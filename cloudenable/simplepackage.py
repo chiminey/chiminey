@@ -10,6 +10,8 @@
 # We might want to organise a node to be run multiple times with different parameters, rather than deploying
 # and destroying each time.  This could be an extension if we get time.
 
+
+
 def create_environ():
 	"""
 	Create the Nectar Node and return id
@@ -46,8 +48,48 @@ def get_output(instance_id):
 	pass
 
 def destroy_environ(instance_id):
-	""" terminate the instance """
+	""" 
+	terminate the instance 
+	"""
 	print "destroy_environ %s" % instance_id
 	pass
 
+import paramiko
 
+def _test_paramiko():
+	""" 
+	Tests that we can connect to a server and issue various commands
+		See http://jessenoller.com/2009/02/05/ssh-programming-with-paramiko-completely-different/
+	"""
+
+	# You will need to change these
+	ip_address = "127.0.0.1"
+	user_name = "ianthomas"
+	password = "EICXJcQ5"
+
+	# open up the connection
+	ssh = paramiko.SSHClient()
+	# autoaccess new keys
+	ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+	ssh.connect(ip_address, username=user_name, password=password)
+
+	# run a user command
+	stdin, stdout, stderr = ssh.exec_command("uptime")
+	print stdout.readlines()
+
+	# run a command that requires input redirection
+	stdin, stdout, stderr = ssh.exec_command("sudo dmesg")
+	# assumes user can use sudo
+	stdin.write(password + '\n')
+	stdin.flush()
+	print stdout.readlines()
+
+	# get and put files
+	ftp = ssh.open_sftp()
+	#ftp.get('remotefile.py', 'localfile.py')
+	#ftp.put('localfile.py','remotefile.py')
+	ssh.close()
+
+
+if __name__ == '__main__':
+	_test_paramiko()
