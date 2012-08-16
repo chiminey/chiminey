@@ -102,7 +102,7 @@ def _normalize_dirpath(dirpath):
 
 
 def _mkdir(sftp, remotepath, mode=0777, intermediate=False):
-    remotepath = .normalize_dirpath(remotepath)
+    remotepath = _normalize_dirpath(remotepath)
     if intermediate:
         try:
             sftp.mkdir(remotepath, mode=mode)
