@@ -19,7 +19,7 @@ if __name__ == '__main__':
 	(options, args) = parser.parse_args()
 
 	if 'setup' in args:
-		print create_environ()		
+		print create_environ()	
 	elif 'run' in args:
 		if options.instance_id:		
 			id = options.instance_id

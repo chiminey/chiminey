@@ -10,6 +10,11 @@
 # We might want to organise a node to be run multiple times with different parameters, rather than deploying
 # and destroying each time.  This could be an extension if we get time.
 
+import os
+import paramiko
+import paraproxy
+import settings
+
 
 
 def create_environ():
@@ -17,6 +22,7 @@ def create_environ():
 	Create the Nectar Node and return id
 	"""
 	print "create_environ"
+	setup_task(42)
 	return 42
 
 def setup_task(instance_id):
@@ -24,14 +30,27 @@ def setup_task(instance_id):
 	Transfer the task package to the node and install
 	"""
 	print "setup_task %s " % instance_id
-	pass 
+	print settings.USER_NAME
+	ip = _get_node_ip(instance_id)
+	ssh = _open_connection(ip)
+	_install_deps(ssh,settings.DEPENDS)
+	_mkdir(ssh,dest_path_prefix)
+	_put_file(ssh,settings.PAYLOAD, dest_path_prefix)
+	_unpack(ssh,dest_path_prefix, settings.PAYLOAD)
+
 
 def prepare_input(instance_id, input_dir):
 	"""
-	Take the input_dir and move to node and ready
+	Take the input_dir and move all the contained files to the node and ready
 	"""
 	print "prepare_input %d %s" % (instance_id, input_dir)
-	pass
+	ip = _get_node_ip(instance_id)
+	ssh = _open_connection(ip)
+	input_dir = _normalize_dirpath(input_dir)
+	dirList=os.listdir(input_dir)
+	for fname in dirList:
+		_upload_input(ssh, fname)
+
 
 def run_task(instance_id):
 	"""
@@ -54,45 +73,63 @@ def destroy_environ(instance_id):
 	print "destroy_environ %s" % instance_id
 	pass
 
-import paramiko
 
-def _test_paramiko():
-	""" 
-	Tests that we can connect to a server and issue various commands
-		See http://jessenoller.com/2009/02/05/ssh-programming-with-paramiko-completely-different/
-	"""
-
-	# You will need to change these
-	ip_address = "127.0.0.1"
-	user_name = "ianthomas"
-	password = "EICXJcQ5"
-
-	# open up the connection
-	ssh = paramiko.SSHClient()
-	# autoaccess new keys
-	ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-	ssh.connect(ip_address, username=user_name, password=password)
-
-	# run a user command
+def _run_command(ssh):
 	stdin, stdout, stderr = ssh.exec_command("uptime")
-	print stdout.readlines()
+	return stdout.readlines()
 
-	# run a command that requires input redirection
+def _run_sudo_command(ssh):
 	stdin, stdout, stderr = ssh.exec_command("sudo dmesg")
-	# assumes user can use sudo
 	stdin.write(password + '\n')
 	stdin.flush()
-	print stdout.readlines()
+	return stdout.readlines()
 
-	# get and put files
+
+def _get_node_ip(instance_id):
+	"""
+		Get the ip adress of a node
+	"""
+	# TODO: use libcloud to return the external ip address of the node
+	return '115.146.94.148'
+
+
+def _open_connection(ip_address):
+	# open up the connection
+	ssh = paramiko.SSHClient()
+	paramiko.util.log_to_file("out")
+	# autoaccess new keys
+	ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+	ssh.load_host_keys(os.path.expanduser(os.path.join("~", ".ssh", "known_hosts")))
+
+	# TODO: use PKI
+	print "%s %s %s" % (ip_address, settings.USER_NAME, settings.PASSWORD)
+	print ssh
+	ssh.connect(ip_address, username=settings.USER_NAME, password=settings.PASSWORD, timeout=60, port=80)
+	return ssh
+
+
+def _put_file(ssh,file,path):
 	ftp = ssh.open_sftp()
-	#ftp.get('remotefile.py', 'localfile.py')
-	#ftp.put('localfile.py','remotefile.py')
+	dest_file = os.path.join(path,file).replace('\\', '/'),
+	ftp.put(file, dest_file)
 
-	# put whole directory
-	#put_dir_recursively(ssh, localpath, remotepath, preserve_perm=True)
 
-	ssh.close()
+def _install_deps(ssh,packages):
+	for pack in packages:
+		_run_sudo_command(ssh,'sudo yum install %s' % pack)
+
+
+def _mkdir(ssh,dir):
+	_run_command(ssh,"mkdir %s" % dir)
+
+
+def _unpack(ssh,path,file):
+	_run_sudo_command(ssh,'tar xzvf %s' % (os.path.join(path,file)))
+
+
+def _upload_input(ssh,input_files):
+	for input in inputfiles:
+		_put_file(ssh,input,dest_path_prefix)		
 
 
 def _normalize_dirpath(dirpath):
@@ -100,68 +137,3 @@ def _normalize_dirpath(dirpath):
         dirpath = dirpath[:-1]
     return dirpath
 
-
-def _mkdir(sftp, remotepath, mode=0777, intermediate=False):
-    remotepath = _normalize_dirpath(remotepath)
-    if intermediate:
-        try:
-            sftp.mkdir(remotepath, mode=mode)
-        except IOError, e:
-            mkdir(sftp, remotepath.rsplit("/", 1)[0], mode=mode,
-                       intermediate=True)
-            return sftp.mkdir(remotepath, mode=mode)
-    else:
-        sftp.mkdir(remotepath, mode=mode)
-
-
-def _put_dir_recursively(ssh,localpath, remotepath, preserve_perm=True):
-    """
-    	Upload local directory to remote recursively 
-    	from http://stackoverflow.com/questions/4409502/directory-transfers-on-paramiko
-    """
-
-    assert remotepath.startswith("/"), "%s must be absolute path" % remotepath
-
-    # normalize
-    localpath =  _normalize_dirpath(localpath)
-    remotepath = _normalize_dirpath(remotepath)
-
-    sftp = ssh.open_sftp()
-
-    try:
-        sftp.chdir(remotepath)
-        localsuffix = localpath.rsplit("/", 1)[1]
-        remotesuffix = remotepath.rsplit("/", 1)[1]
-        if localsuffix != remotesuffix:
-            remotepath = os.path.join(remotepath, localsuffix)
-    except IOError, e:
-        pass
-
-    for root, dirs, fls in os.walk(localpath):
-        prefix = os.path.commonprefix([localpath, root])
-        suffix = root.split(prefix, 1)[1]
-        if suffix.startswith("/"):
-            suffix = suffix[1:]
-
-        remroot = os.path.join(remotepath, suffix)
-
-        try:
-            sftp.chdir(remroot)
-        except IOError, e:
-            if preserve_perm:
-                mode = os.stat(root).st_mode & 0777
-            else:
-                mode = 0777
-            self._mkdir(sftp, remroot, mode=mode, intermediate=True)
-            sftp.chdir(remroot)
-
-        for f in fls:
-            remfile = os.path.join(remroot, f)
-            localfile = os.path.join(root, f)
-            sftp.put(localfile, remfile)
-            if preserve_perm:
-                sftp.chmod(remfile, os.stat(localfile).st_mode & 0777)
-
-
-if __name__ == '__main__':
-	_test_paramiko()
