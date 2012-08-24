@@ -9,6 +9,9 @@ import logging
 
 if __name__ == '__main__':
 
+	#http://docs.python.org/howto/logging.html#logging-basic-tutorial
+	logging.config.fileConfig('logging.conf')
+
 
 	# There are three main paths at the moment.
 	# 1) Create a instance with task package installed
@@ -28,7 +31,7 @@ if __name__ == '__main__':
 	(options, args) = parser.parse_args()
 
 	if 'setup' in args:
-		print create_environ()	
+		logger.debug(create_environ())
 	elif 'run' in args:
 		if options.instance_id:		
 			if not options.output_dir:
@@ -40,16 +43,23 @@ if __name__ == '__main__':
 				sys.exit(1)				
 			id = options.instance_id
 			prepare_input(id,options.input_dir)
-			job_id = run_task(id)	
-			print job_id	
+			try:
+				job_id = run_task(id)	
+			except PackageFailedError, e:
+				logger.error(e)
+				logger.error("unable to start package")
+				#TODO: cleanup node of copied input files etc.
+				sys.exit(1)	
+			logger.debug(job_id)
 			if (len(job_id) != 1):
 				logging.warn("warning: muliple payloads running")
 			while (True):
 				if job_finished(id):
 					break
-				logging.info("job is running.  Wait or CTRL-C to exit here.  run 'check' command to poll again")
+				print("job is running.  Wait or CTRL-C to exit here.  run 'check' command to poll again")
 				time.sleep(settings.SLEEP_TIME)
-			if options.output_dir:			
+			if options.output_dir:	
+				print "done. output is available"		
 				get_output(id,options.output_dir)
 			else:
 				logging.error("need to specify output directory")
@@ -71,10 +81,12 @@ if __name__ == '__main__':
 					sys.exit(1)	
 			id = options.instance_id
 			if job_finished(options.instance_id):
-				print "done"	
+				print "done. output is available"	
 				get_output(id,options.output_dir)
+			else: 
+				print "job still running"
 		else:
-			print "enter nodeid of the package"		
+			logger.error("enter nodeid of the package")
 			parser.print_help() 
 			sys.exit(1)
 	elif 'teardown' in args:
@@ -82,7 +94,7 @@ if __name__ == '__main__':
 			id = options.instance_id
 			destroy_environ(id)
 		else:
-			print "enter nodeid of the package"
+			logger.error("enter nodeid of the package")
 			parser.print_help()
 			sys.exit(1)
 	else:

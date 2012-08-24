@@ -6,7 +6,10 @@ import settings
 import logging
 import logging
 import logging.config
-logging.config.fileConfig('logging.conf')
+
+#http://docs.python.org/howto/logging.html#logging-basic-tutorial
+logger = logging.getLogger(__name__)
+
 
 class Error(Exception):
 	pass
@@ -18,7 +21,7 @@ def create_environ():
 	"""
 		Create the Nectar Node and return id
 	"""
-	print "create_environ"
+	logger.info("create_environ")
 	# TODO: use libcloud to create a new node and return unique id
 	setup_task(42)
 	return 42
@@ -36,7 +39,7 @@ def destroy_environ(instance_id):
 	""" 
 		Terminate the instance 
 	"""
-	print "destroy_environ %s" % instance_id
+	logger.info( "destroy_environ %s" % instance_id)
 	# TODO: use libcloud to tear down the instance
 	pass
 
@@ -45,7 +48,7 @@ def setup_task(instance_id):
 	"""
 		Transfer the task package to the node and install
 	"""
-	print "setup_task %s " % instance_id
+	logger.info("setup_task %s " % instance_id)
 	ip = _get_node_ip(instance_id)
 	ssh = _open_connection(ip_address=ip, username=settings.USER_NAME, password=settings.PASSWORD)
 	_install_deps(ssh, packages=settings.DEPENDS,sudo_password=settings.PASSWORD)
@@ -62,13 +65,13 @@ def prepare_input(instance_id, input_dir):
 	"""
 		Take the input_dir and move all the contained files to the instance and ready
 	"""
-	print "prepare_input %d %s" % (instance_id, input_dir)
+	logger.info("prepare_input %d %s" % (instance_id, input_dir))
 	ip = _get_node_ip(instance_id)
 	ssh = _open_connection(ip_address=ip, username=settings.USER_NAME, password=settings.PASSWORD)
 	input_dir = _normalize_dirpath(input_dir)
 	dirList=os.listdir(input_dir)
 	for fname in dirList:
-		print fname
+		logger.debug(fname)
 		_upload_input(ssh, input_dir, fname,
 			os.path.join(settings.DEST_PATH_PREFIX, settings.PAYLOAD_DIRNAME))
 	_run_command(ssh, "cd %s; cp rmcen.inp rmcen.inp.orig" % 
@@ -83,11 +86,12 @@ def run_task(instance_id):
 	"""
 		Start the task on the instance, then hang and periodically check its state.
 	"""
-	print "run_task %s" % instance_id 
+	logger.info("run_task %s" % instance_id )
 	ip = _get_node_ip(instance_id) 
 	ssh = _open_connection(ip_address=ip, username=settings.USER_NAME, password=settings.PASSWORD)
 	if len(_get_package_pid(ssh,settings.COMPILE_FILE)) > 1:
-		print "warning:multiple packages running"
+		logger.error("warning:multiple packages running")
+		raise PackageFailedError("multiple packages running")
 	_run_command(ssh, "cd %s; ./%s >& %s &" % (os.path.join(settings.DEST_PATH_PREFIX, settings.PAYLOAD_DIRNAME),
 		settings.COMPILE_FILE, "output"))
 	import time
@@ -95,7 +99,7 @@ def run_task(instance_id):
 	for x in range(0, attempts):
 		time.sleep(5) # to give process enough time to start
 		pid = _get_package_pid(ssh,settings.COMPILE_FILE)
-		print pid
+		logger.debug(pid)
 		if pid:
 			break
 	else:
@@ -108,15 +112,15 @@ def get_output(instance_id,output_dir):
 	""" 
 		Retrieve the output from the task on the node
 	"""
-	print "get_output %s" % instance_id
+	logger.info("get_output %s" % instance_id)
 	ip = _get_node_ip(instance_id) 
 	ssh = _open_connection(ip_address=ip, username=settings.USER_NAME, password=settings.PASSWORD)
 	try:
 		os.mkdir(output_dir)
 	except exception.OSError:
-		logging.warning("output directory already exists")
+		logger.warning("output directory already exists")
 		sys.exit(1)	
-	logging.info("output directory is %s" % output_dir)	
+	logger.info("output directory is %s" % output_dir)	
 	for file in settings.OUTPUT_FILES:
 		_get_file(ssh, os.path.join(settings.DEST_PATH_PREFIX, settings.PAYLOAD_DIRNAME), file, output_dir)
 	# TODO: do integrity check on output files
@@ -142,17 +146,17 @@ def _open_connection(ip_address, username, password):
 	ssh.load_host_keys(os.path.expanduser(os.path.join("~", ".ssh", "known_hosts")))
 
 	# TODO: use PKI rather than username/password
-	print "%s %s %s" % (ip_address, username, password)
-	print ssh
+	logger.debug("%s %s %s" % (ip_address, username, password))
+	logger.debug(ssh)
 	ssh.connect(ip_address, username=username, password=password, timeout=60)
 	return ssh
 
 
 def _run_command(ssh, command,current_dir=None):
-	print current_dir, command
+ 	logger.info("%s %s " % (current_dir, command))
 	if current_dir:
 		command = "cd %s;%s" % (current_dir,command)
-	print command
+	logger.info(command)
 	stdin, stdout, stderr = ssh.exec_command(command)
 	return stdout.readlines()
 
@@ -164,8 +168,9 @@ def _run_sudo_command(ssh,command,password=None):
 
 
 def _unpack(ssh,environ_dir,package_file):
-	print _run_command(ssh,'tar --directory=%s --extract --gunzip --verbose --file=%s' 
+	res = _run_command(ssh,'tar --directory=%s --extract --gunzip --verbose --file=%s' 
 		% (environ_dir, os.path.join(environ_dir, package_file)))
+	logger.debug(res)
 
 
 def _compile(ssh, environ_dir,compile_file, package_dirname,compiler_command):
@@ -188,19 +193,19 @@ def _mkdir(ssh,dir):
 
 def _get_file(ssh, source_path, package_file, environ_dir):
 	ftp = ssh.open_sftp()
-	print source_path, package_file, environ_dir
+	logger.debug(source_path, package_file, environ_dir)
 	source_file = os.path.join(source_path,package_file).replace('\\','/')
 	dest_file = os.path.join(environ_dir,package_file).replace('\\', '/')
-	print source_file, dest_file
+	logger.debug(source_file, dest_file)
  	ftp.get(source_file, dest_file)
 
 
 def _put_file(ssh, source_path, package_file, environ_dir):
 	ftp = ssh.open_sftp()
-	print source_path, environ_dir
+	logger.debug(source_path, environ_dir)
 	source_file = os.path.join(source_path,package_file).replace('\\','/')
 	dest_file = os.path.join(environ_dir,package_file).replace('\\', '/')
-	print source_file, dest_file
+	logger.debug(source_file, dest_file)
  	ftp.put(source_file, dest_file)
 
 
