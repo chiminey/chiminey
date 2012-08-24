@@ -8,3 +8,8 @@ virtualenv --no-site-packages .
 source bin/activate
 pip install -r requirements.txt
 python mc.py --help
+
+Example
+python mc.py setup
+python mc.py --nodeid=42 --inputdir=input/ --outputdir=output run
+python mc.py --nodeid=42 check --outputdir=output

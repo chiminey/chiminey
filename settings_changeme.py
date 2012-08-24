@@ -12,3 +12,4 @@ SLEEP_TIME = 10 # time to wait before polling finished job in seconds
 RETRY_ATTEMPTS = 10 # number of times to try accessing package PID
 
 OUTPUT_FILES = ['output','energy01.dat','spchn01.dat']
+TEST_VM_IP = '115.146.94.152'
