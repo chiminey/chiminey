@@ -32,7 +32,7 @@ def _get_node_ip(instance_id):
 		Get the ip adress of a node
 	"""
 	# TODO: use libcloud to return the external ip address from the id
-	return '115.146.94.148'
+	return settings.TEST_VM_IP
 
 
 def destroy_environ(instance_id):
@@ -240,7 +240,7 @@ def _run_sudo_command(ssh,command,password=None):
 	# TODO: handle stderr
 	chan.send('exit\n') 
 
-	return (out, '')
+	return (res, '')
 
 
 def _unpack(ssh,environ_dir,package_file):
