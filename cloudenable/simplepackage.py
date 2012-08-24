@@ -4,7 +4,7 @@ import os
 import paramiko
 import settings
 import logging
-import logging
+import time
 import logging.config
 
 #http://docs.python.org/howto/logging.html#logging-basic-tutorial
@@ -51,9 +51,12 @@ def setup_task(instance_id):
 	logger.info("setup_task %s " % instance_id)
 	ip = _get_node_ip(instance_id)
 	ssh = _open_connection(ip_address=ip, username=settings.USER_NAME, password=settings.PASSWORD)
-	_install_deps(ssh, packages=settings.DEPENDS,sudo_password=settings.PASSWORD)
-	_mkdir(ssh, dir=settings.DEST_PATH_PREFIX)
+	res = _install_deps(ssh, packages=settings.DEPENDS,sudo_password=settings.PASSWORD)
+	logger.debug("install res=%s" % res)
+	res = _mkdir(ssh, dir=settings.DEST_PATH_PREFIX)
+	logger.debug("mkdir res=%s" % res)
 	_put_file(ssh, source_path="payload", package_file=settings.PAYLOAD, environ_dir=settings.DEST_PATH_PREFIX)
+
 	_unpack(ssh, environ_dir=settings.DEST_PATH_PREFIX, package_file=settings.PAYLOAD)
 	_compile(ssh, environ_dir=settings.DEST_PATH_PREFIX, 
 		compile_file=settings.COMPILE_FILE, 
@@ -140,15 +143,23 @@ def job_finished(instance_id):
 def _open_connection(ip_address, username, password):
 	# open up the connection
 	ssh = paramiko.SSHClient()
-	paramiko.util.log_to_file("out")
 	# autoaccess new keys
 	ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 	ssh.load_host_keys(os.path.expanduser(os.path.join("~", ".ssh", "known_hosts")))
 
-	# TODO: use PKI rather than username/password
-	logger.debug("%s %s %s" % (ip_address, username, password))
-	logger.debug(ssh)
-	ssh.connect(ip_address, username=username, password=password, timeout=60)
+
+	# use private key if exists
+	if os.path.exists(settings.PRIVATE_KEY):
+		privatekeyfile = os.path.expanduser(settings.PRIVATE_KEY)
+		mykey = paramiko.RSAKey.from_private_key_file(privatekeyfile)
+		ssh.connect(ip_address, username=username, timeout=60, pkey = mykey)
+	else:			
+		logger.debug("%s %s %s" % (ip_address, username, password))
+		logger.debug(ssh)
+		ssh.connect(ip_address, username=username, password=password,timeout=60)
+
+	#channel = ssh.invoke_shell().open_session()
+
 	return ssh
 
 
@@ -161,10 +172,59 @@ def _run_command(ssh, command,current_dir=None):
 	return stdout.readlines()
 
 def _run_sudo_command(ssh,command,password=None):
-	stdin, stdout, stderr = ssh.exec_command(command,password)
-	stdin.write(password + '\n')
-	stdin.flush()
-	return stdout.readlines()
+
+	# transport = paramiko.Transport((host, port))            
+ #    transport.connect(username = username, password = password)
+ #    chan = paramiko.transport.open_session()
+ #    chan.setblocking(0)
+ #    chan.invoke_shell()
+ 
+ #    out = ''
+ 
+ #    chan.send(cmd+'\n')
+ 
+ #    tCheck = 0
+ 
+ #    # Wait for it.....
+ #    while not chan.recv_ready():
+ #        time.sleep(10)
+ #        tCheck+=1
+ #        if tCheck >= 6:
+ #            print 'time out'#TODO: add exeption here 
+ #            return False
+ #    stdout = chan.recv(1024)
+	 
+	logger.debug(command)
+	t = ssh.get_transport() 
+	chan = t.open_session() 
+	chan.get_pty()
+	chan.exec_command('sudo -s') 
+	chan.send(password + '\n') 
+	chan.send('%s\n' % command) 
+
+	tCheck = 0
+	while not chan.recv_ready():
+ 		time.sleep(10)
+        tCheck+=1
+        if tCheck >= 6:
+            print 'time out'#TODO: add exeption here              
+	out =  chan.recv(9999) 
+
+	logger.debug("out=%s" % out)
+	
+	# tCheck = 0
+	# while not chan.recv_stderr_ready():
+ #  		time.sleep(10)
+ #        tCheck+=1
+ #        if tCheck >= 6:
+ #            print 'time out'#TODO: add exeption here              
+	#out =  chan.recv_stderr(9999) 
+	#logger.debug("err = %s" % err)
+
+	# TODO: handle stderr
+	chan.send('exit\n') 
+
+	return (out, '')
 
 
 def _unpack(ssh,environ_dir,package_file):
@@ -180,7 +240,9 @@ def _compile(ssh, environ_dir,compile_file, package_dirname,compiler_command):
 
 def _install_deps(ssh,packages,sudo_password):
 	for pack in packages:
-	    _run_sudo_command(ssh,'sudo yum install %s' % pack,sudo_password)
+		stdout, stderr = _run_sudo_command(ssh,'sudo yum -y install %s' % pack,password=sudo_password)
+		logger.debug("install stdout=%s" % stdout)
+		logger.debug("install stderr=%s" % stderr)
 
 
 def _upload_input(ssh,source_path_prefix,input_file,dest_path_prefix):
@@ -193,19 +255,19 @@ def _mkdir(ssh,dir):
 
 def _get_file(ssh, source_path, package_file, environ_dir):
 	ftp = ssh.open_sftp()
-	logger.debug(source_path, package_file, environ_dir)
+	logger.debug("%s %s %s" % (source_path, package_file, environ_dir))
 	source_file = os.path.join(source_path,package_file).replace('\\','/')
 	dest_file = os.path.join(environ_dir,package_file).replace('\\', '/')
-	logger.debug(source_file, dest_file)
+	logger.debug("%s %s" % (source_file, dest_file))
  	ftp.get(source_file, dest_file)
 
 
 def _put_file(ssh, source_path, package_file, environ_dir):
 	ftp = ssh.open_sftp()
-	logger.debug(source_path, environ_dir)
+	logger.debug("%s %s" % (source_path, environ_dir))
 	source_file = os.path.join(source_path,package_file).replace('\\','/')
 	dest_file = os.path.join(environ_dir,package_file).replace('\\', '/')
-	logger.debug(source_file, dest_file)
+	logger.debug("%s %s" % (source_file, dest_file))
  	ftp.put(source_file, dest_file)
 
 
