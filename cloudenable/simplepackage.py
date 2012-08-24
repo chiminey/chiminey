@@ -171,6 +171,16 @@ def _run_command(ssh, command,current_dir=None):
 	stdin, stdout, stderr = ssh.exec_command(command)
 	return stdout.readlines()
 
+def _get_channel_data(chan):
+	tCheck = 0
+	while not chan.recv_ready():
+ 		time.sleep(10)
+        tCheck+=1
+        if tCheck >= 6:
+            print 'time out'#TODO: add exeption here              
+	out =  chan.recv(9999) 
+	return out
+
 def _run_sudo_command(ssh,command,password=None):
 
 	# transport = paramiko.Transport((host, port))            
@@ -199,18 +209,24 @@ def _run_sudo_command(ssh,command,password=None):
 	chan = t.open_session() 
 	chan.get_pty()
 	chan.exec_command('sudo -s') 
+	time.sleep(5)
+
+	res = _get_channel_data(chan)
+	logger.debug("res=%s" % res)
+
 	chan.send(password + '\n') 
+	time.sleep(5)
+
+	res = _get_channel_data(chan)
+	logger.debug("res=%s" % res)
+
 	chan.send('%s\n' % command) 
+	time.sleep(5)
 
-	tCheck = 0
-	while not chan.recv_ready():
- 		time.sleep(10)
-        tCheck+=1
-        if tCheck >= 6:
-            print 'time out'#TODO: add exeption here              
-	out =  chan.recv(9999) 
+	res = _get_channel_data(chan)
+	logger.debug("res=%s" % res)
 
-	logger.debug("out=%s" % out)
+	
 	
 	# tCheck = 0
 	# while not chan.recv_stderr_ready():
