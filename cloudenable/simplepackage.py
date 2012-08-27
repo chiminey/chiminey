@@ -2,7 +2,6 @@
 
 import os
 import paramiko
-import settings
 import logging
 import time
 import logging.config
@@ -16,6 +15,7 @@ from libcloud.compute.providers import get_driver
 from libcloud.compute.base import NodeImage
 from libcloud.compute.deployment import ScriptDeployment
 
+import configs
 
 #http://docs.python.org/howto/logging.html#logging-basic-tutorial
 logger = logging.getLogger(__name__)
