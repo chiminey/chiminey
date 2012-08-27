@@ -11,5 +11,22 @@ PAYLOAD_DIRNAME="AEAO_v1_1" #The directory of the unpackaed payload
 SLEEP_TIME = 10 # time to wait before polling finished job in seconds
 RETRY_ATTEMPTS = 10 # number of times to try accessing package PID
 
-OUTPUT_FILES = ['output','energy01.dat','spchn01.dat']
+OUTPUT_FILES = ['output','energy01.dat', \
+	'engchn01.dat',\
+	'engerr01.dat',\
+	'error01.dat',\
+	'frnmc01.dat',\
+	'frsp301.dat',\
+	'grchn01.dat',\
+	'grerr01.dat',\
+	'spchn01.dat',\
+	'sperr01.dat',\
+	'sqchn01.dat',\
+	'sqerr01.dat',\
+	'hrmc01.xyz',\
+	'hrmcpr01.xyz',\
+	'start01.xyz',\
+	'abc',\
+	'sqinput.dat']
+
 TEST_VM_IP = '115.146.94.152'
