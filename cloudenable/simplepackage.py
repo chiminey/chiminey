@@ -275,7 +275,10 @@ def _get_file(ssh, source_path, package_file, environ_dir):
 	source_file = os.path.join(source_path,package_file).replace('\\','/')
 	dest_file = os.path.join(environ_dir,package_file).replace('\\', '/')
 	logger.debug("%s %s" % (source_file, dest_file))
- 	ftp.get(source_file, dest_file)
+	try:
+		ftp.get(source_file, dest_file)
+	except IOError, e:
+		logger.warning("%s not found" % package_file) 	
 
 
 def _put_file(ssh, source_path, package_file, environ_dir):
