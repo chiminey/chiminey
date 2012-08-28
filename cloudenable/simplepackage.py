@@ -6,6 +6,14 @@ import settings
 import logging
 import time
 import logging.config
+import sys
+import traceback
+
+from libcloud.compute.types import Provider
+from libcloud.compute.providers import get_driver
+
+from libcloud.compute.base import NodeImage
+from libcloud.compute.deployment import ScriptDeployment
 
 #http://docs.python.org/howto/logging.html#logging-basic-tutorial
 logger = logging.getLogger(__name__)
@@ -17,31 +25,98 @@ class Error(Exception):
 class PackageFailedError(Error):
 	pass
  
-def create_environ():
-	"""
-		Create the Nectar Node and return id
-	"""
-	logger.info("create_environ")
-	# TODO: use libcloud to create a new node and return unique id
-	setup_task(42)
-	return 42
+def _create_connection():
+    EC2_ACCESS_KEY="2cfcd878737d4ba6c71330b84e3018d7"
+    EC2_SECRET_KEY="2b847b4b-7582-ca45-40eb-e9066ce9f830"
+    
+    OpenstackDriver = get_driver(Provider.EUCALYPTUS)
+    #print("Connecting...",OpenstackDriver)
+    conn = OpenstackDriver(EC2_ACCESS_KEY, secret=EC2_SECRET_KEY, host="nova.rc.nectar.org.au", secure=False, port=8773, path="/services/Cloud")
+    #print ("Connected")
+    
+    return conn
 
+def create_environ():
+    """
+        Create the Nectar Node and return id
+    """
+    logger.info("create_environ")
+	# TODO: use libcloud to create a new node and return unique id
+
+    conn = _create_connection()
+    images = conn.list_images()
+    sizes = conn.list_sizes()
+            
+    image1 = [i for i in images if i.id == 'ami-0000000d'][0]
+    size1 = [i for i in sizes if i.id == 'm1.small'][0]
+     
+    instance_id = ''
+    try:
+        new_instance = conn.create_node(name="New Centos Node",size=size1,image=image1)
+        instance_id = new_instance.name
+        print 'Instance CREATED: ID=',instance_id
+    #TODO: a script should be written to set up login infomarmation. Otherwise, setup_task(instance_id) does not work
+        #setup_task(instance_id)
+    
+    except Exception:
+        traceback.print_exc(file=sys.stdout)
+        _print_running_node_id(conn)
+        
+	    
+    return instance_id
+
+
+def _print_running_node_id(conn):
+    counter = 1
+    nodes = conn.list_nodes()
+    print ('ID and IP for currently running node instances')
+    for i in nodes:
+        print 'Node', counter, i.name, _get_node_ip(i.name)
+        counter = counter+1
+
+def _get_node(instance_id):
+    """
+        Get a reference to node with instance_id
+    """
+    conn = _create_connection()
+    nodes = conn.list_nodes()
+    this_node = []
+    for i in nodes:
+        if i.name == instance_id:   
+            this_node = i
+            break
+
+    return this_node
 
 def _get_node_ip(instance_id):
-	"""
-		Get the ip adress of a node
-	"""
-	# TODO: use libcloud to return the external ip address from the id
-	return settings.TEST_VM_IP
+    """
+        Get the ip address of a node
+    """
+    conn = _create_connection()
+    ip = ''
+    while instance_id == '' or ip == '':
+        nodes = conn.list_nodes()
+        for i in nodes:
+            if i.name == instance_id and len(i.public_ips) > 0:   
+                ip = i.public_ips[0]
+                break
+        
+    return ip
 
 
 def destroy_environ(instance_id):
-	""" 
+    """
 		Terminate the instance 
-	"""
-	logger.info( "destroy_environ %s" % instance_id)
-	# TODO: use libcloud to tear down the instance
-	pass
+    """
+    logger.info( "destroy_environ %s" % instance_id)
+    this_node = _get_node(instance_id)
+    conn = _create_connection()
+    try:
+        print conn.destroy_node(this_node)
+        print 'Instance',instance_id,'DESTROYED'
+            
+    except Exception:
+        print 'Instance',instance_id,'NOT DESTROYED'
 
 
 def setup_task(instance_id):
