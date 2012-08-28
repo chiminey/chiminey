@@ -26,8 +26,8 @@ class PackageFailedError(Error):
 	pass
  
 def _create_connection():
-    EC2_ACCESS_KEY="2cfcd878737d4ba6c71330b84e3018d7"
-    EC2_SECRET_KEY="2b847b4b-7582-ca45-40eb-e9066ce9f830"
+    EC2_ACCESS_KEY=settings.EC2_ACCESS_KEY
+    EC2_SECRET_KEY=settings.EC2_SECRET_KEY
     
     OpenstackDriver = get_driver(Provider.EUCALYPTUS)
     #print("Connecting...",OpenstackDriver)

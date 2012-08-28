@@ -30,3 +30,5 @@ OUTPUT_FILES = ['output','energy01.dat', \
 	'sqinput.dat']
 
 TEST_VM_IP = '115.146.94.152'
+EC2_ACCESS_KEY=""
+EC2_SECRET_KEY=""
