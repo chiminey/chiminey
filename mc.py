@@ -30,8 +30,18 @@ if __name__ == '__main__':
 
 	(options, args) = parser.parse_args()
 
-	if 'setup' in args:
-		logger.debug(create_environ())
+    	if 'create' in args:
+        	logger.debug(create_environ())
+        
+    	elif 'setup' in args:
+        	if options.instance_id:
+            		id = options.instance_id
+            		setup_task(id)
+        	else:
+            		logging.error("enter nodeid of the package")
+			parser.print_help()
+			sys.exit(1)
+        
 	elif 'run' in args:
 		if options.instance_id:		
 			if not options.output_dir:

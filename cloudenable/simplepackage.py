@@ -15,6 +15,7 @@ from libcloud.compute.providers import get_driver
 from libcloud.compute.base import NodeImage
 from libcloud.compute.deployment import ScriptDeployment
 
+
 #http://docs.python.org/howto/logging.html#logging-basic-tutorial
 logger = logging.getLogger(__name__)
 
@@ -41,8 +42,6 @@ def create_environ():
         Create the Nectar Node and return id
     """
     logger.info("create_environ")
-	# TODO: use libcloud to create a new node and return unique id
-
     conn = _create_connection()
     images = conn.list_images()
     sizes = conn.list_sizes()
@@ -52,10 +51,11 @@ def create_environ():
      
     instance_id = ''
     try:
-        new_instance = conn.create_node(name="New Centos Node",size=size1,image=image1)
-        instance_id = new_instance.name
-        print 'Instance CREATED: ID=',instance_id
-    #TODO: a script should be written to set up login infomarmation. Otherwise, setup_task(instance_id) does not work
+        new_instance = conn.create_node(name="New Centos Node",size=size1,image=image1, ex_keyname=settings.PRIVATE_KEY_NAME, ex_securitygroup=settings.SECURITY_GROUP)
+
+	instance_id = new_instance.name
+        print 'Instance CREATED: ID=%s' %instance_id
+
         #setup_task(instance_id)
     
     except Exception:
@@ -128,10 +128,9 @@ def setup_task(instance_id):
 	ssh = _open_connection(ip_address=ip, username=settings.USER_NAME, password=settings.PASSWORD)
 	res = _install_deps(ssh, packages=settings.DEPENDS,sudo_password=settings.PASSWORD)
 	logger.debug("install res=%s" % res)
-	res = _mkdir(ssh, dir=settings.DEST_PATH_PREFIX)
+        res = _mkdir(ssh, dir=settings.DEST_PATH_PREFIX)
 	logger.debug("mkdir res=%s" % res)
 	_put_file(ssh, source_path="payload", package_file=settings.PAYLOAD, environ_dir=settings.DEST_PATH_PREFIX)
-
 	_unpack(ssh, environ_dir=settings.DEST_PATH_PREFIX, package_file=settings.PAYLOAD)
 	_compile(ssh, environ_dir=settings.DEST_PATH_PREFIX, 
 		compile_file=settings.COMPILE_FILE, 
@@ -143,7 +142,7 @@ def prepare_input(instance_id, input_dir):
 	"""
 		Take the input_dir and move all the contained files to the instance and ready
 	"""
-	logger.info("prepare_input %d %s" % (instance_id, input_dir))
+	logger.info("prepare_input %s %s" % (instance_id, input_dir))
 	ip = _get_node_ip(instance_id)
 	ssh = _open_connection(ip_address=ip, username=settings.USER_NAME, password=settings.PASSWORD)
 	input_dir = _normalize_dirpath(input_dir)
@@ -228,7 +227,7 @@ def _open_connection(ip_address, username, password):
 		privatekeyfile = os.path.expanduser(settings.PRIVATE_KEY)
 		mykey = paramiko.RSAKey.from_private_key_file(privatekeyfile)
 		ssh.connect(ip_address, username=username, timeout=60, pkey = mykey)
-	else:			
+	else:
 		logger.debug("%s %s %s" % (ip_address, username, password))
 		logger.debug(ssh)
 		ssh.connect(ip_address, username=username, password=password,timeout=60)
