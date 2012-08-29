@@ -30,15 +30,20 @@ if __name__ == '__main__':
 
     (options, args) = parser.parse_args()
 
-        if 'create' in args:
-            logger.debug(create_environ())
-        
-        elif 'setup' in args:
-            if options.instance_id:
-                    id = options.instance_id
-                    setup_task(id)
-            else:
-                    logging.error("enter nodeid of the package")
+
+    if 'create' in args:
+        logger.debug(create_environ())
+
+    elif 'setup' in args:
+        if options.instance_id:
+            id = options.instance_id
+            if not is_instance_running (id):
+                logging.error ('Instance %s not running' %id)
+                sys.exit(1)
+                
+            setup_task(id)
+        else:
+            logging.error("enter nodeid of the package")
             parser.print_help()
             sys.exit(1)
         
@@ -50,8 +55,13 @@ if __name__ == '__main__':
                 sys.exit(1)
             elif os.path.isdir(options.output_dir):
                 logging.error("output directory already exists")
-                sys.exit(1)             
+                sys.exit(1)     
+
             id = options.instance_id
+            if not is_instance_running (id):
+                logging.error ('Instance %s not running' %id)
+                sys.exit(1)
+
             prepare_input(id,options.input_dir)
             try:
                 job_id = run_task(id)   
@@ -90,6 +100,10 @@ if __name__ == '__main__':
                     logging.error("output directory already exists")
                     sys.exit(1) 
             id = options.instance_id
+            if not is_instance_running (id):
+                logging.error ('Instance %s not running' %id)
+                sys.exit(1)
+
             if job_finished(options.instance_id):
                 print "done. output is available"   
                 get_output(id,options.output_dir)
@@ -99,9 +113,14 @@ if __name__ == '__main__':
             logger.error("enter nodeid of the package")
             parser.print_help() 
             sys.exit(1)
+
     elif 'teardown' in args:
             if options.instance_id:
                     id = options.instance_id
+                    if not is_instance_running (id):
+                        logging.error ('Instance %s not running' %id)
+                        sys.exit(1)
+
                     print 'Instance to be destroyed', id
                     destroy_environ(id)
             else:
