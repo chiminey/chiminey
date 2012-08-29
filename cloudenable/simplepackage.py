@@ -53,10 +53,8 @@ def create_environ():
     try:
         new_instance = conn.create_node(name="New Centos Node",size=size1,image=image1, ex_keyname=settings.PRIVATE_KEY_NAME, ex_securitygroup=settings.SECURITY_GROUP)
 
-	instance_id = new_instance.name
+        instance_id = new_instance.name
         print 'Instance CREATED: ID=%s' %instance_id
-
-        #setup_task(instance_id)
     
     except Exception:
         traceback.print_exc(file=sys.stdout)
@@ -73,6 +71,18 @@ def _print_running_node_id(conn):
     for i in nodes:
         print 'Node', counter, i.name, _get_node_ip(i.name)
         counter = counter+1
+
+def is_instance_running(instance_id):
+	instance_running = False
+	conn = _create_connection()
+	nodes = conn.list_nodes()
+	for i in nodes:
+		if i.name == instance_id:
+			instance_running = True
+			break
+	return instance_running		
+
+
 
 def _get_node(instance_id):
     """
@@ -108,6 +118,7 @@ def destroy_environ(instance_id):
     """
 		Terminate the instance 
     """
+
     logger.info( "destroy_environ %s" % instance_id)
     this_node = _get_node(instance_id)
     conn = _create_connection()
@@ -120,28 +131,31 @@ def destroy_environ(instance_id):
 
 
 def setup_task(instance_id):
-	"""
-		Transfer the task package to the node and install
-	"""
-	logger.info("setup_task %s " % instance_id)
-	ip = _get_node_ip(instance_id)
-	ssh = _open_connection(ip_address=ip, username=settings.USER_NAME, password=settings.PASSWORD)
-	res = _install_deps(ssh, packages=settings.DEPENDS,sudo_password=settings.PASSWORD)
-	logger.debug("install res=%s" % res)
-        res = _mkdir(ssh, dir=settings.DEST_PATH_PREFIX)
-	logger.debug("mkdir res=%s" % res)
-	_put_file(ssh, source_path="payload", package_file=settings.PAYLOAD, environ_dir=settings.DEST_PATH_PREFIX)
-	_unpack(ssh, environ_dir=settings.DEST_PATH_PREFIX, package_file=settings.PAYLOAD)
-	_compile(ssh, environ_dir=settings.DEST_PATH_PREFIX, 
-		compile_file=settings.COMPILE_FILE, 
-		package_dirname=settings.PAYLOAD_DIRNAME,
-		compiler_command=settings.COMPILER)
+    """
+	Transfer the task package to the node and install
+    """
+
+    logger.info("setup_task %s " % instance_id)
+    ip = _get_node_ip(instance_id)
+    ssh = _open_connection(ip_address=ip, username=settings.USER_NAME, password=settings.PASSWORD)
+    res = _install_deps(ssh, packages=settings.DEPENDS,sudo_password=settings.PASSWORD)
+    logger.debug("install res=%s" % res)
+    res = _mkdir(ssh, dir=settings.DEST_PATH_PREFIX)
+    logger.debug("mkdir res=%s" % res)
+    _put_file(ssh, source_path="payload", package_file=settings.PAYLOAD, environ_dir=settings.DEST_PATH_PREFIX)
+    _unpack(ssh, environ_dir=settings.DEST_PATH_PREFIX, package_file=settings.PAYLOAD)
+    _compile(ssh, environ_dir=settings.DEST_PATH_PREFIX, 
+	compile_file=settings.COMPILE_FILE, 
+	package_dirname=settings.PAYLOAD_DIRNAME,
+	compiler_command=settings.COMPILER)
 
 
 def prepare_input(instance_id, input_dir):
 	"""
 		Take the input_dir and move all the contained files to the instance and ready
+
 	"""
+
 	logger.info("prepare_input %s %s" % (instance_id, input_dir))
 	ip = _get_node_ip(instance_id)
 	ssh = _open_connection(ip_address=ip, username=settings.USER_NAME, password=settings.PASSWORD)
@@ -295,7 +309,7 @@ def _run_sudo_command(ssh,command,password=None):
 	logger.debug("res=%s" % res)
 
 	chan.send('%s\n' % command) 
-	time.sleep(5)
+	time.sleep(25)
 
 	res = _get_channel_data(chan)
 	logger.debug("res=%s" % res)
