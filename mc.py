@@ -39,7 +39,7 @@ if __name__ == '__main__':
 			if not is_instance_running (id):
 				logging.error ('Instance %s not running' %id)
 				sys.exit(1)
-				
+
 			setup_task(id)
 		else:
 			logging.error("enter nodeid of the package")
@@ -69,6 +69,7 @@ if __name__ == '__main__':
 				logger.error("unable to start package")
 				#TODO: cleanup node of copied input files etc.
 				sys.exit(1)	
+			
 			logger.debug(job_id)
 			if (len(job_id) != 1):
 				logging.warn("warning: muliple payloads running")

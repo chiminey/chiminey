@@ -10,6 +10,7 @@ import sys
 import traceback
 
 from libcloud.compute.types import Provider
+from libcloud.compute.types import NodeState
 from libcloud.compute.providers import get_driver
 
 from libcloud.compute.base import NodeImage
@@ -52,10 +53,14 @@ def create_environ():
     instance_id = ''
     try:
         new_instance = conn.create_node(name="New Centos Node",size=size1,image=image1, ex_keyname=settings.PRIVATE_KEY_NAME, ex_securitygroup=settings.SECURITY_GROUP)
+        instance_state = _wait_for_instance_to_start_running (new_instance)
+        
+        if instance_state == NodeState.RUNNING:
+        	instance_id = new_instance.name
+        	print 'Instance CREATED: ID=%s' %instance_id
+        else:
+			print 'Instance not created. Current Instance Status %s. Try again' %instance_state
 
-        instance_id = new_instance.name
-        print 'Instance CREATED: ID=%s' %instance_id
-    
     except Exception:
         traceback.print_exc(file=sys.stdout)
         _print_running_node_id(conn)
@@ -63,6 +68,15 @@ def create_environ():
 	    
     return instance_id
 
+def _wait_for_instance_to_start_running(instance):
+	previous_instance = instance.state
+	while (instance.state != NodeState.RUNNING) or (instance.state != NodeState.TERMINATED):
+		print instance.state 
+		time.sleep(3)
+
+
+
+	return 	instance.state
 
 def _print_running_node_id(conn):
     counter = 1
