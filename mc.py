@@ -22,20 +22,20 @@ if __name__ == '__main__':
 
     # get command line options
 
-	parser = OptionParser()
-	parser.add_option("-n", "--nodeid",dest="instance_id",
+    parser = OptionParser()
+    parser.add_option("-n", "--nodeid",dest="instance_id",
 	                  help="The instance id from the cloud infrastructure")
-	parser.add_option("-i", "--inputdir", dest="input_dir",
+    parser.add_option("-i", "--inputdir", dest="input_dir",
 	                  help="The local directory holding input files for the task")		
-	parser.add_option("-o", "--outputdir", dest="output_dir",
+    parser.add_option("-o", "--outputdir", dest="output_dir",
 	                  help="The local directory which will hold output files for the task")	
 
-	(options, args) = parser.parse_args()
+    (options, args) = parser.parse_args()
 
-	if 'create' in args:
+    if 'create' in args:
 		logger.debug(create_environ())
 
-	elif 'setup' in args:
+    elif 'setup' in args:
 		if options.instance_id:
 			id = options.instance_id
 			if not is_instance_running (id):
@@ -48,7 +48,7 @@ if __name__ == '__main__':
 			parser.print_help()
 			sys.exit(1)
         
-	elif 'run' in args:
+    elif 'run' in args:
 		if options.instance_id:		
 			if not options.output_dir:
 				logging.error("need to specify output directory")
@@ -92,7 +92,7 @@ if __name__ == '__main__':
 			parser.print_help()
 			sys.exit(1)
 
-	elif 'check' in args:
+    elif 'check' in args:
 		if options.instance_id:
 			if not options.output_dir:
 				logging.error("need to specify output directory")
@@ -116,18 +116,17 @@ if __name__ == '__main__':
 			parser.print_help() 
 			sys.exit(1)
 
-	elif 'teardown' in args:
+    elif 'teardown' in args:
         	if options.instance_id:
             		id = options.instance_id
             		if not is_instance_running (id):
 						logging.error ('Instance %s not running' %id)
 						sys.exit(1)
 
-            		print 'Instance to be destroyed', id
             		destroy_environ(id)
         	else:
             		logger.error("enter nodeid of the package")
             		parser.print_help()
             		sys.exit(1)
-	else:
+    else:
 		parser.print_help()

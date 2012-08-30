@@ -19,7 +19,7 @@ from libcloud.compute.deployment import ScriptDeployment
 
 #http://docs.python.org/howto/logging.html#logging-basic-tutorial
 logger = logging.getLogger(__name__)
-
+NODE_STATE = ['RUNNING', 'REBOOTING', 'TERMINATED', 'PENDING', 'UNKNOWN']
 
 class Error(Exception):
 	pass
@@ -33,7 +33,8 @@ def _create_connection():
     
     OpenstackDriver = get_driver(Provider.EUCALYPTUS)
     #print("Connecting...",OpenstackDriver)
-    conn = OpenstackDriver(EC2_ACCESS_KEY, secret=EC2_SECRET_KEY, host="nova.rc.nectar.org.au", secure=False, port=8773, path="/services/Cloud")
+    conn = OpenstackDriver(EC2_ACCESS_KEY, secret=EC2_SECRET_KEY,
+     host="nova.rc.nectar.org.au", secure=False, port=8773, path="/services/Cloud")
     #print ("Connected")
     
     return conn
@@ -52,15 +53,12 @@ def create_environ():
      
     instance_id = ''
     try:
-        new_instance = conn.create_node(name="New Centos Node",size=size1,image=image1, ex_keyname=settings.PRIVATE_KEY_NAME, ex_securitygroup=settings.SECURITY_GROUP)
-        instance_state = _wait_for_instance_to_start_running (new_instance)
-        
-        if instance_state == NodeState.RUNNING:
-        	instance_id = new_instance.name
-        	print 'Instance CREATED: ID=%s' %instance_id
-        else:
-			print 'Instance not created. Current Instance Status %s. Try again' %instance_state
+        new_instance = conn.create_node(name="New Centos Node",
+        	size=size1,image=image1, ex_keyname=settings.PRIVATE_KEY_NAME, 
+        	ex_securitygroup=settings.SECURITY_GROUP)
 
+        _wait_for_instance_to_start_running (new_instance)
+        
     except Exception:
         traceback.print_exc(file=sys.stdout)
         _print_running_node_id(conn)
@@ -69,33 +67,44 @@ def create_environ():
     return instance_id
 
 def _wait_for_instance_to_start_running(instance):
-	previous_instance = instance.state
-	while (instance.state != NodeState.RUNNING) or (instance.state != NodeState.TERMINATED):
-		print instance.state 
-		time.sleep(3)
+	instance_id = instance.name
+	while not is_instance_running(instance_id):
+		logger.info('Current status of Instance %s: %s' 
+			%(instance_id, NODE_STATE[instance.state]))
+		time.sleep(settings.CLOUD_SLEEP_INTERVAL)
+
+	logger.info('Current status of Instance %s: %s' 
+		%(instance_id, NODE_STATE[NodeState.RUNNING]))
 
 
+def _wait_for_instance_to_terminate(instance):
+	instance_id = instance.name
+	while is_instance_running(instance_id):
+		logger.info('Current status of Instance %s: %s'
+		 	%(instance_id, NODE_STATE[instance.state]))
+		time.sleep(settings.CLOUD_SLEEP_INTERVAL)
 
-	return 	instance.state
+	logger.info('Current status of Instance %s: %s'
+		%(instance_id, NODE_STATE[NodeState.TERMINATED]))
+
 
 def _print_running_node_id(conn):
     counter = 1
     nodes = conn.list_nodes()
-    print ('ID and IP for currently running node instances')
+    logger.info('Currently running node instances:')
     for i in nodes:
-        print 'Node', counter, i.name, _get_node_ip(i.name)
-        counter = counter+1
+        logger.info('Node %d: %s %s' %(counter, i.name, _get_node_ip(i.name)))
+        counter += 1
 
 def is_instance_running(instance_id):
 	instance_running = False
 	conn = _create_connection()
 	nodes = conn.list_nodes()
 	for i in nodes:
-		if i.name == instance_id:
+		if i.name == instance_id and i.state == NodeState.RUNNING:
 			instance_running = True
 			break
 	return instance_running		
-
 
 
 def _get_node(instance_id):
@@ -137,11 +146,11 @@ def destroy_environ(instance_id):
     this_node = _get_node(instance_id)
     conn = _create_connection()
     try:
-        print conn.destroy_node(this_node)
-        print 'Instance',instance_id,'DESTROYED'
-            
+        conn.destroy_node(this_node)
+        _wait_for_instance_to_terminate(this_node)
+
     except Exception:
-        print 'Instance',instance_id,'NOT DESTROYED'
+        traceback.print_exc(file=sys.stdout)
 
 
 def setup_task(instance_id):
