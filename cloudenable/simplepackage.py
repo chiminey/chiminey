@@ -27,7 +27,7 @@ class Error(Exception):
 class PackageFailedError(Error):
 	pass
  
-def _create_connection():
+def _create_cloud_connection():
     EC2_ACCESS_KEY=settings.EC2_ACCESS_KEY
     EC2_SECRET_KEY=settings.EC2_SECRET_KEY
     
@@ -44,14 +44,13 @@ def create_environ():
         Create the Nectar Node and return id
     """
     logger.info("create_environ")
-    conn = _create_connection()
+    conn = _create_cloud_connection()
     images = conn.list_images()
     sizes = conn.list_sizes()
             
     image1 = [i for i in images if i.id == 'ami-0000000d'][0]
     size1 = [i for i in sizes if i.id == 'm1.small'][0]
      
-    instance_id = ''
     try:
         new_instance = conn.create_node(name="New Centos Node",
         	size=size1,image=image1, ex_keyname=settings.PRIVATE_KEY_NAME, 
@@ -64,8 +63,6 @@ def create_environ():
         _print_running_node_id(conn)
         
 	    
-    return instance_id
-
 def _wait_for_instance_to_start_running(instance):
 	instance_id = instance.name
 	while not is_instance_running(instance_id):
@@ -97,8 +94,12 @@ def _print_running_node_id(conn):
         counter += 1
 
 def is_instance_running(instance_id):
+	"""
+		Checks whether an instance with @instance_id 
+		is running or not
+	"""
 	instance_running = False
-	conn = _create_connection()
+	conn = _create_cloud_connection()
 	nodes = conn.list_nodes()
 	for i in nodes:
 		if i.name == instance_id and i.state == NodeState.RUNNING:
@@ -111,7 +112,7 @@ def _get_node(instance_id):
     """
         Get a reference to node with instance_id
     """
-    conn = _create_connection()
+    conn = _create_cloud_connection()
     nodes = conn.list_nodes()
     this_node = []
     for i in nodes:
@@ -125,7 +126,7 @@ def _get_node_ip(instance_id):
     """
         Get the ip address of a node
     """
-    conn = _create_connection()
+    conn = _create_cloud_connection()
     ip = ''
     while instance_id == '' or ip == '':
         nodes = conn.list_nodes()
@@ -144,7 +145,7 @@ def destroy_environ(instance_id):
 
     logger.info( "destroy_environ %s" % instance_id)
     this_node = _get_node(instance_id)
-    conn = _create_connection()
+    conn = _create_cloud_connection()
     try:
         conn.destroy_node(this_node)
         _wait_for_instance_to_terminate(this_node)
