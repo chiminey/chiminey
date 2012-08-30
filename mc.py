@@ -1,7 +1,7 @@
 from cloudenable.simplepackage import *
 from optparse import OptionParser
 import settings
-import sys		
+import sys      
 import time
 import logging
 
@@ -9,17 +9,19 @@ import logging
 
 if __name__ == '__main__':
 
-	#http://docs.python.org/howto/logging.html#logging-basic-tutorial
-	logging.config.fileConfig('logging.conf')
+    #http://docs.python.org/howto/logging.html#logging-basic-tutorial
+    logging.config.fileConfig('logging.conf')
 
 
-	# There are three main paths at the moment.
-	# 1) Create a instance with task package installed
-    # 2) Setup input, run task and retrieve output
-    # 3) Destroy the instance.
+    # There are four main paths at the moment.
+    # 1) Create a instance 
+    # 2) Set up the instance with task package installed
+    # 3) Provide input, run task and retrieve output
+    # 4) Destroy the instance.
     # This is because we may want to run the sequence 1,2,2,2,3
 
     # get command line options
+
 	parser = OptionParser()
 	parser.add_option("-n", "--nodeid",dest="instance_id",
 	                  help="The instance id from the cloud infrastructure")
@@ -129,4 +131,3 @@ if __name__ == '__main__':
             		sys.exit(1)
 	else:
 		parser.print_help()
-
