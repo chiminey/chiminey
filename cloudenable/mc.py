@@ -5,7 +5,11 @@ import time
 import logging
 
 
+
 if __name__ == '__main__':
+    start()
+
+def start():
 
     #http://docs.python.org/howto/logging.html#logging-basic-tutorial
     logging.config.fileConfig('logging.conf')
@@ -88,7 +92,7 @@ if __name__ == '__main__':
                 sys.exit(1)
             prepare_input(id, options.input_dir, settings)
             try:
-                job_id = run_task(id, settings)
+                job_id = run_task(id, configs)
             except PackageFailedError, e:
                 logger.error(e)
                 logger.error("unable to start package")
@@ -102,7 +106,7 @@ if __name__ == '__main__':
                     break
                 print("job is running.  Wait or CTRL-C to exit here. \
                  run 'check' command to poll again")
-                time.sleep(settings.SLEEP_TIME)
+                time.sleep(configs.SLEEP_TIME)
             if options.output_dir:
                 print "done. output is available"
                 get_output(id, options.output_dir, settings)

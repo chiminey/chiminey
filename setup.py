@@ -7,6 +7,8 @@ setup(
     license='MIT License',
     long_description=open('README.txt').read(),
     entry_points = {
-	'console_scripts': ['mc = mc.p:__main__',]
-	}
+       'console_scripts': [
+            'mc = cloudenable.mc:start',
+       ] ,
+    }
 )
