@@ -1,3 +1,5 @@
-boto==2.5.2
 paramiko==1.7.7.2
 apache-libcloud
+flexmock
+pep8
+pyflakes
