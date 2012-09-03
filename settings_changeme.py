@@ -31,7 +31,6 @@ OUTPUT_FILES = ["output","energy01.dat", \
 	"sqinput.dat"]
 
 TEST_VM_IP = '115.146.94.152'
-EC2_ACCESS_KEY=""
-EC2_SECRET_KEY=""
+EC2_ACCESS_KEY=''
+EC2_SECRET_KEY=''
 CLOUD_SLEEP_INTERVAL=5
-environ_fields = ["USER_NAME","PASSWORD",""]
