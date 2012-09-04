@@ -64,12 +64,12 @@ def create_environ(settings):
 
     except Exception:
         traceback.print_exc(file=sys.stdout)
-        _print_running_node_id(conn)
+        print_running_node_id(settings)
 
 
 def _wait_for_instance_to_start_running(instance, settings):
     instance_id = instance.name
-    while not is_instance_running(instance_id):
+    while not is_instance_running(instance_id, settings):
         logger.info('Current status of Instance %s: %s'
                     % (instance_id, NODE_STATE[instance.state]))
         time.sleep(settings.CLOUD_SLEEP_INTERVAL)
@@ -80,7 +80,7 @@ def _wait_for_instance_to_start_running(instance, settings):
 
 def _wait_for_instance_to_terminate(instance, settings):
     instance_id = instance.name
-    while is_instance_running(instance_id):
+    while is_instance_running(instance_id, settings):
         logger.info('Current status of Instance %s: %s'
                     % (instance_id, NODE_STATE[instance.state]))
         time.sleep(settings.CLOUD_SLEEP_INTERVAL)
@@ -89,22 +89,27 @@ def _wait_for_instance_to_terminate(instance, settings):
                 % (instance_id, NODE_STATE[NodeState.TERMINATED]))
 
 
-def _print_running_node_id(conn):
+def print_running_node_id(settings):
+    """
+        Print ID and IP of currently running nodes
+    """    
+    conn = _create_cloud_connection(settings)
     counter = 1
     nodes = conn.list_nodes()
     logger.info('Currently running node instances:')
     for i in nodes:
-        logger.info('Node %d: %s %s' % (counter, i.name, _get_node_ip(i.name)))
-        counter += 1
+        logger.info('Node %d: %s %s' %(counter, i.name, _get_node_ip(i.name, settings)))
+        counter += 1        
 
 
-def is_instance_running(instance_id):
+
+def is_instance_running(instance_id, settings):
     """
         Checks whether an instance with @instance_id
         is running or not
     """
     instance_running = False
-    conn = _create_cloud_connection()
+    conn = _create_cloud_connection(settings)
     nodes = conn.list_nodes()
     for i in nodes:
         if i.name == instance_id and i.state == NodeState.RUNNING:
@@ -113,11 +118,11 @@ def is_instance_running(instance_id):
     return instance_running
 
 
-def _get_node(instance_id):
+def _get_node(instance_id, settings):
     """
         Get a reference to node with instance_id
     """
-    conn = _create_cloud_connection()
+    conn = _create_cloud_connection(settings)
     nodes = conn.list_nodes()
     this_node = []
     for i in nodes:
@@ -128,11 +133,11 @@ def _get_node(instance_id):
     return this_node
 
 
-def _get_node_ip(instance_id):
+def _get_node_ip(instance_id, settings):
     """
         Get the ip address of a node
     """
-    conn = _create_cloud_connection()
+    conn = _create_cloud_connection(settings)
     ip = ''
     while instance_id == '' or ip == '':
         nodes = conn.list_nodes()
@@ -143,17 +148,17 @@ def _get_node_ip(instance_id):
     return ip
 
 
-def destroy_environ(instance_id):
+def destroy_environ(instance_id, settings):
     """
         Terminate the instance
     """
 
     logger.info("destroy_environ %s" % instance_id)
-    this_node = _get_node(instance_id)
-    conn = _create_cloud_connection()
+    this_node = _get_node(instance_id, settings)
+    conn = _create_cloud_connection(settings)
     try:
         conn.destroy_node(this_node)
-        _wait_for_instance_to_terminate(this_node)
+        _wait_for_instance_to_terminate(this_node, settings)
 
     except Exception:
         traceback.print_exc(file=sys.stdout)
@@ -165,7 +170,7 @@ def setup_task(instance_id, settings):
     """
 
     logger.info("setup_task %s " % instance_id)
-    ip = _get_node_ip(instance_id)
+    ip = _get_node_ip(instance_id, settings)
     ssh = _open_connection(ip_address=ip, username=settings.USER_NAME,
                            password=settings.PASSWORD)
     res = _install_deps(ssh, packages=settings.DEPENDS,
@@ -191,7 +196,7 @@ def prepare_input(instance_id, input_dir, settings):
     """
 
     logger.info("prepare_input %s %s" % (instance_id, input_dir))
-    ip = _get_node_ip(instance_id)
+    ip = _get_node_ip(instance_id, settings)
     ssh = _open_connection(ip_address=ip, username=settings.USER_NAME,
                            password=settings.PASSWORD)
     input_dir = _normalize_dirpath(input_dir)
@@ -218,7 +223,7 @@ def run_task(instance_id, settings):
         periodically check its state.
     """
     logger.info("run_task %s" % instance_id)
-    ip = _get_node_ip(instance_id)
+    ip = _get_node_ip(instance_id, settings)
     ssh = _open_connection(ip_address=ip,
                            username=settings.USER_NAME,
                            password=settings.PASSWORD)
@@ -249,7 +254,7 @@ def get_output(instance_id, output_dir, settings):
         Retrieve the output from the task on the node
     """
     logger.info("get_output %s" % instance_id)
-    ip = _get_node_ip(instance_id)
+    ip = _get_node_ip(instance_id, settings)
     ssh = _open_connection(ip_address=ip,
                            username=settings.USER_NAME,
                            password=settings.PASSWORD)
@@ -271,7 +276,7 @@ def job_finished(instance_id, settings):
     """
         Return True if package job on instance_id has job_finished
     """
-    ip = _get_node_ip(instance_id)
+    ip = _get_node_ip(instance_id, settings)
     ssh = _open_connection(ip_address=ip,
                            username=settings.USER_NAME,
                            password=settings.PASSWORD)
