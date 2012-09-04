@@ -11,7 +11,7 @@ if __name__ == '__main__':
     logging.config.fileConfig('logging.conf')
     import ConfigParser
     config = ConfigParser.RawConfigParser()
-    config_file = os.path.expanduser("~/.cloudenable/config.sys")
+    config_file = os.path.expanduser("cloudenable/config.sys")
     if os.path.exists(config_file):
         config.read(config_file)
     else:
