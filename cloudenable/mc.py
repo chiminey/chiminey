@@ -33,8 +33,7 @@ def start():
                       'SLEEP_TIME', 'RETRY_ATTEMPTS',
                       'OUTPUT_FILES', 'TEST_VM_IP',
                       'EC2_ACCESS_KEY', 'EC2_SECRET_KEY',
-                      'CLOUD_SLEEP_INTERVAL', 'PRIVATE_KEY_NAME',
-                      'SECURITY_GROUP']
+                      'CLOUD_SLEEP_INTERVAL', 'PRIVATE_KEY_NAME', 'SECURITY_GROUP']
 
     import json
     settings = type('', (), {})()
@@ -87,7 +86,7 @@ def start():
                 logging.error("output directory already exists")
                 sys.exit(1)
             id = options.instance_id
-            if not is_instance_running(id, settings):
+            if not is_instance_running(id,settings):
                 logging.error('Instance %s not running' % id)
                 sys.exit(1)
             prepare_input(id, options.input_dir, settings)
@@ -128,7 +127,7 @@ def start():
                 logging.error("output directory already exists")
                 sys.exit(1)
             id = options.instance_id
-            if not is_instance_running(id, settings):
+            if not is_instance_running(id,settings):
                 logging.error('Instance %s not running' % id)
                 sys.exit(1)
 
