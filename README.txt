@@ -1,7 +1,8 @@
 
 Installation:
 
-sudo yum install python-devel
+sudo yum install git
+sudo yum install python-devel python-setuptools
 sudo yum install gcc
 sudo easy_install virtualenv
 virtualenv --no-site-packages .

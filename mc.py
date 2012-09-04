@@ -1,6 +1,5 @@
 from cloudenable.simplepackage import *
 from optparse import OptionParser
-import settings
 import sys
 import time
 import logging
@@ -30,10 +29,11 @@ if __name__ == '__main__':
                       'SLEEP_TIME', 'RETRY_ATTEMPTS',
                       'OUTPUT_FILES', 'TEST_VM_IP',
                       'EC2_ACCESS_KEY', 'EC2_SECRET_KEY',
-                      'CLOUD_SLEEP_INTERVAL']
+                      'CLOUD_SLEEP_INTERVAL', 'PRIVATE_KEY_NAME',
+                      'SECURITY_GROUP']
 
     import json
-    configs = type('', (), {})()
+    settings = type('', (), {})()
     for field in environ_fields:
         #TODO: add multiple sections
         val = config.get("basic", field)
@@ -43,7 +43,7 @@ if __name__ == '__main__':
             field_val = json.loads(val)    # use JSON to parse values
         except ValueError, e:
             file_val = ""
-        setattr(configs, field, field_val)  # and make fake object to hold them
+        setattr(settings, field, field_val)  # and make fake object to hold them
         logger.debug("%s" % field_val)
 
     # get command line options
@@ -60,15 +60,15 @@ if __name__ == '__main__':
     (options, args) = parser.parse_args()
 
     if 'create' in args:
-        res = create_environ(configs)
+        res = create_environ(settings)
         logger.debug(res)
     elif 'setup' in args:
         if options.instance_id:
             id = options.instance_id
-            if not is_instance_running(id):
+            if not is_instance_running(id, settings):
                 logging.error('Instance %s not running' % id)
                 sys.exit(1)
-            setup_task(id, configs)
+            setup_task(id, settings)
         else:
             logging.error("enter nodeid of the package")
             parser.print_help()
@@ -83,10 +83,10 @@ if __name__ == '__main__':
                 logging.error("output directory already exists")
                 sys.exit(1)
             id = options.instance_id
-            if not is_instance_running(id):
+            if not is_instance_running(id, settings):
                 logging.error('Instance %s not running' % id)
                 sys.exit(1)
-            prepare_input(id, options.input_dir, configs)
+            prepare_input(id, options.input_dir, settings)
             try:
                 job_id = run_task(id, settings)
             except PackageFailedError, e:
@@ -105,7 +105,7 @@ if __name__ == '__main__':
                 time.sleep(settings.SLEEP_TIME)
             if options.output_dir:
                 print "done. output is available"
-                get_output(id, options.output_dir, configs)
+                get_output(id, options.output_dir, settings)
             else:
                 logging.error("need to specify output directory")
                 parser.print_help()
@@ -124,13 +124,13 @@ if __name__ == '__main__':
                 logging.error("output directory already exists")
                 sys.exit(1)
             id = options.instance_id
-            if not is_instance_running(id):
+            if not is_instance_running(id, settings):
                 logging.error('Instance %s not running' % id)
                 sys.exit(1)
 
-            if job_finished(options.instance_id, configs):
+            if job_finished(options.instance_id, settings):
                 print "done. output is available"
-                get_output(id, options.output_dir, configs)
+                get_output(id, options.output_dir, settings)
             else:
                 print "job still running"
         else:
@@ -141,13 +141,17 @@ if __name__ == '__main__':
     elif 'teardown' in args:
         if options.instance_id:
             id = options.instance_id
-            if not is_instance_running(id):
+            if not is_instance_running(id, settings):
                 logging.error('Instance %s not running' % id)
                 sys.exit(1)
-            destroy_environ(id, configs)
+            destroy_environ(id, settings)
         else:
             logger.error("enter nodeid of the package")
             parser.print_help()
             sys.exit(1)
+            
+    elif 'print':
+        print_running_node_id(settings)
+        
     else:
         parser.print_help()
