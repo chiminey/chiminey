@@ -101,7 +101,7 @@ def start():
             if (len(job_id) != 1):
                 logging.warn("warning: muliple payloads running")
             while (True):
-                if job_finished(id):
+                if job_finished(id, configs):
                     break
                 print("job is running.  Wait or CTRL-C to exit here. \
                  run 'check' command to poll again")

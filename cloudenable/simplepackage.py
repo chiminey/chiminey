@@ -161,8 +161,7 @@ def destroy_environ(instance_id,settings):
     conn = _create_cloud_connection(settings)
     try:
         conn.destroy_node(this_node)
-        _wait_for_instance_to_terminate(this_node, settings)
-
+        _wait_for_instance_to_terminate(this_node,settings)
     except Exception:
         traceback.print_exc(file=sys.stdout)
 
@@ -177,8 +176,7 @@ def setup_task(instance_id, settings):
     ip = _get_node_ip(instance_id,settings)
     ssh = _open_connection(ip_address=ip, username=settings.USER_NAME,
                            password=settings.PASSWORD,settings=settings)
-    res = _install_deps(ssh, packages=settings.DEPENDS,
-                        sudo_password=settings.PASSWORD)
+    res = _install_deps(ssh, packages=settings.DEPENDS, settings=settings, instance_id=instance_id)
     logger.debug("install res=%s" % res)
     res = _mkdir(ssh, dir=settings.DEST_PATH_PREFIX)
     logger.debug("mkdir res=%s" % res)
@@ -349,67 +347,49 @@ def _get_channel_data(chan):
     return out
 
 
-def _run_sudo_command(ssh, command, password=None):
+def _install_deps(ssh, packages, settings, instance_id):
+    for pack in packages:
+        stdout, stderr = _run_sudo_command(
+            ssh, 'yum -y install %s' % pack, settings=settings, instance_id=instance_id)
+        logger.debug("install stdout=%s" % stdout)
+        logger.debug("install stderr=%s" % stderr)
 
- #    transport = paramiko.Transport((host, port))
- #    transport.connect(username = username, password = password)
- #    chan = paramiko.transport.open_session()
- #    chan.setblocking(0)
- #    chan.invoke_shell()
 
- #    out = ''
+def _run_sudo_command(ssh, command, settings, instance_id):
 
- #    chan.send(cmd+'\n')
+    chan = ssh.invoke_shell()
+    chan.send('sudo -s\n')
+    full_buff = ''
+    buff = ''
+    while not '[%s@%s ~]$ ' % (settings.USER_NAME, instance_id) in buff:
+        resp = chan.recv(9999)
+        #logger.debug("resp=%s" % resp)
+        buff += resp
+    logger.debug("buff = %s" % buff)
+    full_buff += buff
 
- #    tCheck = 0
+    chan.send("%s\n" % command)
+    buff = ''
+    while not '[root@%s %s]# ' % (instance_id,settings.USER_NAME) in buff:
+        resp = chan.recv(9999)
+        #logger.debug("resp=%s" % resp)
+        buff += resp
+    logger.debug("buff = %s" % buff)
+    full_buff += buff
+    
+    # TODO: handle stderr
 
- #    # Wait for it.....
- #    while not chan.recv_ready():
- #        time.sleep(10)
- #        tCheck+=1
- #        if tCheck >= 6:
- #            print 'time out'#TODO: add exeption here
- #            return False
- #    stdout = chan.recv(1024)
-
-    logger.debug(command)
-    t = ssh.get_transport()
-    chan = t.open_session()
-    chan.get_pty()
-    chan.exec_command('sudo -s')
-    time.sleep(5)
-
-    res = _get_channel_data(chan)
-    logger.debug("sudo res=%s" % res)
-    logger.debug("chan = %s" % chan)
-
-    # We assume password not needed
-    #chan.send(password + '\n')
-    #time.sleep(5)
-    #res = _get_channel_data(chan)
-    #logger.debug("password res=%s" % res)
-
-    chan.send('%s\n' % command)
-    res = _get_channel_data(chan)
-    logger.debug("command res=%s" % res)
-    logger.debug("chan = %s" % chan)
-
- #    tCheck = 0
- #    while not chan.recv_stderr_ready():
- #          time.sleep(10)
- #        tCheck+=1
- #        if tCheck >= 6:
- #            print 'time out'#TODO: add exeption here
- #out =  chan.recv_stderr(9999)
- #logger.debug("err = %s" % err)
- # TODO: handle stderr
-    chan.send('exit\n')
-    res = _get_channel_data(chan)
-    logger.debug("exit res=%s" % res)
-    logger.debug("chan = %s" % chan)
+    chan.send("exit\n")
+    buff = ''
+    while not '[%s@%s ~]$ ' % (settings.USER_NAME, instance_id) in buff:
+        resp = chan.recv(9999)
+        #logger.debug("resp=%s" % resp)
+        buff += resp
+    logger.debug("3buff = %s" % buff)
+    full_buff += buff
 
     chan.close()
-    return (res, '')
+    return (full_buff, '')
 
 
 def _unpack(ssh, environ_dir, package_file):
@@ -425,15 +405,6 @@ def _compile(ssh, environ_dir, compile_file, package_dirname,
                                           compile_file,
                                           compile_file),
                  current_dir=os.path.join(environ_dir, package_dirname))
-
-
-def _install_deps(ssh, packages, sudo_password):
-    for pack in packages:
-        stdout, stderr = _run_sudo_command(
-            ssh, 'sudo yum -y install %s' % pack,
-            password=sudo_password)
-        logger.debug("install stdout=%s" % stdout)
-        logger.debug("install stderr=%s" % stderr)
 
 
 def _upload_input(ssh, source_path_prefix, input_file, dest_path_prefix):
