@@ -5,9 +5,6 @@ import time
 import logging
 
 
-
-
-
 def start():
 
     #http://docs.python.org/howto/logging.html#logging-basic-tutorial
@@ -26,13 +23,14 @@ def start():
             sys.exit(1)
 
     environ_fields = ['USER_NAME', 'PASSWORD', 'PRIVATE_KEY',
-                      'PAYLOAD_LOCAL_DIRNAME', 'PAYLOAD', 'DEST_PATH_PREFIX',
-                      'DEPENDS', 'COMPILER',
+                      'PAYLOAD_LOCAL_DIRNAME', 'PAYLOAD',
+                      'DEST_PATH_PREFIX', 'DEPENDS', 'COMPILER',
                       'COMPILE_FILE', 'PAYLOAD_CLOUD_DIRNAME',
                       'SLEEP_TIME', 'RETRY_ATTEMPTS',
                       'OUTPUT_FILES', 'TEST_VM_IP',
                       'EC2_ACCESS_KEY', 'EC2_SECRET_KEY',
-                      'CLOUD_SLEEP_INTERVAL', 'PRIVATE_KEY_NAME', 'SECURITY_GROUP']
+                      'CLOUD_SLEEP_INTERVAL', 'PRIVATE_KEY_NAME',
+                      'SECURITY_GROUP']
 
     import json
     settings = type('', (), {})()
@@ -45,7 +43,8 @@ def start():
             field_val = json.loads(val)    # use JSON to parse values
         except ValueError, e:
             file_val = ""
-        setattr(settings, field, field_val)  # and make fake object to hold them
+        # and make fake object to hold them
+        setattr(settings, field, field_val)
         logger.debug("%s" % field_val)
 
     # get command line options
@@ -64,6 +63,7 @@ def start():
     if 'create' in args:
         res = create_environ(settings)
         logger.debug(res)
+
     elif 'setup' in args:
         if options.instance_id:
             id = options.instance_id
@@ -75,6 +75,7 @@ def start():
             logging.error("enter nodeid of the package")
             parser.print_help()
             sys.exit(1)
+
     elif 'run' in args:
         if options.instance_id:
             if not options.output_dir:
@@ -85,7 +86,7 @@ def start():
                 logging.error("output directory already exists")
                 sys.exit(1)
             id = options.instance_id
-            if not is_instance_running(id,settings):
+            if not is_instance_running(id, settings):
                 logging.error('Instance %s not running' % id)
                 sys.exit(1)
             prepare_input(id, options.input_dir, settings)
@@ -116,6 +117,7 @@ def start():
             logging.error("enter nodeid of the package")
             parser.print_help()
             sys.exit(1)
+
     elif 'check' in args:
         if options.instance_id:
             if not options.output_dir:
@@ -126,7 +128,7 @@ def start():
                 logging.error("output directory already exists")
                 sys.exit(1)
             id = options.instance_id
-            if not is_instance_running(id,settings):
+            if not is_instance_running(id, settings):
                 logging.error('Instance %s not running' % id)
                 sys.exit(1)
 
@@ -151,10 +153,10 @@ def start():
             logger.error("enter nodeid of the package")
             parser.print_help()
             sys.exit(1)
-            
+
     elif 'print':
         print_running_node_id(settings)
-        
+
     else:
         parser.print_help()
 
