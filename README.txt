@@ -15,3 +15,8 @@ python mc.py create
 python mc.py setup --nodeid=42
 python mc.py --nodeid=42 --inputdir=input/ --outputdir=output run
 python mc.py --nodeid=42 check --outputdir=output
+
+
+Notes
+- We support python 2.6
+- Check with Daniel the version of python that is being used in Physics department
