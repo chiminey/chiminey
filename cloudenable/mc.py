@@ -154,7 +154,7 @@ def start():
             parser.print_help()
             sys.exit(1)
 
-    elif 'print':
+    elif 'print' in args:
         print_running_node_id(settings)
 
     else:
