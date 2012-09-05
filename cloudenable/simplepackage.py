@@ -53,10 +53,10 @@ def create_environ(settings):
 
     image1 = [i for i in images if i.id == 'ami-0000000d'][0]
     size1 = [i for i in sizes if i.id == 'm1.small'][0]
-    print settings.SECURITY_GROUP
-    print image1
-    print size1
-    print settings.PRIVATE_KEY_NAME
+    #print settings.SECURITY_GROUP
+    #print image1
+    #print size1
+    #print settings.PRIVATE_KEY_NAME
     try:
         new_instance = conn.create_node(
             name="New Centos Node",
@@ -180,13 +180,13 @@ def setup_task(instance_id, settings):
     logger.debug("install res=%s" % res)
     res = _mkdir(ssh, dir=settings.DEST_PATH_PREFIX)
     logger.debug("mkdir res=%s" % res)
-    _put_file(ssh, source_path="payload", package_file=settings.PAYLOAD,
+    _put_file(ssh, source_path=settings.PAYLOAD_LOCAL_DIRNAME, package_file=settings.PAYLOAD,
               environ_dir=settings.DEST_PATH_PREFIX)
     _unpack(ssh, environ_dir=settings.DEST_PATH_PREFIX,
             package_file=settings.PAYLOAD)
     _compile(ssh, environ_dir=settings.DEST_PATH_PREFIX,
              compile_file=settings.COMPILE_FILE,
-             package_dirname=settings.PAYLOAD_DIRNAME,
+             package_dirname=settings.PAYLOAD_CLOUD_DIRNAME,
              compiler_command=settings.COMPILER)
 
 
@@ -207,16 +207,16 @@ def prepare_input(instance_id, input_dir, settings):
         logger.debug(fname)
         _upload_input(ssh, input_dir, fname,
                       os.path.join(settings.DEST_PATH_PREFIX,
-                                   settings.PAYLOAD_DIRNAME))
+                                   settings.PAYLOAD_CLOUD_DIRNAME))
     _run_command(ssh, "cd %s; cp rmcen.inp rmcen.inp.orig" %
                 (os.path.join(settings.DEST_PATH_PREFIX,
-                              settings.PAYLOAD_DIRNAME)))
+                              settings.PAYLOAD_CLOUD_DIRNAME)))
     _run_command(ssh, "cd %s; dos2unix rmcen.inp" %
                 (os.path.join(settings.DEST_PATH_PREFIX,
-                              settings.PAYLOAD_DIRNAME)))
+                              settings.PAYLOAD_CLOUD_DIRNAME)))
     _run_command(ssh, "cd %s; sed -i '/^$/d' rmcen.inp" %
                 (os.path.join(settings.DEST_PATH_PREFIX,
-                              settings.PAYLOAD_DIRNAME)))
+                              settings.PAYLOAD_CLOUD_DIRNAME)))
 
 
 def run_task(instance_id, settings):
@@ -235,7 +235,7 @@ def run_task(instance_id, settings):
     _run_command(ssh, "cd %s; ./%s >& %s &"
                  % (os.path.join(
                     settings.DEST_PATH_PREFIX,
-                    settings.PAYLOAD_DIRNAME),
+                    settings.PAYLOAD_CLOUD_DIRNAME),
                     settings.COMPILE_FILE, "output"))
     import time
     attempts = settings.RETRY_ATTEMPTS
@@ -268,7 +268,7 @@ def get_output(instance_id, output_dir, settings):
     logger.info("output directory is %s" % output_dir)
     for file in settings.OUTPUT_FILES:
         _get_file(ssh, os.path.join(settings.DEST_PATH_PREFIX,
-                                    settings.PAYLOAD_DIRNAME),
+                                    settings.PAYLOAD_CLOUD_DIRNAME),
                   file, output_dir)
     # TODO: do integrity check on output files
     pass
