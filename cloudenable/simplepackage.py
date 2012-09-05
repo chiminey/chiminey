@@ -294,10 +294,12 @@ def _open_connection(ip_address, username, password, settings):
     # open up the connection
     ssh = paramiko.SSHClient()
     # autoaccess new keys
+
+    ssh.load_system_host_keys(os.path.expanduser(os.path.join("~",
+                                                              ".ssh",
+                                                              "known_hosts")))
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh.load_host_keys(os.path.expanduser(os.path.join("~",
-                                                       ".ssh",
-                                                       "known_hosts")))
+
     # use private key if exists
     if os.path.exists(settings.PRIVATE_KEY):
         privatekeyfile = os.path.expanduser(settings.PRIVATE_KEY)
