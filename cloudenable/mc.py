@@ -1,4 +1,4 @@
-from cloudenable.simplepackage import *
+from simplepackage import *
 from optparse import OptionParser
 import sys
 import time
@@ -6,8 +6,7 @@ import logging
 
 
 
-if __name__ == '__main__':
-    start()
+
 
 def start():
 
@@ -15,7 +14,7 @@ def start():
     logging.config.fileConfig('logging.conf')
     import ConfigParser
     config = ConfigParser.RawConfigParser()
-    config_file = os.path.expanduser("cloudenable/config.sys")
+    config_file = os.path.expanduser("~/.cloudenabling/config.sys")
     if os.path.exists(config_file):
         config.read(config_file)
     else:
@@ -27,9 +26,9 @@ def start():
             sys.exit(1)
 
     environ_fields = ['USER_NAME', 'PASSWORD', 'PRIVATE_KEY',
-                      'PAYLOAD', 'DEST_PATH_PREFIX',
+                      'PAYLOAD_LOCAL_DIRNAME', 'PAYLOAD', 'DEST_PATH_PREFIX',
                       'DEPENDS', 'COMPILER',
-                      'COMPILE_FILE', 'PAYLOAD_DIRNAME',
+                      'COMPILE_FILE', 'PAYLOAD_CLOUD_DIRNAME',
                       'SLEEP_TIME', 'RETRY_ATTEMPTS',
                       'OUTPUT_FILES', 'TEST_VM_IP',
                       'EC2_ACCESS_KEY', 'EC2_SECRET_KEY',
@@ -91,7 +90,7 @@ def start():
                 sys.exit(1)
             prepare_input(id, options.input_dir, settings)
             try:
-                job_id = run_task(id, configs)
+                job_id = run_task(id, settings)
             except PackageFailedError, e:
                 logger.error(e)
                 logger.error("unable to start package")
@@ -101,11 +100,11 @@ def start():
             if (len(job_id) != 1):
                 logging.warn("warning: muliple payloads running")
             while (True):
-                if job_finished(id, configs):
+                if job_finished(id, settings):
                     break
                 print("job is running.  Wait or CTRL-C to exit here. \
                  run 'check' command to poll again")
-                time.sleep(configs.SLEEP_TIME)
+                time.sleep(settings.SLEEP_TIME)
             if options.output_dir:
                 print "done. output is available"
                 get_output(id, options.output_dir, settings)
@@ -158,3 +157,7 @@ def start():
         
     else:
         parser.print_help()
+
+
+if __name__ == '__main__':
+    start()

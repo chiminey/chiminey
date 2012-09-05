@@ -4,13 +4,16 @@ PASSWORD = ""  #account password of instance
 PRIVATE_KEY = "/path/to/nectar_id"  #The nectar private key
 PRIVATE_KEY_NAME = "your_key" #the name of the private key
 SECURITY_GROUP = ["ssh"]
+
+PAYLOAD_LOCAL_DIRNAME = "/home/iyusuf/cloudenabling/payload" # The directory of the payload to be deployed on the cloud
 PAYLOAD = "aeao_v1_1_package.tar.gz" # the filename of the package
+
 DEST_PATH_PREFIX="package" # The destination directory for the software to run
 DEPENDS = ["dos2unix","gcc-gfortran","compat-gcc-34-g77.x86_64"] # yum
 #install requirements
 COMPILER="g77" # The compiler command
 COMPILE_FILE="HRMC" # The file to be compiled (no extension)
-PAYLOAD_DIRNAME="AEAO_v1_1" #The directory of the unpackaed payload
+PAYLOAD_CLOUD_DIRNAME="AEAO_v1_1" #The directory of the payload that was deployed on the cloud
 
 SLEEP_TIME = 10 # time to wait before polling finished job in seconds
 RETRY_ATTEMPTS = 10 # number of times to try accessing package PID
@@ -35,5 +38,4 @@ OUTPUT_FILES = ["output","energy01.dat",
 TEST_VM_IP = ""
 EC2_ACCESS_KEY=""
 EC2_SECRET_KEY=""
-CLOUD_SLEEP_INTERVAL=5
-SECURITY_GROUP = ["ssh"]
+CLOUD_SLEEP_INTERVAL=5 
