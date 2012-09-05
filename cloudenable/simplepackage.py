@@ -62,7 +62,7 @@ def create_environ(settings):
             name="New Centos Node",
             size=size1, image=image1, ex_keyname=settings.PRIVATE_KEY_NAME,
             ex_securitygroup=settings.SECURITY_GROUP)
-            
+
         _wait_for_instance_to_start_running(new_instance, settings)
 
     except Exception:
@@ -95,18 +95,18 @@ def _wait_for_instance_to_terminate(instance, settings):
 def print_running_node_id(settings):
     """
         Print ID and IP of currently running nodes
-    """    
+    """
     conn = _create_cloud_connection(settings)
     counter = 1
     nodes = conn.list_nodes()
     logger.info('Currently running node instances:')
     for i in nodes:
-        logger.info('Node %d: %s %s' %(counter, i.name, _get_node_ip(i.name, settings)))
-        counter += 1        
+        logger.info('Node %d: %s %s' % (counter, i.name,
+                                        _get_node_ip(i.name, settings)))
+        counter += 1
 
 
-
-def is_instance_running(instance_id,settings):
+def is_instance_running(instance_id, settings):
     """
         Checks whether an instance with @instance_id
         is running or not
@@ -121,7 +121,7 @@ def is_instance_running(instance_id,settings):
     return instance_running
 
 
-def _get_node(instance_id,settings):
+def _get_node(instance_id, settings):
     """
         Get a reference to node with instance_id
     """
@@ -135,7 +135,8 @@ def _get_node(instance_id,settings):
 
     return this_node
 
-def _get_node_ip(instance_id,settings):
+
+def _get_node_ip(instance_id, settings):
     """
         Get the ip address of a node
     """
@@ -150,18 +151,18 @@ def _get_node_ip(instance_id,settings):
     return ip
 
 
-def destroy_environ(instance_id,settings):
+def destroy_environ(instance_id, settings):
     """
         Terminate the instance
     """
 
     logger.info("destroy_environ %s" % instance_id)
 
-    this_node = _get_node(instance_id,settings)
+    this_node = _get_node(instance_id, settings)
     conn = _create_cloud_connection(settings)
     try:
         conn.destroy_node(this_node)
-        _wait_for_instance_to_terminate(this_node,settings)
+        _wait_for_instance_to_terminate(this_node, settings)
     except Exception:
         traceback.print_exc(file=sys.stdout)
 
@@ -173,14 +174,16 @@ def setup_task(instance_id, settings):
 
     logger.info("setup_task %s " % instance_id)
 
-    ip = _get_node_ip(instance_id,settings)
+    ip = _get_node_ip(instance_id, settings)
     ssh = _open_connection(ip_address=ip, username=settings.USER_NAME,
-                           password=settings.PASSWORD,settings=settings)
-    res = _install_deps(ssh, packages=settings.DEPENDS, settings=settings, instance_id=instance_id)
+                           password=settings.PASSWORD, settings=settings)
+    res = _install_deps(ssh, packages=settings.DEPENDS,
+                        settings=settings, instance_id=instance_id)
     logger.debug("install res=%s" % res)
     res = _mkdir(ssh, dir=settings.DEST_PATH_PREFIX)
     logger.debug("mkdir res=%s" % res)
-    _put_file(ssh, source_path=settings.PAYLOAD_LOCAL_DIRNAME, package_file=settings.PAYLOAD,
+    _put_file(ssh, source_path=settings.PAYLOAD_LOCAL_DIRNAME,
+              package_file=settings.PAYLOAD,
               environ_dir=settings.DEST_PATH_PREFIX)
     _unpack(ssh, environ_dir=settings.DEST_PATH_PREFIX,
             package_file=settings.PAYLOAD)
@@ -198,9 +201,9 @@ def prepare_input(instance_id, input_dir, settings):
     """
 
     logger.info("prepare_input %s %s" % (instance_id, input_dir))
-    ip = _get_node_ip(instance_id,settings)
+    ip = _get_node_ip(instance_id, settings)
     ssh = _open_connection(ip_address=ip, username=settings.USER_NAME,
-                           password=settings.PASSWORD,settings=settings)
+                           password=settings.PASSWORD, settings=settings)
     input_dir = _normalize_dirpath(input_dir)
     dirList = os.listdir(input_dir)
     for fname in dirList:
@@ -225,10 +228,10 @@ def run_task(instance_id, settings):
         periodically check its state.
     """
     logger.info("run_task %s" % instance_id)
-    ip = _get_node_ip(instance_id,settings)
+    ip = _get_node_ip(instance_id, settings)
     ssh = _open_connection(ip_address=ip,
                            username=settings.USER_NAME,
-                           password=settings.PASSWORD,settings=settings)
+                           password=settings.PASSWORD, settings=settings)
     if len(_get_package_pid(ssh, settings.COMPILE_FILE)) > 1:
         logger.error("warning:multiple packages running")
         raise PackageFailedError("multiple packages running")
@@ -256,10 +259,10 @@ def get_output(instance_id, output_dir, settings):
         Retrieve the output from the task on the node
     """
     logger.info("get_output %s" % instance_id)
-    ip = _get_node_ip(instance_id,settings)
+    ip = _get_node_ip(instance_id, settings)
     ssh = _open_connection(ip_address=ip,
                            username=settings.USER_NAME,
-                           password=settings.PASSWORD,settings=settings)
+                           password=settings.PASSWORD, settings=settings)
     try:
         os.mkdir(output_dir)
     except OSError:
@@ -279,10 +282,10 @@ def job_finished(instance_id, settings):
         Return True if package job on instance_id has job_finished
     """
 
-    ip = _get_node_ip(instance_id,settings)
+    ip = _get_node_ip(instance_id, settings)
     ssh = _open_connection(ip_address=ip,
                            username=settings.USER_NAME,
-                           password=settings.PASSWORD,settings=settings)
+                           password=settings.PASSWORD, settings=settings)
     pid = _get_package_pid(ssh, settings.COMPILE_FILE)
     return not pid
 
@@ -324,7 +327,7 @@ def _get_channel_data(chan):
     tCheck = 0
     res = ''
     # we don't know when data is exhausted.
-    for i in range(0,10):
+    for i in range(0, 10):
         logger.debug("about to check for ready for data %s" % i)
         timeout = False
         # this is the key waiting loop for the next bit of data
@@ -332,7 +335,8 @@ def _get_channel_data(chan):
             time.sleep(5)
             tCheck += 1
             if tCheck >= 10:
-                logger.error('time out for waiting for new data')  # TODO: add exeption here            
+                logger.error('time out for waiting for new data')
+                # TODO: add exeption here
                 timeout = True
                 break
         if not timeout:
@@ -350,7 +354,8 @@ def _get_channel_data(chan):
 def _install_deps(ssh, packages, settings, instance_id):
     for pack in packages:
         stdout, stderr = _run_sudo_command(
-            ssh, 'yum -y install %s' % pack, settings=settings, instance_id=instance_id)
+            ssh, 'yum -y install %s' % pack,
+            settings=settings, instance_id=instance_id)
         logger.debug("install stdout=%s" % stdout)
         logger.debug("install stderr=%s" % stderr)
 
@@ -370,13 +375,13 @@ def _run_sudo_command(ssh, command, settings, instance_id):
 
     chan.send("%s\n" % command)
     buff = ''
-    while not '[root@%s %s]# ' % (instance_id,settings.USER_NAME) in buff:
+    while not '[root@%s %s]# ' % (instance_id, settings.USER_NAME) in buff:
         resp = chan.recv(9999)
         #logger.debug("resp=%s" % resp)
         buff += resp
     logger.debug("buff = %s" % buff)
     full_buff += buff
-    
+
     # TODO: handle stderr
 
     chan.send("exit\n")
