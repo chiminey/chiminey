@@ -300,6 +300,7 @@ def _open_connection(ip_address, username, password, settings):
                                                               "known_hosts")))
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
+    #TODO: handle exceptions if connection does not work.
     # use private key if exists
     if os.path.exists(settings.PRIVATE_KEY):
         privatekeyfile = os.path.expanduser(settings.PRIVATE_KEY)
@@ -454,3 +455,112 @@ def _get_package_pid(ssh, command):
     if len(pid):
         pid = pid[0]  # if some returns, the pids are in first element
     return pid
+
+
+def _get_rego_nodes(group_id, settings, rego_filename):
+    """ Returns nectar nodes that are currently packaged enabled.
+    """
+    # get all available nodes
+    conn = _create_cloud_connection(settings)
+    packaged_node = []
+    for node in conn.list_nodes():
+        # login and check for md5 file
+        ip = _get_node_ip(instance_id, settings)
+        ssh = _open_connection(ip_address=_get_node_ip(node.name, settings))),
+                               username=settings.USER_NAME,
+                               password=settings.PASSWORD, settings=settings)
+        # NOTE: assumes use of bash shell
+        res = _run_command(ssh, "[ -f %s ] && echo exists" % group_id)
+        if 'exists' in res:
+            logger.debug("node %s exists for group %s " % (node.name, group_id))
+            packaged_node.append(node)
+    return packaged_node
+
+
+def _status_of_nodeset(nodes, output_dir):
+    """ 
+    Return lists that describe which of the set of nodes are finished or have disappeared
+    """
+    error_nodes = []
+    finished_nodes = []
+
+    try:
+        os.mkdir(options.output_dir)
+    except OSError:
+        logger.warning("output directory already exists")
+        sys.exit(1)
+
+    for node in nodes:
+        if not is_instance_running(node.name, settings):
+            logging.error('Instance %s not running' % id)
+            error_nodes.append(node)
+            continue
+        if job_finished(node.name, settings):
+                print "done. output is available"
+                get_output(node.name, "%s/%s" % (options.output_dir,node.name), settings)
+                finished_nodes.append(node)
+            else:
+                print "job still running"
+    return (error_nodes, finished_nodes)
+
+
+def setup_multi_task(group_id, settings):
+    """
+    Transfer the task package to the intances in group_id and install
+    """
+    logger.info("setup_multi_task %s " % group_id)
+    packaged_nodes = _get_rego_nodes(group_id, settings, rego_filename)
+    import threading
+    import datetime
+
+    class SetupThread(threading.Thread):
+
+        def __init__(node):
+            self.node_id = node
+
+        def run(self):
+            now = datetime.datetime.now()
+            print "%s says Hello World at time: %s" % (self.getName(), now)
+            # TODO: need to make sure that setup_task eventually finishes
+            setup_task(self.node_id, settings)
+
+    threads_running = []
+    for node in packaged_node:
+        t = SetupThread(node)
+        threads_running.append(t)
+        t.start()
+    for thread in threads_running:        
+        t.join()
+    logger.debug("all threads are done")
+
+
+
+def check_multi_task(group_id, output_dir, settings):
+    """
+    Indicates if all the package nodes have finished and generate any output as needed
+    """
+    nodes = _get_rego_nodes(group_id, settings, rego_filename)
+    error_nodes, finished_nodes = _status_of_nodeset(nodes, output_dir)
+
+    if finished_nodes + error_nodes == nodes:
+        logger.info("Package Finished)  
+
+    if error_nodes:
+        logger.warn("error nodes: %s" % error_nodes)
+   
+
+def run_multi_task(group_id, output_dir, settings):
+    """
+    Run the package on each of the nodes in the group and grab any output as needed
+    """
+    nodes = _get_rego_nodes(group_id, settings, rego_filename)
+
+    pids = []
+    for node in nodes:
+        pid = run_task(node,settings)
+        pid.append(pid)
+
+    pids = dict(zip(node,pids))
+    return pids
+     
+  
