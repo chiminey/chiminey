@@ -33,16 +33,16 @@ def _create_cloud_connection(settings):
     EC2_SECRET_KEY = settings.EC2_SECRET_KEY
 
     OpenstackDriver = get_driver(Provider.EUCALYPTUS)
-    logger.info("Connecting... %s" % OpenstackDriver)
+    logger.debug("Connecting... %s" % OpenstackDriver)
     conn = OpenstackDriver(EC2_ACCESS_KEY, secret=EC2_SECRET_KEY,
                            host="nova.rc.nectar.org.au", secure=False,
                            port=8773, path="/services/Cloud")
-    logger.info("Connected")
+    logger.debug("Connected")
 
     return conn
 
 
-def create_environ(settings):
+def create_environ(number_vm_instances, settings):
     """
         Create the Nectar Node and return id
     """
@@ -58,28 +58,59 @@ def create_environ(settings):
     #print size1
     #print settings.PRIVATE_KEY_NAME
     try:
-        new_instance = conn.create_node(
-            name="New Centos Node",
-            size=size1, image=image1, ex_keyname=settings.PRIVATE_KEY_NAME,
-            ex_securitygroup=settings.SECURITY_GROUP)
-
-        _wait_for_instance_to_start_running(new_instance, settings)
+        all_instances = []
+        for i in number_vm_instances:
+            new_instance = conn.create_node(
+                        name="New Centos Node", size=size1, image=image1,
+                        ex_keyname=settings.PRIVATE_KEY_NAME, 
+                        ex_securitygroup=settings.SECURITY_GROUP)
+            all_instances.append(new_instance)
+            
+        all_running_instances = _wait_for_instance_to_start_running(all_instances, settings)
+        #_store_md5_on_instances(all_running_instances, settings)
 
     except Exception:
         traceback.print_exc(file=sys.stdout)
         print_running_node_id(settings)
 
+def _store_md5_on_instances(all_instances, settings):
+    group_id = _generate_group_id()
+    for instance in all_instances:
+        # login and check for md5 file
+        instance_id = instance.name
+        ip = _get_node_ip(instance_id, settings)
+        ssh = _open_connection(ip_address=_get_node_ip(instance.name, settings),
+                               username=settings.USER_NAME,
+                               password=settings.PASSWORD, settings=settings)
 
-def _wait_for_instance_to_start_running(instance, settings):
-    instance_id = instance.name
-    while not is_instance_running(instance_id, settings):
-        logger.info('Current status of Instance %s: %s'
+        _run_command(ssh, "touch %s" %group_id)
+        logger.info("Your group id: %s" %group_id)        
+
+
+def _generate_group_id():
+    group_id = 'verylongstringfilename'
+    return group_id
+    
+    
+def _wait_for_instance_to_start_running(all_instances, settings):
+    all_running_instances = []
+    while all_instances:
+        for instance in all_instances:
+            instance_id = instance.name
+            if is_instance_running(instance_id, settings):
+                all_running_instances.append(instance)
+                all_instances.remove(instance)
+                logger.info('Current status of Instance %s: %s'
+                % (instance_id, NODE_STATE[NodeState.RUNNING]))                
+            else:
+                logger.info('Current status of Instance %s: %s'
                     % (instance_id, NODE_STATE[instance.state]))
+            
         time.sleep(settings.CLOUD_SLEEP_INTERVAL)
+    
+    return all_running_instances
 
-    logger.info('Current status of Instance %s: %s'
-                % (instance_id, NODE_STATE[NodeState.RUNNING]))
-
+    
 
 def _wait_for_instance_to_terminate(instance, settings):
     instance_id = instance.name
@@ -466,7 +497,7 @@ def _get_rego_nodes(group_id, settings, rego_filename):
     for node in conn.list_nodes():
         # login and check for md5 file
         ip = _get_node_ip(instance_id, settings)
-        ssh = _open_connection(ip_address=_get_node_ip(node.name, settings))),
+        ssh = _open_connection(ip_address=_get_node_ip(node.name, settings),
                                username=settings.USER_NAME,
                                password=settings.PASSWORD, settings=settings)
         # NOTE: assumes use of bash shell
@@ -474,6 +505,7 @@ def _get_rego_nodes(group_id, settings, rego_filename):
         if 'exists' in res:
             logger.debug("node %s exists for group %s " % (node.name, group_id))
             packaged_node.append(node)
+            
     return packaged_node
 
 
@@ -496,11 +528,12 @@ def _status_of_nodeset(nodes, output_dir):
             error_nodes.append(node)
             continue
         if job_finished(node.name, settings):
-                print "done. output is available"
-                get_output(node.name, "%s/%s" % (options.output_dir,node.name), settings)
-                finished_nodes.append(node)
-            else:
-                print "job still running"
+            print "done. output is available"
+            get_output(node.name, "%s/%s" % (options.output_dir,node.name), settings)
+            finished_nodes.append(node)
+        else:
+            print "job still running"
+            
     return (error_nodes, finished_nodes)
 
 
@@ -543,7 +576,7 @@ def check_multi_task(group_id, output_dir, settings):
     error_nodes, finished_nodes = _status_of_nodeset(nodes, output_dir)
 
     if finished_nodes + error_nodes == nodes:
-        logger.info("Package Finished)  
+        logger.info("Package Finished")  
 
     if error_nodes:
         logger.warn("error nodes: %s" % error_nodes)
