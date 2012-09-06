@@ -535,20 +535,13 @@ def _status_of_nodeset(nodes, output_dir):
             continue
         if job_finished(node.name, settings):
             print "done. output is available"
-<<<<<<< HEAD
-            get_output(node.name, "%s/%s" % (options.output_dir,node.name), settings)
-            finished_nodes.append(node)
-        else:
-            print "job still running"
-            
-=======
             get_output(node.name,
                        "%s/%s" % (options.output_dir, node.name),
                        settings)
             finished_nodes.append(node)
         else:
             print "job still running"
->>>>>>> ec04e8ab8097369e85ee19b2204f4c0e46d9cb81
+
     return (error_nodes, finished_nodes)
 
 
