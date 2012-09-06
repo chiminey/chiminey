@@ -69,8 +69,13 @@ def start():
     (options, args) = parser.parse_args()
 
     if 'create' in args:
-        res = create_environ(settings)
-        logger.debug(res)
+        if options.number_vm_instances:
+            res = create_environ(options.number_vm_instances, settings)
+            logger.debug(res)
+        else:
+            logging.error("enter number of VM instances to be created")
+            parser.print_help()
+            sys.exit(1)
 
     elif 'setup' in args:
         if options.instance_id:
