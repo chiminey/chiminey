@@ -151,6 +151,8 @@ def start():
             sys.exit(1)
 
     elif 'teardown' in args:
+        # TODO: make sure that the instance we are tearing down is the one that is running the package and no some
+        # random VM, probably by logging in and checking state.
         if options.instance_id:
             id = options.instance_id
             if not is_instance_running(id, settings):
