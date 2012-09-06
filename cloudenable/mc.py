@@ -73,86 +73,78 @@ def start():
         logger.debug(res)
 
     elif 'setup' in args:
-        if options.instance_id:
-            id = options.instance_id
-            if not is_instance_running(id, settings):
-                logging.error('Instance %s not running' % id)
-                sys.exit(1)
-            setup_task(id, settings)
+        if options.group_id:
+            group_id = options.group_id
+            setup_multi_task(group_id, settings)
         else:
             logging.error("enter nodeid of the package")
             parser.print_help()
             sys.exit(1)
 
     elif 'run' in args:
-        if options.instance_id:
+        if options.group_id:
+
+            group_id = options.group_id
+
             if not options.output_dir:
-                logging.error("need to specify output directory")
+                logging.error("specify output directory")
                 parser.print_help()
                 sys.exit(1)
             elif os.path.isdir(options.output_dir):
                 logging.error("output directory already exists")
                 sys.exit(1)
-            id = options.instance_id
-            if not is_instance_running(id, settings):
-                logging.error('Instance %s not running' % id)
-                sys.exit(1)
-            prepare_input(id, options.input_dir, settings)
+
+            prepare_multi_input(group_id, options.input_dir,
+                                settings)
+
             try:
-                job_id = run_task(id, settings)
+                pids = run_multi_task(group_id, options.input_dir, settings)
             except PackageFailedError, e:
                 logger.error(e)
-                logger.error("unable to start package")
+                logger.error("unable to start packages")
                 #TODO: cleanup node of copied input files etc.
                 sys.exit(1)
-            logger.debug(job_id)
-            if (len(job_id) != 1):
-                logging.warn("warning: muliple payloads running")
-            while (True):
-                if job_finished(id, settings):
-                    break
+
+            while (not packages_complete(group_id,
+                                         options.output_dir,
+                                         settings)):
                 print("job is running.  Wait or CTRL-C to exit here. \
                  run 'check' command to poll again")
                 time.sleep(settings.SLEEP_TIME)
-            if options.output_dir:
-                print "done. output is available"
-                get_output(id, options.output_dir, settings)
-            else:
-                logging.error("need to specify output directory")
-                parser.print_help()
-                sys.exit(1)
+
         else:
-            logging.error("enter nodeid of the package")
+            logging.error("enter group id of the run")
             parser.print_help()
             sys.exit(1)
 
     elif 'check' in args:
-        if options.instance_id:
+        if options.group_id:
             if not options.output_dir:
-                logging.error("need to specify output directory")
+                logging.error("specify output directory")
                 parser.print_help()
                 sys.exit(1)
             elif os.path.isdir(options.output_dir):
                 logging.error("output directory already exists")
                 sys.exit(1)
-            id = options.instance_id
-            if not is_instance_running(id, settings):
-                logging.error('Instance %s not running' % id)
-                sys.exit(1)
 
-            if job_finished(options.instance_id, settings):
-                print "done. output is available"
-                get_output(id, options.output_dir, settings)
+            group_id = options.group_id
+            is_finished = packages_complete(group_id,
+                                            options.output_dir,
+                                            settings)
+
+            if is_finished:
+                print "done. output is available at %s" % options.output_dir
             else:
                 print "job still running"
         else:
-            logger.error("enter nodeid of the package")
+            logger.error("enter group id of the run")
             parser.print_help()
             sys.exit(1)
 
     elif 'teardown' in args:
-        # TODO: make sure that the instance we are tearing down is the one that is running the package and no some
-        # random VM, probably by logging in and checking state.
+        # TODO: make sure that the instance we are tearing down is the one
+        # that is running the package and no some random VM, probably by
+        # logging in and checking state.
         if options.instance_id:
             id = options.instance_id
             if not is_instance_running(id, settings):
