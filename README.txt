@@ -8,7 +8,9 @@ sudo easy_install virtualenv
 virtualenv --no-site-packages .
 source bin/activate
 pip install -r requirements.txt
-python mc.py --help
+mkdir ~/.cloudenabling
+cp cloudenable/config.sys ~/.cloudenabling/config
+# add EC2_ACCESS_KEY and EC2_SECRET_KEY and location and name of private key
 
 Example
 cd cloudenable

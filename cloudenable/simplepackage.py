@@ -33,11 +33,11 @@ def _create_cloud_connection(settings):
     EC2_SECRET_KEY = settings.EC2_SECRET_KEY
 
     OpenstackDriver = get_driver(Provider.EUCALYPTUS)
-    #print("Connecting...",OpenstackDriver)
+    logger.info("Connecting... %s" % OpenstackDriver)
     conn = OpenstackDriver(EC2_ACCESS_KEY, secret=EC2_SECRET_KEY,
                            host="nova.rc.nectar.org.au", secure=False,
                            port=8773, path="/services/Cloud")
-    #print ("Connected")
+    logger.info("Connected")
 
     return conn
 
