@@ -57,6 +57,14 @@ def start():
     parser.add_option("-o", "--outputdir", dest="output_dir",
                       help="The local directory which will \
                       hold output files for the task")
+    parser.add_option("-g", "--group", dest="group_id",
+                      help="The group id from the cloud infrastructure")
+    parser.add_option("-v", "--number-vm-instances",
+                      dest="number_vm_instances",
+                      help="The number of VM instances to " +
+                      "be created as a group")
+    parser.add_option("-s", "--seed", dest="seed",
+                      help="The master seed that generates all other seeds")
 
     (options, args) = parser.parse_args()
 
