@@ -544,7 +544,7 @@ def _status_of_nodeset(nodes, output_dir):
 
     return (error_nodes, finished_nodes)
 
-
+ 
 def setup_multi_task(group_id, settings):
     """
     Transfer the task package to the intances in group_id and install
