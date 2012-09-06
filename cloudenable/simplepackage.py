@@ -171,6 +171,7 @@ def _get_node_ip(instance_id, settings):
     """
         Get the ip address of a node
     """
+    #TODO: throw exception if can't find instance_id
     conn = _create_cloud_connection(settings)
     ip = ''
     while instance_id == '' or ip == '':
@@ -489,7 +490,8 @@ def _get_package_pid(ssh, command):
 
 
 def _get_rego_nodes(group_id, settings, rego_filename):
-    """ Returns nectar nodes that are currently packaged enabled.
+    """
+    Returns nectar nodes that are currently packaged enabled.
     """
     # get all available nodes
     conn = _create_cloud_connection(settings)
@@ -503,15 +505,17 @@ def _get_rego_nodes(group_id, settings, rego_filename):
         # NOTE: assumes use of bash shell
         res = _run_command(ssh, "[ -f %s ] && echo exists" % group_id)
         if 'exists' in res:
-            logger.debug("node %s exists for group %s " % (node.name, group_id))
+            logger.debug("node %s exists for group %s "
+                         % (node.name, group_id))
             packaged_node.append(node)
             
     return packaged_node
 
 
 def _status_of_nodeset(nodes, output_dir):
-    """ 
-    Return lists that describe which of the set of nodes are finished or have disappeared
+    """
+    Return lists that describe which of the set of nodes are finished or
+    have disappeared
     """
     error_nodes = []
     finished_nodes = []
@@ -524,16 +528,27 @@ def _status_of_nodeset(nodes, output_dir):
 
     for node in nodes:
         if not is_instance_running(node.name, settings):
+            # An unlikely situation where the node crashed after is was
+            # detected as registered.
             logging.error('Instance %s not running' % id)
             error_nodes.append(node)
             continue
         if job_finished(node.name, settings):
             print "done. output is available"
+<<<<<<< HEAD
             get_output(node.name, "%s/%s" % (options.output_dir,node.name), settings)
             finished_nodes.append(node)
         else:
             print "job still running"
             
+=======
+            get_output(node.name,
+                       "%s/%s" % (options.output_dir, node.name),
+                       settings)
+            finished_nodes.append(node)
+        else:
+            print "job still running"
+>>>>>>> ec04e8ab8097369e85ee19b2204f4c0e46d9cb81
     return (error_nodes, finished_nodes)
 
 
@@ -562,38 +577,80 @@ def setup_multi_task(group_id, settings):
         t = SetupThread(node)
         threads_running.append(t)
         t.start()
-    for thread in threads_running:        
+    for thread in threads_running:
         t.join()
     logger.debug("all threads are done")
 
 
-
-def check_multi_task(group_id, output_dir, settings):
+def packages_complete(group_id, output_dir, settings):
     """
-    Indicates if all the package nodes have finished and generate any output as needed
+    Indicates if all the package nodes have finished and generate
+    any output as needed
     """
     nodes = _get_rego_nodes(group_id, settings, rego_filename)
     error_nodes, finished_nodes = _status_of_nodeset(nodes, output_dir)
 
     if finished_nodes + error_nodes == nodes:
-        logger.info("Package Finished")  
+        logger.info("Package Finished)
+        return True
 
     if error_nodes:
         logger.warn("error nodes: %s" % error_nodes)
-   
+        return True
+
+    return False
+
 
 def run_multi_task(group_id, output_dir, settings):
     """
-    Run the package on each of the nodes in the group and grab any output as needed
+    Run the package on each of the nodes in the group and grab
+    any output as needed
     """
     nodes = _get_rego_nodes(group_id, settings, rego_filename)
 
     pids = []
     for node in nodes:
-        pid = run_task(node,settings)
-        pid.append(pid)
+        try:
+            pid = run_task(node, settings)
+        except PackageFailedError, e:
+            logger.error(e)
+            logger.error("unable to start package on node %s" % node)
+            #TODO: cleanup node of copied input files etc.
+        else:
+            pids.append(pid)
 
-    pids = dict(zip(node,pids))
+    pids = dict(zip(node, pids))
     return pids
-     
-  
+
+
+def prepare_multi_input(group_id, input_dir, settings):
+    """
+        Take the input_dir and move all the contained files to the
+        instances in the group and ready
+
+    """
+
+    nodes = _get_rego_nodes(group_id, settings, rego_filename)
+
+    for node in nodes:
+        instance_id = node.name
+        logger.info("prepare_input %s %s" % (instance_id, input_dir))
+        ip = _get_node_ip(instance_id, settings)
+        ssh = _open_connection(ip_address=ip, username=settings.USER_NAME,
+                               password=settings.PASSWORD, settings=settings)
+        input_dir = _normalize_dirpath(input_dir)
+        dirList = os.listdir(input_dir)
+        for fname in dirList:
+            logger.debug(fname)
+            _upload_input(ssh, input_dir, fname,
+                          os.path.join(settings.DEST_PATH_PREFIX,
+                                       settings.PAYLOAD_CLOUD_DIRNAME))
+        _run_command(ssh, "cd %s; cp rmcen.inp rmcen.inp.orig" %
+                    (os.path.join(settings.DEST_PATH_PREFIX,
+                                  settings.PAYLOAD_CLOUD_DIRNAME)))
+        _run_command(ssh, "cd %s; dos2unix rmcen.inp" %
+                    (os.path.join(settings.DEST_PATH_PREFIX,
+                                  settings.PAYLOAD_CLOUD_DIRNAME)))
+        _run_command(ssh, "cd %s; sed -i '/^$/d' rmcen.inp" %
+                    (os.path.join(settings.DEST_PATH_PREFIX,
+                                  settings.PAYLOAD_CLOUD_DIRNAME)))
