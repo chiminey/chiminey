@@ -60,17 +60,18 @@ def create_environ(number_vm_instances, settings):
     #print settings.PRIVATE_KEY_NAME
     try:
         all_instances = []
-        logger.info("Creating %d VM instance(s)" %number_vm_instances)
+        logger.info("Creating %d VM instance(s)" % number_vm_instances)
         instance_count = 0
         while instance_count < number_vm_instances:
-            new_instance = conn.create_node(
-                        name="New Centos Node", size=size1, image=image1,
-                        ex_keyname=settings.PRIVATE_KEY_NAME,
-                        ex_securitygroup=settings.SECURITY_GROUP)
+            new_instance = conn.create_node(name="New Centos Node",
+                size=size1, image=image1,
+                ex_keyname=settings.PRIVATE_KEY_NAME,
+                ex_securitygroup=settings.SECURITY_GROUP)
             all_instances.append(new_instance)
             instance_count += 1
 
-        all_running_instances = _wait_for_instance_to_start_running(all_instances, settings)
+        all_running_instances = _wait_for_instance_to_start_running(
+                                                all_instances, settings)
         _store_md5_on_instances(all_running_instances, settings)
         print ''
         print_running_node_id(settings)
@@ -90,7 +91,7 @@ def _store_md5_on_instances(all_instances, settings):
         instance_id = instance.name
         ip = _get_node_ip(instance_id, settings)
         logger.info("Registering %s (%s) to group '%s'"
-                    %(instance_id, ip, group_id))
+                    % (instance_id, ip, group_id))
         md5_written = False
         while not md5_written:
             try:
@@ -98,7 +99,7 @@ def _store_md5_on_instances(all_instances, settings):
                                        username=settings.USER_NAME,
                                        password=settings.PASSWORD,
                                        settings=settings)
-                _run_command(ssh, "touch %s" %group_id)
+                _run_command(ssh, "touch %s" % group_id)
                 md5_written = True
             except Exception:
                 time.sleep(settings.CLOUD_SLEEP_INTERVAL)
@@ -134,7 +135,6 @@ def _wait_for_instance_to_start_running(all_instances, settings):
         time.sleep(settings.CLOUD_SLEEP_INTERVAL)
 
     return all_running_instances
-
 
 
 def _wait_for_instance_to_terminate(all_instances, settings):
@@ -217,21 +217,41 @@ def _get_node_ip(instance_id, settings):
     return ip
 
 
-def destroy_environ(group_id, settings):
+def confirm_teardown():
+    teardown_confirmation = None
+    while not teardown_confirmation:
+        teardown_confirmation = raw_input(
+                                "Are you sure you want to delete (yes/no)? ")
+        if teardown_confirmation != 'yes' and teardown_confirmation != 'no':
+            teardown_confirmation = None
+    return teardown_confirmation
+    
+                
+def destroy_environ(settings, group_id=None, instance_id=None, all_VM=False):
     """
-        Terminate instances with group group_id
+        Terminate  
+            - all instances, or
+            - a group of instances, or
+            - a single instance
     """
-    logger.info("destroy_environ %s" % group_id)
-    all_instances = _get_rego_nodes(group_id, settings)
+    logger.info("destroy_environ")
+    conn = _create_cloud_connection(settings)
+    all_instances = []
+    if all_VM:
+        all_instances = conn.list_nodes()
+    elif group_id:
+        all_instances = _get_rego_nodes(group_id, settings)
+    elif instance_id:
+        all_instances.append(_get_node(instance_id, settings))
+    
     if not all_instances:
-        logging.error("No running instance with group id '%s'" % group_id)
+        logging.error("No running instance(s)")
         sys.exit(1)
-
+        
+    logger.info("Terminating %d VM instance(s)" %len(all_instances))
     for instance in all_instances:
-        this_node = _get_node(instance.name, settings)
-        conn = _create_cloud_connection(settings)
         try:
-            conn.destroy_node(this_node)
+            conn.destroy_node(instance)
         except Exception:
             traceback.print_exc(file=sys.stdout)
 
