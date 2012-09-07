@@ -19,6 +19,8 @@ python mc.py setup --group=76de47e2573676b113b4338f1012c2742
 python mc.py --group=76de47e2573676b113b4338f1012c2742 --inputdir=../input/ --outputdir=output run
 python mc.py --group=76de47e2573676b113b4338f1012c2742 check --outputdir=output
 python mc.py --nodeid=42 teardown
+python mc.py -g group_id teardown
+python mc.py teardown_all
 
 
 Notes
