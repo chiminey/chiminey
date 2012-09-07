@@ -69,17 +69,16 @@ def create_environ(number_vm_instances, settings):
                 ex_securitygroup=settings.SECURITY_GROUP)
             all_instances.append(new_instance)
             instance_count += 1
-
-        all_running_instances = _wait_for_instance_to_start_running(
-                                                all_instances, settings)
-        _store_md5_on_instances(all_running_instances, settings)
-        print ''
-        print_running_node_id(settings)
-
     except Exception:
         traceback.print_exc(file=sys.stdout)
-        print ''
-        print_running_node_id(settings)
+        #print ''
+        #print_running_node_id(settings)
+    
+    all_running_instances = _wait_for_instance_to_start_running(all_instances, settings)
+    _store_md5_on_instances(all_running_instances, settings)
+    print ''
+    print_running_node_id(settings)
+        
 
 
 def _store_md5_on_instances(all_instances, settings):
@@ -99,7 +98,9 @@ def _store_md5_on_instances(all_instances, settings):
                                        username=settings.USER_NAME,
                                        password=settings.PASSWORD,
                                        settings=settings)
-                _run_command(ssh, "touch %s" % group_id)
+                group_id_path = settings.GROUP_ID_DIR+"/"+group_id
+                _run_command(ssh, "mkdir %s" % settings.GROUP_ID_DIR)
+                _run_command(ssh, "touch %s" % group_id_path)
                 md5_written = True
             except Exception:
                 time.sleep(settings.CLOUD_SLEEP_INTERVAL)
@@ -162,14 +163,52 @@ def print_running_node_id(settings):
     nodes = conn.list_nodes()
     if not nodes:
         logger.info("No running VM instances")
-        sys.exit(1)
 
-    logger.info('Currently running VM instances:')
-    for i in nodes:
-        logger.info('Node %d: %s %s' % (counter, i.name,
+    else:
+        logger.info('Currently running VM instances:')
+        for i in nodes:
+            logger.info('Node %d: %s %s' % (counter, i.name,
                                         _get_node_ip(i.name, settings)))
-        counter += 1
+            counter += 1
 
+def _print_available_groups(settings):
+    conn = _create_cloud_connection(settings)
+    all_instances = conn.list_nodes()
+    all_groups = []
+    for instance in all_instances:
+        instance_id = instance.name
+        ip = _get_node_ip(instance_id, settings)
+        ssh = _open_connection(ip_address=ip,
+                                       username=settings.USER_NAME,
+                                       password=settings.PASSWORD,
+                                       settings=settings)
+        res = _run_command(ssh, "ls %s " % settings.GROUP_ID_DIR)
+        if len(res) > 0 and not res[0] in all_groups:
+            all_groups.append(res[0])
+                
+    if not all_groups:
+        logger.info("No available groups")
+        sys.exit(1)
+    else:
+        logger.info("Available groups:")
+        counter = 1
+        for group in all_groups:
+            logger.info("Group %d: %s" % (counter,group))
+            counter += 1
+        
+        
+def print_all_information(settings):
+    """
+        Print 
+            - running instances
+            - list of groups
+    """
+    logger.info("Summary of Computing Environment")
+    print ""  
+    print_running_node_id(settings)
+    print ""
+    _print_available_groups(settings)  
+        
 
 def is_instance_running(instance_id, settings):
     """
@@ -561,7 +600,8 @@ def _get_rego_nodes(group_id, settings):
                                username=settings.USER_NAME,
                                password=settings.PASSWORD, settings=settings)
         # NOTE: assumes use of bash shell
-        res = _run_command(ssh, "[ -f %s ] && echo exists" % group_id)
+        group_id_path = settings.GROUP_ID_DIR+"/"+group_id
+        res = _run_command(ssh, "[ -f %s ] && echo exists" % group_id_path)
         logger.debug("res=%s" % res)
         if 'exists\n' in res:
             logger.debug("node %s exists for group %s "

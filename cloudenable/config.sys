@@ -5,6 +5,7 @@ PRIVATE_KEY = "/path/to/nectar_id"  #The nectar private key
 PRIVATE_KEY_NAME = "your_key" #the name of the private key
 SECURITY_GROUP = ["ssh"]
 
+GROUP_ID_DIR = "group_id"
 PAYLOAD_LOCAL_DIRNAME = "/home/iyusuf/cloudenabling/payload" # The directory of the payload to be deployed on the cloud
 PAYLOAD = "aeao_v1_1_package.tar.gz" # the filename of the package
 
