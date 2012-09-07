@@ -98,6 +98,13 @@ def start():
             elif os.path.isdir(options.output_dir):
                 logging.error("output directory already exists")
                 sys.exit(1)
+            else:
+                try:
+                    os.mkdir(options.output_dir)
+                except OSError:
+                    logger.error("output directory %s already exists" % options.output_dir)
+                    sys.exit(1)
+
 
             prepare_multi_input(group_id, options.input_dir,
                                 settings)
@@ -109,6 +116,7 @@ def start():
                 logger.error("unable to start packages")
                 #TODO: cleanup node of copied input files etc.
                 sys.exit(1)
+
 
             while (not packages_complete(group_id,
                                          options.output_dir,
@@ -128,9 +136,7 @@ def start():
                 logging.error("specify output directory")
                 parser.print_help()
                 sys.exit(1)
-            elif os.path.isdir(options.output_dir):
-                logging.error("output directory already exists")
-                sys.exit(1)
+
 
             group_id = options.group_id
             is_finished = packages_complete(group_id,

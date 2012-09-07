@@ -65,15 +65,15 @@ def create_environ(number_vm_instances, settings):
         while instance_count < number_vm_instances:
             new_instance = conn.create_node(
                         name="New Centos Node", size=size1, image=image1,
-                        ex_keyname=settings.PRIVATE_KEY_NAME, 
+                        ex_keyname=settings.PRIVATE_KEY_NAME,
                         ex_securitygroup=settings.SECURITY_GROUP)
             all_instances.append(new_instance)
             instance_count += 1
-            
+
         all_running_instances = _wait_for_instance_to_start_running(all_instances, settings)
         _store_md5_on_instances(all_running_instances, settings)
         print ''
-        print_running_node_id(settings)        
+        print_running_node_id(settings)
 
     except Exception:
         traceback.print_exc(file=sys.stdout)
@@ -86,7 +86,7 @@ def _store_md5_on_instances(all_instances, settings):
     logger.info("Creating group '%s'", group_id)
     for instance in all_instances:
         # login and check for md5 file
-        
+
         instance_id = instance.name
         ip = _get_node_ip(instance_id, settings)
         logger.info("Registering %s (%s) to group '%s'"
@@ -109,14 +109,14 @@ def _generate_group_id(all_instances):
     md5_starter_string = ""
     for instance in all_instances:
         md5_starter_string += instance.name
-        
+
     md5 = hashlib.md5()
-    md5.update(md5_starter_string)    
+    md5.update(md5_starter_string)
     group_id = md5.hexdigest()
-    
+
     return group_id
-    
-    
+
+
 def _wait_for_instance_to_start_running(all_instances, settings):
     all_running_instances = []
     while all_instances:
@@ -126,16 +126,16 @@ def _wait_for_instance_to_start_running(all_instances, settings):
                 all_running_instances.append(instance)
                 all_instances.remove(instance)
                 logger.info('Current status of Instance %s: %s'
-                % (instance_id, NODE_STATE[NodeState.RUNNING]))                
+                % (instance_id, NODE_STATE[NodeState.RUNNING]))
             else:
                 logger.info('Current status of Instance %s: %s'
                     % (instance_id, NODE_STATE[instance.state]))
-            
+
         time.sleep(settings.CLOUD_SLEEP_INTERVAL)
-    
+
     return all_running_instances
 
-    
+
 
 def _wait_for_instance_to_terminate(all_instances, settings):
     while all_instances:
@@ -145,11 +145,11 @@ def _wait_for_instance_to_terminate(all_instances, settings):
               #  all_running_instances.append(instance)
                 all_instances.remove(instance)
                 logger.info('Current status of Instance %s: %s'
-                % (instance_id, NODE_STATE[NodeState.TERMINATED]))                
+                % (instance_id, NODE_STATE[NodeState.TERMINATED]))
             else:
                 logger.info('Current status of Instance %s: %s'
                     % (instance_id, NODE_STATE[instance.state]))
-            
+
         time.sleep(settings.CLOUD_SLEEP_INTERVAL)
 
 
@@ -163,7 +163,7 @@ def print_running_node_id(settings):
     if not nodes:
         logger.info("No running VM instances")
         sys.exit(1)
-    
+
     logger.info('Currently running VM instances:')
     for i in nodes:
         logger.info('Node %d: %s %s' % (counter, i.name,
@@ -226,7 +226,7 @@ def destroy_environ(group_id, settings):
     if not all_instances:
         logging.error("No running instance with group id '%s'" % group_id)
         sys.exit(1)
-                
+
     for instance in all_instances:
         this_node = _get_node(instance.name, settings)
         conn = _create_cloud_connection(settings)
@@ -234,7 +234,7 @@ def destroy_environ(group_id, settings):
             conn.destroy_node(this_node)
         except Exception:
             traceback.print_exc(file=sys.stdout)
-            
+
     _wait_for_instance_to_terminate(all_instances, settings)
 
 
@@ -336,8 +336,8 @@ def get_output(instance_id, output_dir, settings):
                            password=settings.PASSWORD, settings=settings)
     try:
         os.mkdir(output_dir)
-    except OSError:
-        logger.warning("output directory already exists")
+    except OSError, e:
+        logger.warning("output directory %s already exists: %s" % (output_dir,e))
         sys.exit(1)
     logger.info("output directory is %s" % output_dir)
     for file in settings.OUTPUT_FILES:
@@ -537,34 +537,29 @@ def _get_rego_nodes(group_id, settings):
     packaged_node = []
     for node in conn.list_nodes():
         # login and check for md5 file
-        instance_id = node.name
-        ip = _get_node_ip(instance_id, settings)
         ssh = _open_connection(ip_address=_get_node_ip(node.name, settings),
                                username=settings.USER_NAME,
                                password=settings.PASSWORD, settings=settings)
         # NOTE: assumes use of bash shell
         res = _run_command(ssh, "[ -f %s ] && echo exists" % group_id)
-        if "exists" in res[0]:
+        logger.debug("res=%s" % res)
+        if 'exists\n' in res:
             logger.debug("node %s exists for group %s "
                          % (node.name, group_id))
             packaged_node.append(node)
-                        
+        else:
+            logger.debug("NO node for %s exists for group %s "
+                         % (node.name, group_id))
     return packaged_node
 
 
-def _status_of_nodeset(nodes, output_dir):
+def _status_of_nodeset(nodes, output_dir, settings):
     """
     Return lists that describe which of the set of nodes are finished or
     have disappeared
     """
     error_nodes = []
     finished_nodes = []
-
-    try:
-        os.mkdir(options.output_dir)
-    except OSError:
-        logger.warning("output directory already exists")
-        sys.exit(1)
 
     for node in nodes:
         if not is_instance_running(node.name, settings):
@@ -576,7 +571,7 @@ def _status_of_nodeset(nodes, output_dir):
         if job_finished(node.name, settings):
             print "done. output is available"
             get_output(node.name,
-                       "%s/%s" % (options.output_dir, node.name),
+                       "%s/%s" % (output_dir, node.name),
                        settings)
             finished_nodes.append(node)
         else:
@@ -584,33 +579,33 @@ def _status_of_nodeset(nodes, output_dir):
 
     return (error_nodes, finished_nodes)
 
- 
+
 def setup_multi_task(group_id, settings):
     """
     Transfer the task package to the intances in group_id and install
     """
     logger.info("setup_multi_task %s " % group_id)
-    packaged_nodes = _get_rego_nodes(group_id, settings, rego_filename)
+    packaged_nodes = _get_rego_nodes(group_id, settings)
     import threading
     import datetime
+    logger.debug("packaged_nodes = %s" % packaged_nodes)
 
-    class SetupThread(threading.Thread):
-
-        def __init__(node):
-            self.node_id = node
-
-        def run(self):
-            now = datetime.datetime.now()
-            print "%s says Hello World at time: %s" % (self.getName(), now)
-            # TODO: need to make sure that setup_task eventually finishes
-            setup_task(self.node_id, settings)
+    def setup_worker(node_id):
+        now = datetime.datetime.now()
+        logger.debug("%s says Hello World at time: %s" % (node_id, now))
+        # TODO: need to make sure that setup_task eventually finishes
+        logger.debug("about to start setup_task")
+        setup_task(node_id, settings)
+        logger.debug("setup finished")
 
     threads_running = []
-    for node in packaged_node:
-        t = SetupThread(node)
+    for node in packaged_nodes:
+        logger.debug("starting thread")
+        t = threading.Thread(target=setup_worker, args=(node.name,))
         threads_running.append(t)
         t.start()
     for thread in threads_running:
+        logger.debug("waiting on thread")
         t.join()
     logger.debug("all threads are done")
 
@@ -620,8 +615,8 @@ def packages_complete(group_id, output_dir, settings):
     Indicates if all the package nodes have finished and generate
     any output as needed
     """
-    nodes = _get_rego_nodes(group_id, settings, rego_filename)
-    error_nodes, finished_nodes = _status_of_nodeset(nodes, output_dir)
+    nodes = _get_rego_nodes(group_id, settings)
+    error_nodes, finished_nodes = _status_of_nodeset(nodes, output_dir, settings)
 
     if finished_nodes + error_nodes == nodes:
         logger.info("Package Finished")
@@ -639,12 +634,12 @@ def run_multi_task(group_id, output_dir, settings):
     Run the package on each of the nodes in the group and grab
     any output as needed
     """
-    nodes = _get_rego_nodes(group_id, settings, rego_filename)
+    nodes = _get_rego_nodes(group_id, settings)
 
     pids = []
     for node in nodes:
         try:
-            pid = run_task(node, settings)
+            pid = run_task(node.name, settings)
         except PackageFailedError, e:
             logger.error(e)
             logger.error("unable to start package on node %s" % node)
@@ -652,7 +647,7 @@ def run_multi_task(group_id, output_dir, settings):
         else:
             pids.append(pid)
 
-    pids = dict(zip(node, pids))
+    pids = dict(zip(nodes, pids))
     return pids
 
 
@@ -663,7 +658,7 @@ def prepare_multi_input(group_id, input_dir, settings):
 
     """
 
-    nodes = _get_rego_nodes(group_id, settings, rego_filename)
+    nodes = _get_rego_nodes(group_id, settings)
 
     for node in nodes:
         instance_id = node.name
