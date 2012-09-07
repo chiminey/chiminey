@@ -11,6 +11,7 @@ import traceback
 from libcloud.compute.types import Provider
 from libcloud.compute.types import NodeState
 from libcloud.compute.providers import get_driver
+import md5
 
 #from libcloud.compute.base import NodeImage
 #from libcloud.compute.deployment import ScriptDeployment
@@ -59,36 +60,56 @@ def create_environ(number_vm_instances, settings):
     #print settings.PRIVATE_KEY_NAME
     try:
         all_instances = []
-        for i in number_vm_instances:
+        logger.info("Creating %d VM instance(s)" %number_vm_instances)
+        instance_count = 0
+        while instance_count < number_vm_instances:
             new_instance = conn.create_node(
                         name="New Centos Node", size=size1, image=image1,
                         ex_keyname=settings.PRIVATE_KEY_NAME, 
                         ex_securitygroup=settings.SECURITY_GROUP)
             all_instances.append(new_instance)
+            instance_count += 1
             
         all_running_instances = _wait_for_instance_to_start_running(all_instances, settings)
-        #_store_md5_on_instances(all_running_instances, settings)
+        _store_md5_on_instances(all_running_instances, settings)
+        print ''
+        print_running_node_id(settings)        
 
     except Exception:
         traceback.print_exc(file=sys.stdout)
+        print ''
         print_running_node_id(settings)
 
 def _store_md5_on_instances(all_instances, settings):
-    group_id = _generate_group_id()
+    group_id = _generate_group_id(all_instances)
+    logger.info("Creating group '%s'", group_id)
     for instance in all_instances:
         # login and check for md5 file
+        
         instance_id = instance.name
         ip = _get_node_ip(instance_id, settings)
-        ssh = _open_connection(ip_address=_get_node_ip(instance.name, settings),
-                               username=settings.USER_NAME,
-                               password=settings.PASSWORD, settings=settings)
+        logger.info("Registering %s (%s) to group '%s'"
+                    %(instance_id, ip, group_id))
+        md5_written = False
+        while not md5_written:
+            try:
+                ssh = _open_connection(ip_address=ip,
+                                       username=settings.USER_NAME,
+                                       password=settings.PASSWORD,
+                                       settings=settings)
+                _run_command(ssh, "touch %s" %group_id)
+                md5_written = True
+            except Exception:
+                time.sleep(settings.CLOUD_SLEEP_INTERVAL)
+                logger.info("Registration in progress ...")
 
-        _run_command(ssh, "touch %s" %group_id)
-        logger.info("Your group id: %s" %group_id)        
 
-
-def _generate_group_id():
-    group_id = 'verylongstringfilename'
+def _generate_group_id(all_instances):
+    md5_starter_string = ""
+    for instance in all_instances:
+        md5_starter_string += instance.name
+        
+    group_id = md5.md5(md5_starter_string).hexdigest()
     return group_id
     
     
@@ -350,10 +371,10 @@ def _open_connection(ip_address, username, password, settings):
 
 
 def _run_command(ssh, command, current_dir=None):
-    logger.info("%s %s " % (current_dir, command))
+    logger.debug("%s %s " % (current_dir, command))
     if current_dir:
         command = "cd %s;%s" % (current_dir, command)
-    logger.info(command)
+    logger.debug(command)
     stdin, stdout, stderr = ssh.exec_command(command)
     return stdout.readlines()
 
@@ -584,7 +605,7 @@ def packages_complete(group_id, output_dir, settings):
     error_nodes, finished_nodes = _status_of_nodeset(nodes, output_dir)
 
     if finished_nodes + error_nodes == nodes:
-        logger.info("Package Finished)
+        logger.info("Package Finished")
         return True
 
     if error_nodes:
