@@ -59,7 +59,7 @@ def start():
                       hold output files for the task")
     parser.add_option("-g", "--group", dest="group_id",
                       help="The group id from the cloud infrastructure")
-    parser.add_option("-v", "--number-vm-instances",
+    parser.add_option("-v", "--number-vm-instances", type="int",
                       dest="number_vm_instances",
                       help="The number of VM instances to " +
                       "be created as a group")
