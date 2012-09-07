@@ -30,7 +30,7 @@ def start():
                       'OUTPUT_FILES', 'TEST_VM_IP',
                       'EC2_ACCESS_KEY', 'EC2_SECRET_KEY',
                       'CLOUD_SLEEP_INTERVAL', 'PRIVATE_KEY_NAME',
-                      'SECURITY_GROUP']
+                      'SECURITY_GROUP', 'GROUP_ID_DIR']
 
     import json
     settings = type('', (), {})()
@@ -176,8 +176,11 @@ def start():
             parser.print_help()
             sys.exit(1)
 
-    elif 'print' in args:
-        print_running_node_id(settings)
+#    elif 'print' in args:
+#        print_running_node_id(settings)
+    
+    elif 'info' in args:
+        print_all_information(settings)
 
     else:
         parser.print_help()

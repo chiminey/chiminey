@@ -14,6 +14,7 @@ cp cloudenable/config.sys ~/.cloudenabling/config
 
 Example
 cd cloudenable
+python mc.py info
 python mc.py create -v 1
 python mc.py setup --group=76de47e2573676b113b4338f1012c2742
 python mc.py --group=76de47e2573676b113b4338f1012c2742 --inputdir=../input/ --outputdir=output run
