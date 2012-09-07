@@ -11,7 +11,7 @@ import traceback
 from libcloud.compute.types import Provider
 from libcloud.compute.types import NodeState
 from libcloud.compute.providers import get_driver
-import md5
+import hashlib
 
 #from libcloud.compute.base import NodeImage
 #from libcloud.compute.deployment import ScriptDeployment
@@ -109,7 +109,10 @@ def _generate_group_id(all_instances):
     for instance in all_instances:
         md5_starter_string += instance.name
         
-    group_id = md5.md5(md5_starter_string).hexdigest()
+    md5 = hashlib.md5()
+    md5.update(md5_starter_string)    
+    group_id = md5.hexdigest()
+    
     return group_id
     
     
