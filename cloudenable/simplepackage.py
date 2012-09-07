@@ -80,6 +80,7 @@ def create_environ(number_vm_instances, settings):
         print ''
         print_running_node_id(settings)
 
+
 def _store_md5_on_instances(all_instances, settings):
     group_id = _generate_group_id(all_instances)
     logger.info("Creating group '%s'", group_id)
@@ -136,15 +137,20 @@ def _wait_for_instance_to_start_running(all_instances, settings):
 
     
 
-def _wait_for_instance_to_terminate(instance, settings):
-    instance_id = instance.name
-    while is_instance_running(instance_id, settings):
-        logger.info('Current status of Instance %s: %s'
+def _wait_for_instance_to_terminate(all_instances, settings):
+    while all_instances:
+        for instance in all_instances:
+            instance_id = instance.name
+            if not is_instance_running(instance_id, settings):
+              #  all_running_instances.append(instance)
+                all_instances.remove(instance)
+                logger.info('Current status of Instance %s: %s'
+                % (instance_id, NODE_STATE[NodeState.TERMINATED]))                
+            else:
+                logger.info('Current status of Instance %s: %s'
                     % (instance_id, NODE_STATE[instance.state]))
+            
         time.sleep(settings.CLOUD_SLEEP_INTERVAL)
-
-    logger.info('Current status of Instance %s: %s'
-                % (instance_id, NODE_STATE[NodeState.TERMINATED]))
 
 
 def print_running_node_id(settings):
@@ -154,7 +160,11 @@ def print_running_node_id(settings):
     conn = _create_cloud_connection(settings)
     counter = 1
     nodes = conn.list_nodes()
-    logger.info('Currently running node instances:')
+    if not nodes:
+        logger.info("No running VM instances")
+        sys.exit(1)
+    
+    logger.info('Currently running VM instances:')
     for i in nodes:
         logger.info('Node %d: %s %s' % (counter, i.name,
                                         _get_node_ip(i.name, settings)))
@@ -207,20 +217,25 @@ def _get_node_ip(instance_id, settings):
     return ip
 
 
-def destroy_environ(instance_id, settings):
+def destroy_environ(group_id, settings):
     """
-        Terminate the instance
+        Terminate instances with group group_id
     """
-
-    logger.info("destroy_environ %s" % instance_id)
-
-    this_node = _get_node(instance_id, settings)
-    conn = _create_cloud_connection(settings)
-    try:
-        conn.destroy_node(this_node)
-        _wait_for_instance_to_terminate(this_node, settings)
-    except Exception:
-        traceback.print_exc(file=sys.stdout)
+    logger.info("destroy_environ %s" % group_id)
+    all_instances = _get_rego_nodes(group_id, settings)
+    if not all_instances:
+        logging.error("No running instance with group id '%s'" % group_id)
+        sys.exit(1)
+                
+    for instance in all_instances:
+        this_node = _get_node(instance.name, settings)
+        conn = _create_cloud_connection(settings)
+        try:
+            conn.destroy_node(this_node)
+        except Exception:
+            traceback.print_exc(file=sys.stdout)
+            
+    _wait_for_instance_to_terminate(all_instances, settings)
 
 
 def setup_task(instance_id, settings):
@@ -513,7 +528,7 @@ def _get_package_pid(ssh, command):
     return pid
 
 
-def _get_rego_nodes(group_id, settings, rego_filename):
+def _get_rego_nodes(group_id, settings):
     """
     Returns nectar nodes that are currently packaged enabled.
     """
@@ -522,17 +537,18 @@ def _get_rego_nodes(group_id, settings, rego_filename):
     packaged_node = []
     for node in conn.list_nodes():
         # login and check for md5 file
+        instance_id = node.name
         ip = _get_node_ip(instance_id, settings)
         ssh = _open_connection(ip_address=_get_node_ip(node.name, settings),
                                username=settings.USER_NAME,
                                password=settings.PASSWORD, settings=settings)
         # NOTE: assumes use of bash shell
         res = _run_command(ssh, "[ -f %s ] && echo exists" % group_id)
-        if 'exists' in res:
+        if "exists" in res[0]:
             logger.debug("node %s exists for group %s "
                          % (node.name, group_id))
             packaged_node.append(node)
-            
+                        
     return packaged_node
 
 
