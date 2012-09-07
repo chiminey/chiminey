@@ -150,14 +150,10 @@ def start():
         # TODO: make sure that the instance we are tearing down is the one
         # that is running the package and no some random VM, probably by
         # logging in and checking state.
-        if options.instance_id:
-            id = options.instance_id
-            if not is_instance_running(id, settings):
-                logging.error('Instance %s not running' % id)
-                sys.exit(1)
-            destroy_environ(id, settings)
+        if options.group_id:
+            destroy_environ(options.group_id, settings)
         else:
-            logger.error("enter nodeid of the package")
+            logger.error("enter group id of the package")
             parser.print_help()
             sys.exit(1)
 
