@@ -176,7 +176,8 @@ def start():
 
     elif 'info' in args:
         print "Summary of Computing Environment"
-        print_all_information(settings)
+        all_instances = collect_instances(settings, all_VM=True)
+        print_all_information(settings, all_instances)
 
     else:
         parser.print_help()
