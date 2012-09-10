@@ -280,7 +280,7 @@ def _get_node_ip(instance_id, settings):
     return ip
 
 
-def confirm_teardown(settings, group_id=None, instance_id=None, all_VM=False):
+def collect_instances(settings, group_id=None, instance_id=None, all_VM=False):
     conn = _create_cloud_connection(settings)
     all_instances = []
     if all_VM:
@@ -289,7 +289,11 @@ def confirm_teardown(settings, group_id=None, instance_id=None, all_VM=False):
         all_instances = _get_rego_nodes(group_id, settings)
     elif instance_id:
         all_instances.append(_get_node(instance_id, settings))
-    
+        
+    return all_instances
+
+
+def confirm_teardown(settings, all_instances):
     print "Instances to be deleted are "
     print_all_information(settings, all_instances)
     
@@ -306,7 +310,7 @@ def confirm_teardown(settings, group_id=None, instance_id=None, all_VM=False):
         return False 
     
     
-def destroy_environ(settings, group_id=None, instance_id=None, all_VM=False):
+def destroy_environ(settings, all_instances):
     """
         Terminate
             - all instances, or
@@ -314,15 +318,6 @@ def destroy_environ(settings, group_id=None, instance_id=None, all_VM=False):
             - a single instance
     """
     logger.info("destroy_environ")
-    conn = _create_cloud_connection(settings)
-    all_instances = []
-    if all_VM:
-        all_instances = conn.list_nodes()
-    elif group_id:
-        all_instances = _get_rego_nodes(group_id, settings)
-    elif instance_id:
-        all_instances.append(_get_node(instance_id, settings))
-
     if not all_instances:
         logging.error("No running instance(s)")
         sys.exit(1)
