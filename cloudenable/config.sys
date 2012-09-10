@@ -34,9 +34,11 @@ OUTPUT_FILES = ["output","energy01.dat",
         "hrmc01.xyz",
         "hrmcpr01.xyz",
         "start01.xyz",
-        "sqinput.dat"]
+        "sqinput.dat",
+        "rmcen.inp"]
 
 TEST_VM_IP = ""
 EC2_ACCESS_KEY=""
 EC2_SECRET_KEY=""
-CLOUD_SLEEP_INTERVAL=5 
+CLOUD_SLEEP_INTERVAL=5
+MAX_SEED_INT = 512 # The maximum postive integer used for individual runs
