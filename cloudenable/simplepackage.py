@@ -53,7 +53,7 @@ def create_environ(number_vm_instances, settings):
     sizes = conn.list_sizes()
 
     image1 = [i for i in images if i.id == 'ami-0000000d'][0]
-    size1 = [i for i in sizes if i.id == 'm1.small'][0]
+    size1 = [i for i in sizes if i.id == settings.VM_SIZE][0]
     #print settings.SECURITY_GROUP
     #print image1
     #print size1
@@ -256,16 +256,36 @@ def _get_node_ip(instance_id, settings):
     return ip
 
 
-def confirm_teardown():
+def confirm_teardown(settings, group_id=None, instance_id=None, all_VM=False):
+    conn = _create_cloud_connection(settings)
+    all_instances = []
+    if all_VM:
+        all_instances = conn.list_nodes()
+    elif group_id:
+        all_instances = _get_rego_nodes(group_id, settings)
+    elif instance_id:
+        all_instances.append(_get_node(instance_id, settings))
+    
+    print "Instances to be deleted are "
+    counter = 1
+    for instance in all_instances:
+        print '\t Node %d: %s %s' % (counter, instance.name,
+                                  _get_node_ip(instance.name, settings))
+        counter += 1
+        
     teardown_confirmation = None
     while not teardown_confirmation:
         teardown_confirmation = raw_input(
                                 "Are you sure you want to delete (yes/no)? ")
         if teardown_confirmation != 'yes' and teardown_confirmation != 'no':
             teardown_confirmation = None
-    return teardown_confirmation
-
-
+            
+    if teardown_confirmation == 'yes':
+        return True
+    else:
+        return False 
+    
+    
 def destroy_environ(settings, group_id=None, instance_id=None, all_VM=False):
     """
         Terminate
@@ -645,7 +665,7 @@ def _status_of_nodeset(nodes, output_dir, settings):
 
 def setup_multi_task(group_id, settings):
     """
-    Transfer the task package to the intances in group_id and install
+    Transfer the task package to the instances in group_id and install
     """
     logger.info("setup_multi_task %s " % group_id)
     packaged_nodes = _get_rego_nodes(group_id, settings)

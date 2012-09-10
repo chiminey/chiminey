@@ -23,6 +23,7 @@ def start():
             sys.exit(1)
 
     environ_fields = ['USER_NAME', 'PASSWORD', 'PRIVATE_KEY',
+                      'VM_SIZE',
                       'PAYLOAD_LOCAL_DIRNAME', 'PAYLOAD',
                       'DEST_PATH_PREFIX', 'DEPENDS', 'COMPILER',
                       'COMPILE_FILE', 'PAYLOAD_CLOUD_DIRNAME',
@@ -154,23 +155,14 @@ def start():
         # that is running the package and no some random VM, probably by
         # logging in and checking state.
         if options.group_id:
-            teardown_confirmation = confirm_teardown()
-            if teardown_confirmation == 'yes':
-                destroy_environ(settings, group_id=options.group_id)
-            elif teardown_confirmation == "no":
-                sys.exit(1)
+            if confirm_teardown(settings, group_id=options.group_id):
+                destroy_environ(settings, group_id=options.group_id)        
         elif options.instance_id:
-            teardown_confirmation = confirm_teardown()
-            if teardown_confirmation == 'yes':
+            if confirm_teardown(settings, instance_id=options.instance_id):
                 destroy_environ(settings, instance_id=options.instance_id)
-            elif teardown_confirmation == "no":
-                sys.exit(1)
         elif 'teardown_all' in args:
-            teardown_confirmation = confirm_teardown()
-            if teardown_confirmation == 'yes':
+            if confirm_teardown(settings, all_VM=True):
                 destroy_environ(settings, all_VM=True)
-            elif teardown_confirmation == "no":
-                sys.exit(1)
         else:
             logger.error("Enter either group id or instance id of the package")
             parser.print_help()
@@ -187,4 +179,7 @@ def start():
 
 
 if __name__ == '__main__':
+    begins = time.time()
     start()
+    ends = time.time()
+    logger.info("Total execution time: %d seconds", ends-begins)
