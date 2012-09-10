@@ -46,7 +46,7 @@ def start():
         # and make fake object to hold them
         setattr(settings, field, field_val)
         logger.debug("%s" % field_val)
-
+    
     # get command line options
     parser = OptionParser()
     parser.add_option("-n", "--nodeid", dest="instance_id",

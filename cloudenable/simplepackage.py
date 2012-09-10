@@ -396,8 +396,8 @@ def get_output(instance_id, output_dir, settings):
     try:
         os.mkdir(output_dir)
     except OSError, e:
-        logger.warning("output directory %s already exists: %s" % (output_dir,e))
-        sys.exit(1)
+        logger.debug("output directory %s already exists: %s" % (output_dir,e))
+        #sys.exit(1)
     logger.info("output directory is %s" % output_dir)
     for file in settings.OUTPUT_FILES:
         _get_file(ssh, os.path.join(settings.DEST_PATH_PREFIX,
@@ -622,20 +622,23 @@ def _status_of_nodeset(nodes, output_dir, settings):
     finished_nodes = []
 
     for node in nodes:
-        if not is_instance_running(node.name, settings):
+        instance_id = node.name
+        if not is_instance_running(instance_id, settings):
             # An unlikely situation where the node crashed after is was
             # detected as registered.
-            logging.error('Instance %s not running' % id)
+            logging.error('Instance %s not running' % instance_id)
             error_nodes.append(node)
             continue
-        if job_finished(node.name, settings):
+        if job_finished(instance_id, settings):
             print "done. output is available"
-            get_output(node.name,
+            get_output(instance_id,
                        "%s/%s" % (output_dir, node.name),
                        settings)
             finished_nodes.append(node)
         else:
-            print "job still running"
+            print "job still running on %s: %s" % (instance_id,
+                                                   _get_node_ip(instance_id,
+                                                                settings))
 
     return (error_nodes, finished_nodes)
 
