@@ -30,7 +30,7 @@ def start():
                       'OUTPUT_FILES', 'TEST_VM_IP',
                       'EC2_ACCESS_KEY', 'EC2_SECRET_KEY',
                       'CLOUD_SLEEP_INTERVAL', 'PRIVATE_KEY_NAME',
-                      'SECURITY_GROUP', 'GROUP_ID_DIR']
+                      'SECURITY_GROUP', 'GROUP_ID_DIR', 'MAX_SEED_INT']
 
     import json
     settings = type('', (), {})()
@@ -46,7 +46,7 @@ def start():
         # and make fake object to hold them
         setattr(settings, field, field_val)
         logger.debug("%s" % field_val)
-    
+
     # get command line options
     parser = OptionParser()
     parser.add_option("-n", "--nodeid", dest="instance_id",
@@ -106,7 +106,7 @@ def start():
                     sys.exit(1)
 
             prepare_multi_input(group_id, options.input_dir,
-                                settings)
+                                settings, options.seed)
 
             try:
                 pids = run_multi_task(group_id, options.input_dir, settings)
@@ -134,7 +134,7 @@ def start():
                 logging.error("specify output directory")
                 parser.print_help()
                 sys.exit(1)
-            
+
             group_id = options.group_id
             is_finished = packages_complete(group_id,
                                             options.output_dir,
@@ -178,7 +178,7 @@ def start():
 
 #    elif 'print' in args:
 #        print_running_node_id(settings)
-    
+
     elif 'info' in args:
         print_all_information(settings)
 

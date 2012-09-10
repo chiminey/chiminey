@@ -73,12 +73,12 @@ def create_environ(number_vm_instances, settings):
         traceback.print_exc(file=sys.stdout)
         #print ''
         #print_running_node_id(settings)
-    
+
     all_running_instances = _wait_for_instance_to_start_running(all_instances, settings)
     _store_md5_on_instances(all_running_instances, settings)
     print ''
     print_running_node_id(settings)
-        
+
 
 
 def _store_md5_on_instances(all_instances, settings):
@@ -185,7 +185,7 @@ def _print_available_groups(settings):
         res = _run_command(ssh, "ls %s " % settings.GROUP_ID_DIR)
         if len(res) > 0 and not res[0] in all_groups:
             all_groups.append(res[0])
-                
+
     if not all_groups:
         logger.info("No available groups")
         sys.exit(1)
@@ -195,20 +195,20 @@ def _print_available_groups(settings):
         for group in all_groups:
             logger.info("Group %d: %s" % (counter,group))
             counter += 1
-        
-        
+
+
 def print_all_information(settings):
     """
-        Print 
+        Print
             - running instances
             - list of groups
     """
     logger.info("Summary of Computing Environment")
-    print ""  
+    print ""
     print_running_node_id(settings)
     print ""
-    _print_available_groups(settings)  
-        
+    _print_available_groups(settings)
+
 
 def is_instance_running(instance_id, settings):
     """
@@ -264,11 +264,11 @@ def confirm_teardown():
         if teardown_confirmation != 'yes' and teardown_confirmation != 'no':
             teardown_confirmation = None
     return teardown_confirmation
-    
-                
+
+
 def destroy_environ(settings, group_id=None, instance_id=None, all_VM=False):
     """
-        Terminate  
+        Terminate
             - all instances, or
             - a group of instances, or
             - a single instance
@@ -282,11 +282,11 @@ def destroy_environ(settings, group_id=None, instance_id=None, all_VM=False):
         all_instances = _get_rego_nodes(group_id, settings)
     elif instance_id:
         all_instances.append(_get_node(instance_id, settings))
-    
+
     if not all_instances:
         logging.error("No running instance(s)")
         sys.exit(1)
-        
+
     logger.info("Terminating %d VM instance(s)" %len(all_instances))
     for instance in all_instances:
         try:
@@ -323,7 +323,7 @@ def setup_task(instance_id, settings):
              compiler_command=settings.COMPILER)
 
 
-def prepare_input(instance_id, input_dir, settings):
+def prepare_input(instance_id, input_dir, settings,seed):
     """
         Take the input_dir and move all the contained files to the
         instance and ready
@@ -653,6 +653,9 @@ def setup_multi_task(group_id, settings):
     import datetime
     logger.debug("packaged_nodes = %s" % packaged_nodes)
 
+
+
+
     def setup_worker(node_id):
         now = datetime.datetime.now()
         logger.debug("%s says Hello World at time: %s" % (node_id, now))
@@ -714,7 +717,7 @@ def run_multi_task(group_id, output_dir, settings):
     return pids
 
 
-def prepare_multi_input(group_id, input_dir, settings):
+def prepare_multi_input(group_id, input_dir, settings, seed):
     """
         Take the input_dir and move all the contained files to the
         instances in the group and ready
@@ -723,6 +726,22 @@ def prepare_multi_input(group_id, input_dir, settings):
 
     nodes = _get_rego_nodes(group_id, settings)
 
+
+
+    import random
+    random.seed(seed)
+    seeds = {}
+    for node in nodes:
+        # FIXME: is the random supposed to be positive or negative?
+        seeds[node] = random.randrange(0,settings.MAX_SEED_INT)
+
+    if seed:
+        print ("seed for full package run = %s" % seed)
+    else:
+        print ("seeds for each node in group %s = %s" % (group_id,[(x.name,seeds[x]) for x in seeds.keys()]))
+
+
+    logger.debug("seeds = %s" % seeds)
     for node in nodes:
         instance_id = node.name
         logger.info("prepare_input %s %s" % (instance_id, input_dir))
@@ -745,3 +764,10 @@ def prepare_multi_input(group_id, input_dir, settings):
         _run_command(ssh, "cd %s; sed -i '/^$/d' rmcen.inp" %
                     (os.path.join(settings.DEST_PATH_PREFIX,
                                   settings.PAYLOAD_CLOUD_DIRNAME)))
+
+        _run_command(ssh, "cd %s; sed -i 's/[0-9]*[ \t]*iseed.*$/%s\tiseed/' rmcen.inp" %
+                    (os.path.join(settings.DEST_PATH_PREFIX,
+                                  settings.PAYLOAD_CLOUD_DIRNAME), seeds[node]))
+
+
+
