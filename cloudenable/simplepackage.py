@@ -211,7 +211,7 @@ def print_all_information(settings, all_instances=None):
             
     counter = 1
     if all_instances:
-        print '\t No. \t   ID\t\tIP\t   VMtype\t\tGroup'
+        print '\t No. \t   ID\t\tIP\t   Package\t\tGroup'
     for instance in all_instances:
         instance_id = instance.name
         ip = _get_node_ip(instance_id, settings)
@@ -220,10 +220,10 @@ def print_all_information(settings, all_instances=None):
                                        password=settings.PASSWORD,
                                        settings=settings)
         group_name = _run_command(ssh, "ls %s " % settings.GROUP_ID_DIR)
-        vm_type = 'NeCTAR'
+        vm_type = ' Other'
         res = _run_command(ssh, "[ -d %s ] && echo exists" % settings.GROUP_ID_DIR)
         if 'exists\n' in res:
-            vm_type = ' RMIT '
+            vm_type = ' RMIT  '
             
         print '\t Node %d: %s %s %s %s' % (counter, instance_id,
                                         ip, vm_type, group_name)
