@@ -45,7 +45,7 @@ def _create_cloud_connection(settings):
 
 def create_environ(number_vm_instances, settings):
     """
-        Create the Nectar Node and return id
+        Create the Nectar VM instance and return id
     """
     logger.info("create_environ")
     conn = _create_cloud_connection(settings)
@@ -60,30 +60,33 @@ def create_environ(number_vm_instances, settings):
     #print settings.PRIVATE_KEY_NAME
     try:
         all_instances = []
-        logger.info("Creating %d VM instance(s)" % number_vm_instances)
+        print(" Creating %d VM instance(s)" % number_vm_instances)
         instance_count = 0
         while instance_count < number_vm_instances:
-            new_instance = conn.create_node(name="New Centos Node",
+            new_instance = conn.create_node(name="New Centos VM instance",
                 size=size1, image=image1,
                 ex_keyname=settings.PRIVATE_KEY_NAME,
                 ex_securitygroup=settings.SECURITY_GROUP)
             all_instances.append(new_instance)
             instance_count += 1
-    except Exception:
-        traceback.print_exc(file=sys.stdout)
-        #print ''
-        #print_running_node_id(settings)
-
-    all_running_instances = _wait_for_instance_to_start_running(all_instances, settings)
-    _store_md5_on_instances(all_running_instances, settings)
-    print ''
-    print_running_node_id(settings)
-
-
+    except Exception, e:
+        if "QuotaError" in e[0]:
+            print " Quota Limit Reached: "
+            print "\t %s instances are created." % len(all_instances)
+            print "\t Additional %s instances will not be created" % (number_vm_instances - len(all_instances))
+        else:
+            traceback.print_exc(file=sys.stdout)
+       
+    if all_instances:
+        all_running_instances = _wait_for_instance_to_start_running(all_instances, settings)
+        _store_md5_on_instances(all_running_instances, settings)
+        print 'Created VM instances:'
+        print_all_information(settings, all_running_instances)
+        
 
 def _store_md5_on_instances(all_instances, settings):
     group_id = _generate_group_id(all_instances)
-    logger.info("Creating group '%s'", group_id)
+    print " Creating group '%s'" % group_id
     for instance in all_instances:
         # login and check for md5 file
 
@@ -197,7 +200,7 @@ def _print_available_groups(settings):
             counter += 1
 
 
-def print_all_information(settings, all_instances=None):
+def print_all_information(settings, all_instances):
     """
         Print information about running instances
             - ID
@@ -206,12 +209,11 @@ def print_all_information(settings, all_instances=None):
             - list of groups
     """
     if not all_instances:
-        conn = _create_cloud_connection(settings)
-        all_instances = conn.list_nodes()
-            
+        print '\t No running instances'
+        sys.exit(1)
+        
     counter = 1
-    if all_instances:
-        print '\tNo.\tID\t\tIP\t\tPackage\t\tGroup'
+    print '\tNo.\tID\t\tIP\t\tPackage\t\tGroup'
     for instance in all_instances:
         instance_id = instance.name
         ip = _get_node_ip(instance_id, settings)
@@ -228,7 +230,6 @@ def print_all_information(settings, all_instances=None):
         if not group_name:
             group_name = '-'
         
-            
         print '\t%d:\t%s\t%s\t%s\t\t%s' % (counter, instance_id,
                                         ip, vm_type, group_name)
         counter += 1
@@ -288,7 +289,8 @@ def collect_instances(settings, group_id=None, instance_id=None, all_VM=False):
     elif group_id:
         all_instances = _get_rego_nodes(group_id, settings)
     elif instance_id:
-        all_instances.append(_get_node(instance_id, settings))
+        if is_instance_running(instance_id, settings):
+            all_instances.append(_get_node(instance_id, settings))
         
     return all_instances
 
@@ -323,6 +325,7 @@ def destroy_environ(settings, all_instances):
         sys.exit(1)
 
     logger.info("Terminating %d VM instance(s)" %len(all_instances))
+    conn = _create_cloud_connection(settings)
     for instance in all_instances:
         try:
             conn.destroy_node(instance)
