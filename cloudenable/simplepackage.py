@@ -197,17 +197,37 @@ def _print_available_groups(settings):
             counter += 1
 
 
-def print_all_information(settings):
+def print_all_information(settings, all_instances=None):
     """
-        Print
-            - running instances
+        Print information about running instances
+            - ID
+            - IP
+            - VM type
             - list of groups
     """
-    logger.info("Summary of Computing Environment")
-    print ""
-    print_running_node_id(settings)
-    print ""
-    _print_available_groups(settings)
+    if not all_instances:
+        conn = _create_cloud_connection(settings)
+        all_instances = conn.list_nodes()
+            
+    counter = 1
+    if all_instances:
+        print '\t No. \t   ID\t\tIP\t   VMtype\t\tGroup'
+    for instance in all_instances:
+        instance_id = instance.name
+        ip = _get_node_ip(instance_id, settings)
+        ssh = _open_connection(ip_address=ip,
+                                       username=settings.USER_NAME,
+                                       password=settings.PASSWORD,
+                                       settings=settings)
+        group_name = _run_command(ssh, "ls %s " % settings.GROUP_ID_DIR)
+        vm_type = 'NeCTAR'
+        res = _run_command(ssh, "[ -d %s ] && echo exists" % settings.GROUP_ID_DIR)
+        if 'exists\n' in res:
+            vm_type = ' RMIT '
+            
+        print '\t Node %d: %s %s %s %s' % (counter, instance_id,
+                                        ip, vm_type, group_name)
+        counter += 1
 
 
 def is_instance_running(instance_id, settings):
@@ -267,12 +287,8 @@ def confirm_teardown(settings, group_id=None, instance_id=None, all_VM=False):
         all_instances.append(_get_node(instance_id, settings))
     
     print "Instances to be deleted are "
-    counter = 1
-    for instance in all_instances:
-        print '\t Node %d: %s %s' % (counter, instance.name,
-                                  _get_node_ip(instance.name, settings))
-        counter += 1
-        
+    print_all_information(settings, all_instances)
+    
     teardown_confirmation = None
     while not teardown_confirmation:
         teardown_confirmation = raw_input(

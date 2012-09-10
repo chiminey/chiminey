@@ -172,6 +172,7 @@ def start():
 #        print_running_node_id(settings)
 
     elif 'info' in args:
+        logger.info("Summary of Computing Environment")
         print_all_information(settings)
 
     else:
