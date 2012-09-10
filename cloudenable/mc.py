@@ -155,14 +155,17 @@ def start():
         # that is running the package and no some random VM, probably by
         # logging in and checking state.
         if options.group_id:
-            if confirm_teardown(settings, group_id=options.group_id):
-                destroy_environ(settings, group_id=options.group_id)        
+            all_instances = collect_instances(settings, group_id=options.group_id)
+            if confirm_teardown(settings, all_instances):
+                destroy_environ(settings, all_instances)        
         elif options.instance_id:
-            if confirm_teardown(settings, instance_id=options.instance_id):
-                destroy_environ(settings, instance_id=options.instance_id)
+            all_instances = collect_instances(settings, instance_id=options.instance_id)
+            if confirm_teardown(settings, all_instances):
+                destroy_environ(settings, all_instances)
         elif 'teardown_all' in args:
-            if confirm_teardown(settings, all_VM=True):
-                destroy_environ(settings, all_VM=True)
+            all_instances = collect_instances(settings, all_VM=True)
+            if confirm_teardown(settings, all_instances):
+                destroy_environ(settings, all_instances)
         else:
             logger.error("Enter either group id or instance id of the package")
             parser.print_help()
@@ -172,7 +175,7 @@ def start():
 #        print_running_node_id(settings)
 
     elif 'info' in args:
-        logger.info("Summary of Computing Environment")
+        print "Summary of Computing Environment"
         print_all_information(settings)
 
     else:
