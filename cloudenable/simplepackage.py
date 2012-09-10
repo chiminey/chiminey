@@ -229,7 +229,7 @@ def print_all_information(settings, all_instances=None):
             group_name = '-'
         
             
-        print '\t%d:\t%s\t%s\t%s\t%s' % (counter, instance_id,
+        print '\t%d:\t%s\t%s\t%s\t\t%s' % (counter, instance_id,
                                         ip, vm_type, group_name)
         counter += 1
 
