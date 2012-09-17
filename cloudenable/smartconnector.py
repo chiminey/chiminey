@@ -1,4 +1,6 @@
-class Stage(Object):
+import time
+
+class Stage(object):
 
     def __init__(self):
         pass
@@ -22,31 +24,37 @@ class UI(object):
     pass
 
 class Configure(Stage, UI):
-
+    
     def triggered(self, filesystem):
         return True
-
-
+    
     def process(self, filesystem):
         # get the input from the user to override config settings
-
+        pass
+        
     def output(self, filesystem):
         # store in filesystem
+        pass
 
-class FileSystem(Object):
-    pass
+class FileSystem(object):
+    def create_initial_filesystem(self):
+    # create standardised metdata files and data files in filesystem
+        pass
 
 
 class Create(Stage):
 
     def __init__(self):
         pass
+    
+    def _load_metadata_file(self):
+        pass
 
-    def triggered(self):
+    def triggered(self, filesystem):
         """ return true if the directory pattern triggers this stage
         """
         self.metadata = self._load_metadata_file()
-        return metadata
+        return self.metadata
 
     def _transform_the_filesystem(filesystem, settings):
         key =  settings['ec2_access_key']
@@ -89,35 +97,41 @@ class Run(Stage):
 
 class Check(Stage):
     pass
-
+ 
 
 class Teardown(Stage):
     pass
 
 
-class SmartConnector():
-
+class SmartConnector(object):
+    stages = []
     def register(self,stage):
-        stages.append(stage)
-
-
-def create_initial_filesystem(filesystem):
-    # create standardised metdata files and data files in filesystem
-    pass
+        self.stages.append(stage)
 
 
 def mainloop():
 
     smart_con = SmartConnector()
-    filesys = Filesystem()
+    filesys = FileSystem()
 
-    create_initial_filesystem(filesys)
+    filesys.create_initial_filesystem()
 
-    for stage in (Configure, Create, Setup, Run, Check, TearDown):
+    for stage in (Configure(), Create(), Setup(), Run(), Check(), Teardown()):
         smart_con.register(stage)
+        print "Here", stage
+    
+    #print smart_con.stages
 
+    #while loop is infinite
     while (True):
         for stage in smart_con.stages:
-            if stage.triggered(filesys)
+            print "Before error",stage
+            if stage.triggered(filesys):
                 stage.process(filesys)
                 stage.output(filesys)
+                
+if __name__ == '__main__':
+    begins = time.time()
+    mainloop()
+    ends = time.time()
+    logger.info("Total execution time: %d seconds", ends-begins)                
