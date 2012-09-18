@@ -187,4 +187,4 @@ if __name__ == '__main__':
     begins = time.time()
     start()
     ends = time.time()
-    logger.info("Total execution time: %d seconds", ends-begins)
+    logger.info("Total execution time: %d seconds", % (ends-begins))
