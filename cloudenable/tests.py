@@ -24,6 +24,106 @@ from libcloud.compute.drivers.ec2 import EucNodeDriver
 
 logger = logging.getLogger(__name__)
 
+from smartconnector import Stage
+from smartconnector import SequentialStage
+from smartconnector import SmartConnector
+
+
+class CounterStage(Stage):
+
+    def __init__(self, context):
+        context['count'] = 0
+
+    def triggered(self, context):
+        count = context['count']
+        return (count < 10)
+
+    def process(self, context):
+
+        self.count = context['count']
+        self.count += 1
+
+    def output(self, context):
+        context['count'] = self.count
+
+
+class TestStage(Stage):
+    """ Basic stage with counter for testing """
+
+    def __init__(self, context, key="teststage"):
+        self.must_trigger = True
+        self.test_count = 0
+        self.key = key
+        context[key] = 0
+
+    def triggered(self, context):
+        return self.must_trigger
+
+    def process(self, context):
+        pass
+
+    def output(self, context):
+        context[self.key] += 1
+        pass
+
+
+class ConnectorTests(unittest.TestCase):
+
+
+    def setUp(self):
+        pass
+
+    def test_simple_looper(self):
+        """
+        Creates a simple 0-10 counter from looping stage
+        """
+
+        context = {}
+        s = CounterStage(context)
+        while s.triggered(context):
+            s.process(context)
+            s.output(context)
+
+        self.assertEquals(context['count'],10)
+
+    def test_smart_connector(self):
+        """
+        Creates a simple smart connector
+        """
+        context = {}
+        s1 = TestStage(context)
+        ss1 = SmartConnector(s1)
+        ss1.process(context)
+        self.assertEquals(context,{'teststage':1})
+
+    def test_seq_stage(self):
+        """
+        Creates a sequential Stage
+        """
+        context = {}
+        s1 = TestStage(context)
+        s2 = TestStage(context)
+        s3 = TestStage(context)
+        s4 = TestStage(context)
+        s5 = TestStage(context)
+
+        # whether we will drop out straight away or continue.
+
+        finished = TestStage(context,"finished")
+
+        # how to convert input to output
+        convert = TestStage(context,"convert")
+
+        ss1 = SequentialStage([s1, finished, convert,
+                               s2, finished, convert,
+                               s3, finished, convert,
+                               s4, finished, convert])
+
+        ss1.process(context)
+        self.assertEquals(context,{'finished': 4, 'convert': 4, 'teststage': 4})
+
+
+
 
 class CloudTests(unittest.TestCase):
     # TODO: Tests only the most basic run throughs of the operations with
