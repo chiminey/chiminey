@@ -27,3 +27,4 @@ python mc.py teardown_all
 Notes
 - We support python 2.6
 - Check with Daniel the version of python that is being used in Physics department
+- PyFilesystem requires at least Python 2.5
