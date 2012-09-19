@@ -1,7 +1,15 @@
 import time
 import os
 import utility
+from fs.osfs import OSFS
+import shutil
+import logging
+import logging.config
 
+
+
+logging.config.fileConfig('logging.conf')
+logger = logging.getLogger(__name__)
 #Every stage may be thrown away after completion 
 # This stage has no impact on other stages
 class Stage(object):
@@ -27,13 +35,40 @@ class UI(object):
     pass
 
 class FileSystem(object):
-    #create, retrieve, update, delete
-    # collection of files
-    def create_initial_filesystem(self):
-    # create standardised metdata files and data files in filesystem
-        pass
+    #create, retrieve, update, delete '~/connectorfs'
+    def create_initial_filesystem(self, path_fs):
+        connector_fs = OSFS(path_fs, create=True)
     
+    def create_file(self, path_fs, file_name):
+        file_path = path_fs + "/" + file_name
+        if os.path.exists(file_path):
+            logger.error("File %s already exists" % file_path)
+        else:
+            f = open(file_path,'w+')
+            f.close()
     
+    def create_dir(self, path_fs, dir_name):
+        dir_path = path_fs + "/" + dir_name
+        if os.path.exists(dir_path):
+            logger.error("Directory %s already exists" % dir_path)
+        else:
+            os.makedirs(dir_path)
+            
+    def delete_file(self, path_fs, file_name):
+        file_path = path_fs + "/" + file_name
+        if os.path.exists(file_path):
+            os.remove(file_path)            
+        else:
+            logger.warn("File %s does not exist" % file_path)
+    
+    def delete_dir(self, path_fs, dir_name):
+        dir_path = path_fs + "/" + dir_name
+        if os.path.exists(dir_path):
+            shutil.rmtree(dir_path)
+        else:
+            logger.warn("Directory %s does not exist" % dir_path)
+        
+     
 class Configure(Stage, UI):
     """
         - Load config.sys file into the filesystem
@@ -70,19 +105,16 @@ class Configure(Stage, UI):
 
 class Create(Stage):
 
-    def __init__(self):
-        pass
-    
-    def _load_metadata_file(self):
-        pass
-
     def triggered(self, context):
         """ return true if the directory pattern triggers this stage
         """
         #check the context for existence of a file system or other
         # key words, then if true, trigger
-        self.metadata = self._load_metadata_file()
-        return True
+        #self.metadata = self._load_metadata_file()
+        
+        if True:
+            self.settings = utility.load_generic_settings()
+            return True
 
     def _transform_the_filesystem(filesystem, settings):
         key =  settings['ec2_access_key']
@@ -111,6 +143,7 @@ class Create(Stage):
         #f = codecs.open('metadata.json', encoding='utf-8')
         #import json
         #metadata = json.loads(f.read())
+        print "Security Group ", self.settings.SECURITY_GROUP
         pass
     
   
@@ -157,6 +190,10 @@ def mainloop():
     
     smart_con = SmartConnector()
     filesys = FileSystem()
+    path_fs = '/home/iyusuf/connectorFS'
+    filesys.create_initial_filesystem(path_fs)
+    #filesys.create_file(path_fs, 'Iman')
+    filesys.delete_file(path_fs, 'Iman')
 
     #filesys.create_initial_filesystem()
     #filesys.load_generic_settings()
