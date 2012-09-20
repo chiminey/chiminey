@@ -234,7 +234,7 @@ class Teardown(Stage):
         pass
 
 
-class ParallelConnector(Stage):
+class ParallelStage(Stage):
     def triggered(self, context):
         return True
 
