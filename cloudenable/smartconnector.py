@@ -1,14 +1,6 @@
 import time
 import os
 import utility
-from fs.osfs import OSFS
-import shutil
-import logging
-import logging.config
-
-
-logging.config.fileConfig('logging.conf')
-logger = logging.getLogger(__name__)
 #Every stage may be thrown away after completion
 
 class Error(Exception):
@@ -41,63 +33,6 @@ class Stage(object):
 class UI(object):
     pass
 
-
-class FileSystem(object):
-
-    #create, retrieve, update, delete '~/connectorfs'
-    def create_initial_filesystem(self, initial_filesystem_name):
-        self.toplevel_filesystem = initial_filesystem_name
-        self.connector_fs = OSFS(initial_filesystem_name, create=True)
-        logger.info("Top level filesystem '%s' CREATED" % initial_filesystem_name)
-        
-    def create_filesystem(self, filesystem_name):
-        absolute_filesystem_path = self.toplevel_filesystem + "/" + filesystem_name
-        if self.connector_fs.exists(filesystem_name):
-            logger.error("Filesystem '%s' already exists" % absolute_filesystem_path)
-        else:
-            self.connector_fs.makedir(filesystem_name)
-            logger.info("Filesystem '%s' CREATED" % absolute_filesystem_path)
-
-    def delete_filesystem(self, filesystem_name):
-        absolute_filesystem_path = self.toplevel_filesystem + "/" + filesystem_name
-        if self.connector_fs.exists(filesystem_name):
-           self.connector_fs.removedir(filesystem_name)
-           logger.info("Filesystem '%s' DELETED" % absolute_filesystem_path)
-        else:
-            logger.error("Filesystem '%s' does not exist" % absolute_filesystem_path)
-        
-            
-    def create_file(self, src_file, dest_filesystem=None):    
-        if not os.path.exists(src_file):
-             logger.error("Source file '%s' does not exist" % src_file)  
-             return False
-                  
-        if not dest_filesystem:
-            dest_filesystem = self.toplevel_filesystem
-        elif not self.connector_fs.isdir(dest_filesystem):
-            filesystem_path = os.path.dirname(dest_filesystem)+'/'
-            if  filesystem_path == self.connector_fs.getsyspath('/'):
-                pass
-            else:
-                try:
-                    self.connector_fs.unsyspath(filesystem_path)
-                except:
-                    logger.error("Destination filesystem '%s' does not exist" % dest_filesystem)
-                    return False
-                    
-        shutil.copy(src_file, dest_filesystem)
-        logger.info("File '%s' copied to '%s'" % (src_file, dest_filesystem))
-        return True
-   
-    def delete_file(self, file_name):
-        absolute_file_path = self.toplevel_filesystem + "/" + file_name
-        if self.connector_fs.exists(file_name):
-            self.connector_fs.remove(file_name)
-            logger.info("File '%s' DELETED" % absolute_file_path)
-        else:
-            logger.warn("File '%s' does not exists" % absolute_file_path)
-        
-       
 
 
 
@@ -322,7 +257,17 @@ def mainloop():
     filesys.delete_filesystem("newFS")
     filesys.delete_file("Iman")
     filesys.create_file('/home/iyusuf/Butini', dest_filesystem='/home/iyusuf/connectorFS/Seid')
-    filesys.update_file('Butini')
+    
+    file_name='tobeupdated'
+    absolute_path=filesys.toplevel_filesystem+"/"+file_name
+    
+    f= open(absolute_path, 'w')
+    f.write("Line 1")
+    f.write("line 2")
+    f.close()
+    
+    
+    #filesys.update_file('Butini')
     #filesys.delete_file(path_fs, 'Iman')
 
     #filesys.create_initial_filesystem()
