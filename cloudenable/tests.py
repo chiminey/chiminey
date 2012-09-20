@@ -8,6 +8,7 @@ import logging.config
 import paramiko
 import json
 import random
+import filesystem
 
 from simplepackage import _create_cloud_connection
 from simplepackage import setup_multi_task
@@ -35,7 +36,6 @@ from smartconnector import Configure, Create, Run, Check, Teardown, ParallelStag
 from hrmcconnectors import Setup
 from hrmcconnectors import FileElement
 from hrmcconnectors import FileSystem
-
 
 class CounterStage(Stage):
 
@@ -75,7 +75,7 @@ class TestStage(Stage):
         pass
 
 
-class SetupStageTests(unittest.TestCase):
+ class SetupStageTests(unittest.TestCase):
 
     def test_simple(self):
         group_id = 'kjdfashkadjfghkjadzfhgkdfasj'
@@ -89,6 +89,36 @@ class SetupStageTests(unittest.TestCase):
         self.assertEquals(s1.group_id, group_id)
 
 
+ 
+
+
+
+class FileSystemTests(unittest.TestCase):
+    
+    def setUp(self):
+        pass
+    
+    def test_simpletest(self):
+        fsys = FileSystem()
+        
+        f1 = FileElement("c")
+        fsys.create("a/b",f1)
+        
+        f3 = fsys.retrieve("a/b/c")        
+        line = f3.retrieve_line(2)
+        print line
+        
+        f2 = FileElement("c")
+        lines = ["hello","iman"]
+        f2.create(lines)
+        
+        fsys.update("a/b",f2) #whole repace
+
+        fsys.update("a/b/d",f2)
+        
+        fsys.delete("a/b/c")
+        #assert statement
+        
 class ConnectorTests(unittest.TestCase):
 
 
