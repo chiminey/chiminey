@@ -6,6 +6,7 @@ from flexmock import flexmock
 import logging
 import logging.config
 import paramiko
+import json
 import random
 
 from simplepackage import _create_cloud_connection
@@ -17,6 +18,7 @@ from simplepackage import packages_complete
 from simplepackage import collect_instances
 from simplepackage import destroy_environ
 from simplepackage import NodeState
+
 import simplepackage
 
 from libcloud.compute.drivers.ec2 import EucNodeDriver
@@ -27,6 +29,12 @@ logger = logging.getLogger(__name__)
 from smartconnector import Stage
 from smartconnector import SequentialStage
 from smartconnector import SmartConnector
+from smartconnector import Configure, Create, Run, Check, Teardown, ParallelStage
+
+
+from hrmcconnectors import Setup
+from hrmcconnectors import FileElement
+from hrmcconnectors import FileSystem
 
 
 class CounterStage(Stage):
@@ -65,6 +73,20 @@ class TestStage(Stage):
     def output(self, context):
         context[self.key] += 1
         pass
+
+
+class SetupStageTests(unittest.TestCase):
+
+    def test_simple(self):
+        group_id = 'kjdfashkadjfghkjadzfhgkdfasj'
+        f1 = FileElement()
+        f1.create(json.dumps({'group_id':group_id}))
+        fs = FileSystem()
+        fs.create("/config.sys",f1)
+        context = {'filesys':fs}
+        s1 = Setup()
+        self.assertEquals(s1.triggered(context), True)
+        self.assertEquals(s1.group_id, group_id)
 
 
 class ConnectorTests(unittest.TestCase):
@@ -122,6 +144,52 @@ class ConnectorTests(unittest.TestCase):
         ss1.process(context)
         self.assertEquals(context,{'finished': 4, 'convert': 4, 'teststage': 4})
 
+    def test_seedrun(self):
+        """
+        Creates a single multi-seed run through
+        """
+        context = {}
+        run = TestStage(context)
+        configure = Configure()
+        create =  Create()
+        setup = Setup()
+        run = Run()
+        check = Check()
+        teardown = Teardown()
+
+        seed_run = SequentialStage([configure, create, setup, run, check, teardown])
+
+        seed_run.process(context)
+        # TODO: check state of config
+
+    def test_seed_component(self):
+
+        context = {}
+        run = TestStage(context)
+        configure = Configure()
+        create = Create()
+        setup = Setup()
+        run = Run()
+        check = Check()
+        teardown = Teardown()
+
+        seed_run = SequentialStage([configure, create, setup, run, check, teardown])
+
+        seed_run.process(context)
+
+    def test_daisychain(self):
+
+        # each accepts a filesystem and either uses or creates sub filesystem
+        # each accepts a context and can change as needed.
+        context = {}
+
+        s1 = TestStage(context)
+        s2 = TestStage(context)
+        s3 = TestStage(context)
+        s4 = TestStage(context)
+
+        p = ParallelStage()
+        s = SequentialStage([s1,s2,s3,s4])
 
 
 
