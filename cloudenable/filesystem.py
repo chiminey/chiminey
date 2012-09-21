@@ -15,129 +15,91 @@ logger = logging.getLogger(__name__)
 class FileSystem(object):
     def __init__(self, global_filesystem):
         self._create_global_filesystem(global_filesystem)
-       
+
     def __init__(self, global_filesystem, local_filesystem):
-        self._create_global_filesystem(global_filesystem)        
+        self._create_global_filesystem(global_filesystem)
         if self.connector_fs.exists(local_filesystem):
-            logger.error("Local filesystem '%s' already exists under '%s'" % (local_filesystem, global_filesystem))
+            logger.error("Local filesystem '%s' already exists under '%s'"
+                         % (local_filesystem, global_filesystem))
         else:
             self.connector_fs.makedir(local_filesystem)
-            logger.info("Local filesystem '%s' CREATED under '%s' " % (local_filesystem, global_filesystem))
-    
+            logger.info("Local filesystem '%s' CREATED under '%s' "
+                        % (local_filesystem, global_filesystem))
+
     def _create_global_filesystem(self, global_filesystem):
         self.global_filesystem = global_filesystem
         self.connector_fs = OSFS(global_filesystem, create=True)
         logger.info("Global filesystem '%s' CREATED " % global_filesystem)
-    
+
     def create(self, local_filesystem, file_element, message='CREATED'):
         if not self.connector_fs.exists(local_filesystem):
-            logger.error("Destination filesystem '%s' does not exist" % local_filesystem)
+            logger.error("Destination filesystem '%s' does not exist"
+                         % local_filesystem)
             return False
-    
-        destination_file_name = self.global_filesystem + "/" + local_filesystem + "/" + file_element.name
+
+        destination_file_name = self.global_filesystem + "/" + local_filesystem + "/" + file_element.getName()
         destination_file = open(destination_file_name, 'w')
-        destination_file.write(file_element.content)
+        destination_file.write(file_element.getContent())
         destination_file.close()
         logger.info("File '%s' %s" % (destination_file_name, message))
         return True
-        
-        
-    def retrieve(self, path):
-        # check for missing path# MUST RETURN filesystem
-        pass
+     # check for missing path# MUST RETURN filesystem
+    def retrieve(self, file_to_be_retrieved):
+        if not self.connector_fs.exists(file_to_be_retrieved):
+            logger.error("File'%s' does not exist" % file_to_be_retrieved)
+            return None
 
+        retrieved_file_absolute_path = self.global_filesystem + "/" + file_to_be_retrieved
+        retrieved_file = open(retrieved_file_absolute_path, 'r')
+        retrieved_file_content = retrieved_file.read()
+        retrieved_file_name = os.path.basename(file_to_be_retrieved)
+        retrieved_file.close()
+        
+        file_element = FileElement(retrieved_file_name)
+        file_element.setContent(retrieved_file_content)
+        return file_element
+    
     def update(self, local_filesystem, file_element):
-        file_to_be_updated = local_filesystem + "/" + file_element.name
+        file_to_be_updated = local_filesystem + "/" + file_element.getName()
         if not self.connector_fs.exists(file_to_be_updated):
             logger.error("File'%s' does not exist" % file_to_be_updated)
             return False
-        
-        #logger.info("Updating file '%s'" % file_to_be_updated)
+       #logger.info("Updating file '%s'" % file_to_be_updated)
         return self.create(local_filesystem, file_element, message="UPDATED")
-    
-    def delete(self, local_filesystem, file_element):
-        file_to_be_deleted = local_filesystem + "/" + file_element.name
+
+    def delete(self, file_to_be_deleted):
         if not self.connector_fs.exists(file_to_be_deleted):
             logger.error("File'%s' does not exist" % file_to_be_deleted)
             return False
-        
+
         self.connector_fs.remove(file_to_be_deleted)
         logger.info("File '%s' DELETED" % file_to_be_deleted)
         return True
-    
+
 
 class FileElement(object):
     # Assume that whole file is contained in one big string
     # as it makes json parsing easier
+    _name = ""
+    _content = ""
     def __init__(self, name):
-        self.name = name
+        self._name = name
         self.content = ""
 
-    def create(self,content):
-        self.content = content
+    def create(self, content):
+        self._content = content
 
     def retrieve(self):
         return self.content
+    
+    def getName(self):
+        return self._name
+    
+    def getContent(self):
+        return self._content
 
-
-
-
-'''class FileElement(object):
+    def setName(self, name):
+        self._name = name
     
-    # lines = array of string
-    
-    # lines = File
-    def __init__(self,name):
-        self.name = name
-        
-    def create(self, lines):
-        self.lines = lines
-        
-    def retrieve(self):
-        return self.lines
-    
-    def retrieve(self, line_no):
-        return self.lines[line_no]
-    
-    def append_line(self, line):
-        self.lines.append(line)
-'''
-    
-def mainloop():
-    global_filesystem = '/home/iyusuf/connect'
-    local_filesystem = 'a'
-    fsys = FileSystem(global_filesystem, local_filesystem)
-        
-    f1 = FileElement("c")
-    contents = "hello\n" + "iman\n" +"seid\n"+"osman\n"
-    f1.create(contents)
-    fsys.create(local_filesystem, f1)
-    
-    f2 = FileElement("c")
-    contents = "New Greetings to \n" + "iman\n" +"seid\n"+"osman\n"
-    f2.create(contents)
-    
-    f3 = FileElement("ff")
-    contents = "New Greetings to \n" + "iman\n" +"seid\n"+"osman\n"
-    f3.create(contents)
-    
-    print "Should be true", fsys.update(local_filesystem, f2)
-    
-    print "Shouold be false", fsys.update(local_filesystem, f3), f2.name
-    
-        
-    #    fsys.update("a/b",f2) #whole repace
-
-     #   fsys.update("a/b/d",f2)
-        
-      #  fsys.delete("a/b/c")
-        
-
-
-
-if __name__ == '__main__':
-    begins = time.time()
-    mainloop()
-    ends = time.time()
-    print "Total execution time: %d seconds" % (ends-begins)
-    
+    def setContent(self, content):
+        self._content = content
