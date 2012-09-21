@@ -98,7 +98,7 @@ class SetupStageTests(unittest.TestCase):
 
 
 class FileSystemTests(unittest.TestCase):
-    
+    HOME_DIR = os.path.expanduser("~")
     def setUp(self):
         pass
     
@@ -108,7 +108,7 @@ class FileSystemTests(unittest.TestCase):
         file_element.create(file_element_content)
         self.assertEquals(file_element_content, file_element.content)
         
-        global_filesystem = '/home/iyusuf/test_globalFS'
+        global_filesystem = self.HOME_DIR+'/test_globalFS'
         local_filesystem = 'test_localFS'
         filesystem = FileSystem(global_filesystem, local_filesystem)
         filesystem.create(local_filesystem, file_element)
@@ -117,7 +117,7 @@ class FileSystemTests(unittest.TestCase):
         self.assertTrue(os.path.exists(absolute_path_file))
         
     def test_update(self):
-        global_filesystem = '/home/iyusuf/test_globalFS'
+        global_filesystem = self.HOME_DIR+'/test_globalFS'
         local_filesystem = 'test_localFS'
         filesystem = FileSystem(global_filesystem, local_filesystem)
         
@@ -125,13 +125,34 @@ class FileSystemTests(unittest.TestCase):
         updated_file_element_content = "New Greetings\n" + "iman\n" +"and\n"+"seid\n"
         updated_file_element.create(updated_file_element_content)
         
-        has_updated = filesystem.update(local_filesystem, updated_file_element)
-        self.assertTrue(has_updated)
+        is_updated = filesystem.update(local_filesystem, updated_file_element)
+        self.assertTrue(is_updated)
         
         updated_file_element.name = "unknown_file"
-        has_updated = filesystem.update(local_filesystem, updated_file_element)
-        self.assertFalse(has_updated)
+        is_updated = filesystem.update(local_filesystem, updated_file_element)
+        self.assertFalse(is_updated)
         
+    def test_delete(self):
+        file_element =  FileElement("test_file_delete")
+        file_element_content = "hello\n" + "iman\n" +"and\n"+"seid\n"
+        file_element.create(file_element_content)
+        
+        global_filesystem = self.HOME_DIR+'/test_globalFS'
+        local_filesystem = 'test_localFS'
+        filesystem = FileSystem(global_filesystem, local_filesystem)
+        is_created = filesystem.create(local_filesystem, file_element)
+        self.assertTrue(is_created)
+        
+        if is_created:
+            is_deleted = filesystem.delete(local_filesystem, file_element)
+            self.assertTrue(is_deleted)
+            absolute_path_file = global_filesystem + "/" + local_filesystem + "/"+ file_element.name
+            self.assertFalse(os.path.exists(absolute_path_file))
+        
+        file_element.name = "unknown"
+        is_deleted = filesystem.delete(local_filesystem, file_element)
+        self.assertFalse(is_deleted)
+            
       
     """
      def test_simpletest(self):
