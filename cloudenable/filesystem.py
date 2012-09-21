@@ -29,7 +29,7 @@ class FileSystem(object):
         self.connector_fs = OSFS(global_filesystem, create=True)
         logger.info("Global filesystem '%s' CREATED " % global_filesystem)
     
-    def create(self, local_filesystem, file_element):
+    def create(self, local_filesystem, file_element, message='CREATED'):
         if not self.connector_fs.exists(local_filesystem):
             logger.error("Destination filesystem '%s' does not exist" % local_filesystem)
             return False
@@ -38,7 +38,7 @@ class FileSystem(object):
         destination_file = open(destination_file_name, 'w')
         destination_file.write(file_element.content)
         destination_file.close()
-        logger.info("File '%s' CREATED" % (destination_file_name))
+        logger.info("File '%s' %s" % (destination_file_name, message))
         return True
         
         
@@ -48,14 +48,16 @@ class FileSystem(object):
     def delete(self, path):
         pass
     
-    def update(self, path, felem):
-        source_file = path + "/" + felem.name
-        f = FileElement(felem.name)
-        for (i,content) in enumerate(felem.get(contents)):
-            l = felem.retrieve(i)
-            f.append(l)
-        file = _copy_contents_to_file(f)
-        shui.copy(file, dest_filesystem)
+    def update(self, local_filesystem, file_element):
+        file_to_be_updated = local_filesystem + "/" + file_element.name
+        if not self.connector_fs.exists(file_to_be_updated):
+            logger.error("File'%s' does not exist" % file_to_be_updated)
+            return False
+        
+        logger.info("Updating file '%s'" % file_to_be_updated)
+        return self.create(local_filesystem, file_element, message="UPDATED")
+        
+       
     
     def _copy_contents_to_file(self, file_element, new_file_destination):
         temp_file = tempfile.NamedTemporaryFile(delete=False,mode='w')   
@@ -78,7 +80,6 @@ class FileSystem(object):
 class FileElement(object):
     # Assume that whole file is contained in one big string
     # as it makes json parsing easier
-
     def __init__(self, name):
         self.name = name
         self.content = ""
@@ -121,6 +122,19 @@ def mainloop():
     contents = "hello\n" + "iman\n" +"seid\n"+"osman\n"
     f1.create(contents)
     fsys.create(local_filesystem, f1)
+    
+    f2 = FileElement("c")
+    contents = "New Greetings to \n" + "iman\n" +"seid\n"+"osman\n"
+    f2.create(contents)
+    
+    f3 = FileElement("ff")
+    contents = "New Greetings to \n" + "iman\n" +"seid\n"+"osman\n"
+    f3.create(contents)
+    
+    print "Should be true", fsys.update(local_filesystem, f2)
+    
+    print "Shouold be false", fsys.update(local_filesystem, f3), f2.name
+    
         
     #    fsys.update("a/b",f2) #whole repace
 

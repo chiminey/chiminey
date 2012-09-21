@@ -103,7 +103,6 @@ class FileSystemTests(unittest.TestCase):
         pass
     
     def test_create(self):
-        print "HI..."
         file_element =  FileElement("test_file")
         file_element_content = "hello\n" + "iman\n" +"and\n"+"seid\n"
         file_element.create(file_element_content)
@@ -113,13 +112,29 @@ class FileSystemTests(unittest.TestCase):
         local_filesystem = 'test_localFS'
         filesystem = FileSystem(global_filesystem, local_filesystem)
         filesystem.create(local_filesystem, file_element)
-        print "end"
         
+        absolute_path_file = global_filesystem + "/" + local_filesystem + "/"+ file_element.name
+        self.assertTrue(os.path.exists(absolute_path_file))
         
+    def test_update(self):
+        global_filesystem = '/home/iyusuf/test_globalFS'
+        local_filesystem = 'test_localFS'
+        filesystem = FileSystem(global_filesystem, local_filesystem)
         
-    
-''' 
-   def test_simpletest(self):
+        updated_file_element =  FileElement("test_file")
+        updated_file_element_content = "New Greetings\n" + "iman\n" +"and\n"+"seid\n"
+        updated_file_element.create(updated_file_element_content)
+        
+        has_updated = filesystem.update(local_filesystem, updated_file_element)
+        self.assertTrue(has_updated)
+        
+        updated_file_element.name = "unknown_file"
+        has_updated = filesystem.update(local_filesystem, updated_file_element)
+        self.assertFalse(has_updated)
+        
+      
+    """
+     def test_simpletest(self):
         fsys = FileSystem()
         
         f1 = FileElement("c")
@@ -139,7 +154,7 @@ class FileSystemTests(unittest.TestCase):
         
         fsys.delete("a/b/c")
         #assert statement
-'''
+    """
         
 class ConnectorTests(unittest.TestCase):
 
