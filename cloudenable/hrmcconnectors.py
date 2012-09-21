@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 from smartconnector import Stage
 
+
 class FileElement():
     # Assume that whole file is contained in one big string
     # as it makes json parsing easier

@@ -8,7 +8,7 @@ import logging.config
 import paramiko
 import json
 import random
-import filesystem
+
 
 from simplepackage import _create_cloud_connection
 from simplepackage import setup_multi_task
@@ -34,8 +34,8 @@ from smartconnector import Configure, Create, Run, Check, Teardown, ParallelStag
 
 
 from hrmcconnectors import Setup
-from hrmcconnectors import FileElement
-from hrmcconnectors import FileSystem
+from filesystem import FileElement
+from filesystem import FileSystem
 
 class CounterStage(Stage):
 
@@ -75,13 +75,17 @@ class TestStage(Stage):
         pass
 
 
- class SetupStageTests(unittest.TestCase):
+class SetupStageTests(unittest.TestCase):
 
     def test_simple(self):
+        # IanT, See this comment
+        #consider revising this test. FileElement is located in filesystem.py
+        # for now, FileElement is still available in hrmcconnectors
+        import hrmcconnectors 
         group_id = 'kjdfashkadjfghkjadzfhgkdfasj'
-        f1 = FileElement()
+        f1 = hrmcconnectors.FileElement()
         f1.create(json.dumps({'group_id':group_id}))
-        fs = FileSystem()
+        fs = hrmcconnectors.FileSystem()
         fs.create("/config.sys",f1)
         context = {'filesys':fs}
         s1 = Setup()
@@ -98,7 +102,24 @@ class FileSystemTests(unittest.TestCase):
     def setUp(self):
         pass
     
-    def test_simpletest(self):
+    def test_create(self):
+        print "HI..."
+        file_element =  FileElement("test_file")
+        file_element_content = "hello\n" + "iman\n" +"and\n"+"seid\n"
+        file_element.create(file_element_content)
+        self.assertEquals(file_element_content, file_element.content)
+        
+        global_filesystem = '/home/iyusuf/test_globalFS'
+        local_filesystem = 'test_localFS'
+        filesystem = FileSystem(global_filesystem, local_filesystem)
+        filesystem.create(local_filesystem, file_element)
+        print "end"
+        
+        
+        
+    
+''' 
+   def test_simpletest(self):
         fsys = FileSystem()
         
         f1 = FileElement("c")
@@ -118,6 +139,7 @@ class FileSystemTests(unittest.TestCase):
         
         fsys.delete("a/b/c")
         #assert statement
+'''
         
 class ConnectorTests(unittest.TestCase):
 
