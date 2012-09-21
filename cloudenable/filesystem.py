@@ -34,17 +34,15 @@ class FileSystem(object):
             logger.error("Destination filesystem '%s' does not exist" % local_filesystem)
             return False
     
-        new_file = self._copy_lines_to_file(file_element)
-        new_file_name = new_file.name 
+        #new_file = 
+        #new_file_name = new_file.name 
         new_file_destination = self.global_filesystem + "/" + local_filesystem + "/" + file_element.name
-        print "new file name %s dest name %s" % (new_file_name, new_file_destination)
-        shutil.copy(new_file_name, new_file_destination)
-        new_file.close()
         
-        logger.info("File '%s' CREATED" % (new_file_destination))
-        return True
-
-#local_filesystem_path = self.global_filesystem + "/" + local_filesystem
+        if self._copy_lines_to_file(file_element, new_file_destination):
+            logger.info("File '%s' CREATED" % (new_file_destination))
+            return True
+        else:
+            return False
         
         
     def retrieve(self, path):
@@ -62,14 +60,22 @@ class FileSystem(object):
         file = _copy_lines_to_file(f)
         shui.copy(file, dest_filesystem)
     
-    def _copy_lines_to_file(self, file_element):
-        temp_file = tempfile.NamedTemporaryFile()
-        
-        #for line in file_element.lines:
-         #   temp_file.write(line)
+    def _copy_lines_to_file(self, file_element, new_file_destination):
+        temp_file = tempfile.NamedTemporaryFile(delete=False,mode='w')   
+        #os.chmod(temp_file.name, 0777)
+        print "Lines", file_element.lines
+        file = open(new_file_destination, 'w')
+        for line in file_element.lines:
+            print line
+            temp_file.write("Iman \n" )
+            file.write(line+"\n")
+            
+        print temp_file.name
+        print new_file_destination
+        #shutil.copyfile(temp_file.name, new_file_destination)
         #temp_file.close()
         
-        return temp_file
+        return True
     
 
 class FileElement(object):
