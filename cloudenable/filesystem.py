@@ -34,15 +34,12 @@ class FileSystem(object):
             logger.error("Destination filesystem '%s' does not exist" % local_filesystem)
             return False
     
-        #new_file = 
-        #new_file_name = new_file.name 
-        new_file_destination = self.global_filesystem + "/" + local_filesystem + "/" + file_element.name
-        
-        if self._copy_lines_to_file(file_element, new_file_destination):
-            logger.info("File '%s' CREATED" % (new_file_destination))
-            return True
-        else:
-            return False
+        destination_file_name = self.global_filesystem + "/" + local_filesystem + "/" + file_element.name
+        destination_file = open(destination_file_name, 'w')
+        destination_file.write(file_element.content)
+        destination_file.close()
+        logger.info("File '%s' CREATED" % (destination_file_name))
+        return True
         
         
     def retrieve(self, path):
@@ -54,21 +51,21 @@ class FileSystem(object):
     def update(self, path, felem):
         source_file = path + "/" + felem.name
         f = FileElement(felem.name)
-        for (i,line) in enumerate(felem.get(lines)):
+        for (i,content) in enumerate(felem.get(contents)):
             l = felem.retrieve(i)
             f.append(l)
-        file = _copy_lines_to_file(f)
+        file = _copy_contents_to_file(f)
         shui.copy(file, dest_filesystem)
     
-    def _copy_lines_to_file(self, file_element, new_file_destination):
+    def _copy_contents_to_file(self, file_element, new_file_destination):
         temp_file = tempfile.NamedTemporaryFile(delete=False,mode='w')   
         #os.chmod(temp_file.name, 0777)
-        print "Lines", file_element.lines
+        print "contents", file_element.contents
         file = open(new_file_destination, 'w')
-        for line in file_element.lines:
-            print line
+        for content in file_element.contents:
+            print content
             temp_file.write("Iman \n" )
-            file.write(line+"\n")
+            file.write(content+"\n")
             
         print temp_file.name
         print new_file_destination
@@ -79,6 +76,22 @@ class FileSystem(object):
     
 
 class FileElement(object):
+    # Assume that whole file is contained in one big string
+    # as it makes json parsing easier
+
+    def __init__(self, name):
+        self.name = name
+        self.content = ""
+
+    def create(self,content):
+        self.content = content
+
+    def retrieve(self):
+        return self.content
+
+
+
+'''class FileElement(object):
     
     # lines = array of string
     
@@ -97,15 +110,16 @@ class FileElement(object):
     
     def append_line(self, line):
         self.lines.append(line)
-
+'''
+    
 def mainloop():
     global_filesystem = '/home/iyusuf/connect'
     local_filesystem = 'a'
     fsys = FileSystem(global_filesystem, local_filesystem)
         
     f1 = FileElement("c")
-    lines = ["hello","iman"]
-    f1.create(lines)
+    contents = "hello\n" + "iman\n" +"seid\n"+"osman\n"
+    f1.create(contents)
     fsys.create(local_filesystem, f1)
         
     #    fsys.update("a/b",f2) #whole repace
