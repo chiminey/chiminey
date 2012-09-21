@@ -45,35 +45,24 @@ class FileSystem(object):
     def retrieve(self, path):
         # check for missing path# MUST RETURN filesystem
         pass
-    def delete(self, path):
-        pass
-    
+
     def update(self, local_filesystem, file_element):
         file_to_be_updated = local_filesystem + "/" + file_element.name
         if not self.connector_fs.exists(file_to_be_updated):
             logger.error("File'%s' does not exist" % file_to_be_updated)
             return False
         
-        logger.info("Updating file '%s'" % file_to_be_updated)
+        #logger.info("Updating file '%s'" % file_to_be_updated)
         return self.create(local_filesystem, file_element, message="UPDATED")
-        
-       
     
-    def _copy_contents_to_file(self, file_element, new_file_destination):
-        temp_file = tempfile.NamedTemporaryFile(delete=False,mode='w')   
-        #os.chmod(temp_file.name, 0777)
-        print "contents", file_element.contents
-        file = open(new_file_destination, 'w')
-        for content in file_element.contents:
-            print content
-            temp_file.write("Iman \n" )
-            file.write(content+"\n")
-            
-        print temp_file.name
-        print new_file_destination
-        #shutil.copyfile(temp_file.name, new_file_destination)
-        #temp_file.close()
+    def delete(self, local_filesystem, file_element):
+        file_to_be_deleted = local_filesystem + "/" + file_element.name
+        if not self.connector_fs.exists(file_to_be_deleted):
+            logger.error("File'%s' does not exist" % file_to_be_deleted)
+            return False
         
+        self.connector_fs.remove(file_to_be_deleted)
+        logger.info("File '%s' DELETED" % file_to_be_deleted)
         return True
     
 
@@ -89,6 +78,7 @@ class FileElement(object):
 
     def retrieve(self):
         return self.content
+
 
 
 
