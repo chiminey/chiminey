@@ -31,15 +31,15 @@ class FileSystem(object):
         self.connector_fs = OSFS(global_filesystem, create=True)
         logger.info("Global filesystem '%s' CREATED " % global_filesystem)
 
-    def create(self, local_filesystem, file_element, message='CREATED'):
+    def create(self, local_filesystem, data_object, message='CREATED'):
         if not self.connector_fs.exists(local_filesystem):
             logger.error("Destination filesystem '%s' does not exist"
                          % local_filesystem)
             return False
 
-        destination_file_name = self.global_filesystem + "/" + local_filesystem + "/" + file_element.getName()
+        destination_file_name = self.global_filesystem + "/" + local_filesystem + "/" + data_object.getName()
         destination_file = open(destination_file_name, 'w')
-        destination_file.write(file_element.getContent())
+        destination_file.write(data_object.getContent())
         destination_file.close()
         logger.info("File '%s' %s" % (destination_file_name, message))
         return True
@@ -55,17 +55,17 @@ class FileSystem(object):
         retrieved_file_name = os.path.basename(file_to_be_retrieved)
         retrieved_file.close()
         
-        file_element = FileElement(retrieved_file_name)
-        file_element.setContent(retrieved_file_content)
-        return file_element
+        data_object = DataObject(retrieved_file_name)
+        data_object.setContent(retrieved_file_content)
+        return data_object
     
-    def update(self, local_filesystem, file_element):
-        file_to_be_updated = local_filesystem + "/" + file_element.getName()
+    def update(self, local_filesystem, data_object):
+        file_to_be_updated = local_filesystem + "/" + data_object.getName()
         if not self.connector_fs.exists(file_to_be_updated):
             logger.error("File'%s' does not exist" % file_to_be_updated)
             return False
        #logger.info("Updating file '%s'" % file_to_be_updated)
-        return self.create(local_filesystem, file_element, message="UPDATED")
+        return self.create(local_filesystem, data_object, message="UPDATED")
 
     def delete(self, file_to_be_deleted):
         if not self.connector_fs.exists(file_to_be_deleted):
@@ -77,7 +77,7 @@ class FileSystem(object):
         return True
 
 
-class FileElement(object):
+class DataObject(object):
     # Assume that whole file is contained in one big string
     # as it makes json parsing easier
     _name = ""

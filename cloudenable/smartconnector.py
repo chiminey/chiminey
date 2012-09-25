@@ -35,8 +35,6 @@ class UI(object):
 
 
 
-
-
 class Configure(Stage, UI):
     """
         - Load config.sys file into the filesystem

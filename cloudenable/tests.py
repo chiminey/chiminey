@@ -33,8 +33,8 @@ from smartconnector import SmartConnector
 from smartconnector import Configure, Create, Run, Check, Teardown, ParallelStage
 
 
-from hrmcconnectors import Setup
-from filesystem import FileElement
+from hrmcstages import Setup
+from filesystem import DataObject
 from filesystem import FileSystem
 
 class CounterStage(Stage):
@@ -79,13 +79,13 @@ class SetupStageTests(unittest.TestCase):
 
     def test_simple(self):
         # IanT, See this comment
-        #consider revising this test. FileElement is located in filesystem.py
-        # for now, FileElement is still available in hrmcconnectors
-        import hrmcconnectors 
+        #consider revising this test. DataObject is located in filesystem.py
+        # for now, DataObject is still available in hrmcstages
+        import hrmcstages 
         group_id = 'kjdfashkadjfghkjadzfhgkdfasj'
-        f1 = hrmcconnectors.FileElement()
+        f1 = hrmcstages.DataObject()
         f1.create(json.dumps({'group_id':group_id}))
-        fs = hrmcconnectors.FileSystem()
+        fs = hrmcstages.FileSystem()
         fs.create("/config.sys",f1)
         context = {'filesys':fs}
         s1 = Setup()
@@ -107,47 +107,47 @@ class FileSystemTests(unittest.TestCase):
         pass
     
     def test_create(self):
-        file_element =  FileElement("test_file")
-        file_element_content = "hello\n" + "iman\n" +"and\n"+"seid\n"
-        file_element.create(file_element_content)
-        absolute_path_file = self.global_filesystem + "/" + self.local_filesystem + "/"+ file_element.getName()
+        data_object =  DataObject("test_file")
+        data_object_content = "hello\n" + "iman\n" +"and\n"+"seid\n"
+        data_object.create(data_object_content)
+        absolute_path_file = self.global_filesystem + "/" + self.local_filesystem + "/"+ data_object.getName()
    
-        self.assertEquals(file_element_content, file_element.getContent())
-        self.filesystem.create(self.local_filesystem, file_element)
+        self.assertEquals(data_object_content, data_object.getContent())
+        self.filesystem.create(self.local_filesystem, data_object)
         self.assertTrue(os.path.exists(absolute_path_file))
         
     def test_retreve(self):
         file_name = "test_file"
         file_content = "hello\n" + "iman\n" +"and\n"+"seid\n"
         file_to_be_retrieved = self.local_filesystem + "/" + file_name
-        retrieved_file_element = self.filesystem.retrieve(file_to_be_retrieved)
-        self.assertNotEqual(retrieved_file_element, None)
-        self.assertEqual(file_name, retrieved_file_element.getName())
-        self.assertEqual(file_content, retrieved_file_element.getContent())
+        retrieved_data_object = self.filesystem.retrieve(file_to_be_retrieved)
+        self.assertNotEqual(retrieved_data_object, None)
+        self.assertEqual(file_name, retrieved_data_object.getName())
+        self.assertEqual(file_content, retrieved_data_object.getContent())
         
         file_name = "unknown"
         file_to_be_retrieved = self.local_filesystem + "/" + file_name
-        retrieved_file_element = self.filesystem.retrieve(file_to_be_retrieved)
-        self.assertEqual(retrieved_file_element, None)
+        retrieved_data_object = self.filesystem.retrieve(file_to_be_retrieved)
+        self.assertEqual(retrieved_data_object, None)
     
     def test_update(self):
-        updated_file_element =  FileElement("test_file")
-        updated_file_element_content = "New Greetings\n" + "iman\n" +"and\n"+"seid\n"
-        updated_file_element.create(updated_file_element_content)
+        updated_data_object =  DataObject("test_file")
+        updated_data_object_content = "New Greetings\n" + "iman\n" +"and\n"+"seid\n"
+        updated_data_object.create(updated_data_object_content)
         
-        is_updated = self.filesystem.update(self.local_filesystem, updated_file_element)
+        is_updated = self.filesystem.update(self.local_filesystem, updated_data_object)
         self.assertTrue(is_updated)
         
-        updated_file_element.setName("unknown_file")
-        is_updated = self.filesystem.update(self.local_filesystem, updated_file_element)
+        updated_data_object.setName("unknown_file")
+        is_updated = self.filesystem.update(self.local_filesystem, updated_data_object)
         self.assertFalse(is_updated)
         
     def test_delete(self):
-        file_element =  FileElement("test_file_delete")
-        file_element_content = "hello\n" + "iman\n" +"and\n"+"seid\n"
-        file_element.create(file_element_content)
+        data_object =  DataObject("test_file_delete")
+        data_object_content = "hello\n" + "iman\n" +"and\n"+"seid\n"
+        data_object.create(data_object_content)
         
-        is_created = self.filesystem.create(self.local_filesystem, file_element)
+        is_created = self.filesystem.create(self.local_filesystem, data_object)
         self.assertTrue(is_created)
         
         file_to_be_deleted = self.local_filesystem + "/test_file_delete"
@@ -165,14 +165,14 @@ class FileSystemTests(unittest.TestCase):
      def test_simpletest(self):
         fsys = FileSystem()
         
-        f1 = FileElement("c")
+        f1 = DataObject("c")
         fsys.create("a/b",f1)
         
         f3 = fsys.retrieve("a/b/c")        
         line = f3.retrieve_line(2)
         print line
         
-        f2 = FileElement("c")
+        f2 = DataObject("c")
         lines = ["hello","iman"]
         f2.create(lines)
         
