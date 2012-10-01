@@ -265,20 +265,6 @@ def _get_node(instance_id, settings):
     return this_node
 
 
-def _get_node_ip(instance_id, settings):
-    """
-        Get the ip address of a node
-    """
-    #TODO: throw exception if can't find instance_id
-    conn = _create_cloud_connection(settings)
-    ip = ''
-    while instance_id == '' or ip == '':
-        nodes = conn.list_nodes()
-        for i in nodes:
-            if i.name == instance_id and len(i.public_ips) > 0:
-                ip = i.public_ips[0]
-                break
-    return ip
 
 
 def collect_instances(settings, group_id=None, instance_id=None, all_VM=False):
