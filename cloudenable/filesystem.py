@@ -110,5 +110,7 @@ class DataObject(object):
     def setContent(self, content):
         self._content = content
 
+    # TODO: make getters and setters that handle arrays and serialise/deserialise as JSON
+
     def __str__(self):
         return "%s = %s" % (self._name, self._content)

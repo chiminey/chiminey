@@ -19,41 +19,6 @@ from filesystem import DataObject
 from simplepackage import _get_rego_nodes
 from simplepackage import setup_multi_task
 
-# class DataObject():
-#     # Assume that whole file is contained in one big string
-#     # as it makes json parsing easier
-
-#     def __init__(self):
-#         self.line = ""
-
-#     def create(self,line):
-#         self.line = line
-
-#     def retrieve(self):
-#         return self.line
-
-
-# class FileSystem(object):
-
-#     def __init__(self):
-#         self.fs = {}
-
-#     def create(self, name, felem):
-#         self.fs[name] = felem
-
-#     def retrieve(self, name):
-#         return self.fs[name]
-
-#     def update(self, name, felem):
-#         self.fs[name] = felem
-
-#     def delete(self):
-#         self.fs.delete(felem)
-#         pass
-
-#     def __str__(self):
-#         return "%s" % self.fs
-
 
 def get_elem(context,key):
     try:
@@ -195,29 +160,49 @@ class Setup(Stage):
 
     def triggered(self, context):
         # triggered if the set of the VMS has been established.
-
         self.settings = get_settings(context)
         logger.debug("settings = %s" % self.settings)
+
         run_info = get_run_info(context)
         logger.debug("runinfo=%s" % run_info)
-        self.settings.update(run_info)
 
+        self.settings.update(run_info)
         logger.debug("settings = %s" % self.settings)
 
         self.group_id = self.settings["group_id"]
-
         logger.debug("group_id = %s" % self.group_id)
-        packaged_nodes = _get_rego_nodes(self.group_id, self.settings)
-        logger.debug("packaged_nodes = %s" % packaged_nodes)
-        return len(packaged_nodes)
+
+        self.packaged_nodes = _get_rego_nodes(self.group_id, self.settings)
+        logger.debug("packaged_nodes = %s" % self.packaged_nodes)
+
+        return len(self.packaged_nodes)
 
     def process(self, context):
         setup_multi_task(self.group_id, self.settings)
         pass
 
     def output(self, context):
-        # TODO: how to signal next stage
-        pass
+
+        fsys = get_filesys(context)
+        logger.debug("fsys= %s" % fsys)
+
+        run_info_file = get_file(fsys,"default/runinfo.sys")
+        logger.debug("run_info_file= %s" % run_info_file)
+
+        settings_text = run_info_file.retrieve()
+        logger.debug("runinfo_text= %s" % settings_text)
+
+        config = json.loads(settings_text)
+        config['setup_finished'] = len(self.packaged_nodes) # FIXME: possible race condition?
+        logger.debug("config=%s" % config)
+        run_info_text = json.dumps(config)
+        run_info_file.setContent(run_info_text)
+
+        fsys.update("default", run_info_file)
+
+        # FIXME: check to make sure not retriggered
+
+        return self.packaged_nodes
 
 
 class Run(Stage):
@@ -227,13 +212,33 @@ class Run(Stage):
 
     def triggered(self, context):
         # triggered when we now that we have N nodes setup and ready to run.
+
         self.settings = get_settings(context)
+        logger.debug("settings = %s" % self.settings)
+
+        run_info = get_run_info(context)
+        logger.debug("runinfo=%s" % run_info)
+
+        self.settings.update(run_info)
+        logger.debug("settings = %s" % self.settings)
+
         self.group_id = self.settings['group_id']
-        self.fsys== get_filesys(context)
-        packaged_nodes = _get_rego_nodes(group_id, settings)
+        logger.debug("group_id = %s" % self.group_id)
 
-        # TODO: look for compiled packages on nodes.
-
+        if 'setup_finished' in self.settings:
+            setup_nodes = self.settings['setup_finished']
+            logger.debug("setup_nodes = %s" % setup_nodes)
+            packaged_nodes = len(_get_rego_nodes(self.group_id, self.settings))
+            logger.debug("packaged_nodes = %s" % packaged_nodes)
+            if packaged_nodes == setup_nodes:
+                return True
+            else:
+                logger.error("Indicated number of setup nodes does not match allocated number")
+                logger.error("%s != %s" % (packaged_nodes, setup_nodes))
+                return False
+        else:
+            logger.info("setup was not finished")
+            return False
 
     def process(self, context):
 
@@ -252,8 +257,8 @@ class Run(Stage):
             #TODO: cleanup node of copied input files etc.
             sys.exit(1)
 
-
     def output(self, context):
+        # TODO: remoge setup_finished to avoid retriggering
         pass
 
 class Finished(Stage):
