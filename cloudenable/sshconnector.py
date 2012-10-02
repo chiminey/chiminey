@@ -4,22 +4,24 @@ import paramiko
 import os
 import sys
 import traceback
+import logging
 
+logger = logging.getLogger(__name__)
 
 def is_ssh_ready(settings, ip_address):
     ssh_ready = False
     while not ssh_ready:
         try:
-            ssh = _open_connection(settings, ip_address)
+            ssh = open_connection(ip_address, settings)
             ssh_ready = True
         except Exception, e:
             sleep(settings.CLOUD_SLEEP_INTERVAL)
-            print ("Connecting to %s in progress ..." % ip_address)
-            traceback.print_exc(file=sys.stdout)
+            #print ("Connecting to %s in progress ..." % ip_address)
+            #traceback.print_exc(file=sys.stdout)
     return ssh_ready
 
     
-def _open_connection(settings, ip_address):
+def open_connection(ip_address, settings):
     # open up the connection
     ssh = paramiko.SSHClient()
     # autoaccess new keys
@@ -44,7 +46,7 @@ def _open_connection(settings, ip_address):
     return ssh
 
 
-def _run_command(ssh, command, current_dir=None):
+def run_command(ssh, command, current_dir=None):
     logger.debug("%s %s " % (current_dir, command))
     if current_dir:
         command = "cd %s;%s" % (current_dir, command)
