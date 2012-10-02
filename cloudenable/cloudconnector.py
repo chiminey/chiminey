@@ -18,7 +18,7 @@ NODE_STATE = ['RUNNING', 'REBOOTING', 'TERMINATED', 'PENDING', 'UNKNOWN']
 def _create_cloud_connection(settings):
     OpenstackDriver = get_driver(Provider.EUCALYPTUS)
     logger.debug("Connecting... %s" % OpenstackDriver)
-    connection = OpenstackDriver(settings.EC2_ACCESS_KEY, secret=settings.EC2_SECRET_KEY,
+    connection = OpenstackDriver(settings['EC2_ACCESS_KEY'], secret=settings['EC2_SECRET_KEY'],
                            host="nova.rc.nectar.org.au", secure=False,
                            port=8773, path="/services/Cloud")
     logger.debug("Connected")
@@ -46,8 +46,8 @@ def _create_VM_instances(number_vm_instances, settings):
     connection = _create_cloud_connection(settings)
     images = connection.list_images()
     sizes = connection.list_sizes()
-    image1 = [i for i in images if i.id == settings.VM_IMAGE][0]
-    size1 = [i for i in sizes if i.id == settings.VM_SIZE][0]
+    image1 = [i for i in images if i.id == settings['VM_IMAGE']][0]
+    size1 = [i for i in sizes if i.id == settings['VM_SIZE']][0]
 
     all_instances = []
     try:
@@ -56,8 +56,8 @@ def _create_VM_instances(number_vm_instances, settings):
         while instance_count < number_vm_instances:
             new_instance = connection.create_node(name="New Centos VM instance",
                 size=size1, image=image1,
-                ex_keyname=settings.PRIVATE_KEY_NAME,
-                ex_securitygroup=settings.SECURITY_GROUP)
+                ex_keyname=settings['PRIVATE_KEY_NAME'],
+                ex_securitygroup=settings['SECURITY_GROUP'])
             all_instances.append(new_instance)
             instance_count += 1
     except Exception, e:
@@ -86,8 +86,8 @@ def _store_md5_on_instances(all_instances, settings):
             print "Registering %s (%s) to group '%s'\
             " % (instance_id, ip_address, group_id)
             ssh = open_connection(ip_address=ip_address, settings=settings)
-            group_id_path = settings.GROUP_ID_DIR+"/"+group_id
-            run_command(ssh, "mkdir %s" % settings.GROUP_ID_DIR)
+            group_id_path = settings['GROUP_ID_DIR']+"/"+group_id
+            run_command(ssh, "mkdir %s" % settings['GROUP_ID_DIR'])
             run_command(ssh, "touch %s" % group_id_path)
         else:
             print "VM instance %s will not be registered to group '%s'\
@@ -187,7 +187,7 @@ def _wait_for_instance_to_start_running(all_instances, settings):
                 print 'Current status of Instance %s: %s\
                 ' % (instance_id, NODE_STATE[instance.state])
 
-        time.sleep(settings.CLOUD_SLEEP_INTERVAL)
+        time.sleep(settings['CLOUD_SLEEP_INTERVAL'])
 
     return all_running_instances
 
@@ -204,7 +204,7 @@ def _wait_for_instance_to_terminate(all_instances, settings):
                 print 'Current status of Instance %s: %s\
                 ' % (instance_id, NODE_STATE[instance.state])
 
-        time.sleep(settings.CLOUD_SLEEP_INTERVAL)
+        time.sleep(settings['CLOUD_SLEEP_INTERVAL'])
 
 
 def print_all_information(settings, all_instances=None):
@@ -229,10 +229,10 @@ def print_all_information(settings, all_instances=None):
         ip = _get_node_ip(instance_id, settings)
         #if is_ssh_ready(settings, ip):
         ssh = open_connection(ip, settings)
-        group_name = run_command(ssh, "ls %s " % settings.GROUP_ID_DIR)
+        group_name = run_command(ssh, "ls %s " % settings['GROUP_ID_DIR'])
         vm_type = 'Other'
         res = run_command(ssh, "[ -d %s ] && echo exists"
-                           % settings.GROUP_ID_DIR)
+                           % settings['GROUP_ID_DIR'])
         if 'exists\n' in res:
             vm_type = 'RMIT'
 

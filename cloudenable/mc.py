@@ -35,7 +35,8 @@ def start():
                       'SECURITY_GROUP', 'GROUP_ID_DIR', 'MAX_SEED_INT']
 
     import json
-    settings = type('', (), {})()
+    #settings = type('', (), {})()
+    settings = {}
     for field in environ_fields:
         #TODO: add multiple sections
         val = config.get("basic", field)
@@ -46,7 +47,8 @@ def start():
         except ValueError, e:
             file_val = ""
         # and make fake object to hold them
-        setattr(settings, field, field_val)
+        settings[field]=field_val
+        #setattr(settings, field, field_val)
         logger.debug("%s" % field_val)
 
     # get command line options
