@@ -30,8 +30,8 @@ class PackageFailedError(Error):
 
 
 def _create_cloud_connection(settings):
-    EC2_ACCESS_KEY = settings.EC2_ACCESS_KEY
-    EC2_SECRET_KEY = settings.EC2_SECRET_KEY
+    EC2_ACCESS_KEY = settings['EC2_ACCESS_KEY']
+    EC2_SECRET_KEY = settings['EC2_SECRET_KEY']
 
     OpenstackDriver = get_driver(Provider.EUCALYPTUS)
     logger.debug("Connecting... %s" % OpenstackDriver)
@@ -53,11 +53,11 @@ def create_environ(number_vm_instances, settings):
     sizes = conn.list_sizes()
 
     image1 = [i for i in images if i.id == 'ami-0000000d'][0]
-    size1 = [i for i in sizes if i.id == settings.VM_SIZE][0]
-    #print settings.SECURITY_GROUP
+    size1 = [i for i in sizes if i.id == settings['VM_SIZE']][0]
+    #print settings['SECURITY_GROUP
     #print image1
     #print size1
-    #print settings.PRIVATE_KEY_NAME
+    #print settings['PRIVATE_KEY_NAME
     try:
         all_instances = []
         print(" Creating %d VM instance(s)" % number_vm_instances)
@@ -65,8 +65,8 @@ def create_environ(number_vm_instances, settings):
         while instance_count < number_vm_instances:
             new_instance = conn.create_node(name="New Centos VM instance",
                 size=size1, image=image1,
-                ex_keyname=settings.PRIVATE_KEY_NAME,
-                ex_securitygroup=settings.SECURITY_GROUP)
+                ex_keyname=settings['PRIVATE_KEY_NAME'],
+                ex_securitygroup=settings['SECURITY_GROUP'])
             all_instances.append(new_instance)
             instance_count += 1
     except Exception, e:
@@ -76,13 +76,13 @@ def create_environ(number_vm_instances, settings):
             print "\t Additional %s instances will not be created" % (number_vm_instances - len(all_instances))
         else:
             traceback.print_exc(file=sys.stdout)
-       
+
     if all_instances:
         all_running_instances = _wait_for_instance_to_start_running(all_instances, settings)
         _store_md5_on_instances(all_running_instances, settings)
         print 'Created VM instances:'
         print_all_information(settings, all_running_instances)
-        
+
 
 def _store_md5_on_instances(all_instances, settings):
     group_id = _generate_group_id(all_instances)
@@ -98,15 +98,15 @@ def _store_md5_on_instances(all_instances, settings):
         while not md5_written:
             try:
                 ssh = _open_connection(ip_address=ip,
-                                       username=settings.USER_NAME,
-                                       password=settings.PASSWORD,
+                                       username=settings['USER_NAME'],
+                                       password=settings['PASSWORD'],
                                        settings=settings)
-                group_id_path = settings.GROUP_ID_DIR+"/"+group_id
-                _run_command(ssh, "mkdir %s" % settings.GROUP_ID_DIR)
+                group_id_path = settings['GROUP_ID_DIR']+"/"+group_id
+                _run_command(ssh, "mkdir %s" % settings['GROUP_ID_DIR'])
                 _run_command(ssh, "touch %s" % group_id_path)
                 md5_written = True
             except Exception:
-                time.sleep(settings.CLOUD_SLEEP_INTERVAL)
+                time.sleep(settings['CLOUD_SLEEP_INTERVAL'])
                 logger.info("Registration in progress ...")
 
 
@@ -136,7 +136,7 @@ def _wait_for_instance_to_start_running(all_instances, settings):
                 logger.info('Current status of Instance %s: %s'
                     % (instance_id, NODE_STATE[instance.state]))
 
-        time.sleep(settings.CLOUD_SLEEP_INTERVAL)
+        time.sleep(settings['CLOUD_SLEEP_INTERVAL'])
 
     return all_running_instances
 
@@ -154,7 +154,7 @@ def _wait_for_instance_to_terminate(all_instances, settings):
                 logger.info('Current status of Instance %s: %s'
                     % (instance_id, NODE_STATE[instance.state]))
 
-        time.sleep(settings.CLOUD_SLEEP_INTERVAL)
+        time.sleep(settings['CLOUD_SLEEP_INTERVAL'])
 
 
 def print_running_node_id(settings):
@@ -174,6 +174,7 @@ def print_running_node_id(settings):
                                         _get_node_ip(i.name, settings)))
             counter += 1
 
+
 def _print_available_groups(settings):
     conn = _create_cloud_connection(settings)
     all_instances = conn.list_nodes()
@@ -182,10 +183,10 @@ def _print_available_groups(settings):
         instance_id = instance.name
         ip = _get_node_ip(instance_id, settings)
         ssh = _open_connection(ip_address=ip,
-                                       username=settings.USER_NAME,
-                                       password=settings.PASSWORD,
+                                       username=settings['USER_NAME'],
+                                       password=settings['PASSWORD'],
                                        settings=settings)
-        res = _run_command(ssh, "ls %s " % settings.GROUP_ID_DIR)
+        res = _run_command(ssh, "ls %s " % settings['GROUP_ID_DIR'])
         if len(res) > 0 and not res[0] in all_groups:
             all_groups.append(res[0])
 
@@ -211,25 +212,25 @@ def print_all_information(settings, all_instances):
     if not all_instances:
         print '\t No running instances'
         sys.exit(1)
-        
+
     counter = 1
     print '\tNo.\tID\t\tIP\t\tPackage\t\tGroup'
     for instance in all_instances:
         instance_id = instance.name
         ip = _get_node_ip(instance_id, settings)
         ssh = _open_connection(ip_address=ip,
-                                       username=settings.USER_NAME,
-                                       password=settings.PASSWORD,
+                                       username=settings['USER_NAME'],
+                                       password=settings['PASSWORD'],
                                        settings=settings)
-        group_name = _run_command(ssh, "ls %s " % settings.GROUP_ID_DIR)
+        group_name = _run_command(ssh, "ls %s " % settings['GROUP_ID_DIR'])
         vm_type = 'Other'
-        res = _run_command(ssh, "[ -d %s ] && echo exists" % settings.GROUP_ID_DIR)
+        res = _run_command(ssh, "[ -d %s ] && echo exists" % settings['GROUP_ID_DIR'])
         if 'exists\n' in res:
             vm_type = 'RMIT'
-        
+
         if not group_name:
             group_name = '-'
-        
+
         print '\t%d:\t%s\t%s\t%s\t\t%s' % (counter, instance_id,
                                         ip, vm_type, group_name)
         counter += 1
@@ -291,27 +292,27 @@ def collect_instances(settings, group_id=None, instance_id=None, all_VM=False):
     elif instance_id:
         if is_instance_running(instance_id, settings):
             all_instances.append(_get_node(instance_id, settings))
-        
+
     return all_instances
 
 
 def confirm_teardown(settings, all_instances):
     print "Instances to be deleted are "
     print_all_information(settings, all_instances)
-    
+
     teardown_confirmation = None
     while not teardown_confirmation:
         teardown_confirmation = raw_input(
                                 "Are you sure you want to delete (yes/no)? ")
         if teardown_confirmation != 'yes' and teardown_confirmation != 'no':
             teardown_confirmation = None
-            
+
     if teardown_confirmation == 'yes':
         return True
     else:
-        return False 
-    
-    
+        return False
+
+
 def destroy_environ(settings, all_instances):
     """
         Terminate
@@ -343,22 +344,22 @@ def setup_task(instance_id, settings):
     logger.info("setup_task %s " % instance_id)
 
     ip = _get_node_ip(instance_id, settings)
-    ssh = _open_connection(ip_address=ip, username=settings.USER_NAME,
-                           password=settings.PASSWORD, settings=settings)
-    res = _install_deps(ssh, packages=settings.DEPENDS,
+    ssh = _open_connection(ip_address=ip, username=settings['USER_NAME'],
+                           password=settings['PASSWORD'], settings=settings)
+    res = _install_deps(ssh, packages=settings['DEPENDS'],
                         settings=settings, instance_id=instance_id)
     logger.debug("install res=%s" % res)
-    res = _mkdir(ssh, dir=settings.DEST_PATH_PREFIX)
+    res = _mkdir(ssh, dir=settings['DEST_PATH_PREFIX'])
     logger.debug("mkdir res=%s" % res)
-    _put_file(ssh, source_path=settings.PAYLOAD_LOCAL_DIRNAME,
-              package_file=settings.PAYLOAD,
-              environ_dir=settings.DEST_PATH_PREFIX)
-    _unpack(ssh, environ_dir=settings.DEST_PATH_PREFIX,
-            package_file=settings.PAYLOAD)
-    _compile(ssh, environ_dir=settings.DEST_PATH_PREFIX,
-             compile_file=settings.COMPILE_FILE,
-             package_dirname=settings.PAYLOAD_CLOUD_DIRNAME,
-             compiler_command=settings.COMPILER)
+    _put_file(ssh, source_path=settings['PAYLOAD_LOCAL_DIRNAME'],
+              package_file=settings['PAYLOAD'],
+              environ_dir=settings['DEST_PATH_PREFIX'])
+    _unpack(ssh, environ_dir=settings['DEST_PATH_PREFIX'],
+            package_file=settings['PAYLOAD'])
+    _compile(ssh, environ_dir=settings['DEST_PATH_PREFIX'],
+             compile_file=settings['COMPILE_FILE'],
+             package_dirname=settings['PAYLOAD_CLOUD_DIRNAME'],
+             compiler_command=settings['COMPILER'])
 
 
 def prepare_input(instance_id, input_dir, settings,seed):
@@ -370,24 +371,24 @@ def prepare_input(instance_id, input_dir, settings,seed):
 
     logger.info("prepare_input %s %s" % (instance_id, input_dir))
     ip = _get_node_ip(instance_id, settings)
-    ssh = _open_connection(ip_address=ip, username=settings.USER_NAME,
-                           password=settings.PASSWORD, settings=settings)
+    ssh = _open_connection(ip_address=ip, username=settings['USER_NAME'],
+                           password=settings['PASSWORD'], settings=settings)
     input_dir = _normalize_dirpath(input_dir)
     dirList = os.listdir(input_dir)
     for fname in dirList:
         logger.debug(fname)
         _upload_input(ssh, input_dir, fname,
-                      os.path.join(settings.DEST_PATH_PREFIX,
-                                   settings.PAYLOAD_CLOUD_DIRNAME))
+                      os.path.join(settings['DEST_PATH_PREFIX'],
+                                   settings['PAYLOAD_CLOUD_DIRNAME']))
     _run_command(ssh, "cd %s; cp rmcen.inp rmcen.inp.orig" %
-                (os.path.join(settings.DEST_PATH_PREFIX,
-                              settings.PAYLOAD_CLOUD_DIRNAME)))
+                (os.path.join(settings['DEST_PATH_PREFIX'],
+                              settings['PAYLOAD_CLOUD_DIRNAME'])))
     _run_command(ssh, "cd %s; dos2unix rmcen.inp" %
-                (os.path.join(settings.DEST_PATH_PREFIX,
-                              settings.PAYLOAD_CLOUD_DIRNAME)))
+                (os.path.join(settings['DEST_PATH_PREFIX'],
+                              settings['PAYLOAD_CLOUD_DIRNAME'])))
     _run_command(ssh, "cd %s; sed -i '/^$/d' rmcen.inp" %
-                (os.path.join(settings.DEST_PATH_PREFIX,
-                              settings.PAYLOAD_CLOUD_DIRNAME)))
+                (os.path.join(settings['DEST_PATH_PREFIX'],
+                              settings['PAYLOAD_CLOUD_DIRNAME'])))
 
 
 def run_task(instance_id, settings):
@@ -398,21 +399,21 @@ def run_task(instance_id, settings):
     logger.info("run_task %s" % instance_id)
     ip = _get_node_ip(instance_id, settings)
     ssh = _open_connection(ip_address=ip,
-                           username=settings.USER_NAME,
-                           password=settings.PASSWORD, settings=settings)
-    if len(_get_package_pid(ssh, settings.COMPILE_FILE)) > 1:
+                           username=settings['USER_NAME'],
+                           password=settings['PASSWORD'], settings=settings)
+    if len(_get_package_pid(ssh, settings['COMPILE_FILE'])) > 1:
         logger.error("warning:multiple packages running")
         raise PackageFailedError("multiple packages running")
     _run_command(ssh, "cd %s; ./%s >& %s &"
                  % (os.path.join(
-                    settings.DEST_PATH_PREFIX,
-                    settings.PAYLOAD_CLOUD_DIRNAME),
-                    settings.COMPILE_FILE, "output"))
+                    settings['DEST_PATH_PREFIX'],
+                    settings['PAYLOAD_CLOUD_DIRNAME']),
+                    settings['COMPILE_FILE'], "output"))
     import time
-    attempts = settings.RETRY_ATTEMPTS
+    attempts = settings['RETRY_ATTEMPTS']
     for x in range(0, attempts):
         time.sleep(5)  # to give process enough time to start
-        pid = _get_package_pid(ssh, settings.COMPILE_FILE)
+        pid = _get_package_pid(ssh, settings['COMPILE_FILE'])
         logger.debug(pid)
         if pid:
             break
@@ -429,17 +430,17 @@ def get_output(instance_id, output_dir, settings):
     logger.info("get_output %s" % instance_id)
     ip = _get_node_ip(instance_id, settings)
     ssh = _open_connection(ip_address=ip,
-                           username=settings.USER_NAME,
-                           password=settings.PASSWORD, settings=settings)
+                           username=settings['USER_NAME'],
+                           password=settings['PASSWORD'], settings=settings)
     try:
         os.mkdir(output_dir)
     except OSError, e:
         logger.debug("output directory %s already exists: %s" % (output_dir,e))
         #sys.exit(1)
     logger.info("output directory is %s" % output_dir)
-    for file in settings.OUTPUT_FILES:
-        _get_file(ssh, os.path.join(settings.DEST_PATH_PREFIX,
-                                    settings.PAYLOAD_CLOUD_DIRNAME),
+    for file in settings['OUTPUT_FILES']:
+        _get_file(ssh, os.path.join(settings['DEST_PATH_PREFIX'],
+                                    settings['PAYLOAD_CLOUD_DIRNAME']),
                   file, output_dir)
     # TODO: do integrity check on output files
     pass
@@ -452,9 +453,9 @@ def job_finished(instance_id, settings):
 
     ip = _get_node_ip(instance_id, settings)
     ssh = _open_connection(ip_address=ip,
-                           username=settings.USER_NAME,
-                           password=settings.PASSWORD, settings=settings)
-    pid = _get_package_pid(ssh, settings.COMPILE_FILE)
+                           username=settings['USER_NAME'],
+                           password=settings['PASSWORD'], settings=settings)
+    pid = _get_package_pid(ssh, settings['COMPILE_FILE'])
     return not pid
 
 
@@ -470,8 +471,8 @@ def _open_connection(ip_address, username, password, settings):
 
     #TODO: handle exceptions if connection does not work.
     # use private key if exists
-    if os.path.exists(settings.PRIVATE_KEY):
-        privatekeyfile = os.path.expanduser(settings.PRIVATE_KEY)
+    if os.path.exists(settings['PRIVATE_KEY']):
+        privatekeyfile = os.path.expanduser(settings['PRIVATE_KEY'])
         mykey = paramiko.RSAKey.from_private_key_file(privatekeyfile)
         ssh.connect(ip_address, username=username, timeout=60, pkey=mykey)
     else:
@@ -537,7 +538,7 @@ def _run_sudo_command(ssh, command, settings, instance_id):
     chan.send('sudo -s\n')
     full_buff = ''
     buff = ''
-    while not '[%s@%s ~]$ ' % (settings.USER_NAME, instance_id) in buff:
+    while not '[%s@%s ~]$ ' % (settings['USER_NAME'], instance_id) in buff:
         resp = chan.recv(9999)
         #logger.debug("resp=%s" % resp)
         buff += resp
@@ -546,7 +547,7 @@ def _run_sudo_command(ssh, command, settings, instance_id):
 
     chan.send("%s\n" % command)
     buff = ''
-    while not '[root@%s %s]# ' % (instance_id, settings.USER_NAME) in buff:
+    while not '[root@%s %s]# ' % (instance_id, settings['USER_NAME']) in buff:
         resp = chan.recv(9999)
         #logger.debug("resp=%s" % resp)
         buff += resp
@@ -557,7 +558,7 @@ def _run_sudo_command(ssh, command, settings, instance_id):
 
     chan.send("exit\n")
     buff = ''
-    while not '[%s@%s ~]$ ' % (settings.USER_NAME, instance_id) in buff:
+    while not '[%s@%s ~]$ ' % (settings['USER_NAME'], instance_id) in buff:
         resp = chan.recv(9999)
         #logger.debug("resp=%s" % resp)
         buff += resp
@@ -635,10 +636,10 @@ def _get_rego_nodes(group_id, settings):
     for node in conn.list_nodes():
         # login and check for md5 file
         ssh = _open_connection(ip_address=_get_node_ip(node.name, settings),
-                               username=settings.USER_NAME,
-                               password=settings.PASSWORD, settings=settings)
+                               username=settings['USER_NAME'],
+                               password=settings['PASSWORD'], settings=settings)
         # NOTE: assumes use of bash shell
-        group_id_path = settings.GROUP_ID_DIR+"/"+group_id
+        group_id_path = settings['GROUP_ID_DIR']+"/"+group_id
         res = _run_command(ssh, "[ -f %s ] && echo exists" % group_id_path)
         logger.debug("res=%s" % res)
         if 'exists\n' in res:
@@ -771,7 +772,7 @@ def prepare_multi_input(group_id, input_dir, settings, seed):
     seeds = {}
     for node in nodes:
         # FIXME: is the random supposed to be positive or negative?
-        seeds[node] = random.randrange(0,settings.MAX_SEED_INT)
+        seeds[node] = random.randrange(0,settings['MAX_SEED_INT'])
 
     if seed:
         print ("seed for full package run = %s" % seed)
@@ -784,28 +785,28 @@ def prepare_multi_input(group_id, input_dir, settings, seed):
         instance_id = node.name
         logger.info("prepare_input %s %s" % (instance_id, input_dir))
         ip = _get_node_ip(instance_id, settings)
-        ssh = _open_connection(ip_address=ip, username=settings.USER_NAME,
-                               password=settings.PASSWORD, settings=settings)
+        ssh = _open_connection(ip_address=ip, username=settings['USER_NAME'],
+                               password=settings['PASSWORD'], settings=settings)
         input_dir = _normalize_dirpath(input_dir)
         dirList = os.listdir(input_dir)
         for fname in dirList:
             logger.debug(fname)
             _upload_input(ssh, input_dir, fname,
-                          os.path.join(settings.DEST_PATH_PREFIX,
-                                       settings.PAYLOAD_CLOUD_DIRNAME))
+                          os.path.join(settings['DEST_PATH_PREFIX'],
+                                       settings['PAYLOAD_CLOUD_DIRNAME']))
         _run_command(ssh, "cd %s; cp rmcen.inp rmcen.inp.orig" %
-                    (os.path.join(settings.DEST_PATH_PREFIX,
-                                  settings.PAYLOAD_CLOUD_DIRNAME)))
+                    (os.path.join(settings['DEST_PATH_PREFIX'],
+                                  settings['PAYLOAD_CLOUD_DIRNAME'])))
         _run_command(ssh, "cd %s; dos2unix rmcen.inp" %
-                    (os.path.join(settings.DEST_PATH_PREFIX,
-                                  settings.PAYLOAD_CLOUD_DIRNAME)))
+                    (os.path.join(settings['DEST_PATH_PREFIX'],
+                                  settings['PAYLOAD_CLOUD_DIRNAME'])))
         _run_command(ssh, "cd %s; sed -i '/^$/d' rmcen.inp" %
-                    (os.path.join(settings.DEST_PATH_PREFIX,
-                                  settings.PAYLOAD_CLOUD_DIRNAME)))
+                    (os.path.join(settings['DEST_PATH_PREFIX'],
+                                  settings['PAYLOAD_CLOUD_DIRNAME'])))
 
         _run_command(ssh, "cd %s; sed -i 's/[0-9]*[ \t]*iseed.*$/%s\tiseed/' rmcen.inp" %
-                    (os.path.join(settings.DEST_PATH_PREFIX,
-                                  settings.PAYLOAD_CLOUD_DIRNAME), seeds[node]))
+                    (os.path.join(settings['DEST_PATH_PREFIX'],
+                                  settings['PAYLOAD_CLOUD_DIRNAME']), seeds[node]))
 
 
 
