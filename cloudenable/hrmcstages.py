@@ -18,6 +18,7 @@ from filesystem import DataObject
 
 from simplepackage import _get_rego_nodes
 from simplepackage import setup_multi_task
+from simplepackage import prepare_multi_input
 
 
 def get_elem(context,key):
@@ -179,7 +180,6 @@ class Setup(Stage):
 
     def process(self, context):
         setup_multi_task(self.group_id, self.settings)
-        pass
 
     def output(self, context):
 
@@ -244,7 +244,18 @@ class Run(Stage):
 
         seed = self.settings['seed']
 
-        # assume that correct local file system has been created.
+        # NOTE we assume that correct local file system has been created.
+
+        fsys = get_filesys(context)
+        logger.debug("fsys= %s" % fsys)
+
+        run_info = get_run_info(context)
+        logger.debug("runinfo=%s" % run_info)
+
+        # expose subdirectory as filesystem for copying
+
+        fsys.get_directory("input")
+
 
         prepare_multi_input(self.group_id, options.input_dir,
                             settings, seed)

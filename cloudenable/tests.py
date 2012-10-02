@@ -267,11 +267,15 @@ class RunStageTests(unittest.TestCase):
         self.assertEquals(res, True)
         self.assertEquals(s1.group_id, group_id)
 
-        #s1.process(context)
 
 
 
     def test_process(self):
+
+        logger.debug("%s:%s" %(self.__class__.__name__,sys._getframe().f_code.co_name))
+        group_id = "sq42kdjshasdkjghauiwytuiawjmkghasjkghasg"
+
+
         # Make fake ssh connection
         fakessh1 = flexmock(load_system_host_keys= lambda x: True,
                         set_missing_host_key_policy= lambda x: True,
@@ -304,8 +308,31 @@ class RunStageTests(unittest.TestCase):
             .and_return(None) \
             .and_return("1")
 
-        res = run_multi_task("foobar","",self.settings)
-        self.assertEquals(res.values(),[['1']])
+        #res = run_multi_task("foobar","",self.settings)
+        #self.assertEquals(res.values(),[['1']])
+
+        f1 = DataObject("config.sys")
+        self.settings['seed'] = 42
+        f1.create(json.dumps(self.settings))
+        f2 = DataObject("runinfo.sys")
+        f2.create(json.dumps({'group_id':group_id,'setup_finished':1}))
+        print("f2=%s" % f2)
+        fs = FileSystem(self.global_filesystem, self.local_filesystem)
+        fs.create(self.local_filesystem, f1)
+        fs.create(self.local_filesystem, f2)
+        print("fs=%s" % fs)
+        context = {'filesys':fs}
+        print("context=%s" % context)
+        s1 = Run()
+        res = s1.triggered(context)
+        print res
+        self.assertEquals(res, True)
+        self.assertEquals(s1.group_id, group_id)
+
+
+
+        #s1.process(context)
+
 
 
 
