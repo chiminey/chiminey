@@ -80,7 +80,7 @@ def _store_md5_on_instances(all_instances, settings):
     for instance in all_instances:
         # login and check for md5 file
         instance_id = instance.name
-        ip_address = _get_node_ip(instance_id, settings)
+        ip_address = get_instance_ip(instance_id, settings)
         ssh_ready = is_ssh_ready(settings, ip_address)
         if ssh_ready:
             print "Registering %s (%s) to group '%s'\
@@ -112,9 +112,9 @@ def collect_instances(settings, group_id=None, instance_id=None, all_VM=False):
     if all_VM:
         all_instances = connection.list_nodes()
     elif group_id:
-        all_instances = _get_rego_nodes(group_id, settings)
+        all_instances = get_rego_nodes(group_id, settings)
     elif instance_id:
-        if _is_instance_running(instance_id, settings):
+        if is_instance_running(instance_id, settings):
             all_instances.append(_get_this_instance(instance_id, settings))
 
     return all_instances
@@ -158,7 +158,7 @@ def destroy_environ(settings, all_instances):
     _wait_for_instance_to_terminate(all_instances, settings)
 
 
-def _is_instance_running(instance_id, settings):
+def is_instance_running(instance_id, settings):
     """
         Checks whether an instance with @instance_id
         is running or not
@@ -178,7 +178,7 @@ def _wait_for_instance_to_start_running(all_instances, settings):
     while all_instances:
         for instance in all_instances:
             instance_id = instance.name
-            if _is_instance_running(instance_id, settings):
+            if is_instance_running(instance_id, settings):
                 all_running_instances.append(instance)
                 all_instances.remove(instance)
                 print 'Current status of Instance %s: %s\
@@ -196,7 +196,7 @@ def _wait_for_instance_to_terminate(all_instances, settings):
     while all_instances:
         for instance in all_instances:
             instance_id = instance.name
-            if not _is_instance_running(instance_id, settings):
+            if not is_instance_running(instance_id, settings):
                 all_instances.remove(instance)
                 print 'Current status of Instance %s: %s\
                 ' % (instance_id, NODE_STATE[NodeState.TERMINATED])
@@ -226,7 +226,7 @@ def print_all_information(settings, all_instances=None):
     print '\tNo.\tID\t\tIP\t\tPackage\t\tGroup'
     for instance in all_instances:
         instance_id = instance.name
-        ip = _get_node_ip(instance_id, settings)
+        ip = get_instance_ip(instance_id, settings)
         #if is_ssh_ready(settings, ip):
         ssh = open_connection(ip, settings)
         group_name = run_command(ssh, "ls %s " % settings['GROUP_ID_DIR'])
@@ -258,8 +258,8 @@ def _get_this_instance(instance_id, settings):
 
     return this_node
 
-#rename _get_node_ip to _get_instance_ip
-def _get_node_ip(instance_id, settings):
+#rename get_instance_ip to _get_instance_ip
+def get_instance_ip(instance_id, settings):
     """
         Get the ip address of a node
     """
@@ -275,3 +275,27 @@ def _get_node_ip(instance_id, settings):
     return ip
 
 
+#newly added methods from simplepackage
+def get_rego_nodes(group_id, settings):
+    """
+    Returns nectar nodes that are currently packaged enabled.
+    """
+    # get all available nodes
+    conn = _create_cloud_connection(settings)
+    packaged_node = []
+    for node in conn.list_nodes():
+        # login and check for md5 file
+        ssh = open_connection(ip_address=get_instance_ip(node.name, settings),
+                              settings=settings)
+        # NOTE: assumes use of bash shell
+        group_id_path = settings['GROUP_ID_DIR']+"/"+group_id
+        res = run_command(ssh, "[ -f %s ] && echo exists" % group_id_path)
+        logger.debug("res=%s" % res)
+        if 'exists\n' in res:
+            logger.debug("node %s exists for group %s "
+                         % (node.name, group_id))
+            packaged_node.append(node)
+        else:
+            logger.debug("NO node for %s exists for group %s "
+                         % (node.name, group_id))
+    return packaged_node

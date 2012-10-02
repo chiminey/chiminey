@@ -55,27 +55,25 @@ def run_command(ssh, command, current_dir=None):
     return stdout.readlines()
 
 
-def _run_sudo_command(ssh, command, settings, instance_id):
-
+def run_sudo_command(ssh, command, settings, instance_id):
     chan = ssh.invoke_shell()
     chan.send('sudo -s\n')
     full_buff = ''
     buff = ''
-    buff_size = 9999
     while not '[%s@%s ~]$ ' % (settings['USER_NAME'], instance_id) in buff:
-        resp = chan.recv(buff_size)
-        #print("resp=%s" % resp)
+        resp = chan.recv(9999)
+        #logger.debug("resp=%s" % resp)
         buff += resp
-    #print("buff = %s" % buff)
+    logger.debug("buff = %s" % buff)
     full_buff += buff
 
     chan.send("%s\n" % command)
     buff = ''
     while not '[root@%s %s]# ' % (instance_id, settings['USER_NAME']) in buff:
-        resp = chan.recv(buff_size)
-        print(resp)
+        resp = chan.recv(9999)
+        #logger.debug("resp=%s" % resp)
         buff += resp
-    #print("buff = %s" % buff)
+    logger.debug("buff = %s" % buff)
     full_buff += buff
 
     # TODO: handle stderr
@@ -83,12 +81,67 @@ def _run_sudo_command(ssh, command, settings, instance_id):
     chan.send("exit\n")
     buff = ''
     while not '[%s@%s ~]$ ' % (settings['USER_NAME'], instance_id) in buff:
-        resp = chan.recv(buff_size)
-        #print("resp=%s" % resp)
+        resp = chan.recv(9999)
+        #logger.debug("resp=%s" % resp)
         buff += resp
-   # print("3buff = %s" % buff)
+    logger.debug("3buff = %s" % buff)
     full_buff += buff
 
     chan.close()
-    print full_buff
     return (full_buff, '')
+
+
+def install_deps(ssh, packages, settings, instance_id):
+    for pack in packages:
+        stdout, stderr = run_sudo_command(
+            ssh, 'yum -y install %s' % pack,
+            settings=settings, instance_id=instance_id)
+        logger.debug("install stdout=%s" % stdout)
+        logger.debug("install stderr=%s" % stderr)
+
+
+def unpack(ssh, environ_dir, package_file):
+    res = run_command(
+        ssh, 'tar --directory=%s --extract --gunzip --verbose --file=%s'
+        % (environ_dir, os.path.join(environ_dir, package_file)))
+    logger.debug(res)
+
+
+def compile(ssh, environ_dir, compile_file, package_dirname,
+             compiler_command):
+    run_command(ssh, "%s %s.f -o %s " % (compiler_command,
+                                          compile_file,
+                                          compile_file),
+                 current_dir=os.path.join(environ_dir, package_dirname))
+
+
+def mkdir(ssh, dir):
+    run_command(ssh, "mkdir %s" % dir)
+
+
+def get_file(ssh, source_path, package_file, environ_dir):
+    ftp = ssh.open_sftp()
+    logger.debug("%s %s %s" % (source_path, package_file, environ_dir))
+    source_file = os.path.join(source_path, package_file).replace('\\', '/')
+    dest_file = os.path.join(environ_dir, package_file).replace('\\', '/')
+    logger.debug("%s %s" % (source_file, dest_file))
+    try:
+        ftp.get(source_file, dest_file)
+    except IOError:
+        logger.warning("%s not found" % package_file)
+
+
+def put_file(ssh, source_path, package_file, environ_dir):
+    ftp = ssh.open_sftp()
+    logger.debug("%s %s" % (source_path, environ_dir))
+    source_file = os.path.join(source_path, package_file).replace('\\', '/')
+    dest_file = os.path.join(environ_dir, package_file).replace('\\', '/')
+    logger.debug("%s %s" % (source_file, dest_file))
+    ftp.put(source_file, dest_file)
+
+
+def get_package_pid(ssh, command):
+    pid = run_command(ssh, "/sbin/pidof %s" % command)
+    if len(pid):
+        pid = pid[0]  # if some returns, the pids are in first element
+    return pid
