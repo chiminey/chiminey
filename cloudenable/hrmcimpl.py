@@ -166,9 +166,7 @@ def packages_complete(group_id, output_dir, settings):
     any output as needed
     """
     nodes = get_rego_nodes(group_id, settings)
-    error_nodes, finished_nodes = _status_of_nodeset(nodes, output_dir, settings)
-    
-    #print "Finished nodes %s , Error nodes %s" % (finished_nodes, error_nodes)
+    error_nodes, finished_nodes =_status_of_nodeset(nodes, output_dir, settings)
 
     if finished_nodes + error_nodes == nodes:
         logger.info("Package Finished")

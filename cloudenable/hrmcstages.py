@@ -16,9 +16,9 @@ from smartconnector import SequentialStage
 from filesystem import FileSystem
 from filesystem import DataObject
 
-from simplepackage import _get_rego_nodes
-from simplepackage import setup_multi_task
-from simplepackage import prepare_multi_input
+from cloudconnector import get_rego_nodes
+from hrmcimpl import setup_multi_task
+from hrmcimpl import prepare_multi_input
 
 
 def get_elem(context,key):
@@ -173,7 +173,7 @@ class Setup(Stage):
         self.group_id = self.settings["group_id"]
         logger.debug("group_id = %s" % self.group_id)
 
-        self.packaged_nodes = _get_rego_nodes(self.group_id, self.settings)
+        self.packaged_nodes = get_rego_nodes(self.group_id, self.settings)
         logger.debug("packaged_nodes = %s" % self.packaged_nodes)
 
         return len(self.packaged_nodes)
@@ -228,7 +228,7 @@ class Run(Stage):
         if 'setup_finished' in self.settings:
             setup_nodes = self.settings['setup_finished']
             logger.debug("setup_nodes = %s" % setup_nodes)
-            packaged_nodes = len(_get_rego_nodes(self.group_id, self.settings))
+            packaged_nodes = len(get_rego_nodes(self.group_id, self.settings))
             logger.debug("packaged_nodes = %s" % packaged_nodes)
             if packaged_nodes == setup_nodes:
                 return True
