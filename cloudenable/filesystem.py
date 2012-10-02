@@ -54,11 +54,11 @@ class FileSystem(object):
         retrieved_file_content = retrieved_file.read()
         retrieved_file_name = os.path.basename(file_to_be_retrieved)
         retrieved_file.close()
-        
+
         data_object = DataObject(retrieved_file_name)
         data_object.setContent(retrieved_file_content)
         return data_object
-    
+
     def update(self, local_filesystem, data_object):
         file_to_be_updated = local_filesystem + "/" + data_object.getName()
         if not self.connector_fs.exists(file_to_be_updated):
@@ -76,6 +76,12 @@ class FileSystem(object):
         logger.info("File '%s' DELETED" % file_to_be_deleted)
         return True
 
+    def get_local_subdirectories(self, local_filesystem):
+        """
+        Returns list of names of directories immediately below local_filesystem
+        """
+        # TODO
+        return []
 
 class DataObject(object):
     # Assume that whole file is contained in one big string
@@ -90,16 +96,19 @@ class DataObject(object):
         self._content = content
 
     def retrieve(self):
-        return self.content
-    
+        return self._content
+
     def getName(self):
         return self._name
-    
+
     def getContent(self):
         return self._content
 
     def setName(self, name):
         self._name = name
-    
+
     def setContent(self, content):
         self._content = content
+
+    def __str__(self):
+        return "%s = %s" % (self._name, self._content)
