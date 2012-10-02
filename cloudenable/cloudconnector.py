@@ -31,12 +31,13 @@ def create_environ(number_vm_instances, settings):
     """
     logger.info("create_environ")
     all_instances = _create_VM_instances(number_vm_instances, settings)
+
     if all_instances:
-        all_running_instances = _wait_for_instance_to_start_running(all_instances, settings)  
+        all_running_instances = _wait_for_instance_to_start_running(all_instances, settings)
         _store_md5_on_instances(all_running_instances, settings)
         print 'Created VM instances:'
         print_all_information(settings, all_instances=all_running_instances)
-        
+
 
 def _create_VM_instances(number_vm_instances, settings):
     """
@@ -47,7 +48,7 @@ def _create_VM_instances(number_vm_instances, settings):
     sizes = connection.list_sizes()
     image1 = [i for i in images if i.id == settings.VM_IMAGE][0]
     size1 = [i for i in sizes if i.id == settings.VM_SIZE][0]
-    
+
     all_instances = []
     try:
         print "Creating %d VM instance(s)" % number_vm_instances
@@ -69,7 +70,7 @@ def _create_VM_instances(number_vm_instances, settings):
             print_all_information(settings)
         else:
             traceback.print_exc(file=sys.stdout)
-            
+
     return all_instances
 
 
@@ -91,7 +92,7 @@ def _store_md5_on_instances(all_instances, settings):
         else:
             print "VM instance %s will not be registered to group '%s'\
             " % (instance_id, ip, group_id)
-      
+
 
 def _generate_group_id(all_instances):
     md5_starter_string = ""
@@ -102,7 +103,7 @@ def _generate_group_id(all_instances):
     md5.update(md5_starter_string)
     group_id = md5.hexdigest()
 
-    return group_id      
+    return group_id
 
 
 def collect_instances(settings, group_id=None, instance_id=None, all_VM=False):
@@ -115,26 +116,25 @@ def collect_instances(settings, group_id=None, instance_id=None, all_VM=False):
     elif instance_id:
         if _is_instance_running(instance_id, settings):
             all_instances.append(_get_this_instance(instance_id, settings))
-        
+
     return all_instances
 
 
 def confirm_teardown(settings, all_instances):
     print "Instances to be deleted are "
     print_all_information(settings, all_instances=all_instances)
-    
     teardown_confirmation = None
     while not teardown_confirmation:
         teardown_confirmation = raw_input(
                                 "Are you sure you want to delete (yes/no)? ")
         if teardown_confirmation != 'yes' and teardown_confirmation != 'no':
             teardown_confirmation = None
-            
+
     if teardown_confirmation == 'yes':
         return True
     else:
-        return False 
-    
+        return False
+
 
 def destroy_environ(settings, all_instances):
     """
@@ -221,7 +221,7 @@ def print_all_information(settings, all_instances=None):
         if not all_instances:
             print '\t No running instances'
             sys.exit(1)
-        
+
     counter = 1
     print '\tNo.\tID\t\tIP\t\tPackage\t\tGroup'
     for instance in all_instances:
@@ -231,14 +231,14 @@ def print_all_information(settings, all_instances=None):
         ssh = open_connection(ip, settings)
         group_name = run_command(ssh, "ls %s " % settings.GROUP_ID_DIR)
         vm_type = 'Other'
-        res = run_command(ssh, "[ -d %s ] && echo exists" 
+        res = run_command(ssh, "[ -d %s ] && echo exists"
                            % settings.GROUP_ID_DIR)
         if 'exists\n' in res:
             vm_type = 'RMIT'
-        
+
         if not group_name:
             group_name = '-'
-        
+
         print '\t%d:\t%s\t%s\t%s\t\t%s' % (counter, instance_id,
                                         ip, vm_type, group_name)
         counter += 1
@@ -258,7 +258,7 @@ def _get_this_instance(instance_id, settings):
 
     return this_node
 
-#rename _get_node_ip to _get_instance_ip 
+#rename _get_node_ip to _get_instance_ip
 def _get_node_ip(instance_id, settings):
     """
         Get the ip address of a node
@@ -274,4 +274,4 @@ def _get_node_ip(instance_id, settings):
                 break
     return ip
 
-                
+
