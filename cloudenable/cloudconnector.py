@@ -8,7 +8,8 @@ import hashlib
 from libcloud.compute.types import Provider
 from libcloud.compute.types import NodeState
 from libcloud.compute.providers import get_driver
-from sshconnector.py import *
+
+from sshconnector import *
 
 logger = logging.getLogger(__name__)
 NODE_STATE = ['RUNNING', 'REBOOTING', 'TERMINATED', 'PENDING', 'UNKNOWN']
@@ -30,12 +31,11 @@ def create_environ(number_vm_instances, settings):
     """
     logger.info("create_environ")
     all_instances = _create_VM_instances(number_vm_instances, settings)
-       
     if all_instances:
-        all_running_instances = _wait_for_instance_to_start_running(all_instances, settings)    
+        all_running_instances = _wait_for_instance_to_start_running(all_instances, settings)  
         _store_md5_on_instances(all_running_instances, settings)
         print 'Created VM instances:'
-        print_all_information(settings, all_running_instances)
+        print_all_information(settings, all_instances=all_running_instances)
         
 
 def _create_VM_instances(number_vm_instances, settings):
@@ -50,7 +50,7 @@ def _create_VM_instances(number_vm_instances, settings):
     
     all_instances = []
     try:
-        print(" Creating %d VM instance(s)" % number_vm_instances)
+        print "Creating %d VM instance(s)" % number_vm_instances
         instance_count = 0
         while instance_count < number_vm_instances:
             new_instance = connection.create_node(name="New Centos VM instance",
@@ -61,9 +61,12 @@ def _create_VM_instances(number_vm_instances, settings):
             instance_count += 1
     except Exception, e:
         if "QuotaError" in e[0]:
-            print " Quota Limit Reached: "
+            print "Quota Limit Reached: "
             print "\t %s instances are created." % len(all_instances)
-            print "\t Additional %s instances will not be created" % (number_vm_instances - len(all_instances))
+            print "\t Additional %s instances will not be created\
+            " % (number_vm_instances - len(all_instances))
+            print ' Running VM instances:'
+            print_all_information(settings)
         else:
             traceback.print_exc(file=sys.stdout)
             
@@ -72,26 +75,22 @@ def _create_VM_instances(number_vm_instances, settings):
 
 def _store_md5_on_instances(all_instances, settings):
     group_id = _generate_group_id(all_instances)
-    print " Creating group '%s'" % group_id
+    print "Creating group '%s' ..." % group_id
     for instance in all_instances:
         # login and check for md5 file
-
         instance_id = instance.name
         ip_address = _get_node_ip(instance_id, settings)
         ssh_ready = is_ssh_ready(settings, ip_address)
         if ssh_ready:
-            logger.info("Registering %s (%s) to group '%s'"
-                    % (instance_id, ip, group_id))
-            ssh = _open_connection(ip_address=ip,
-                                       username=settings.USER_NAME,
-                                       password=settings.PASSWORD,
-                                       settings=settings)
+            print "Registering %s (%s) to group '%s'\
+            " % (instance_id, ip_address, group_id)
+            ssh = open_connection(ip_address=ip_address, settings=settings)
             group_id_path = settings.GROUP_ID_DIR+"/"+group_id
-            _run_command(ssh, "mkdir %s" % settings.GROUP_ID_DIR)
-            _run_command(ssh, "touch %s" % group_id_path)
+            run_command(ssh, "mkdir %s" % settings.GROUP_ID_DIR)
+            run_command(ssh, "touch %s" % group_id_path)
         else:
-            logger.info("VM instance %s will not be registered to group '%s'"
-                    % (instance_id, ip, group_id))
+            print "VM instance %s will not be registered to group '%s'\
+            " % (instance_id, ip, group_id)
       
 
 def _generate_group_id(all_instances):
@@ -114,7 +113,7 @@ def collect_instances(settings, group_id=None, instance_id=None, all_VM=False):
     elif group_id:
         all_instances = _get_rego_nodes(group_id, settings)
     elif instance_id:
-        if is_instance_running(instance_id, settings):
+        if _is_instance_running(instance_id, settings):
             all_instances.append(_get_this_instance(instance_id, settings))
         
     return all_instances
@@ -122,7 +121,7 @@ def collect_instances(settings, group_id=None, instance_id=None, all_VM=False):
 
 def confirm_teardown(settings, all_instances):
     print "Instances to be deleted are "
-    print_all_information(settings, all_instances)
+    print_all_information(settings, all_instances=all_instances)
     
     teardown_confirmation = None
     while not teardown_confirmation:
@@ -149,18 +148,17 @@ def destroy_environ(settings, all_instances):
         logging.error("No running instance(s)")
         sys.exit(1)
 
-    logger.info("Terminating %d VM instance(s)" %len(all_instances))
+    print "Terminating %d VM instance(s)" %len(all_instances)
     connection = _create_cloud_connection(settings)
     for instance in all_instances:
         try:
             connection.destroy_node(instance)
         except Exception:
             traceback.print_exc(file=sys.stdout)
-
     _wait_for_instance_to_terminate(all_instances, settings)
 
 
-def is_instance_running(instance_id, settings):
+def _is_instance_running(instance_id, settings):
     """
         Checks whether an instance with @instance_id
         is running or not
@@ -180,14 +178,14 @@ def _wait_for_instance_to_start_running(all_instances, settings):
     while all_instances:
         for instance in all_instances:
             instance_id = instance.name
-            if is_instance_running(instance_id, settings):
+            if _is_instance_running(instance_id, settings):
                 all_running_instances.append(instance)
                 all_instances.remove(instance)
-                logger.info('Current status of Instance %s: %s'
-                % (instance_id, NODE_STATE[NodeState.RUNNING]))
+                print 'Current status of Instance %s: %s\
+                ' % (instance_id, NODE_STATE[NodeState.RUNNING])
             else:
-                logger.info('Current status of Instance %s: %s'
-                    % (instance_id, NODE_STATE[instance.state]))
+                print 'Current status of Instance %s: %s\
+                ' % (instance_id, NODE_STATE[instance.state])
 
         time.sleep(settings.CLOUD_SLEEP_INTERVAL)
 
@@ -198,19 +196,18 @@ def _wait_for_instance_to_terminate(all_instances, settings):
     while all_instances:
         for instance in all_instances:
             instance_id = instance.name
-            if not is_instance_running(instance_id, settings):
-              #  all_running_instances.append(instance)
+            if not _is_instance_running(instance_id, settings):
                 all_instances.remove(instance)
-                logger.info('Current status of Instance %s: %s'
-                % (instance_id, NODE_STATE[NodeState.TERMINATED]))
+                print 'Current status of Instance %s: %s\
+                ' % (instance_id, NODE_STATE[NodeState.TERMINATED])
             else:
-                logger.info('Current status of Instance %s: %s'
-                    % (instance_id, NODE_STATE[instance.state]))
+                print 'Current status of Instance %s: %s\
+                ' % (instance_id, NODE_STATE[instance.state])
 
         time.sleep(settings.CLOUD_SLEEP_INTERVAL)
 
 
-def print_all_information(settings, all_instances):
+def print_all_information(settings, all_instances=None):
     """
         Print information about running instances
             - ID
@@ -219,32 +216,32 @@ def print_all_information(settings, all_instances):
             - list of groups
     """
     if not all_instances:
-        print '\t No running instances'
-        sys.exit(1)
+        connection = _create_cloud_connection(settings)
+        all_instances = connection.list_nodes()
+        if not all_instances:
+            print '\t No running instances'
+            sys.exit(1)
         
     counter = 1
     print '\tNo.\tID\t\tIP\t\tPackage\t\tGroup'
     for instance in all_instances:
         instance_id = instance.name
         ip = _get_node_ip(instance_id, settings)
-        if is_ssh_ready(settings, ip):
-            ssh = _open_connection(ip_address=ip,
-                                           username=settings.USER_NAME,
-                                           password=settings.PASSWORD,
-                                           settings=settings)
-            group_name = _run_command(ssh, "ls %s " % settings.GROUP_ID_DIR)
-            vm_type = 'Other'
-            res = _run_command(ssh, "[ -d %s ] && echo exists" 
-                               % settings.GROUP_ID_DIR)
-            if 'exists\n' in res:
-                vm_type = 'RMIT'
-            
-            if not group_name:
-                group_name = '-'
-            
-            print '\t%d:\t%s\t%s\t%s\t\t%s' % (counter, instance_id,
-                                            ip, vm_type, group_name)
-            counter += 1
+        #if is_ssh_ready(settings, ip):
+        ssh = open_connection(ip, settings)
+        group_name = run_command(ssh, "ls %s " % settings.GROUP_ID_DIR)
+        vm_type = 'Other'
+        res = run_command(ssh, "[ -d %s ] && echo exists" 
+                           % settings.GROUP_ID_DIR)
+        if 'exists\n' in res:
+            vm_type = 'RMIT'
+        
+        if not group_name:
+            group_name = '-'
+        
+        print '\t%d:\t%s\t%s\t%s\t\t%s' % (counter, instance_id,
+                                        ip, vm_type, group_name)
+        counter += 1
 
 
 def _get_this_instance(instance_id, settings):

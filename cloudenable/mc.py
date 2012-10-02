@@ -4,6 +4,7 @@ import sys
 import time
 import logging
 
+import cloudconnector
 
 def start():
 
@@ -23,7 +24,7 @@ def start():
             sys.exit(1)
 
     environ_fields = ['USER_NAME', 'PASSWORD', 'PRIVATE_KEY',
-                      'VM_SIZE',
+                      'VM_SIZE', 'VM_IMAGE',
                       'PAYLOAD_LOCAL_DIRNAME', 'PAYLOAD',
                       'DEST_PATH_PREFIX', 'DEPENDS', 'COMPILER',
                       'COMPILE_FILE', 'PAYLOAD_CLOUD_DIRNAME',
@@ -71,7 +72,7 @@ def start():
 
     if 'create' in args:
         if options.number_vm_instances:
-            res = create_environ(options.number_vm_instances, settings)
+            res = cloudconnector.create_environ(options.number_vm_instances, settings)
             logger.debug(res)
         else:
             logging.error("enter number of VM instances to be created")
@@ -154,18 +155,19 @@ def start():
         # TODO: make sure that the instance we are tearing down is the one
         # that is running the package and no some random VM, probably by
         # logging in and checking state.
+        
         if options.group_id:
-            all_instances = collect_instances(settings, group_id=options.group_id)
-            if confirm_teardown(settings, all_instances):
-                destroy_environ(settings, all_instances)
+            all_instances = cloudconnector.collect_instances(settings, group_id=options.group_id)
+            if cloudconnector.confirm_teardown(settings, all_instances):
+                cloudconnector.destroy_environ(settings, all_instances)
         elif options.instance_id:
-            all_instances = collect_instances(settings, instance_id=options.instance_id)
-            if confirm_teardown(settings, all_instances):
-                destroy_environ(settings, all_instances)
+            all_instances = cloudconnector.collect_instances(settings, instance_id=options.instance_id)
+            if cloudconnector.confirm_teardown(settings, all_instances):
+                cloudconnector.destroy_environ(settings, all_instances)
         elif 'teardown_all' in args:
-            all_instances = collect_instances(settings, all_VM=True)
-            if confirm_teardown(settings, all_instances):
-                destroy_environ(settings, all_instances)
+            all_instances = cloudconnector.collect_instances(settings, all_VM=True)
+            if cloudconnector.confirm_teardown(settings, all_instances):
+                cloudconnector.destroy_environ(settings, all_instances)
         else:
             logger.error("Enter either group id or instance id of the package")
             parser.print_help()
