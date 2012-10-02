@@ -1,10 +1,13 @@
-from simplepackage import *
 from optparse import OptionParser
 import sys
 import time
 import logging
+import logging.config
 
 import cloudconnector
+from cloudconnector import *
+from hrmcimpl import *
+#from simplepackage import *
 
 def start():
 
@@ -125,7 +128,7 @@ def start():
                                          settings)):
                 print("job is running.  Wait or CTRL-C to exit here. \
                  run 'check' command to poll again")
-                time.sleep(settings.SLEEP_TIME)
+                time.sleep(settings['SLEEP_TIME'])
 
         else:
             logging.error("enter group id of the run")

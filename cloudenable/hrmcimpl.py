@@ -109,7 +109,7 @@ def get_output(instance_id, output_dir, settings):
         #sys.exit(1)
     logger.info("output directory is %s" % output_dir)
     for file in settings['OUTPUT_FILES']:
-        _get_file(ssh, os.path.join(settings['DEST_PATH_PREFIX'],
+        get_file(ssh, os.path.join(settings['DEST_PATH_PREFIX'],
                                     settings['PAYLOAD_CLOUD_DIRNAME']),
                   file, output_dir)
     # TODO: do integrity check on output files
