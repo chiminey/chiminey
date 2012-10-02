@@ -7,6 +7,7 @@ import logging
 import logging.config
 import paramiko
 import json
+import sys
 import random
 
 
@@ -25,7 +26,7 @@ import simplepackage
 from libcloud.compute.drivers.ec2 import EucNodeDriver
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('tests')
 
 from smartconnector import Stage
 from smartconnector import SequentialStage
@@ -76,6 +77,9 @@ class TestStage(Stage):
 
 
 class SetupStageTests(unittest.TestCase):
+    """
+    Tests the HRMC Setup Stage
+    """
     HOME_DIR = os.path.expanduser("~")
     global_filesystem = HOME_DIR+'/test_globalFS'
     local_filesystem = 'default'
@@ -86,7 +90,6 @@ class SetupStageTests(unittest.TestCase):
         self.image_name = "ami-0000000d"  # FIXME: is hardcoded in
                                           # simplepackage
         self.instance_name = "foo"
-
         self.settings = {
             'USER_NAME':"accountname", 'PASSWORD':"mypassword",
             'GROUP_DIR_ID':"test", 'EC2_ACCESS_KEY':"",
@@ -98,10 +101,13 @@ class SetupStageTests(unittest.TestCase):
             'COMPILE_FILE':"foo", 'MAX_SEED_INT':100, 'RETRY_ATTEMPTS':3,
             'OUTPUT_FILES':['a', 'b']}
 
-    def test_simple(self):
-        logger.debug("here I am")
+    def test_setup_simple(self):
+
+        logger.debug("%s:%s" %(self.__class__.__name__,sys._getframe().f_code.co_name))
 
         group_id = "sq42kdjshasdkjghauiwytuiawjmkghasjkghasg"
+
+        # Setup the mocks for SSH and cloud connections
 
         # Fake channel for communicating with server vida socket interface
         fakechan = flexmock(send=lambda str: True)
@@ -115,11 +121,8 @@ class SetupStageTests(unittest.TestCase):
         fakechan.should_receive('close').and_return(True)
 
         exec_mock = ["", flexmock(readlines=lambda: ["done\n"]), ""]
-
-
         # Make fake sftp connection
         fakesftp = flexmock(get=lambda x, y: True, put=lambda x, y: True)
-
         exec_ret = ["", flexmock(readlines=lambda: ["exists\n"]), ""]
         # Make second fake ssh connection  for the individual setup operation
         fakessh2 = flexmock(load_system_host_keys=lambda x: True,
@@ -130,19 +133,15 @@ class SetupStageTests(unittest.TestCase):
                         exec_command=lambda command: exec_ret,
                         invoke_shell=lambda: fakechan,
                         open_sftp=lambda: fakesftp)
-
         # and use fake for paramiko
         flexmock(paramiko).should_receive('SSHClient') \
             .and_return(fakessh2)
-
         # Make fake cloud connection
         fakeimage = flexmock(id=self.image_name)
         fakesize = flexmock(id=self.vm_size)
-
         fakenode_state2 = flexmock(name="foo",
                                    state=NodeState.RUNNING,
                                    public_ips=[1])
-
         fakecloud = flexmock(
             found=True,
             list_images=lambda: [fakeimage],
@@ -150,22 +149,16 @@ class SetupStageTests(unittest.TestCase):
             create_node=lambda
                         name, size, image, ex_keyname,
                         ex_securitygroup: fakenode_state1)
-
         fakecloud.should_receive('list_nodes') \
             .and_return((fakenode_state2,))
-
         flexmock(EucNodeDriver).new_instances(fakecloud)
 
-
+        # Setup fsys and initial config files for setup
         f1 = DataObject("config.sys")
         f1.create(json.dumps(self.settings))
-
         f2 = DataObject("runinfo.sys")
         f2.create(json.dumps({'group_id':group_id}))
-
         print("f2=%s" % f2)
-
-
         fs = FileSystem(self.global_filesystem, self.local_filesystem)
         fs.create(self.local_filesystem, f1)
         fs.create(self.local_filesystem, f2)
@@ -173,17 +166,26 @@ class SetupStageTests(unittest.TestCase):
         context = {'filesys':fs}
         print("context=%s" % context)
         s1 = Setup()
+
         res = s1.triggered(context)
         print res
         self.assertEquals(res, True)
         self.assertEquals(s1.group_id, group_id)
+
         s1.process(context)
 
+        s1.output(context)
+        config = fs.retrieve("default/runinfo.sys")
+        content = json.loads(config.retrieve())
+        self.assertEquals(content,
+            {'group_id': group_id,
+            'setup_finished': 1})
 
 
 class RunStageTests(unittest.TestCase):
-
-
+    """
+    Tests the HRMC Run Stage
+    """
 
     HOME_DIR = os.path.expanduser("~")
     global_filesystem = HOME_DIR+'/test_globalFS'
@@ -207,12 +209,10 @@ class RunStageTests(unittest.TestCase):
             'COMPILE_FILE':"foo", 'MAX_SEED_INT':100, 'RETRY_ATTEMPTS':3,
             'OUTPUT_FILES':['a', 'b']}
 
+    def test_run_simple(self):
 
-
-
-    def test_simple(self):
-
-        logger.debug("test_prepare_multi_input")
+        logger.debug("%s:%s" %(self.__class__.__name__,sys._getframe().f_code.co_name))
+        group_id = "sq42kdjshasdkjghauiwytuiawjmkghasjkghasg"
 
         # Make fake sftp connection
         fakesftp = flexmock(put=lambda x, y: True)
@@ -248,14 +248,30 @@ class RunStageTests(unittest.TestCase):
 
         flexmock(EucNodeDriver).new_instances(fakecloud)
 
+        # test triggered
 
-        self.assertEquals(prepare_multi_input("foobar","",self.settings, None),None)
+        f1 = DataObject("config.sys")
+        f1.create(json.dumps(self.settings))
+        f2 = DataObject("runinfo.sys")
+        f2.create(json.dumps({'group_id':group_id,'setup_finished':1}))
+        print("f2=%s" % f2)
+        fs = FileSystem(self.global_filesystem, self.local_filesystem)
+        fs.create(self.local_filesystem, f1)
+        fs.create(self.local_filesystem, f2)
+        print("fs=%s" % fs)
+        context = {'filesys':fs}
+        print("context=%s" % context)
+        s1 = Run()
+        res = s1.triggered(context)
+        print res
+        self.assertEquals(res, True)
+        self.assertEquals(s1.group_id, group_id)
+
+        #s1.process(context)
 
 
-    def test_simple(self):
 
-        logger.debug("test_prepare_multi_input")
-
+    def test_process(self):
         # Make fake ssh connection
         fakessh1 = flexmock(load_system_host_keys= lambda x: True,
                         set_missing_host_key_policy= lambda x: True,
@@ -290,10 +306,6 @@ class RunStageTests(unittest.TestCase):
 
         res = run_multi_task("foobar","",self.settings)
         self.assertEquals(res.values(),[['1']])
-
-
-
-
 
 
 
@@ -770,4 +782,5 @@ class CloudTests(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    logging.config.fileConfig('logging.conf')
     unittest.main()
