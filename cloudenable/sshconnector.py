@@ -15,7 +15,7 @@ def is_ssh_ready(settings, ip_address):
             ssh = open_connection(ip_address, settings)
             ssh_ready = True
         except Exception, e:
-            sleep(settings.CLOUD_SLEEP_INTERVAL)
+            sleep(settings['CLOUD_SLEEP_INTERVAL'])
             #print ("Connecting to %s in progress ..." % ip_address)
             #traceback.print_exc(file=sys.stdout)
     return ssh_ready
@@ -32,15 +32,15 @@ def open_connection(ip_address, settings):
 
     #TODO: handle exceptions if connection does not work.
     # use private key if exists
-    if os.path.exists(settings.PRIVATE_KEY):
-        privatekeyfile = os.path.expanduser(settings.PRIVATE_KEY)
+    if os.path.exists(settings['PRIVATE_KEY']):
+        privatekeyfile = os.path.expanduser(settings['PRIVATE_KEY'])
         mykey = paramiko.RSAKey.from_private_key_file(privatekeyfile)
-        ssh.connect(ip_address, username=settings.USER_NAME, timeout=60, pkey=mykey)
+        ssh.connect(ip_address, username=settings['USER_NAME'], timeout=60, pkey=mykey)
     else:
-        print("%s %s %s" % (ip_address, settings.USER_NAME, settings.PASSWORD))
+        print("%s %s %s" % (ip_address, settings['USER_NAME'], settings['PASSWORD']))
         print(ssh)
-        ssh.connect(ip_address, username=settings.USER_NAME,
-                    password=settings.PASSWORD, timeout=60)
+        ssh.connect(ip_address, username=settings['USER_NAME'],
+                    password=settings['PASSWORD'], timeout=60)
 
     #channel = ssh.invoke_shell().open_session()
     return ssh
@@ -62,7 +62,7 @@ def _run_sudo_command(ssh, command, settings, instance_id):
     full_buff = ''
     buff = ''
     buff_size = 9999
-    while not '[%s@%s ~]$ ' % (settings.USER_NAME, instance_id) in buff:
+    while not '[%s@%s ~]$ ' % (settings['USER_NAME'], instance_id) in buff:
         resp = chan.recv(buff_size)
         #print("resp=%s" % resp)
         buff += resp
@@ -71,7 +71,7 @@ def _run_sudo_command(ssh, command, settings, instance_id):
 
     chan.send("%s\n" % command)
     buff = ''
-    while not '[root@%s %s]# ' % (instance_id, settings.USER_NAME) in buff:
+    while not '[root@%s %s]# ' % (instance_id, settings['USER_NAME']) in buff:
         resp = chan.recv(buff_size)
         print(resp)
         buff += resp
@@ -82,7 +82,7 @@ def _run_sudo_command(ssh, command, settings, instance_id):
 
     chan.send("exit\n")
     buff = ''
-    while not '[%s@%s ~]$ ' % (settings.USER_NAME, instance_id) in buff:
+    while not '[%s@%s ~]$ ' % (settings['USER_NAME'], instance_id) in buff:
         resp = chan.recv(buff_size)
         #print("resp=%s" % resp)
         buff += resp
