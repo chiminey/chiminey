@@ -73,7 +73,9 @@ def run_task(instance_id, settings):
     ip = get_instance_ip(instance_id, settings)
     ssh = open_connection(ip_address=ip,
                           settings=settings)
-    if len(get_package_pid(ssh, settings['COMPILE_FILE'])) > 1:
+    pids = get_package_pids(ssh, settings['COMPILE_FILE'])
+    logger.debug("pids=%s" % pids)
+    if len(pids) > 1:
         logger.error("warning:multiple packages running")
         raise PackageFailedError("multiple packages running")
     run_command(ssh, "cd %s; ./%s >& %s &"
@@ -83,16 +85,17 @@ def run_task(instance_id, settings):
                     settings['COMPILE_FILE'], "output"))
     import time
     attempts = settings['RETRY_ATTEMPTS']
+    logger.debug("checking for package start")
     for x in range(0, attempts):
         time.sleep(5)  # to give process enough time to start
-        pid = get_package_pid(ssh, settings['COMPILE_FILE'])
-        logger.debug(pid)
-        if pid:
+        pids = get_package_pids(ssh, settings['COMPILE_FILE'])
+        logger.debug("pids=%s" % pids)
+        if pids:
             break
     else:
         raise PackageFailedError("package did not start")
-    return pid.split(' ')
-    pass
+    # pids should have maximum of one element
+    return pids
 
 
 def get_output(instance_id, output_dir, settings):
@@ -123,7 +126,7 @@ def job_finished(instance_id, settings):
 
     ip = get_instance_ip(instance_id, settings)
     ssh = open_connection(ip_address=ip, settings=settings)
-    pid = get_package_pid(ssh, settings['COMPILE_FILE'])
+    pid = get_package_pids(ssh, settings['COMPILE_FILE'])
     return not pid
 
 
@@ -189,16 +192,16 @@ def run_multi_task(group_id, output_dir, settings):
     pids = []
     for node in nodes:
         try:
-            pid = run_task(node.name, settings)
+            pids_for_task = run_task(node.name, settings)
         except PackageFailedError, e:
             logger.error(e)
             logger.error("unable to start package on node %s" % node)
             #TODO: cleanup node of copied input files etc.
         else:
-            pids.append(pid)
+            pids.append(pids_for_task)
 
-    pids = dict(zip(nodes, pids))
-    return pids
+    all_pids = dict(zip(nodes, pids))
+    return all_pids
 
 
 def prepare_multi_input(group_id, input_dir, settings, seed):

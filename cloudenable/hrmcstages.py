@@ -5,6 +5,8 @@
 import logging
 import logging.config
 import json
+import os
+
 logger = logging.getLogger(__name__)
 
 
@@ -15,19 +17,23 @@ from smartconnector import SequentialStage
 
 from filesystem import FileSystem
 from filesystem import DataObject
-
 from cloudconnector import get_rego_nodes
+from cloudconnector import open_connection
+from cloudconnector import get_instance_ip
 from hrmcimpl import setup_multi_task
 from hrmcimpl import prepare_multi_input
-
+from hrmcimpl import run_command
+from hrmcimpl import PackageFailedError
+from hrmcimpl import run_multi_task
+from hrmcimpl import _normalize_dirpath
 
 def get_elem(context,key):
     try:
-        fsys = context[key]
+        elem = context[key]
     except KeyError,e:
-        logger.error("canot load filesys %s from %s" % (e,context))
-        return {}
-    return fsys
+        logger.error("canot load elem %s from %s" % (e,context))
+        return None
+    return elem
 
 
 def get_filesys(context):
@@ -240,6 +246,7 @@ class Run(Stage):
             logger.info("setup was not finished")
             return False
 
+
     def process(self, context):
 
         seed = self.settings['seed']
@@ -254,22 +261,72 @@ class Run(Stage):
 
         # expose subdirectory as filesystem for copying
 
-        fsys.get_directory("input")
+        nodes = get_rego_nodes(self.group_id, self.settings)
 
+        import random
+        random.seed(seed)
+        seeds = {}
+        for node in nodes:
+            # FIXME: is the random supposed to be positive or negative?
+            seeds[node] = random.randrange(0,self.settings['MAX_SEED_INT'])
 
-        prepare_multi_input(self.group_id, options.input_dir,
-                            settings, seed)
+        if seed:
+            print ("seed for full package run = %s" % seed)
+        else:
+            print ("seeds for each node in group %s = %s" % (self.group_id,[(x.name,seeds[x]) for x in seeds.keys()]))
+
+        # input_dir is assumed to be populated.
+        input_dir = "input"
+
+        logger.debug("seeds = %s" % seeds)
+        for node in nodes:
+            instance_id = node.name
+            logger.info("prepare_input %s %s" % (instance_id, input_dir))
+            ip = get_instance_ip(instance_id, self.settings)
+            ssh = open_connection(ip_address=ip, settings=self.settings)
+            #ssh = open_connection(ip_address=ip, username=self.settings['USER_NAME'],
+            #                       password=self.settings['PASSWORD'], settings=self.settings)
+
+            #input_dir = _normalize_dirpath(input_dir)
+            #dirList = os.listdir(input_dir)
+            # for fname in dirList:
+            #     logger.debug(fname)
+            #     _upload_input(ssh, input_dir, fname,
+            #                   os.path.join(settings['DEST_PATH_PREFIX'],
+            #                                settings['PAYLOAD_CLOUD_DIRNAME']))
+
+            fsys.upload_input(ssh, "input", os.path.join(self.settings['DEST_PATH_PREFIX'],
+                                           self.settings['PAYLOAD_CLOUD_DIRNAME']))
+
+            run_command(ssh, "cd %s; cp rmcen.inp rmcen.inp.orig" %
+                        (os.path.join(self.settings['DEST_PATH_PREFIX'],
+                                      self.settings['PAYLOAD_CLOUD_DIRNAME'])))
+            run_command(ssh, "cd %s; dos2unix rmcen.inp" %
+                        (os.path.join(self.settings['DEST_PATH_PREFIX'],
+                                      self.settings['PAYLOAD_CLOUD_DIRNAME'])))
+            run_command(ssh, "cd %s; sed -i '/^$/d' rmcen.inp" %
+                        (os.path.join(self.settings['DEST_PATH_PREFIX'],
+                                      self.settings['PAYLOAD_CLOUD_DIRNAME'])))
+
+            run_command(ssh, "cd %s; sed -i 's/[0-9]*[ \t]*iseed.*$/%s\tiseed/' rmcen.inp" %
+                        (os.path.join(self.settings['DEST_PATH_PREFIX'],
+                                      self.settings['PAYLOAD_CLOUD_DIRNAME']), seeds[node]))
+
 
         try:
-            pids = run_multi_task(group_id, options.input_dir, settings)
+            pids = run_multi_task(self.group_id, input_dir, self.settings)
+
+
         except PackageFailedError, e:
             logger.error(e)
             logger.error("unable to start packages")
             #TODO: cleanup node of copied input files etc.
             sys.exit(1)
+        return pids
+
 
     def output(self, context):
-        # TODO: remoge setup_finished to avoid retriggering
+        # TODO: communicate required data for next stage
         pass
 
 class Finished(Stage):

@@ -8,6 +8,8 @@ import tempfile
 import logging
 import logging.config
 
+from simplepackage import _upload_input
+
 logging.config.fileConfig('logging.conf')
 logger = logging.getLogger(__name__)
 
@@ -83,11 +85,23 @@ class FileSystem(object):
         # TODO
         return []
 
+    def upload_input(self, ssh, local_filesystem, dest):
+        input_dir = os.path.join(self.global_filesystem,local_filesystem)
+        logger.debug("input_dir =%s" % input_dir)
+        dirList = os.listdir(input_dir)
+        for fname in dirList:
+            logger.debug("fname=%s" % fname)
+            _upload_input(ssh, input_dir,  fname, dest)
+
+
 class DataObject(object):
     # Assume that whole file is contained in one big string
     # as it makes json parsing easier
-    _name = ""
-    _content = ""
+
+    def __init__(self):
+        self._name = ""
+        self.content = ""
+
     def __init__(self, name):
         self._name = name
         self.content = ""

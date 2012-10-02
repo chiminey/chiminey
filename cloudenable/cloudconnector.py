@@ -231,9 +231,9 @@ def print_all_information(settings, all_instances=None):
         ssh = open_connection(ip, settings)
         group_name = run_command(ssh, "ls %s " % settings['GROUP_ID_DIR'])
         vm_type = 'Other'
-        res = run_command(ssh, "[ -d %s ] && echo exists"
+        res = run_command(ssh, "[ -d %s ] && echo 1"
                            % settings['GROUP_ID_DIR'])
-        if 'exists\n' in res:
+        if '1\n' in res:
             vm_type = 'RMIT'
 
         if not group_name:
@@ -280,6 +280,7 @@ def get_rego_nodes(group_id, settings):
     """
     Returns nectar nodes that are currently packaged enabled.
     """
+    logger.debug("get_rego_nodes")
     # get all available nodes
     conn = _create_cloud_connection(settings)
     packaged_node = []
@@ -289,13 +290,14 @@ def get_rego_nodes(group_id, settings):
                               settings=settings)
         # NOTE: assumes use of bash shell
         group_id_path = settings['GROUP_ID_DIR']+"/"+group_id
-        res = run_command(ssh, "[ -f %s ] && echo exists" % group_id_path)
+        res = run_command(ssh, "[ -f %s ] && echo 1" % group_id_path)
         logger.debug("res=%s" % res)
-        if 'exists\n' in res:
+        if '1\n' in res:
             logger.debug("node %s exists for group %s "
                          % (node.name, group_id))
             packaged_node.append(node)
         else:
             logger.debug("NO node for %s exists for group %s "
                          % (node.name, group_id))
+    logger.debug("get_rego_nodes DONE")
     return packaged_node

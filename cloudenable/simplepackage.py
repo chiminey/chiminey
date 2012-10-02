@@ -606,10 +606,10 @@ def _get_file(ssh, source_path, package_file, environ_dir):
 
 def _put_file(ssh, source_path, package_file, environ_dir):
     ftp = ssh.open_sftp()
-    logger.debug("%s %s" % (source_path, environ_dir))
+    logger.debug("source=%s environ=%s" % (source_path, environ_dir))
     source_file = os.path.join(source_path, package_file).replace('\\', '/')
     dest_file = os.path.join(environ_dir, package_file).replace('\\', '/')
-    logger.debug("%s %s" % (source_file, dest_file))
+    logger.debug("source_file=%s dest_file=%s" % (source_file, dest_file))
     ftp.put(source_file, dest_file)
 
 
@@ -741,6 +741,7 @@ def run_multi_task(group_id, output_dir, settings):
     """
     nodes = _get_rego_nodes(group_id, settings)
 
+    logger.debug("rego_nodes = %s" % nodes)
     pids = []
     for node in nodes:
         try:
@@ -764,8 +765,6 @@ def prepare_multi_input(group_id, input_dir, settings, seed):
     """
 
     nodes = _get_rego_nodes(group_id, settings)
-
-
 
     import random
     random.seed(seed)

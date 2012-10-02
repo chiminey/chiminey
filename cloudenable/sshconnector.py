@@ -20,7 +20,7 @@ def is_ssh_ready(settings, ip_address):
             #traceback.print_exc(file=sys.stdout)
     return ssh_ready
 
-    
+
 def open_connection(ip_address, settings):
     # open up the connection
     ssh = paramiko.SSHClient()
@@ -47,12 +47,14 @@ def open_connection(ip_address, settings):
 
 
 def run_command(ssh, command, current_dir=None):
-    logger.debug("%s %s " % (current_dir, command))
+    logger.debug("run_command %s; %s " % (current_dir, command))
     if current_dir:
         command = "cd %s;%s" % (current_dir, command)
     logger.debug(command)
     stdin, stdout, stderr = ssh.exec_command(command)
-    return stdout.readlines()
+    res =  stdout.readlines()
+    logger.debug("run_command_stdout=%s" % res)
+    return res
 
 
 def run_sudo_command(ssh, command, settings, instance_id):
@@ -140,8 +142,19 @@ def put_file(ssh, source_path, package_file, environ_dir):
     ftp.put(source_file, dest_file)
 
 
-def get_package_pid(ssh, command):
-    pid = run_command(ssh, "/sbin/pidof %s" % command)
-    if len(pid):
-        pid = pid[0]  # if some returns, the pids are in first element
-    return pid
+def get_package_pids(ssh, command):
+    logger.debug("get_package_pids")
+    pid_lines = run_command(ssh, "/sbin/pidof %s" % command)
+    logger.debug("pid_lines=%s" % pid_lines)
+    # could return multiple lines so pick first.
+    pids = ""
+    try:
+        pids = pid_lines[0]
+    except IndexError:
+        pids = ""
+    # if len(pid_lines) > 1:
+    #     pids = pid_lines[0]  # if some returns, the pids are in first element
+    # else:
+    #     pids = pid_lines
+    logger.debug("pids=%s" % pids)
+    return pids.split(' ')
