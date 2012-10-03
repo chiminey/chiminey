@@ -223,11 +223,13 @@ class SequentialStage(Stage):
 class SmartConnector(object):
     """ A smart Connector is a container for stages """
 
-    def __init__(self, stage):
-        self.stage = stage
+    def __init__(self, stage=None):
+        self.stages = []
+        if stage:
+            self.stages.append(stage)
 
     def register(self,stage):
-        self.stage = stage
+         self.stages.append(stage)
 
     def process(self,context):
         if self.stage.triggered(context):

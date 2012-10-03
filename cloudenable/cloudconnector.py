@@ -11,6 +11,7 @@ from libcloud.compute.providers import get_driver
 
 from sshconnector import *
 
+
 logger = logging.getLogger(__name__)
 NODE_STATE = ['RUNNING', 'REBOOTING', 'TERMINATED', 'PENDING', 'UNKNOWN']
 
@@ -19,7 +20,7 @@ def _create_cloud_connection(settings):
     OpenstackDriver = get_driver(Provider.EUCALYPTUS)
     logger.debug("Connecting... %s" % OpenstackDriver)
     connection = OpenstackDriver(settings['EC2_ACCESS_KEY'], secret=settings['EC2_SECRET_KEY'],
-                           host="nova.rc.nectar.org.au", secure=False,
+                           host="nova.rc.nectar.org.au", secure=True,
                            port=8773, path="/services/Cloud")
     logger.debug("Connected")
     return connection
@@ -34,9 +35,10 @@ def create_environ(number_vm_instances, settings):
 
     if all_instances:
         all_running_instances = _wait_for_instance_to_start_running(all_instances, settings)
-        _store_md5_on_instances(all_running_instances, settings)
+        group_id = _store_md5_on_instances(all_running_instances, settings)
         print 'Created VM instances:'
         print_all_information(settings, all_instances=all_running_instances)
+        return group_id
 
 
 def _create_VM_instances(number_vm_instances, settings):
@@ -92,6 +94,8 @@ def _store_md5_on_instances(all_instances, settings):
         else:
             print "VM instance %s will not be registered to group '%s'\
             " % (instance_id, ip, group_id)
+        
+    return group_id
 
 
 def _generate_group_id(all_instances):
