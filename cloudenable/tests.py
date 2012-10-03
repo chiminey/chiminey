@@ -409,15 +409,15 @@ class ConnectorTests(unittest.TestCase):
 
         self.assertEquals(context['count'],10)
 
-    def test_smart_connector(self):
-        """
-        Creates a simple smart connector
-        """
-        context = {}
-        s1 = TestStage(context)
-        ss1 = SmartConnector(s1)
-        ss1.process(context)
-        self.assertEquals(context,{'teststage':1})
+    # def test_smart_connector(self):
+    #     """
+    #     Creates a simple smart connector
+    #     """
+    #     context = {}
+    #     s1 = TestStage(context)
+    #     ss1 = SmartConnector(s1)
+    #     ss1.process(context)
+    #     self.assertEquals(context,{'teststage':1})
 
     def test_seq_stage(self):
         """
@@ -526,9 +526,12 @@ class CloudTests(unittest.TestCase):
             .and_return((fakenode_state1,)) \
             .and_return((fakenode_state2,))
 
+        group_id = 'acbd18db4cc2f85cedef654fccc4a4d8'
+        flexmock(cloudconnector).should_receive('_generate_group_id').and_return(group_id)
+
         flexmock(EucNodeDriver).new_instances(fakecloud)
 
-        self.assertEquals(create_environ(1, self.settings), None)
+        self.assertEquals(create_environ(1, self.settings), group_id)
 
     def test_setup_multi_task(self):
 
