@@ -10,22 +10,6 @@ import json
 import sys
 import random
 
-'''
-from simplepackage import _create_cloud_connection
-from simplepackage import setup_multi_task
-from simplepackage import prepare_multi_input
-from simplepackage import create_environ
-from simplepackage import run_multi_task
-from simplepackage import packages_complete
-from simplepackage import collect_instances
-from simplepackage import destroy_environ
-from simplepackage import NodeState
-from simplepackage import _run_command
-
-
-import simplepackage
-'''
-
 from cloudconnector import *
 from sshconnector import get_package_pids
 from hrmcimpl import *
