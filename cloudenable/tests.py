@@ -27,12 +27,17 @@ import simplepackage
 '''
 
 from cloudconnector import *
-#from sshconnector import *
+from sshconnector import get_package_pids
 from hrmcimpl import *
 
 import cloudconnector
 import  sshconnector
 import hrmcimpl
+
+from hrmcstages import get_filesys
+from hrmcstages import get_file
+from hrmcstages import get_settings
+from hrmcstages import get_run_info
 
 
 from libcloud.compute.drivers.ec2 import EucNodeDriver
@@ -86,6 +91,25 @@ class TestStage(Stage):
     def output(self, context):
         context[self.key] += 1
         pass
+
+
+class ConfigureStageTests(unittest.TestCase):
+
+    def test_simple(self):
+
+        con = Configure()
+        context = {}
+        self.assertTrue(con.triggered(context), True)
+        con.process(context)
+        context = con.output(context)
+        self.assertEquals(context.keys(),['filesys'] )
+        settings = get_settings(context)
+        self.assertTrue(len(settings) > 0)
+
+
+class CreateStageTests(unittest.TestCase):
+    # TODO:
+    pass
 
 
 class SetupStageTests(unittest.TestCase):
@@ -303,6 +327,118 @@ class RunStageTests(unittest.TestCase):
 
 
 
+class FinishedStageTests(unittest.TestCase):
+    """
+    Tests the HRMC Run Stage
+    """
+
+    HOME_DIR = os.path.expanduser("~")
+    global_filesystem = HOME_DIR+'/test_runstageTests'
+    local_filesystem = 'default'
+
+    def setUp(self):
+        logging.config.fileConfig('logging.conf')
+        self.vm_size = 100
+        self.image_name = "ami-0000000d"  # FIXME: is hardcoded in
+                                          # simplepackage
+        self.instance_name = "foo"
+
+        self.settings = {
+            'USER_NAME':"accountname", 'PASSWORD':"mypassword",
+            'GROUP_DIR_ID':"test", 'EC2_ACCESS_KEY':"",
+            'EC2_SECRET_KEY':"", 'VM_SIZE':self.vm_size, 'VM_IMAGE':"ami-0000000d",
+            'PRIVATE_KEY_NAME':"", 'PRIVATE_KEY':"", 'SECURITY_GROUP':"",
+            'CLOUD_SLEEP_INTERVAL':0, 'GROUP_ID_DIR':"", 'DEPENDS':('a',),
+            'DEST_PATH_PREFIX':"package", 'PAYLOAD_CLOUD_DIRNAME':"package",
+            'PAYLOAD_LOCAL_DIRNAME':"", 'COMPILER':"g77", 'PAYLOAD':"payload",
+            'COMPILE_FILE':"foo", 'MAX_SEED_INT':100, 'RETRY_ATTEMPTS':3,
+            'OUTPUT_FILES':['a', 'b']}
+
+
+
+
+    def test_run(self):
+
+
+        logger.debug("%s:%s" %(self.__class__.__name__,sys._getframe().f_code.co_name))
+        group_id = "sq42kdjshasdkjghauiwytuiawjmkghasjkghasg"
+
+        #TODO: copy input files into filesystem
+
+
+        # Make fake sftp connection
+        fakesftp = flexmock(put=lambda x, y: True)
+
+        # Make fake ssh connection
+        fakessh1 = flexmock(load_system_host_keys= lambda x: True,
+                        set_missing_host_key_policy= lambda x: True,
+                        connect= lambda ipaddress, username, password, timeout: True,
+                        exec_command = lambda command: ["",flexmock(readlines = lambda: ["1\n"]),""],
+                        open_sftp=lambda: fakesftp
+                        )
+
+        # and use fake for paramiko
+        flexmock(paramiko).should_receive('SSHClient').and_return(fakessh1)
+
+        # Make fake cloud connection
+        fakeimage = flexmock(id=self.image_name)
+        fakesize = flexmock(id=self.vm_size)
+        fakenode_state1 = flexmock(name="foo",state=NodeState.RUNNING,public_ips=[1])
+
+        fakecloud = flexmock(
+            found = True,
+            list_images = lambda: [fakeimage],
+            list_sizes = lambda: [fakesize],
+            create_node = lambda name,size,image,ex_keyname,ex_securitygroup: fakenode_state1)
+
+        fakecloud.should_receive('list_nodes').and_return((fakenode_state1,))
+        flexmock(os).should_receive('listdir').and_return(['inputfile1','inputfile2'])
+        flexmock(time).should_receive('sleep')
+
+        flexmock(EucNodeDriver).new_instances(fakecloud)
+
+        # FIXME: This does not appear to work and is ignored.
+        flexmock(sshconnector).should_receive('get_package_pids').and_return([1])
+
+        f1 = DataObject("config.sys")
+        self.settings['seed'] = 42
+        f1.create(json.dumps(self.settings))
+        f2 = DataObject("runinfo.sys")
+        f2.create(json.dumps({'group_id':group_id,'setup_finished':1}))
+        print("f2=%s" % f2)
+        fs = FileSystem(self.global_filesystem, self.local_filesystem)
+        fs.create(self.local_filesystem, f1)
+        fs.create(self.local_filesystem, f2)
+        print("fs=%s" % fs)
+        context = {'filesys':fs}
+        print("context=%s" % context)
+        s1 = Run()
+        res = s1.triggered(context)
+        logger.debug("triggered done")
+        print res
+        self.assertEquals(res, True)
+        self.assertEquals(s1.group_id, group_id)
+
+        logger.debug("about to process")
+        pids = s1.process(context)
+        self.assertEquals(pids.values(),[['1\n']])
+
+        logger.debug("about to output")
+        s1.output(context)
+
+        config = fs.retrieve("default/runinfo.sys")
+        content = json.loads(config.retrieve())
+        logger.debug("content=%s" % content)
+        self.assertEquals(content, {"error_nodes": 0,
+            "runs_left": 1,
+            "group_id": "sq42kdjshasdkjghauiwytuiawjmkghasjkghasg",
+            "setup_finished": 1})
+
+
+
+
+
+
 class FileSystemTests(unittest.TestCase):
     HOME_DIR = os.path.expanduser("~")
     global_filesystem = HOME_DIR+'/test_globalFS'
@@ -447,19 +583,18 @@ class ConnectorTests(unittest.TestCase):
         self.assertEquals(context,{'finished': 4, 'convert': 4, 'teststage': 4})
 
 
-    def test_daisychain(self):
+    # def test_daisychain(self):
 
-        # each accepts a filesystem and either uses or creates sub filesystem
-        # each accepts a context and can change as needed.
-        context = {}
+    #     # each accepts a filesystem and either uses or creates sub filesystem
+    #     # each accepts a context and can change as needed.
+    #     context = {}
 
-        s1 = TestStage(context)
-        s2 = TestStage(context)
-        s3 = TestStage(context)
-        s4 = TestStage(context)
+    #     s1 = Setup(context)
+    #     s2 = Run(context)
+    #     s3 = Finished(context)
 
-        p = ParallelStage()
-        s = SequentialStage([s1,s2,s3,s4])
+    #     p = ParallelStage()
+    #     s = SequentialStage([s1,s2,s3])
 
 
 
@@ -677,10 +812,10 @@ class CloudTests(unittest.TestCase):
 
         flexmock(EucNodeDriver).new_instances(fakecloud)
 
-        flexmock(sshconnector).should_receive('get_package_pids') \
-            .and_return([1]) \
+        flexmock(sshconnector).should_receive('get_package_pids').with_args(fakessh1,"command") \
+            .and_return([99]) \
             .and_return(None) \
-            .and_return([1])
+            .and_return([99])
 
         res = run_multi_task("foobar","",self.settings)
         #TODO: this test case fails?

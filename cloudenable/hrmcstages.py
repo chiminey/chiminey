@@ -87,13 +87,13 @@ def get_run_info(context):
     return dict(res)
 
 
-class Configure(Stage, UI):    
+class Configure(Stage, UI):
     """
         - Load config.sys file into the filesystem
         - Nothing beyond specifying the path to config.sys
         - Later could be dialogue box,...
     """
-    
+
     def triggered(self, context):
         return True
 
@@ -102,26 +102,27 @@ class Configure(Stage, UI):
         # - Nothing beyond specifying the path to config.sys
         # - Later could be dialogue box,...
         # 1. creates instance of file system
-        # 2. loads the content of config.sys to filesystem 
-        
+        # 2. loads the content of config.sys to filesystem
+
         HOME_DIR = os.path.expanduser("~")
         local_filesystem = 'default'
         global_filesystem = os.path.expanduser("~")
         self.filesystem = FileSystem(global_filesystem, local_filesystem)
-        
+
         #TODO: the path to the original config file should be
         # provided via command line or a web page.
         # For now, we assume, its location is 'original_config_file_path'
-        original_config_file_path = HOME_DIR+"/cloudenabling/cloudenable/config.sys.json"
+        #TODO: also need to load up all the input files
+        original_config_file_path = HOME_DIR+"/sandbox/cloudenabling/cloudenable/config.sys.json"
         original_config_file = open(original_config_file_path, 'r')
         original_config_file_content = original_config_file.read()
         original_config_file.close()
-        
+
         data_object =  DataObject("config.sys")
         data_object.create(original_config_file_content)
         self.filesystem.create(local_filesystem, data_object)
-        
-        
+
+
     # indicate the process() is completed
     def output(self, context):
         # store in filesystem
@@ -142,7 +143,7 @@ class Create(Stage):
             logger.debug("settings = %s" % self.settings)
             return True
         return False
-    
+
     '''
         if True:
             self.settings = utility.load_generic_settings()
@@ -157,6 +158,7 @@ class Create(Stage):
     def process(self, context):
         #user input
         number_vm_instances = 1
+        self.seed = 32
         self.group_id = create_environ(number_vm_instances, self.settings)
 
     def output(self, context):
@@ -164,11 +166,12 @@ class Create(Stage):
         #self._store(self.temp_sys, filesystem)
         local_filesystem = 'default'
         data_object =  DataObject("runinfo.sys")
-        data_object.create(json.dumps({'group_id':self.group_id}))
-                           
+        data_object.create(json.dumps({'group_id':self.group_id, 'seed':self.seed}))
+
+
         filesystem = get_filesys(context)
         filesystem.create(local_filesystem, data_object)
-        
+
         return context
 
 
@@ -221,7 +224,7 @@ class Setup(Stage):
 
         # FIXME: check to make sure not retriggered
 
-        return self.packaged_nodes
+        return context
 
 
 class Run(Stage):
@@ -262,7 +265,11 @@ class Run(Stage):
 
     def process(self, context):
 
-        seed = self.settings['seed']
+        if 'seed' in self.settings:
+            seed = self.settings['seed']
+        else:
+            seed = 42
+            logger.warn("No seed specified. Using default value")
 
         # NOTE we assume that correct local file system has been created.
 
@@ -385,15 +392,18 @@ class Run(Stage):
         logger.debug("run_info_file=%s" % run_info_file)
         fsys.update("default", run_info_file)
         # FIXME: check to make sure not retriggered
-        return True
+        return context
 
 class Finished(Stage):
     """
     Return whether the run has finished or not
     """
+
+    def __init__(self):
+        self.runs_left= 0
+        self.error_nodes = 0
+
     def triggered(self, context):
-        self.settings = get_settings(context)
-        self.group_id = self.settings['group_id']
 
         self.settings = get_settings(context)
         logger.debug("settings = %s" % self.settings)
@@ -401,47 +411,53 @@ class Finished(Stage):
         run_info = get_run_info(context)
         logger.debug("runinfo=%s" % run_info)
 
+        self.group_id = run_info['group_id']
+
         self.settings.update(run_info)
         logger.debug("settings = %s" % self.settings)
 
         self.group_id = self.settings['group_id']
         logger.debug("group_id = %s" % self.group_id)
 
-        self.runs_left = 9999 # should be infinity
-        self.error_nodes = 0
-        if 'runs_left' in self.settings:
-            self.runs_left = self.setttings['runs_left']
-            if 'error_nodes' in self.settings:
-                self.error_nodes = self.settings['error_nodes']
-            return True
-        return False
-
+        return 'runs_left' in self.settings
 
     def process(self, context):
 
-        nodes = get_rego_nodes(self.group_id, self.settings)
+        self.nodes = get_rego_nodes(self.group_id, self.settings)
 
+        self.error_nodes = []
+        self.finished_nodes = []
         for node in nodes:
             instance_id = node.name
             if not is_instance_running(instance_id, self.settings):
                 # An unlikely situation where the node crashed after is was
                 # detected as registered.
                 logging.error('Instance %s not running' % instance_id)
-                error_nodes.append(node)
+                self.error_nodes.append(node)
                 continue
             if job_finished(instance_id, self.settings):
                 print "done. output is available"
                 download_output(ssh, instance_id, "output", self.settings)
-                finished_nodes.append(node)
+                self.finished_nodes.append(node)
             else:
                 print "job still running on %s: %s" % (instance_id,
                                                get_instance_ip(instance_id,
                                                             settings))
-        pass
 
     def output(self, context):
-        # remove runs_left
-        pass
+        nodes_working = len(self.nodes) - len(self.finished_nodes)
+        config = json.loads(settings_text)
+        if nodes_working:
+            config['runs_left'] = nodes_working # FIXME: possible race condition?
+            config['error_nodes'] = len(self.error_nodes)
+        else:
+            del config['runs_left']
+        logger.debug("config=%s" % config)
+        run_info_text = json.dumps(config)
+        run_info_file.setContent(run_info_text)
+        logger.debug("run_info_file=%s" % run_info_file)
+        fsys.update("default", run_info_file)
+        return context
 
 
 class Converge(Stage):
@@ -502,22 +518,21 @@ def mainloop():
     context = {}
     #context['version'] = "1.0.0"
 
-    
-    
+
     #filesys.update_file('Butini')
     #filesys.delete_file(path_fs, 'Iman')
 
     #filesys.create_initial_filesystem()
     #filesys.load_generic_settings()
 
-    smart_conn = SmartConnector()    
+    smart_conn = SmartConnector()
     #stage= Configure()
     #smart_conn.register(Configure())
     #smart_conn.register(Create())
 
-    for stage in (Configure(), Create(), Setup()):#, Run(), Check(), Teardown()):
+    for stage in (Configure(), Create(), Setup(),Run(), Finished()):#, Check(), Teardown()):
         smart_conn.register(stage)
-     
+
 
     #print smart_con.stages
 
@@ -547,6 +562,7 @@ def mainloop():
             break
 
 if __name__ == '__main__':
+    logging.config.fileConfig('logging.conf')
     begins = time.time()
     mainloop()
     ends = time.time()
