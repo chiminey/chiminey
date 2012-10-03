@@ -18,13 +18,13 @@ logger = logging.getLogger(__name__)
 
 class FileSystem(object):
    # def __init__(self, global_filesystem):
-        
+
 
     def __init__(self, global_filesystem, local_filesystem=None):
         self._create_global_filesystem(global_filesystem)
         if not local_filesystem:
             self._create_global_filesystem(global_filesystem)
-            
+
         elif self.connector_fs.exists(local_filesystem):
             logger.error("Local filesystem '%s' already exists under '%s'"
                          % (local_filesystem, global_filesystem))
@@ -47,7 +47,7 @@ class FileSystem(object):
         destination_file_name = self.global_filesystem + "/" + local_filesystem + "/" + data_object.getName()
         if not local_filesystem:
             destination_file_name = self.global_filesystem + "/" + data_object.getName()
-            
+
         destination_file = open(destination_file_name, 'w')
         destination_file.write(data_object.getContent())
         destination_file.close()
@@ -78,6 +78,7 @@ class FileSystem(object):
         return self.create(local_filesystem, data_object, message="UPDATED")
 
     def delete(self, file_to_be_deleted):
+        # file to be deleted is path not file
         if not self.connector_fs.exists(file_to_be_deleted):
             logger.error("File'%s' does not exist" % file_to_be_deleted)
             return False

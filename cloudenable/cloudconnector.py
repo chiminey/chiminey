@@ -9,7 +9,10 @@ from libcloud.compute.types import Provider
 from libcloud.compute.types import NodeState
 from libcloud.compute.providers import get_driver
 
-from sshconnector import *
+#from sshconnector import *
+from sshconnector import open_connection
+from sshconnector import run_command
+from sshconnector import is_ssh_ready
 
 
 logger = logging.getLogger(__name__)
@@ -94,7 +97,7 @@ def _store_md5_on_instances(all_instances, settings):
         else:
             print "VM instance %s will not be registered to group '%s'\
             " % (instance_id, ip, group_id)
-        
+
     return group_id
 
 
