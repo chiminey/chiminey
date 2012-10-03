@@ -419,7 +419,11 @@ class Finished(Stage):
         self.group_id = self.settings['group_id']
         logger.debug("group_id = %s" % self.group_id)
 
-        return 'runs_left' in self.settings
+
+        # if we have no runs_left then we must have finished all the runs
+        if 'runs_left' in self.settings:
+            return self.settings['runs_left']
+        return False
 
     def process(self, context):
 
@@ -427,11 +431,12 @@ class Finished(Stage):
 
         self.error_nodes = []
         self.finished_nodes = []
-        for node in nodes:
+        for node in self.nodes:
             instance_id = node.name
             if not is_instance_running(instance_id, self.settings):
                 # An unlikely situation where the node crashed after is was
                 # detected as registered.
+                #FIXME: should error nodes be counted as finished?
                 logging.error('Instance %s not running' % instance_id)
                 self.error_nodes.append(node)
                 continue
@@ -447,11 +452,8 @@ class Finished(Stage):
     def output(self, context):
         nodes_working = len(self.nodes) - len(self.finished_nodes)
         config = json.loads(settings_text)
-        if nodes_working:
-            config['runs_left'] = nodes_working # FIXME: possible race condition?
-            config['error_nodes'] = len(self.error_nodes)
-        else:
-            del config['runs_left']
+        config['runs_left'] = nodes_working # FIXME: possible race condition?
+        config['error_nodes'] = len(self.error_nodes)
         logger.debug("config=%s" % config)
         run_info_text = json.dumps(config)
         run_info_file.setContent(run_info_text)
@@ -547,19 +549,22 @@ def mainloop():
 
     while (True):
         done = 0
+        not_triggered = 0
         for stage in smart_conn.stages:
             print "Working in stage",stage
             if stage.triggered(context):
                 stage.process(context)
                 context = stage.output(context)
                 logger.debug("Context", context)
-                done += 1
+            else:
+                not_triggered += 1
                 #smart_con.unregister(stage)
                 #print "Deleting stage",stage
             logger.debug(done, " ", len(smart_conn.stages))
 
-        if done == len(smart_conn.stages):
+        if not_triggered == len(smart_conn.stages):
             break
+
 
 if __name__ == '__main__':
     logging.config.fileConfig('logging.conf')
