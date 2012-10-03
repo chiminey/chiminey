@@ -8,7 +8,9 @@ import tempfile
 import logging
 import logging.config
 
-from simplepackage import _upload_input
+from hrmcimpl import _upload_input
+from hrmcimpl import get_output
+
 
 logging.config.fileConfig('logging.conf')
 logger = logging.getLogger(__name__)
@@ -99,6 +101,10 @@ class FileSystem(object):
             logger.debug("fname=%s" % fname)
             _upload_input(ssh, input_dir,  fname, dest)
 
+    def download_output(self, ssh, instance_id, local_filesystem, settings):
+        output_dir = os.path.join(self.global_filesystem, local_filesystem)
+        get_output(instance_id, output_dir, settings)
+
 
 class DataObject(object):
     # Assume that whole file is contained in one big string
@@ -106,11 +112,11 @@ class DataObject(object):
 
     def __init__(self):
         self._name = ""
-        self.content = ""
+        self._content = ""
 
     def __init__(self, name):
         self._name = name
-        self.content = ""
+        self._content = ""
 
     def create(self, content):
         self._content = content

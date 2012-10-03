@@ -33,6 +33,10 @@ from hrmcimpl import run_command
 from hrmcimpl import PackageFailedError
 from hrmcimpl import run_multi_task
 from hrmcimpl import _normalize_dirpath
+from hrmcimpl import _status_of_nodeset
+from hrmcimpl import is_instance_running
+from hrmcimpl import job_finished
+
 
 def get_elem(context,key):
     try:
@@ -335,8 +339,53 @@ class Run(Stage):
 
 
     def output(self, context):
-        # TODO: communicate required data for next stage
-        pass
+
+        fsys = get_filesys(context)
+        logger.debug("fsys= %s" % fsys)
+
+        run_info_file = get_file(fsys,"default/runinfo.sys")
+        logger.debug("run_info_file= %s" % run_info_file)
+
+        settings_text = run_info_file.retrieve()
+        logger.debug("runinfo_text= %s" % settings_text)
+
+        nodes = get_rego_nodes(self.group_id, self.settings)
+        logger.debug("nodes = %s" % nodes)
+        error_nodes = []
+        finished_nodes = []
+
+        for node in nodes:
+            instance_id = node.name
+            ip = get_instance_ip(instance_id, self.settings)
+            ssh = open_connection(ip_address=ip, settings=self.settings)
+            if not is_instance_running(instance_id, self.settings):
+                # An unlikely situation where the node crashed after is was
+                # detected as registered.
+                logging.error('Instance %s not running' % instance_id)
+                error_nodes.append(node)
+                continue
+            if job_finished(instance_id, self.settings):
+                print "done. output is available"
+                finished_nodes.append(node)
+            else:
+                print "job still running on %s: %s" % (instance_id,
+                                               get_instance_ip(instance_id,
+                                                            self.settings))
+
+        # TODO: handle error_nodes
+        logger.debug("finished = %s" % finished_nodes)
+        logger.debug("error_nodes = %s" % error_nodes)
+        nodes_working = len(nodes) - len(finished_nodes)
+        config = json.loads(settings_text)
+        config['runs_left'] = nodes_working # FIXME: possible race condition?
+        config['error_nodes'] = len(error_nodes)
+        logger.debug("config=%s" % config)
+        run_info_text = json.dumps(config)
+        run_info_file.setContent(run_info_text)
+        logger.debug("run_info_file=%s" % run_info_file)
+        fsys.update("default", run_info_file)
+        # FIXME: check to make sure not retriggered
+        return True
 
 class Finished(Stage):
     """
@@ -346,13 +395,52 @@ class Finished(Stage):
         self.settings = get_settings(context)
         self.group_id = self.settings['group_id']
 
+        self.settings = get_settings(context)
+        logger.debug("settings = %s" % self.settings)
 
-        pass
+        run_info = get_run_info(context)
+        logger.debug("runinfo=%s" % run_info)
+
+        self.settings.update(run_info)
+        logger.debug("settings = %s" % self.settings)
+
+        self.group_id = self.settings['group_id']
+        logger.debug("group_id = %s" % self.group_id)
+
+        self.runs_left = 9999 # should be infinity
+        self.error_nodes = 0
+        if 'runs_left' in self.settings:
+            self.runs_left = self.setttings['runs_left']
+            if 'error_nodes' in self.settings:
+                self.error_nodes = self.settings['error_nodes']
+            return True
+        return False
+
 
     def process(self, context):
+
+        nodes = get_rego_nodes(self.group_id, self.settings)
+
+        for node in nodes:
+            instance_id = node.name
+            if not is_instance_running(instance_id, self.settings):
+                # An unlikely situation where the node crashed after is was
+                # detected as registered.
+                logging.error('Instance %s not running' % instance_id)
+                error_nodes.append(node)
+                continue
+            if job_finished(instance_id, self.settings):
+                print "done. output is available"
+                download_output(ssh, instance_id, "output", self.settings)
+                finished_nodes.append(node)
+            else:
+                print "job still running on %s: %s" % (instance_id,
+                                               get_instance_ip(instance_id,
+                                                            settings))
         pass
 
     def output(self, context):
+        # remove runs_left
         pass
 
 
