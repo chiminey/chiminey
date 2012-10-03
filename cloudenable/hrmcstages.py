@@ -1,7 +1,8 @@
 
 # Contains the specific connectors and stages for HRMC
 
-
+import os
+import time
 import logging
 import logging.config
 import json
@@ -14,14 +15,20 @@ from smartconnector import Stage
 from smartconnector import UI
 from smartconnector import ParallelStage
 from smartconnector import SequentialStage
+from smartconnector import SmartConnector
 
 from filesystem import FileSystem
 from filesystem import DataObject
+
+
+from cloudconnector import create_environ
+
 from cloudconnector import get_rego_nodes
 from cloudconnector import open_connection
 from cloudconnector import get_instance_ip
 from hrmcimpl import setup_multi_task
 from hrmcimpl import prepare_multi_input
+
 from hrmcimpl import run_command
 from hrmcimpl import PackageFailedError
 from hrmcimpl import run_multi_task
@@ -31,9 +38,10 @@ def get_elem(context,key):
     try:
         elem = context[key]
     except KeyError,e:
-        logger.error("canot load elem %s from %s" % (e,context))
+        logger.error("cannot load filesys %s from %s" % (e,context))
         return None
     return elem
+
 
 
 def get_filesys(context):
@@ -44,7 +52,7 @@ def get_file(fsys,file):
     try:
         config = fsys.retrieve(file)
     except KeyError,e:
-        logger.error("canot load %s %s" % (file,e))
+        logger.error("cannot load %s %s" % (file,e))
         return {}
     return config
 
@@ -75,50 +83,63 @@ def get_run_info(context):
     return dict(res)
 
 
-class Configure(Stage, UI):
+class Configure(Stage, UI):    
     """
         - Load config.sys file into the filesystem
         - Nothing beyond specifying the path to config.sys
         - Later could be dialogue box,...
-
     """
+    
     def triggered(self, context):
-        #check for filesystem in context
         return True
-
-
-            #logger.debug("%s" % field_val)
 
     def process(self, context):
         # - Load config.sys file into the filesystem
         # - Nothing beyond specifying the path to config.sys
         # - Later could be dialogue box,...
         # 1. creates instance of file system
-        # 2. pass the file system as entry in the Context
-        # create status  file in file system
-        #print " Security Group", filesystem.settings.SECURITY_GROUP
-
-        pass
-
+        # 2. loads the content of config.sys to filesystem 
+        
+        HOME_DIR = os.path.expanduser("~")
+        local_filesystem = 'default'
+        global_filesystem = os.path.expanduser("~")
+        self.filesystem = FileSystem(global_filesystem, local_filesystem)
+        
+        #TODO: the path to the original config file should be
+        # provided via command line or a web page.
+        # For now, we assume, its location is 'original_config_file_path'
+        original_config_file_path = HOME_DIR+"/cloudenabling/cloudenable/config.sys.json"
+        original_config_file = open(original_config_file_path, 'r')
+        original_config_file_content = original_config_file.read()
+        original_config_file.close()
+        
+        data_object =  DataObject("config.sys")
+        data_object.create(original_config_file_content)
+        self.filesystem.create(local_filesystem, data_object)
+        
+        
     # indicate the process() is completed
     def output(self, context):
         # store in filesystem
-        pass
-
-
-
-
+        # pass the file system as entry in the Context
+        context = {'filesys':self.filesystem}
+        return context
 
 class Create(Stage):
 
+    def __init__(self):
+        self.settings = {}
+        self.group_id = ''
 
     def triggered(self, context):
-        """ return true if the directory pattern triggers this stage
-        """
-        #check the context for existence of a file system or other
-        # key words, then if true, trigger
-        #self.metadata = self._load_metadata_file()
-
+        #check the context for existence of a file system
+        if get_filesys(context):
+            self.settings = get_settings(context)
+            logger.debug("settings = %s" % self.settings)
+            return True
+        return False
+    
+    '''
         if True:
             self.settings = utility.load_generic_settings()
             return True
@@ -127,36 +148,24 @@ class Create(Stage):
         key =  settings['ec2_access_key']
 
         print key
-
+    '''
 
     def process(self, context):
-
-        # get the input from the user to override config settings
-        # load up the metadata
-
-        #settings = {}
-        #settings['number_vm_instances'] = self.metadata.number
-
-        #settings['ec2_access_key'] = self.metadata.ec2_access_key
-        #settings['ec2_secret_key'] = self.metadata.ec2_secret_key
-        # ...
-
-
-        #self.temp_sys = FileSystem(filesystem)
-
-        #self._transform_the_filesystem(self.temp_sys, settings)
-
-        #import codecs
-        #f = codecs.open('metadata.json', encoding='utf-8')
-        #import json
-        #metadata = json.loads(f.read())
-        print "Security Group ", self.settings.SECURITY_GROUP
-        pass
+        #user input
+        number_vm_instances = 1
+        self.group_id = create_environ(number_vm_instances, self.settings)
 
     def output(self, context):
         # store in filesystem
         #self._store(self.temp_sys, filesystem)
-        pass
+        local_filesystem = 'default'
+        data_object =  DataObject("runinfo.sys")
+        data_object.create(json.dumps({'group_id':self.group_id}))
+                           
+        filesystem = get_filesys(context)
+        filesystem.create(local_filesystem, data_object)
+        
+        return context
 
 
 class Setup(Stage):
@@ -395,4 +404,63 @@ class Teardown(Stage):
     def output(self, context):
         pass
 
+
+
+def mainloop():
+
+# load system wide settings, e.g Security_Group
+#communicating between stages: crud context or filesystem
+#build context with file system as its only entry
+    context = {}
+    #context['version'] = "1.0.0"
+
+    
+    
+    #filesys.update_file('Butini')
+    #filesys.delete_file(path_fs, 'Iman')
+
+    #filesys.create_initial_filesystem()
+    #filesys.load_generic_settings()
+
+    smart_conn = SmartConnector()    
+    #stage= Configure()
+    #smart_conn.register(Configure())
+    #smart_conn.register(Create())
+
+    for stage in (Configure(), Create(), Setup()):#, Run(), Check(), Teardown()):
+        smart_conn.register(stage)
+     
+
+    #print smart_con.stages
+
+    #while loop is infinite:
+    # check the semantics for 'dropping data' into
+    # designated location.
+    #What happens if data is dropped while
+    #another is in progress?
+
+
+    #while(True):
+
+    while (True):
+        done = 0
+        for stage in smart_conn.stages:
+            print "Working in stage",stage
+            if stage.triggered(context):
+                stage.process(context)
+                context = stage.output(context)
+                logger.debug("Context", context)
+                done += 1
+                #smart_con.unregister(stage)
+                #print "Deleting stage",stage
+            logger.debug(done, " ", len(smart_conn.stages))
+
+        if done == len(smart_conn.stages):
+            break
+
+if __name__ == '__main__':
+    begins = time.time()
+    mainloop()
+    ends = time.time()
+    print "Total execution time: %d seconds" % (ends-begins)
 
