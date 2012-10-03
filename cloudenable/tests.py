@@ -93,7 +93,7 @@ class SetupStageTests(unittest.TestCase):
     Tests the HRMC Setup Stage
     """
     HOME_DIR = os.path.expanduser("~")
-    global_filesystem = HOME_DIR+'/test_globalFS'
+    global_filesystem = HOME_DIR+'/test_setupstagetests'
     local_filesystem = 'default'
 
     def setUp(self):
@@ -200,7 +200,7 @@ class RunStageTests(unittest.TestCase):
     """
 
     HOME_DIR = os.path.expanduser("~")
-    global_filesystem = HOME_DIR+'/test_globalFS'
+    global_filesystem = HOME_DIR+'/test_runstageTests'
     local_filesystem = 'default'
 
     def setUp(self):
@@ -221,106 +221,10 @@ class RunStageTests(unittest.TestCase):
             'COMPILE_FILE':"foo", 'MAX_SEED_INT':100, 'RETRY_ATTEMPTS':3,
             'OUTPUT_FILES':['a', 'b']}
 
-    def test_run_triggered(self):
-
-        logger.debug("%s:%s" %(self.__class__.__name__,sys._getframe().f_code.co_name))
-        group_id = "sq42kdjshasdkjghauiwytuiawjmkghasjkghasg"
 
 
 
-        # Make fake sftp connection
-        fakesftp = flexmock(put=lambda x, y: True)
-
-        exec_ret = ["", flexmock(readlines=lambda: ["1\n"]), ""]
-        # Make fake ssh connection
-        fakessh1 = flexmock(load_system_host_keys=lambda x: True,
-                        set_missing_host_key_policy=lambda x: True,
-                        connect=lambda
-                            ipaddress, username,
-                            password, timeout: True,
-                        exec_command=lambda command: exec_ret,
-                        open_sftp=lambda: fakesftp)
-
-        flexmock(random).should_receive('randrange').and_return(42)
-
-        # and use fake for paramiko
-        flexmock(paramiko).should_receive('SSHClient').and_return(fakessh1)
-
-        # Make fake cloud connection
-        fakeimage = flexmock(id=self.image_name)
-        fakesize = flexmock(id=self.vm_size)
-        fakenode_state1 = flexmock(name="foo",state=NodeState.RUNNING,public_ips=[1])
-
-        fakecloud = flexmock(
-            found = True,
-            list_images = lambda: [fakeimage],
-            list_sizes = lambda: [fakesize],
-            create_node = lambda name, size, image, ex_keyname, ex_securitygroup: fakenode_state1)
-
-        fakecloud.should_receive('list_nodes').and_return((fakenode_state1,))
-        flexmock(os).should_receive('listdir').and_return(['mydirectory'])
-
-        flexmock(EucNodeDriver).new_instances(fakecloud)
-
-        # test triggered
-
-        f1 = DataObject("config.sys")
-        f1.create(json.dumps(self.settings))
-        f2 = DataObject("runinfo.sys")
-        f2.create(json.dumps({'group_id':group_id,'setup_finished':1}))
-        print("f2=%s" % f2)
-        fs = FileSystem(self.global_filesystem, self.local_filesystem)
-        fs.create(self.local_filesystem, f1)
-        fs.create(self.local_filesystem, f2)
-        print("fs=%s" % fs)
-        context = {'filesys':fs}
-        print("context=%s" % context)
-        s1 = Run()
-        res = s1.triggered(context)
-        print res
-        self.assertEquals(res, True)
-        self.assertEquals(s1.group_id, group_id)
-
-
-
-
-    def test_run_processed(self):
-
-
-
-        # # Make fake sftp connection
-        # fakesftp = flexmock(put=lambda x, y: True)
-
-        # exec_ret = ["", flexmock(readlines=lambda: ["1\n"]), ""]
-        # # Make fake ssh connection
-        # fakessh1 = flexmock(load_system_host_keys=lambda x: True,
-        #                 set_missing_host_key_policy=lambda x: True,
-        #                 connect=lambda
-        #                     ipaddress, username,
-        #                     password, timeout: True,
-        #                 exec_command=lambda command: exec_ret,
-        #                 open_sftp=lambda: fakesftp)
-
-        # flexmock(random).should_receive('randrange').and_return(42)
-
-        # # and use fake for paramiko
-        # flexmock(paramiko).should_receive('SSHClient').and_return(fakessh1)
-
-        # # Make fake cloud connection
-        # fakeimage = flexmock(id=self.image_name)
-        # fakesize = flexmock(id=self.vm_size)
-        # fakenode_state1 = flexmock(name="foo",state=NodeState.RUNNING,public_ips=[1])
-
-        # fakecloud = flexmock(
-        #     found = True,
-        #     list_images = lambda: [fakeimage],
-        #     list_sizes = lambda: [fakesize],
-        #     create_node = lambda name, size, image, ex_keyname, ex_securitygroup: fakenode_state1)
-
-        # fakecloud.should_receive('list_nodes').and_return((fakenode_state1,))
-        # flexmock(os).should_receive('listdir').and_return(['mydirectory'])
-
-        # flexmock(EucNodeDriver).new_instances(fakecloud)
+    def test_run(self):
 
 
         logger.debug("%s:%s" %(self.__class__.__name__,sys._getframe().f_code.co_name))
@@ -360,10 +264,8 @@ class RunStageTests(unittest.TestCase):
 
         flexmock(EucNodeDriver).new_instances(fakecloud)
 
+        # FIXME: This does not appear to work and is ignored.
         flexmock(sshconnector).should_receive('get_package_pids').and_return([1])
-
-        #res = run_multi_task("foobar","",self.settings)
-        #self.assertEquals(res.values(),[['1']])
 
         f1 = DataObject("config.sys")
         self.settings['seed'] = 42
@@ -384,18 +286,20 @@ class RunStageTests(unittest.TestCase):
         self.assertEquals(res, True)
         self.assertEquals(s1.group_id, group_id)
 
-
-
         logger.debug("about to process")
         pids = s1.process(context)
-
         self.assertEquals(pids.values(),[['1\n']])
 
+        logger.debug("about to output")
+        s1.output(context)
 
-
-        ##########
-
-
+        config = fs.retrieve("default/runinfo.sys")
+        content = json.loads(config.retrieve())
+        logger.debug("content=%s" % content)
+        self.assertEquals(content, {"error_nodes": 0,
+            "runs_left": 1,
+            "group_id": "sq42kdjshasdkjghauiwytuiawjmkghasjkghasg",
+            "setup_finished": 1})
 
 
 
