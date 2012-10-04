@@ -54,6 +54,8 @@ def run_command(ssh, command, current_dir=None):
     stdin, stdout, stderr = ssh.exec_command(command)
     res =  stdout.readlines()
     logger.debug("run_command_stdout=%s" % res)
+    res_err =  stderr.readlines()
+    logger.debug("run_command_err=%s" % res_err)
     return res
 
 

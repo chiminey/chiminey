@@ -197,6 +197,7 @@ class Create(Stage):
         """
         Make new VMS and store group_id
         """
+
         #TODO: user input of this information
         number_vm_instances = 1
         self.seed = 32
@@ -295,7 +296,6 @@ class Run(Stage):
     def triggered(self, context):
         # triggered when we now that we have N nodes setup and ready to run.
 
-
         # input_dir is assumed to be populated.
 
 
@@ -304,7 +304,7 @@ class Run(Stage):
             self.input_dir = "input_%s" % self.id
         else:
             self.input_dir = "input"
-
+        print "Run stage triggered"
         self.settings = get_settings(context)
         logger.debug("settings = %s" % self.settings)
 
@@ -495,6 +495,7 @@ class Finished(Stage):
             logger.debug("fin=%s" % fin)
             if fin:
                 print "done. output is available"
+
                 logger.debug("node=%s" % node)
                 logger.debug("finished_nodes=%s" % self.finished_nodes)
                 #FIXME: for multiple nodes, if one finishes before the other then
@@ -505,6 +506,9 @@ class Finished(Stage):
                     fsys.download_output(ssh, instance_id, self.output_dir, self.settings)
                 else:
                     logger.info("We have already processed output from node %s" %node.name)
+
+
+
                 self.finished_nodes.append(node)
             else:
                 print "job still running on %s: %s" % (instance_id,
@@ -549,22 +553,68 @@ class Converge(Stage):
     """
     Return whether the run has finished or not
     """
+    def __init__(self, number_of_iterations):
+        self.total_iterations = number_of_iterations
+        self.number_of_remaining_iterations = number_of_iterations
+        
     def triggered(self, context):
 
-        if not get_elem(context, ['Done']):
-            print "Triggered"
+        
+        self.settings = get_settings(context)
+        logger.debug("settings = %s" % self.settings)
 
+        run_info = get_run_info(context)
+        logger.debug("runinfo=%s" % run_info)
+
+        self.settings.update(run_info)
+        logger.debug("settings = %s" % self.settings)
+
+        self.run_list = self.settings["runs_left"]
+
+        if self.run_list == 0:
             return True
         return False
+      
     def process(self, context):
-        pass
+        self.number_of_remaining_iterations -= 1 
+        print "Number of Iterations Left %d" % self.number_of_remaining_iterations
+        
+        fsys = get_filesys(context)
+        logger.debug("fsys= %s" % fsys)
 
+        run_info_file = get_file(fsys,"default/runinfo.sys")
+        logger.debug("run_info_file= %s" % run_info_file)
+
+        settings_text = run_info_file.retrieve()
+        logger.debug("runinfo_text= %s" % settings_text)
+
+        config = json.loads(settings_text)
+        del(config['runs_left'])
+        del(config['error_nodes']) #??
+        logger.debug("config=%s" % config)
+       
+        run_info_text = json.dumps(config)
+        run_info_file.setContent(run_info_text)
+        logger.debug("run_info_file=%s" % run_info_file)
+        fsys.update("default", run_info_file)
+
+     
     def output(self, context):
-        context['Done'] = True
+        fsys = get_filesys(context)
+        run_info_file = get_file(fsys,"default/runinfo.sys")
+        settings_text = run_info_file.retrieve()
+        config = json.loads(settings_text)
+        config['converged'] = False
+        
+        if self.number_of_remaining_iterations == 0:
+             config['converged'] = True
+        
+        run_info_text = json.dumps(config)
+        run_info_file.setContent(run_info_text)
+        fsys.update("default", run_info_file)
+        
+        
         return context
-
-
-
 
 
 class Transform(Stage):
@@ -605,9 +655,12 @@ class Teardown(Stage):
         logger.debug("group_id = %s" % self.group_id)
 
         print "Run list", self.run_list
-        if self.run_list == 0:
-            if not 'run_finished' in self.settings:
-                return True
+
+
+        if 'converged' in self.settings:
+            if self.settings['converged'] == True:
+                if not 'run_finished' in self.settings:
+                    return True
         return False
         #trigger_message = self.settings["setup_finished"]
 
@@ -683,13 +736,14 @@ def mainloop():
     #filesys.create_initial_filesystem()
     #filesys.load_generic_settings()
 
+    number_of_iterations = 2
     smart_conn = SmartConnector()
     #stage= Configure()
     #smart_conn.register(Configure())
     #smart_conn.register(Create())
 
 
-    for stage in (Configure(), Create(), Setup(),Run(), Finished(), Teardown()):#, Check(), Teardown()):
+    for stage in (Configure(), Create(), Setup(),Run(), Finished(), Converge(number_of_iterations), Teardown()):#, Check(), Teardown()):
     #for stage in (Configure(), Create(), Teardown()):#, Run(), Check(), Teardown()):
         smart_conn.register(stage)
 
@@ -708,8 +762,10 @@ def mainloop():
 
     #smart_conn.register(Converge())
 
-
-
+    
+    
+    '''
+    
 
     while (True):
         done = 0
@@ -730,6 +786,33 @@ def mainloop():
         if not_triggered == len(smart_conn.stages):
             break
 
+
+
+    '''
+    exit_reached = False
+    while (True):
+        done = 0
+        not_triggered = 0
+        for stage in smart_conn.stages:
+            print "Working in stage",stage
+            if stage.triggered(context):
+                stage.process(context)
+                context = stage.output(context)
+                logger.debug("Context", context)
+                if type(stage==Teardown()):
+                    exit_reached = True
+            else:
+                not_triggered += 1
+                #smart_con.unregister(stage)
+                #print "Deleting stage",stage
+                print context
+            logger.debug(done, " ", len(smart_conn.stages))
+
+        if exit_reached:
+            break
+        else:
+            print "Not Teardown"
+    
 
 if __name__ == '__main__':
     logging.config.fileConfig('logging.conf')
