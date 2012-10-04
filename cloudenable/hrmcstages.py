@@ -89,16 +89,17 @@ def get_run_info(context):
     Returns the content of the run info file as a dict
     """
     fsys = get_filesys(context)
+    
     logger.debug("fsys= %s" % fsys)
     config = get_file(fsys,"default/runinfo.sys")
     logger.debug("config= %s" % config)
-
-    settings_text = config.retrieve()
-
-    logger.debug("runinfo_text= %s" % settings_text)
-    res = json.loads(settings_text)
-    logger.debug("res=%s" % dict(res))
-    return dict(res)
+    if config:
+        settings_text = config.retrieve()
+        logger.debug("runinfo_text= %s" % settings_text)
+        res = json.loads(settings_text)
+        logger.debug("res=%s" % dict(res))
+        return dict(res)
+    return None
 
 
 class Configure(Stage, UI):
@@ -128,7 +129,7 @@ class Configure(Stage, UI):
 
         HOME_DIR = os.path.expanduser("~")
         local_filesystem = 'default'
-        global_filesystem = os.path.expanduser("~")
+        global_filesystem = HOME_DIR+"/testStages"
         self.filesystem = FileSystem(global_filesystem, local_filesystem)
 
         #TODO: the path to the original config file should be
@@ -162,28 +163,12 @@ class Create(Stage):
         self.group_id = ''
 
     def triggered(self, context):
-        """
-        Returns true if filesystem exists but there is no  runinfo.sys with group_id
-        """
-        self.settings = get_settings(context)
-        logger.debug("settings = %s" % self.settings)
-
-        fsys = get_filesys(context)
-        run_info = None
-        try:
-            run_info = get_run_info(context)
-        except AttributeError:
-            pass
-
-        if not run_info:
-            return True
-
-        logger.debug("runinfo=%s" % run_info)
-
-        self.settings.update(run_info)
-        logger.debug("settings = %s" % self.settings)
-
-        return not ('group_id' in self.settings)
+        if get_filesys(context):
+            if not get_run_info(context):
+                self.settings = get_settings(context)
+                logger.debug("settings = %s" % self.settings)
+                return True
+        return False
 
     '''
         if True:
@@ -565,15 +550,18 @@ class Converge(Stage):
     Return whether the run has finished or not
     """
     def triggered(self, context):
-        self.settings = get_settings(context)
-        self.group_id = self.settings['group_id']
-        pass
-
+        
+        if not get_elem(context, ['Done']):
+            print "Triggered"
+    
+            return True
+        return False
     def process(self, context):
         pass
 
     def output(self, context):
-        pass
+        context['Done'] = True
+        return context
 
 
 
@@ -697,7 +685,13 @@ def mainloop():
 
 
     #while(True):
-
+    #smart_conn = SmartConnector()
+    
+    #smart_conn.register(Converge())
+    
+    
+    
+    
     while (True):
         done = 0
         not_triggered = 0
@@ -716,7 +710,7 @@ def mainloop():
 
         if not_triggered == len(smart_conn.stages):
             break
-
+    
 
 if __name__ == '__main__':
     logging.config.fileConfig('logging.conf')
