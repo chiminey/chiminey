@@ -76,16 +76,17 @@ def get_settings(context):
 
 def get_run_info(context):
     fsys = get_filesys(context)
+    
     logger.debug("fsys= %s" % fsys)
     config = get_file(fsys,"default/runinfo.sys")
     logger.debug("config= %s" % config)
-
-    settings_text = config.retrieve()
-
-    logger.debug("runinfo_text= %s" % settings_text)
-    res = json.loads(settings_text)
-    logger.debug("res=%s" % dict(res))
-    return dict(res)
+    if config:
+        settings_text = config.retrieve()
+        logger.debug("runinfo_text= %s" % settings_text)
+        res = json.loads(settings_text)
+        logger.debug("res=%s" % dict(res))
+        return dict(res)
+    return None
 
 
 class Configure(Stage, UI):
@@ -109,7 +110,7 @@ class Configure(Stage, UI):
 
         HOME_DIR = os.path.expanduser("~")
         local_filesystem = 'default'
-        global_filesystem = os.path.expanduser("~")
+        global_filesystem = HOME_DIR+"/testStages"
         self.filesystem = FileSystem(global_filesystem, local_filesystem)
 
         #TODO: the path to the original config file should be
@@ -140,20 +141,10 @@ class Create(Stage):
         self.group_id = ''
 
     def triggered(self, context):
-        self.settings = get_settings(context)
-        logger.debug("settings = %s" % self.settings)
-
-        run_info = get_run_info(context)
-        logger.debug("runinfo=%s" % run_info)
-
-        self.settings.update(run_info)
-        logger.debug("settings = %s" % self.settings)
-
-        self.group_id = self.settings["group_id"]
-        logger.debug("group_id = %s" % self.group_id)
-    
         if get_filesys(context):
-            if not self.settings["group_id"]:
+            if not get_run_info(context):
+                self.settings = get_settings(context)
+                logger.debug("settings = %s" % self.settings)
                 return True
         return False
 
