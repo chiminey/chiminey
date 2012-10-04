@@ -320,7 +320,7 @@ class RunStageTests(unittest.TestCase):
         config = fs.retrieve("default/runinfo.sys")
         content = json.loads(config.retrieve())
         logger.debug("content=%s" % content)
-        self.assertEquals(content, {"error_nodes": 0,
+        self.assertEquals(content, {
             "runs_left": 1,
             "group_id": "sq42kdjshasdkjghauiwytuiawjmkghasjkghasg",
             "setup_finished": 1})
@@ -429,7 +429,7 @@ class FinishedStageTests(unittest.TestCase):
         config = fs.retrieve("default/runinfo.sys")
         content = json.loads(config.retrieve())
         logger.debug("content=%s" % content)
-        self.assertEquals(content, {"error_nodes": 0,
+        self.assertEquals(content, {
             "runs_left": 1,
             "group_id": "sq42kdjshasdkjghauiwytuiawjmkghasjkghasg",
             "setup_finished": 1})

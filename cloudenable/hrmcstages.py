@@ -95,6 +95,7 @@ class Configure(Stage, UI):
     """
 
     def triggered(self, context):
+        # True if fsys missing
         return True
 
     def process(self, context):
@@ -138,6 +139,7 @@ class Create(Stage):
 
     def triggered(self, context):
         #check the context for existence of a file system
+        # True if not group_id
         if get_filesys(context):
             self.settings = get_settings(context)
             logger.debug("settings = %s" % self.settings)
@@ -195,8 +197,15 @@ class Setup(Stage):
         self.group_id = self.settings["group_id"]
         logger.debug("group_id = %s" % self.group_id)
 
+        #FIXME: need to check for no group_id which can happen when over quota
+
+        if 'setup_finished' in self.settings:
+            return False
+
         self.packaged_nodes = get_rego_nodes(self.group_id, self.settings)
         logger.debug("packaged_nodes = %s" % self.packaged_nodes)
+
+
 
         return len(self.packaged_nodes)
 
@@ -252,6 +261,11 @@ class Run(Stage):
             logger.debug("setup_nodes = %s" % setup_nodes)
             packaged_nodes = len(get_rego_nodes(self.group_id, self.settings))
             logger.debug("packaged_nodes = %s" % packaged_nodes)
+
+
+            if 'runs_left' in self.settings:
+                return False
+
             if packaged_nodes == setup_nodes:
                 return True
             else:
@@ -346,7 +360,10 @@ class Run(Stage):
 
 
     def output(self, context):
-
+        """
+        Assume that no nodes have finished yet and indicate to future stages
+        """
+        #TODO: make function for get fsys, run_info and settings
         fsys = get_filesys(context)
         logger.debug("fsys= %s" % fsys)
 
@@ -358,40 +375,42 @@ class Run(Stage):
 
         nodes = get_rego_nodes(self.group_id, self.settings)
         logger.debug("nodes = %s" % nodes)
-        error_nodes = []
-        finished_nodes = []
+        # error_nodes = []
+        # finished_nodes = []
 
-        for node in nodes:
-            instance_id = node.name
-            ip = get_instance_ip(instance_id, self.settings)
-            ssh = open_connection(ip_address=ip, settings=self.settings)
-            if not is_instance_running(instance_id, self.settings):
-                # An unlikely situation where the node crashed after is was
-                # detected as registered.
-                logging.error('Instance %s not running' % instance_id)
-                error_nodes.append(node)
-                continue
-            if job_finished(instance_id, self.settings):
-                print "done. output is available"
-                finished_nodes.append(node)
-            else:
-                print "job still running on %s: %s" % (instance_id,
-                                               get_instance_ip(instance_id,
-                                                            self.settings))
+        # for node in nodes:
+        #     instance_id = node.name
+        #     ip = get_instance_ip(instance_id, self.settings)
+        #     ssh = open_connection(ip_address=ip, settings=self.settings)
+        #     if not is_instance_running(instance_id, self.settings):
+        #         # An unlikely situation where the node crashed after is was
+        #         # detected as registered.
+        #         logging.error('Instance %s not running' % instance_id)
+        #         error_nodes.append(node)
+        #         continue
+        #     if job_finished(instance_id, self.settings):
+        #         print "done. output is available"
+        #         finished_nodes.append(node)
+        #     else:
+        #         print "job still running on %s: %s" % (instance_id,
+        #                                        get_instance_ip(instance_id,
+        #                                                     self.settings))
 
         # TODO: handle error_nodes
-        logger.debug("finished = %s" % finished_nodes)
-        logger.debug("error_nodes = %s" % error_nodes)
-        nodes_working = len(nodes) - len(finished_nodes)
+        # logger.debug("finished = %s" % finished_nodes)
+        # logger.debug("error_nodes = %s" % error_nodes)
+        # nodes_working = len(nodes) - len(finished_nodes)
         config = json.loads(settings_text)
-        config['runs_left'] = nodes_working # FIXME: possible race condition?
-        config['error_nodes'] = len(error_nodes)
+        # We assume that none of runs have finished yet.
+        config['runs_left'] = len(nodes) # FIXME: possible race condition?
+        #config['error_nodes'] = len(error_nodes)
         logger.debug("config=%s" % config)
         run_info_text = json.dumps(config)
         run_info_file.setContent(run_info_text)
         logger.debug("run_info_file=%s" % run_info_file)
         fsys.update("default", run_info_file)
         # FIXME: check to make sure not retriggered
+
         return context
 
 class Finished(Stage):
@@ -404,21 +423,18 @@ class Finished(Stage):
         self.error_nodes = 0
 
     def triggered(self, context):
-
+        """
+        Checks whether there is a non-zero number of runs still going.
+        """
         self.settings = get_settings(context)
         logger.debug("settings = %s" % self.settings)
-
         run_info = get_run_info(context)
         logger.debug("runinfo=%s" % run_info)
-
         self.group_id = run_info['group_id']
-
         self.settings.update(run_info)
         logger.debug("settings = %s" % self.settings)
-
         self.group_id = self.settings['group_id']
         logger.debug("group_id = %s" % self.group_id)
-
 
         # if we have no runs_left then we must have finished all the runs
         if 'runs_left' in self.settings:
@@ -426,6 +442,12 @@ class Finished(Stage):
         return False
 
     def process(self, context):
+        """
+        Check all registered nodes to find whether they are running, stopped or in error_nodes
+        """
+
+        fsys = get_filesys(context)
+        logger.debug("fsys= %s" % fsys)
 
         self.nodes = get_rego_nodes(self.group_id, self.settings)
 
@@ -442,15 +464,28 @@ class Finished(Stage):
                 continue
             if job_finished(instance_id, self.settings):
                 print "done. output is available"
-                download_output(ssh, instance_id, "output", self.settings)
+                fys.download_output(ssh, instance_id, "output", self.settings)
                 self.finished_nodes.append(node)
             else:
                 print "job still running on %s: %s" % (instance_id,
                                                get_instance_ip(instance_id,
-                                                            settings))
+                                                            self.settings))
 
     def output(self, context):
+        """
+        Output new runs_left value (including zero value)
+        """
         nodes_working = len(self.nodes) - len(self.finished_nodes)
+
+        fsys = get_filesys(context)
+        logger.debug("fsys= %s" % fsys)
+
+        run_info_file = get_file(fsys,"default/runinfo.sys")
+        logger.debug("run_info_file= %s" % run_info_file)
+
+        settings_text = run_info_file.retrieve()
+        logger.debug("runinfo_text= %s" % settings_text)
+
         config = json.loads(settings_text)
         config['runs_left'] = nodes_working # FIXME: possible race condition?
         config['error_nodes'] = len(self.error_nodes)
@@ -459,6 +494,8 @@ class Finished(Stage):
         run_info_file.setContent(run_info_text)
         logger.debug("run_info_file=%s" % run_info_file)
         fsys.update("default", run_info_file)
+
+        # NOTE: runs_left cannot be deleted or run() will trigger
         return context
 
 
