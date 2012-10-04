@@ -43,17 +43,22 @@ def get_elem(context,key):
     try:
         elem = context[key]
     except KeyError,e:
-        logger.error("cannot load filesys %s from %s" % (e,context))
+        logger.error("cannot load elem %s from %s" % (e,context))
         return None
     return elem
 
 
-
 def get_filesys(context):
+    """
+    Return the filesys in the context
+    """
     return get_elem(context,'filesys')
 
 
 def get_file(fsys,file):
+    """
+    Return contents of file
+    """
     try:
         config = fsys.retrieve(file)
     except KeyError,e:
@@ -63,6 +68,9 @@ def get_file(fsys,file):
 
 
 def get_settings(context):
+    """
+    Return contents of config.sys file as a dictionary
+    """
     fsys = get_filesys(context)
     logger.debug("fsys= %s" % fsys)
     config = get_file(fsys, "default/config.sys")
@@ -76,7 +84,7 @@ def get_settings(context):
 
 def get_run_info_file(context):
     """
-    Returns the actual runinfo file
+    Returns the actual runinfo file. If problem, return None
     """
     fsys = get_filesys(context)
     logger.debug("fsys= %s" % fsys)
@@ -84,9 +92,10 @@ def get_run_info_file(context):
     logger.debug("config= %s" % config)
     return config
 
+
 def get_run_info(context):
     """
-    Returns the content of the run info file as a dict
+    Returns the content of the run info file as a dict. If problem, return None
     """
     fsys = get_filesys(context)
 
@@ -163,6 +172,9 @@ class Create(Stage):
         self.group_id = ''
 
     def triggered(self, context):
+        """
+        Return True if there is a file system but it doesn't contain run_info file.
+        """
         if get_filesys(context):
             if not get_run_info(context):
                 self.settings = get_settings(context)
@@ -185,7 +197,7 @@ class Create(Stage):
         """
         Make new VMS and store group_id
         """
-        #user input
+        #TODO: user input of this information
         number_vm_instances = 1
         self.seed = 32
         self.group_id = create_environ(number_vm_instances, self.settings)
@@ -208,6 +220,9 @@ class Create(Stage):
 
 
 class Setup(Stage):
+    """
+    Handles creation of a running executable on the VMS in a group
+    """
 
     def __init__(self):
         self.settings = {}
@@ -237,8 +252,6 @@ class Setup(Stage):
 
         self.packaged_nodes = get_rego_nodes(self.group_id, self.settings)
         logger.debug("packaged_nodes = %s" % self.packaged_nodes)
-
-
 
         return len(self.packaged_nodes)
 
@@ -270,15 +283,13 @@ class Setup(Stage):
 
         fsys.update("default", run_info_file)
 
-        # FIXME: check to make sure not retriggered
-
 
         return context
 
 
 class Run(Stage):
     """
-    Start N nodes and return status
+    Start applicaiton on nodes and return status
     """
 
     def triggered(self, context):
@@ -359,23 +370,12 @@ class Run(Stage):
         else:
             print ("seeds for each node in group %s = %s" % (self.group_id,[(x.name,seeds[x]) for x in seeds.keys()]))
 
-
         logger.debug("seeds = %s" % seeds)
         for node in nodes:
             instance_id = node.name
             logger.info("prepare_input %s %s" % (instance_id, self.input_dir))
             ip = get_instance_ip(instance_id, self.settings)
             ssh = open_connection(ip_address=ip, settings=self.settings)
-            #ssh = open_connection(ip_address=ip, username=self.settings['USER_NAME'],
-            #                       password=self.settings['PASSWORD'], settings=self.settings)
-
-            #input_dir = _normalize_dirpath(input_dir)
-            #dirList = os.listdir(input_dir)
-            # for fname in dirList:
-            #     logger.debug(fname)
-            #     _upload_input(ssh, input_dir, fname,
-            #                   os.path.join(settings['DEST_PATH_PREFIX'],
-            #                                settings['PAYLOAD_CLOUD_DIRNAME']))
 
             fsys.upload_input(ssh, self.input_dir, os.path.join(self.settings['DEST_PATH_PREFIX'],
                                            self.settings['PAYLOAD_CLOUD_DIRNAME']))
@@ -393,19 +393,14 @@ class Run(Stage):
             run_command(ssh, "cd %s; sed -i 's/[0-9]*[ \t]*iseed.*$/%s\tiseed/' rmcen.inp" %
                         (os.path.join(self.settings['DEST_PATH_PREFIX'],
                                       self.settings['PAYLOAD_CLOUD_DIRNAME']), seeds[node]))
-
-
         try:
             pids = run_multi_task(self.group_id, self.input_dir, self.settings)
-
-
         except PackageFailedError, e:
             logger.error(e)
             logger.error("unable to start packages")
             #TODO: cleanup node of copied input files etc.
             sys.exit(1)
         return pids
-
 
     def output(self, context):
         """
@@ -423,31 +418,6 @@ class Run(Stage):
 
         nodes = get_rego_nodes(self.group_id, self.settings)
         logger.debug("nodes = %s" % nodes)
-        # error_nodes = []
-        # finished_nodes = []
-
-        # for node in nodes:
-        #     instance_id = node.name
-        #     ip = get_instance_ip(instance_id, self.settings)
-        #     ssh = open_connection(ip_address=ip, settings=self.settings)
-        #     if not is_instance_running(instance_id, self.settings):
-        #         # An unlikely situation where the node crashed after is was
-        #         # detected as registered.
-        #         logging.error('Instance %s not running' % instance_id)
-        #         error_nodes.append(node)
-        #         continue
-        #     if job_finished(instance_id, self.settings):
-        #         print "done. output is available"
-        #         finished_nodes.append(node)
-        #     else:
-        #         print "job still running on %s: %s" % (instance_id,
-        #                                        get_instance_ip(instance_id,
-        #                                                     self.settings))
-
-        # TODO: handle error_nodes
-        # logger.debug("finished = %s" % finished_nodes)
-        # logger.debug("error_nodes = %s" % error_nodes)
-        # nodes_working = len(nodes) - len(finished_nodes)
 
         config = json.loads(settings_text)
         # We assume that none of runs have finished yet.
@@ -510,6 +480,7 @@ class Finished(Stage):
         self.error_nodes = []
         self.finished_nodes = []
         for node in self.nodes:
+
             instance_id = node.name
             ip = get_instance_ip(instance_id, self.settings)
             ssh = open_connection(ip_address=ip, settings=self.settings)
@@ -524,7 +495,16 @@ class Finished(Stage):
             logger.debug("fin=%s" % fin)
             if fin:
                 print "done. output is available"
-                fsys.download_output(ssh, instance_id, self.output_dir, self.settings)
+                logger.debug("node=%s" % node)
+                logger.debug("finished_nodes=%s" % self.finished_nodes)
+                #FIXME: for multiple nodes, if one finishes before the other then
+                #its output will be retrieved, but it may again when the other node fails, because
+                #we cannot tell whether we have prevous retrieved this output before and finished_nodes
+                # is not maintained between triggerings...
+                if not (node.name in [ x.name for x in self.finished_nodes]):
+                    fsys.download_output(ssh, instance_id, self.output_dir, self.settings)
+                else:
+                    logger.info("We have already processed output from node %s" %node.name)
                 self.finished_nodes.append(node)
             else:
                 print "job still running on %s: %s" % (instance_id,
@@ -536,7 +516,6 @@ class Finished(Stage):
         Output new runs_left value (including zero value)
         """
         nodes_working = len(self.nodes) - len(self.finished_nodes)
-
 
         fsys = get_filesys(context)
         logger.debug("fsys= %s" % fsys)
@@ -558,6 +537,12 @@ class Finished(Stage):
 
         # NOTE: runs_left cannot be deleted or run() will trigger
         return context
+
+    def _kill_run(context):
+        """ Based on information from the current run, decide whether to kill the current runs
+        """
+        #TODO:
+        pass
 
 
 class Converge(Stage):
@@ -662,6 +647,25 @@ class Teardown(Stage):
 
         return context#self.packaged_nodes
 
+
+
+
+class Sleep(Stage):
+    """
+    Return whether the run has finished or not
+    """
+
+    def __init__(self,secs):
+        self.sleeptime = secs
+    def triggered(self, context):
+        return True
+
+    def process(self, context):
+        pass
+
+    def output(self, context):
+        context['Done'] = True
+        return context
 
 
 def mainloop():

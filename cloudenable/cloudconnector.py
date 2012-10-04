@@ -54,6 +54,7 @@ def _create_VM_instances(number_vm_instances, settings):
     image1 = [i for i in images if i.id == settings['VM_IMAGE']][0]
     size1 = [i for i in sizes if i.id == settings['VM_SIZE']][0]
 
+    # TODO: make SSH security group here.
     all_instances = []
     try:
         print "Creating %d VM instance(s)" % number_vm_instances
