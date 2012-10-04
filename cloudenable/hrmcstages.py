@@ -96,8 +96,9 @@ class Configure(Stage, UI):
     """
 
     def triggered(self, context):
-        # True if fsys missing
-        return True
+        if not get_filesys(context):
+            return True
+        return False
 
     def process(self, context):
         # - Load config.sys file into the filesystem
@@ -115,7 +116,7 @@ class Configure(Stage, UI):
         # provided via command line or a web page.
         # For now, we assume, its location is 'original_config_file_path'
         #TODO: also need to load up all the input files
-        original_config_file_path = HOME_DIR+"/sandbox/cloudenabling/cloudenable/config.sys.json"
+        original_config_file_path = HOME_DIR+"/cloudenabling/cloudenable/config.sys.json"
         original_config_file = open(original_config_file_path, 'r')
         original_config_file_content = original_config_file.read()
         original_config_file.close()
@@ -139,12 +140,21 @@ class Create(Stage):
         self.group_id = ''
 
     def triggered(self, context):
-        #check the context for existence of a file system
-        # True if not group_id
+        self.settings = get_settings(context)
+        logger.debug("settings = %s" % self.settings)
+
+        run_info = get_run_info(context)
+        logger.debug("runinfo=%s" % run_info)
+
+        self.settings.update(run_info)
+        logger.debug("settings = %s" % self.settings)
+
+        self.group_id = self.settings["group_id"]
+        logger.debug("group_id = %s" % self.group_id)
+    
         if get_filesys(context):
-            self.settings = get_settings(context)
-            logger.debug("settings = %s" % self.settings)
-            return True
+            if not self.settings["group_id"]:
+                return True
         return False
 
     '''
@@ -402,6 +412,7 @@ class Run(Stage):
         # logger.debug("finished = %s" % finished_nodes)
         # logger.debug("error_nodes = %s" % error_nodes)
         # nodes_working = len(nodes) - len(finished_nodes)
+
         config = json.loads(settings_text)
         # We assume that none of runs have finished yet.
         config['runs_left'] = len(nodes) # FIXME: possible race condition?
@@ -479,6 +490,7 @@ class Finished(Stage):
         """
         nodes_working = len(self.nodes) - len(self.finished_nodes)
 
+
         fsys = get_filesys(context)
         logger.debug("fsys= %s" % fsys)
 
@@ -552,15 +564,26 @@ class Teardown(Stage):
         self.group_id = self.settings["group_id"]
         logger.debug("group_id = %s" % self.group_id)
         
+        self.run_list = self.settings["runs_left"]
+        
+        self.group_id = self.settings["group_id"]
+        logger.debug("group_id = %s" % self.group_id)
+    
+        print "Run list", self.run_list  
+        if self.run_list == 0:
+            if not self.settings['run_finished']:
+                return True
+        return False
         #trigger_message = self.settings["setup_finished"]
         
         #trigger message should be changed 
+        '''
         try:
             trigger_message = self.settings["setup_finished"]
             return True
         except:
             return False      
-        
+        '''
     def process(self, context):
         all_instances = collect_instances(self.settings, group_id=self.group_id)
         destroy_environ(self.settings, all_instances)
@@ -610,8 +633,8 @@ def mainloop():
     #smart_conn.register(Create())
 
 
-    #for stage in (Configure(), Create(), Setup(),Run(), Finished()):#, Check(), Teardown()):
-    for stage in (Configure(), Create(), Setup(), Teardown()):#, Run(), Check(), Teardown()):
+    for stage in (Configure(), Create(), Setup(),Run(), Finished(), Teardown()):#, Check(), Teardown()):
+    #for stage in (Configure(), Create(), Teardown()):#, Run(), Check(), Teardown()):
         smart_conn.register(stage)
 
 
