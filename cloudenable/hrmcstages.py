@@ -20,12 +20,13 @@ from smartconnector import SmartConnector
 from filesystem import FileSystem
 from filesystem import DataObject
 
-
 from cloudconnector import create_environ
-
 from cloudconnector import get_rego_nodes
 from cloudconnector import open_connection
 from cloudconnector import get_instance_ip
+from cloudconnector import collect_instances
+from cloudconnector import destroy_environ
+
 from hrmcimpl import setup_multi_task
 from hrmcimpl import prepare_multi_input
 
@@ -102,8 +103,9 @@ class Configure(Stage, UI):
     """
 
     def triggered(self, context):
-        # True if fsys missing
-        return True
+        if not get_filesys(context):
+            return True
+        return False
 
     def process(self, context):
         # - Load config.sys file into the filesystem
@@ -121,7 +123,7 @@ class Configure(Stage, UI):
         # provided via command line or a web page.
         # For now, we assume, its location is 'original_config_file_path'
         #TODO: also need to load up all the input files
-        original_config_file_path = HOME_DIR+"/sandbox/cloudenabling/cloudenable/config.sys.json"
+        original_config_file_path = HOME_DIR+"/cloudenabling/cloudenable/config.sys.json"
         original_config_file = open(original_config_file_path, 'r')
         original_config_file_content = original_config_file.read()
         original_config_file.close()
@@ -145,12 +147,21 @@ class Create(Stage):
         self.group_id = ''
 
     def triggered(self, context):
-        #check the context for existence of a file system
-        # True if not group_id
+        self.settings = get_settings(context)
+        logger.debug("settings = %s" % self.settings)
+
+        run_info = get_run_info(context)
+        logger.debug("runinfo=%s" % run_info)
+
+        self.settings.update(run_info)
+        logger.debug("settings = %s" % self.settings)
+
+        self.group_id = self.settings["group_id"]
+        logger.debug("group_id = %s" % self.group_id)
+    
         if get_filesys(context):
-            self.settings = get_settings(context)
-            logger.debug("settings = %s" % self.settings)
-            return True
+            if not self.settings["group_id"]:
+                return True
         return False
 
     '''
@@ -169,7 +180,7 @@ class Create(Stage):
         number_vm_instances = 1
         self.seed = 32
         self.group_id = create_environ(number_vm_instances, self.settings)
-
+       
     def output(self, context):
         # store in filesystem
         #self._store(self.temp_sys, filesystem)
@@ -218,7 +229,7 @@ class Setup(Stage):
 
     def process(self, context):
         setup_multi_task(self.group_id, self.settings)
-
+        
     def output(self, context):
 
         fsys = get_filesys(context)
@@ -239,6 +250,7 @@ class Setup(Stage):
         fsys.update("default", run_info_file)
 
         # FIXME: check to make sure not retriggered
+
 
         return context
 
@@ -407,6 +419,7 @@ class Run(Stage):
         # logger.debug("finished = %s" % finished_nodes)
         # logger.debug("error_nodes = %s" % error_nodes)
         # nodes_working = len(nodes) - len(finished_nodes)
+
         config = json.loads(settings_text)
         # We assume that none of runs have finished yet.
         config['runs_left'] = len(nodes) # FIXME: possible race condition?
@@ -484,6 +497,7 @@ class Finished(Stage):
         """
         nodes_working = len(self.nodes) - len(self.finished_nodes)
 
+
         fsys = get_filesys(context)
         logger.debug("fsys= %s" % fsys)
 
@@ -546,13 +560,62 @@ class Transform(Stage):
 class Teardown(Stage):
     def triggered(self, context):
         self.settings = get_settings(context)
-        self.group_id = self.settings['group_id']
+        logger.debug("settings = %s" % self.settings)
 
+        run_info = get_run_info(context)
+        logger.debug("runinfo=%s" % run_info)
+
+        self.settings.update(run_info)
+        logger.debug("settings = %s" % self.settings)
+
+        self.group_id = self.settings["group_id"]
+        logger.debug("group_id = %s" % self.group_id)
+        
+        self.run_list = self.settings["runs_left"]
+        
+        self.group_id = self.settings["group_id"]
+        logger.debug("group_id = %s" % self.group_id)
+    
+        print "Run list", self.run_list  
+        if self.run_list == 0:
+            if not self.settings['run_finished']:
+                return True
+        return False
+        #trigger_message = self.settings["setup_finished"]
+        
+        #trigger message should be changed 
+        '''
+        try:
+            trigger_message = self.settings["setup_finished"]
+            return True
+        except:
+            return False      
+        '''
     def process(self, context):
-        pass
+        all_instances = collect_instances(self.settings, group_id=self.group_id)
+        destroy_environ(self.settings, all_instances)
 
     def output(self, context):
-        pass
+        fsys = get_filesys(context)
+        logger.debug("fsys= %s" % fsys)
+
+        run_info_file = get_file(fsys,"default/runinfo.sys")
+        logger.debug("run_info_file= %s" % run_info_file)
+
+        settings_text = run_info_file.retrieve()
+        logger.debug("runinfo_text= %s" % settings_text)
+
+        config = json.loads(settings_text)
+        config['run_finished'] = True # FIXME: possible race condition?
+        logger.debug("config=%s" % config)
+        run_info_text = json.dumps(config)
+        run_info_file.setContent(run_info_text)
+
+        fsys.update("default", run_info_file)
+
+        # FIXME: check to make sure not retriggered
+
+        return context#self.packaged_nodes
 
 
 
@@ -576,7 +639,9 @@ def mainloop():
     #smart_conn.register(Configure())
     #smart_conn.register(Create())
 
-    for stage in (Configure(), Create(), Setup(),Run(), Finished()):#, Check(), Teardown()):
+
+    for stage in (Configure(), Create(), Setup(),Run(), Finished(), Teardown()):#, Check(), Teardown()):
+    #for stage in (Configure(), Create(), Teardown()):#, Run(), Check(), Teardown()):
         smart_conn.register(stage)
 
 
@@ -604,6 +669,7 @@ def mainloop():
                 not_triggered += 1
                 #smart_con.unregister(stage)
                 #print "Deleting stage",stage
+                print context
             logger.debug(done, " ", len(smart_conn.stages))
 
         if not_triggered == len(smart_conn.stages):
