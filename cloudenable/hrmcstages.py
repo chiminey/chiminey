@@ -162,10 +162,8 @@ class Configure(Stage, UI):
         # provided via command line or a web page.
         # For now, we assume, its location is 'original_config_file_path'
         #TODO: also need to load up all the input files
-        original_config_file_path = os.path.join(
-            HOME_DIR,
-            "sandbox/cloudenabling",
-            "cloudenable/config.sys.json")
+
+        original_config_file_path = HOME_DIR+"/cloudenabling/cloudenable/config.sys.json"
         original_config_file = open(original_config_file_path, 'r')
         original_config_file_content = original_config_file.read()
         original_config_file.close()
@@ -317,11 +315,19 @@ class Run(Stage):
 
         # input_dir is assumed to be populated.
 
+
+        '''
+        TODO: - uncomment after transformation is finished
+              - change context to self.settings
+              - move the code after self.settings.update
         if 'id' in context:
             self.id = context['id']
             self.input_dir = "input_%s" % self.id
         else:
             self.input_dir = "input"
+        '''
+        self.input_dir = "input"
+        
         print "Run stage triggered"
         self.settings = get_settings(context)
         logger.debug("settings = %s" % self.settings)
@@ -344,6 +350,7 @@ class Run(Stage):
             if 'runs_left' in self.settings:
                 return False
 
+            print "True"
             if packaged_nodes == setup_nodes:
                 return True
             else:
@@ -477,13 +484,6 @@ class Finished(Stage):
         """
         Checks whether there is a non-zero number of runs still going.
         """
-
-        if 'id' in context:
-            self.id = context['id']
-            self.output_dir = "output_%s" % self.id
-        else:
-            self.output_dir = "output"
-
         self.settings = get_settings(context)
         logger.debug("settings = %s" % self.settings)
         run_info = get_run_info(context)
@@ -494,6 +494,12 @@ class Finished(Stage):
         self.group_id = self.settings['group_id']
         logger.debug("group_id = %s" % self.group_id)
 
+        if 'id' in self.settings:
+            self.id = self.settings['id']
+            self.output_dir = "output_%s" % self.id
+        else:
+            self.output_dir = "output"
+            
         # if we have no runs_left then we must have finished all the runs
         if 'runs_left' in self.settings:
             return self.settings['runs_left']
@@ -586,7 +592,8 @@ class Converge(Stage):
     def __init__(self, number_of_iterations):
         self.total_iterations = number_of_iterations
         self.number_of_remaining_iterations = number_of_iterations
-
+        self.counter = 0
+        
     def triggered(self, context):
 
         self.settings = get_settings(context)
@@ -598,9 +605,11 @@ class Converge(Stage):
         self.settings.update(run_info)
         logger.debug("settings = %s" % self.settings)
 
-        if 'runs_left' in self.settings:
+        
+        
+        if 'runs_left' in self.settings: 
             self.run_list = self.settings["runs_left"]
-            if self.run_list == 0:
+            if self.run_list == 0 and self.number_of_remaining_iterations > 0:
                 return True
         return False
 
@@ -618,14 +627,17 @@ class Converge(Stage):
         logger.debug("runinfo_text= %s" % settings_text)
 
         config = json.loads(settings_text)
-        del(config['runs_left'])
-        del(config['error_nodes'])  # ??
-        logger.debug("config=%s" % config)
 
-        run_info_text = json.dumps(config)
-        run_info_file.setContent(run_info_text)
-        logger.debug("run_info_file=%s" % run_info_file)
-        fsys.update("default", run_info_file)
+        if self.number_of_remaining_iterations > 0:
+            del(config['runs_left'])
+            del(config['error_nodes']) #??
+        
+            logger.debug("config=%s" % config)
+       
+            run_info_text = json.dumps(config)
+            run_info_file.setContent(run_info_text)
+            logger.debug("run_info_file=%s" % run_info_file)
+            fsys.update("default", run_info_file)
 
     def output(self, context):
         fsys = get_filesys(context)
@@ -635,6 +647,10 @@ class Converge(Stage):
         config['converged'] = False
         if self.number_of_remaining_iterations == 0:
             config['converged'] = True
+        
+        self.counter += 1
+        config['id'] = self.counter
+        
         run_info_text = json.dumps(config)
         run_info_file.setContent(run_info_text)
         fsys.update("default", run_info_file)
@@ -670,6 +686,7 @@ class Teardown(Stage):
 
         self.group_id = self.settings["group_id"]
         logger.debug("group_id = %s" % self.group_id)
+
 
         self.group_id = self.settings["group_id"]
         logger.debug("group_id = %s" % self.group_id)
