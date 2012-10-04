@@ -89,7 +89,7 @@ def get_run_info(context):
     Returns the content of the run info file as a dict
     """
     fsys = get_filesys(context)
-    
+
     logger.debug("fsys= %s" % fsys)
     config = get_file(fsys,"default/runinfo.sys")
     logger.debug("config= %s" % config)
@@ -284,6 +284,16 @@ class Run(Stage):
     def triggered(self, context):
         # triggered when we now that we have N nodes setup and ready to run.
 
+
+        # input_dir is assumed to be populated.
+
+
+        if 'id' in context:
+            self.id = context['id']
+            self.input_dir = "input_%s" % self.id
+        else:
+            self.input_dir = "input"
+
         self.settings = get_settings(context)
         logger.debug("settings = %s" % self.settings)
 
@@ -349,13 +359,11 @@ class Run(Stage):
         else:
             print ("seeds for each node in group %s = %s" % (self.group_id,[(x.name,seeds[x]) for x in seeds.keys()]))
 
-        # input_dir is assumed to be populated.
-        input_dir = "input"
 
         logger.debug("seeds = %s" % seeds)
         for node in nodes:
             instance_id = node.name
-            logger.info("prepare_input %s %s" % (instance_id, input_dir))
+            logger.info("prepare_input %s %s" % (instance_id, self.input_dir))
             ip = get_instance_ip(instance_id, self.settings)
             ssh = open_connection(ip_address=ip, settings=self.settings)
             #ssh = open_connection(ip_address=ip, username=self.settings['USER_NAME'],
@@ -369,7 +377,7 @@ class Run(Stage):
             #                   os.path.join(settings['DEST_PATH_PREFIX'],
             #                                settings['PAYLOAD_CLOUD_DIRNAME']))
 
-            fsys.upload_input(ssh, "input", os.path.join(self.settings['DEST_PATH_PREFIX'],
+            fsys.upload_input(ssh, self.input_dir, os.path.join(self.settings['DEST_PATH_PREFIX'],
                                            self.settings['PAYLOAD_CLOUD_DIRNAME']))
 
             run_command(ssh, "cd %s; cp rmcen.inp rmcen.inp.orig" %
@@ -388,7 +396,7 @@ class Run(Stage):
 
 
         try:
-            pids = run_multi_task(self.group_id, input_dir, self.settings)
+            pids = run_multi_task(self.group_id, self.input_dir, self.settings)
 
 
         except PackageFailedError, e:
@@ -467,6 +475,13 @@ class Finished(Stage):
         """
         Checks whether there is a non-zero number of runs still going.
         """
+
+        if 'id' in context:
+            self.id = context['id']
+            self.output_dir = "output_%s" % self.id
+        else:
+            self.output_dir = "output"
+
         self.settings = get_settings(context)
         logger.debug("settings = %s" % self.settings)
         run_info = get_run_info(context)
@@ -509,7 +524,7 @@ class Finished(Stage):
             logger.debug("fin=%s" % fin)
             if fin:
                 print "done. output is available"
-                fsys.download_output(ssh, instance_id, "output", self.settings)
+                fsys.download_output(ssh, instance_id, self.output_dir, self.settings)
                 self.finished_nodes.append(node)
             else:
                 print "job still running on %s: %s" % (instance_id,
@@ -550,10 +565,10 @@ class Converge(Stage):
     Return whether the run has finished or not
     """
     def triggered(self, context):
-        
+
         if not get_elem(context, ['Done']):
             print "Triggered"
-    
+
             return True
         return False
     def process(self, context):
@@ -686,12 +701,12 @@ def mainloop():
 
     #while(True):
     #smart_conn = SmartConnector()
-    
+
     #smart_conn.register(Converge())
-    
-    
-    
-    
+
+
+
+
     while (True):
         done = 0
         not_triggered = 0
@@ -710,7 +725,7 @@ def mainloop():
 
         if not_triggered == len(smart_conn.stages):
             break
-    
+
 
 if __name__ == '__main__':
     logging.config.fileConfig('logging.conf')
