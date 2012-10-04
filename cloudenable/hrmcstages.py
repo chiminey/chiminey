@@ -556,10 +556,10 @@ class Converge(Stage):
     def __init__(self, number_of_iterations):
         self.total_iterations = number_of_iterations
         self.number_of_remaining_iterations = number_of_iterations
-        
+
     def triggered(self, context):
 
-        
+
         self.settings = get_settings(context)
         logger.debug("settings = %s" % self.settings)
 
@@ -569,16 +569,16 @@ class Converge(Stage):
         self.settings.update(run_info)
         logger.debug("settings = %s" % self.settings)
 
-        self.run_list = self.settings["runs_left"]
-
-        if self.run_list == 0:
-            return True
+        if 'runs_left' in self.settings:
+            self.run_list = self.settings["runs_left"]
+            if self.run_list == 0:
+                return True
         return False
-      
+
     def process(self, context):
-        self.number_of_remaining_iterations -= 1 
+        self.number_of_remaining_iterations -= 1
         print "Number of Iterations Left %d" % self.number_of_remaining_iterations
-        
+
         fsys = get_filesys(context)
         logger.debug("fsys= %s" % fsys)
 
@@ -592,28 +592,28 @@ class Converge(Stage):
         del(config['runs_left'])
         del(config['error_nodes']) #??
         logger.debug("config=%s" % config)
-       
+
         run_info_text = json.dumps(config)
         run_info_file.setContent(run_info_text)
         logger.debug("run_info_file=%s" % run_info_file)
         fsys.update("default", run_info_file)
 
-     
+
     def output(self, context):
         fsys = get_filesys(context)
         run_info_file = get_file(fsys,"default/runinfo.sys")
         settings_text = run_info_file.retrieve()
         config = json.loads(settings_text)
         config['converged'] = False
-        
+
         if self.number_of_remaining_iterations == 0:
              config['converged'] = True
-        
+
         run_info_text = json.dumps(config)
         run_info_file.setContent(run_info_text)
         fsys.update("default", run_info_file)
-        
-        
+
+
         return context
 
 
@@ -649,12 +649,8 @@ class Teardown(Stage):
         self.group_id = self.settings["group_id"]
         logger.debug("group_id = %s" % self.group_id)
 
-        self.run_list = self.settings["runs_left"]
-
         self.group_id = self.settings["group_id"]
         logger.debug("group_id = %s" % self.group_id)
-
-        print "Run list", self.run_list
 
 
         if 'converged' in self.settings:
@@ -762,10 +758,10 @@ def mainloop():
 
     #smart_conn.register(Converge())
 
-    
-    
-    '''
-    
+
+
+
+
 
     while (True):
         done = 0
@@ -799,7 +795,8 @@ def mainloop():
                 stage.process(context)
                 context = stage.output(context)
                 logger.debug("Context", context)
-                if type(stage==Teardown()):
+                if type(stage==Teardown):
+                    print "exit_reached"
                     exit_reached = True
             else:
                 not_triggered += 1
@@ -812,7 +809,7 @@ def mainloop():
             break
         else:
             print "Not Teardown"
-    
+    '''
 
 if __name__ == '__main__':
     logging.config.fileConfig('logging.conf')
