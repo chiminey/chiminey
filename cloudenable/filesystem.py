@@ -103,7 +103,7 @@ class FileSystem(object):
             _upload_input(ssh, input_dir,  fname, dest)
 
     def download_output(self, ssh, instance_id, local_filesystem, settings):
-        output_dir = os.path.join(self.global_filesystem, local_filesystem)
+        output_dir = os.path.join(self.global_filesystem, local_filesystem, instance_id)
         get_output(instance_id, output_dir, settings)
 
 

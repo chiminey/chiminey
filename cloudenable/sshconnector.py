@@ -143,6 +143,7 @@ def put_file(ssh, source_path, package_file, environ_dir):
 
 
 def get_package_pids(ssh, command):
+    #FIXME: the output of pidof is not entirely clear.,
     logger.debug("get_package_pids")
     pid_lines = run_command(ssh, "/sbin/pidof %s" % command)
     logger.debug("pid_lines=%s" % pid_lines)

@@ -75,6 +75,9 @@ def get_settings(context):
 
 
 def get_run_info_file(context):
+    """
+    Returns the actual runinfo file
+    """
     fsys = get_filesys(context)
     logger.debug("fsys= %s" % fsys)
     config = get_file(fsys,"default/runinfo.sys")
@@ -82,6 +85,9 @@ def get_run_info_file(context):
     return config
 
 def get_run_info(context):
+    """
+    Returns the content of the run info file as a dict
+    """
     fsys = get_filesys(context)
     logger.debug("fsys= %s" % fsys)
     config = get_file(fsys,"default/runinfo.sys")
@@ -103,11 +109,17 @@ class Configure(Stage, UI):
     """
 
     def triggered(self, context):
+        """
+        True if filesystem exists in context
+        """
         if not get_filesys(context):
             return True
         return False
 
     def process(self, context):
+        """
+        Create config file
+        """
         # - Load config.sys file into the filesystem
         # - Nothing beyond specifying the path to config.sys
         # - Later could be dialogue box,...
@@ -123,7 +135,7 @@ class Configure(Stage, UI):
         # provided via command line or a web page.
         # For now, we assume, its location is 'original_config_file_path'
         #TODO: also need to load up all the input files
-        original_config_file_path = HOME_DIR+"/cloudenabling/cloudenable/config.sys.json"
+        original_config_file_path = HOME_DIR+"/sandbox/cloudenabling/cloudenable/config.sys.json"
         original_config_file = open(original_config_file_path, 'r')
         original_config_file_content = original_config_file.read()
         original_config_file.close()
@@ -135,6 +147,9 @@ class Configure(Stage, UI):
 
     # indicate the process() is completed
     def output(self, context):
+        """
+        Store ref to filesystem in context
+        """
         # store in filesystem
         # pass the file system as entry in the Context
         context = {'filesys':self.filesystem}
@@ -147,22 +162,28 @@ class Create(Stage):
         self.group_id = ''
 
     def triggered(self, context):
+        """
+        Returns true if filesystem exists but there is no  runinfo.sys with group_id
+        """
         self.settings = get_settings(context)
         logger.debug("settings = %s" % self.settings)
 
-        run_info = get_run_info(context)
+        fsys = get_filesys(context)
+        run_info = None
+        try:
+            run_info = get_run_info(context)
+        except AttributeError:
+            pass
+
+        if not run_info:
+            return True
+
         logger.debug("runinfo=%s" % run_info)
 
         self.settings.update(run_info)
         logger.debug("settings = %s" % self.settings)
 
-        self.group_id = self.settings["group_id"]
-        logger.debug("group_id = %s" % self.group_id)
-    
-        if get_filesys(context):
-            if not self.settings["group_id"]:
-                return True
-        return False
+        return not ('group_id' in self.settings)
 
     '''
         if True:
@@ -176,12 +197,18 @@ class Create(Stage):
     '''
 
     def process(self, context):
+        """
+        Make new VMS and store group_id
+        """
         #user input
         number_vm_instances = 1
         self.seed = 32
         self.group_id = create_environ(number_vm_instances, self.settings)
-       
+
     def output(self, context):
+        """
+        Create a runfinos.sys file in filesystem with new group_id
+        """
         # store in filesystem
         #self._store(self.temp_sys, filesystem)
         local_filesystem = 'default'
@@ -202,6 +229,9 @@ class Setup(Stage):
         self.group_id = ''
 
     def triggered(self, context):
+        """
+        Triggered if appropriate vms exist and we have not finished setup
+        """
         # triggered if the set of the VMS has been established.
         self.settings = get_settings(context)
         logger.debug("settings = %s" % self.settings)
@@ -228,9 +258,15 @@ class Setup(Stage):
         return len(self.packaged_nodes)
 
     def process(self, context):
+        """
+        Setup all the nodes
+        """
         setup_multi_task(self.group_id, self.settings)
-        
+
     def output(self, context):
+        """
+        Store number of packages nodes as setup_finished in runinfo.sys
+        """
 
         fsys = get_filesys(context)
         logger.debug("fsys= %s" % fsys)
@@ -475,6 +511,8 @@ class Finished(Stage):
         self.finished_nodes = []
         for node in self.nodes:
             instance_id = node.name
+            ip = get_instance_ip(instance_id, self.settings)
+            ssh = open_connection(ip_address=ip, settings=self.settings)
             if not is_instance_running(instance_id, self.settings):
                 # An unlikely situation where the node crashed after is was
                 # detected as registered.
@@ -482,9 +520,11 @@ class Finished(Stage):
                 logging.error('Instance %s not running' % instance_id)
                 self.error_nodes.append(node)
                 continue
-            if job_finished(instance_id, self.settings):
+            fin = job_finished(instance_id, self.settings)
+            logger.debug("fin=%s" % fin)
+            if fin:
                 print "done. output is available"
-                fys.download_output(ssh, instance_id, "output", self.settings)
+                fsys.download_output(ssh, instance_id, "output", self.settings)
                 self.finished_nodes.append(node)
             else:
                 print "job still running on %s: %s" % (instance_id,
@@ -570,26 +610,26 @@ class Teardown(Stage):
 
         self.group_id = self.settings["group_id"]
         logger.debug("group_id = %s" % self.group_id)
-        
+
         self.run_list = self.settings["runs_left"]
-        
+
         self.group_id = self.settings["group_id"]
         logger.debug("group_id = %s" % self.group_id)
-    
-        print "Run list", self.run_list  
+
+        print "Run list", self.run_list
         if self.run_list == 0:
-            if not self.settings['run_finished']:
+            if not 'run_finished' in self.settings:
                 return True
         return False
         #trigger_message = self.settings["setup_finished"]
-        
-        #trigger message should be changed 
+
+        #trigger message should be changed
         '''
         try:
             trigger_message = self.settings["setup_finished"]
             return True
         except:
-            return False      
+            return False
         '''
     def process(self, context):
         all_instances = collect_instances(self.settings, group_id=self.group_id)
@@ -614,6 +654,8 @@ class Teardown(Stage):
         fsys.update("default", run_info_file)
 
         # FIXME: check to make sure not retriggered
+
+
 
         return context#self.packaged_nodes
 
