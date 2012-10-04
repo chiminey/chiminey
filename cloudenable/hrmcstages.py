@@ -73,6 +73,13 @@ def get_settings(context):
     return dict(res)
 
 
+def get_run_info_file(context):
+    fsys = get_filesys(context)
+    logger.debug("fsys= %s" % fsys)
+    config = get_file(fsys,"default/runinfo.sys")
+    logger.debug("config= %s" % config)
+    return config
+
 def get_run_info(context):
     fsys = get_filesys(context)
     logger.debug("fsys= %s" % fsys)

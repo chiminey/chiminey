@@ -38,6 +38,7 @@ from hrmcstages import get_filesys
 from hrmcstages import get_file
 from hrmcstages import get_settings
 from hrmcstages import get_run_info
+from hrmcstages import get_run_info_file
 
 
 from libcloud.compute.drivers.ec2 import EucNodeDriver
@@ -357,7 +358,7 @@ class FinishedStageTests(unittest.TestCase):
 
 
 
-    def test_run(self):
+    def test_finished(self):
 
 
         logger.debug("%s:%s" %(self.__class__.__name__,sys._getframe().f_code.co_name))
@@ -404,7 +405,7 @@ class FinishedStageTests(unittest.TestCase):
         self.settings['seed'] = 42
         f1.create(json.dumps(self.settings))
         f2 = DataObject("runinfo.sys")
-        f2.create(json.dumps({'group_id':group_id,'setup_finished':1}))
+        f2.create(json.dumps({'group_id':group_id,'runs_left':1,'setup_finished':1}))
         print("f2=%s" % f2)
         fs = FileSystem(self.global_filesystem, self.local_filesystem)
         fs.create(self.local_filesystem, f1)
@@ -412,18 +413,39 @@ class FinishedStageTests(unittest.TestCase):
         print("fs=%s" % fs)
         context = {'filesys':fs}
         print("context=%s" % context)
-        s1 = Run()
+        s1 = Finished()
         res = s1.triggered(context)
         logger.debug("triggered done")
-        print res
         self.assertEquals(res, True)
         self.assertEquals(s1.group_id, group_id)
 
+
+
+
+        # Change run_info to 0
+        run_info_file = get_run_info_file(context)
+        logger.debug("run_info_file=%s" % run_info_file)
+        run_info = get_run_info(context)
+        self.group_id = run_info['group_id']
+        run_info['runs_left'] = 0
+        run_info_text = json.dumps(run_info)
+        run_info_file.setContent(run_info_text)
+        fs.update("default", run_info_file)
+
+
+        res = s1.triggered(context)
+        logger.debug("triggered done")
+        self.assertEquals(res, False)
+
+
         logger.debug("about to process")
-        pids = s1.process(context)
-        self.assertEquals(pids.values(),[['1\n']])
+        s1.process(context)
+        self.assertEquals(len(s1.nodes),1)
+        self.assertEquals(len(s1.finished_nodes),0)
+        self.assertEquals(len(s1.error_nodes),0)
 
         logger.debug("about to output")
+        #TODO: need to change result of next step to test
         s1.output(context)
 
         config = fs.retrieve("default/runinfo.sys")
@@ -431,7 +453,8 @@ class FinishedStageTests(unittest.TestCase):
         logger.debug("content=%s" % content)
         self.assertEquals(content, {
             "runs_left": 1,
-            "group_id": "sq42kdjshasdkjghauiwytuiawjmkghasjkghasg",
+            "error_nodes":0,
+            "group_id": group_id,
             "setup_finished": 1})
 
 
