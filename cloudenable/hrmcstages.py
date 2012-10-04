@@ -509,15 +509,18 @@ class Converge(Stage):
     Return whether the run has finished or not
     """
     def triggered(self, context):
-        self.settings = get_settings(context)
-        self.group_id = self.settings['group_id']
-        pass
-
+        
+        if not get_elem(context, ['Done']):
+            print "Triggered"
+    
+            return True
+        return False
     def process(self, context):
         pass
 
     def output(self, context):
-        pass
+        context['Done'] = True
+        return context
 
 
 
@@ -639,7 +642,13 @@ def mainloop():
 
 
     #while(True):
-
+    #smart_conn = SmartConnector()
+    
+    #smart_conn.register(Converge())
+    
+    
+    
+    
     while (True):
         done = 0
         not_triggered = 0
@@ -658,7 +667,7 @@ def mainloop():
 
         if not_triggered == len(smart_conn.stages):
             break
-
+    
 
 if __name__ == '__main__':
     logging.config.fileConfig('logging.conf')
