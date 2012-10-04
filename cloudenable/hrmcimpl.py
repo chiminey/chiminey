@@ -106,7 +106,7 @@ def get_output(instance_id, output_dir, settings):
     ip = get_instance_ip(instance_id, settings)
     ssh = open_connection(ip_address=ip, settings=settings)
     try:
-        os.mkdir(output_dir)
+        os.makedirs(output_dir)  # NOTE: makes intermediate directories
     except OSError, e:
         logger.debug("output directory %s already exists: %s" % (output_dir,e))
         #sys.exit(1)
@@ -126,8 +126,9 @@ def job_finished(instance_id, settings):
 
     ip = get_instance_ip(instance_id, settings)
     ssh = open_connection(ip_address=ip, settings=settings)
-    pid = get_package_pids(ssh, settings['COMPILE_FILE'])
-    return not pid
+    pids = get_package_pids(ssh, settings['COMPILE_FILE'])
+    logger.debug("pids=%s" % repr(pids))
+    return pids == [""]
 
 
 def setup_multi_task(group_id, settings):
