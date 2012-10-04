@@ -286,7 +286,8 @@ class RunStageTests(unittest.TestCase):
         fs.create(self.local_filesystem, f1)
         fs.create(self.local_filesystem, f2)
         print("fs=%s" % fs)
-        context = {'filesys':fs}
+        id = "mytestid"
+        context = {'filesys':fs,'id':id}
         print("context=%s" % context)
         s1 = Run()
         res = s1.triggered(context)
@@ -305,6 +306,8 @@ class RunStageTests(unittest.TestCase):
         config = fs.retrieve("default/runinfo.sys")
         content = json.loads(config.retrieve())
         logger.debug("content=%s" % content)
+        self.assertEquals(s1.input_dir,"input_%s" % id)
+
         self.assertEquals(content, {
             "runs_left": 1,
             "group_id": "sq42kdjshasdkjghauiwytuiawjmkghasjkghasg",
@@ -395,7 +398,8 @@ class FinishedStageTests(unittest.TestCase):
         fs.create(self.local_filesystem, f1)
         fs.create(self.local_filesystem, f2)
         print("fs=%s" % fs)
-        context = {'filesys':fs}
+        id = "mytestid"
+        context = {'filesys':fs,'id':id}
         print("context=%s" % context)
         s1 = Finished()
         res = s1.triggered(context)
@@ -403,6 +407,7 @@ class FinishedStageTests(unittest.TestCase):
         self.assertEquals(res, True)
         self.assertEquals(s1.group_id, group_id)
 
+        self.assertEquals(s1.output_dir,"output_%s" % id)
 
 
 
