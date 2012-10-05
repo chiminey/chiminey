@@ -39,6 +39,7 @@ from hrmcstages import Setup
 from filesystem import DataObject
 from filesystem import FileSystem
 
+#TODO: need to split up these tests into separate files in a tests directory
 
 class CounterStage(Stage):
 
@@ -141,10 +142,10 @@ class SetupStageTests(unittest.TestCase):
                                              self.instance_name))
         fakechan.should_receive('close').and_return(True)
 
-        exec_mock = ["", flexmock(readlines=lambda: ["done\n"]), ""]
+        #exec_mock = ["", flexmock(readlines=lambda: ["done\n"]), ""]
         # Make fake sftp connection
         fakesftp = flexmock(get=lambda x, y: True, put=lambda x, y: True)
-        exec_ret = ["", flexmock(readlines=lambda: ["1\n"]), ""]
+        exec_ret = ["", flexmock(readlines=lambda: ["1\n"]), flexmock(readlines=lambda: [""])]
         # Make second fake ssh connection  for the individual setup operation
         fakessh2 = flexmock(load_system_host_keys=lambda x: True,
                         set_missing_host_key_policy=lambda x: True,
@@ -249,7 +250,7 @@ class RunStageTests(unittest.TestCase):
         fakessh1 = flexmock(load_system_host_keys= lambda x: True,
                         set_missing_host_key_policy= lambda x: True,
                         connect= lambda ipaddress, username, password, timeout: True,
-                        exec_command = lambda command: ["",flexmock(readlines = lambda: ["1\n"]),""],
+                        exec_command = lambda command: ["",flexmock(readlines = lambda: ["1\n"]),flexmock(readlines=lambda: [""])],
                         open_sftp=lambda: fakesftp
                         )
 
@@ -361,7 +362,7 @@ class FinishedStageTests(unittest.TestCase):
         fakessh1 = flexmock(load_system_host_keys= lambda x: True,
                         set_missing_host_key_policy= lambda x: True,
                         connect= lambda ipaddress, username, password, timeout: True,
-                        exec_command = lambda command: ["",flexmock(readlines = lambda: ["1\n"]),""],
+                        exec_command = lambda command: ["",flexmock(readlines = lambda: ["1\n"]),flexmock(readlines = lambda: [""])],
                         open_sftp=lambda: fakesftp
                         )
 
@@ -639,7 +640,7 @@ class CloudTests(unittest.TestCase):
         # TODO: should make multiple return values to simulate all the
         # correct input/output responses
 
-        exec_mock = ["", flexmock(readlines=lambda: ["done\n"]), ""]
+        exec_mock = ["", flexmock(readlines=lambda: ["done\n"]), flexmock(readlines=lambda: [""])]
 
         fakessh = flexmock(
             load_system_host_keys=lambda x: True,
@@ -697,7 +698,7 @@ class CloudTests(unittest.TestCase):
                                              self.instance_name))
         fakechan.should_receive('close').and_return(True)
 
-        exec_mock = ["", flexmock(readlines=lambda: ["done\n"]), ""]
+        exec_mock = ["", flexmock(readlines=lambda: ["done\n"]), flexmock(readlines=lambda: [""])]
 
         # Make fake ssh connection
         fakessh1 = flexmock(
@@ -709,7 +710,7 @@ class CloudTests(unittest.TestCase):
         # Make fake sftp connection
         fakesftp = flexmock(get=lambda x, y: True, put=lambda x, y: True)
 
-        exec_ret = ["", flexmock(readlines=lambda: ["1\n"]), ""]
+        exec_ret = ["", flexmock(readlines=lambda: ["1\n"]), flexmock(readlines=lambda: [""])]
         # Make second fake ssh connection  for the individual setup operation
         fakessh2 = flexmock(load_system_host_keys=lambda x: True,
                         set_missing_host_key_policy=lambda x: True,
@@ -758,7 +759,8 @@ class CloudTests(unittest.TestCase):
         # Make fake sftp connection
         fakesftp = flexmock(put=lambda x, y: True)
 
-        exec_ret = ["", flexmock(readlines=lambda: ["1\n"]), ""]
+
+        exec_ret = ["", flexmock(readlines=lambda: ["1\n"]), flexmock(readlines=lambda: [""])]
         # Make fake ssh connection
         fakessh1 = flexmock(load_system_host_keys=lambda x: True,
                         set_missing_host_key_policy=lambda x: True,
@@ -801,7 +803,7 @@ class CloudTests(unittest.TestCase):
         fakessh1 = flexmock(load_system_host_keys= lambda x: True,
                         set_missing_host_key_policy= lambda x: True,
                         connect= lambda ipaddress, username, password, timeout: True,
-                        exec_command = lambda command: ["",flexmock(readlines = lambda: ["1\n"]),""],
+                        exec_command = lambda command: ["",flexmock(readlines = lambda: ["1\n"]),flexmock(readlines=lambda: [""])],
                         )
 
         # and use fake for paramiko
@@ -837,7 +839,7 @@ class CloudTests(unittest.TestCase):
         logger.debug("test_packages_complete")
         # Make fake sftp connection
         fakesftp = flexmock(get=lambda x, y: True, put=lambda x, y: True)
-        exec_ret = ["", flexmock(readlines=lambda: ["1\n"]), ""]
+        exec_ret = ["", flexmock(readlines=lambda: ["1\n"]), flexmock(readlines=lambda: [""])]
         # Make fake ssh connection
         fakessh1 = flexmock(load_system_host_keys=lambda x: True,
                         set_missing_host_key_policy=lambda x: True,
@@ -869,7 +871,8 @@ class CloudTests(unittest.TestCase):
         logger.debug("test_collect_instances")
         # Make fake sftp connection
         fakesftp = flexmock(get=lambda x, y: True, put=lambda x, y: True)
-        exec_ret = ["", flexmock(readlines=lambda: ["1\n"]), ""]
+        exec_ret = ["", flexmock(readlines=lambda: ["1\n"]), flexmock(readlines=lambda: [""])]
+
         # Make fake ssh connection
         fakessh1 = flexmock(load_system_host_keys=lambda x: True,
                         set_missing_host_key_policy=lambda x: True,
