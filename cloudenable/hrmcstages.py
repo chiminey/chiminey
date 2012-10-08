@@ -20,6 +20,8 @@
 
 # Contains the specific connectors and stages for HRMC
 
+import sys
+import os
 import time
 import logging
 import logging.config
@@ -47,7 +49,7 @@ from cloudconnector import destroy_environ
 from hrmcimpl import setup_multi_task
 #from hrmcimpl import prepare_multi_input
 
-from hrmcimpl import run_command
+
 from hrmcimpl import PackageFailedError
 from hrmcimpl import run_multi_task
 #from hrmcimpl import _normalize_dirpath
@@ -55,12 +57,14 @@ from hrmcimpl import run_multi_task
 from hrmcimpl import is_instance_running
 from hrmcimpl import job_finished
 
+from sshconnector import run_command
+
 
 def get_elem(context, key):
     try:
         elem = context[key]
     except KeyError, e:
-        logger.error("cannot load elem %s from %s" % (e, context))
+        logger.error("cannot load element %s from %s" % (e, context))
         return None
     return elem
 
@@ -128,13 +132,49 @@ def get_run_info(context):
     return None
 
 
+def get_run_settings(context):
+    settings = get_settings(context)
+    run_info = get_run_info(context)
+    settings.update(run_info)
+    settings.update(context)
+    return settings
+
+
+def update_key(key, value, context):
+    filesystem = get_filesys(context)
+    logger.debug("filesystem= %s" % filesystem)
+
+    run_info_file = get_file(filesystem, "default/runinfo.sys")
+    logger.debug("run_info_file= %s" % run_info_file)
+
+    run_info_file_content = run_info_file.retrieve()
+    logger.debug("runinfo_content= %s" % run_info_file_content)
+
+    settings = json.loads(run_info_file_content)
+    settings[key] = value  # FIXME: possible race condition?
+    logger.debug("configuration=%s" % settings)
+
+    run_info_content_blob = json.dumps(settings)
+    run_info_file.setContent(run_info_content_blob)
+    filesystem.update("default", run_info_file)
+
+
+def clear_temp_files(context):
+    """
+    Deletes temporary files
+    """
+    filesystem = get_filesys(context)
+    print "Deleting temporary files ..."
+    filesystem.delete_local_filesystem('default')
+    print "done."
+
+
 class Configure(Stage, UI):
     """
-        - Load config.sys file into the filesystem
-        - Nothing beyond specifying the path to config.sys
-        - Later could be dialogue box,...
+        - Creates file system,
+        - Loads config.sys file into the filesystem,
+        - Stores a reference to the filesystem in dictionary
     """
-
     def triggered(self, context):
         """
         True if filesystem exists in context
@@ -145,25 +185,13 @@ class Configure(Stage, UI):
 
     def process(self, context):
         """
-        Create config file
+        Create global filesystem and then load config.sys to the filesystem
         """
-        # - Load config.sys file into the filesystem
-        # - Nothing beyond specifying the path to config.sys
-        # - Later could be dialogue box,...
-        # 1. creates instance of file system
-        # 2. loads the content of config.sys to filesystem
-
-        HOME_DIR = os.path.expanduser("~")
+        global_filesystem = context['global_filesystem']
         local_filesystem = 'default'
-        global_filesystem = os.path.join(HOME_DIR, "testStages")
         self.filesystem = FileSystem(global_filesystem, local_filesystem)
 
-        #TODO: the path to the original config file should be
-        # provided via command line or a web page.
-        # For now, we assume, its location is 'original_config_file_path'
-        #TODO: also need to load up all the input files
-
-        original_config_file_path = HOME_DIR+"/cloudenabling/cloudenable/config.sys.json"
+        original_config_file_path = context['config.sys']
         original_config_file = open(original_config_file_path, 'r')
         original_config_file_content = original_config_file.read()
         original_config_file.close()
@@ -172,14 +200,11 @@ class Configure(Stage, UI):
         data_object.create(original_config_file_content)
         self.filesystem.create(local_filesystem, data_object)
 
-    # indicate the process() is completed
     def output(self, context):
         """
         Store ref to filesystem in context
         """
-        # store in filesystem
-        # pass the file system as entry in the Context
-        context = {'filesys': self.filesystem}
+        context['filesys'] = self.filesystem
         return context
 
 
@@ -191,7 +216,8 @@ class Create(Stage):
 
     def triggered(self, context):
         """
-        Return True if there is a file system but it doesn't contain run_info file.
+            Return True if there is a file system
+            but it doesn't contain run_info file.
         """
         if get_filesys(context):
             if not get_run_info(context):
@@ -200,41 +226,28 @@ class Create(Stage):
                 return True
         return False
 
-    '''
-        if True:
-            self.settings = utility.load_generic_settings()
-            return True
-
-    def _transform_the_filesystem(filesystem, settings):
-        key =  settings['ec2_access_key']
-
-        print key
-    '''
-
     def process(self, context):
         """
         Make new VMS and store group_id
         """
-
-        #TODO: user input of this information
-        number_vm_instances = 1
-        self.seed = 32
+        number_vm_instances = context['number_vm_instances']
+        self.seed = context['seed']
         self.group_id = create_environ(number_vm_instances, self.settings)
+        if not self.group_id:
+            print "No new VM instance can be created for this computation. Retry later."
+            clear_temp_files(context)
+            sys.exit()
 
     def output(self, context):
         """
         Create a runfinos.sys file in filesystem with new group_id
         """
-        # store in filesystem
-        #self._store(self.temp_sys, filesystem)
         local_filesystem = 'default'
         data_object = DataObject("runinfo.sys")
         data_object.create(json.dumps({'group_id': self.group_id,
                                        'seed': self.seed}))
-
         filesystem = get_filesys(context)
         filesystem.create(local_filesystem, data_object)
-
         return context
 
 
@@ -252,19 +265,11 @@ class Setup(Stage):
         Triggered if appropriate vms exist and we have not finished setup
         """
         # triggered if the set of the VMS has been established.
-        self.settings = get_settings(context)
-        logger.debug("settings = %s" % self.settings)
-
-        run_info = get_run_info(context)
-        logger.debug("runinfo=%s" % run_info)
-
-        self.settings.update(run_info)
+        self.settings = get_run_settings(context)
         logger.debug("settings = %s" % self.settings)
 
         self.group_id = self.settings["group_id"]
         logger.debug("group_id = %s" % self.group_id)
-
-        #FIXME: need to check for no group_id which can happen when over quota
 
         if 'setup_finished' in self.settings:
             return False
@@ -284,24 +289,7 @@ class Setup(Stage):
         """
         Store number of packages nodes as setup_finished in runinfo.sys
         """
-
-        fsys = get_filesys(context)
-        logger.debug("fsys= %s" % fsys)
-
-        run_info_file = get_file(fsys, "default/runinfo.sys")
-        logger.debug("run_info_file= %s" % run_info_file)
-
-        settings_text = run_info_file.retrieve()
-        logger.debug("runinfo_text= %s" % settings_text)
-
-        config = json.loads(settings_text)
-        config['setup_finished'] = len(self.packaged_nodes)  # FIXME: possible race condition?
-        logger.debug("config=%s" % config)
-        run_info_text = json.dumps(config)
-        run_info_file.setContent(run_info_text)
-
-        fsys.update("default", run_info_file)
-
+        update_key('setup_finished', len(self.packaged_nodes), context)
         return context
 
 
@@ -317,16 +305,19 @@ class Run(Stage):
 
 
         '''
-        TODO: - uncomment after transformation is finished
+        TODO: - uncomment during transformation is in progress
               - change context to self.settings
               - move the code after self.settings.update
+              
+               self.input_dir = "input"
+        '''
         if 'id' in context:
             self.id = context['id']
             self.input_dir = "input_%s" % self.id
         else:
             self.input_dir = "input"
-        '''
-        self.input_dir = "input"
+        
+       
         
         print "Run stage triggered"
         self.settings = get_settings(context)
@@ -350,7 +341,6 @@ class Run(Stage):
             if 'runs_left' in self.settings:
                 return False
 
-            print "True"
             if packaged_nodes == setup_nodes:
                 return True
             else:
@@ -473,7 +463,7 @@ class Run(Stage):
 
 class Finished(Stage):
     """
-    Return whether the run has finished or not
+        Return whether the run has finished or not
     """
 
     def __init__(self):
@@ -482,15 +472,11 @@ class Finished(Stage):
 
     def triggered(self, context):
         """
-        Checks whether there is a non-zero number of runs still going.
+            Checks whether there is a non-zero number of runs still going.
         """
-        self.settings = get_settings(context)
+        self.settings = get_run_settings(context)
         logger.debug("settings = %s" % self.settings)
-        run_info = get_run_info(context)
-        logger.debug("runinfo=%s" % run_info)
-        self.group_id = run_info['group_id']
-        self.settings.update(run_info)
-        logger.debug("settings = %s" % self.settings)
+
         self.group_id = self.settings['group_id']
         logger.debug("group_id = %s" % self.group_id)
 
@@ -499,7 +485,7 @@ class Finished(Stage):
             self.output_dir = "output_%s" % self.id
         else:
             self.output_dir = "output"
-            
+
         # if we have no runs_left then we must have finished all the runs
         if 'runs_left' in self.settings:
             return self.settings['runs_left']
@@ -507,9 +493,9 @@ class Finished(Stage):
 
     def process(self, context):
         """
-        Check all registered nodes to find whether they are running, stopped or in error_nodes
+            Check all registered nodes to find whether 
+            they are running, stopped or in error_nodes
         """
-
         fsys = get_filesys(context)
         logger.debug("fsys= %s" % fsys)
 
@@ -518,7 +504,6 @@ class Finished(Stage):
         self.error_nodes = []
         self.finished_nodes = []
         for node in self.nodes:
-
             instance_id = node.name
             ip = get_instance_ip(instance_id, self.settings)
             ssh = open_connection(ip_address=ip, settings=self.settings)
@@ -547,42 +532,22 @@ class Finished(Stage):
                         + "processed output from node %s" % node.name)
                 self.finished_nodes.append(node)
             else:
-                print "job still running on %s: %s" % (instance_id,
-                                               get_instance_ip(instance_id,
-                                                            self.settings))
+                print "job still running on %s: %s\
+                " % (instance_id,
+                     get_instance_ip(instance_id, self.settings))
 
     def output(self, context):
         """
         Output new runs_left value (including zero value)
         """
         nodes_working = len(self.nodes) - len(self.finished_nodes)
-
-        fsys = get_filesys(context)
-        logger.debug("fsys= %s" % fsys)
-
-        run_info_file = get_file(fsys, "default/runinfo.sys")
-        logger.debug("run_info_file= %s" % run_info_file)
-
-        settings_text = run_info_file.retrieve()
-        logger.debug("runinfo_text= %s" % settings_text)
-
-        config = json.loads(settings_text)
-        config['runs_left'] = nodes_working  # FIXME: possible race condition?
-        config['error_nodes'] = len(self.error_nodes)
-        logger.debug("config=%s" % config)
-        run_info_text = json.dumps(config)
-        run_info_file.setContent(run_info_text)
-        logger.debug("run_info_file=%s" % run_info_file)
-        fsys.update("default", run_info_file)
+        update_key('runs_left', nodes_working, context)
+        # FIXME: possible race condition?
+        update_key('error_nodes', len(self.error_nodes), context)
+        update_key('runs_left', nodes_working, context)
 
         # NOTE: runs_left cannot be deleted or run() will trigger
         return context
-
-    def _kill_run(context):
-        """ Based on information from the current run, decide whether to kill the current runs
-        """
-        #TODO:
-        pass
 
 
 class Converge(Stage):
@@ -593,21 +558,12 @@ class Converge(Stage):
         self.total_iterations = number_of_iterations
         self.number_of_remaining_iterations = number_of_iterations
         self.counter = 0
-        
+
     def triggered(self, context):
-
-        self.settings = get_settings(context)
+        self.settings = get_run_settings(context)
         logger.debug("settings = %s" % self.settings)
 
-        run_info = get_run_info(context)
-        logger.debug("runinfo=%s" % run_info)
-
-        self.settings.update(run_info)
-        logger.debug("settings = %s" % self.settings)
-
-        
-        
-        if 'runs_left' in self.settings: 
+        if 'runs_left' in self.settings:
             self.run_list = self.settings["runs_left"]
             if self.run_list == 0 and self.number_of_remaining_iterations > 0:
                 return True
@@ -615,7 +571,8 @@ class Converge(Stage):
 
     def process(self, context):
         self.number_of_remaining_iterations -= 1
-        print "Number of Iterations Left %d" % self.number_of_remaining_iterations
+        print "Number of Iterations Left %d\
+        " % self.number_of_remaining_iterations
 
         fsys = get_filesys(context)
         logger.debug("fsys= %s" % fsys)
@@ -630,114 +587,136 @@ class Converge(Stage):
 
         if self.number_of_remaining_iterations > 0:
             del(config['runs_left'])
-            del(config['error_nodes']) #??
-        
-            logger.debug("config=%s" % config)
-       
+            del(config['error_nodes'])  # ??
             run_info_text = json.dumps(config)
             run_info_file.setContent(run_info_text)
             logger.debug("run_info_file=%s" % run_info_file)
             fsys.update("default", run_info_file)
 
     def output(self, context):
-        fsys = get_filesys(context)
-        run_info_file = get_file(fsys, "default/runinfo.sys")
-        settings_text = run_info_file.retrieve()
-        config = json.loads(settings_text)
-        config['converged'] = False
+        update_key('converged', False, context)
         if self.number_of_remaining_iterations == 0:
-            config['converged'] = True
-        
+            update_key('converged', True, context)
         self.counter += 1
-        config['id'] = self.counter
-        
-        run_info_text = json.dumps(config)
-        run_info_file.setContent(run_info_text)
-        fsys.update("default", run_info_file)
+        update_key('id', self.counter, context)
         return context
+
 
 
 class Transform(Stage):
     """
-    Convert output into input for next iteration.
+        Convert output into input for next iteration.
     """
     def triggered(self, context):
         self.settings = get_settings(context)
+        logger.debug("settings = %s" % self.settings)
+        run_info = get_run_info(context)
+        logger.debug("runinfo=%s" % run_info)
+        self.group_id = run_info['group_id']
+        self.settings.update(run_info)
+        logger.debug("settings = %s" % self.settings)
         self.group_id = self.settings['group_id']
-        pass
+        logger.debug("group_id = %s" % self.group_id)
+
+        if 'id' in self.settings:
+            self.id = self.settings['id']
+            self.output_dir = "output_%s" % self.id
+            self.input_dir = "input_%s" % self.id
+        else:
+            self.output_dir = "output"
+            self.output_dir = "input"
+        
+        return True
 
     def process(self, context):
+        import subprocess
+        import re
+        filesystem = get_filesys(context)
+        all_output_subdir = filesystem.get_local_subdirectories(self.output_dir)
+        file_rmcen = os.path.join(self.output_dir, all_output_subdir[0], 'rmcen.inp')
+        command = []
+        command.append('grep')
+        command.append('numbfile')
+        number_line = filesystem.exec_command(file_rmcen, command)
+        number_line_split = number_line.split()
+        number = number_line_split[0]
+        print 'nu', number
+        
+        file_grerr = os.path.join(filesystem.get_global_filesystem(), 
+                                   self.output_dir, all_output_subdir[0], 'grerr*.dat')
+        file_grerr_exp = os.path.e
+        command = []
+        command.append('tail')
+        command.append('-n')
+        command.append('1')
+        criterion_line =  filesystem.exec_command(file_grerr, command)
+        print "cr", criterion_line, file_grerr
+       # criterion_line_split = criterion_line.split()
+        #criterion = criterion_line_split[1]
+        
+        print "after", number  
+        input_file_object = filesystem.retrieve(file_rmcen)
+        input_file_object_content = input_file_object.getContent()
+        
+        output_file = os.path.join(filesystem.get_global_filesystem(), 
+                                   self.output_dir, all_output_subdir[0], 'grerr*.dat')
+        
+        comparison_criterion = os.system("tail -n 1 %s | awk '{print $2}'" % output_file)
+        
+        if re.search("numbfile", input_file_object_content):
+            print "Matches"
+            print (re.sub("numbfile","numbfile_changed", input_file_object_content))
+        else:
+            print "Doesnt Match"
+            
+        #filesystem.exec_command("%s" %input_file_name, input_file_name )
+        
+        #print "Input file", input_file_name
+    
+        #a = subprocess.call('grep numbfile input_file_name')
+        print all_output_subdir
+        
+        '''
+            def _kill_run(context):
+        """ Based on information from the current run, decide whether to kill the current runs
+        """
+        #TODO:
         pass
-
+        '''
     def output(self, context):
-        pass
+        import sys
+        sys.exit(1)
+        #return context
 
 
 class Teardown(Stage):
     def triggered(self, context):
-        self.settings = get_settings(context)
+        self.settings = get_run_settings(context)
         logger.debug("settings = %s" % self.settings)
-
-        run_info = get_run_info(context)
-        logger.debug("runinfo=%s" % run_info)
-
-        self.settings.update(run_info)
-        logger.debug("settings = %s" % self.settings)
-
-        self.group_id = self.settings["group_id"]
-        logger.debug("group_id = %s" % self.group_id)
-
 
         self.group_id = self.settings["group_id"]
         logger.debug("group_id = %s" % self.group_id)
 
         if 'converged' in self.settings:
-            if self.settings['converged'] == True:
+            if self.settings['converged']:
                 if not 'run_finished' in self.settings:
                     return True
         return False
-        #trigger_message = self.settings["setup_finished"]
 
-        #trigger message should be changed
-        '''
-        try:
-            trigger_message = self.settings["setup_finished"]
-            return True
-        except:
-            return False
-        '''
     def process(self, context):
-        all_instances = collect_instances(self.settings, group_id=self.group_id)
+        all_instances = collect_instances(self.settings,
+                                          group_id=self.group_id)
         destroy_environ(self.settings, all_instances)
 
     def output(self, context):
-        fsys = get_filesys(context)
-        logger.debug("fsys= %s" % fsys)
-
-        run_info_file = get_file(fsys, "default/runinfo.sys")
-        logger.debug("run_info_file= %s" % run_info_file)
-
-        settings_text = run_info_file.retrieve()
-        logger.debug("runinfo_text= %s" % settings_text)
-
-        config = json.loads(settings_text)
-        config['run_finished'] = True  # FIXME: possible race condition?
-        logger.debug("config=%s" % config)
-        run_info_text = json.dumps(config)
-        run_info_file.setContent(run_info_text)
-
-        fsys.update("default", run_info_file)
-
-        # FIXME: check to make sure not retriggered
-
-        return context  # self.packaged_nodes
+        update_key('run_finished', True, context)
+        return context
 
 
 class Sleep(Stage):
     """
     Go to sleep
     """
-
     def __init__(self, secs):
         self.sleeptime = secs
 
@@ -751,98 +730,5 @@ class Sleep(Stage):
         pass
 
     def output(self, context):
-        context['Done'] = True
+        context['sleep_done'] = True
         return context
-
-
-def mainloop():
-
-# load system wide settings, e.g Security_Group
-#communicating between stages: crud context or filesystem
-#build context with file system as its only entry
-    context = {}
-    #context['version'] = "1.0.0"
-
-    #filesys.update_file('Butini')
-    #filesys.delete_file(path_fs, 'Iman')
-
-    #filesys.create_initial_filesystem()
-    #filesys.load_generic_settings()
-
-    number_of_iterations = 2
-    smart_conn = SmartConnector()
-    #stage= Configure()
-    #smart_conn.register(Configure())
-    #smart_conn.register(Create())
-
-    for stage in (Configure(), Create(), Setup(), Run(), Finished(),
-        Converge(number_of_iterations), Teardown()):  # , Check(), Teardown()):
-    #for stage in (Configure(), Create(), Teardown()):#, Run(), Check(), Teardown()):
-        smart_conn.register(stage)
-
-    #print smart_con.stages
-
-    #while loop is infinite:
-    # check the semantics for 'dropping data' into
-    # designated location.
-    #What happens if data is dropped while
-    #another is in progress?
-
-    #while(True):
-    #smart_conn = SmartConnector()
-
-    #smart_conn.register(Converge())
-
-    while (True):
-        done = 0
-        not_triggered = 0
-        for stage in smart_conn.stages:
-            print "Working in stage %s" % stage
-            if stage.triggered(context):
-                stage.process(context)
-                context = stage.output(context)
-                logger.debug("Context", context)
-            else:
-                not_triggered += 1
-                #smart_con.unregister(stage)
-                #print "Deleting stage",stage
-                print context
-            logger.debug(done, " ", len(smart_conn.stages))
-
-        if not_triggered == len(smart_conn.stages):
-            break
-
-    '''
-    exit_reached = False
-    while (True):
-        done = 0
-        not_triggered = 0
-        for stage in smart_conn.stages:
-            print "Working in stage",stage
-            if stage.triggered(context):
-                stage.process(context)
-                context = stage.output(context)
-                logger.debug("Context", context)
-                if type(stage==Teardown):
-                    print "exit_reached"
-                    exit_reached = True
-            else:
-                not_triggered += 1
-                #smart_con.unregister(stage)
-                #print "Deleting stage",stage
-                print context
-            logger.debug(done, " ", len(smart_conn.stages))
-
-        if exit_reached:
-            break
-        else:
-            print "Not Teardown"
-    '''
-
-if __name__ == '__main__':
-    logging.config.fileConfig('logging.conf')
-    begins = time.time()
-    mainloop()
-    ends = time.time()
-    print "Total execution time: %d seconds" % (ends-begins)
-

@@ -58,6 +58,9 @@ class FileSystem(object):
         self.connector_fs = OSFS(global_filesystem, create=True)
         logger.info("Global filesystem '%s' CREATED " % global_filesystem)
 
+    def get_global_filesystem(self):
+        return self.global_filesystem
+    
     def create(self, local_filesystem, data_object, message='CREATED'):
         if not self.connector_fs.exists(local_filesystem):
             logger.error("Destination filesystem '%s' does not exist"
@@ -107,13 +110,24 @@ class FileSystem(object):
         logger.info("File '%s' DELETED" % file_to_be_deleted)
         return True
 
+
+
     def get_local_subdirectories(self, local_filesystem):
         """
         Returns list of names of directories immediately below local_filesystem
         """
-        # TODO
-        return []
+        path_to_subdirectories =  os.path.join(self.global_filesystem, local_filesystem)
+        list_of_subdirectories = os.listdir(path_to_subdirectories)
+        
+        return list_of_subdirectories
 
+    def delete_local_filesystem(self, local_filesystem):
+        """
+        Deleted a local file system
+        """
+        path_to_local_filesystem =  os.path.join(self.global_filesystem, local_filesystem)
+        shutil.rmtree(path_to_local_filesystem)
+       
     def upload_input(self, ssh, local_filesystem, dest):
         input_dir = os.path.join(self.global_filesystem, local_filesystem)
         logger.debug("input_dir =%s" % input_dir)
@@ -125,7 +139,20 @@ class FileSystem(object):
     def download_output(self, ssh, instance_id, local_filesystem, settings):
         output_dir = os.path.join(self.global_filesystem, local_filesystem, instance_id)
         get_output(instance_id, output_dir, settings)
-
+        
+    def exec_command(self, file_to_be_executed, command, wildcard=False):
+        import subprocess
+        absolute_path_to_file = os.path.join(
+                                             self.global_filesystem, 
+                                             file_to_be_executed)
+        if wildcard:
+            import glob
+            
+        command.append(absolute_path_to_file)
+        proc = subprocess.Popen(command, stdout=subprocess.PIPE)
+        output = proc.stdout.read()
+        return output
+    
 
 class DataObject(object):
     # Assume that whole file is contained in one big string

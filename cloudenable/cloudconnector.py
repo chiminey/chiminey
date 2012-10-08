@@ -20,6 +20,7 @@
 
 #import paramiko
 import sys
+import os
 import time
 import traceback
 import logging
@@ -41,10 +42,11 @@ NODE_STATE = ['RUNNING', 'REBOOTING', 'TERMINATED', 'PENDING', 'UNKNOWN']
 
 def _create_cloud_connection(settings):
     OpenstackDriver = get_driver(Provider.EUCALYPTUS)
-    logger.debug("Connecting... %s" % OpenstackDriver)
-    connection = OpenstackDriver(settings['EC2_ACCESS_KEY'], secret=settings['EC2_SECRET_KEY'],
-                           host="nova.rc.nectar.org.au", secure=True,
-                           port=8773, path="/services/Cloud")
+    logger.debug("Connecting to... %s" % OpenstackDriver)
+    connection = OpenstackDriver(settings['EC2_ACCESS_KEY'],
+                                 secret=settings['EC2_SECRET_KEY'],
+                                 host="nova.rc.nectar.org.au", secure=True,
+                                 port=8773, path="/services/Cloud")
     logger.debug("Connected")
     return connection
 
@@ -62,6 +64,8 @@ def create_environ(number_vm_instances, settings):
         print 'Created VM instances:'
         print_all_information(settings, all_instances=all_running_instances)
         return group_id
+
+    return None
 
 
 def _create_VM_instances(number_vm_instances, settings):
@@ -81,9 +85,9 @@ def _create_VM_instances(number_vm_instances, settings):
         instance_count = 0
         while instance_count < number_vm_instances:
             new_instance = connection.create_node(name="New Centos VM instance",
-                size=size1, image=image1,
-                ex_keyname=settings['PRIVATE_KEY_NAME'],
-                ex_securitygroup=settings['SECURITY_GROUP'])
+                                                  size=size1, image=image1,
+                                                  ex_keyname=settings['PRIVATE_KEY_NAME'],
+                                                  ex_securitygroup=settings['SECURITY_GROUP'])
             all_instances.append(new_instance)
             instance_count += 1
     except Exception, e:
@@ -112,7 +116,7 @@ def _store_md5_on_instances(all_instances, settings):
             print "Registering %s (%s) to group '%s'\
             " % (instance_id, ip_address, group_id)
             ssh = open_connection(ip_address=ip_address, settings=settings)
-            group_id_path = settings['GROUP_ID_DIR']+"/"+group_id
+            group_id_path = os.path.join(settings['GROUP_ID_DIR'], group_id)
             run_command(ssh, "mkdir %s" % settings['GROUP_ID_DIR'])
             run_command(ssh, "touch %s" % group_id_path)
         else:
@@ -153,8 +157,7 @@ def confirm_teardown(settings, all_instances):
     print_all_information(settings, all_instances=all_instances)
     teardown_confirmation = None
     while not teardown_confirmation:
-        teardown_confirmation = raw_input(
-                                "Are you sure you want to delete (yes/no)? ")
+        teardown_confirmation = raw_input("Are you sure you want to delete (yes/no)? ")
         if teardown_confirmation != 'yes' and teardown_confirmation != 'no':
             teardown_confirmation = None
 
@@ -176,7 +179,7 @@ def destroy_environ(settings, all_instances):
         logging.error("No running instance(s)")
         sys.exit(1)
 
-    print "Terminating %d VM instance(s)" %len(all_instances)
+    print "Terminating %d VM instance(s)" % len(all_instances)
     connection = _create_cloud_connection(settings)
     for instance in all_instances:
         try:
@@ -259,16 +262,16 @@ def print_all_information(settings, all_instances=None):
         ssh = open_connection(ip, settings)
         group_name = run_command(ssh, "ls %s " % settings['GROUP_ID_DIR'])
         vm_type = 'Other'
-        res = run_command(ssh, "[ -d %s ] && echo 1"
-                           % settings['GROUP_ID_DIR'])
+        res = run_command(ssh, "[ -d %s ] && echo 1\
+        " % settings['GROUP_ID_DIR'])
         if '1\n' in res:
             vm_type = 'RMIT'
 
         if not group_name:
             group_name = '-'
 
-        print '\t%d:\t%s\t%s\t%s\t\t%s' % (counter, instance_id,
-                                        ip, vm_type, group_name)
+        print '\t%d:\t%s\t%s\t%s\t\t%s\
+        ' % (counter, instance_id, ip, vm_type, group_name)
         counter += 1
 
 
@@ -286,7 +289,7 @@ def _get_this_instance(instance_id, settings):
 
     return this_node
 
-#rename get_instance_ip to _get_instance_ip
+
 def get_instance_ip(instance_id, settings):
     """
         Get the ip address of a node
@@ -317,7 +320,7 @@ def get_rego_nodes(group_id, settings):
         ssh = open_connection(ip_address=get_instance_ip(node.name, settings),
                               settings=settings)
         # NOTE: assumes use of bash shell
-        group_id_path = settings['GROUP_ID_DIR']+"/"+group_id
+        group_id_path = os.path.join(settings['GROUP_ID_DIR'], group_id)
         res = run_command(ssh, "[ -f %s ] && echo 1" % group_id_path)
         logger.debug("res=%s" % res)
         if '1\n' in res:

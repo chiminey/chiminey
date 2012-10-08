@@ -27,6 +27,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 def is_ssh_ready(settings, ip_address):
     ssh_ready = False
     while not ssh_ready:
@@ -54,9 +55,12 @@ def open_connection(ip_address, settings):
     if os.path.exists(settings['PRIVATE_KEY']):
         privatekeyfile = os.path.expanduser(settings['PRIVATE_KEY'])
         mykey = paramiko.RSAKey.from_private_key_file(privatekeyfile)
-        ssh.connect(ip_address, username=settings['USER_NAME'], timeout=60, pkey=mykey)
+        ssh.connect(ip_address, username=settings['USER_NAME'],
+                    timeout=60, pkey=mykey)
     else:
-        print("%s %s %s" % (ip_address, settings['USER_NAME'], settings['PASSWORD']))
+        print("%s %s %s" % (ip_address,
+                            settings['USER_NAME'],
+                            settings['PASSWORD']))
         print(ssh)
         ssh.connect(ip_address, username=settings['USER_NAME'],
                     password=settings['PASSWORD'], timeout=60)
@@ -71,10 +75,8 @@ def run_command(ssh, command, current_dir=None):
         command = "cd %s;%s" % (current_dir, command)
     logger.debug(command)
     stdin, stdout, stderr = ssh.exec_command(command)
-    res =  stdout.readlines()
+    res = stdout.readlines()
     logger.debug("run_command_stdout=%s" % res)
-    res_err =  stderr.readlines()
-    logger.debug("run_command_err=%s" % res_err)
     return res
 
 
@@ -130,12 +132,12 @@ def unpack(ssh, environ_dir, package_file):
     logger.debug(res)
 
 
-def compile(ssh, environ_dir, compile_file, package_dirname,
-             compiler_command):
-    run_command(ssh, "%s %s.f -o %s " % (compiler_command,
-                                          compile_file,
-                                          compile_file),
-                 current_dir=os.path.join(environ_dir, package_dirname))
+def compile(ssh, environ_dir, compile_file,
+            package_dirname, compiler_command):
+    run_command(ssh,
+                "%s %s.f -o %s " % (compiler_command,
+                                    compile_file, compile_file),
+                current_dir=os.path.join(environ_dir, package_dirname))
 
 
 def mkdir(ssh, dir):

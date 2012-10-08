@@ -1,13 +1,36 @@
 from optparse import OptionParser
 import sys
+import os
 import time
 import logging
 import logging.config
 
 import cloudconnector
-from cloudconnector import *
-from hrmcimpl import *
-#from simplepackage import *
+from cloudconnector import create_environ
+from cloudconnector import collect_instances
+from cloudconnector import print_all_information
+from cloudconnector import confirm_teardown
+from cloudconnector import destroy_environ
+
+from hrmcimpl import prepare_multi_input
+from hrmcimpl import setup_multi_task
+from hrmcimpl import run_multi_task
+from hrmcimpl import packages_complete
+from hrmcimpl import PackageFailedError
+ 
+#from hrmcimpl import *
+
+from smartconnector import SmartConnector
+from hrmcstages import Configure
+from hrmcstages import Create
+from hrmcstages import Setup
+from hrmcstages import Run
+from hrmcstages import Finished
+from hrmcstages import Converge
+from hrmcstages import Teardown
+
+logger = logging.getLogger(__name__)
+
 
 def start():
 
@@ -75,9 +98,52 @@ def start():
 
     (options, args) = parser.parse_args()
 
-    if 'create' in args:
+    if 'smart' in args:
+        context = {'number_vm_instances': 1}
+        context['seed'] = 32
+    
+        HOME_DIR = os.path.expanduser("~")
+        global_filesystem = os.path.join(HOME_DIR, "testStages")
+        context['global_filesystem'] = global_filesystem
+        context['config.sys'] = HOME_DIR + "/cloudenabling/cloudenable/config.sys.json"
+        number_of_iterations = 2
+        smart_conn = SmartConnector()
+    
+        for stage in (Configure(), Create(), Setup(), Run(), Finished(), Converge(number_of_iterations)):
+            #, Teardown()):#, Check(), Teardown()):
+        #for stage in (Configure(), Transform()):
+            smart_conn.register(stage)
+    
+        #while loop is infinite:
+        # check the semantics for 'dropping data' into
+        # designated location.
+        #What happens if data is dropped while
+        #another is in progress?
+        while (True):
+            done = 0
+            not_triggered = 0
+            for stage in smart_conn.stages:
+                print "Working in stage", stage
+                if stage.triggered(context):
+                    stage.process(context)
+                    context = stage.output(context)
+                    logger.debug("Context", context)
+                else:
+                    not_triggered += 1
+                    #smart_con.unregister(stage)
+                    #print "Deleting stage",stage
+                    print context
+                logger.debug(done, " ", len(smart_conn.stages))
+    
+            if not_triggered == len(smart_conn.stages):
+                break
+    
+        clear_temp_files(context)
+
+
+    elif 'create' in args:
         if options.number_vm_instances:
-            res = cloudconnector.create_environ(options.number_vm_instances, settings)
+            res = create_environ(options.number_vm_instances, settings)
             logger.debug(res)
         else:
             logging.error("enter number of VM instances to be created")
@@ -162,17 +228,17 @@ def start():
         # logging in and checking state.
         
         if options.group_id:
-            all_instances = cloudconnector.collect_instances(settings, group_id=options.group_id)
-            if cloudconnector.confirm_teardown(settings, all_instances):
-                cloudconnector.destroy_environ(settings, all_instances)
+            all_instances = collect_instances(settings, group_id=options.group_id)
+            if confirm_teardown(settings, all_instances):
+                destroy_environ(settings, all_instances)
         elif options.instance_id:
-            all_instances = cloudconnector.collect_instances(settings, instance_id=options.instance_id)
-            if cloudconnector.confirm_teardown(settings, all_instances):
-                cloudconnector.destroy_environ(settings, all_instances)
+            all_instances = collect_instances(settings, instance_id=options.instance_id)
+            if confirm_teardown(settings, all_instances):
+                destroy_environ(settings, all_instances)
         elif 'teardown_all' in args:
-            all_instances = cloudconnector.collect_instances(settings, all_VM=True)
-            if cloudconnector.confirm_teardown(settings, all_instances):
-                cloudconnector.destroy_environ(settings, all_instances)
+            all_instances = collect_instances(settings, all_VM=True)
+            if confirm_teardown(settings, all_instances):
+                destroy_environ(settings, all_instances)
         else:
             logger.error("Enter either group id or instance id of the package")
             parser.print_help()
@@ -185,6 +251,7 @@ def start():
         print "Summary of Computing Environment"
         all_instances = collect_instances(settings, all_VM=True)
         print_all_information(settings, all_instances)
+    
 
     else:
         parser.print_help()
