@@ -1,20 +1,37 @@
+# Copyright (C) 2012, RMIT University
+
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to
+# deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+# sell copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+# IN THE SOFTWARE.
 
 # Contains the specific connectors and stages for HRMC
 
-import os
 import time
 import logging
 import logging.config
 import json
 import os
+import sys
 
 logger = logging.getLogger(__name__)
 
 
 from smartconnector import Stage
 from smartconnector import UI
-from smartconnector import ParallelStage
-from smartconnector import SequentialStage
 from smartconnector import SmartConnector
 
 from filesystem import FileSystem
@@ -28,22 +45,22 @@ from cloudconnector import collect_instances
 from cloudconnector import destroy_environ
 
 from hrmcimpl import setup_multi_task
-from hrmcimpl import prepare_multi_input
+#from hrmcimpl import prepare_multi_input
 
 from hrmcimpl import run_command
 from hrmcimpl import PackageFailedError
 from hrmcimpl import run_multi_task
-from hrmcimpl import _normalize_dirpath
-from hrmcimpl import _status_of_nodeset
+#from hrmcimpl import _normalize_dirpath
+#from hrmcimpl import _status_of_nodeset
 from hrmcimpl import is_instance_running
 from hrmcimpl import job_finished
 
 
-def get_elem(context,key):
+def get_elem(context, key):
     try:
         elem = context[key]
-    except KeyError,e:
-        logger.error("cannot load elem %s from %s" % (e,context))
+    except KeyError, e:
+        logger.error("cannot load elem %s from %s" % (e, context))
         return None
     return elem
 
@@ -52,17 +69,17 @@ def get_filesys(context):
     """
     Return the filesys in the context
     """
-    return get_elem(context,'filesys')
+    return get_elem(context, 'filesys')
 
 
-def get_file(fsys,file):
+def get_file(fsys, file):
     """
     Return contents of file
     """
     try:
         config = fsys.retrieve(file)
-    except KeyError,e:
-        logger.error("cannot load %s %s" % (file,e))
+    except KeyError, e:
+        logger.error("cannot load %s %s" % (file, e))
         return {}
     return config
 
@@ -88,7 +105,7 @@ def get_run_info_file(context):
     """
     fsys = get_filesys(context)
     logger.debug("fsys= %s" % fsys)
-    config = get_file(fsys,"default/runinfo.sys")
+    config = get_file(fsys, "default/runinfo.sys")
     logger.debug("config= %s" % config)
     return config
 
@@ -100,7 +117,7 @@ def get_run_info(context):
     fsys = get_filesys(context)
 
     logger.debug("fsys= %s" % fsys)
-    config = get_file(fsys,"default/runinfo.sys")
+    config = get_file(fsys, "default/runinfo.sys")
     logger.debug("config= %s" % config)
     if config:
         settings_text = config.retrieve()
@@ -138,22 +155,24 @@ class Configure(Stage, UI):
 
         HOME_DIR = os.path.expanduser("~")
         local_filesystem = 'default'
-        global_filesystem = HOME_DIR+"/testStages"
+        global_filesystem = os.path.join(HOME_DIR, "testStages")
         self.filesystem = FileSystem(global_filesystem, local_filesystem)
 
         #TODO: the path to the original config file should be
         # provided via command line or a web page.
         # For now, we assume, its location is 'original_config_file_path'
         #TODO: also need to load up all the input files
-        original_config_file_path = HOME_DIR+"/sandbox/cloudenabling/cloudenable/config.sys.json"
+        original_config_file_path = os.path.join(
+            HOME_DIR,
+            "sandbox/cloudenabling",
+            "cloudenable/config.sys.json")
         original_config_file = open(original_config_file_path, 'r')
         original_config_file_content = original_config_file.read()
         original_config_file.close()
 
-        data_object =  DataObject("config.sys")
+        data_object = DataObject("config.sys")
         data_object.create(original_config_file_content)
         self.filesystem.create(local_filesystem, data_object)
-
 
     # indicate the process() is completed
     def output(self, context):
@@ -162,8 +181,9 @@ class Configure(Stage, UI):
         """
         # store in filesystem
         # pass the file system as entry in the Context
-        context = {'filesys':self.filesystem}
+        context = {'filesys': self.filesystem}
         return context
+
 
 class Create(Stage):
 
@@ -210,9 +230,9 @@ class Create(Stage):
         # store in filesystem
         #self._store(self.temp_sys, filesystem)
         local_filesystem = 'default'
-        data_object =  DataObject("runinfo.sys")
-        data_object.create(json.dumps({'group_id':self.group_id, 'seed':self.seed}))
-
+        data_object = DataObject("runinfo.sys")
+        data_object.create(json.dumps({'group_id': self.group_id,
+                                       'seed': self.seed}))
 
         filesystem = get_filesys(context)
         filesystem.create(local_filesystem, data_object)
@@ -270,20 +290,19 @@ class Setup(Stage):
         fsys = get_filesys(context)
         logger.debug("fsys= %s" % fsys)
 
-        run_info_file = get_file(fsys,"default/runinfo.sys")
+        run_info_file = get_file(fsys, "default/runinfo.sys")
         logger.debug("run_info_file= %s" % run_info_file)
 
         settings_text = run_info_file.retrieve()
         logger.debug("runinfo_text= %s" % settings_text)
 
         config = json.loads(settings_text)
-        config['setup_finished'] = len(self.packaged_nodes) # FIXME: possible race condition?
+        config['setup_finished'] = len(self.packaged_nodes)  # FIXME: possible race condition?
         logger.debug("config=%s" % config)
         run_info_text = json.dumps(config)
         run_info_file.setContent(run_info_text)
 
         fsys.update("default", run_info_file)
-
 
         return context
 
@@ -297,7 +316,6 @@ class Run(Stage):
         # triggered when we now that we have N nodes setup and ready to run.
 
         # input_dir is assumed to be populated.
-
 
         if 'id' in context:
             self.id = context['id']
@@ -323,7 +341,6 @@ class Run(Stage):
             packaged_nodes = len(get_rego_nodes(self.group_id, self.settings))
             logger.debug("packaged_nodes = %s" % packaged_nodes)
 
-
             if 'runs_left' in self.settings:
                 return False
 
@@ -337,16 +354,30 @@ class Run(Stage):
             logger.info("setup was not finished")
             return False
 
+    def _create_input(self, instance_id, seeds, node, fsys):
+        ip = get_instance_ip(instance_id, self.settings)
+        ssh = open_connection(ip_address=ip, settings=self.settings)
+        fsys.upload_input(ssh, self.input_dir, os.path.join(
+            self.settings['DEST_PATH_PREFIX'],
+            self.settings['PAYLOAD_CLOUD_DIRNAME']))
+        run_command(ssh, "cd %s; cp rmcen.inp rmcen.inp.orig" %
+                    (os.path.join(self.settings['DEST_PATH_PREFIX'],
+                                  self.settings['PAYLOAD_CLOUD_DIRNAME'])))
+        run_command(ssh, "cd %s; dos2unix rmcen.inp" %
+                    (os.path.join(self.settings['DEST_PATH_PREFIX'],
+                                  self.settings['PAYLOAD_CLOUD_DIRNAME'])))
+        run_command(ssh, "cd %s; sed -i '/^$/d' rmcen.inp" %
+                    (os.path.join(self.settings['DEST_PATH_PREFIX'],
+                                  self.settings['PAYLOAD_CLOUD_DIRNAME'])))
 
-    def process(self, context):
+        run_command(ssh, "cd %s; sed -i 's/[0-9]*[ \t]*iseed.*$/%s\tiseed/' rmcen.inp" %
+                    (os.path.join(self.settings['DEST_PATH_PREFIX'],
+                                  self.settings['PAYLOAD_CLOUD_DIRNAME']), seeds[node]))
 
-        if 'seed' in self.settings:
-            seed = self.settings['seed']
-        else:
-            seed = 42
-            logger.warn("No seed specified. Using default value")
-
-        # NOTE we assume that correct local file system has been created.
+    def _prepare_input(self, context):
+        """
+        Copy the input parameters for the package to the VM
+        """
 
         fsys = get_filesys(context)
         logger.debug("fsys= %s" % fsys)
@@ -354,45 +385,45 @@ class Run(Stage):
         run_info = get_run_info(context)
         logger.debug("runinfo=%s" % run_info)
 
+        if 'seed' in self.settings:
+            seed = self.settings['seed']
+        else:
+            seed = 42
+            logger.warn("No seed specified. Using default value")
+        # NOTE we assume that correct local file system has been created.
+
+        import random
+        random.seed(seed)
+
+        seeds = {}
+
         # expose subdirectory as filesystem for copying
 
         nodes = get_rego_nodes(self.group_id, self.settings)
 
-        import random
-        random.seed(seed)
-        seeds = {}
         for node in nodes:
             # FIXME: is the random supposed to be positive or negative?
-            seeds[node] = random.randrange(0,self.settings['MAX_SEED_INT'])
+            seeds[node] = random.randrange(0, self.settings['MAX_SEED_INT'])
 
         if seed:
             print ("seed for full package run = %s" % seed)
         else:
-            print ("seeds for each node in group %s = %s" % (self.group_id,[(x.name,seeds[x]) for x in seeds.keys()]))
+            print ("seeds for each node in group %s = %s"
+                   % (self.group_id, [(x.name, seeds[x])
+                         for x in seeds.keys()]))
 
         logger.debug("seeds = %s" % seeds)
+
         for node in nodes:
             instance_id = node.name
             logger.info("prepare_input %s %s" % (instance_id, self.input_dir))
-            ip = get_instance_ip(instance_id, self.settings)
-            ssh = open_connection(ip_address=ip, settings=self.settings)
 
-            fsys.upload_input(ssh, self.input_dir, os.path.join(self.settings['DEST_PATH_PREFIX'],
-                                           self.settings['PAYLOAD_CLOUD_DIRNAME']))
+            self._create_input(instance_id, seeds, node, fsys)
 
-            run_command(ssh, "cd %s; cp rmcen.inp rmcen.inp.orig" %
-                        (os.path.join(self.settings['DEST_PATH_PREFIX'],
-                                      self.settings['PAYLOAD_CLOUD_DIRNAME'])))
-            run_command(ssh, "cd %s; dos2unix rmcen.inp" %
-                        (os.path.join(self.settings['DEST_PATH_PREFIX'],
-                                      self.settings['PAYLOAD_CLOUD_DIRNAME'])))
-            run_command(ssh, "cd %s; sed -i '/^$/d' rmcen.inp" %
-                        (os.path.join(self.settings['DEST_PATH_PREFIX'],
-                                      self.settings['PAYLOAD_CLOUD_DIRNAME'])))
+    def process(self, context):
 
-            run_command(ssh, "cd %s; sed -i 's/[0-9]*[ \t]*iseed.*$/%s\tiseed/' rmcen.inp" %
-                        (os.path.join(self.settings['DEST_PATH_PREFIX'],
-                                      self.settings['PAYLOAD_CLOUD_DIRNAME']), seeds[node]))
+        self._prepare_input(context)
+
         try:
             pids = run_multi_task(self.group_id, self.input_dir, self.settings)
         except PackageFailedError, e:
@@ -410,7 +441,7 @@ class Run(Stage):
         fsys = get_filesys(context)
         logger.debug("fsys= %s" % fsys)
 
-        run_info_file = get_file(fsys,"default/runinfo.sys")
+        run_info_file = get_file(fsys, "default/runinfo.sys")
         logger.debug("run_info_file= %s" % run_info_file)
 
         settings_text = run_info_file.retrieve()
@@ -421,7 +452,7 @@ class Run(Stage):
 
         config = json.loads(settings_text)
         # We assume that none of runs have finished yet.
-        config['runs_left'] = len(nodes) # FIXME: possible race condition?
+        config['runs_left'] = len(nodes)  # FIXME: possible race condition?
         #config['error_nodes'] = len(error_nodes)
         logger.debug("config=%s" % config)
         run_info_text = json.dumps(config)
@@ -432,13 +463,14 @@ class Run(Stage):
 
         return context
 
+
 class Finished(Stage):
     """
     Return whether the run has finished or not
     """
 
     def __init__(self):
-        self.runs_left= 0
+        self.runs_left = 0
         self.error_nodes = 0
 
     def triggered(self, context):
@@ -502,13 +534,11 @@ class Finished(Stage):
                 #its output will be retrieved, but it may again when the other node fails, because
                 #we cannot tell whether we have prevous retrieved this output before and finished_nodes
                 # is not maintained between triggerings...
-                if not (node.name in [ x.name for x in self.finished_nodes]):
+                if not (node.name in [x.name for x in self.finished_nodes]):
                     fsys.download_output(ssh, instance_id, self.output_dir, self.settings)
                 else:
-                    logger.info("We have already processed output from node %s" %node.name)
-
-
-
+                    logger.info("We have already "
+                        + "processed output from node %s" % node.name)
                 self.finished_nodes.append(node)
             else:
                 print "job still running on %s: %s" % (instance_id,
@@ -524,14 +554,14 @@ class Finished(Stage):
         fsys = get_filesys(context)
         logger.debug("fsys= %s" % fsys)
 
-        run_info_file = get_file(fsys,"default/runinfo.sys")
+        run_info_file = get_file(fsys, "default/runinfo.sys")
         logger.debug("run_info_file= %s" % run_info_file)
 
         settings_text = run_info_file.retrieve()
         logger.debug("runinfo_text= %s" % settings_text)
 
         config = json.loads(settings_text)
-        config['runs_left'] = nodes_working # FIXME: possible race condition?
+        config['runs_left'] = nodes_working  # FIXME: possible race condition?
         config['error_nodes'] = len(self.error_nodes)
         logger.debug("config=%s" % config)
         run_info_text = json.dumps(config)
@@ -551,14 +581,13 @@ class Finished(Stage):
 
 class Converge(Stage):
     """
-    Return whether the run has finished or not
+    Determine whether the function has been optimised
     """
     def __init__(self, number_of_iterations):
         self.total_iterations = number_of_iterations
         self.number_of_remaining_iterations = number_of_iterations
 
     def triggered(self, context):
-
 
         self.settings = get_settings(context)
         logger.debug("settings = %s" % self.settings)
@@ -582,7 +611,7 @@ class Converge(Stage):
         fsys = get_filesys(context)
         logger.debug("fsys= %s" % fsys)
 
-        run_info_file = get_file(fsys,"default/runinfo.sys")
+        run_info_file = get_file(fsys, "default/runinfo.sys")
         logger.debug("run_info_file= %s" % run_info_file)
 
         settings_text = run_info_file.retrieve()
@@ -590,7 +619,7 @@ class Converge(Stage):
 
         config = json.loads(settings_text)
         del(config['runs_left'])
-        del(config['error_nodes']) #??
+        del(config['error_nodes'])  # ??
         logger.debug("config=%s" % config)
 
         run_info_text = json.dumps(config)
@@ -598,28 +627,23 @@ class Converge(Stage):
         logger.debug("run_info_file=%s" % run_info_file)
         fsys.update("default", run_info_file)
 
-
     def output(self, context):
         fsys = get_filesys(context)
-        run_info_file = get_file(fsys,"default/runinfo.sys")
+        run_info_file = get_file(fsys, "default/runinfo.sys")
         settings_text = run_info_file.retrieve()
         config = json.loads(settings_text)
         config['converged'] = False
-
         if self.number_of_remaining_iterations == 0:
-             config['converged'] = True
-
+            config['converged'] = True
         run_info_text = json.dumps(config)
         run_info_file.setContent(run_info_text)
         fsys.update("default", run_info_file)
-
-
         return context
 
 
 class Transform(Stage):
     """
-    Return whether the run has finished or not
+    Convert output into input for next iteration.
     """
     def triggered(self, context):
         self.settings = get_settings(context)
@@ -631,8 +655,6 @@ class Transform(Stage):
 
     def output(self, context):
         pass
-
-
 
 
 class Teardown(Stage):
@@ -651,7 +673,6 @@ class Teardown(Stage):
 
         self.group_id = self.settings["group_id"]
         logger.debug("group_id = %s" % self.group_id)
-
 
         if 'converged' in self.settings:
             if self.settings['converged'] == True:
@@ -676,14 +697,14 @@ class Teardown(Stage):
         fsys = get_filesys(context)
         logger.debug("fsys= %s" % fsys)
 
-        run_info_file = get_file(fsys,"default/runinfo.sys")
+        run_info_file = get_file(fsys, "default/runinfo.sys")
         logger.debug("run_info_file= %s" % run_info_file)
 
         settings_text = run_info_file.retrieve()
         logger.debug("runinfo_text= %s" % settings_text)
 
         config = json.loads(settings_text)
-        config['run_finished'] = True # FIXME: possible race condition?
+        config['run_finished'] = True  # FIXME: possible race condition?
         logger.debug("config=%s" % config)
         run_info_text = json.dumps(config)
         run_info_file.setContent(run_info_text)
@@ -692,21 +713,21 @@ class Teardown(Stage):
 
         # FIXME: check to make sure not retriggered
 
-
-
-        return context#self.packaged_nodes
-
-
+        return context  # self.packaged_nodes
 
 
 class Sleep(Stage):
     """
-    Return whether the run has finished or not
+    Go to sleep
     """
 
-    def __init__(self,secs):
+    def __init__(self, secs):
         self.sleeptime = secs
+
     def triggered(self, context):
+        # FIXME: broken because dispatch loop will never exit because
+        # stage will always trigger.  Need to create return state that
+        # triggers dispatch loop to end
         return True
 
     def process(self, context):
@@ -725,7 +746,6 @@ def mainloop():
     context = {}
     #context['version'] = "1.0.0"
 
-
     #filesys.update_file('Butini')
     #filesys.delete_file(path_fs, 'Iman')
 
@@ -738,11 +758,10 @@ def mainloop():
     #smart_conn.register(Configure())
     #smart_conn.register(Create())
 
-
-    for stage in (Configure(), Create(), Setup(),Run(), Finished(), Converge(number_of_iterations), Teardown()):#, Check(), Teardown()):
+    for stage in (Configure(), Create(), Setup(), Run(), Finished(),
+        Converge(number_of_iterations), Teardown()):  # , Check(), Teardown()):
     #for stage in (Configure(), Create(), Teardown()):#, Run(), Check(), Teardown()):
         smart_conn.register(stage)
-
 
     #print smart_con.stages
 
@@ -752,22 +771,16 @@ def mainloop():
     #What happens if data is dropped while
     #another is in progress?
 
-
     #while(True):
     #smart_conn = SmartConnector()
 
     #smart_conn.register(Converge())
 
-
-
-
-
-
     while (True):
         done = 0
         not_triggered = 0
         for stage in smart_conn.stages:
-            print "Working in stage",stage
+            print "Working in stage %s" % stage
             if stage.triggered(context):
                 stage.process(context)
                 context = stage.output(context)
@@ -781,8 +794,6 @@ def mainloop():
 
         if not_triggered == len(smart_conn.stages):
             break
-
-
 
     '''
     exit_reached = False
