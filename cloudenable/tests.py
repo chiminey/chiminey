@@ -110,8 +110,8 @@ class ConfigureStageTests(unittest.TestCase):
         HOME_DIR = os.path.expanduser("~")
         global_filesystem = HOME_DIR+'/test_runstageTests'
         context['global_filesystem'] = global_filesystem
-        context['config.sys'] = HOME_DIR + "/cloudenabling/cloudenable/config.sys.json"
-    
+        context['config.sys'] ="./config.sys.json"
+
         con = Configure()
         self.assertTrue(con.triggered(context), True)
         con.process(context)

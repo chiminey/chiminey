@@ -308,7 +308,7 @@ class Run(Stage):
         TODO: - uncomment during transformation is in progress
               - change context to self.settings
               - move the code after self.settings.update
-              
+
                self.input_dir = "input"
         '''
         if 'id' in context:
@@ -316,9 +316,9 @@ class Run(Stage):
             self.input_dir = "input_%s" % self.id
         else:
             self.input_dir = "input"
-        
-       
-        
+
+
+
         print "Run stage triggered"
         self.settings = get_settings(context)
         logger.debug("settings = %s" % self.settings)
@@ -493,7 +493,7 @@ class Finished(Stage):
 
     def process(self, context):
         """
-            Check all registered nodes to find whether 
+            Check all registered nodes to find whether
             they are running, stopped or in error_nodes
         """
         fsys = get_filesys(context)
@@ -625,7 +625,7 @@ class Transform(Stage):
         else:
             self.output_dir = "output"
             self.output_dir = "input"
-        
+
         return True
 
     def process(self, context):
@@ -641,8 +641,8 @@ class Transform(Stage):
         number_line_split = number_line.split()
         number = number_line_split[0]
         print 'nu', number
-        
-        file_grerr = os.path.join(filesystem.get_global_filesystem(), 
+
+        file_grerr = os.path.join(filesystem.get_global_filesystem(),
                                    self.output_dir, all_output_subdir[0], 'grerr*.dat')
         file_grerr_exp = os.path.e
         command = []
@@ -653,29 +653,29 @@ class Transform(Stage):
         print "cr", criterion_line, file_grerr
        # criterion_line_split = criterion_line.split()
         #criterion = criterion_line_split[1]
-        
-        print "after", number  
+
+        print "after", number
         input_file_object = filesystem.retrieve(file_rmcen)
         input_file_object_content = input_file_object.getContent()
-        
-        output_file = os.path.join(filesystem.get_global_filesystem(), 
+
+        output_file = os.path.join(filesystem.get_global_filesystem(),
                                    self.output_dir, all_output_subdir[0], 'grerr*.dat')
-        
+
         comparison_criterion = os.system("tail -n 1 %s | awk '{print $2}'" % output_file)
-        
+
         if re.search("numbfile", input_file_object_content):
             print "Matches"
             print (re.sub("numbfile","numbfile_changed", input_file_object_content))
         else:
             print "Doesnt Match"
-            
+
         #filesystem.exec_command("%s" %input_file_name, input_file_name )
-        
+
         #print "Input file", input_file_name
-    
+
         #a = subprocess.call('grep numbfile input_file_name')
         print all_output_subdir
-        
+
         '''
             def _kill_run(context):
         """ Based on information from the current run, decide whether to kill the current runs
