@@ -17,7 +17,7 @@ from hrmcimpl import setup_multi_task
 from hrmcimpl import run_multi_task
 from hrmcimpl import packages_complete
 from hrmcimpl import PackageFailedError
- 
+
 #from hrmcimpl import *
 
 from smartconnector import SmartConnector
@@ -101,19 +101,19 @@ def start():
     if 'smart' in args:
         context = {'number_vm_instances': 1}
         context['seed'] = 32
-    
+
         HOME_DIR = os.path.expanduser("~")
         global_filesystem = os.path.join(HOME_DIR, "testStages")
         context['global_filesystem'] = global_filesystem
-        context['config.sys'] = HOME_DIR + "/cloudenabling/cloudenable/config.sys.json"
+        context['config.sys'] = "./config.sys.json"
         number_of_iterations = 2
         smart_conn = SmartConnector()
-    
+
         for stage in (Configure(), Create(), Setup(), Run(), Finished(), Converge(number_of_iterations)):
             #, Teardown()):#, Check(), Teardown()):
         #for stage in (Configure(), Transform()):
             smart_conn.register(stage)
-    
+
         #while loop is infinite:
         # check the semantics for 'dropping data' into
         # designated location.
@@ -134,10 +134,10 @@ def start():
                     #print "Deleting stage",stage
                     print context
                 logger.debug(done, " ", len(smart_conn.stages))
-    
+
             if not_triggered == len(smart_conn.stages):
                 break
-    
+
         clear_temp_files(context)
 
 
@@ -226,7 +226,7 @@ def start():
         # TODO: make sure that the instance we are tearing down is the one
         # that is running the package and no some random VM, probably by
         # logging in and checking state.
-        
+
         if options.group_id:
             all_instances = collect_instances(settings, group_id=options.group_id)
             if confirm_teardown(settings, all_instances):
@@ -251,7 +251,7 @@ def start():
         print "Summary of Computing Environment"
         all_instances = collect_instances(settings, all_VM=True)
         print_all_information(settings, all_instances)
-    
+
 
     else:
         parser.print_help()
