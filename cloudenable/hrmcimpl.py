@@ -5,12 +5,14 @@ from sshconnector import *
 
 logger = logging.getLogger(__name__)
 
+
 class Error(Exception):
     pass
 
 
 class PackageFailedError(Error):
     pass
+
 
 def setup_task(instance_id, settings):
     """
@@ -22,22 +24,25 @@ def setup_task(instance_id, settings):
     ip = get_instance_ip(instance_id, settings)
     ssh = open_connection(ip_address=ip, settings=settings)
     res = install_deps(ssh, packages=settings['DEPENDS'],
-                        settings=settings, instance_id=instance_id)
+                       settings=settings, instance_id=instance_id)
     logger.debug("install res=%s" % res)
     res = mkdir(ssh, dir=settings['DEST_PATH_PREFIX'])
     logger.debug("mkdir res=%s" % res)
-    put_file(ssh, source_path=settings['PAYLOAD_LOCAL_DIRNAME'],
-              package_file=settings['PAYLOAD'],
-              environ_dir=settings['DEST_PATH_PREFIX'])
+    put_file(ssh,
+             source_path=settings['PAYLOAD_LOCAL_DIRNAME'],
+             package_file=settings['PAYLOAD'],
+             environ_dir=settings['DEST_PATH_PREFIX'])
+
     unpack(ssh, environ_dir=settings['DEST_PATH_PREFIX'],
-            package_file=settings['PAYLOAD'])
+           package_file=settings['PAYLOAD'])
+
     compile(ssh, environ_dir=settings['DEST_PATH_PREFIX'],
-             compile_file=settings['COMPILE_FILE'],
-             package_dirname=settings['PAYLOAD_CLOUD_DIRNAME'],
-             compiler_command=settings['COMPILER'])
+            compile_file=settings['COMPILE_FILE'],
+            package_dirname=settings['PAYLOAD_CLOUD_DIRNAME'],
+            compiler_command=settings['COMPILER'])
 
 
-def prepare_input(instance_id, input_dir, settings,seed):
+def prepare_input(instance_id, input_dir, settings, seed):
     """
         Take the input_dir and move all the contained files to the
         instance and ready
@@ -78,11 +83,11 @@ def run_task(instance_id, settings):
     if len(pids) > 1:
         logger.error("warning:multiple packages running")
         raise PackageFailedError("multiple packages running")
-    run_command(ssh, "cd %s; ./%s >& %s &"
-                 % (os.path.join(
-                    settings['DEST_PATH_PREFIX'],
-                    settings['PAYLOAD_CLOUD_DIRNAME']),
-                    settings['COMPILE_FILE'], "output"))
+    run_command(ssh, "cd %s; ./%s >& %s &\
+    " % (os.path.join(settings['DEST_PATH_PREFIX'],
+                      settings['PAYLOAD_CLOUD_DIRNAME']),
+         settings['COMPILE_FILE'], "output"))
+
     import time
     attempts = settings['RETRY_ATTEMPTS']
     logger.debug("checking for package start")
@@ -108,13 +113,14 @@ def get_output(instance_id, output_dir, settings):
     try:
         os.makedirs(output_dir)  # NOTE: makes intermediate directories
     except OSError, e:
-        logger.debug("output directory %s already exists: %s" % (output_dir,e))
+        logger.debug("output directory %s already exists: %s\
+        " % (output_dir, e))
         #sys.exit(1)
     logger.info("output directory is %s" % output_dir)
     for file in settings['OUTPUT_FILES']:
         get_file(ssh, os.path.join(settings['DEST_PATH_PREFIX'],
-                                    settings['PAYLOAD_CLOUD_DIRNAME']),
-                  file, output_dir)
+                                   settings['PAYLOAD_CLOUD_DIRNAME']),
+                 file, output_dir)
     # TODO: do integrity check on output files
     pass
 
@@ -123,7 +129,6 @@ def job_finished(instance_id, settings):
     """
         Return True if package job on instance_id has job_finished
     """
-
     ip = get_instance_ip(instance_id, settings)
     ssh = open_connection(ip_address=ip, settings=settings)
     pids = get_package_pids(ssh, settings['COMPILE_FILE'])
@@ -140,9 +145,6 @@ def setup_multi_task(group_id, settings):
     import threading
     import datetime
     logger.debug("packaged_nodes = %s" % packaged_nodes)
-
-
-
 
     def setup_worker(node_id):
         now = datetime.datetime.now()
@@ -170,8 +172,9 @@ def packages_complete(group_id, output_dir, settings):
     any output as needed
     """
     nodes = get_rego_nodes(group_id, settings)
-    error_nodes, finished_nodes =_status_of_nodeset(nodes, output_dir, settings)
-
+    error_nodes, finished_nodes = _status_of_nodeset(nodes,
+                                                     output_dir,
+                                                     settings)
     if finished_nodes + error_nodes == nodes:
         logger.info("Package Finished")
         return True
@@ -211,23 +214,20 @@ def prepare_multi_input(group_id, input_dir, settings, seed):
         instances in the group and ready
 
     """
-
     nodes = get_rego_nodes(group_id, settings)
-
-
 
     import random
     random.seed(seed)
     seeds = {}
     for node in nodes:
         # FIXME: is the random supposed to be positive or negative?
-        seeds[node] = random.randrange(0,settings['MAX_SEED_INT'])
+        seeds[node] = random.randrange(0, settings['MAX_SEED_INT'])
 
     if seed:
         print ("seed for full package run = %s" % seed)
     else:
-        print ("seeds for each node in group %s = %s" % (group_id,[(x.name,seeds[x]) for x in seeds.keys()]))
-
+        print ("seeds for each node in group %s = %s\
+        " % (group_id, [(x.name, seeds[x]) for x in seeds.keys()]))
 
     logger.debug("seeds = %s" % seeds)
     for node in nodes:
@@ -252,14 +252,17 @@ def prepare_multi_input(group_id, input_dir, settings, seed):
                     (os.path.join(settings['DEST_PATH_PREFIX'],
                                   settings['PAYLOAD_CLOUD_DIRNAME'])))
 
-        run_command(ssh, "cd %s; sed -i 's/[0-9]*[ \t]*iseed.*$/%s\tiseed/' rmcen.inp" %
-                    (os.path.join(settings['DEST_PATH_PREFIX'],
-                                  settings['PAYLOAD_CLOUD_DIRNAME']), seeds[node]))
+        run_command(ssh,
+                    "cd %s; sed -i 's/[0-9]*[ \t]*iseed.*$/%s\tiseed/' rmcen.inp\
+                    " % (os.path.join(settings['DEST_PATH_PREFIX'],
+                                      settings['PAYLOAD_CLOUD_DIRNAME']),
+                         seeds[node]))
 
 
 #should remove this directory
 def _upload_input(ssh, source_path_prefix, input_file, dest_path_prefix):
         put_file(ssh, source_path_prefix, input_file, dest_path_prefix)
+
 
 #TODO: move this method to utility
 def _normalize_dirpath(dirpath):
@@ -291,8 +294,7 @@ def _status_of_nodeset(nodes, output_dir, settings):
                        settings)
             finished_nodes.append(node)
         else:
-            print "job still running on %s: %s" % (instance_id,
-                                                   get_instance_ip(instance_id,
-                                                                settings))
+            print "job still running on %s: %s\
+            " % (instance_id, get_instance_ip(instance_id, settings))
 
     return (error_nodes, finished_nodes)

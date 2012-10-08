@@ -106,13 +106,19 @@ class TestStage(Stage):
 class ConfigureStageTests(unittest.TestCase):
 
     def test_simple(self):
-
-        con = Configure()
         context = {}
+        HOME_DIR = os.path.expanduser("~")
+        global_filesystem = HOME_DIR+'/test_runstageTests'
+        context['global_filesystem'] = global_filesystem
+        context['config.sys'] = HOME_DIR + "/cloudenabling/cloudenable/config.sys.json"
+    
+        con = Configure()
         self.assertTrue(con.triggered(context), True)
         con.process(context)
         context = con.output(context)
-        self.assertEquals(context.keys(), ['filesys'])
+
+        self.assertTrue(context['filesys'])
+
         settings = get_settings(context)
         self.assertTrue(len(settings) > 0)
 
