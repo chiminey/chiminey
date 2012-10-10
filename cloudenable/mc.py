@@ -28,11 +28,12 @@ from hrmcstages import Run
 from hrmcstages import Finished
 from hrmcstages import Converge
 from hrmcstages import Teardown
+from hrmcstages import clear_temp_files
 
 logger = logging.getLogger(__name__)
 
 
-def start():
+def start(args):
 
     #http://docs.python.org/howto/logging.html#logging-basic-tutorial
     logging.config.fileConfig('logging.conf')
@@ -60,22 +61,22 @@ def start():
                       'CLOUD_SLEEP_INTERVAL', 'PRIVATE_KEY_NAME',
                       'SECURITY_GROUP', 'GROUP_ID_DIR', 'MAX_SEED_INT']
 
-    import json
-    #settings = type('', (), {})()
-    settings = {}
-    for field in environ_fields:
-        #TODO: add multiple sections
-        val = config.get("basic", field)
-        if '#' in val:  # remove comments
-            val, _ = val.split('#', 1)
-        try:
-            field_val = json.loads(val)    # use JSON to parse values
-        except ValueError, e:
-            file_val = ""
-        # and make fake object to hold them
-        settings[field]=field_val
-        #setattr(settings, field, field_val)
-        logger.debug("%s" % field_val)
+    # import json
+    # #settings = type('', (), {})()
+    # settings = {}
+    # for field in environ_fields:
+    #     #TODO: add multiple sections
+    #     val = config.get("basic", field)
+    #     if '#' in val:  # remove comments
+    #         val, _ = val.split('#', 1)
+    #     try:
+    #         field_val = json.loads(val)    # use JSON to parse values
+    #     except ValueError, e:
+    #         file_val = ""
+    #     # and make fake object to hold them
+    #     settings[field]=field_val
+    #     #setattr(settings, field, field_val)
+    #     logger.debug("%s" % field_val)
 
     # get command line options
     parser = OptionParser()
@@ -96,7 +97,7 @@ def start():
     parser.add_option("-s", "--seed", dest="seed",
                       help="The master seed that generates all other seeds")
 
-    (options, args) = parser.parse_args()
+    (options, args) = parser.parse_args(args)
 
     if 'smart' in args:
         context = {'number_vm_instances': 1}
@@ -259,6 +260,6 @@ def start():
 
 if __name__ == '__main__':
     begins = time.time()
-    start()
+    start(sys.argv[1:])
     ends = time.time()
     logger.info("Total execution time: %d seconds" % (ends-begins))
