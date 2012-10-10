@@ -1007,6 +1007,30 @@ class CloudTests(unittest.TestCase):
         self.assertEquals(res, None)
 
 
+from metadata import process_all
+
+
+class MetadataTests(unittest.TestCase):
+    """
+    Tests stage which extracts metadata from found VASP datafiles
+    """
+
+    def setUp(self):
+        pass
+
+    def test_vasp_extraction(self):
+        """ Extract metadata from a set of VASP datafiles into a JSON file"""
+        import time
+        path = "./testing/dataset1"
+        begins = time.time()
+        res = process_all(path)
+        import json
+        dump = json.dumps(res,indent=1)
+        # read in stored correct answer
+        test_text = open(os.path.join(path,'test_check.json'),'r').read()
+        self.assertEquals(dump,test_text)
+
+
 if __name__ == '__main__':
     logging.config.fileConfig('logging.conf')
     unittest.main()
