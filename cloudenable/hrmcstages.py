@@ -95,12 +95,14 @@ def get_settings(context):
     fsys = get_filesys(context)
     logger.debug("fsys= %s" % fsys)
     config = get_file(fsys, "default/config.sys")
-    logger.debug("config= %s" % config)
+    #logger.debug("config= %s" % config)
     settings_text = config.retrieve()
-    logger.debug("settings_text= %s" % settings_text)
+    #logger.debug("settings_text= %s" % settings_text)
     res = json.loads(settings_text)
-    logger.debug("res=%s" % dict(res))
-    return dict(res)
+    #logger.debug("res=%s" % dict(res))
+    settings = dict(res)
+    settings['PROVIDER'] = context['provider']
+    return settings
 
 
 def get_run_info_file(context):
@@ -266,7 +268,7 @@ class Setup(Stage):
         """
         # triggered if the set of the VMS has been established.
         self.settings = get_run_settings(context)
-        logger.debug("settings = %s" % self.settings)
+        #logger.debug("settings = %s" % self.settings)
 
         self.group_id = self.settings["group_id"]
         logger.debug("group_id = %s" % self.group_id)
@@ -276,7 +278,8 @@ class Setup(Stage):
 
         self.packaged_nodes = get_rego_nodes(self.group_id, self.settings)
         logger.debug("packaged_nodes = %s" % self.packaged_nodes)
-
+        
+        logger.debug("Setup on %s" % self.settings['PROVIDER'])
         return len(self.packaged_nodes)
 
     def process(self, context):
@@ -412,7 +415,7 @@ class Run(Stage):
         logger.debug("seeds = %s" % seeds)
 
         for node in nodes:
-            instance_id = node.name
+            instance_id = node.id
             logger.info("prepare_input %s %s" % (instance_id, self.input_dir))
 
             self._create_input(instance_id, seeds, node, fsys)
@@ -504,7 +507,7 @@ class Finished(Stage):
         self.error_nodes = []
         self.finished_nodes = []
         for node in self.nodes:
-            instance_id = node.name
+            instance_id = node.id
             ip = get_instance_ip(instance_id, self.settings)
             ssh = open_connection(ip_address=ip, settings=self.settings)
             if not is_instance_running(instance_id, self.settings):
@@ -525,11 +528,11 @@ class Finished(Stage):
                 #its output will be retrieved, but it may again when the other node fails, because
                 #we cannot tell whether we have prevous retrieved this output before and finished_nodes
                 # is not maintained between triggerings...
-                if not (node.name in [x.name for x in self.finished_nodes]):
+                if not (node.id in [x.id for x in self.finished_nodes]):
                     fsys.download_output(ssh, instance_id, self.output_dir, self.settings)
                 else:
                     logger.info("We have already "
-                        + "processed output from node %s" % node.name)
+                        + "processed output from node %s" % node.id)
                 self.finished_nodes.append(node)
             else:
                 print "job still running on %s: %s\

@@ -41,12 +41,34 @@ NODE_STATE = ['RUNNING', 'REBOOTING', 'TERMINATED', 'PENDING', 'UNKNOWN']
 
 
 def _create_cloud_connection(settings):
+    provider = settings['PROVIDER']
+    if provider.lower() == "amazon" :
+        return _create_amazon_connection(settings)
+    elif provider.lower() == "nectar" :
+        return _create_nectar_connection(settings)
+    else:
+        print "Unknown provider: %s" %provider
+        sys.exit()#FIXME: throw exception
+
+
+def _create_nectar_connection(settings):
+         
     OpenstackDriver = get_driver(Provider.EUCALYPTUS)
     logger.debug("Connecting to... %s" % OpenstackDriver)
     connection = OpenstackDriver(settings['EC2_ACCESS_KEY'],
                                  secret=settings['EC2_SECRET_KEY'],
                                  host="nova.rc.nectar.org.au", secure=True,
                                  port=8773, path="/services/Cloud")
+    logger.debug("Connected %s", connection.__dict__)
+    return connection
+
+
+def _create_amazon_connection(settings):
+         
+    AmazonDriver = get_driver(Provider.EC2)
+    logger.debug("Connecting to... %s" % AmazonDriver)
+    connection = AmazonDriver(settings['EC2_ACCESS_KEY'],
+                                 secret=settings['EC2_SECRET_KEY'])
     logger.debug("Connected")
     return connection
 
@@ -57,10 +79,12 @@ def create_environ(number_vm_instances, settings):
     """
     logger.info("create_environ")
     all_instances = _create_VM_instances(number_vm_instances, settings)
+    logger.debug("Printing ---- %s " % all_instances)
 
     if all_instances:
         all_running_instances = _wait_for_instance_to_start_running(all_instances, settings)
         group_id = _store_md5_on_instances(all_running_instances, settings)
+        _customize_prompt(all_running_instances, settings)
         print 'Created VM instances:'
         print_all_information(settings, all_instances=all_running_instances)
         return group_id
@@ -91,6 +115,7 @@ def _create_VM_instances(number_vm_instances, settings):
             all_instances.append(new_instance)
             instance_count += 1
     except Exception, e:
+        print "printing exception ", e
         if "QuotaError" in e[0]:
             print "Quota Limit Reached: "
             print "\t %s instances are created." % len(all_instances)
@@ -100,6 +125,7 @@ def _create_VM_instances(number_vm_instances, settings):
             print_all_information(settings)
         else:
             traceback.print_exc(file=sys.stdout)
+            sys.exit() #FIXME: replace Exception by QuotaError
 
     return all_instances
 
@@ -108,17 +134,20 @@ def _store_md5_on_instances(all_instances, settings):
     group_id = _generate_group_id(all_instances)
     print "Creating group '%s' ..." % group_id
     for instance in all_instances:
-        # login and check for md5 file
-        instance_id = instance.name
+        # login and store md5 file
+        instance_id = instance.id
         ip_address = get_instance_ip(instance_id, settings)
         ssh_ready = is_ssh_ready(settings, ip_address)
         if ssh_ready:
             print "Registering %s (%s) to group '%s'\
             " % (instance_id, ip_address, group_id)
-            ssh = open_connection(ip_address=ip_address, settings=settings)
+            ssh_client = open_connection(ip_address=ip_address, settings=settings)
             group_id_path = os.path.join(settings['GROUP_ID_DIR'], group_id)
-            run_command(ssh, "mkdir %s" % settings['GROUP_ID_DIR'])
-            run_command(ssh, "touch %s" % group_id_path)
+            
+            run_command(ssh_client, "mkdir %s" % settings['GROUP_ID_DIR'])
+            logger.debug("Group ID directory created")
+            run_command(ssh_client, "touch %s" % group_id_path)
+            logger.debug("Group ID file created")
         else:
             print "VM instance %s will not be registered to group '%s'\
             " % (instance_id, ip, group_id)
@@ -126,10 +155,29 @@ def _store_md5_on_instances(all_instances, settings):
     return group_id
 
 
+def _customize_prompt(all_instances, settings):
+    for instance in all_instances:
+        instance_id = instance.id
+        ip_address = get_instance_ip(instance_id, settings)
+        ssh_ready = is_ssh_ready(settings, ip_address)
+        if ssh_ready:
+            ssh_client = open_connection(ip_address=ip_address, settings=settings)
+            home_dir = os.path.expanduser("~")
+            command_bash = 'echo \'export PS1="%s"\' >> .bash_profile' % settings['CUSTOM_PROMPT']
+            command_csh = 'echo \'setenv PS1 "%s"\' >> .cshrc' % settings['CUSTOM_PROMPT']
+            command = 'cd ~; %s; %s' % (command_bash, command_csh)
+            logger.debug("Command Prompt %s" % command)
+            res = run_command(ssh_client, command)
+            logger.debug("Customized prompt")
+        else:
+            print "Unable to customize command prompt for VM instance %s\
+            " % (instance_id, ip)
+       
+
 def _generate_group_id(all_instances):
     md5_starter_string = ""
     for instance in all_instances:
-        md5_starter_string += instance.name
+        md5_starter_string += instance.id
 
     md5 = hashlib.md5()
     md5.update(md5_starter_string)
@@ -139,10 +187,9 @@ def _generate_group_id(all_instances):
 
 
 def collect_instances(settings, group_id=None, instance_id=None, all_VM=False):
-    connection = _create_cloud_connection(settings)
     all_instances = []
     if all_VM:
-        all_instances = connection.list_nodes()
+        all_instances = get_running_instances(settings)
     elif group_id:
         all_instances = get_rego_nodes(group_id, settings)
     elif instance_id:
@@ -198,7 +245,7 @@ def is_instance_running(instance_id, settings):
     connection = _create_cloud_connection(settings)
     nodes = connection.list_nodes()
     for i in nodes:
-        if i.name == instance_id and i.state == NodeState.RUNNING:
+        if i.id == instance_id and i.state == NodeState.RUNNING:
             instance_running = True
             break
     return instance_running
@@ -208,7 +255,7 @@ def _wait_for_instance_to_start_running(all_instances, settings):
     all_running_instances = []
     while all_instances:
         for instance in all_instances:
-            instance_id = instance.name
+            instance_id = instance.id
             if is_instance_running(instance_id, settings):
                 all_running_instances.append(instance)
                 all_instances.remove(instance)
@@ -226,7 +273,7 @@ def _wait_for_instance_to_start_running(all_instances, settings):
 def _wait_for_instance_to_terminate(all_instances, settings):
     while all_instances:
         for instance in all_instances:
-            instance_id = instance.name
+            instance_id = instance.id
             if not is_instance_running(instance_id, settings):
                 all_instances.remove(instance)
                 print 'Current status of Instance %s: %s\
@@ -247,8 +294,7 @@ def print_all_information(settings, all_instances=None):
             - list of groups
     """
     if not all_instances:
-        connection = _create_cloud_connection(settings)
-        all_instances = connection.list_nodes()
+        all_instances = get_running_instances(settings)
         if not all_instances:
             print '\t No running instances'
             sys.exit(1)
@@ -256,7 +302,7 @@ def print_all_information(settings, all_instances=None):
     counter = 1
     print '\tNo.\tID\t\tIP\t\tPackage\t\tGroup'
     for instance in all_instances:
-        instance_id = instance.name
+        instance_id = instance.id
         ip = get_instance_ip(instance_id, settings)
         #if is_ssh_ready(settings, ip):
         ssh = open_connection(ip, settings)
@@ -283,7 +329,7 @@ def _get_this_instance(instance_id, settings):
     nodes = connection.list_nodes()
     this_node = []
     for i in nodes:
-        if i.name == instance_id:
+        if i.id == instance_id:
             this_node = i
             break
 
@@ -297,15 +343,28 @@ def get_instance_ip(instance_id, settings):
     #TODO: throw exception if can't find instance_id
     connection = _create_cloud_connection(settings)
     ip = ''
+    
     while instance_id == '' or ip == '':
-        nodes = connection.list_nodes()
+        nodes = get_running_instances(settings)
+        logger.debug("total nodes %d " % len(nodes))
         for i in nodes:
-            if i.name == instance_id and len(i.public_ips) > 0:
+            logger.debug("Node %s %s  %s " % (instance_id, i.id, i))
+            if i.id == instance_id and len(i.public_ips) > 0:
                 ip = i.public_ips[0]
+                logger.debug("ip %s", ip)
                 break
     return ip
 
+def get_running_instances(settings):
+    connection = _create_cloud_connection(settings)
+    all_instances = connection.list_nodes()
+    all_running_instances = []
+    for instance in all_instances:
+        if instance.state == NodeState.RUNNING:
+            all_running_instances.append(instance)
+    return all_running_instances
 
+            
 #newly added methods from simplepackage
 def get_rego_nodes(group_id, settings):
     """
@@ -314,21 +373,24 @@ def get_rego_nodes(group_id, settings):
     logger.debug("get_rego_nodes")
     # get all available nodes
     conn = _create_cloud_connection(settings)
+    
     packaged_node = []
-    for node in conn.list_nodes():
+    for node in get_running_instances(settings):
         # login and check for md5 file
-        ssh = open_connection(ip_address=get_instance_ip(node.name, settings),
+        ip = get_instance_ip(node.id, settings)
+        ssh_client = open_connection(ip_address=ip,
                               settings=settings)
+        logger.debug("ssh client created %s" % ssh_client)
         # NOTE: assumes use of bash shell
         group_id_path = os.path.join(settings['GROUP_ID_DIR'], group_id)
-        res = run_command(ssh, "[ -f %s ] && echo 1" % group_id_path)
+        res = run_command(ssh_client, "[ -f %s ] && echo 1" % group_id_path)
         logger.debug("res=%s" % res)
         if '1\n' in res:
             logger.debug("node %s exists for group %s "
-                         % (node.name, group_id))
+                         % (node.id, group_id))
             packaged_node.append(node)
         else:
             logger.debug("NO node for %s exists for group %s "
-                         % (node.name, group_id))
+                         % (node.id, group_id))
     logger.debug("get_rego_nodes DONE")
     return packaged_node
