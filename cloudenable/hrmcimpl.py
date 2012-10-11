@@ -1,7 +1,19 @@
+import os
 import logging
 
-from cloudconnector import *
-from sshconnector import *
+from sshconnector import open_connection
+from sshconnector import run_command
+from sshconnector import install_deps
+from sshconnector import unpack
+from sshconnector import compile
+from sshconnector import mkdir
+from sshconnector import get_file
+from sshconnector import put_file
+from sshconnector import get_package_pids
+
+from cloudconnector import is_instance_running
+from cloudconnector import get_rego_nodes
+from cloudconnector import get_instance_ip
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +34,10 @@ def setup_task(instance_id, settings):
     logger.info("setup_task %s " % instance_id)
 
     ip = get_instance_ip(instance_id, settings)
+    logger.debug("Setup %s IP" % ip)
     ssh = open_connection(ip_address=ip, settings=settings)
+    logger.debug("Setup %s ssh" % ssh)
+    
     res = install_deps(ssh, packages=settings['DEPENDS'],
                        settings=settings, instance_id=instance_id)
     logger.debug("install res=%s" % res)
@@ -157,7 +172,7 @@ def setup_multi_task(group_id, settings):
     threads_running = []
     for node in packaged_nodes:
         logger.debug("starting thread")
-        t = threading.Thread(target=setup_worker, args=(node.name,))
+        t = threading.Thread(target=setup_worker, args=(node.id,))
         threads_running.append(t)
         t.start()
     for thread in threads_running:
@@ -196,7 +211,7 @@ def run_multi_task(group_id, output_dir, settings):
     pids = []
     for node in nodes:
         try:
-            pids_for_task = run_task(node.name, settings)
+            pids_for_task = run_task(node.id, settings)
         except PackageFailedError, e:
             logger.error(e)
             logger.error("unable to start package on node %s" % node)
@@ -227,11 +242,11 @@ def prepare_multi_input(group_id, input_dir, settings, seed):
         print ("seed for full package run = %s" % seed)
     else:
         print ("seeds for each node in group %s = %s\
-        " % (group_id, [(x.name, seeds[x]) for x in seeds.keys()]))
+        " % (group_id, [(x.id, seeds[x]) for x in seeds.keys()]))
 
     logger.debug("seeds = %s" % seeds)
     for node in nodes:
-        instance_id = node.name
+        instance_id = node.id
         logger.info("prepare_input %s %s" % (instance_id, input_dir))
         ip = get_instance_ip(instance_id, settings)
         ssh = open_connection(ip_address=ip, settings=settings)
@@ -280,7 +295,7 @@ def _status_of_nodeset(nodes, output_dir, settings):
     finished_nodes = []
 
     for node in nodes:
-        instance_id = node.name
+        instance_id = node.id
         if not is_instance_running(instance_id, settings):
             # An unlikely situation where the node crashed after is was
             # detected as registered.
@@ -290,7 +305,7 @@ def _status_of_nodeset(nodes, output_dir, settings):
         if job_finished(instance_id, settings):
             print "done. output is available"
             get_output(instance_id,
-                       "%s/%s" % (output_dir, node.name),
+                       "%s/%s" % (output_dir, node.id),
                        settings)
             finished_nodes.append(node)
         else:

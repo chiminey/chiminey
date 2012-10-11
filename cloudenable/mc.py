@@ -18,8 +18,6 @@ from hrmcimpl import run_multi_task
 from hrmcimpl import packages_complete
 from hrmcimpl import PackageFailedError
 
-#from hrmcimpl import *
-
 from smartconnector import SmartConnector
 from hrmcstages import Configure
 from hrmcstages import Create
@@ -59,24 +57,26 @@ def start(args):
                       'OUTPUT_FILES', 'TEST_VM_IP',
                       'EC2_ACCESS_KEY', 'EC2_SECRET_KEY',
                       'CLOUD_SLEEP_INTERVAL', 'PRIVATE_KEY_NAME',
-                      'SECURITY_GROUP', 'GROUP_ID_DIR', 'MAX_SEED_INT']
-
-    # import json
-    # #settings = type('', (), {})()
-    # settings = {}
-    # for field in environ_fields:
-    #     #TODO: add multiple sections
-    #     val = config.get("basic", field)
-    #     if '#' in val:  # remove comments
-    #         val, _ = val.split('#', 1)
-    #     try:
-    #         field_val = json.loads(val)    # use JSON to parse values
-    #     except ValueError, e:
-    #         file_val = ""
-    #     # and make fake object to hold them
-    #     settings[field]=field_val
-    #     #setattr(settings, field, field_val)
-    #     logger.debug("%s" % field_val)
+                      'SECURITY_GROUP', 'GROUP_ID_DIR', 'MAX_SEED_INT',
+                      'PROVIDER', 'CUSTOM_PROMPT'
+                      ]
+#['CUSTOM_PROMPT'] "[smart-connector_prompt]$"
+    import json
+    #settings = type('', (), {})()
+    settings = {}
+    for field in environ_fields:
+        #TODO: add multiple sections
+        val = config.get("basic", field)
+        if '#' in val:  # remove comments
+            val, _ = val.split('#', 1)
+        try:
+            field_val = json.loads(val)    # use JSON to parse values
+        except ValueError, e:
+            file_val = ""
+        # and make fake object to hold them
+        settings[field]=field_val
+        #setattr(settings, field, field_val)
+        logger.debug("%s" % field_val)
 
     # get command line options
     parser = OptionParser()
@@ -106,12 +106,20 @@ def start(args):
         HOME_DIR = os.path.expanduser("~")
         global_filesystem = os.path.join(HOME_DIR, "testStages")
         context['global_filesystem'] = global_filesystem
-        context['config.sys'] = "./config.sys.json"
-        number_of_iterations = 2
+        context['provider'] = 'nectar'
+        
+        if context['provider'].lower() == 'nectar':
+            context['config.sys'] = "./config.sys.json"
+        elif context['provider'].lower() == 'amazon':
+            context['config.sys'] =  "./config.sys.json.ec2"
+        else:
+            print "unknown cloud service provider"
+            sys.exit()
+        
+        number_of_iterations = 1
         smart_conn = SmartConnector()
-
-        for stage in (Configure(), Create(), Setup(), Run(), Finished(), Converge(number_of_iterations)):
-            #, Teardown()):#, Check(), Teardown()):
+    
+        for stage in (Configure(), Create(), Setup(), Run(), Finished(), Converge(number_of_iterations)):#, Teardown()):#, Check(), Teardown()):
         #for stage in (Configure(), Transform()):
             smart_conn.register(stage)
 
@@ -141,6 +149,7 @@ def start(args):
 
         clear_temp_files(context)
 
+    
 
     elif 'create' in args:
         if options.number_vm_instances:

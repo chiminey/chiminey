@@ -133,7 +133,11 @@ class FileSystem(object):
         logger.debug("input_dir =%s" % input_dir)
         dirList = os.listdir(input_dir)
         for fname in dirList:
+            
             logger.debug("fname=%s" % fname)
+            #dest = os.path.join("/home/centos",dest)
+            logger.debug("Destination %s" % dest)
+            
             _upload_input(ssh, input_dir,  fname, dest)
 
     def download_output(self, ssh, instance_id, local_filesystem, settings):

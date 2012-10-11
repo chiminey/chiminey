@@ -110,8 +110,9 @@ class ConfigureStageTests(unittest.TestCase):
         HOME_DIR = os.path.expanduser("~")
         global_filesystem = HOME_DIR+'/test_runstageTests'
         context['global_filesystem'] = global_filesystem
-        context['config.sys'] ="./config.sys.json"
-
+        context['config.sys'] = "./config.sys.json"
+        context['provider'] = "nectar"
+        
         con = Configure()
         self.assertTrue(con.triggered(context), True)
         con.process(context)
@@ -152,7 +153,8 @@ class SetupStageTests(unittest.TestCase):
             'DEST_PATH_PREFIX': "package", 'PAYLOAD_CLOUD_DIRNAME': "package",
             'PAYLOAD_LOCAL_DIRNAME': "", 'COMPILER': "g77", 'PAYLOAD': "payload",
             'COMPILE_FILE': "foo", 'MAX_SEED_INT': 100, 'RETRY_ATTEMPTS': 3,
-            'OUTPUT_FILES': ['a', 'b']}
+            'OUTPUT_FILES': ['a', 'b'], 'PROVIDER': "nectar",
+            'CUSTOM_PROMPT': "[smart-connector_prompt]$"}
 
     def test_setup_simple(self):
 
@@ -160,18 +162,16 @@ class SetupStageTests(unittest.TestCase):
                                 sys._getframe().f_code.co_name))
 
         group_id = "sq42kdjshasdkjghauiwytuiawjmkghasjkghasg"
-
+        command_prompt = "[smart-connector_prompt]$"
+        
         # Setup the mocks for SSH and cloud connections
 
         # Fake channel for communicating with server vida socket interface
         fakechan = flexmock(send=lambda str: True)
         fakechan.should_receive('recv') \
-            .and_return('foo [%s@%s ~]$ ' % (self.settings['USER_NAME'],
-                                             self.instance_name)) \
-            .and_return('bar [root@%s %s]# ' % (self.instance_name,
-                                                self.settings['USER_NAME'])) \
-            .and_return('baz [%s@%s ~]$ ' % (self.settings['USER_NAME'],
-                                             self.instance_name))
+            .and_return('foo %s ' % (command_prompt)) \
+            .and_return('bar %s ' % (command_prompt)) \
+            .and_return('baz %s ' % (command_prompt))
         fakechan.should_receive('close').and_return(True)
 
         #exec_mock = ["", flexmock(readlines=lambda: ["done\n"]), ""]
@@ -193,7 +193,7 @@ class SetupStageTests(unittest.TestCase):
         # Make fake cloud connection
         fakeimage = flexmock(id=self.image_name)
         fakesize = flexmock(id=self.vm_size)
-        fakenode_state2 = flexmock(name="foo",
+        fakenode_state2 = flexmock(id="foo",
                                    state=NodeState.RUNNING,
                                    public_ips=[1])
         fakecloud = flexmock(
@@ -216,6 +216,7 @@ class SetupStageTests(unittest.TestCase):
         fs.create(self.local_filesystem, f2)
         print("fs=%s" % fs)
         context = {'filesys': fs}
+        context['provider'] = "nectar"
         print("context=%s" % context)
         s1 = Setup()
 
@@ -260,7 +261,8 @@ class RunStageTests(unittest.TestCase):
             'DEST_PATH_PREFIX': "package", 'PAYLOAD_CLOUD_DIRNAME': "package",
             'PAYLOAD_LOCAL_DIRNAME': "", 'COMPILER': "g77", 'PAYLOAD': "payload",
             'COMPILE_FILE': "foo", 'MAX_SEED_INT': 100, 'RETRY_ATTEMPTS': 3,
-            'OUTPUT_FILES': ['a', 'b']}
+            'OUTPUT_FILES': ['a', 'b'], 'PROVIDER': "nectar",
+            'CUSTOM_PROMPT': "[smart-connector_prompt]$"}
 
     def test_run(self):
 
@@ -291,7 +293,7 @@ class RunStageTests(unittest.TestCase):
         # Make fake cloud connection
         fakeimage = flexmock(id=self.image_name)
         fakesize = flexmock(id=self.vm_size)
-        fakenode_state1 = flexmock(name="foo",
+        fakenode_state1 = flexmock(id="foo",
                                    state=NodeState.RUNNING,
                                    public_ips=[1])
 
@@ -327,6 +329,7 @@ class RunStageTests(unittest.TestCase):
         print("fs=%s" % fs)
         id = "mytestid"
         context = {'filesys': fs, 'id': id}
+        context['provider'] = "nectar"
         print("context=%s" % context)
         s1 = Run()
         res = s1.triggered(context)
@@ -379,7 +382,8 @@ class FinishedStageTests(unittest.TestCase):
             'DEST_PATH_PREFIX': "package", 'PAYLOAD_CLOUD_DIRNAME': "package",
             'PAYLOAD_LOCAL_DIRNAME': "", 'COMPILER': "g77", 'PAYLOAD': "payload",
             'COMPILE_FILE': "foo", 'MAX_SEED_INT': 100, 'RETRY_ATTEMPTS': 3,
-            'OUTPUT_FILES': ['a', 'b']}
+            'OUTPUT_FILES': ['a', 'b'], 'PROVIDER': "nectar",
+            'CUSTOM_PROMPT': "[smart-connector_prompt]$"}
 
     def test_finished(self):
 
@@ -410,7 +414,7 @@ class FinishedStageTests(unittest.TestCase):
         # Make fake cloud connection
         fakeimage = flexmock(id=self.image_name)
         fakesize = flexmock(id=self.vm_size)
-        fakenode_state1 = flexmock(name="foo",
+        fakenode_state1 = flexmock(id="foo",
                                    state=NodeState.RUNNING,
                                    public_ips=[1])
 
@@ -448,6 +452,7 @@ class FinishedStageTests(unittest.TestCase):
         print("fs=%s" % fs)
         id = "mytestid"
         context = {'filesys': fs, 'id': id}
+        context['provider'] = "nectar"
         print("context=%s" % context)
         s1 = Finished()
         res = s1.triggered(context)
@@ -679,7 +684,8 @@ class CloudTests(unittest.TestCase):
             'DEST_PATH_PREFIX': "package", 'PAYLOAD_CLOUD_DIRNAME': "package",
             'PAYLOAD_LOCAL_DIRNAME': "", 'COMPILER': "g77", 'PAYLOAD': "payload",
             'COMPILE_FILE': "foo", 'MAX_SEED_INT': 100, 'RETRY_ATTEMPTS': 3,
-            'OUTPUT_FILES': ['a', 'b']}
+            'OUTPUT_FILES': ['a', 'b'], 'PROVIDER': "nectar",
+            'CUSTOM_PROMPT': "[smart-connector_prompt]$"}
 
     def test_create_connection(self):
 
@@ -702,10 +708,10 @@ class CloudTests(unittest.TestCase):
         # Make fake cloud connection
         fakeimage = flexmock(id=self.image_name)
         fakesize = flexmock(id=self.vm_size)
-        fakenode_state1 = flexmock(name="foo",
+        fakenode_state1 = flexmock(id="foo",
                                    state=NodeState.PENDING,
                                    public_ips=[1])
-        fakenode_state2 = flexmock(name="foo",
+        fakenode_state2 = flexmock(id="foo",
                                    state=NodeState.RUNNING,
                                    public_ips=[1])
 
@@ -780,10 +786,10 @@ class CloudTests(unittest.TestCase):
         # Make fake cloud connection
         fakeimage = flexmock(id=self.image_name)
         fakesize = flexmock(id=self.vm_size)
-        fakenode_state1 = flexmock(name="foo",
+        fakenode_state1 = flexmock(id="foo",
                                    state=NodeState.PENDING,
                                    public_ips=[1])
-        fakenode_state2 = flexmock(name="foo",
+        fakenode_state2 = flexmock(id="foo",
                                    state=NodeState.RUNNING,
                                    public_ips=[1])
 
@@ -829,7 +835,7 @@ class CloudTests(unittest.TestCase):
         # Make fake cloud connection
         fakeimage = flexmock(id=self.image_name)
         fakesize = flexmock(id=self.vm_size)
-        fakenode_state1 = flexmock(name="foo", state=NodeState.RUNNING,
+        fakenode_state1 = flexmock(id="foo", state=NodeState.RUNNING,
                                    public_ips=[1])
 
         fakecloud = flexmock(
@@ -869,7 +875,7 @@ class CloudTests(unittest.TestCase):
         # Make fake cloud connection
         fakeimage = flexmock(id=self.image_name)
         fakesize = flexmock(id=self.vm_size)
-        fakenode_state1 = flexmock(name="foo",
+        fakenode_state1 = flexmock(id="foo",
                                  state=NodeState.RUNNING,
                                  public_ips=[1])
 
@@ -915,7 +921,7 @@ class CloudTests(unittest.TestCase):
         # Make fake cloud connection
         fakeimage = flexmock(id=self.image_name)
         fakesize = flexmock(id=self.vm_size)
-        fakenode_state1 = flexmock(name="foo",
+        fakenode_state1 = flexmock(id="foo",
                                    state=NodeState.RUNNING,
                                    public_ips=[1])
         fakecloud = flexmock(
@@ -954,7 +960,7 @@ class CloudTests(unittest.TestCase):
         # Make fake cloud connection
         fakeimage = flexmock(id=self.image_name)
         fakesize = flexmock(id=self.vm_size)
-        fakenode_state1 = flexmock(name="foo",
+        fakenode_state1 = flexmock(id="foo",
                                    state=NodeState.RUNNING,
                                    public_ips=[1])
         fakecloud = flexmock(
@@ -973,23 +979,23 @@ class CloudTests(unittest.TestCase):
         res = collect_instances(self.settings, group_id="foobar")
         logger.debug("res= %s" % res)
         self.assertEquals(len(res), 1)
-        self.assertEquals(res[0].name, "foo")
+        self.assertEquals(res[0].id, "foo")
         res = collect_instances(self.settings, instance_id=self.instance_name)
         self.assertEquals(len(res), 1)
-        self.assertEquals(res[0].name, "foo")
+        self.assertEquals(res[0].id, "foo")
         res = collect_instances(self.settings, all_VM=True)
         self.assertEquals(len(res), 1)
-        self.assertEquals(res[0].name, "foo")
+        self.assertEquals(res[0].id, "foo")
 
     def test_destroy_environ(self):
         logger.debug("test_destroy_environ")
         # first node starts terminated, and second is there after one check
-        fakenode1 = flexmock(name="foo",
+        fakenode1 = flexmock(id="foo",
                              state=NodeState.TERMINATED,
                              public_ips=[1])
-        fakenode2_state1 = flexmock(name="foo",
+        fakenode2_state1 = flexmock(id="foo",
                                     state=NodeState.RUNNING, public_ips=[1])
-        fakenode2_state2 = flexmock(name="foo",
+        fakenode2_state2 = flexmock(id="foo",
                                     state=NodeState.TERMINATED,
                                     public_ips=[1])
 
