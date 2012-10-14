@@ -210,7 +210,7 @@ class Configure(Stage, UI):
         return context
 
 
-class Create(Stage):
+class Schedule(Stage):
 
     def __init__(self):
         self.settings = {}
@@ -225,6 +225,84 @@ class Create(Stage):
             if not get_run_info(context):
                 self.settings = get_settings(context)
                 logger.debug("settings = %s" % self.settings)
+                return True
+        return False
+
+    def process(self, context):
+        """ Determine the provider
+        """
+        self.provider = "nectar"
+        questions = [
+            ['S', 'M', "L"],
+            ['1', '10', "100", "1000"]]
+
+        self.answers = []
+        for (quest_num, question) in enumerate(questions):
+            print "Question %d" % (quest_num + 1)
+
+            valid_input = False
+            number_of_fails = 0
+            while (not valid_input):
+                for (choice_num, choice) in enumerate(question):
+                    print "%d %s" % (choice_num + 1, choice)
+
+                input = raw_input("Enter choice: ")
+                print input
+                mychoice = ""
+                try:
+                    mychoice = int(input)
+                except ValueError as e:
+                    print "Invalid input: %s" % e
+                    number_of_fails += 1
+                else:
+                    if mychoice in range(1,len(question)+1):
+                        valid_input = True
+                    else:
+                        print "Please type number of answer: %s" % mychoice
+                        number_of_fails += 1
+
+            self.answers.append(int(mychoice))
+
+        return self.answers
+
+    def output(self, context):
+        """
+        Create a runfinos.sys file in filesystem with new group_id and provider
+        """
+
+
+        local_filesystem = 'default'
+        data_object = DataObject("runinfo.sys")
+        data_object.create(json.dumps({'group_id': self.group_id,
+                                       'seed': self.seed,
+                                       'PROVIDER': self.provider}))
+        filesystem = get_filesys(context)
+        filesystem.create(local_filesystem, data_object)
+        return context
+
+
+class Create(Stage):
+
+    def __init__(self):
+        self.settings = {}
+        self.group_id = ''
+        self.provider = None
+
+    def triggered(self, context):
+        """
+            Return True if there is a file system and a filesystem and there is a provider
+            but now group_id
+        """
+        self.settings = get_settings(context)
+        self.run_info = get_run_info(context)
+
+        if self.settings and self.run_info:
+            if 'PROVIDER' in self.run_info:
+                self.provider = self.run_info['PROVIDER']
+                if 'group_id' in self.run_info:
+                    return False
+                self.settings.update(run_info)  # merge all settings
+
                 return True
         return False
 
@@ -278,7 +356,7 @@ class Setup(Stage):
 
         self.packaged_nodes = get_rego_nodes(self.group_id, self.settings)
         logger.debug("packaged_nodes = %s" % self.packaged_nodes)
-        
+
         logger.debug("Setup on %s" % self.settings['PROVIDER'])
         return len(self.packaged_nodes)
 

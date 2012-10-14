@@ -57,6 +57,7 @@ from hrmcstages import Configure
 from hrmcstages import Setup
 from hrmcstages import Run
 from hrmcstages import Finished
+from hrmcstages import Schedule
 #from hrmcstages import Teardown
 
 from filesystem import DataObject
@@ -112,7 +113,7 @@ class ConfigureStageTests(unittest.TestCase):
         context['global_filesystem'] = global_filesystem
         context['config.sys'] = "./config.sys.json"
         context['provider'] = "nectar"
-        
+
         con = Configure()
         self.assertTrue(con.triggered(context), True)
         con.process(context)
@@ -163,7 +164,7 @@ class SetupStageTests(unittest.TestCase):
 
         group_id = "sq42kdjshasdkjghauiwytuiawjmkghasjkghasg"
         command_prompt = "[smart-connector_prompt]$"
-        
+
         # Setup the mocks for SSH and cloud connections
 
         # Fake channel for communicating with server vida socket interface
@@ -1016,6 +1017,67 @@ class CloudTests(unittest.TestCase):
 from metadata import process_all
 
 
+class SchedulerStageTest(unittest.TestCase):
+
+    def setUp(self):
+        pass
+
+    def test_decisiontree(self):
+        self.assertEquals(True, True)
+        import DecisionTree
+
+        training_datafile = os.path.join("testing", "decisiontree", "training.dat")
+
+        dt = DecisionTree.DecisionTree(
+            training_datafile=training_datafile,
+            entropy_threshold=0.1,
+            max_depth_desired=3,
+            debug1=1,
+            debug2=1,
+           )
+        dt.get_training_data()
+
+        #   UNCOMMENT THE FOLLOWING LINE if you would like to see the training
+        #   data that was read from the disk file:
+        #dt.show_training_data()
+
+        root_node = dt.construct_decision_tree_classifier()
+
+        #   UNCOMMENT THE FOLLOWING LINE if you would like to see the decision
+        #   tree displayed in your terminal window:
+        #root_node.display_decision_tree("   ")
+
+        test_sample = ['exercising=>never',
+                       'smoking=>heavy',
+                       'fatIntake=>heavy',
+                       'videoAddiction=>heavy']
+
+        classification = dt.classify(root_node, test_sample)
+        which_classes = list(classification.keys())
+        which_classes = sorted(which_classes, key=lambda x: classification[x], reverse=True)
+        print("\nClassification:\n")
+        for which_class in which_classes:
+            print("     " + str.ljust(which_class, 20) + "  =>  " + str(classification[which_class]))
+
+        print("\n\n")
+        print("Number of nodes created: ", root_node.how_many_nodes())
+
+    def test_simple(self):
+        stage = Schedule()
+        tests = [(["2\n", "3\n"],[2,3]),
+                     (["0\n","1\n","0\n","2\n"],[1,2]),
+                     (["foo\n","1\n","bar\n","2\n"],[1,2]),
+                     (["-1\n","1\n","-1\n","2\n"],[1,2]),
+                     (["4\n","3\n","5\n","4\n"],[3,4]),
+                     ]
+        for (response, test) in tests:
+            mymock = flexmock(sys.modules['__builtin__'])
+            mymock.should_receive('raw_input').and_return(*test).one_by_one()
+            res = stage.process({})
+            self.assertEquals(res, test)
+
+
+
 class MetadataTests(unittest.TestCase):
     """
     Tests stage which extracts metadata from found VASP datafiles
@@ -1026,15 +1088,13 @@ class MetadataTests(unittest.TestCase):
 
     def test_vasp_extraction(self):
         """ Extract metadata from a set of VASP datafiles into a JSON file"""
-        import time
         path = "./testing/dataset1"
-        begins = time.time()
         res = process_all(path)
         import json
-        dump = json.dumps(res,indent=1)
+        dump = json.dumps(res, indent=1)
         # read in stored correct answer
-        test_text = open(os.path.join(path,'test_check.json'),'r').read()
-        self.assertEquals(dump,test_text)
+        test_text = open(os.path.join(path, 'test_check.json'), 'r').read()
+        self.assertEquals(dump, test_text)
 
 
 if __name__ == '__main__':
