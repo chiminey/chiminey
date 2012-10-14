@@ -101,7 +101,6 @@ def get_settings(context):
     res = json.loads(settings_text)
     #logger.debug("res=%s" % dict(res))
     settings = dict(res)
-    settings['PROVIDER'] = context['provider']
     return settings
 
 
