@@ -6,6 +6,7 @@ PRIVATE_KEY_NAME = "your_key" #the name of the private key
 SECURITY_GROUP = ["ssh"]
 VM_SIZE = "m1.small"
 VM_IMAGE= "ami-0000000d"
+CUSTOM_PROMPT = "[smart-connector_prompt]$"
 
 GROUP_ID_DIR = "group_id"
 PAYLOAD_LOCAL_DIRNAME = "/home/iyusuf/cloudenabling/payload" # The directory of the payload to be deployed on the cloud

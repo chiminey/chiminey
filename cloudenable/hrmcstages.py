@@ -179,7 +179,7 @@ class Configure(Stage, UI):
     """
     def triggered(self, context):
         """
-        True if filesystem exists in context
+        True if filesystem does not exist in context
         """
         if not get_filesys(context):
             return True
@@ -322,6 +322,8 @@ class Schedule(Stage):
 
         self.provider = which_classes[0]
 
+        #FIXME: until correct dtree created we override results
+        self.provider = 'nectar'
 
         local_filesystem = 'default'
         data_object = DataObject("runinfo.sys")
@@ -351,7 +353,7 @@ class Create(Stage):
                 self.provider = self.run_info['PROVIDER']
                 if 'group_id' in self.run_info:
                     return False
-                self.settings.update(run_info)  # merge all settings
+                self.settings.update(self.run_info)  # merge all settings
 
                 return True
         return False

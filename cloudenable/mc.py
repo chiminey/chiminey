@@ -26,6 +26,7 @@ from hrmcstages import Run
 from hrmcstages import Finished
 from hrmcstages import Converge
 from hrmcstages import Teardown
+from hrmcstages import Schedule
 from hrmcstages import clear_temp_files
 
 logger = logging.getLogger(__name__)
@@ -107,7 +108,7 @@ def start(args):
         global_filesystem = os.path.join(HOME_DIR, "testStages")
         context['global_filesystem'] = global_filesystem
         context['provider'] = 'nectar'
-        
+
         if context['provider'].lower() == 'nectar':
             context['config.sys'] = "./config.sys.json"
         elif context['provider'].lower() == 'amazon':
@@ -115,11 +116,11 @@ def start(args):
         else:
             print "unknown cloud service provider"
             sys.exit()
-        
+
         number_of_iterations = 1
         smart_conn = SmartConnector()
-    
-        for stage in (Configure(), Create(), Setup(), Run(), Finished(), Converge(number_of_iterations)):#, Teardown()):#, Check(), Teardown()):
+
+        for stage in (Configure(), Schedule(), Create(), Setup(), Run(), Finished(), Converge(number_of_iterations)):#, Teardown()):#, Check(), Teardown()):
         #for stage in (Configure(), Transform()):
             smart_conn.register(stage)
 
@@ -149,7 +150,7 @@ def start(args):
 
         clear_temp_files(context)
 
-    
+
 
     elif 'create' in args:
         if options.number_vm_instances:
