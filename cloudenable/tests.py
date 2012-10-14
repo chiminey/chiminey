@@ -39,8 +39,8 @@ import sshconnector
 
 #from hrmcstages import get_filesys
 #from hrmcstages import get_file
-#from hrmcstages import get_run_info
-#from hrmcstages import get_run_info_file
+from hrmcstages import get_run_info
+from hrmcstages import get_run_info_file
 
 from hrmcstages import get_settings
 
@@ -1018,6 +1018,9 @@ from metadata import process_all
 
 
 class SchedulerStageTest(unittest.TestCase):
+    HOME_DIR = os.path.expanduser("~")
+    global_filesystem = os.path.join(HOME_DIR, "test_schedulerstagetests")
+    local_filesystem = 'default'
 
     def setUp(self):
         pass
@@ -1063,18 +1066,32 @@ class SchedulerStageTest(unittest.TestCase):
         print("Number of nodes created: ", root_node.how_many_nodes())
 
     def test_simple(self):
+        context = {}
+
+        fs = FileSystem(self.global_filesystem, self.local_filesystem)
+        print("fs=%s" % fs)
+        context = {'filesys': fs}
+
         stage = Schedule()
-        tests = [(["2\n", "3\n"],[2,3]),
-                     (["0\n","1\n","0\n","2\n"],[1,2]),
-                     (["foo\n","1\n","bar\n","2\n"],[1,2]),
-                     (["-1\n","1\n","-1\n","2\n"],[1,2]),
-                     (["4\n","3\n","5\n","4\n"],[3,4]),
-                     ]
+        tests = [
+            (["2\n", "3\n", "2\n", "3\n"], [2, 3, 2, 3]),
+            (["0\n", "1\n", "0\n", "2\n", "2\n", "3\n"], [1, 2, 2, 3]),
+            (["foo\n", "1\n", "bar\n", "2\n", "2\n", "3\n"], [1, 2, 2, 3]),
+            (["-1\n", "1\n", "-1\n", "2\n", "2\n", "3\n"], [1, 2, 2, 3]),
+            (["4\n", "3\n", "5\n", "4\n", "2\n", "3\n"], [3, 4, 2, 3]),
+            ]
         for (response, test) in tests:
             mymock = flexmock(sys.modules['__builtin__'])
             mymock.should_receive('raw_input').and_return(*test).one_by_one()
-            res = stage.process({})
+            res = stage.process(context)
             self.assertEquals(res, test)
+        context =  stage.output(context)
+        run_info_file = get_run_info_file(context)
+        logger.debug("run_info_file=%s" % run_info_file)
+        run_info = get_run_info(context)
+        provider = run_info['PROVIDER']
+        self.assertEquals(provider,"malignant")
+
 
 
 
