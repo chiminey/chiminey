@@ -1090,7 +1090,7 @@ class SchedulerStageTest(unittest.TestCase):
         logger.debug("run_info_file=%s" % run_info_file)
         run_info = get_run_info(context)
         provider = run_info['PROVIDER']
-        self.assertEquals(provider,"malignant")
+        self.assertEquals(provider,"nectar")
 
 
 
