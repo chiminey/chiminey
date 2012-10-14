@@ -232,18 +232,26 @@ class Schedule(Stage):
         """ Determine the provider
         """
         self.provider = "nectar"
+
         questions = [
-            ['S', 'M', "L"],
-            ['1', '10', "100", "1000"]]
+            ('Smoking', "Are you a smoker?", ['heavy', 'medium', 'light', 'never']),
+            ('videoAddiction', "How much to use videos", ['none', 'low', 'medium', 'heavy']),
+            ('fatIntake', 'Weight?', ['low', 'medium', 'heavy']),
+            ('exercising', 'Amount of exercise', ['never', 'occasionally', 'regularly'])]
+
+
+        # questions = [
+        #     ('Size', 'Choose the size of VM:', ['S', 'M', "L"]),
+        #     ('Speed', 'Choose the speed of VM:', ['1', '10', "100", "1000"])]
 
         self.answers = []
-        for (quest_num, question) in enumerate(questions):
-            print "Question %d" % (quest_num + 1)
+        for (quest_num, (question_name, question_desc, question_choices)) in enumerate(questions):
+            print "Question %d: %s\n%s\n" % (quest_num + 1, question_name, question_desc)
 
             valid_input = False
             number_of_fails = 0
             while (not valid_input):
-                for (choice_num, choice) in enumerate(question):
+                for (choice_num, choice) in enumerate(question_choices):
                     print "%d %s" % (choice_num + 1, choice)
 
                 input = raw_input("Enter choice: ")
@@ -255,7 +263,7 @@ class Schedule(Stage):
                     print "Invalid input: %s" % e
                     number_of_fails += 1
                 else:
-                    if mychoice in range(1,len(question)+1):
+                    if mychoice in range(1, len(question_choices) + 1):
                         valid_input = True
                     else:
                         print "Please type number of answer: %s" % mychoice
@@ -270,12 +278,54 @@ class Schedule(Stage):
         Create a runfinos.sys file in filesystem with new group_id and provider
         """
 
+        import DecisionTree
+
+        training_datafile = 'provider_training.dat'
+
+        dt = DecisionTree.DecisionTree(
+            training_datafile=training_datafile,
+            entropy_threshold=0.1,
+            max_depth_desired=3,
+            debug1=0,
+            debug2=0,
+           )
+        dt.get_training_data()
+
+        #   UNCOMMENT THE FOLLOWING LINE if you would like to see the training
+        #   data that was read from the disk file:
+        #dt.show_training_data()
+
+        root_node = dt.construct_decision_tree_classifier()
+
+        #   UNCOMMENT THE FOLLOWING LINE if you would like to see the decision
+        #   tree displayed in your terminal window:
+        #root_node.display_decision_tree("   ")
+
+
+        test_sample = ['exercising=>never',
+                       'smoking=>heavy',
+                       'fatIntake=>heavy',
+                       'videoAddiction=>heavy']
+
+        classification = dt.classify(root_node, test_sample)
+        which_classes = list(classification.keys())
+        which_classes = sorted(which_classes, key=lambda x: classification[x], reverse=True)
+
+
+        logger.debug("\nClassification:\n")
+        for which_class in which_classes:
+            logger.debug("     " + str.ljust(which_class, 20) + "  =>  " + str(classification[which_class]))
+
+        logger.debug("\n\n")
+        logger.debug(("Number of nodes created: ", root_node.how_many_nodes()))
+
+
+        self.provider = which_classes[0]
+
 
         local_filesystem = 'default'
         data_object = DataObject("runinfo.sys")
-        data_object.create(json.dumps({'group_id': self.group_id,
-                                       'seed': self.seed,
-                                       'PROVIDER': self.provider}))
+        data_object.create(json.dumps({'PROVIDER': self.provider}))
         filesystem = get_filesys(context)
         filesystem.create(local_filesystem, data_object)
         return context
