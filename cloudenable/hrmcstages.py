@@ -421,6 +421,9 @@ class Setup(Stage):
         Store number of packages nodes as setup_finished in runinfo.sys
         """
         update_key('setup_finished', len(self.packaged_nodes), context)
+        # So initial input goes in input_0 directory
+        update_key('id', 0, context)
+
         return context
 
 
@@ -753,50 +756,126 @@ class Transform(Stage):
 
         if 'id' in self.settings:
             self.id = self.settings['id']
-            self.output_dir = "output_%s" % self.id
-            self.input_dir = "input_%s" % self.id
+            self.output_dir = "output_%d" % self.id
+            self.input_dir = "input_%d" % self.id
+            self.new_input_dir = "input_%d" % (self.id + 1)
         else:
             self.output_dir = "output"
             self.output_dir = "input"
+            self.new_input_dir = "input_1"  # FIXME: first iteralation does not have suffix?
 
         return True
 
     def process(self, context):
-        #import subprocess
-        import re
-        filesystem = get_filesys(context)
-        file_rmcen = os.path.join(self.output_dir, 'rmcen.inp')
-        logger.debug("file_rmcen=%s" % file_rmcen)
-
-        numb = [x.split()[0] for x
-            in filesystem.retrieve(file_rmcen).retrieve().split('\n')
-            if 'numbfile' in x]
-
-        #command = []
-        #command.append('grep')
-        #command.append('numbfile')
-        #number_line = filesystem.exec_command(file_rmcen, command)
-        #number_line_split = number_line.split()
-        #number = number_line_split[0]
-        self.number = -1
-        if numb:
-            self.number = int(numb[0])
-        else:
-            raise ValueError("No numbfile record found")
-
-        file_grerr = os.path.join(filesystem.get_global_filesystem(),
-                                   self.output_dir, 'grerr*.dat')
         import glob
-        grerr_files = glob.glob(file_grerr)
-        grerr_files.sort()  # FIXME: only guaranteed to sort grerr01 - gree9
-        logger.debug("grerr_files=%s " % grerr_files)
-        grerr_content = filesystem.retrieve(
-            os.path.join(self.output_dir, os.path.basename(grerr_files[-1]))).retrieve()
-        self.criterion = int(grerr_content.strip().split('\n')[-1].split()[0])
+        import re
+        #import shutil
 
-        #import ipdb; ipdb.set_trace()
+        audit = ""
+        res = []
+        filesystem = get_filesys(context)
+        cand_output_dir = os.path.join(filesystem.get_global_filesystem(), 'output_[0-9]+')
+        cand_output_dirs = glob.glob(cand_output_dir)
+        for cand_output_dir in cand_output_dirs:
+            if not os.path.is_dir(cand_output_dir):
+                logger.warn("%s is not a directory" % cand_output_dir)
+                # FIXME: do we really want to skip here?
+                continue
+            file_rmcen = os.path.join(cand_output_dir, 'rmcen.inp')
+            if not os.path.exists(file_rmcen):
+                logger.warn("%s not found" % file_rmcen)
+                # FIXME: do we really want to skip here?
+                continue
+            if not os.path.isfile(file_rmcen):
+                logger.warn("%s not a file" % file_rmcen)
+                # FIXME: do we really want to skip here?
+                continue
+            logger.debug("file_rmcen=%s" % file_rmcen)
+            numb = [x.split()[0] for x
+                in filesystem.retrieve(file_rmcen).retrieve().split('\n')
+                if 'numbfile' in x]
+            if numb:
+                number = int(numb[0])
+            else:
+                raise ValueError("No numbfile record found")
+            file_grerr = os.path.join(filesystem.get_global_filesystem(),
+                                       self.output_dir, 'grerr[0-9]+.dat')
+            grerr_files = glob.glob(file_grerr)
+            grerr_files.sort()  # FIXME: only guaranteed to sort grerr01 - grerr09
+            logger.debug("grerr_files=%s " % grerr_files)
+            grerr_content = filesystem.retrieve(
+                os.path.join(cand_output_dir, os.path.basename(grerr_files[-1]))).retrieve()
+            criterion = int(grerr_content.strip().split('\n')[-1].split()[0])
+            res.append((cand_output_dir, number, criterion))
+            #import ipdb; ipdb.set_trace()
 
-        print "Run %s preserved (error %s)" % (self.number, self.criterion)
+        #FIXME: select the lowest criterion?
+        logger.debug("res=%s" % res)
+        res = sorted(res, key=lambda x: x[2])
+        logger.debug("res=%s" % res)
+        if res:
+            (best_output_dir, number, criterion) = res[0]
+        else:
+            # FIXME: can we carry on here?
+            logger.warning("no output directory found")
+            (best_output_dir, number, criterion) = (self.output_dir, 0, 0)  # ?
+
+        audit += "Run %s preserved (error %s)\n" % (number, criterion)
+        logger.debug("output_dir=%s" % best_output_dir)
+
+        # FIXME: what is the number?  Is it just the iteration number of something more?
+
+
+        filesystem.create_local_filesystem(self.new_input_dir)
+        #os.makedirs(self.new_input_dir)
+
+        # transfer rmcen.inp to next iteration
+        filesystem.copy(self.input_dir, 'rmcen.inp', self.new_input_dir)
+
+        # copy best hrmc*.xyz file to new input directory as initial.xyz
+        # FIXME: what if there are multiple matches? DO we choose the largest?
+        xyzfiles = glob.glob(os.path.join(best_output_dir, 'hrmc[0-9]+.xyz'))
+
+        for file in xyzfiles:
+            filesystem.copy(file, self.new_input_dir)
+
+        #NB: only works for small files
+        text = open(os.path.join(self.new_input_dir, "rmcen.inp"), "r").read()
+
+        # increment rmcen.input numbfile value.  FIXME: is this correct?
+        p = re.compile("^([0-9])*[ \t]*numbfile.*$", re.MULTILINE)
+
+        # numbfile should match iteration number but read version first
+        m = p.match(text)
+        if m:
+            numbfile = int(m.group(1))
+        else:
+            numbfile = self.id
+        text = p.sub("%d    numbfile" % (numbfile + 1), text)
+
+        # change istart
+        p = re.compile("^([0-9])*[ \t]*istart.*$", re.MULTILINE)
+        m = p.match(text)
+        if m:
+            text = p.sub("1     istart", text)
+        else:
+            logger.warn("Cloud not find istart in rmcen.inp")
+
+        # write back changes
+        f = open("rmcen.inp", "w")
+        f.write(text)
+        f.close()
+
+        audit += "spawning diamond runs\n"
+
+        # make input_x
+        # copy best hrmc*.xyz to input_x/initial.xyz
+        # copy rmcen.inp to input_x/
+        # add one to input_x/rmcen.inp numbfile
+        # create new iseeds for input_x/rmcen.inp iseed
+        # for second run turn istart to 1
+
+
         #command = []
         #command.append('tail')
         #command.append('-n')

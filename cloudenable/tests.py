@@ -58,6 +58,7 @@ from hrmcstages import Setup
 from hrmcstages import Run
 from hrmcstages import Finished
 from hrmcstages import Schedule
+from hrmcstages import Transform
 #from hrmcstages import Teardown
 
 from filesystem import DataObject
@@ -1127,7 +1128,7 @@ class TransformStageTests(unittest.TestCase):
         f1 = DataObject("config.sys")
         f1.create(json.dumps(self.settings))
         f2 = DataObject("runinfo.sys")
-        id_to_test =42
+        id_to_test = 42
         f2.create(json.dumps({'group_id': group_id, 'id':id_to_test}))
         f3 = DataObject("rmcen.inp")
         f3.setContent("firstline\n%d numbfile simulation run number\n" % test_number)
@@ -1138,9 +1139,10 @@ class TransformStageTests(unittest.TestCase):
         print("f2=%s" % f2)
         fs = FileSystem(self.global_filesystem, self.local_filesystem)
         fs.create_local_filesystem("output_%s" % id_to_test)
+        fs.create_local_filesystem("input_%s" % id_to_test)
         fs.create(self.local_filesystem, f1)
         fs.create(self.local_filesystem, f2)
-        fs.create("output_%s" % id_to_test, f3)
+        fs.create("input_%s" % id_to_test, f3)
         fs.create("output_%s" % id_to_test, f4)
         fs.create("output_%s" % id_to_test, f5)
 

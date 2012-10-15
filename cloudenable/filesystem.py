@@ -23,6 +23,7 @@ import os
 import time
 
 from fs.osfs import OSFS
+from fs import path
 import shutil
 import tempfile
 
@@ -38,7 +39,11 @@ logger = logging.getLogger(__name__)
 
 
 class FileSystem(object):
-   # def __init__(self, global_filesystem):
+    # FIXME: these methods should not interact with the underlying filesystem
+    # directory, and should only interact vis osfs api calls.  For example,
+    # use fs.mkdir not os.mkdir.__doc__
+
+    # def __init__(self, global_filesystem):
 
     def __init__(self, global_filesystem, local_filesystem=None):
         self._create_global_filesystem(global_filesystem)
@@ -60,7 +65,17 @@ class FileSystem(object):
 
     def get_global_filesystem(self):
         return self.global_filesystem
-    
+
+
+    def create_local_filesystem(self, local_filesystem):
+        """
+        Creates an additional local filesystem in addition to those created at init
+        """
+        if not self.connector_fs.exists(local_filesystem):
+            self.connector_fs.makedir(local_filesystem)
+        return True
+
+
     def create(self, local_filesystem, data_object, message='CREATED'):
         if not self.connector_fs.exists(local_filesystem):
             logger.error("Destination filesystem '%s' does not exist"
@@ -118,7 +133,7 @@ class FileSystem(object):
         """
         path_to_subdirectories =  os.path.join(self.global_filesystem, local_filesystem)
         list_of_subdirectories = os.listdir(path_to_subdirectories)
-        
+
         return list_of_subdirectories
 
     def delete_local_filesystem(self, local_filesystem):
@@ -126,37 +141,46 @@ class FileSystem(object):
         Deleted a local file system
         """
         path_to_local_filesystem =  os.path.join(self.global_filesystem, local_filesystem)
+        #FIXME: should use appropriate osfs API here
         shutil.rmtree(path_to_local_filesystem)
-       
+
     def upload_input(self, ssh, local_filesystem, dest):
         input_dir = os.path.join(self.global_filesystem, local_filesystem)
         logger.debug("input_dir =%s" % input_dir)
         dirList = os.listdir(input_dir)
         for fname in dirList:
-            
+
             logger.debug("fname=%s" % fname)
             #dest = os.path.join("/home/centos",dest)
             logger.debug("Destination %s" % dest)
-            
+
             _upload_input(ssh, input_dir,  fname, dest)
 
     def download_output(self, ssh, instance_id, local_filesystem, settings):
         output_dir = os.path.join(self.global_filesystem, local_filesystem, instance_id)
         get_output(instance_id, output_dir, settings)
-        
+
     def exec_command(self, file_to_be_executed, command, wildcard=False):
         import subprocess
+
         absolute_path_to_file = os.path.join(
-                                             self.global_filesystem, 
+                                             self.global_filesystem,
                                              file_to_be_executed)
         if wildcard:
-            import glob
-            
+            import glob  # Why is this here?
+
         command.append(absolute_path_to_file)
         proc = subprocess.Popen(command, stdout=subprocess.PIPE)
         output = proc.stdout.read()
         return output
-    
+
+    def copy(self, source_dir, file, dest_dir):
+        self.connector_fs.copy(path.join(source_dir, file), dest_dir)
+
+
+    # TODO: need to build glob function for pyfilesystem, may have to walk directory and
+    # do manual regex matching as pytfilesystem doesn't provide that function.
+
 
 class DataObject(object):
     # Assume that whole file is contained in one big string
