@@ -1095,6 +1095,78 @@ class SchedulerStageTest(unittest.TestCase):
 
 
 
+class TransformStageTests(unittest.TestCase):
+
+    HOME_DIR = os.path.expanduser("~")
+    global_filesystem = os.path.join(HOME_DIR, "test_transformstagetests")
+    local_filesystem = 'default'
+
+    def setUp(self):
+        logging.config.fileConfig('logging.conf')
+        self.vm_size = 100
+        self.image_name = "ami-0000000d"  # FIXME: is hardcoded in
+                                          # simplepackage
+        self.instance_name = "foo"
+        self.settings = {
+            'USER_NAME':  "accountname", 'PASSWORD':  "mypassword",
+            'GROUP_DIR_ID': "test", 'EC2_ACCESS_KEY': "",
+            'EC2_SECRET_KEY': "", 'VM_SIZE': self.vm_size,
+            'VM_IMAGE': "ami-0000000d",
+            'PRIVATE_KEY_NAME': "", 'PRIVATE_KEY': "", 'SECURITY_GROUP': "",
+            'CLOUD_SLEEP_INTERVAL': 0, 'GROUP_ID_DIR': "", 'DEPENDS': ('a',),
+            'DEST_PATH_PREFIX': "package", 'PAYLOAD_CLOUD_DIRNAME': "package",
+            'PAYLOAD_LOCAL_DIRNAME': "", 'COMPILER': "g77", 'PAYLOAD': "payload",
+            'COMPILE_FILE': "foo", 'MAX_SEED_INT': 100, 'RETRY_ATTEMPTS': 3,
+            'OUTPUT_FILES': ['a', 'b']}
+
+    def test_get_output_numbers(self):
+        group_id = "sq42kdjshasdkjghauiwytuiawjmkghasjkghasg"
+         # Setup fsys and initial config files for setup
+        test_criterion = 789
+        test_number = 101
+        f1 = DataObject("config.sys")
+        f1.create(json.dumps(self.settings))
+        f2 = DataObject("runinfo.sys")
+        id_to_test =42
+        f2.create(json.dumps({'group_id': group_id, 'id':id_to_test}))
+        f3 = DataObject("rmcen.inp")
+        f3.setContent("firstline\n%d numbfile simulation run number\n" % test_number)
+        f4 = DataObject("grerr02.dat")
+        f4.setContent("123 456\n%d 0123\n" % test_criterion)
+        f5 = DataObject("grerr01.dat")
+        f5.setContent("abc def\nghi jkl\n")
+        print("f2=%s" % f2)
+        fs = FileSystem(self.global_filesystem, self.local_filesystem)
+        fs.create_local_filesystem("output_%s" % id_to_test)
+        fs.create(self.local_filesystem, f1)
+        fs.create(self.local_filesystem, f2)
+        fs.create("output_%s" % id_to_test, f3)
+        fs.create("output_%s" % id_to_test, f4)
+        fs.create("output_%s" % id_to_test, f5)
+
+        print("fs=%s" % fs)
+        context = {'filesys': fs}
+        print("context=%s" % context)
+        s1 = Transform()
+        res = s1.triggered(context)
+        print res
+        self.assertEquals(res, True)
+        self.assertEquals(s1.output_dir,"output_%s" % id_to_test)
+        self.assertEquals(s1.input_dir,"input_%s" % id_to_test)
+        self.assertEquals(s1.group_id, group_id)
+
+
+        s1.process(context)
+        self.assertEquals(s1.number,test_number)
+        self.assertEquals(s1.criterion,test_criterion)
+        # s1.output(context)
+        # config = fs.retrieve("default/runinfo.sys")
+        # content = json.loads(config.retrieve())
+        # self.assertEquals(content,
+        #                   {'group_id': group_id,
+        #                    'setup_finished': 1})
+
+
 
 class MetadataTests(unittest.TestCase):
     """
