@@ -734,6 +734,8 @@ class Converge(Stage):
 
 
 
+
+
 class Transform(Stage):
     """
         Convert output into input for next iteration.
@@ -760,52 +762,71 @@ class Transform(Stage):
         return True
 
     def process(self, context):
-        import subprocess
+        #import subprocess
         import re
         filesystem = get_filesys(context)
-        all_output_subdir = filesystem.get_local_subdirectories(self.output_dir)
-        file_rmcen = os.path.join(self.output_dir, all_output_subdir[0], 'rmcen.inp')
-        command = []
-        command.append('grep')
-        command.append('numbfile')
-        number_line = filesystem.exec_command(file_rmcen, command)
-        number_line_split = number_line.split()
-        number = number_line_split[0]
-        print 'nu', number
+        file_rmcen = os.path.join(self.output_dir, 'rmcen.inp')
+        logger.debug("file_rmcen=%s" % file_rmcen)
+
+        numb = [x.split()[0] for x
+            in filesystem.retrieve(file_rmcen).retrieve().split('\n')
+            if 'numbfile' in x]
+
+        #command = []
+        #command.append('grep')
+        #command.append('numbfile')
+        #number_line = filesystem.exec_command(file_rmcen, command)
+        #number_line_split = number_line.split()
+        #number = number_line_split[0]
+        self.number = -1
+        if numb:
+            self.number = int(numb[0])
+        else:
+            raise ValueError("No numbfile record found")
 
         file_grerr = os.path.join(filesystem.get_global_filesystem(),
-                                   self.output_dir, all_output_subdir[0], 'grerr*.dat')
-        file_grerr_exp = os.path.e
-        command = []
-        command.append('tail')
-        command.append('-n')
-        command.append('1')
-        criterion_line =  filesystem.exec_command(file_grerr, command)
-        print "cr", criterion_line, file_grerr
-       # criterion_line_split = criterion_line.split()
+                                   self.output_dir, 'grerr*.dat')
+        import glob
+        grerr_files = glob.glob(file_grerr)
+        grerr_files.sort()  # FIXME: only guaranteed to sort grerr01 - gree9
+        logger.debug("grerr_files=%s " % grerr_files)
+        grerr_content = filesystem.retrieve(
+            os.path.join(self.output_dir, os.path.basename(grerr_files[-1]))).retrieve()
+        self.criterion = int(grerr_content.strip().split('\n')[-1].split()[0])
+
+        #import ipdb; ipdb.set_trace()
+
+        print "Run %s preserved (error %s)" % (self.number, self.criterion)
+        #command = []
+        #command.append('tail')
+        #command.append('-n')
+        #command.append('1')
+        #criterion_line =  filesystem.exec_command(file_grerr, command)
+        #print "cr", criterion_line, file_grerr
+        # criterion_line_split = criterion_line.split()
         #criterion = criterion_line_split[1]
 
-        print "after", number
-        input_file_object = filesystem.retrieve(file_rmcen)
-        input_file_object_content = input_file_object.getContent()
+        # print "after", number
+        # input_file_object = filesystem.retrieve(file_rmcen)
+        # input_file_object_content = input_file_object.getContent()
 
-        output_file = os.path.join(filesystem.get_global_filesystem(),
-                                   self.output_dir, all_output_subdir[0], 'grerr*.dat')
+        # output_file = os.path.join(filesystem.get_global_filesystem(),
+        #                            self.output_dir, all_output_subdir[0], 'grerr*.dat')
 
-        comparison_criterion = os.system("tail -n 1 %s | awk '{print $2}'" % output_file)
+        # comparison_criterion = os.system("tail -n 1 %s | awk '{print $2}'" % output_file)
 
-        if re.search("numbfile", input_file_object_content):
-            print "Matches"
-            print (re.sub("numbfile","numbfile_changed", input_file_object_content))
-        else:
-            print "Doesnt Match"
+        #if re.search("numbfile", input_file_object_content):
+        #    print "Matches"
+        #    print (re.sub("numbfile","numbfile_changed", input_file_object_content))
+        #else:
+        #    print "Doesnt Match"
 
         #filesystem.exec_command("%s" %input_file_name, input_file_name )
 
         #print "Input file", input_file_name
 
         #a = subprocess.call('grep numbfile input_file_name')
-        print all_output_subdir
+        #print all_output_subdir
 
         '''
             def _kill_run(context):
@@ -818,6 +839,7 @@ class Transform(Stage):
         import sys
         sys.exit(1)
         #return context
+
 
 
 class Teardown(Stage):
