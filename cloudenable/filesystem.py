@@ -222,12 +222,12 @@ class FileSystem(object):
         output = proc.stdout.read()
         return output
 
-    def copy(self, local_filesystem, source_dir, file, dest_dir, new_name):
+    def copy(self, local_filesystem, source_dir, file, dest_dir, new_name,overwrite=True):
 
         """
         Copy lfs/sourcedir/file to lfs/dest_dir
         """
-        self.connector_fs.copy(path.join(local_filesystem,source_dir, file), path.join(dest_dir, new_name))
+        self.connector_fs.copy(path.join(local_filesystem,source_dir, file), path.join(dest_dir, new_name),overwrite)
 
 
     # TODO: need to build glob function for pyfilesystem, may have to walk directory and

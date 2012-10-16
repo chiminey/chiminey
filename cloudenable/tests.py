@@ -1194,6 +1194,27 @@ class TransformStageTests(unittest.TestCase):
         fs.create_under_dir("output_%s" % id_to_test, "i-0001b", f4b)
         fs.create_under_dir("output_%s" % id_to_test, "i-0001b", f5b)
 
+        default_output_content = "foobar\n"
+        for node in ['i-0001a','i-0001b']:
+            for file in ['output', 'frnmc01.dat','sinput.dat','grexp.dat','initial.xyz','pore.xyz','sqexp.dat']:
+                f = DataObject(file)
+                f.setContent(default_output_content)
+                fs.create_under_dir("output_%s" % id_to_test, node, f)
+
+        f = DataObject('hrmc1.xyz')
+        f.setContent("foo\n")
+        fs.create_under_dir("output_%s" % id_to_test, 'i-0001a', f)
+        fs.create_under_dir("output_%s" % id_to_test, 'i-0001b', f)
+
+        f = DataObject('hrmc2.xyz')
+        hrmc2_content = "barbarbar\n"
+        f.setContent(hrmc2_content)
+        fs.create_under_dir("output_%s" % id_to_test, 'i-0001b', f)
+
+
+
+
+
         print("fs=%s" % fs)
         context = {'filesys': fs}
         print("context=%s" % context)
@@ -1211,6 +1232,16 @@ class TransformStageTests(unittest.TestCase):
         self.assertEquals(new_rmcen.getContent(), "firstline\n%s    numbfile\n1     istart\n" % (test_number+1))
         self.assertEquals(s1.audit, "Run %s preserved (error %s)\nspawning diamond runs\n" % (test_number,
             min(test_criterion1,test_criterion2)))
+
+        ff = fs.retrieve_new("input_%s" % (id_to_test + 1), "initial.xyz")
+        self.assertEquals(ff.getContent(), hrmc2_content)
+
+        for f in ['pore.xyz','sqexp.dat']:
+            ff = fs.retrieve_new("input_%s" % (id_to_test + 1), f)
+            self.assertEquals(ff.getContent(), default_output_content)
+
+
+
 
         # s1.output(context)
         # config = fs.retrieve("default/runinfo.sys")

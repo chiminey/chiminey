@@ -813,7 +813,12 @@ class Transform(Stage):
                                                   node_output_dir,
                                                   grerr_files[-1]).retrieve()
             logger.debug("grerr_content=%s" % grerr_content)
-            criterion = int(grerr_content.strip().split('\n')[-1].split()[0])
+            try:
+                criterion = int(grerr_content.strip().split('\n')[-1].split()[0])
+            except ValueError as e:
+                logger.warn("invalid criteron found in grerr file for  %s/%s: %s"
+                    % (self.output_dir, node_output_dir, e))
+                continue
             logger.debug("criterion=%s" % criterion)
             res.append((node_output_dir, number, criterion))
 
@@ -836,18 +841,26 @@ class Transform(Stage):
 
         # transfer rmcen.inp to next iteration inputdir
         fs.copy(self.output_dir, best_node_dir, 'rmcen.inp', self.new_input_dir,'rmcen.inp')
+        for f in ['pore.xyz','sqexp.dat']:
+            fs.copy(self.output_dir, best_node_dir, f, self.new_input_dir, f)
+
 
         # copy best hrmc*.xyz file to new input directory as initial.xyz
         # FIXME: what if there are multiple matches? DO we choose the largest?
         # TODO: make into globbing function in fsys
         xyzfiles = fs.get_local_subdirectory_files(self.output_dir, best_node_dir)
         logger.debug("xyzfiles=%s " % xyzfiles)
-        pat = re.compile('hmrc[0-9]+.xyz')
+        pat = re.compile('hrmc[0-9]+\.xyz')
         xyzfiles = [x for x in xyzfiles if pat.match(x)]
+        logger.debug("xyzfiles=%s " % xyzfiles)
+
+        xyzfiles.sort() # FIXME: assume we use only the last
+        logger.debug("xyzfiles=%s " % xyzfiles)
+
 
         for file_name in xyzfiles:
-            fs.copy(self.output_dir, best_node_dir, self.input_dir,
-                    file_name, self.new_input_dir,'initial.xyz')
+            fs.copy(self.output_dir, best_node_dir,
+                    file_name, self.new_input_dir,'initial.xyz',overwrite=True)
 
         #NB: only works for small files
         rmcen = fs.retrieve_new(self.new_input_dir, "rmcen.inp")
