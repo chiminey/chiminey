@@ -24,6 +24,7 @@ import time
 
 from fs.osfs import OSFS
 from fs import path
+from fs.errors import ResourceNotFoundError
 from fs.path import join
 import shutil
 import tempfile
@@ -227,7 +228,11 @@ class FileSystem(object):
         """
         Copy lfs/sourcedir/file to lfs/dest_dir
         """
-        self.connector_fs.copy(path.join(local_filesystem,source_dir, file), path.join(dest_dir, new_name),overwrite)
+        try:
+            self.connector_fs.copy(path.join(local_filesystem,source_dir, file), path.join(dest_dir, new_name),overwrite)
+        except ResourceNotFoundError as e:
+            raise  IOError(e)
+
 
 
     # TODO: need to build glob function for pyfilesystem, may have to walk directory and

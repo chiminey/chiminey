@@ -26,6 +26,7 @@ from hrmcstages import Run
 from hrmcstages import Finished
 from hrmcstages import Converge
 from hrmcstages import Teardown
+from hrmcstages import Transform
 from hrmcstages import Schedule
 from hrmcstages import clear_temp_files
 
@@ -117,10 +118,10 @@ def start(args):
             print "unknown cloud service provider"
             sys.exit()
 
-        number_of_iterations = 1
+        number_of_iterations = 3
         smart_conn = SmartConnector()
 
-        for stage in (Configure(), Schedule(), Create(), Setup(), Run(), Finished(), Converge(number_of_iterations)):#, Teardown()):#, Check(), Teardown()):
+        for stage in (Configure(), Schedule(), Create(), Setup(), Run(), Finished(), Transform(), Converge(number_of_iterations)):#, Teardown()):#, Check(), Teardown()):
         #for stage in (Configure(), Transform()):
             smart_conn.register(stage)
 

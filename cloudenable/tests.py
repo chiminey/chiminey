@@ -326,14 +326,15 @@ class RunStageTests(unittest.TestCase):
         self.settings['seed'] = 42
         f1.create(json.dumps(self.settings))
         f2 = DataObject("runinfo.sys")
-        f2.create(json.dumps({'group_id': group_id, 'setup_finished': 1}))
+        myid = 0
+        f2.create(json.dumps({'group_id': group_id, 'setup_finished': 1, 'id': myid}))
         print("f2=%s" % f2)
         fs = FileSystem(self.global_filesystem, self.local_filesystem)
         fs.create(self.local_filesystem, f1)
         fs.create(self.local_filesystem, f2)
         print("fs=%s" % fs)
-        id = "mytestid"
-        context = {'filesys': fs, 'id': id}
+
+        context = {'filesys': fs}
         context['provider'] = "nectar"
         print("context=%s" % context)
         s1 = Run()
@@ -353,12 +354,13 @@ class RunStageTests(unittest.TestCase):
         config = fs.retrieve("default/runinfo.sys")
         content = json.loads(config.retrieve())
         logger.debug("content=%s" % content)
-        self.assertEquals(s1.input_dir, "input_%s" % id)
+        self.assertEquals(s1.input_dir, "input_%s" % myid)
 
         self.assertEquals(content, {
             "runs_left": 1,
             "group_id": "sq42kdjshasdkjghauiwytuiawjmkghasjkghasg",
-            "setup_finished": 1})
+            "setup_finished": 1,
+            "id": 0})
 
 
 class FinishedStageTests(unittest.TestCase):
@@ -1160,7 +1162,7 @@ class TransformStageTests(unittest.TestCase):
         f1.create(json.dumps(self.settings))
         f2 = DataObject("runinfo.sys")
         id_to_test = 42
-        f2.create(json.dumps({'group_id': group_id, 'id': id_to_test}))
+        f2.create(json.dumps({'group_id': group_id, 'id': id_to_test, 'runs_left': 0}))
 
         f3a = DataObject("rmcen.inp")
         f3a.setContent("firstline\n%d numbfile simulation run number\n2 istart\n" % test_number)

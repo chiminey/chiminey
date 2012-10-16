@@ -28,6 +28,14 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+
+class Error(Exception):
+    pass
+
+
+class AuthError(Error):
+    pass
+
 def is_ssh_ready(settings, ip_address):
     ssh_ready = False
     while not ssh_ready:
@@ -52,19 +60,21 @@ def open_connection(ip_address, settings):
 
     #TODO: handle exceptions if connection does not work.
     # use private key if exists
-    if os.path.exists(settings['PRIVATE_KEY']):
-        privatekeyfile = os.path.expanduser(settings['PRIVATE_KEY'])
-        mykey = paramiko.RSAKey.from_private_key_file(privatekeyfile)
-        ssh_client.connect(ip_address, username=settings['USER_NAME'],
-                    timeout=60, pkey=mykey)
-    else:
-        print("%s %s %s" % (ip_address,
-                            settings['USER_NAME'],
-                            settings['PASSWORD']))
-        print(ssh_client)
-        ssh_client.connect(ip_address, username=settings['USER_NAME'],
-                    password=settings['PASSWORD'], timeout=60)
-
+    try:
+        if os.path.exists(settings['PRIVATE_KEY']):
+            privatekeyfile = os.path.expanduser(settings['PRIVATE_KEY'])
+            mykey = paramiko.RSAKey.from_private_key_file(privatekeyfile)
+            ssh_client.connect(ip_address, username=settings['USER_NAME'],
+                        timeout=60, pkey=mykey)
+        else:
+            print("%s %s %s" % (ip_address,
+                                settings['USER_NAME'],
+                                settings['PASSWORD']))
+            print(ssh_client)
+            ssh_client.connect(ip_address, username=settings['USER_NAME'],
+                        password=settings['PASSWORD'], timeout=60)
+    except paramiko.AuthenticationException:
+        raise AuthError
     #channel = ssh.invoke_shell().open_session()
     return ssh_client
 
@@ -87,8 +97,8 @@ def run_sudo_command(ssh_client, command, settings, instance_id):
     logger.debug("Sending through channel %s" % chan)
     full_buff = ''
     buff = ''
-    command_prompt = settings['CUSTOM_PROMPT'] 
-    
+    command_prompt = settings['CUSTOM_PROMPT']
+
     while not command_prompt in buff:
         resp = chan.recv(9999)
         print resp
@@ -99,7 +109,7 @@ def run_sudo_command(ssh_client, command, settings, instance_id):
     chan.send("%s\n" % command)
     logger.debug("Command %s" % command)
     buff = ''
-    
+
     while not command_prompt in buff:
         resp = chan.recv(9999)
         print resp
@@ -111,7 +121,7 @@ def run_sudo_command(ssh_client, command, settings, instance_id):
 
     chan.send("exit\n")
     buff = ''
-    
+
     while not command_prompt in buff:
         resp = chan.recv(9999)
         print resp

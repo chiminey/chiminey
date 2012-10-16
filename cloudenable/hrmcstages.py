@@ -160,6 +160,25 @@ def update_key(key, value, context):
     filesystem.update("default", run_info_file)
 
 
+def delete_key(key, context):
+    filesystem = get_filesys(context)
+    logger.debug("filesystem= %s" % filesystem)
+
+    run_info_file = get_file(filesystem, "default/runinfo.sys")
+    logger.debug("run_info_file= %s" % run_info_file)
+
+    run_info_file_content = run_info_file.retrieve()
+    logger.debug("runinfo_content= %s" % run_info_file_content)
+
+    settings = json.loads(run_info_file_content)
+    del settings[key]
+    logger.debug("configuration=%s" % settings)
+
+    run_info_content_blob = json.dumps(settings)
+    run_info_file.setContent(run_info_content_blob)
+    filesystem.update("default", run_info_file)
+
+
 def clear_temp_files(context):
     """
     Deletes temporary files
@@ -375,7 +394,8 @@ class Create(Stage):
         local_filesystem = 'default'
         data_object = DataObject("runinfo.sys")
         data_object.create(json.dumps({'group_id': self.group_id,
-                                       'seed': self.seed}))
+                                       'seed': self.seed,
+                                       'PROVIDER': self.provider}))
         filesystem = get_filesys(context)
         filesystem.create(local_filesystem, data_object)
         return context
@@ -445,13 +465,6 @@ class Run(Stage):
 
                self.input_dir = "input"
         '''
-        if 'id' in context:
-            self.id = context['id']
-            self.input_dir = "input_%s" % self.id
-        else:
-            self.input_dir = "input"
-
-
 
         print "Run stage triggered"
         self.settings = get_settings(context)
@@ -462,6 +475,12 @@ class Run(Stage):
 
         self.settings.update(run_info)
         logger.debug("settings = %s" % self.settings)
+
+        if 'id' in self.settings:
+            self.id = self.settings['id']
+            self.input_dir = "input_%s" % self.id
+        else:
+            self.input_dir = "input"
 
         self.group_id = self.settings['group_id']
         logger.debug("group_id = %s" % self.group_id)
@@ -691,15 +710,21 @@ class Converge(Stage):
     def __init__(self, number_of_iterations):
         self.total_iterations = number_of_iterations
         self.number_of_remaining_iterations = number_of_iterations
-        self.counter = 0
+        self.id = 0
 
     def triggered(self, context):
         self.settings = get_run_settings(context)
         logger.debug("settings = %s" % self.settings)
 
-        if 'runs_left' in self.settings:
-            self.run_list = self.settings["runs_left"]
-            if self.run_list == 0 and self.number_of_remaining_iterations > 0:
+        self.settings = get_run_settings(context)
+        logger.debug("settings = %s" % self.settings)
+
+        self.id = self.settings['id']
+        logger.debug("id = %s" % self.id)
+
+        if 'transformed' in self.settings:
+            self.transformed = self.settings["transformed"]
+            if self.transformed:
                 return True
         return False
 
@@ -731,8 +756,10 @@ class Converge(Stage):
         update_key('converged', False, context)
         if self.number_of_remaining_iterations == 0:
             update_key('converged', True, context)
-        self.counter += 1
-        update_key('id', self.counter, context)
+            delete_key('transformed', context)
+        self.id += 1
+        update_key('id', self.id, context)
+
         return context
 
 
@@ -764,7 +791,15 @@ class Transform(Stage):
             self.output_dir = "input"
             self.new_input_dir = "input_1"  # FIXME: first iteralation does not have suffix?
 
-        return True
+        if 'runs_left' in self.settings:
+            self.runs_left = self.settings["runs_left"]
+            if 'transformed' in self.settings:
+                self.transformed = self.settings['transformed']
+            else:
+                self.transformed = False
+            if self.runs_left == 0 and not self.transformed:
+                return True
+        return False
 
     def process(self, context):
         import glob
@@ -841,9 +876,14 @@ class Transform(Stage):
 
         # transfer rmcen.inp to next iteration inputdir
         fs.copy(self.output_dir, best_node_dir, 'rmcen.inp', self.new_input_dir,'rmcen.inp')
-        for f in ['pore.xyz','sqexp.dat']:
-            fs.copy(self.output_dir, best_node_dir, f, self.new_input_dir, f)
 
+        for f in ['pore.xyz','sqexp.dat']:
+            try:
+                fs.copy(self.output_dir, best_node_dir, f, self.new_input_dir, f)
+            except IOError as e:
+                logger.warn("no %s found in  %s/%s: %s"
+                    % (f, self.output_dir, best_node_dir, e))
+                continue
 
         # copy best hrmc*.xyz file to new input directory as initial.xyz
         # FIXME: what if there are multiple matches? DO we choose the largest?
@@ -859,13 +899,19 @@ class Transform(Stage):
 
 
         for file_name in xyzfiles:
-            fs.copy(self.output_dir, best_node_dir,
-                    file_name, self.new_input_dir,'initial.xyz',overwrite=True)
+            try:
+                fs.copy(self.output_dir, best_node_dir,
+                        file_name, self.new_input_dir,'initial.xyz',overwrite=True)
+            except IOError as e:
+                logger.warn("no %s found in  %s/%s: %s"
+                    % (file_name, self.output_dir, best_node_dir, e))
+                continue
+
 
         #NB: only works for small files
         rmcen = fs.retrieve_new(self.new_input_dir, "rmcen.inp")
         text = rmcen.retrieve()
-        logger.debug("text = %s" % text)
+        #logger.debug("text = %s" % text)
 
         # increment rmcen.input numbfile value.  FIXME: is this correct?
         p = re.compile("^([0-9]*)[ \t]*numbfile.*$", re.MULTILINE)
@@ -878,7 +924,7 @@ class Transform(Stage):
             logger.warn("could not find numbfile in rmcen.inp")
             numbfile = self.id
         text = re.sub(p, "%d    numbfile" % (numbfile + 1), text)
-        logger.debug("text = %s" % text)
+        #logger.debug("text = %s" % text)
 
         logger.debug("numfile = %d" % numbfile)
 
@@ -906,9 +952,10 @@ class Transform(Stage):
         pass
         '''
     def output(self, context):
-        import sys
-        sys.exit(1)
-        #return context
+
+        update_key('transformed', True, context)
+
+        return context
 
 
 
