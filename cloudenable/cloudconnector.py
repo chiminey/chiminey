@@ -34,6 +34,8 @@ from libcloud.compute.providers import get_driver
 from sshconnector import open_connection
 from sshconnector import run_command
 from sshconnector import is_ssh_ready
+from sshconnector import AuthError
+
 
 
 logger = logging.getLogger(__name__)
@@ -52,7 +54,7 @@ def _create_cloud_connection(settings):
 
 
 def _create_nectar_connection(settings):
-         
+
     OpenstackDriver = get_driver(Provider.EUCALYPTUS)
     logger.debug("Connecting to... %s" % OpenstackDriver)
     connection = OpenstackDriver(settings['EC2_ACCESS_KEY'],
@@ -64,7 +66,7 @@ def _create_nectar_connection(settings):
 
 
 def _create_amazon_connection(settings):
-         
+
     AmazonDriver = get_driver(Provider.EC2)
     logger.debug("Connecting to... %s" % AmazonDriver)
     connection = AmazonDriver(settings['EC2_ACCESS_KEY'],
@@ -143,7 +145,7 @@ def _store_md5_on_instances(all_instances, settings):
             " % (instance_id, ip_address, group_id)
             ssh_client = open_connection(ip_address=ip_address, settings=settings)
             group_id_path = os.path.join(settings['GROUP_ID_DIR'], group_id)
-            
+
             run_command(ssh_client, "mkdir %s" % settings['GROUP_ID_DIR'])
             logger.debug("Group ID directory created")
             run_command(ssh_client, "touch %s" % group_id_path)
@@ -172,7 +174,7 @@ def _customize_prompt(all_instances, settings):
         else:
             print "Unable to customize command prompt for VM instance %s\
             " % (instance_id, ip)
-       
+
 
 def _generate_group_id(all_instances):
     md5_starter_string = ""
@@ -343,7 +345,7 @@ def get_instance_ip(instance_id, settings):
     #TODO: throw exception if can't find instance_id
     connection = _create_cloud_connection(settings)
     ip = ''
-    
+
     while instance_id == '' or ip == '':
         nodes = get_running_instances(settings)
         logger.debug("total nodes %d " % len(nodes))
@@ -364,7 +366,7 @@ def get_running_instances(settings):
             all_running_instances.append(instance)
     return all_running_instances
 
-            
+
 #newly added methods from simplepackage
 def get_rego_nodes(group_id, settings):
     """
@@ -373,13 +375,17 @@ def get_rego_nodes(group_id, settings):
     logger.debug("get_rego_nodes")
     # get all available nodes
     conn = _create_cloud_connection(settings)
-    
+
     packaged_node = []
     for node in get_running_instances(settings):
         # login and check for md5 file
         ip = get_instance_ip(node.id, settings)
-        ssh_client = open_connection(ip_address=ip,
+        try:
+            ssh_client = open_connection(ip_address=ip,
                               settings=settings)
+        except AuthError:
+            logger.warn("node skipped as cannot access")
+            continue
         logger.debug("ssh client created %s" % ssh_client)
         # NOTE: assumes use of bash shell
         group_id_path = os.path.join(settings['GROUP_ID_DIR'], group_id)
