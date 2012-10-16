@@ -24,6 +24,7 @@ import time
 
 from fs.osfs import OSFS
 from fs import path
+from fs.path import join
 import shutil
 import tempfile
 
@@ -91,8 +92,37 @@ class FileSystem(object):
         destination_file.close()
         logger.info("File '%s' %s" % (destination_file_name, message))
         return True
+
+    def create_under_dir(self, local_filesystem, directory, data_object, message='CREATED'):
+        if not self.connector_fs.exists(local_filesystem):
+            logger.error("Destination filesystem '%s' does not exist"
+                         % local_filesystem)
+            return False
+        #mport ipdb
+        #ipdb.set_trace()
+        direct = path.join("/", local_filesystem, directory)
+        self.connector_fs.makedir(direct,allow_recreate=True)
+        dest_file_name = path.join(direct, data_object.getName())
+        #FIXME: Not sure why we need this
+        #if not local_filesystem:
+        #    destination_file_name = self.global_filesystem + "/" + data_object.getName()
+        dest_file = self.connector_fs.open(dest_file_name, 'w')
+        dest_file.write(data_object.getContent())
+        dest_file.close()
+        logger.debug("File '%s' %s" % (dest_file, message))
+        return True
+
+    def retrieve_new(self, directory, file):
+        # This has the advantage of not exposing the path join semantics.
+        return self.retrieve(path.join(directory, file))
+
+    def retrieve_under_dir(self, local_filesystem, directory, file):
+        # This has the advantage of not exposing the path join semantics.
+        return self.retrieve(path.join("/",local_filesystem, directory, file))
+
      # check for missing path# MUST RETURN filesystem
     def retrieve(self, file_to_be_retrieved):
+        # Deprecated
         if not self.connector_fs.exists(file_to_be_retrieved):
             logger.error("File'%s' does not exist" % file_to_be_retrieved)
             return None
@@ -106,6 +136,7 @@ class FileSystem(object):
         data_object = DataObject(retrieved_file_name)
         data_object.setContent(retrieved_file_content)
         return data_object
+
 
     def update(self, local_filesystem, data_object):
         file_to_be_updated = local_filesystem + "/" + data_object.getName()
@@ -125,7 +156,14 @@ class FileSystem(object):
         logger.info("File '%s' DELETED" % file_to_be_deleted)
         return True
 
+    def isdir(self, local_filesystem, dir_path):
+        return self.connector_fs.isdir(path.join("/",local_filesystem,dir_path))
 
+    def isfile(self, local_filesystem, dir_path,f):
+        return self.connector_fs.isfile(path.join("/",local_filesystem,dir_path,f))
+
+    def exists(self, local_filesystem, dir_path, f):
+        return self.connector_fs.exists(path.join("/",local_filesystem, dir_path, f))
 
     def get_local_subdirectories(self, local_filesystem):
         """
@@ -135,6 +173,16 @@ class FileSystem(object):
         list_of_subdirectories = os.listdir(path_to_subdirectories)
 
         return list_of_subdirectories
+
+    def get_local_subdirectory_files(self, local_filesystem, directory):
+        """
+        Returns list of names of directories immediately below local_filesystem
+        """
+        path_to_subdirectories = os.path.join(self.global_filesystem, local_filesystem, directory)
+        list_of_subdirectories = os.listdir(path_to_subdirectories)
+
+        return list_of_subdirectories
+
 
     def delete_local_filesystem(self, local_filesystem):
         """
@@ -174,8 +222,12 @@ class FileSystem(object):
         output = proc.stdout.read()
         return output
 
-    def copy(self, source_dir, file, dest_dir):
-        self.connector_fs.copy(path.join(source_dir, file), dest_dir)
+    def copy(self, local_filesystem, source_dir, file, dest_dir, new_name):
+
+        """
+        Copy lfs/sourcedir/file to lfs/dest_dir
+        """
+        self.connector_fs.copy(path.join(local_filesystem,source_dir, file), path.join(dest_dir, new_name))
 
 
     # TODO: need to build glob function for pyfilesystem, may have to walk directory and
@@ -207,6 +259,8 @@ class DataObject(object):
         return self._content
 
     def setName(self, name):
+        if '/' in name:
+            raise ValueError("Data objects cannot have paths")
         self._name = name
 
     def setContent(self, content):
