@@ -771,141 +771,119 @@ class Transform(Stage):
         import re
         #import shutil
 
-        audit = ""
+        self.audit = ""
         res = []
-        filesystem = get_filesys(context)
-        cand_output_dir = os.path.join(filesystem.get_global_filesystem(), 'output_[0-9]+')
-        cand_output_dirs = glob.glob(cand_output_dir)
-        for cand_output_dir in cand_output_dirs:
-            if not os.path.is_dir(cand_output_dir):
-                logger.warn("%s is not a directory" % cand_output_dir)
+        fs = get_filesys(context)
+
+        # for each run in the diamon
+        node_output_dirs = fs.get_local_subdirectories(self.output_dir)
+        logger.debug("node_output_dirs=%s" % node_output_dirs)
+        for node_output_dir in node_output_dirs:
+            if not fs.isdir(self.output_dir, node_output_dir):
+                logger.warn("%s is not a directory" % node_output_dir)
                 # FIXME: do we really want to skip here?
                 continue
-            file_rmcen = os.path.join(cand_output_dir, 'rmcen.inp')
-            if not os.path.exists(file_rmcen):
-                logger.warn("%s not found" % file_rmcen)
+            #file_rmcen = os.path.join(node_output_dir, 'rmcen.inp')
+            if not fs.exists(self.output_dir, node_output_dir, 'rmcen.inp'):
+                logger.warn("rmcen.inp not found")
                 # FIXME: do we really want to skip here?
                 continue
-            if not os.path.isfile(file_rmcen):
-                logger.warn("%s not a file" % file_rmcen)
+            if not fs.isfile(self.output_dir, node_output_dir, 'rmcen.inp'):
+                logger.warn("rmcen.inp not a file")
                 # FIXME: do we really want to skip here?
                 continue
-            logger.debug("file_rmcen=%s" % file_rmcen)
+            # get numbfile
             numb = [x.split()[0] for x
-                in filesystem.retrieve(file_rmcen).retrieve().split('\n')
+                in fs.retrieve_under_dir(self.output_dir,
+                                                 node_output_dir,
+                                                 'rmcen.inp').retrieve().split('\n')
                 if 'numbfile' in x]
             if numb:
                 number = int(numb[0])
             else:
                 raise ValueError("No numbfile record found")
-            file_grerr = os.path.join(filesystem.get_global_filesystem(),
-                                       self.output_dir, 'grerr[0-9]+.dat')
-            grerr_files = glob.glob(file_grerr)
+
+            grerr_files = fs.get_local_subdirectory_files(self.output_dir, node_output_dir)
+            logger.debug("grerr_files=%s " % grerr_files)
+            pat = re.compile('grerr[0-9]+.dat')
+            grerr_files = [ x for x in grerr_files if pat.match(x)]
             grerr_files.sort()  # FIXME: only guaranteed to sort grerr01 - grerr09
             logger.debug("grerr_files=%s " % grerr_files)
-            grerr_content = filesystem.retrieve(
-                os.path.join(cand_output_dir, os.path.basename(grerr_files[-1]))).retrieve()
+            grerr_content = fs.retrieve_under_dir(self.output_dir,
+                                                  node_output_dir,
+                                                  grerr_files[-1]).retrieve()
+            logger.debug("grerr_content=%s" % grerr_content)
             criterion = int(grerr_content.strip().split('\n')[-1].split()[0])
-            res.append((cand_output_dir, number, criterion))
-            #import ipdb; ipdb.set_trace()
+            logger.debug("criterion=%s" % criterion)
+            res.append((node_output_dir, number, criterion))
 
-        #FIXME: select the lowest criterion?
         logger.debug("res=%s" % res)
         res = sorted(res, key=lambda x: x[2])
         logger.debug("res=%s" % res)
         if res:
-            (best_output_dir, number, criterion) = res[0]
+            (best_node_dir, number, criterion) = res[0]
         else:
             # FIXME: can we carry on here?
             logger.warning("no output directory found")
-            (best_output_dir, number, criterion) = (self.output_dir, 0, 0)  # ?
+            (best_node_dir, number, criterion) = (self.output_dir, 0, 0)  # ?
 
-        audit += "Run %s preserved (error %s)\n" % (number, criterion)
-        logger.debug("output_dir=%s" % best_output_dir)
+        self.audit += "Run %s preserved (error %s)\n" % (number, criterion)
+        logger.debug("best_node_dir=%s" % best_node_dir)
 
         # FIXME: what is the number?  Is it just the iteration number of something more?
 
+        fs.create_local_filesystem(self.new_input_dir)
 
-        filesystem.create_local_filesystem(self.new_input_dir)
-        #os.makedirs(self.new_input_dir)
-
-        # transfer rmcen.inp to next iteration
-        filesystem.copy(self.input_dir, 'rmcen.inp', self.new_input_dir)
+        # transfer rmcen.inp to next iteration inputdir
+        fs.copy(self.output_dir, best_node_dir, 'rmcen.inp', self.new_input_dir,'rmcen.inp')
 
         # copy best hrmc*.xyz file to new input directory as initial.xyz
         # FIXME: what if there are multiple matches? DO we choose the largest?
-        xyzfiles = glob.glob(os.path.join(best_output_dir, 'hrmc[0-9]+.xyz'))
+        # TODO: make into globbing function in fsys
+        xyzfiles = fs.get_local_subdirectory_files(self.output_dir, best_node_dir)
+        logger.debug("xyzfiles=%s " % xyzfiles)
+        pat = re.compile('hmrc[0-9]+.xyz')
+        xyzfiles = [x for x in xyzfiles if pat.match(x)]
 
-        for file in xyzfiles:
-            filesystem.copy(file, self.new_input_dir)
+        for file_name in xyzfiles:
+            fs.copy(self.output_dir, best_node_dir, self.input_dir,
+                    file_name, self.new_input_dir,'initial.xyz')
 
         #NB: only works for small files
-        text = open(os.path.join(self.new_input_dir, "rmcen.inp"), "r").read()
+        rmcen = fs.retrieve_new(self.new_input_dir, "rmcen.inp")
+        text = rmcen.retrieve()
+        logger.debug("text = %s" % text)
 
         # increment rmcen.input numbfile value.  FIXME: is this correct?
-        p = re.compile("^([0-9])*[ \t]*numbfile.*$", re.MULTILINE)
+        p = re.compile("^([0-9]*)[ \t]*numbfile.*$", re.MULTILINE)
 
         # numbfile should match iteration number but read version first
-        m = p.match(text)
+        m = p.search(text)
         if m:
             numbfile = int(m.group(1))
         else:
+            logger.warn("could not find numbfile in rmcen.inp")
             numbfile = self.id
-        text = p.sub("%d    numbfile" % (numbfile + 1), text)
+        text = re.sub(p, "%d    numbfile" % (numbfile + 1), text)
+        logger.debug("text = %s" % text)
+
+        logger.debug("numfile = %d" % numbfile)
 
         # change istart
-        p = re.compile("^([0-9])*[ \t]*istart.*$", re.MULTILINE)
-        m = p.match(text)
+        p = re.compile("^([0-9]*)[ \t]*istart.*$", re.MULTILINE)
+        m = p.search(text)
         if m:
-            text = p.sub("1     istart", text)
+            logger.debug("match = %s" % m.groups())
+            text = re.sub(p, "1     istart", text)
         else:
             logger.warn("Cloud not find istart in rmcen.inp")
+        logger.debug("text = %s" % text)
 
-        # write back changes
-        f = open("rmcen.inp", "w")
-        f.write(text)
-        f.close()
+        rmcen.setContent(text)
+        logger.debug("rmcen=%s" % rmcen)
+        fs.update(self.new_input_dir, rmcen)
 
-        audit += "spawning diamond runs\n"
-
-        # make input_x
-        # copy best hrmc*.xyz to input_x/initial.xyz
-        # copy rmcen.inp to input_x/
-        # add one to input_x/rmcen.inp numbfile
-        # create new iseeds for input_x/rmcen.inp iseed
-        # for second run turn istart to 1
-
-
-        #command = []
-        #command.append('tail')
-        #command.append('-n')
-        #command.append('1')
-        #criterion_line =  filesystem.exec_command(file_grerr, command)
-        #print "cr", criterion_line, file_grerr
-        # criterion_line_split = criterion_line.split()
-        #criterion = criterion_line_split[1]
-
-        # print "after", number
-        # input_file_object = filesystem.retrieve(file_rmcen)
-        # input_file_object_content = input_file_object.getContent()
-
-        # output_file = os.path.join(filesystem.get_global_filesystem(),
-        #                            self.output_dir, all_output_subdir[0], 'grerr*.dat')
-
-        # comparison_criterion = os.system("tail -n 1 %s | awk '{print $2}'" % output_file)
-
-        #if re.search("numbfile", input_file_object_content):
-        #    print "Matches"
-        #    print (re.sub("numbfile","numbfile_changed", input_file_object_content))
-        #else:
-        #    print "Doesnt Match"
-
-        #filesystem.exec_command("%s" %input_file_name, input_file_name )
-
-        #print "Input file", input_file_name
-
-        #a = subprocess.call('grep numbfile input_file_name')
-        #print all_output_subdir
+        self.audit += "spawning diamond runs\n"
 
         '''
             def _kill_run(context):

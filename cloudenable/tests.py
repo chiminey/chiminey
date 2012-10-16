@@ -64,6 +64,8 @@ from hrmcstages import Transform
 from filesystem import DataObject
 from filesystem import FileSystem
 
+from fs import path
+
 #TODO: need to split up these tests into separate files in a tests directory
 
 
@@ -234,6 +236,7 @@ class SetupStageTests(unittest.TestCase):
         content = json.loads(config.retrieve())
         self.assertEquals(content,
                           {'group_id': group_id,
+                           'id':0,
                            'setup_finished': 1})
 
 
@@ -500,6 +503,7 @@ class FinishedStageTests(unittest.TestCase):
 
 
 class FileSystemTests(unittest.TestCase):
+    #FIXME: These testcases should not know about the underlying filesystem implementation
     HOME_DIR = os.path.expanduser("~")
     global_filesystem = os.path.join(HOME_DIR, 'test_globalFS')
     local_filesystem = 'test_localFS'
@@ -521,6 +525,19 @@ class FileSystemTests(unittest.TestCase):
         self.assertEquals(data_object_content, data_object.getContent())
         self.filesystem.create(self.local_filesystem, data_object)
         self.assertTrue(os.path.exists(absolute_path_file))
+
+    def test_create_under_dir(self):
+        data_object = DataObject("test_file")
+        data_object_content = "hello\n" + "iman\n" + "and\n" + "seid\n"
+        data_object.create(data_object_content)
+        path_file = path.join("/",
+            self.local_filesystem, data_object.getName())
+       #absolute_path_file = self.global_filesystem + "/" +  \
+       # self.local_filesystem + "/"+ data_object.getName()
+
+        self.assertEquals(data_object_content, data_object.getContent())
+        self.filesystem.create_under_dir(self.local_filesystem, "foo", data_object)
+        self.assertTrue(self.filesystem.connector_fs.exists(path_file))
 
     def test_retreve(self):
         file_name = "test_file"
@@ -1098,11 +1115,16 @@ class SchedulerStageTest(unittest.TestCase):
 
 class TransformStageTests(unittest.TestCase):
 
-    HOME_DIR = os.path.expanduser("~")
-    global_filesystem = os.path.join(HOME_DIR, "test_transformstagetests")
-    local_filesystem = 'default'
+    keep_directories = True
 
     def setUp(self):
+
+        import tempfile
+
+        self.global_filesystem = tempfile.mkdtemp()
+        logger.debug("global_filesystem=%s" % self.global_filesystem)
+        self.local_filesystem = 'default'
+
         logging.config.fileConfig('logging.conf')
         self.vm_size = 100
         self.image_name = "ami-0000000d"  # FIXME: is hardcoded in
@@ -1120,31 +1142,57 @@ class TransformStageTests(unittest.TestCase):
             'COMPILE_FILE': "foo", 'MAX_SEED_INT': 100, 'RETRY_ATTEMPTS': 3,
             'OUTPUT_FILES': ['a', 'b']}
 
+    def tearDown(self):
+        if not self.keep_directories:
+            import shutil
+            shutil.rmtree(self.global_filesystem)
+        else:
+            logger.warn("Keeping directory %s" % self.global_filesystem)
+        pass
+
     def test_get_output_numbers(self):
         group_id = "sq42kdjshasdkjghauiwytuiawjmkghasjkghasg"
          # Setup fsys and initial config files for setup
-        test_criterion = 789
-        test_number = 101
+        test_criterion1 = 789
+        test_criterion2 = 324
+        test_number = 42
         f1 = DataObject("config.sys")
         f1.create(json.dumps(self.settings))
         f2 = DataObject("runinfo.sys")
         id_to_test = 42
-        f2.create(json.dumps({'group_id': group_id, 'id':id_to_test}))
-        f3 = DataObject("rmcen.inp")
-        f3.setContent("firstline\n%d numbfile simulation run number\n" % test_number)
-        f4 = DataObject("grerr02.dat")
-        f4.setContent("123 456\n%d 0123\n" % test_criterion)
-        f5 = DataObject("grerr01.dat")
-        f5.setContent("abc def\nghi jkl\n")
+        f2.create(json.dumps({'group_id': group_id, 'id': id_to_test}))
+
+        f3a = DataObject("rmcen.inp")
+        f3a.setContent("firstline\n%d numbfile simulation run number\n2 istart\n" % test_number)
+
+
+        f3b = DataObject("rmcen.inp")
+        f3b.setContent("firstline\n%d numbfile simulation run number\n2 istart\n" % test_number)
+
+        f4a = DataObject("grerr02.dat")
+        f4a.setContent("123 456\n%d 0123\n" % test_criterion1)
+        f5a = DataObject("grerr01.dat")
+        f5a.setContent("abc def\nghi jkl\n")
+
+        f4b = DataObject("grerr02.dat")
+        f4b.setContent("123 456\n%d 0123\n" % test_criterion2)
+        f5b = DataObject("grerr01.dat")
+        f5b.setContent("abc def\nghi jkl\n")
+
         print("f2=%s" % f2)
         fs = FileSystem(self.global_filesystem, self.local_filesystem)
         fs.create_local_filesystem("output_%s" % id_to_test)
         fs.create_local_filesystem("input_%s" % id_to_test)
         fs.create(self.local_filesystem, f1)
         fs.create(self.local_filesystem, f2)
-        fs.create("input_%s" % id_to_test, f3)
-        fs.create("output_%s" % id_to_test, f4)
-        fs.create("output_%s" % id_to_test, f5)
+
+        fs.create_under_dir("output_%s" % id_to_test, "i-0001a", f3a)
+        fs.create_under_dir("output_%s" % id_to_test, "i-0001a", f4a)
+        fs.create_under_dir("output_%s" % id_to_test, "i-0001a", f5a)
+
+        fs.create_under_dir("output_%s" % id_to_test, "i-0001b", f3b)
+        fs.create_under_dir("output_%s" % id_to_test, "i-0001b", f4b)
+        fs.create_under_dir("output_%s" % id_to_test, "i-0001b", f5b)
 
         print("fs=%s" % fs)
         context = {'filesys': fs}
@@ -1153,14 +1201,17 @@ class TransformStageTests(unittest.TestCase):
         res = s1.triggered(context)
         print res
         self.assertEquals(res, True)
-        self.assertEquals(s1.output_dir,"output_%s" % id_to_test)
-        self.assertEquals(s1.input_dir,"input_%s" % id_to_test)
+        self.assertEquals(s1.output_dir, "output_%s" % id_to_test)
+        self.assertEquals(s1.input_dir, "input_%s" % id_to_test)
         self.assertEquals(s1.group_id, group_id)
 
-
         s1.process(context)
-        self.assertEquals(s1.number,test_number)
-        self.assertEquals(s1.criterion,test_criterion)
+
+        new_rmcen = fs.retrieve_new("input_%s" % (id_to_test + 1), "rmcen.inp")
+        self.assertEquals(new_rmcen.getContent(), "firstline\n%s    numbfile\n1     istart\n" % (test_number+1))
+        self.assertEquals(s1.audit, "Run %s preserved (error %s)\nspawning diamond runs\n" % (test_number,
+            min(test_criterion1,test_criterion2)))
+
         # s1.output(context)
         # config = fs.retrieve("default/runinfo.sys")
         # content = json.loads(config.retrieve())
