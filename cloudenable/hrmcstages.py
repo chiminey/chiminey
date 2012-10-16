@@ -230,18 +230,10 @@ class Schedule(Stage):
     def process(self, context):
         """ Determine the provider
         """
-        self.provider = "nectar"
-
         questions = [
-            ('Smoking', "Are you a smoker?", ['heavy', 'medium', 'light', 'never']),
-            ('videoAddiction', "How much to use videos", ['none', 'low', 'medium', 'heavy']),
-            ('fatIntake', 'Weight?', ['low', 'medium', 'heavy']),
-            ('exercising', 'Amount of exercise', ['never', 'occasionally', 'regularly'])]
-
-
-        # questions = [
-        #     ('Size', 'Choose the size of VM:', ['S', 'M', "L"]),
-        #     ('Speed', 'Choose the speed of VM:', ['1', '10', "100", "1000"])]
+            ('architecture', "What is the architecture of the computation?", ['Embarrassingly_parallel', 'MapReduce', 'Other']),
+            ('size', "How big is the computation", ['small', 'large']),
+            ('sensitivity', 'What is the sensitivity of the data of the computation to location?', ['none', 'sensitive'])]
 
         self.answers = []
         for (quest_num, (question_name, question_desc, question_choices)) in enumerate(questions):
@@ -269,61 +261,68 @@ class Schedule(Stage):
                         number_of_fails += 1
 
             self.answers.append(int(mychoice))
+         
+        user_requirement = [] 
+        question_no = 0
+        for (quest_num, (question_name, question_desc, question_choices)) in enumerate(questions):
+            logger.debug("Quest num %d, question name %s " % (quest_num,question_name ))
+            answer_index = self.answers[quest_num]-1
+            requirement = question_name + '=>' + question_choices[answer_index]
+            user_requirement.append(requirement)
+            logger.debug("req %s" % requirement)
+        logger.debug(user_requirement)
+        
+        import DecisionTree
+        training_datafile = 'provider_training.dat'
+        dt = DecisionTree.DecisionTree( training_datafile = training_datafile,
+                                entropy_threshold = 0.1,
+                                max_depth_desired = 3,
+                                debug1 = 1,                          
+                                debug2 = 1,
+                              )
+        dt.get_training_data()
+        root_node = dt.construct_decision_tree_classifier()
+        #   UNCOMMENT THE FOLLOWING LINE if you would like to see the decision
+        #   tree displayed in your terminal window:
+        #logger.debug(root_node.display_decision_tree("   "))
+        classification = dt.classify(root_node, user_requirement)
+        max_prob = self._get_highest_probability(classification)
+        self.candidate_providers = self._get_candidate_providers(classification, max_prob)
+        logger.debug("answers %s" %self.answers)
 
-        return self.answers
+        return self.answers  
+    
+    def _get_highest_probability(self, classification):
+        which_classes = list(classification.keys())
+        max_prob = 0
+        for provider in which_classes:
+            curr_prob = classification[provider]
+            logger.debug("provider %s prob  %f" % (provider, curr_prob))
+            if curr_prob > max_prob:
+                max_prob = curr_prob
+        return max_prob
+            
+    def _get_candidate_providers(self, classification, max_prob):
+        which_classes = list(classification.keys())
+        candidate_providers = []
+        for provider in which_classes:
+            curr_prob = classification[provider]
+            if curr_prob == max_prob:
+                candidate_providers.append(provider)
+                logger.debug("Candidate provider %s " % provider)
+        return candidate_providers
+
 
     def output(self, context):
         """
-        Create a runfinos.sys file in filesystem with new group_id and provider
+        Create a runfinos.sys file in filesystem with provider
         """
-
-        import DecisionTree
-
-        training_datafile = 'provider_training.dat'
-
-        dt = DecisionTree.DecisionTree(
-            training_datafile=training_datafile,
-            entropy_threshold=0.1,
-            max_depth_desired=3,
-            debug1=0,
-            debug2=0,
-           )
-        dt.get_training_data()
-
-        #   UNCOMMENT THE FOLLOWING LINE if you would like to see the training
-        #   data that was read from the disk file:
-        #dt.show_training_data()
-
-        root_node = dt.construct_decision_tree_classifier()
-
-        #   UNCOMMENT THE FOLLOWING LINE if you would like to see the decision
-        #   tree displayed in your terminal window:
-        #root_node.display_decision_tree("   ")
-
-
-        test_sample = ['exercising=>never',
-                       'smoking=>heavy',
-                       'fatIntake=>heavy',
-                       'videoAddiction=>heavy']
-
-        classification = dt.classify(root_node, test_sample)
-        which_classes = list(classification.keys())
-        which_classes = sorted(which_classes, key=lambda x: classification[x], reverse=True)
-
-
-        logger.debug("\nClassification:\n")
-        for which_class in which_classes:
-            logger.debug("     " + str.ljust(which_class, 20) + "  =>  " + str(classification[which_class]))
-
-        logger.debug("\n\n")
-        logger.debug(("Number of nodes created: ", root_node.how_many_nodes()))
-
-
-        self.provider = which_classes[0]
-
-        #FIXME: until correct dtree created we override results
-        self.provider = 'nectar'
-
+        self.provider = self.candidate_providers[0]
+        logger.debug("Candidate provider(s) is (are) %s" % self.candidate_providers)
+        if self.provider != 'nectar' or len(self.candidate_providers) > 1:
+            logger.debug("But we use 'nectar' for now...")
+            self.provider = 'nectar'
+        
         local_filesystem = 'default'
         data_object = DataObject("runinfo.sys")
         data_object.create(json.dumps({'PROVIDER': self.provider}))

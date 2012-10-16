@@ -1,63 +1,21 @@
-Class names: malignant benign 
+Class names: amazon nectar 
 
 Feature names and their values:
-     smoking => heavy medium light never 
-     videoAddiction => none low medium heavy 
-     fatIntake => low medium heavy 
-     exercising => never occasionally regularly 
-
+     architecture => Embarrassingly_parallel MapReduce Other
+     size => small large
+     sensitivity => none sensitive
 
 Training Data:
 
-sample          class           exercising      fatIntake       smoking         videoAddiction  
-================================================================================================
-sample_0        malignant       never           medium          heavy           heavy           
-sample_1        benign          regularly       medium          never           none            
-sample_2        benign          regularly       low             heavy           heavy           
-sample_3        malignant       occasionally    heavy           heavy           none            
-sample_4        benign          never           medium          heavy           none            
-sample_5        malignant       never           medium          heavy           low             
-sample_6        malignant       never           heavy           heavy           none            
-sample_7        malignant       occasionally    heavy           heavy           medium          
-sample_8        benign          regularly       heavy           medium          none            
-sample_9        malignant       never           heavy           heavy           medium          
-sample_10       malignant       occasionally    heavy           heavy           none            
-sample_11       malignant       occasionally    heavy           heavy           heavy           
-sample_12       benign          regularly       medium          light           medium          
-sample_13       benign          regularly       low             heavy           low             
-sample_14       malignant       never           heavy           heavy           medium          
-sample_15       malignant       regularly       heavy           heavy           heavy           
-sample_16       malignant       occasionally    heavy           heavy           none            
-sample_17       benign          regularly       heavy           heavy           none            
-sample_18       benign          regularly       low             medium          heavy           
-sample_19       malignant       never           heavy           heavy           heavy           
-sample_20       benign          regularly       medium          never           low             
-sample_21       benign          occasionally    heavy           medium          low             
-sample_22       malignant       occasionally    heavy           never           medium          
-sample_23       benign          regularly       medium          light           none            
-sample_24       malignant       never           medium          heavy           none            
-sample_25       malignant       regularly       low             medium          none            
-sample_26       malignant       never           heavy           heavy           low             
-sample_27       benign          regularly       heavy           light           low             
-sample_28       benign          regularly       medium          medium          heavy           
-sample_29       benign          never           low             medium          heavy           
-sample_30       malignant       never           heavy           heavy           none            
-sample_31       malignant       regularly       heavy           heavy           heavy           
-sample_32       benign          regularly       heavy           light           heavy           
-sample_33       benign          regularly       low             never           low             
-sample_34       benign          regularly       low             heavy           medium          
-sample_35       benign          regularly       low             light           medium          
-sample_36       benign          regularly       low             never           none            
-sample_37       malignant       never           heavy           heavy           none            
-sample_38       benign          never           medium          light           low             
-sample_39       benign          occasionally    heavy           heavy           heavy           
-sample_40       benign          never           medium          never           low             
-sample_41       malignant       occasionally    low             never           medium          
-sample_42       benign          occasionally    medium          heavy           low             
-sample_43       benign          occasionally    medium          heavy           medium          
-sample_44       benign          regularly       medium          light           heavy           
-sample_45       malignant       occasionally    heavy           light           medium          
-sample_46       benign          occasionally    low             light           medium          
-sample_47       malignant       never           low             heavy           none            
-sample_48       malignant       never           heavy           heavy           heavy           
-sample_49       benign          regularly       low             light           low             
+sample          class           architecture     size		sensitivity
+================================================================================
+sample_0	amazon		Embarrassingly_parallel	small		none
+sample_1	amazon		Embarrassingly_parallel	large		none
+sample_2	amazon		MapReduce	small		none
+sample_3	amazon		MapReduce	large		none
+sample_4	amazon		Other		small		none
+sample_5	amazon		Other		large		none
+sample_6	nectar		Embarrassingly_parallel	small		none
+sample_7	nectar		Embarrassingly_parallel	small		sensitive
+sample_8	nectar		Other		small		none
+sample_9	nectar		Other		small		sensitive
