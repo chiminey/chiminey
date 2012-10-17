@@ -58,7 +58,7 @@ from hrmcstages import Setup
 from hrmcstages import Run
 from hrmcstages import Finished
 from hrmcstages import Schedule
-from hrmcstages import Transform
+from stages.transform import Transform
 #from hrmcstages import Teardown
 
 from filesystem import DataObject
