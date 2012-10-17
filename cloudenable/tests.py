@@ -1051,7 +1051,7 @@ class SchedulerStageTest(unittest.TestCase):
 
         training_datafile = os.path.join("testing", "decisiontree", "training.dat")
         #training_datafile = "training.dat.org" #Iman's training.dat
-        
+
         dt = DecisionTree.DecisionTree(
             training_datafile=training_datafile,
             entropy_threshold=0.1,
@@ -1095,11 +1095,11 @@ class SchedulerStageTest(unittest.TestCase):
 
         stage = Schedule()
         tests = [
-            (["2\n", "3\n", "2\n", "3\n"], [2, 3, 2, 3]),
-            (["0\n", "1\n", "0\n", "2\n", "2\n", "3\n"], [1, 2, 2, 3]),
-            (["foo\n", "1\n", "bar\n", "2\n", "2\n", "3\n"], [1, 2, 2, 3]),
-            (["-1\n", "1\n", "-1\n", "2\n", "2\n", "3\n"], [1, 2, 2, 3]),
-            (["4\n", "3\n", "5\n", "4\n", "2\n", "3\n"], [3, 4, 2, 3]),
+            (["1\n", "2\n", "1\n"], [1, 2, 1]),
+            (["0\n", "1\n", "0\n", "2\n", "2\n"], [1, 2, 2]),
+            (["foo\n", "1\n", "bar\n", "2\n", "2\n"], [1, 2, 2]),
+            (["-1\n", "1\n", "-1\n", "2\n", "2\n"], [1, 2, 2]),
+            (["4\n", "1\n", "5\n", "1\n", "2\n"], [1, 1, 2]),
             ]
         for (response, test) in tests:
             mymock = flexmock(sys.modules['__builtin__'])
