@@ -24,11 +24,13 @@ from hrmcstages import Create
 from hrmcstages import Setup
 from hrmcstages import Run
 from hrmcstages import Finished
-from hrmcstages import Converge
+
 from hrmcstages import Teardown
-from hrmcstages import Transform
 from hrmcstages import Schedule
 from hrmcstages import clear_temp_files
+
+from stages.converge import Converge
+from stages.transform import Transform
 
 logger = logging.getLogger(__name__)
 
@@ -136,10 +138,12 @@ def start(args):
             for stage in smart_conn.stages:
                 print "Working in stage", stage
                 if stage.triggered(context):
+                    logger.debug("triggered")
                     stage.process(context)
                     context = stage.output(context)
                     logger.debug("Context", context)
                 else:
+                    logger.debug("not triggered")
                     not_triggered += 1
                     #smart_con.unregister(stage)
                     #print "Deleting stage",stage
@@ -150,8 +154,6 @@ def start(args):
                 break
 
         clear_temp_files(context)
-
-
 
     elif 'create' in args:
         if options.number_vm_instances:
@@ -263,8 +265,6 @@ def start(args):
         print "Summary of Computing Environment"
         all_instances = collect_instances(settings, all_VM=True)
         print_all_information(settings, all_instances)
-
-
     else:
         parser.print_help()
 
@@ -273,4 +273,4 @@ if __name__ == '__main__':
     begins = time.time()
     start(sys.argv[1:])
     ends = time.time()
-    logger.info("Total execution time: %d seconds" % (ends-begins))
+    logger.info("Total execution time: %d seconds" % (ends - begins))
