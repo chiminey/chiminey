@@ -28,6 +28,7 @@ import logging.config
 import paramiko
 import json
 import sys
+import re
 
 from cloudconnector import *
 #from sshconnector import get_package_pids
@@ -329,9 +330,16 @@ class RunStageTests(unittest.TestCase):
         myid = 0
         f2.create(json.dumps({'group_id': group_id, 'setup_finished': 1, 'id': myid}))
         print("f2=%s" % f2)
+
+        f3 = DataObject("rmcen.inp")
+        run_num = 42
+        f3.create("%s numbfile\n23 iseed\n" % run_num)
+
         fs = FileSystem(self.global_filesystem, self.local_filesystem)
         fs.create(self.local_filesystem, f1)
         fs.create(self.local_filesystem, f2)
+        fs.create_local_filesystem("input_0")
+        fs.create("input_0", f3)
         print("fs=%s" % fs)
 
         context = {'filesys': fs}
@@ -361,6 +369,8 @@ class RunStageTests(unittest.TestCase):
             "group_id": "sq42kdjshasdkjghauiwytuiawjmkghasjkghasg",
             "setup_finished": 1,
             "id": 0})
+
+        self.assertEquals(s1.numbfile, run_num+1)
 
 
 class FinishedStageTests(unittest.TestCase):
@@ -1155,13 +1165,13 @@ class TransformStageTests(unittest.TestCase):
     def test_get_output_numbers(self):
         group_id = "sq42kdjshasdkjghauiwytuiawjmkghasjkghasg"
          # Setup fsys and initial config files for setup
-        test_criterion1 = 789
-        test_criterion2 = 324
+        test_criterion1 = 324
+        test_criterion2 = 768
         test_number = 42
         f1 = DataObject("config.sys")
         f1.create(json.dumps(self.settings))
         f2 = DataObject("runinfo.sys")
-        id_to_test = 42
+        id_to_test = 1
         f2.create(json.dumps({'group_id': group_id, 'id': id_to_test, 'runs_left': 0}))
 
         f3a = DataObject("rmcen.inp")
@@ -1169,15 +1179,15 @@ class TransformStageTests(unittest.TestCase):
 
 
         f3b = DataObject("rmcen.inp")
-        f3b.setContent("firstline\n%d numbfile simulation run number\n2 istart\n" % test_number)
+        f3b.setContent("firstline\n%d numbfile simulation run number\n2 istart\n" % (test_number+1))
 
         f4a = DataObject("grerr02.dat")
-        f4a.setContent("123 456\n%d 0123\n" % test_criterion1)
+        f4a.setContent("123 456\n0123 %d\n" % test_criterion1)
         f5a = DataObject("grerr01.dat")
         f5a.setContent("abc def\nghi jkl\n")
 
         f4b = DataObject("grerr02.dat")
-        f4b.setContent("123 456\n%d 0123\n" % test_criterion2)
+        f4b.setContent("123 456\n0123 %d\n" % test_criterion2)
         f5b = DataObject("grerr01.dat")
         f5b.setContent("abc def\nghi jkl\n")
 
@@ -1203,19 +1213,32 @@ class TransformStageTests(unittest.TestCase):
                 f.setContent(default_output_content)
                 fs.create_under_dir("output_%s" % id_to_test, node, f)
 
-        f = DataObject('hrmc1.xyz')
-        f.setContent("foo\n")
-        fs.create_under_dir("output_%s" % id_to_test, 'i-0001a', f)
-        fs.create_under_dir("output_%s" % id_to_test, 'i-0001b', f)
+        f1 = DataObject('hrmc1.xyz')
+        f1.setContent("foo1\n")
 
-        f = DataObject('hrmc2.xyz')
-        hrmc2_content = "barbarbar\n"
-        f.setContent(hrmc2_content)
-        fs.create_under_dir("output_%s" % id_to_test, 'i-0001b', f)
+        hrmc2_content ="here is the correct\n"
+        f2 = DataObject('hrmc2.xyz')
+        f2.setContent(hrmc2_content)
 
+        f3 = DataObject('hrmc3.xyz')
+        f3.setContent("foo3\n")
 
+        fs.create_under_dir("output_%s" % id_to_test, 'i-0001a', f1)
+        fs.create_under_dir("output_%s" % id_to_test, 'i-0001a', f2)
+        fs.create_under_dir("output_%s" % id_to_test, 'i-0001a', f3)
 
+        f4 = DataObject('hrmc1.xyz')
+        f4.setContent("bar1")
 
+        f5 = DataObject('hrmc2.xyz')
+        f5.setContent("bar2")
+
+        f6 = DataObject('hrmc3.xyz')
+        f6.setContent("bar3")
+
+        fs.create_under_dir("output_%s" % id_to_test, 'i-0001b', f4)
+        fs.create_under_dir("output_%s" % id_to_test, 'i-0001b', f5)
+        fs.create_under_dir("output_%s" % id_to_test, 'i-0001b', f6)
 
         print("fs=%s" % fs)
         context = {'filesys': fs}
@@ -1231,7 +1254,7 @@ class TransformStageTests(unittest.TestCase):
         s1.process(context)
 
         new_rmcen = fs.retrieve_new("input_%s" % (id_to_test + 1), "rmcen.inp")
-        self.assertEquals(new_rmcen.getContent(), "firstline\n%s    numbfile\n1     istart\n" % (test_number+1))
+        self.assertEquals(new_rmcen.getContent(), "firstline\n%s    numbfile\n1     istart\n" % (test_number+2))
         self.assertEquals(s1.audit, "Run %s preserved (error %s)\nspawning diamond runs\n" % (test_number,
             min(test_criterion1,test_criterion2)))
 
@@ -1272,7 +1295,6 @@ class MetadataTests(unittest.TestCase):
         test_text = open(os.path.join(path, 'test_check.json'), 'r').read()
         self.assertEquals(dump, test_text)
 
-
 if __name__ == '__main__':
-    logging.config.fileConfig('logging.conf')
-    unittest.main()
+     logging.config.fileConfig('logging.conf')
+     unittest.main()
