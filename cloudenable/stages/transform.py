@@ -18,6 +18,8 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+import re
+
 from hrmcstages import get_settings
 from hrmcstages import get_run_info
 from hrmcstages import get_filesys
@@ -85,7 +87,7 @@ class Transform(Stage):
         res = []
         fs = get_filesys(context)
 
-        # for each run in the diamon
+        # Analyse each run in the previous iteration diamond
         node_output_dirs = fs.get_local_subdirectories(self.output_dir)
         logger.debug("node_output_dirs=%s" % node_output_dirs)
         for node_output_dir in node_output_dirs:
@@ -102,7 +104,8 @@ class Transform(Stage):
                 logger.warn("rmcen.inp not a file")
                 # FIXME: do we really want to skip here?
                 continue
-            # get numbfile
+
+            # Get numbfile from rmcen.inp
             numb = [x.split()[0] for x
                 in fs.retrieve_under_dir(self.output_dir,
                                          node_output_dir,
@@ -113,51 +116,65 @@ class Transform(Stage):
             else:
                 raise ValueError("No numbfile record found")
 
-            grerr_files = fs.get_local_subdirectory_files(
-                self.output_dir,
-                node_output_dir)
-            logger.debug("grerr_files=%s " % grerr_files)
-            pat = re.compile('grerr[0-9]+.dat')
-            grerr_files = [x for x in grerr_files if pat.match(x)]
+            # for each grerr*.dat file, get criterion
+            grerr_files = fs.glob(self.output_dir, node_output_dir, 'grerr[0-9]+.dat')
             grerr_files.sort()  # FIXME: only guaranteed to sort grerr 01-09
             logger.debug("grerr_files=%s " % grerr_files)
-            grerr_content = fs.retrieve_under_dir(self.output_dir,
+            criterions = []
+            for (index, f) in enumerate(grerr_files):
+
+                grerr_content = fs.retrieve_under_dir(self.output_dir,
                                                   node_output_dir,
                                                   grerr_files[-1]).retrieve()
-            logger.debug("grerr_content=%s" % grerr_content)
-            try:
-                criterion = int(grerr_content.strip().split('\n')[-1]
-                    .split()[0])
-            except ValueError as e:
-                logger.warn("invalid criteron found in grerr "
-                    + "file for  %s/%s: %s"
-                    % (self.output_dir, node_output_dir, e))
-                continue
-            logger.debug("criterion=%s" % criterion)
-            res.append((node_output_dir, number, criterion))
+                logger.debug("grerr_content=%s" % grerr_content)
+                try:
+                    criterion = int(grerr_content.strip().split('\n')[-1]
+                        .split()[1])
+                except ValueError as e:
+                    logger.warn("invalid criteron found in grerr "
+                        + "file for  %s/%s: %s"
+                        % (self.output_dir, node_output_dir, e))
+                    continue
+                logger.debug("criterion=%s" % criterion)
+                criterions.append((index, f, criterion))
 
+            # Find minimum criterion
+            criterions.sort(key=lambda x: x[2])
+            if criterions:
+                grerr_info = criterions[0]
+            else:
+                logger.error("no grerr files found")
+                grerr_info = () # FIXME: can recover from this?
+            criterion = grerr_info[2]
+
+            res.append((node_output_dir, index, number, criterion))
+
+        # Get Maximum numbfile in all previous runs
+        max_numbfile = max([x[2] for x in res])
+        logger.debug("maximum numbfile value=%s" % max_numbfile)
+
+        # Get informatiion about minimum criterion previous run.
         logger.debug("res=%s" % res)
-        res = sorted(res, key=lambda x: x[2])
+        res.sort(key=lambda x: int(x[3]))
         logger.debug("res=%s" % res)
         if res:
-            (best_node_dir, number, criterion) = res[0]
+            (best_node_dir, best_index, number, criterion) = res[0]
         else:
             # FIXME: can we carry on here?
             logger.warning("no output directory found")
-            (best_node_dir, number, criterion) = (self.output_dir, 0, 0)  # ?
+            (best_node_dir, best_index, number, criterion) = ("", 0, 0,0)  # ?
 
         self.audit += "Run %s preserved (error %s)\n" % (number, criterion)
         logger.debug("best_node_dir=%s" % best_node_dir)
-
-        # FIXME: what is the number?  Is it just the iteration number of
-        # something more?
+        logger.debug("best_index=%s" % best_index)
 
         fs.create_local_filesystem(self.new_input_dir)
 
-        # transfer rmcen.inp to next iteration inputdir
+        # Transfer rmcen.inp to next iteration inputdir initially unchanged
         fs.copy(self.output_dir, best_node_dir,
                 'rmcen.inp', self.new_input_dir, 'rmcen.inp')
 
+        # Move all existing input files unchanged to next input directory
         for f in ['pore.xyz', 'sqexp.dat']:
             try:
                 fs.copy(self.output_dir, best_node_dir,
@@ -167,50 +184,42 @@ class Transform(Stage):
                     % (f, self.output_dir, best_node_dir, e))
                 continue
 
-        # copy best hrmc*.xyz file to new input directory as initial.xyz
-        # FIXME: what if there are multiple matches? DO we choose the largest?
-        # TODO: make into globbing function in fsys
-        xyzfiles = fs.get_local_subdirectory_files(self.output_dir,
-                                                    best_node_dir)
+        # Copy hrmc[best_index].xyz file from best run new input directory
+        # as initial.xyz
+        xyzfiles = fs.glob(self.output_dir, best_node_dir, 'hrmc[0-9]+\.xyz')
         logger.debug("xyzfiles=%s " % xyzfiles)
-        pat = re.compile('hrmc[0-9]+\.xyz')
-        xyzfiles = [x for x in xyzfiles if pat.match(x)]
-        logger.debug("xyzfiles=%s " % xyzfiles)
-
         xyzfiles.sort()  # FIXME: assume we use only the last
         logger.debug("xyzfiles=%s " % xyzfiles)
-
+        found = False
         for file_name in xyzfiles:
-            try:
-                fs.copy(self.output_dir, best_node_dir,
-                        file_name, self.new_input_dir,
-                        'initial.xyz', overwrite=True)
-            except IOError as e:
-                logger.warn("no %s found in  %s/%s: %s"
-                    % (file_name, self.output_dir, best_node_dir, e))
-                continue
-
-        #NB: only works for small files
+            if file_name == 'hrmc%d.xyz' % (best_index+1):
+                logger.debug("%s -> %s" % (file_name, 'initial.xyz'))
+                try:
+                    fs.copy(self.output_dir, best_node_dir,
+                            file_name, self.new_input_dir,
+                            'initial.xyz', overwrite=True)
+                except IOError as e:
+                    logger.warn("no %s found in  %s/%s: %s"
+                        % (file_name, self.output_dir, best_node_dir, e))
+                    continue
+            found = True
+        if not found:
+            logger.warn("No matching hrmc%s.dat file found to transfer" % best_index)
         rmcen = fs.retrieve_new(self.new_input_dir, "rmcen.inp")
         text = rmcen.retrieve()
-        #logger.debug("text = %s" % text)
 
-        # increment rmcen.input numbfile value.  FIXME: is this correct?
+        # Change numfile to be higher than any of previous iteration
         p = re.compile("^([0-9]*)[ \t]*numbfile.*$", re.MULTILINE)
-
-        # numbfile should match iteration number but read version first
         m = p.search(text)
         if m:
             numbfile = int(m.group(1))
         else:
             logger.warn("could not find numbfile in rmcen.inp")
             numbfile = self.id
-        text = re.sub(p, "%d    numbfile" % (numbfile + 1), text)
-        #logger.debug("text = %s" % text)
-
+        text = re.sub(p, "%d    numbfile" % (max_numbfile + 1), text)
         logger.debug("numfile = %d" % numbfile)
 
-        # change istart
+        # Change istart from 2 to 1 after first iteration
         p = re.compile("^([0-9]*)[ \t]*istart.*$", re.MULTILINE)
         m = p.search(text)
         if m:
@@ -220,6 +229,7 @@ class Transform(Stage):
             logger.warn("Cloud not find istart in rmcen.inp")
         logger.debug("text = %s" % text)
 
+        # Write back changes
         rmcen.setContent(text)
         logger.debug("rmcen=%s" % rmcen)
         fs.update(self.new_input_dir, rmcen)

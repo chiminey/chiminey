@@ -21,6 +21,7 @@
 
 import os
 import time
+import re
 
 from fs.osfs import OSFS
 from fs import path
@@ -223,17 +224,27 @@ class FileSystem(object):
         output = proc.stdout.read()
         return output
 
-    def copy(self, local_filesystem, source_dir, file, dest_dir, new_name,overwrite=True):
-
+    def copy(self, local_filesystem, source_dir, file, dest_dir, new_name, overwrite=True):
         """
         Copy lfs/sourcedir/file to lfs/dest_dir
         """
         try:
-            self.connector_fs.copy(path.join(local_filesystem,source_dir, file), path.join(dest_dir, new_name),overwrite)
+            self.connector_fs.copy(path.join(local_filesystem, source_dir, file),
+                                   path.join(dest_dir, new_name), overwrite)
         except ResourceNotFoundError as e:
-            raise  IOError(e)
+            raise IOError(e)  # FIXME: make filesystem specfic exceptions
 
-
+    def glob(self, local_filesystem, directory, pattern):
+        """
+        Return list of files in the local_filesystem/directory with names that match pattern
+        """
+        files = self.get_local_subdirectory_files(
+            local_filesystem,
+            directory)
+        logger.debug("files=%s " % files)
+        pat = re.compile(pattern)
+        new_files = [x for x in files if pat.match(x)]
+        return new_files
 
     # TODO: need to build glob function for pyfilesystem, may have to walk directory and
     # do manual regex matching as pytfilesystem doesn't provide that function.

@@ -28,6 +28,7 @@ import logging.config
 import json
 import os
 import sys
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -281,24 +282,24 @@ class Schedule(Stage):
                         number_of_fails += 1
 
             self.answers.append(int(mychoice))
-         
-        user_requirement = [] 
+
+        user_requirement = []
         question_no = 0
         for (quest_num, (question_name, question_desc, question_choices)) in enumerate(questions):
-            logger.debug("Quest num %d, question name %s " % (quest_num,question_name ))
-            answer_index = self.answers[quest_num]-1
+            logger.debug("Quest num %d, question name %s " % (quest_num, question_name))
+            answer_index = self.answers[quest_num] - 1
             requirement = question_name + '=>' + question_choices[answer_index]
             user_requirement.append(requirement)
             logger.debug("req %s" % requirement)
         logger.debug(user_requirement)
-        
+
         import DecisionTree
         training_datafile = 'provider_training.dat'
-        dt = DecisionTree.DecisionTree( training_datafile = training_datafile,
-                                entropy_threshold = 0.1,
-                                max_depth_desired = 3,
-                                debug1 = 1,                          
-                                debug2 = 1,
+        dt = DecisionTree.DecisionTree(training_datafile=training_datafile,
+                                entropy_threshold=0.1,
+                                max_depth_desired=3,
+                                debug1=1,
+                                debug2=1
                               )
         dt.get_training_data()
         root_node = dt.construct_decision_tree_classifier()
@@ -308,10 +309,10 @@ class Schedule(Stage):
         classification = dt.classify(root_node, user_requirement)
         max_prob = self._get_highest_probability(classification)
         self.candidate_providers = self._get_candidate_providers(classification, max_prob)
-        logger.debug("answers %s" %self.answers)
+        logger.debug("answers %s" % self.answers)
 
-        return self.answers  
-    
+        return self.answers
+
     def _get_highest_probability(self, classification):
         which_classes = list(classification.keys())
         max_prob = 0
@@ -321,7 +322,7 @@ class Schedule(Stage):
             if curr_prob > max_prob:
                 max_prob = curr_prob
         return max_prob
-            
+
     def _get_candidate_providers(self, classification, max_prob):
         which_classes = list(classification.keys())
         candidate_providers = []
@@ -332,7 +333,6 @@ class Schedule(Stage):
                 logger.debug("Candidate provider %s " % provider)
         return candidate_providers
 
-
     def output(self, context):
         """
         Create a runfinos.sys file in filesystem with provider
@@ -342,7 +342,7 @@ class Schedule(Stage):
         if self.provider != 'nectar' or len(self.candidate_providers) > 1:
             logger.debug("But we use 'nectar' for now...")
             self.provider = 'nectar'
-        
+
         local_filesystem = 'default'
         data_object = DataObject("runinfo.sys")
         data_object.create(json.dumps({'PROVIDER': self.provider}))
@@ -452,6 +452,8 @@ class Run(Stage):
     """
     Start applicaiton on nodes and return status
     """
+    def __init__(self):
+        self.numbfile = 0
 
     def triggered(self, context):
         # triggered when we now that we have N nodes setup and ready to run.
@@ -507,6 +509,9 @@ class Run(Stage):
             return False
 
     def _create_input(self, instance_id, seeds, node, fsys):
+        """
+        Move the input files to the VM
+        """
         ip = get_instance_ip(instance_id, self.settings)
         ssh = open_connection(ip_address=ip, settings=self.settings)
         fsys.upload_input(ssh, self.input_dir, os.path.join(
@@ -521,10 +526,13 @@ class Run(Stage):
         run_command(ssh, "cd %s; sed -i '/^$/d' rmcen.inp" %
                     (os.path.join(self.settings['DEST_PATH_PREFIX'],
                                   self.settings['PAYLOAD_CLOUD_DIRNAME'])))
-
         run_command(ssh, "cd %s; sed -i 's/[0-9]*[ \t]*iseed.*$/%s\tiseed/' rmcen.inp" %
                     (os.path.join(self.settings['DEST_PATH_PREFIX'],
                                   self.settings['PAYLOAD_CLOUD_DIRNAME']), seeds[node]))
+        run_command(ssh, "cd %s; sed -i 's/[0-9]*[ \t]*numbfile.*$/%s\tnumbfile/' rmcen.inp" %
+                    (os.path.join(self.settings['DEST_PATH_PREFIX'],
+                                  self.settings['PAYLOAD_CLOUD_DIRNAME']), self.numbfile))
+        self.numbfile += 1
 
     def _prepare_input(self, context):
         """
@@ -549,14 +557,10 @@ class Run(Stage):
 
         seeds = {}
 
-        # expose subdirectory as filesystem for copying
-
         nodes = get_rego_nodes(self.group_id, self.settings)
-
         for node in nodes:
             # FIXME: is the random supposed to be positive or negative?
             seeds[node] = random.randrange(0, self.settings['MAX_SEED_INT'])
-
         if seed:
             print ("seed for full package run = %s" % seed)
         else:
@@ -566,11 +570,24 @@ class Run(Stage):
 
         logger.debug("seeds = %s" % seeds)
 
+        # Get starting value for numbfile from new input file
+        # each deployed rmcen.inp has numbfile relative to this.
+        rmcen = fsys.retrieve_new(self.input_dir, "rmcen.inp")
+        text = rmcen.retrieve()
+        p = re.compile("^([0-9]*)[ \t]*numbfile.*$", re.MULTILINE)
+        m = p.search(text)
+        if m:
+            self.numbfile = int(m.group(1))
+        else:
+            logger.error("could not find numbfile in rmcen.inp")
+            self.numbfile = 100 # should not collide with other previous iterations.
+
+        # copy up the new input files to VMs
         for node in nodes:
             instance_id = node.id
             logger.info("prepare_input %s %s" % (instance_id, self.input_dir))
-
             self._create_input(instance_id, seeds, node, fsys)
+
 
     def process(self, context):
 
