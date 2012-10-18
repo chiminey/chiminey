@@ -128,7 +128,7 @@ class Transform(Stage):
                                                   grerr_files[-1]).retrieve()
                 logger.debug("grerr_content=%s" % grerr_content)
                 try:
-                    criterion = int(grerr_content.strip().split('\n')[-1]
+                    criterion = float(grerr_content.strip().split('\n')[-1]
                         .split()[1])
                 except ValueError as e:
                     logger.warn("invalid criteron found in grerr "
@@ -192,7 +192,7 @@ class Transform(Stage):
         logger.debug("xyzfiles=%s " % xyzfiles)
         found = False
         for file_name in xyzfiles:
-            if file_name == 'hrmc%d.xyz' % (best_index+1):
+            if file_name == 'hrmc%d.xyz' % (best_index + 1):
                 logger.debug("%s -> %s" % (file_name, 'initial.xyz'))
                 try:
                     fs.copy(self.output_dir, best_node_dir,
