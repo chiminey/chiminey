@@ -1256,7 +1256,7 @@ class TransformStageTests(unittest.TestCase):
         new_rmcen = fs.retrieve_new("input_%s" % (id_to_test + 1), "rmcen.inp")
         self.assertEquals(new_rmcen.getContent(), "firstline\n%s    numbfile\n1     istart\n" % (test_number+2))
         self.assertEquals(s1.audit, "Run %s preserved (error %s)\nspawning diamond runs\n" % (test_number,
-            min(test_criterion1,test_criterion2)))
+            float(min(test_criterion1,test_criterion2))))
 
         ff = fs.retrieve_new("input_%s" % (id_to_test + 1), "initial.xyz")
         self.assertEquals(ff.getContent(), hrmc2_content)
