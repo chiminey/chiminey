@@ -40,12 +40,13 @@ from hrmcimpl import get_output
 logging.config.fileConfig('logging.conf')
 logger = logging.getLogger(__name__)
 
-
+#TODO: make filesystem-specific exceptions
 
 class FileSystem(object):
     # FIXME: these methods should not interact with the underlying filesystem
     # directory, and should only interact vis osfs api calls.  For example,
     # use fs.mkdir not os.mkdir.
+    # FIXME: remove os.path.join references and use fs.path.join instead
 
     def __init__(self, global_filesystem, local_filesystem=None):
         self._create_global_filesystem(global_filesystem)
@@ -101,7 +102,7 @@ class FileSystem(object):
         #mport ipdb
         #ipdb.set_trace()
         direct = path.join("/", local_filesystem, directory)
-        self.connector_fs.makedir(direct,allow_recreate=True)
+        self.connector_fs.makedir(direct, allow_recreate=True)
         dest_file_name = path.join(direct, data_object.getName())
         #FIXME: Not sure why we need this
         #if not local_filesystem:
@@ -122,7 +123,7 @@ class FileSystem(object):
 
     def retrieve_under_dir(self, local_filesystem, directory, file):
         # This has the advantage of not exposing the path join semantics.
-        return self.retrieve(path.join("/",local_filesystem, directory, file))
+        return self.retrieve(path.join("/", local_filesystem, directory, file))
 
     def retrieve(self, file_to_be_retrieved):
         # NOTE: Deprecated, as requires full path to created externally, which is
@@ -140,7 +141,6 @@ class FileSystem(object):
         data_object = DataObject(retrieved_file_name)
         data_object.setContent(retrieved_file_content)
         return data_object
-
 
     def update(self, local_filesystem, data_object):
         file_to_be_updated = local_filesystem + "/" + data_object.getName()
@@ -187,12 +187,11 @@ class FileSystem(object):
 
         return list_of_subdirectories
 
-
     def delete_local_filesystem(self, local_filesystem):
         """
         Deleted a local file system
         """
-        path_to_local_filesystem =  os.path.join(self.global_filesystem, local_filesystem)
+        path_to_local_filesystem = path.join(self.global_filesystem, local_filesystem)
         #FIXME: should use appropriate osfs API here
         shutil.rmtree(path_to_local_filesystem)
 
@@ -248,13 +247,11 @@ class FileSystem(object):
         new_files = [x for x in files if pat.match(x)]
         return new_files
 
-    # TODO: need to build glob function for pyfilesystem, may have to walk directory and
-    # do manual regex matching as pytfilesystem doesn't provide that function.
-
 
 class DataObject(object):
     # Assume that whole file is contained in one big string
     # as it makes json parsing easier
+    # FIXME: There is very little value-add here.  Might be better to just use strings
 
     def __init__(self):
         self._name = ""

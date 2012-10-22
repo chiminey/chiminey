@@ -21,6 +21,7 @@
 
 import re
 import logging
+import sys
 import logging.config
 
 from hrmcstages import get_run_settings
@@ -41,7 +42,7 @@ class IterationConverge(Stage):
 
     def __init__(self, number_of_iterations):
         print "hello"
-        logger.debug("created converge")
+        logger.debug("created iteration converge")
         self.total_iterations = number_of_iterations
         self.number_of_remaining_iterations = number_of_iterations
         self.id = 0
@@ -95,7 +96,6 @@ class Converge(Stage):
     # TODO: Might be clearer to count up rather than down as id goes up
 
     def __init__(self, error_threshold):
-        print "hello"
         logger.debug("created converge")
         self.error_threshold = error_threshold
         self.id = 0
@@ -104,8 +104,6 @@ class Converge(Stage):
         self.settings = get_run_settings(context)
         logger.debug("settings = %s" % self.settings)
 
-        self.settings = get_run_settings(context)
-        logger.debug("settings = %s" % self.settings)
 
         if 'id' in self.settings:
             self.id = self.settings['id']
@@ -125,6 +123,11 @@ class Converge(Stage):
 
     def process(self, context):
 
+        # TODO: should keep track of the criterion from the last iteration
+        # to handle the error condition where criterion is diverging
+        # TODO: should could number of iterations to indicate if the
+        # convergence is very slow.
+
         # retrive the audit file for last iteration
         fs = get_filesys(context)
         if not fs:
@@ -136,22 +139,37 @@ class Converge(Stage):
         except IOError:
             logger.warn("no audit found")
             raise
-
         logger.debug("text=%s" % text)
+
+        self.settings = get_run_settings(context)
+        logger.debug("settings = %s" % self.settings)
+
+        if 'criterion' in self.settings:
+            self.prev_criterion = float(self.settings['criterion'])
+        else:
+            self.prev_criterion = sys.float_info.max - 1.0
+            logger.warn("no previous criterion found")
+
         # extract the best criterion error from last iteration
         p = re.compile("\(error[ \t]*([0-9\.]+)\)", re.MULTILINE)
         m = p.search(text)
-        criterion = None
+        self.criterion = None
         if m:
-            criterion = float(m.group(1))
+            self.criterion = float(m.group(1))
         else:
             message = "cannot extract criterion from audit file for iteration %s" % (self.id + 1)
             logger.warn(message)
             raise IOError(message)
 
-        logger.debug("criterion = %d" % criterion)
+        # check whether we are under the error threshold
+        logger.debug("prev_criterion = %f" % self.prev_criterion)
+        logger.debug("criterion = %f" % self.criterion)
         self.done_iterating = False
-        if criterion <= self.error_threshold:
+        if self.criterion > self.prev_criterion:
+            logger.error('iteration %s is diverging')
+            self.done_iterating = True  # if we are diverging then end now
+
+        if (self.prev_criterion - self.criterion) <= self.error_threshold:
             self.done_iterating = True
 
     def output(self, context):
@@ -168,6 +186,7 @@ class Converge(Stage):
             update_key('converged', True, context)
             # we are done, so don't trigger iteration stages
 
+        update_key('criterion', self.criterion, context)
         delete_key('transformed', context)
         self.id += 1
         update_key('id', self.id, context)
