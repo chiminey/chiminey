@@ -1417,7 +1417,24 @@ class ConvergeStageTests(unittest.TestCase):
 
         fs.create(self.local_filesystem, f1)
         fs.create_local_filesystem("input_%s" % (id_to_test + 1))
+        fs.create_local_filesystem('output')
         fs.create("input_%s" % (id_to_test + 1), f3a)
+
+
+        f4 = DataObject('grerr%s.dat' % str(id_to_test).zfill(2))
+        best_gerr_content = 'foo'
+        f4.setContent(content=best_gerr_content)
+        f5 = DataObject('grerr%s.dat' % str(id_to_test+1).zfill(2))
+        f5.setContent(content='bar')
+        f6 = DataObject('testfile')
+        best_testfile_content = "testfile"
+        f6.setContent(content=best_testfile_content)
+
+        fs.create_local_filesystem('output_%s' % id_to_test)
+        fs.create_under_dir(local_filesystem='output_%s' % id_to_test, directory='node1', data_object=f4)
+        fs.create_under_dir(local_filesystem='output_%s' % id_to_test, directory='node2', data_object=f5)
+        fs.create_under_dir(local_filesystem='output_%s' % id_to_test, directory='node1', data_object=f6)
+
 
         print("fs=%s" % fs)
         context = {'filesys': fs}
@@ -1436,6 +1453,17 @@ class ConvergeStageTests(unittest.TestCase):
         self.assertTrue('error_nodes' in content)
         criterion = float(content['criterion'])
         self.assertTrue(criterion <= s1.prev_criterion)
+
+        grerr_content = fs.retrieve_new(directory='output',
+                                          file='grerr%s.dat' % str(id_to_test).zfill(2)).retrieve()
+
+
+        self.assertEquals(best_gerr_content, grerr_content)
+
+        testfile_content = fs.retrieve_new(directory='output',
+                                          file='testfile').retrieve()
+        self.assertEquals(testfile_content, best_testfile_content)
+
 
     def test_diverge(self):
         """ Tests situation where converence has happened
@@ -1482,6 +1510,9 @@ class ConvergeStageTests(unittest.TestCase):
         self.assertEquals(content['converged'], True)
         self.assertTrue('runs_left' in content)
         self.assertTrue('error_nodes' in content)
+
+
+
         criterion = float(content['criterion'])
         self.assertTrue(criterion > s1.prev_criterion)
 
