@@ -151,26 +151,58 @@ class Converge(Stage):
             logger.warn("no previous criterion found")
 
         # extract the best criterion error from last iteration
-        p = re.compile("\(error[ \t]*([0-9\.]+)\)", re.MULTILINE)
+        p = re.compile("Run (\d+) preserved \(error[ \t]*([0-9\.]+)\)", re.MULTILINE)
         m = p.search(text)
         self.criterion = None
         if m:
-            self.criterion = float(m.group(1))
+            self.criterion = float(m.group(2))
+            self.best_num = int(m.group(1))
         else:
             message = "cannot extract criterion from audit file for iteration %s" % (self.id + 1)
             logger.warn(message)
             raise IOError(message)
 
         # check whether we are under the error threshold
+        logger.debug("best_num=%s" % self.best_num)
         logger.debug("prev_criterion = %f" % self.prev_criterion)
         logger.debug("criterion = %f" % self.criterion)
         self.done_iterating = False
         if self.criterion > self.prev_criterion:
-            logger.error('iteration %s is diverging')
+            logger.error('iteration %s is diverging' % self.best_num)
             self.done_iterating = True  # if we are diverging then end now
-
-        if (self.prev_criterion - self.criterion) <= self.error_threshold:
+        elif (self.prev_criterion - self.criterion) <= self.error_threshold:
             self.done_iterating = True
+            self._ready_final_output(fs)
+        else:
+            logger.debug("iteration continues")
+
+    def _ready_final_output(self, fs):
+
+
+        new_output_dir = 'output'
+        # FIXME: check new_output_dir does not already exist
+        fs.create_local_filesystem(new_output_dir)
+
+        for node_dir in fs.get_local_subdirectories(self.output_dir):
+            grerr = None
+            try:
+                grerr = fs.retrieve_under_dir(local_filesystem=self.output_dir,
+                                             directory=node_dir,
+                                             file="grerr%s.dat" % str(self.best_num).zfill(2)).retrieve()
+            except IOError:
+                logger.warn("no grerr found")
+
+            if grerr:
+                files_to_copy = fs.get_local_subdirectory_files(self.output_dir,
+                                             node_dir)
+                logger.debug("files_to_copy=%s" % files_to_copy)
+
+                for f in files_to_copy:
+                    logger.debug("f=%s" % f)
+                    fs.copy(self.output_dir, node_dir, f, new_output_dir, f)
+            else:
+                logger.debug("skipping %s" % node_dir)
+
 
     def output(self, context):
 

@@ -73,6 +73,7 @@ class FileSystem(object):
         """
         Creates an additional local filesystem in addition to those created at init
         """
+        #FIXME: should throw exception if already exists
         if not self.connector_fs.exists(local_filesystem):
             self.connector_fs.makedir(local_filesystem)
         return True
