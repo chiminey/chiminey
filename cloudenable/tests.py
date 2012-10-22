@@ -1340,12 +1340,16 @@ class ConvergeStageTests(unittest.TestCase):
         pass
 
     def test_nonconverge(self):
+        """
+        Test situation where the convergence has not been met
+        """
 
-        s1 = Converge(100)
+        s1 = Converge(10)
 
         group_id = "sq42kdjshasdkjghauiwytuiawjmkghasjkghasg"
          # Setup fsys and initial config files for setup
         test_criterion = 324
+
         f1 = DataObject("config.sys")
         f1.create(json.dumps(self.settings))
 
@@ -1354,7 +1358,7 @@ class ConvergeStageTests(unittest.TestCase):
         id_to_test = 1
         f2.create(json.dumps({'group_id': group_id, 'id': id_to_test,
                               'runs_left': 0, 'transformed': True,
-                              'error_nodes': 0}))
+                              'error_nodes': 0, 'criterion': 500}))
         fs = FileSystem(self.global_filesystem, self.local_filesystem)
         fs.create(self.local_filesystem, f2)
 
@@ -1377,9 +1381,110 @@ class ConvergeStageTests(unittest.TestCase):
         config = fs.retrieve("default/runinfo.sys")
         content = json.loads(config.retrieve())
 
+        self.assertEquals(s1.criterion, test_criterion)
         self.assertEquals(content['converged'], False)
         self.assertTrue(not 'runs_left' in content)
         self.assertTrue(not 'error_nodes' in content)
+        criterion = float(content['criterion'])
+        self.assertTrue(criterion <= s1.prev_criterion)
+
+
+    def test_converge(self):
+        """ Tests situation where converence has happened
+        """
+
+        s1 = Converge(10)
+
+        group_id = "sq42kdjshasdkjghauiwytuiawjmkghasjkghasg"
+         # Setup fsys and initial config files for setup
+        test_criterion = 90
+
+        f1 = DataObject("config.sys")
+        f1.create(json.dumps(self.settings))
+
+        f2 = DataObject("runinfo.sys")
+
+        id_to_test = 1
+        f2.create(json.dumps({'group_id': group_id, 'id': id_to_test,
+                              'runs_left': 0, 'transformed': True,
+                              'error_nodes': 0, 'criterion': 95}))
+        fs = FileSystem(self.global_filesystem, self.local_filesystem)
+        fs.create(self.local_filesystem, f2)
+
+        f3a = DataObject("audit.txt")
+        f3a.setContent("Run %s preserved (error %f)\nspawning diamond runs\n"
+                        % (id_to_test, test_criterion))
+
+        fs.create(self.local_filesystem, f1)
+        fs.create_local_filesystem("input_%s" % (id_to_test + 1))
+        fs.create("input_%s" % (id_to_test + 1), f3a)
+
+        print("fs=%s" % fs)
+        context = {'filesys': fs}
+        print("context=%s" % context)
+        res = s1.triggered(context)
+        print res
+        s1.process(context)
+        context = s1.output(context)
+
+        config = fs.retrieve("default/runinfo.sys")
+        content = json.loads(config.retrieve())
+
+        self.assertEquals(s1.criterion, test_criterion)
+        self.assertEquals(content['converged'], True)
+        self.assertTrue('runs_left' in content)
+        self.assertTrue('error_nodes' in content)
+        criterion = float(content['criterion'])
+        self.assertTrue(criterion <= s1.prev_criterion)
+
+    def test_diverge(self):
+        """ Tests situation where converence has happened
+        """
+
+        s1 = Converge(10)
+
+        group_id = "sq42kdjshasdkjghauiwytuiawjmkghasjkghasg"
+         # Setup fsys and initial config files for setup
+        test_criterion = 90
+
+        f1 = DataObject("config.sys")
+        f1.create(json.dumps(self.settings))
+
+        f2 = DataObject("runinfo.sys")
+
+        id_to_test = 1
+        f2.create(json.dumps({'group_id': group_id, 'id': id_to_test,
+                              'runs_left': 0, 'transformed': True,
+                              'error_nodes': 0, 'criterion': 85}))
+        fs = FileSystem(self.global_filesystem, self.local_filesystem)
+        fs.create(self.local_filesystem, f2)
+
+        f3a = DataObject("audit.txt")
+        f3a.setContent("Run %s preserved (error %f)\nspawning diamond runs\n"
+                        % (id_to_test, test_criterion))
+
+        fs.create(self.local_filesystem, f1)
+        fs.create_local_filesystem("input_%s" % (id_to_test + 1))
+        fs.create("input_%s" % (id_to_test + 1), f3a)
+
+        print("fs=%s" % fs)
+        context = {'filesys': fs}
+        print("context=%s" % context)
+        res = s1.triggered(context)
+        print res
+        s1.process(context)
+        context = s1.output(context)
+
+        config = fs.retrieve("default/runinfo.sys")
+        content = json.loads(config.retrieve())
+
+        self.assertEquals(s1.criterion, test_criterion)
+        self.assertEquals(content['converged'], True)
+        self.assertTrue('runs_left' in content)
+        self.assertTrue('error_nodes' in content)
+        criterion = float(content['criterion'])
+        self.assertTrue(criterion > s1.prev_criterion)
+
 
 
 class MetadataTests(unittest.TestCase):

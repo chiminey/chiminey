@@ -178,6 +178,7 @@ class Transform(Stage):
             logger.warning("no output directory found")
             (best_node_dir, best_index, number, criterion, grerr_file) = ("", 0, 0, 0, "")  # ?
 
+        # NB: Converge stage triggers based on criterion value from audit.
         self.audit += "Run %s preserved (error %s)\n" % (number, criterion)
         logger.debug("best_node_dir=%s" % best_node_dir)
         logger.debug("best_index=%s" % best_index)

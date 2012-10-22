@@ -17,6 +17,7 @@ class Stage(object):
     def triggered(self, context):
         """ return true if the directory pattern triggers this stage
         """
+        # FIXME: Need to verify that triggered is idempotent.
         return True
 
     def process(self, context):
@@ -253,20 +254,20 @@ def mainloop():
     filesys.create_initial_filesystem(path_fs)
    # filesys.create_file(path_fs, 'Iman')
     filesys.create_filesystem("newFS")
-    
+
     filesys.delete_filesystem("newFS")
     filesys.delete_file("Iman")
     filesys.create_file('/home/iyusuf/Butini', dest_filesystem='/home/iyusuf/connectorFS/Seid')
-    
+
     file_name='tobeupdated'
     absolute_path=filesys.toplevel_filesystem+"/"+file_name
-    
+
     f= open(absolute_path, 'w')
     f.write("Line 1")
     f.write("line 2")
     f.close()
-    
-    
+
+
     #filesys.update_file('Butini')
     #filesys.delete_file(path_fs, 'Iman')
 
