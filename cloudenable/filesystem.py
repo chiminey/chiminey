@@ -41,12 +41,11 @@ logging.config.fileConfig('logging.conf')
 logger = logging.getLogger(__name__)
 
 
+
 class FileSystem(object):
     # FIXME: these methods should not interact with the underlying filesystem
     # directory, and should only interact vis osfs api calls.  For example,
-    # use fs.mkdir not os.mkdir.__doc__
-
-    # def __init__(self, global_filesystem):
+    # use fs.mkdir not os.mkdir.
 
     def __init__(self, global_filesystem, local_filesystem=None):
         self._create_global_filesystem(global_filesystem)
@@ -69,7 +68,6 @@ class FileSystem(object):
     def get_global_filesystem(self):
         return self.global_filesystem
 
-
     def create_local_filesystem(self, local_filesystem):
         """
         Creates an additional local filesystem in addition to those created at init
@@ -78,12 +76,12 @@ class FileSystem(object):
             self.connector_fs.makedir(local_filesystem)
         return True
 
-
     def create(self, local_filesystem, data_object, message='CREATED'):
         if not self.connector_fs.exists(local_filesystem):
             logger.error("Destination filesystem '%s' does not exist"
                          % local_filesystem)
-            return False
+            raise IOError("Destination filesystem '%s' does not exist"
+                         % local_filesystem)
 
         destination_file_name = self.global_filesystem + "/" + local_filesystem + "/" + data_object.getName()
         if not local_filesystem:
@@ -115,6 +113,10 @@ class FileSystem(object):
         return True
 
     def retrieve_new(self, directory, file):
+        """
+        Return the Dataobject for the file in the directory
+        Throws IOError if not found
+        """
         # This has the advantage of not exposing the path join semantics.
         return self.retrieve(path.join(directory, file))
 
@@ -122,12 +124,12 @@ class FileSystem(object):
         # This has the advantage of not exposing the path join semantics.
         return self.retrieve(path.join("/",local_filesystem, directory, file))
 
-     # check for missing path# MUST RETURN filesystem
     def retrieve(self, file_to_be_retrieved):
-        # Deprecated
+        # NOTE: Deprecated, as requires full path to created externally, which is
+        # leaky abstraction
         if not self.connector_fs.exists(file_to_be_retrieved):
             logger.error("File'%s' does not exist" % file_to_be_retrieved)
-            return None
+            raise IOError("File'%s' does not exist" % file_to_be_retrieved)
 
         retrieved_file_absolute_path = self.global_filesystem + "/" + file_to_be_retrieved
         retrieved_file = open(retrieved_file_absolute_path, 'r')
@@ -144,7 +146,7 @@ class FileSystem(object):
         file_to_be_updated = local_filesystem + "/" + data_object.getName()
         if not self.connector_fs.exists(file_to_be_updated):
             logger.error("File'%s' does not exist" % file_to_be_updated)
-            return False
+            raise IOError("File'%s' does not exist" % file_to_be_updated)
        #logger.info("Updating file '%s'" % file_to_be_updated)
         return self.create(local_filesystem, data_object, message="UPDATED")
 
@@ -152,26 +154,26 @@ class FileSystem(object):
         # file to be deleted is path not file
         if not self.connector_fs.exists(file_to_be_deleted):
             logger.error("File'%s' does not exist" % file_to_be_deleted)
-            return False
+            raise IOError("File'%s' does not exist" % file_to_be_deleted)
 
         self.connector_fs.remove(file_to_be_deleted)
         logger.info("File '%s' DELETED" % file_to_be_deleted)
         return True
 
     def isdir(self, local_filesystem, dir_path):
-        return self.connector_fs.isdir(path.join("/",local_filesystem,dir_path))
+        return self.connector_fs.isdir(path.join("/", local_filesystem, dir_path))
 
-    def isfile(self, local_filesystem, dir_path,f):
-        return self.connector_fs.isfile(path.join("/",local_filesystem,dir_path,f))
+    def isfile(self, local_filesystem, dir_path, f):
+        return self.connector_fs.isfile(path.join("/", local_filesystem, dir_path, f))
 
     def exists(self, local_filesystem, dir_path, f):
-        return self.connector_fs.exists(path.join("/",local_filesystem, dir_path, f))
+        return self.connector_fs.exists(path.join("/", local_filesystem, dir_path, f))
 
     def get_local_subdirectories(self, local_filesystem):
         """
         Returns list of names of directories immediately below local_filesystem
         """
-        path_to_subdirectories =  os.path.join(self.global_filesystem, local_filesystem)
+        path_to_subdirectories = os.path.join(self.global_filesystem, local_filesystem)
         list_of_subdirectories = os.listdir(path_to_subdirectories)
 
         return list_of_subdirectories
@@ -217,7 +219,7 @@ class FileSystem(object):
                                              self.global_filesystem,
                                              file_to_be_executed)
         if wildcard:
-            import glob  # Why is this here?
+            import glob  # FIXME: Why is this here?
 
         command.append(absolute_path_to_file)
         proc = subprocess.Popen(command, stdout=subprocess.PIPE)

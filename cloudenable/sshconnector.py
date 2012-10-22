@@ -21,12 +21,9 @@ from time import sleep
 
 import paramiko
 import os
-import sys
-import traceback
 import logging
 
 logger = logging.getLogger(__name__)
-
 
 
 class Error(Exception):
@@ -35,6 +32,7 @@ class Error(Exception):
 
 class AuthError(Error):
     pass
+
 
 def is_ssh_ready(settings, ip_address):
     ssh_ready = False
@@ -162,16 +160,25 @@ def mkdir(ssh_client, dir):
     run_command(ssh_client, "mkdir %s" % dir)
 
 
+def find_remote_files(ssh, remote_dir, type='f'):
+    res = run_command(ssh,
+    "find %s -name \"*\" -type %s" % (remote_dir, type))
+    files = []
+    for f in res:
+        files.append(f.rstrip())
+    return files
+
+
 def get_file(ssh_client, source_path, package_file, environ_dir):
     ftp = ssh_client.open_sftp()
-    logger.debug("%s %s %s" % (source_path, package_file, environ_dir))
+    logger.debug("source=%s file=%s dest=%s" % (source_path, package_file, environ_dir))
     source_file = os.path.join(source_path, package_file).replace('\\', '/')
     dest_file = os.path.join(environ_dir, package_file).replace('\\', '/')
-    logger.debug("%s %s" % (source_file, dest_file))
+    logger.debug("sfile=%s dfile=%s" % (source_file, dest_file))
     try:
         ftp.get(source_file, dest_file)
-    except IOError:
-        logger.warning("%s not found" % package_file)
+    except IOError as e:
+        logger.warning("%s not found:%s" % (package_file, e))
 
 
 def put_file(ssh_client, source_path, package_file, environ_dir):

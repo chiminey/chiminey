@@ -492,6 +492,8 @@ class FinishedStageTests(unittest.TestCase):
         #logger.debug("triggered done")
         #self.assertEquals(res, False)
 
+        #TODO: need to properly test copying down of output files
+
         logger.debug("about to process")
         s1.process(context)
         self.assertEquals(len(s1.nodes), 1)
@@ -562,8 +564,15 @@ class FileSystemTests(unittest.TestCase):
 
         file_name = "unknown"
         file_to_be_retrieved = self.local_filesystem + "/" + file_name
-        retrieved_data_object = self.filesystem.retrieve(file_to_be_retrieved)
-        self.assertEqual(retrieved_data_object, None)
+
+        try:
+            retrieved_data_object = self.filesystem.retrieve(file_to_be_retrieved)
+        except IOError:
+            pass
+        except e:
+            self.fail('Unexpected exception thrown:', e)
+        else:
+            self.fail('ExpectedException not thrown')
 
     def test_update(self):
         updated_data_object = DataObject("test_file")
@@ -575,9 +584,15 @@ class FileSystemTests(unittest.TestCase):
         self.assertTrue(is_updated)
 
         updated_data_object.setName("unknown_file")
-        is_updated = self.filesystem.update(self.local_filesystem,
+        try:
+            is_updated = self.filesystem.update(self.local_filesystem,
                                             updated_data_object)
-        self.assertFalse(is_updated)
+        except IOError:
+            pass
+        except e:
+            self.fail('Unexpected exception thrown:', e)
+        else:
+            self.fail('ExpectedException not thrown')
 
     def test_delete(self):
         data_object = DataObject("test_file_delete")
@@ -595,8 +610,14 @@ class FileSystemTests(unittest.TestCase):
         self.assertFalse(os.path.exists(absolute_path_file))
 
         file_to_be_deleted = self.local_filesystem + "/unknown"
-        is_deleted = self.filesystem.delete(file_to_be_deleted)
-        self.assertFalse(is_deleted)
+        try:
+            is_deleted = self.filesystem.delete(file_to_be_deleted)
+        except IOError:
+            pass
+        except e:
+            self.fail('Unexpected exception thrown:', e)
+        else:
+            self.fail('ExpectedException not thrown')
 
     """
      def test_simpletest(self):
@@ -1162,7 +1183,11 @@ class TransformStageTests(unittest.TestCase):
             logger.warn("Keeping directory %s" % self.global_filesystem)
         pass
 
-    def test_get_output_numbers(self):
+    def test_stage(self):
+
+
+        s1 = Transform()
+
         group_id = "sq42kdjshasdkjghauiwytuiawjmkghasjkghasg"
          # Setup fsys and initial config files for setup
         test_criterion1 = 324
@@ -1175,20 +1200,21 @@ class TransformStageTests(unittest.TestCase):
         f2.create(json.dumps({'group_id': group_id, 'id': id_to_test, 'runs_left': 0}))
 
         f3a = DataObject("rmcen.inp")
-        f3a.setContent("firstline\n%d numbfile simulation run number\n2 istart\n" % test_number)
-
+        f3a.setContent("firstline\n%d numbfile simulation run number\n2 istart\n"
+                        % test_number)
 
         f3b = DataObject("rmcen.inp")
-        f3b.setContent("firstline\n%d numbfile simulation run number\n2 istart\n" % (test_number+1))
+        f3b.setContent("firstline\n%d numbfile simulation run number\n2 istart\n"
+                       % (test_number + 1))
 
-        f4a = DataObject("grerr02.dat")
+        f4a = DataObject("grerr%s.dat" % str(test_number).zfill(2))
         f4a.setContent("123 456\n0123 %d\n" % test_criterion1)
-        f5a = DataObject("grerr01.dat")
+        f5a = DataObject("grerr%s.dat" % str(1).zfill(2))
         f5a.setContent("abc def\nghi jkl\n")
 
-        f4b = DataObject("grerr02.dat")
+        f4b = DataObject("grerr%s.dat" % str(test_number + 1).zfill(2))
         f4b.setContent("123 456\n0123 %d\n" % test_criterion2)
-        f5b = DataObject("grerr01.dat")
+        f5b = DataObject("grerr%s.dat" % str(1).zfill(2))
         f5b.setContent("abc def\nghi jkl\n")
 
         print("f2=%s" % f2)
@@ -1207,17 +1233,18 @@ class TransformStageTests(unittest.TestCase):
         fs.create_under_dir("output_%s" % id_to_test, "i-0001b", f5b)
 
         default_output_content = "foobar\n"
-        for node in ['i-0001a','i-0001b']:
-            for file in ['output', 'frnmc01.dat','sinput.dat','grexp.dat','initial.xyz','pore.xyz','sqexp.dat']:
+        for node in ['i-0001a', 'i-0001b']:
+            for file in ['output', 'frnmc01.dat', 'sinput.dat',
+                         'grexp.dat', 'initial.xyz', 'pore.xyz', 'sqexp.dat']:
                 f = DataObject(file)
                 f.setContent(default_output_content)
                 fs.create_under_dir("output_%s" % id_to_test, node, f)
 
-        f1 = DataObject('hrmc1.xyz')
+        f1 = DataObject('hrmc1.xyz' )
         f1.setContent("foo1\n")
 
-        hrmc2_content ="here is the correct\n"
-        f2 = DataObject('hrmc2.xyz')
+        hrmc2_content = "here is the correct\n"
+        f2 = DataObject('hrmc%s.xyz' % str(test_number).zfill(2))
         f2.setContent(hrmc2_content)
 
         f3 = DataObject('hrmc3.xyz')
@@ -1230,14 +1257,10 @@ class TransformStageTests(unittest.TestCase):
         f4 = DataObject('hrmc1.xyz')
         f4.setContent("bar1")
 
-        f5 = DataObject('hrmc2.xyz')
-        f5.setContent("bar2")
-
-        f6 = DataObject('hrmc3.xyz')
+        f6 = DataObject('hrmc%s.xyz' % str(test_number+1).zfill(2))
         f6.setContent("bar3")
 
         fs.create_under_dir("output_%s" % id_to_test, 'i-0001b', f4)
-        fs.create_under_dir("output_%s" % id_to_test, 'i-0001b', f5)
         fs.create_under_dir("output_%s" % id_to_test, 'i-0001b', f6)
 
         print("fs=%s" % fs)
@@ -1252,29 +1275,29 @@ class TransformStageTests(unittest.TestCase):
         self.assertEquals(s1.group_id, group_id)
 
         s1.process(context)
+        context = s1.output(context)
+
+
+        config = fs.retrieve("default/runinfo.sys")
+        content = json.loads(config.retrieve())
+        self.assertTrue('transformed' in content and content['transformed'])
 
         new_rmcen = fs.retrieve_new("input_%s" % (id_to_test + 1), "rmcen.inp")
-        self.assertEquals(new_rmcen.getContent(), "firstline\n%s    numbfile\n1     istart\n" % (test_number+2))
-        self.assertEquals(s1.audit, "Run %s preserved (error %s)\nspawning diamond runs\n" % (test_number,
-            float(min(test_criterion1,test_criterion2))))
+        self.assertEquals(
+            new_rmcen.getContent(),
+            "firstline\n%s    numbfile\n1     istart\n" % (test_number + 2))
 
         ff = fs.retrieve_new("input_%s" % (id_to_test + 1), "initial.xyz")
         self.assertEquals(ff.getContent(), hrmc2_content)
 
-        for f in ['pore.xyz','sqexp.dat']:
+        ff = fs.retrieve_new("input_%s" % (id_to_test + 1), "audit.txt")
+        self.assertEquals(ff.getContent(), "Run %s preserved (error %s)\nspawning diamond runs\n" % (
+                test_number,
+                float(min(test_criterion1, test_criterion2))))
+
+        for f in ['pore.xyz', 'sqexp.dat']:
             ff = fs.retrieve_new("input_%s" % (id_to_test + 1), f)
             self.assertEquals(ff.getContent(), default_output_content)
-
-
-
-
-        # s1.output(context)
-        # config = fs.retrieve("default/runinfo.sys")
-        # content = json.loads(config.retrieve())
-        # self.assertEquals(content,
-        #                   {'group_id': group_id,
-        #                    'setup_finished': 1})
-
 
 
 class MetadataTests(unittest.TestCase):

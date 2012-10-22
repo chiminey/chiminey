@@ -10,6 +10,8 @@ from sshconnector import mkdir
 from sshconnector import get_file
 from sshconnector import put_file
 from sshconnector import get_package_pids
+from sshconnector import find_remote_files
+
 
 from cloudconnector import is_instance_running
 from cloudconnector import get_rego_nodes
@@ -37,7 +39,7 @@ def setup_task(instance_id, settings):
     logger.debug("Setup %s IP" % ip)
     ssh = open_connection(ip_address=ip, settings=settings)
     logger.debug("Setup %s ssh" % ssh)
-    
+
     res = install_deps(ssh, packages=settings['DEPENDS'],
                        settings=settings, instance_id=instance_id)
     logger.debug("install res=%s" % res)
@@ -132,7 +134,11 @@ def get_output(instance_id, output_dir, settings):
         " % (output_dir, e))
         #sys.exit(1)
     logger.info("output directory is %s" % output_dir)
-    for file in settings['OUTPUT_FILES']:
+
+    remote_files = [os.path.basename(x) for x in find_remote_files(ssh, os.path.join(settings['DEST_PATH_PREFIX'],
+                                   settings['PAYLOAD_CLOUD_DIRNAME']))]
+    logger.debug("remote_files=%s" % remote_files)
+    for file in remote_files:
         get_file(ssh, os.path.join(settings['DEST_PATH_PREFIX'],
                                    settings['PAYLOAD_CLOUD_DIRNAME']),
                  file, output_dir)

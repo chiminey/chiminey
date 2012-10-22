@@ -57,6 +57,7 @@ from hrmcimpl import run_multi_task
 #from hrmcimpl import _status_of_nodeset
 from hrmcimpl import is_instance_running
 from hrmcimpl import job_finished
+from sshconnector import find_remote_files
 
 from sshconnector import run_command
 
@@ -241,8 +242,11 @@ class Schedule(Stage):
             Return True if there is a file system
             but it doesn't contain run_info file.
         """
+
         if get_filesys(context):
-            if not get_run_info(context):
+            try:
+                get_run_info(context)
+            except IOError:
                 self.settings = get_settings(context)
                 logger.debug("settings = %s" % self.settings)
                 return True
@@ -457,10 +461,7 @@ class Run(Stage):
 
     def triggered(self, context):
         # triggered when we now that we have N nodes setup and ready to run.
-
         # input_dir is assumed to be populated.
-
-
         '''
         TODO: - uncomment during transformation is in progress
               - change context to self.settings
@@ -514,6 +515,25 @@ class Run(Stage):
         """
         ip = get_instance_ip(instance_id, self.settings)
         ssh = open_connection(ip_address=ip, settings=self.settings)
+
+        # get all files from the payload directory
+        dest_files = find_remote_files(ssh, os.path.join(self.settings['DEST_PATH_PREFIX'],
+            self.settings['PAYLOAD_CLOUD_DIRNAME']))
+        logger.debug("dest_files=%s" % dest_files)
+
+        # keep results of setup stages
+        for f in [self.settings['COMPILE_FILE'], "..", "."]:
+            try:
+                dest_files.remove(os.path.join(self.settings['DEST_PATH_PREFIX'],
+                    self.settings['PAYLOAD_CLOUD_DIRNAME'], f))
+            except ValueError:
+                logger.info("no %s found to remove" % f)
+
+        logger.debug("dest_files=%s" % dest_files)
+        # and delete all the rest
+        for f in dest_files:
+            run_command(ssh, "/bin/rm -f %s" % f)
+
         fsys.upload_input(ssh, self.input_dir, os.path.join(
             self.settings['DEST_PATH_PREFIX'],
             self.settings['PAYLOAD_CLOUD_DIRNAME']))
@@ -580,14 +600,13 @@ class Run(Stage):
             self.numbfile = int(m.group(1))
         else:
             logger.error("could not find numbfile in rmcen.inp")
-            self.numbfile = 100 # should not collide with other previous iterations.
+            self.numbfile = 100  # should not collide with other previous iterations.
 
         # copy up the new input files to VMs
         for node in nodes:
             instance_id = node.id
             logger.info("prepare_input %s %s" % (instance_id, self.input_dir))
             self._create_input(instance_id, seeds, node, fsys)
-
 
     def process(self, context):
 

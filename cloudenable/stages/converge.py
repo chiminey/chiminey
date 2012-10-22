@@ -21,12 +21,7 @@
 
 import logging
 import logging.config
-import json
 from hrmcstages import get_run_settings
-from hrmcstages import get_filesys
-from hrmcstages import get_file
-#from filesystem import FileSystem
-#from filesystem import DataObject
 from hrmcstages import update_key
 from hrmcstages import delete_key
 
@@ -66,27 +61,16 @@ class Converge(Stage):
 
     def process(self, context):
         self.number_of_remaining_iterations -= 1
-        print "Number of Iterations Left %d\
-        " % self.number_of_remaining_iterations
-
-        # fsys = get_filesys(context)
-        # logger.debug("fsys= %s" % fsys)
-
-        # run_info_file = get_file(fsys, "default/runinfo.sys")
-        # logger.debug("run_info_file= %s" % run_info_file)
-
-        # settings_text = run_info_file.retrieve()
-        # logger.debug("runinfo_text= %s" % settings_text)
-
-        # config = json.loads(settings_text)
+        print "Number of Iterations Left %d" \
+            % self.number_of_remaining_iterations
 
     def output(self, context):
 
         if self.number_of_remaining_iterations > 0:
             # trigger first of iteration stages
             logger.debug("nonconvergence")
-            delete_key('runs_left',context)
-            delete_key('error_nodes',context)
+            delete_key('runs_left', context)
+            delete_key('error_nodes', context)
             update_key('converged', False, context)
         else:
             logger.debug("convergence")
@@ -99,4 +83,3 @@ class Converge(Stage):
         update_key('id', self.id, context)
 
         return context
-
