@@ -19,18 +19,16 @@
 # IN THE SOFTWARE.
 
 import re
+import logging
+import logging.config
 
 from hrmcstages import get_settings
 from hrmcstages import get_run_info
 from hrmcstages import get_filesys
-#from filesystem import FileSystem
-#from filesystem import DataObject
 from hrmcstages import update_key
+from filesystem import DataObject
 
 from smartconnector import Stage
-
-import logging
-import logging.config
 
 logger = logging.getLogger('stages')
 
@@ -39,9 +37,15 @@ class Transform(Stage):
     """
         Convert output into input for next iteration.
     """
+    # FIXME: put part of config file, or pull from original input file
+    input_files = ['pore.xyz', 'sqexp.dat', 'grexp.dat']
 
     def __init__(self):
         logger.debug("creating transform")
+        # alt_specfication implements revised set of specifications from product
+        # owners. Old way is deprecated, to be removed in due time.
+        self.alt_specification = True
+
         pass
 
     def triggered(self, context):
@@ -81,7 +85,6 @@ class Transform(Stage):
         return False
 
     def process(self, context):
-        import re
 
         self.audit = ""
         res = []
@@ -116,9 +119,19 @@ class Transform(Stage):
             else:
                 raise ValueError("No numbfile record found")
 
-            # for each grerr*.dat file, get criterion
-            grerr_files = fs.glob(self.output_dir, node_output_dir, 'grerr[0-9]+.dat')
-            grerr_files.sort()  # FIXME: only guaranteed to sort grerr 01-09
+            if self.alt_specification:
+                try:
+                    grerr_files = ['grerr%s.dat' % str(number).zfill(2)]
+                    f = fs.retrieve_under_dir(self.output_dir,
+                                          node_output_dir,
+                                         'grerr%s.dat' % str(number).zfill(2)).retrieve()
+                except IOError:
+                        logger.warn("no grerr found")
+            else:
+                # for each grerr*.dat file, get criterion
+                grerr_files = fs.glob(self.output_dir, node_output_dir, 'grerr[0-9]+.dat')
+                grerr_files.sort()
+
             logger.debug("grerr_files=%s " % grerr_files)
             criterions = []
             for (index, f) in enumerate(grerr_files):
@@ -144,10 +157,11 @@ class Transform(Stage):
                 grerr_info = criterions[0]
             else:
                 logger.error("no grerr files found")
-                grerr_info = () # FIXME: can recover from this?
+                grerr_info = ()  # FIXME: can recover from this?
             criterion = grerr_info[2]
+            f = grerr_info[1]
 
-            res.append((node_output_dir, index, number, criterion))
+            res.append((node_output_dir, index, number, criterion, f))
 
         # Get Maximum numbfile in all previous runs
         max_numbfile = max([x[2] for x in res])
@@ -158,15 +172,17 @@ class Transform(Stage):
         res.sort(key=lambda x: int(x[3]))
         logger.debug("res=%s" % res)
         if res:
-            (best_node_dir, best_index, number, criterion) = res[0]
+            (best_node_dir, best_index, number, criterion, grerr_file) = res[0]
         else:
             # FIXME: can we carry on here?
             logger.warning("no output directory found")
-            (best_node_dir, best_index, number, criterion) = ("", 0, 0,0)  # ?
+            (best_node_dir, best_index, number, criterion, grerr_file) = ("", 0, 0, 0, "")  # ?
 
         self.audit += "Run %s preserved (error %s)\n" % (number, criterion)
         logger.debug("best_node_dir=%s" % best_node_dir)
         logger.debug("best_index=%s" % best_index)
+        logger.debug("grerr_file=%s" % grerr_file)
+        logger.debug("number=%s" % number)
 
         fs.create_local_filesystem(self.new_input_dir)
 
@@ -175,7 +191,7 @@ class Transform(Stage):
                 'rmcen.inp', self.new_input_dir, 'rmcen.inp')
 
         # Move all existing input files unchanged to next input directory
-        for f in ['pore.xyz', 'sqexp.dat']:
+        for f in self.input_files:
             try:
                 fs.copy(self.output_dir, best_node_dir,
                         f, self.new_input_dir, f)
@@ -184,15 +200,25 @@ class Transform(Stage):
                     % (f, self.output_dir, best_node_dir, e))
                 continue
 
-        # Copy hrmc[best_index].xyz file from best run new input directory
-        # as initial.xyz
-        xyzfiles = fs.glob(self.output_dir, best_node_dir, 'hrmc[0-9]+\.xyz')
-        logger.debug("xyzfiles=%s " % xyzfiles)
-        xyzfiles.sort()  # FIXME: assume we use only the last
+        if self.alt_specification:
+            try:
+                xyzfiles = ['hrmc%s.xyz' % str(number).zfill(2)]
+                f = fs.retrieve_under_dir(self.output_dir,
+                             best_node_dir,
+                            'hrmc%s.xyz' % str(number).zfill(2)).retrieve()
+            except IOError:
+                logger.warn("no hrmcstages found")
+        else:
+            # Copy hrmc[best_index].xyz file from best run new input directory
+            # as initial.xyz
+            xyzfiles = fs.glob(self.output_dir, best_node_dir, 'hrmc[0-9]+\.xyz')
+            logger.debug("xyzfiles=%s " % xyzfiles)
+            xyzfiles.sort()  # FIXME: assume we use only the last
         logger.debug("xyzfiles=%s " % xyzfiles)
         found = False
         for file_name in xyzfiles:
-            if file_name == 'hrmc%d.xyz' % (best_index + 1):
+            if file_name == 'hrmc%s.xyz' % (str(number).zfill(2)):
+            #if file_name == grerr_file:
                 logger.debug("%s -> %s" % (file_name, 'initial.xyz'))
                 try:
                     fs.copy(self.output_dir, best_node_dir,
@@ -202,9 +228,9 @@ class Transform(Stage):
                     logger.warn("no %s found in  %s/%s: %s"
                         % (file_name, self.output_dir, best_node_dir, e))
                     continue
-            found = True
+                found = True
         if not found:
-            logger.warn("No matching hrmc%s.dat file found to transfer" % best_index)
+            logger.warn("No matching %s file found to transfer" % grerr_file)
         rmcen = fs.retrieve_new(self.new_input_dir, "rmcen.inp")
         text = rmcen.retrieve()
 
@@ -236,15 +262,14 @@ class Transform(Stage):
 
         self.audit += "spawning diamond runs\n"
 
-        '''
-            def _kill_run(context):
-        """ Based on information from the current run, decide whether
-            to kill the current runs
-        """
-        #TODO:
-        pass
-        '''
     def output(self, context):
+        logger.debug("transform.output")
+
+        audit = DataObject('audit.txt')
+        audit.create(self.audit)
+        logger.debug("audit=%s" % audit)
+        fs = get_filesys(context)
+        fs.create(self.new_input_dir, audit)
 
         update_key('transformed', True, context)
 

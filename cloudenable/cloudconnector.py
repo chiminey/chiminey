@@ -255,6 +255,7 @@ def is_instance_running(instance_id, settings):
 
 def _wait_for_instance_to_start_running(all_instances, settings):
     all_running_instances = []
+    # FIXME: add final timeout for when VMs fail to initialise properly
     while all_instances:
         for instance in all_instances:
             instance_id = instance.id
