@@ -60,6 +60,7 @@ from hrmcstages import Run
 from hrmcstages import Finished
 from hrmcstages import Schedule
 from stages.transform import Transform
+from stages.converge import Converge
 #from hrmcstages import Teardown
 
 from filesystem import DataObject
@@ -1298,6 +1299,87 @@ class TransformStageTests(unittest.TestCase):
         for f in ['pore.xyz', 'sqexp.dat']:
             ff = fs.retrieve_new("input_%s" % (id_to_test + 1), f)
             self.assertEquals(ff.getContent(), default_output_content)
+
+
+
+class ConvergeStageTests(unittest.TestCase):
+
+    keep_directories = True
+
+    def setUp(self):
+
+        import tempfile
+
+        self.global_filesystem = tempfile.mkdtemp()
+        logger.debug("global_filesystem=%s" % self.global_filesystem)
+        self.local_filesystem = 'default'
+
+        logging.config.fileConfig('logging.conf')
+        self.vm_size = 100
+        self.image_name = "ami-0000000d"  # FIXME: is hardcoded in
+                                          # simplepackage
+        self.instance_name = "foo"
+        self.settings = {
+            'USER_NAME':  "accountname", 'PASSWORD':  "mypassword",
+            'GROUP_DIR_ID': "test", 'EC2_ACCESS_KEY': "",
+            'EC2_SECRET_KEY': "", 'VM_SIZE': self.vm_size,
+            'VM_IMAGE': "ami-0000000d",
+            'PRIVATE_KEY_NAME': "", 'PRIVATE_KEY': "", 'SECURITY_GROUP': "",
+            'CLOUD_SLEEP_INTERVAL': 0, 'GROUP_ID_DIR': "", 'DEPENDS': ('a',),
+            'DEST_PATH_PREFIX': "package", 'PAYLOAD_CLOUD_DIRNAME': "package",
+            'PAYLOAD_LOCAL_DIRNAME': "", 'COMPILER': "g77", 'PAYLOAD': "payload",
+            'COMPILE_FILE': "foo", 'MAX_SEED_INT': 100, 'RETRY_ATTEMPTS': 3,
+            'OUTPUT_FILES': ['a', 'b']}
+
+    def tearDown(self):
+        if not self.keep_directories:
+            import shutil
+            shutil.rmtree(self.global_filesystem)
+        else:
+            logger.warn("Keeping directory %s" % self.global_filesystem)
+        pass
+
+    def test_nonconverge(self):
+
+        s1 = Converge(100)
+
+        group_id = "sq42kdjshasdkjghauiwytuiawjmkghasjkghasg"
+         # Setup fsys and initial config files for setup
+        test_criterion = 324
+        f1 = DataObject("config.sys")
+        f1.create(json.dumps(self.settings))
+
+        f2 = DataObject("runinfo.sys")
+
+        id_to_test = 1
+        f2.create(json.dumps({'group_id': group_id, 'id': id_to_test,
+                              'runs_left': 0, 'transformed': True,
+                              'error_nodes': 0}))
+        fs = FileSystem(self.global_filesystem, self.local_filesystem)
+        fs.create(self.local_filesystem, f2)
+
+        f3a = DataObject("audit.txt")
+        f3a.setContent("Run %s preserved (error %f)\nspawning diamond runs\n"
+                        % (id_to_test, test_criterion))
+
+        fs.create(self.local_filesystem, f1)
+        fs.create_local_filesystem("input_%s" % (id_to_test + 1))
+        fs.create("input_%s" % (id_to_test + 1), f3a)
+
+        print("fs=%s" % fs)
+        context = {'filesys': fs}
+        print("context=%s" % context)
+        res = s1.triggered(context)
+        print res
+        s1.process(context)
+        context = s1.output(context)
+
+        config = fs.retrieve("default/runinfo.sys")
+        content = json.loads(config.retrieve())
+
+        self.assertEquals(content['converged'], False)
+        self.assertTrue(not 'runs_left' in content)
+        self.assertTrue(not 'error_nodes' in content)
 
 
 class MetadataTests(unittest.TestCase):
