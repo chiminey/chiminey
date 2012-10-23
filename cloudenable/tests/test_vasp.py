@@ -1,12 +1,16 @@
 import unittest
 import os
-
+import logging
+import logging.config
 from smartconnector import Stage
 from stages.vasp import VASP
+from filesystem import DataObject
+from filesystem import FileSystem
 
 from stages.vasp import process_all
 
 
+logger = logging.getLogger('tests')
 
 
 
@@ -42,16 +46,16 @@ class MetadataTests(unittest.TestCase):
             'COMPILE_FILE': "foo", 'MAX_SEED_INT': 100, 'RETRY_ATTEMPTS': 3,
             'OUTPUT_FILES': ['a', 'b']}
 
-    def test_vasp_extraction(self):
-        """ Extract metadata from a set of VASP datafiles into a JSON file"""
-        path = os.path.abspath(os.path.join(".","testing","dataset1"))
-        res = process_all(path)
-        import json
-        dump = json.dumps(res, indent=1)
-        # read in stored correct answer
-        test_text = open(os.path.join(path, 'test_check.json'), 'r').read()
-        print dump
-        self.assertEquals(dump, test_text)
+    # def test_vasp_extraction(self):
+    #     """ Extract metadata from a set of VASP datafiles into a JSON file"""
+    #     path = os.path.abspath(os.path.join(".","testing","dataset1"))
+    #     res = process_all(path)
+    #     import json
+    #     dump = json.dumps(res, indent=1)
+    #     # read in stored correct answer
+    #     test_text = open(os.path.join(path, 'test_check.json'), 'r').read()
+    #     print dump
+    #     self.assertEquals(dump, test_text)
 
     def test_stage(self):
 
@@ -60,14 +64,15 @@ class MetadataTests(unittest.TestCase):
 
         fs = FileSystem(self.global_filesystem, self.local_filesystem)
 
-        files_to_copy = fs.get_local_subdirectory_files(self.output_dir,
-                                             node_dir)
+        input_path = os.path.join("testing", "dataset1")
 
         # move input files to fs
         from shutil import copytree
-        copytree(os.path.join("..","testing","dataset1"),
-                 os.path.join(self.global_filesystem,"vasp"))
+        copytree(os.path.abspath(input_path),
+                 os.path.join(self.global_filesystem, "vasp"))
 
+        print("fs=%s" % fs)
+        context = {'filesys': fs}
         res = s1.triggered(context)
         self.assertEquals(res, True)
 
@@ -75,13 +80,19 @@ class MetadataTests(unittest.TestCase):
 
         context = s1.output(context)
 
-
         import json
-        dump = json.dumps(res, indent=1)
+        config = fs.retrieve_new("output", "metadata.json")
+        content = json.loads(config.retrieve())
 
+        # dump = json.dumps(content, indent=1)
+        # logger.debug("dump=%s" % dump)
 
-        test_text = open(os.path.join(path, 'test_check.json'), 'r').read()
+        test_text = open(os.path.join(input_path, 'test_check.json'), 'r').read()
+        test_dict = json.loads(test_text)
 
+        logger.debug("test_text=%s" % test_text)
+
+        self.assertEquals(content, test_dict)
 
 
 
