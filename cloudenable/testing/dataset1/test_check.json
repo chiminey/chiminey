@@ -1,146 +1,126 @@
 {
- "./testing/dataset1/vasp.sub.o813344": {
-  "http://tardis.edu.au/schemas/general/1 # general 1.0": {
-   "Number Of CPUs": [
-    "64", 
-    ""
-   ], 
-   "Maximum virtual memory": [
-    "27047", 
-    "MB"
-   ], 
-   "Max jobfs disk use": [
-    "0.1", 
-    "GB"
-   ], 
-   "Walltime": [
-    "01:59:17", 
-    ""
-   ]
-  }
- }, 
- "./testing/dataset1/OUTCAR": {
-  "http://tardis.edu.au/schemas/vasp/1 # vasp 1.0": {
-   "TEBEG": [
-    "0.0", 
-    ""
-   ], 
-   "NELECT": [
-    "864.0000", 
-    "total number of electrons"
-   ], 
-   "NIONS": [
-    "216", 
-    ""
-   ], 
-   "TITEL": [
-    "PAW_PBE C 08Apr2002", 
-    ""
-   ], 
-   "NELM": [
-    "60", 
-    ""
-   ], 
-   "TEEND": [
-    "0.0", 
-    " temperature during run"
-   ], 
-   "ENCUT": [
-    "400.0", 
-    "eV"
-   ], 
-   "ISIF": [
-    "3", 
-    "stress and relaxation"
-   ], 
-   "IBRION": [
-    "2", 
-    "ionic relax: 0-MD 1-quasi-New 2-CG"
-   ], 
-   "EDIFFG": [
-    "0.1E-02", 
-    ""
-   ], 
-   "EDIFF": [
-    "0.1E-03", 
-    ""
-   ], 
-   "ISPIN": [
-    "4", 
-    "spin polarized calculation?"
-   ], 
-   "ISMEAR": [
-    "-6", 
-    ""
-   ], 
-   "SMASS": [
-    "-3.00", 
-    "    Nose mass-parameter (am)"
-   ], 
-   "LEXCH": [
-    "", 
-    ""
-   ], 
-   "POTIM": [
-    "0.5", 
-    ""
-   ], 
-   "NSW": [
-    "42", 
-    "number of steps for IOM"
-   ]
-  }
- }, 
- "./testing/dataset1/INCAR": {
-  "http://tardis.edu.au/schemas/vasp/1 # vasp 1.0": {
-   "Descriptor Line": [
-    "Bulk Diamond", 
-    ""
-   ], 
-   "ISTART": [
-    "", 
-    ""
-   ]
-  }
- }, 
- "./testing/dataset1/metadata.vasp": {
-  "http://tardis.edu.au/schemas/general/1 # general 1.0": {
-   "Project": [
-    "FOOBAR Project", 
-    ""
-   ]
-  }
- }, 
- "./testing/dataset1/KPOINTS_1": {
-  "http://tardis.edu.au/schemas/vasp/1 # vasp 1.0": {
-   "kpoint_grid": [
-    " 8  8  8   \n", 
-    ""
-   ], 
-   "kpoint_grid_offset": [
-    " 0  0  0\n", 
-    ""
-   ]
-  }
- }, 
- "./testing/dataset1/POSCAR": {
-  "http://tardis.edu.au/schemas/vasp/1 # vasp 1.0": {
-   "Cell Parameter3": [
-    "     0.0000000000000000    0.0000000000000000   10.6863390000000003\n", 
-    ""
-   ], 
-   "Cell Parameter1": [
-    "    10.6863390000000003    0.0000000000000000    0.0000000000000000\n", 
-    ""
-   ], 
-   "Cell Parameter2": [
-    "     0.0000000000000000   10.6863390000000003    0.0000000000000000\n", 
-    ""
-   ], 
-   "Cell Scaling": [
-    "   1.00000000000000     \n", 
-    ""
-   ]
-  }
+ "http://tardis.edu.au/schemas/vasp/1 # vasp 1.0": {
+  "NELM": [
+   "60",
+   ""
+  ],
+  "TEEND": [
+   "0.0",
+   " temperature during run"
+  ],
+  "IBRION": [
+   "2",
+   "ionic relax: 0-MD 1-quasi-New 2-CG"
+  ],
+  "Cell Parameter1": [
+   "    10.6863390000000003    0.0000000000000000    0.0000000000000000\n",
+   ""
+  ],
+  "Cell Parameter2": [
+   "     0.0000000000000000   10.6863390000000003    0.0000000000000000\n",
+   ""
+  ],
+  "Cell Parameter3": [
+   "     0.0000000000000000    0.0000000000000000   10.6863390000000003\n",
+   ""
+  ],
+  "SMASS": [
+   "-3.00",
+   "    Nose mass-parameter (am)"
+  ],
+  "LEXCH": [
+   "",
+   ""
+  ],
+  "POTIM": [
+   "0.5",
+   ""
+  ],
+  "Cell Scaling": [
+   "   1.00000000000000     \n",
+   ""
+  ],
+  "kpoint_grid": [
+   " 8  8  8   \n",
+   ""
+  ],
+  "NIONS": [
+   "216",
+   ""
+  ],
+  "ISTART": [
+   "",
+   ""
+  ],
+  "ENCUT": [
+   "400.0",
+   "eV"
+  ],
+  "ISIF": [
+   "3",
+   "stress and relaxation"
+  ],
+  "TEBEG": [
+   "0.0",
+   ""
+  ],
+  "EDIFF": [
+   "0.1E-03",
+   ""
+  ],
+  "Descriptor Line": [
+   "Bulk Diamond",
+   ""
+  ],
+  "NSW": [
+   "42",
+   "number of steps for IOM"
+  ],
+  "ISMEAR": [
+   "-6",
+   ""
+  ],
+  "TITEL": [
+   "PAW_PBE C 08Apr2002",
+   ""
+  ],
+  "NELECT": [
+   "864.0000",
+   "total number of electrons"
+  ],
+  "kpoint_grid_offset": [
+   " 0  0  0\n",
+   ""
+  ],
+  "EDIFFG": [
+   "0.1E-02",
+   ""
+  ],
+  "ISPIN": [
+   "4",
+   "spin polarized calculation?"
+  ]
+ },
+ "http://tardis.edu.au/schemas/general/1 # general 1.0": {
+  "Project": [
+   "FOOBAR Project",
+   ""
+  ],
+  "Number Of CPUs": [
+   "64",
+   ""
+  ],
+  "Maximum virtual memory": [
+   "27047",
+   "MB"
+  ],
+  "Max jobfs disk use": [
+   "0.1",
+   "GB"
+  ],
+  "Walltime": [
+   "01:59:17",
+   ""
+  ]
  }
 }

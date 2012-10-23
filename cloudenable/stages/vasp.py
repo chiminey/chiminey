@@ -50,7 +50,7 @@ class VASP(Stage):
 
         self.fsys.create_local_filesystem('output')
 
-        self.create('output', do)
+        self.fsys.create('output', do)
 
 
 def process_all(context):
@@ -61,8 +61,8 @@ def process_all(context):
     import os
     metadata_set = {}
     for fname in fsys.get_local_subdirectories('vasp'):
-        full_fname = os.path.join(dirpath, fname)
-        #logger.debug("full_fname=%s" % full_fname)
+        full_fname = os.path.join(os.path.join(fsys.global_filesystem, 'vasp', fname))
+        logger.debug("full_fname=%s" % full_fname)
         for schemainfo in rulesets:
             meta = process_datafile(fname, full_fname, rulesets[schemainfo])
             key = "%s # %s" % schemainfo
