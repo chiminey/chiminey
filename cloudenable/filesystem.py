@@ -196,6 +196,9 @@ class FileSystem(object):
         #FIXME: should use appropriate osfs API here
         shutil.rmtree(path_to_local_filesystem)
 
+    def local_filesystem_exists(self, local_filesystem):
+        return self.connector_fs.exists(path.join("/", local_filesystem))
+
     def upload_input(self, ssh, local_filesystem, dest):
         input_dir = os.path.join(self.global_filesystem, local_filesystem)
         logger.debug("input_dir =%s" % input_dir)

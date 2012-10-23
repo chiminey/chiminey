@@ -694,8 +694,14 @@ def process_all(local_dir):
                 if meta:
                     metadata_set["%s # %s" % schemainfo] = meta
                 #metadata_set.update(meta)
+
             if metadata_set:
-                res[full_fname] = metadata_set
+                if "%s # %s" % schemainfo in res:
+                    res["%s # %s" % schemainfo].update(metadata_set["%s # %s" % schemainfo])
+                else:
+                    res["%s # %s" % schemainfo]= {}
+                #res.update(metadata_set)
+                #res[full_fname] = metadata_set
             #print full_fname , metadata_set
 
     return res
