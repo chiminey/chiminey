@@ -1,3 +1,34 @@
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2011-2012, RMIT e-Research Office
+#   (RMIT University, Australia)
+# Copyright (c) 2010-2011, Monash e-Research Centre
+#   (Monash University, Australia)
+# All rights reserved.
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+#    *  Redistributions of source code must retain the above copyright
+#       notice, this list of conditions and the following disclaimer.
+#    *  Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#    *  Neither the name of the RMIT, the RMIT members, nor the
+#       names of its contributors may be used to endorse or promote products
+#       derived from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND ANY
+# EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE REGENTS AND CONTRIBUTORS BE LIABLE FOR ANY
+# DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+
 import unittest
 import os
 import logging
@@ -6,8 +37,6 @@ from smartconnector import Stage
 from stages.vasp import VASP
 from filesystem import DataObject
 from filesystem import FileSystem
-
-from stages.vasp import process_all
 
 
 logger = logging.getLogger('tests')
@@ -46,52 +75,30 @@ class MetadataTests(unittest.TestCase):
             'COMPILE_FILE': "foo", 'MAX_SEED_INT': 100, 'RETRY_ATTEMPTS': 3,
             'OUTPUT_FILES': ['a', 'b']}
 
-    # def test_vasp_extraction(self):
-    #     """ Extract metadata from a set of VASP datafiles into a JSON file"""
-    #     path = os.path.abspath(os.path.join(".","testing","dataset1"))
-    #     res = process_all(path)
-    #     import json
-    #     dump = json.dumps(res, indent=1)
-    #     # read in stored correct answer
-    #     test_text = open(os.path.join(path, 'test_check.json'), 'r').read()
-    #     print dump
-    #     self.assertEquals(dump, test_text)
-
     def test_stage(self):
 
         s1 = VASP()
         context = {}
-
         fs = FileSystem(self.global_filesystem, self.local_filesystem)
-
         input_path = os.path.join("testing", "dataset1")
-
         # move input files to fs
         from shutil import copytree
         copytree(os.path.abspath(input_path),
                  os.path.join(self.global_filesystem, "vasp"))
-
         print("fs=%s" % fs)
         context = {'filesys': fs}
         res = s1.triggered(context)
         self.assertEquals(res, True)
-
         s1.process(context)
-
         context = s1.output(context)
-
         import json
         config = fs.retrieve_new("output", "metadata.json")
         content = json.loads(config.retrieve())
-
         # dump = json.dumps(content, indent=1)
         # logger.debug("dump=%s" % dump)
-
         test_text = open(os.path.join(input_path, 'test_check.json'), 'r').read()
         test_dict = json.loads(test_text)
-
         logger.debug("test_text=%s" % test_text)
-
         self.assertEquals(content, test_dict)
 
 
