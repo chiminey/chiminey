@@ -134,9 +134,10 @@ def get_output(instance_id, output_dir, settings):
         " % (output_dir, e))
         #sys.exit(1)
     logger.info("output directory is %s" % output_dir)
-
-    remote_files = [os.path.basename(x) for x in find_remote_files(ssh, os.path.join(settings['DEST_PATH_PREFIX'],
-                                   settings['PAYLOAD_CLOUD_DIRNAME']))]
+    cloud_path = os.path.join(settings['DEST_PATH_PREFIX'],
+                              settings['PAYLOAD_CLOUD_DIRNAME'])
+    remote_files = [os.path.basename(x) for x in find_remote_files(ssh,
+                                                                   cloud_path)]
     logger.debug("remote_files=%s" % remote_files)
     for file in remote_files:
         get_file(ssh, os.path.join(settings['DEST_PATH_PREFIX'],
@@ -272,9 +273,8 @@ def prepare_multi_input(group_id, input_dir, settings, seed):
         run_command(ssh, "cd %s; sed -i '/^$/d' rmcen.inp" %
                     (os.path.join(settings['DEST_PATH_PREFIX'],
                                   settings['PAYLOAD_CLOUD_DIRNAME'])))
-
-        run_command(ssh,
-                    "cd %s; sed -i 's/[0-9]*[ \t]*iseed.*$/%s\tiseed/' rmcen.inp\
+        run_command(ssh, "cd %s;\
+                    sed -i 's/[0-9]*[ \t]*iseed.*$/%s\tiseed/' rmcen.inp\
                     " % (os.path.join(settings['DEST_PATH_PREFIX'],
                                       settings['PAYLOAD_CLOUD_DIRNAME']),
                          seeds[node]))

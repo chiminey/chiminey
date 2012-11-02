@@ -3,11 +3,14 @@ import os
 import utility
 #Every stage may be thrown away after completion
 
+
 class Error(Exception):
     pass
 
+
 class PackageFailedError(Error):
     pass
+
 
 # This stage has no impact on other stages
 class Stage(object):
@@ -35,7 +38,6 @@ class UI(object):
     pass
 
 
-
 class Configure(Stage, UI):
     """
         - Load config.sys file into the filesystem
@@ -47,9 +49,7 @@ class Configure(Stage, UI):
         #check for filesystem in context
         return True
 
-
-            #logger.debug("%s" % field_val)
-
+        #logger.debug("%s" % field_val)
     def process(self, context):
         # - Load config.sys file into the filesystem
         # - Nothing beyond specifying the path to config.sys
@@ -67,12 +67,7 @@ class Configure(Stage, UI):
         pass
 
 
-
-
-
 class Create(Stage):
-
-
     def triggered(self, context):
         """ return true if the directory pattern triggers this stage
         """
@@ -85,10 +80,8 @@ class Create(Stage):
             return True
 
     def _transform_the_filesystem(filesystem, settings):
-        key =  settings['ec2_access_key']
-
+        key = settings['ec2_access_key']
         print key
-
 
     def process(self, context):
 
@@ -102,7 +95,6 @@ class Create(Stage):
         #settings['ec2_secret_key'] = self.metadata.ec2_secret_key
         # ...
 
-
         #self.temp_sys = FileSystem(filesystem)
 
         #self._transform_the_filesystem(self.temp_sys, settings)
@@ -114,12 +106,11 @@ class Create(Stage):
         print "Security Group ", self.settings.SECURITY_GROUP
         pass
 
-
-
     def output(self, context):
         # store in filesystem
         #self._store(self.temp_sys, filesystem)
         pass
+
 
 class Setup(Stage):
 
@@ -135,7 +126,6 @@ class Setup(Stage):
 
 class Run(Stage):
     #json output
-
     def triggered(self, context):
         pass
 
@@ -177,7 +167,7 @@ class ParallelStage(Stage):
         while(True):
             done = 0
             for stage in smart_con.stages:
-                print "Working in stage",stage
+                print "Working in stage", stage
                 if stage.triggered(context):
                     stage.process(context)
                     stage.output(context)
@@ -185,15 +175,14 @@ class ParallelStage(Stage):
                     #smart_con.unregister(stage)
                     #print "Deleting stage",stage
                     print done
-
             if done == len(smart_con.stages):
                 break
-
 
         while s.triggered(context):
             s.process(context)
             s.output(context)
             print context
+
     def output(self, context):
         pass
 
@@ -205,7 +194,7 @@ class GridParameterStage(Stage):
 class SequentialStage(Stage):
 
     def __init__(self, stages):
-       self.stages = stages
+        self.stages = stages
 
     def triggered(self, context):
         return True
@@ -215,7 +204,6 @@ class SequentialStage(Stage):
             if stage.triggered(context):
                 stage.process(context)
                 stage.output(context)
-
 
     def output(self, context):
         pass
@@ -229,10 +217,10 @@ class SmartConnector(object):
         if stage:
             self.stages.append(stage)
 
-    def register(self,stage):
-         self.stages.append(stage)
+    def register(self, stage):
+        self.stages.append(stage)
 
-    def process(self,context):
+    def process(self, context):
         if self.stage.triggered(context):
             self.stage.process(context)
             self.stage.output(context)
@@ -241,7 +229,6 @@ class SmartConnector(object):
 
 
 def mainloop():
-
 # load system wide settings, e.g Security_Group
 #communicating between stages: crud context or filesystem
 #build context with file system as its only entry
@@ -257,12 +244,14 @@ def mainloop():
 
     filesys.delete_filesystem("newFS")
     filesys.delete_file("Iman")
-    filesys.create_file('/home/iyusuf/Butini', dest_filesystem='/home/iyusuf/connectorFS/Seid')
+    filesys.create_file('/home/iyusuf/Butini',
+                        dest_filesystem='/home/iyusuf/connectorFS/Seid')
 
-    file_name='tobeupdated'
-    absolute_path=filesys.toplevel_filesystem+"/"+file_name
+    file_name = 'tobeupdated'
+    absolute_path = os.path.join(filesys.toplevel_filesystem,
+                                 file_name)
 
-    f= open(absolute_path, 'w')
+    f = open(absolute_path, 'w')
     f.write("Line 1")
     f.write("line 2")
     f.close()
@@ -308,4 +297,4 @@ if __name__ == '__main__':
     begins = time.time()
     mainloop()
     ends = time.time()
-    print "Total execution time: %d seconds" % (ends-begins)
+    print "Total execution time: %d seconds" % (ends - begins)

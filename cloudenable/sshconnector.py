@@ -51,9 +51,8 @@ def open_connection(ip_address, settings):
     # open up the connection
     ssh_client = paramiko.SSHClient()
     # autoaccess new keys
-    ssh_client.load_system_host_keys(os.path.expanduser(os.path.join("~",
-                                                              ".ssh",
-                                                              "known_hosts")))
+    known_hosts_file = os.path.join("~", ".ssh", "known_hosts")
+    ssh_client.load_system_host_keys(os.path.expanduser(known_hosts_file))
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
     #TODO: handle exceptions if connection does not work.
@@ -63,14 +62,14 @@ def open_connection(ip_address, settings):
             privatekeyfile = os.path.expanduser(settings['PRIVATE_KEY'])
             mykey = paramiko.RSAKey.from_private_key_file(privatekeyfile)
             ssh_client.connect(ip_address, username=settings['USER_NAME'],
-                        timeout=60, pkey=mykey)
+                               timeout=60, pkey=mykey)
         else:
             print("%s %s %s" % (ip_address,
                                 settings['USER_NAME'],
                                 settings['PASSWORD']))
             print(ssh_client)
             ssh_client.connect(ip_address, username=settings['USER_NAME'],
-                        password=settings['PASSWORD'], timeout=60)
+                               password=settings['PASSWORD'], timeout=60)
     except paramiko.AuthenticationException:
         raise AuthError
     #channel = ssh.invoke_shell().open_session()
@@ -161,8 +160,8 @@ def mkdir(ssh_client, dir):
 
 
 def find_remote_files(ssh, remote_dir, type='f'):
-    res = run_command(ssh,
-    "find %s -name \"*\" -type %s" % (remote_dir, type))
+    command = "find %s -name \"*\" -type %s" % (remote_dir, type)
+    res = run_command(ssh, command)
     files = []
     for f in res:
         files.append(f.rstrip())
@@ -171,7 +170,8 @@ def find_remote_files(ssh, remote_dir, type='f'):
 
 def get_file(ssh_client, source_path, package_file, environ_dir):
     ftp = ssh_client.open_sftp()
-    logger.debug("source=%s file=%s dest=%s" % (source_path, package_file, environ_dir))
+    logger.debug("source=%s file=%s dest=%s"
+                 % (source_path, package_file, environ_dir))
     source_file = os.path.join(source_path, package_file).replace('\\', '/')
     dest_file = os.path.join(environ_dir, package_file).replace('\\', '/')
     logger.debug("sfile=%s dfile=%s" % (source_file, dest_file))
