@@ -136,7 +136,7 @@ def start(args):
             done = 0
             not_triggered = 0
             for stage in smart_conn.stages:
-                print "Working in stage", stage
+                print "Working in stage", stage.__class__
                 if stage.triggered(context):
                     logger.debug("triggered")
                     stage.process(context)

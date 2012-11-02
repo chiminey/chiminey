@@ -342,9 +342,9 @@ class Schedule(Stage):
         Create a runfinos.sys file in filesystem with provider
         """
         self.provider = self.candidate_providers[0]
-        logger.debug("Candidate provider(s) is (are) %s" % self.candidate_providers)
+        print "Candidate provider(s) is (are) %s" % self.candidate_providers
         if self.provider != 'nectar' or len(self.candidate_providers) > 1:
-            logger.debug("But we use 'nectar' for now...")
+            print "But we use 'nectar' for now..."
             self.provider = 'nectar'
 
         local_filesystem = 'default'

@@ -273,5 +273,6 @@ class Transform(Stage):
         fs.create(self.new_input_dir, audit)
 
         update_key('transformed', True, context)
-
+        print "End of Transformation: \n %s" % self.audit
+        
         return context

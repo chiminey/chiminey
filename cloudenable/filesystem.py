@@ -20,6 +20,7 @@
 
 
 import os
+import os.path
 import time
 import re
 
@@ -36,11 +37,11 @@ import logging.config
 from hrmcimpl import _upload_input
 from hrmcimpl import get_output
 
-
 logging.config.fileConfig('logging.conf')
 logger = logging.getLogger(__name__)
 
 #TODO: make filesystem-specific exceptions
+
 
 class FileSystem(object):
     # FIXME: these methods should not interact with the underlying filesystem
@@ -71,7 +72,8 @@ class FileSystem(object):
 
     def create_local_filesystem(self, local_filesystem):
         """
-        Creates an additional local filesystem in addition to those created at init
+        Creates an additional local filesystem in
+        addition to those created at init
         """
         #FIXME: should throw exception if already exists
         if not self.connector_fs.exists(local_filesystem):
@@ -83,11 +85,14 @@ class FileSystem(object):
             logger.error("Destination filesystem '%s' does not exist"
                          % local_filesystem)
             raise IOError("Destination filesystem '%s' does not exist"
-                         % local_filesystem)
+                          % local_filesystem)
 
-        destination_file_name = self.global_filesystem + "/" + local_filesystem + "/" + data_object.getName()
+        destination_file_name = os.path.join(self.global_filesystem,
+                                             local_filesystem,
+                                             data_object.getName())
         if not local_filesystem:
-            destination_file_name = self.global_filesystem + "/" + data_object.getName()
+            destination_file_name = os.path.join(self.global_filesystem,
+                                                 data_object.getName())
 
         destination_file = open(destination_file_name, 'w')
         destination_file.write(data_object.getContent())
@@ -95,7 +100,8 @@ class FileSystem(object):
         logger.info("File '%s' %s" % (destination_file_name, message))
         return True
 
-    def create_under_dir(self, local_filesystem, directory, data_object, message='CREATED'):
+    def create_under_dir(self, local_filesystem, directory,
+                         data_object, message='CREATED'):
         if not self.connector_fs.exists(local_filesystem):
             logger.error("Destination filesystem '%s' does not exist"
                          % local_filesystem)
@@ -107,7 +113,8 @@ class FileSystem(object):
         dest_file_name = path.join(direct, data_object.getName())
         #FIXME: Not sure why we need this
         #if not local_filesystem:
-        #    destination_file_name = self.global_filesystem + "/" + data_object.getName()
+        #    destination_file_name = os.path.join(self.global_filesystem,
+        #                                        data_object.getName())
         dest_file = self.connector_fs.open(dest_file_name, 'w')
         dest_file.write(data_object.getContent())
         dest_file.close()
@@ -124,16 +131,19 @@ class FileSystem(object):
 
     def retrieve_under_dir(self, local_filesystem, directory, file):
         # This has the advantage of not exposing the path join semantics.
-        return self.retrieve(path.join("/", local_filesystem, directory, file))
+        return self.retrieve(path.join(local_filesystem,
+                                       directory, file))
 
     def retrieve(self, file_to_be_retrieved):
-        # NOTE: Deprecated, as requires full path to created externally, which is
+        # NOTE: Deprecated, as requires full path
+        #       to created externally, which is
         # leaky abstraction
         if not self.connector_fs.exists(file_to_be_retrieved):
             logger.error("File'%s' does not exist" % file_to_be_retrieved)
             raise IOError("File'%s' does not exist" % file_to_be_retrieved)
 
-        retrieved_file_absolute_path = self.global_filesystem + "/" + file_to_be_retrieved
+        retrieved_file_absolute_path = os.path.join(self.global_filesystem,
+                                                    file_to_be_retrieved)
         retrieved_file = open(retrieved_file_absolute_path, 'r')
         retrieved_file_content = retrieved_file.read()
         retrieved_file_name = os.path.basename(file_to_be_retrieved)
@@ -144,7 +154,8 @@ class FileSystem(object):
         return data_object
 
     def update(self, local_filesystem, data_object):
-        file_to_be_updated = local_filesystem + "/" + data_object.getName()
+        file_to_be_updated = os.path.join(local_filesystem,
+                                          data_object.getName())
         if not self.connector_fs.exists(file_to_be_updated):
             logger.error("File'%s' does not exist" % file_to_be_updated)
             raise IOError("File'%s' does not exist" % file_to_be_updated)
@@ -162,19 +173,23 @@ class FileSystem(object):
         return True
 
     def isdir(self, local_filesystem, dir_path):
-        return self.connector_fs.isdir(path.join("/", local_filesystem, dir_path))
+        joined_path = path.join("/", local_filesystem, dir_path)
+        return self.connector_fs.isdir(joined_path)
 
     def isfile(self, local_filesystem, dir_path, f):
-        return self.connector_fs.isfile(path.join("/", local_filesystem, dir_path, f))
+        joined_path = path.join("/", local_filesystem, dir_path, f)
+        return self.connector_fs.isfile(joined_path)
 
     def exists(self, local_filesystem, dir_path, f):
-        return self.connector_fs.exists(path.join("/", local_filesystem, dir_path, f))
+        joined_path = path.join("/", local_filesystem, dir_path, f)
+        return self.connector_fs.exists(joined_path)
 
     def get_local_subdirectories(self, local_filesystem):
         """
         Returns list of names of directories immediately below local_filesystem
         """
-        path_to_subdirectories = os.path.join(self.global_filesystem, local_filesystem)
+        path_to_subdirectories = os.path.join(self.global_filesystem,
+                                              local_filesystem)
         list_of_subdirectories = os.listdir(path_to_subdirectories)
 
         return list_of_subdirectories
@@ -183,7 +198,8 @@ class FileSystem(object):
         """
         Returns list of names of directories immediately below local_filesystem
         """
-        path_to_subdirectories = os.path.join(self.global_filesystem, local_filesystem, directory)
+        path_to_subdirectories = os.path.join(self.global_filesystem,
+                                              local_filesystem, directory)
         list_of_subdirectories = os.listdir(path_to_subdirectories)
 
         return list_of_subdirectories
@@ -192,7 +208,8 @@ class FileSystem(object):
         """
         Deleted a local file system
         """
-        path_to_local_filesystem = path.join(self.global_filesystem, local_filesystem)
+        path_to_local_filesystem = path.join(self.global_filesystem,
+                                             local_filesystem)
         #FIXME: should use appropriate osfs API here
         shutil.rmtree(path_to_local_filesystem)
 
@@ -212,14 +229,15 @@ class FileSystem(object):
             _upload_input(ssh, input_dir,  fname, dest)
 
     def download_output(self, ssh, instance_id, local_filesystem, settings):
-        output_dir = os.path.join(self.global_filesystem, local_filesystem, instance_id)
+        output_dir = os.path.join(self.global_filesystem,
+                                  local_filesystem,
+                                  instance_id)
         get_output(instance_id, output_dir, settings)
 
     def exec_command(self, file_to_be_executed, command, wildcard=False):
         import subprocess
 
-        absolute_path_to_file = os.path.join(
-                                             self.global_filesystem,
+        absolute_path_to_file = os.path.join(self.global_filesystem,
                                              file_to_be_executed)
         if wildcard:
             import glob  # FIXME: Why is this here?
@@ -229,19 +247,23 @@ class FileSystem(object):
         output = proc.stdout.read()
         return output
 
-    def copy(self, local_filesystem, source_dir, file, dest_dir, new_name, overwrite=True):
+    def copy(self, local_filesystem, source_dir,
+             file, dest_dir, new_name, overwrite=True):
         """
         Copy lfs/sourcedir/file to lfs/dest_dir
         """
         try:
-            self.connector_fs.copy(path.join(local_filesystem, source_dir, file),
-                                   path.join(dest_dir, new_name), overwrite)
+            self.connector_fs.copy(path.join(local_filesystem,
+                                             source_dir, file),
+                                   path.join(dest_dir, new_name),
+                                   overwrite)
         except ResourceNotFoundError as e:
             raise IOError(e)  # FIXME: make filesystem specfic exceptions
 
     def glob(self, local_filesystem, directory, pattern):
         """
-        Return list of files in the local_filesystem/directory with names that match pattern
+        Return list of files in the local_filesystem/directory
+        with names that match pattern
         """
         files = self.get_local_subdirectory_files(
             local_filesystem,
@@ -255,7 +277,8 @@ class FileSystem(object):
 class DataObject(object):
     # Assume that whole file is contained in one big string
     # as it makes json parsing easier
-    # FIXME: There is very little value-add here.  Might be better to just use strings
+    # FIXME: There is very little value-add here.
+    #        Might be better to just use strings
 
     def __init__(self):
         self._name = ""
@@ -285,7 +308,8 @@ class DataObject(object):
     def setContent(self, content):
         self._content = content
 
-    # TODO: make getters and setters that handle arrays and serialise/deserialise as JSON
+    # TODO: make getters and setters that handle
+    #       arrays and serialise/deserialise as JSON
 
     def __str__(self):
-        return "%s = %s" % (self._name, self._content)
+        return '%s = %s' % (self._name, self._content)
