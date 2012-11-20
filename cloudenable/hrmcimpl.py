@@ -234,7 +234,7 @@ def setup_multi_task(group_id, settings):
     threads_running = []
     for node in packaged_nodes:
         logger.debug("starting thread")
-        instance_id = "fake_id"
+        instance_id = node.id
         t = threading.Thread(target=setup_worker, args=(instance_id,))
         threads_running.append(t)
         t.start()
@@ -274,7 +274,7 @@ def run_multi_task(group_id, output_dir, settings):
     pids = []
     for node in nodes:
         try:
-            instance_id = 'fake_id' #node.id
+            instance_id = node.id
             pids_for_task = run_task(instance_id, settings)
         except PackageFailedError, e:
             logger.error(e)
@@ -305,14 +305,12 @@ def prepare_multi_input(group_id, input_dir, settings, seed):
     if seed:
         print ("seed for full package run = %s" % seed)
     else:
-        instance_id = 'fake_id' #x.id
         print ("seeds for each node in group %s = %s\
-        " % (group_id, [(instance_id, seeds[x]) for x in seeds.keys()]))
+        " % (group_id, [(x.id, seeds[x]) for x in seeds.keys()]))
 
     logger.debug("seeds = %s" % seeds)
-    nodes = [1]
     for node in nodes:
-        instance_id = 'fake_id' #node.id
+        instance_id = node.id
         logger.info("prepare_input %s %s" % (instance_id, input_dir))
         ip = get_instance_ip(instance_id, settings)
         ssh = open_connection(ip_address=ip, settings=settings)
@@ -340,7 +338,8 @@ def prepare_multi_input(group_id, input_dir, settings, seed):
                          seeds[node]))
 
 
-        post_processing_dest = os.path.join(settings['POST_PROCESSING_DEST_PATH_PREFIX'],
+        post_processing_dest = os.path.join(
+            settings['POST_PROCESSING_DEST_PATH_PREFIX'],
             settings['POST_PAYLOAD_CLOUD_DIRNAME'])
 
         run_command(ssh, "cd %s; cp PSD.inp PSD.inp.orig" %
@@ -377,15 +376,15 @@ def _status_of_nodeset(nodes, output_dir, settings):
     finished_nodes = []
 
     for node in nodes:
-        instance_id = 'fake_id' #node.id
-        '''
+        instance_id = node.id
+
         if not is_instance_running(instance_id, settings):
             # An unlikely situation where the node crashed after is was
             # detected as registered.
             logging.error('Instance %s not running' % instance_id)
             error_nodes.append(node)
             continue
-        '''
+
         if job_finished(instance_id, settings):
             print "done. output is available"
             get_output(instance_id,
