@@ -147,6 +147,13 @@ def unpack(ssh_client, environ_dir, package_file):
     logger.debug(res)
 
 
+def unzip(ssh_client, zipped_file, destination_dir):
+    res = run_command(
+        ssh_client, 'unzip -o %s -d %s'
+                    % (zipped_file, destination_dir))
+    logger.debug(res)
+
+
 def compile(ssh_client, environ_dir, compile_file,
             package_dirname, compiler_command):
     run_command(ssh_client,

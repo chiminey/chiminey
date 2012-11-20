@@ -62,8 +62,11 @@ def start(args):
                       'EC2_ACCESS_KEY', 'EC2_SECRET_KEY',
                       'CLOUD_SLEEP_INTERVAL', 'PRIVATE_KEY_NAME',
                       'SECURITY_GROUP', 'GROUP_ID_DIR', 'MAX_SEED_INT',
-                      'PROVIDER', 'CUSTOM_PROMPT'
-                      ]
+                      'PROVIDER', 'CUSTOM_PROMPT',
+                      'POST_PROCESSING_LOCAL_PATH', 'POST_PAYLOAD',
+                      'POST_PROCESSING_DEST_PATH_PREFIX','POST_PAYLOAD_COMPILE_FILE',
+                      'POST_PAYLOAD_CLOUD_DIRNAME']
+
 #['CUSTOM_PROMPT'] "[smart-connector_prompt]$"
     import json
     #settings = type('', (), {})()
@@ -124,7 +127,8 @@ def start(args):
         error_threshold = 10000
         smart_conn = SmartConnector()
 
-        for stage in (Configure(), Schedule(), Create(), Setup(), Run(), Finished(), Transform(), Converge(error_threshold), Teardown()):
+        for stage in (Configure(), Schedule(), Create()):
+            #, Setup(), Run(), Finished(), Transform(), Converge(error_threshold), Teardown()):
             smart_conn.register(stage)
 
         #while loop is infinite:
