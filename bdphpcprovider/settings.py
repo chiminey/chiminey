@@ -12,7 +12,7 @@ ADMINS = (
     # ('Your Name', 'your_email@domain.com'),
 )
 
-SUB_SITE = "computescheduler"
+SUB_SITE = "bdphpcprovider"
 
 MANAGERS = ADMINS
 
@@ -51,7 +51,7 @@ USE_I18N = True
 USE_L10N = True
 
 STATIC_DOC_ROOT = path.join(path.dirname(__file__),
-                               'scheduler/site_media').replace('\\', '/')
+                               'smartconnectorscheduler/site_media').replace('\\', '/')
 
 #STATIC_URL = path.join(path.dirname(__file__),'smra_portal/site_media').replace('\\','/')
 #STATIC_URL = path.join('/site_media/').replace('\\','/')
@@ -83,22 +83,22 @@ TEMPLATE_LOADERS = (
 MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    #'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.transaction.TransactionMiddleware'
 )
 
-ROOT_URLCONF = 'computescheduler.urls'
+ROOT_URLCONF = 'bdphpcprovider.urls'
 
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
     path.join(path.dirname(__file__),
-    'scheduler/templates/').replace('\\','/'),
+    'smartconnectorscheduler/templates/').replace('\\','/'),
     path.join(path.dirname(__file__),
-    'scheduler/publish/').replace('\\','/')
+    'smartconnectorscheduler/publish/').replace('\\','/')
 )
 
 TEMPLATE_CONTEXT_PROCESSORS = ("django.contrib.auth.context_processors.auth",
@@ -106,7 +106,7 @@ TEMPLATE_CONTEXT_PROCESSORS = ("django.contrib.auth.context_processors.auth",
      "django.core.context_processors.i18n",
      "django.contrib.messages.context_processors.messages")
 
-OUR_APPS = ('computescheduler.scheduler',)
+OUR_APPS = ('bdphpcprovider.smartconnectorscheduler',)
 
 INSTALLED_APPS = (
     'django_extensions',
@@ -157,8 +157,8 @@ LOGGING = {
 
 FIXTURE_DIRS = (
                 path.join(path.dirname(__file__),
-                               'scheduler/site_media').replace('\\', '/'),)
+                               'smartconnectorscheduler/site_media').replace('\\', '/'),)
 
 
-AUTH_PROFILE_MODULE = "scheduler.UserProfile"
+AUTH_PROFILE_MODULE = "smartconnectorscheduler.UserProfile"
 
