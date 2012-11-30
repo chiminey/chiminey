@@ -5,5 +5,4 @@ flexmock
 pep8
 decisiontree
 fs
-DecisionTree
 nose

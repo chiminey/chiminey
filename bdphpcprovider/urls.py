@@ -4,6 +4,6 @@ from django.contrib import admin
 admin.autodiscover()
 
 urlpatterns = patterns('',
-    (r'^hello/$', 'computescheduler.scheduler.views.hello'),
+    (r'^hello/$', 'bdphpcprovider.smartconnectorscheduler.views.hello'),
     url(r'^admin/', include(admin.site.urls)),
 )
