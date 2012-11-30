@@ -41,6 +41,14 @@ from sshconnector import AuthError
 logger = logging.getLogger(__name__)
 NODE_STATE = ['RUNNING', 'REBOOTING', 'TERMINATED', 'PENDING', 'UNKNOWN']
 
+#TODO: comment out FAKE_VM class when list_nodes() API is fixed
+class Fake_VM:
+    id = "115.146.92.233"
+    public_ips = ["115.146.92.233"]
+    state = 0 # Equivalent to RUNNING
+    def __init__(self):
+        pass
+
 
 def _create_cloud_connection(settings):
     provider = settings['PROVIDER']
@@ -80,15 +88,19 @@ def create_environ(number_vm_instances, settings):
         Create the Nectar VM instance and return id
     """
     logger.info("create_environ")
-    all_instances = _create_VM_instances(number_vm_instances, settings)
+    #TODO: review next 2 lines when list_nodes() API is fixed
+    fake_vm = Fake_VM()
+    all_instances = [fake_vm] #_create_VM_instances(number_vm_instances, settings)
     logger.debug("Printing ---- %s " % all_instances)
 
     if all_instances:
-        all_running_instances = _wait_for_instance_to_start_running(all_instances, settings)
+        #TODO: review the next line when list_nodes() API is fixed
+        all_running_instances = all_instances #_wait_for_instance_to_start_running(all_instances, settings)
         group_id = _store_md5_on_instances(all_running_instances, settings)
         _customize_prompt(all_running_instances, settings)
-        print 'Created VM instances:'
-        print_all_information(settings, all_instances=all_running_instances)
+        print "Group ID %s" % group_id
+        #print 'Created VM instances:'
+        #print_all_information(settings, all_instances=all_running_instances)
         return group_id
 
     return None
@@ -137,8 +149,11 @@ def _store_md5_on_instances(all_instances, settings):
     print "Creating group '%s' ..." % group_id
     for instance in all_instances:
         # login and store md5 file
+        logger.debug("Instance ID  ...")
         instance_id = instance.id
+        logger.debug("Instance ID %s" % instance_id)
         ip_address = get_instance_ip(instance_id, settings)
+        logger.debug("Instance IP %s" % ip_address)
         ssh_ready = is_ssh_ready(settings, ip_address)
         if ssh_ready:
             print "Registering %s (%s) to group '%s'\
@@ -173,13 +188,16 @@ def _customize_prompt(all_instances, settings):
             logger.debug("Customized prompt")
         else:
             print "Unable to customize command prompt for VM instance %s\
-            " % (instance_id, ip)
+            " % (instance_id, ip_address)
 
 
 def _generate_group_id(all_instances):
     md5_starter_string = ""
+    md5_starter_string = "Iman"
+    '''
     for instance in all_instances:
         md5_starter_string += instance.id
+    '''
 
     md5 = hashlib.md5()
     md5.update(md5_starter_string)
@@ -245,7 +263,9 @@ def is_instance_running(instance_id, settings):
     """
     instance_running = False
     connection = _create_cloud_connection(settings)
-    nodes = connection.list_nodes()
+    #TODO: review next 2 lines when list_nodes() API is fixed
+    fake_vm = Fake_VM()
+    nodes = [fake_vm]#connection.list_nodes()
     for i in nodes:
         if i.id == instance_id and i.state == NodeState.RUNNING:
             instance_running = True
@@ -346,7 +366,6 @@ def get_instance_ip(instance_id, settings):
     #TODO: throw exception if can't find instance_id
     connection = _create_cloud_connection(settings)
     ip = ''
-
     while instance_id == '' or ip == '':
         nodes = get_running_instances(settings)
         logger.debug("total nodes %d " % len(nodes))
@@ -356,15 +375,23 @@ def get_instance_ip(instance_id, settings):
                 ip = i.public_ips[0]
                 logger.debug("ip %s", ip)
                 break
+
     return ip
+
 
 def get_running_instances(settings):
     connection = _create_cloud_connection(settings)
-    all_instances = connection.list_nodes()
+    #TODO: review next 2 lines when list_nodes() API is fixed
+    fake_vm = Fake_VM()
+    all_instances = [fake_vm] #connection.list_nodes()
     all_running_instances = []
+
     for instance in all_instances:
+        logger.debug(len(all_instances))
         if instance.state == NodeState.RUNNING:
             all_running_instances.append(instance)
+
+
     return all_running_instances
 
 
@@ -378,9 +405,13 @@ def get_rego_nodes(group_id, settings):
     conn = _create_cloud_connection(settings)
 
     packaged_node = []
-    for node in get_running_instances(settings):
+    #TODO: review next 2 lines when list_nodes() API is fixed
+    fake_vm = Fake_VM()
+    running_instances = [fake_vm] # get_running_instances(settings)
+    for node in running_instances:
         # login and check for md5 file
-        ip = get_instance_ip(node.id, settings)
+        instance_id = node.id
+        ip = get_instance_ip(instance_id, settings)
         try:
             ssh_client = open_connection(ip_address=ip,
                               settings=settings)
@@ -394,10 +425,10 @@ def get_rego_nodes(group_id, settings):
         logger.debug("res=%s" % res)
         if '1\n' in res:
             logger.debug("node %s exists for group %s "
-                         % (node.id, group_id))
+                         % (instance_id, group_id))
             packaged_node.append(node)
         else:
             logger.debug("NO node for %s exists for group %s "
-                         % (node.id, group_id))
+                         % (instance_id, group_id))
     logger.debug("get_rego_nodes DONE")
     return packaged_node

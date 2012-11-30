@@ -5,6 +5,7 @@ from sshconnector import open_connection
 from sshconnector import run_command
 from sshconnector import install_deps
 from sshconnector import unpack
+from sshconnector import unzip
 from sshconnector import compile
 from sshconnector import mkdir
 from sshconnector import get_file
@@ -56,6 +57,32 @@ def setup_task(instance_id, settings):
     compile(ssh, environ_dir=settings['DEST_PATH_PREFIX'],
             compile_file=settings['COMPILE_FILE'],
             package_dirname=settings['PAYLOAD_CLOUD_DIRNAME'],
+            compiler_command=settings['COMPILER'])
+
+    res = mkdir(ssh,
+                dir=settings['POST_PROCESSING_DEST_PATH_PREFIX'])
+
+
+
+    post_processing_dest = os.path.join(settings['POST_PROCESSING_DEST_PATH_PREFIX'],
+                                        settings['POST_PAYLOAD_CLOUD_DIRNAME'])
+    res = mkdir(ssh, dir=post_processing_dest)
+
+    logger.debug("mkdir res=%s" % res)
+    logger.debug("Post Processing === %s" % post_processing_dest)
+    put_file(ssh,
+             source_path=settings['POST_PROCESSING_LOCAL_PATH'],
+             package_file=settings['POST_PAYLOAD'],
+             environ_dir=settings['POST_PROCESSING_DEST_PATH_PREFIX'])
+
+    zipped =os.path.join(settings['POST_PROCESSING_DEST_PATH_PREFIX'],
+        settings['POST_PAYLOAD'])
+    unzip(ssh, zipped_file=zipped,
+        destination_dir=post_processing_dest)
+
+    compile(ssh, environ_dir=settings['POST_PROCESSING_DEST_PATH_PREFIX'],
+            compile_file=settings['POST_PAYLOAD_COMPILE_FILE'],
+            package_dirname=settings['POST_PAYLOAD_CLOUD_DIRNAME'],
             compiler_command=settings['COMPILER'])
 
 
@@ -147,6 +174,34 @@ def get_output(instance_id, output_dir, settings):
     pass
 
 
+def get_post_output(instance_id, output_dir, settings):
+    """
+        Retrieve the output from the task on the node
+    """
+    logger.info("get_post_output %s" % instance_id)
+    ip = get_instance_ip(instance_id, settings)
+    ssh = open_connection(ip_address=ip, settings=settings)
+    try:
+        os.makedirs(output_dir)  # NOTE: makes intermediate directories
+    except OSError, e:
+        logger.debug("output directory %s already exists: %s\
+        " % (output_dir, e))
+        #sys.exit(1)
+    logger.info("output directory is %s" % output_dir)
+    cloud_path = os.path.join(settings['POST_PROCESSING_DEST_PATH_PREFIX'],
+        settings['POST_PAYLOAD_CLOUD_DIRNAME'])
+    remote_files = [os.path.basename(x) for x in find_remote_files(ssh,
+        cloud_path)]
+    logger.debug("remote_files=%s" % remote_files)
+    for file in remote_files:
+        get_file(ssh, os.path.join(settings['POST_PROCESSING_DEST_PATH_PREFIX'],
+            settings['POST_PAYLOAD_CLOUD_DIRNAME']),
+            file, output_dir)
+        # TODO: do integrity check on output files
+    pass
+
+
+
 def job_finished(instance_id, settings):
     """
         Return True if package job on instance_id has job_finished
@@ -179,7 +234,8 @@ def setup_multi_task(group_id, settings):
     threads_running = []
     for node in packaged_nodes:
         logger.debug("starting thread")
-        t = threading.Thread(target=setup_worker, args=(node.id,))
+        instance_id = node.id
+        t = threading.Thread(target=setup_worker, args=(instance_id,))
         threads_running.append(t)
         t.start()
     for thread in threads_running:
@@ -218,7 +274,8 @@ def run_multi_task(group_id, output_dir, settings):
     pids = []
     for node in nodes:
         try:
-            pids_for_task = run_task(node.id, settings)
+            instance_id = node.id
+            pids_for_task = run_task(instance_id, settings)
         except PackageFailedError, e:
             logger.error(e)
             logger.error("unable to start package on node %s" % node)
@@ -264,6 +321,7 @@ def prepare_multi_input(group_id, input_dir, settings, seed):
             _upload_input(ssh, input_dir, fname,
                           os.path.join(settings['DEST_PATH_PREFIX'],
                                        settings['PAYLOAD_CLOUD_DIRNAME']))
+
         run_command(ssh, "cd %s; cp rmcen.inp rmcen.inp.orig" %
                     (os.path.join(settings['DEST_PATH_PREFIX'],
                                   settings['PAYLOAD_CLOUD_DIRNAME'])))
@@ -278,6 +336,23 @@ def prepare_multi_input(group_id, input_dir, settings, seed):
                     " % (os.path.join(settings['DEST_PATH_PREFIX'],
                                       settings['PAYLOAD_CLOUD_DIRNAME']),
                          seeds[node]))
+
+
+        post_processing_dest = os.path.join(
+            settings['POST_PROCESSING_DEST_PATH_PREFIX'],
+            settings['POST_PAYLOAD_CLOUD_DIRNAME'])
+
+        run_command(ssh, "cd %s; cp PSD.inp PSD.inp.orig" %
+                         post_processing_dest)
+        run_command(ssh, "cd %s; dos2unix PSD.inp" %
+                         post_processing_dest)
+        run_command(ssh, "cd %s; sed -i '/^$/d' PSD.inp" %
+                         post_processing_dest)
+        run_command(ssh, "cd %s;\
+                    sed -i 's/[0-9]*[ \t]*iseed.*$/%s\tiseed/' PSD.inp\
+                    " % (post_processing_dest,
+                         seeds[node]))
+
 
 
 #should remove this directory
@@ -302,20 +377,59 @@ def _status_of_nodeset(nodes, output_dir, settings):
 
     for node in nodes:
         instance_id = node.id
+
         if not is_instance_running(instance_id, settings):
             # An unlikely situation where the node crashed after is was
             # detected as registered.
             logging.error('Instance %s not running' % instance_id)
             error_nodes.append(node)
             continue
+
         if job_finished(instance_id, settings):
             print "done. output is available"
             get_output(instance_id,
-                       "%s/%s" % (output_dir, node.id),
+                       "%s/%s" % (output_dir, instance_id),
                        settings)
+
+            run_post_task(instance_id, settings)
+            post_output_dir = instance_id + "_post"
+            get_post_output(instance_id,
+                "%s/%s" % (output_dir, post_output_dir),
+                settings)
+
             finished_nodes.append(node)
         else:
             print "job still running on %s: %s\
             " % (instance_id, get_instance_ip(instance_id, settings))
 
     return (error_nodes, finished_nodes)
+
+
+def run_post_task(instance_id, settings):
+    """
+        Start the task on the instance, then hang and
+        periodically check its state.
+    """
+    logger.info("run_post_task %s" % instance_id)
+    ip = get_instance_ip(instance_id, settings)
+    ssh = open_connection(ip_address=ip,
+        settings=settings)
+
+    #pids = get_package_pids(ssh, settings['COMPILE_FILE'])
+    #logger.debug("pids=%s" % pids)
+    #if len(pids) > 1:
+     #   logger.error("warning:multiple packages running")
+      #  raise PackageFailedError("multiple packages running")
+
+    post_processing_dest = os.path.join(settings['POST_PROCESSING_DEST_PATH_PREFIX'],
+        settings['POST_PAYLOAD_CLOUD_DIRNAME'])
+
+    run_command(ssh, "cp %s %s &\
+    " % (os.path.join(settings['DEST_PATH_PREFIX'],
+        settings['PAYLOAD_CLOUD_DIRNAME'],
+         "hrmc01.xyz"), post_processing_dest))
+
+    run_command(ssh, "cd %s; ./%s >& %s &\
+    " % (post_processing_dest,
+         settings['POST_PAYLOAD_COMPILE_FILE'], "output"))
+
