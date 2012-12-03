@@ -37,6 +37,8 @@ from sshconnector import is_ssh_ready
 from sshconnector import AuthError
 
 
+import libcloud.security
+libcloud.security.VERIFY_SSL_CERT = False
 
 logger = logging.getLogger(__name__)
 NODE_STATE = ['RUNNING', 'REBOOTING', 'TERMINATED', 'PENDING', 'UNKNOWN']

@@ -18,27 +18,13 @@ from hrmcimpl import run_multi_task
 from hrmcimpl import packages_complete
 from hrmcimpl import PackageFailedError
 
-from smartconnector import SmartConnector
-from hrmcstages import Configure
-from hrmcstages import Create
-from hrmcstages import Setup
-from hrmcstages import Run
-from hrmcstages import Finished
-
-from hrmcstages import Teardown
-from hrmcstages import Schedule
-from hrmcstages import clear_temp_files
-
-from stages.converge import Converge
-from stages.transform import Transform
-
 logger = logging.getLogger(__name__)
 
 
 def start(args):
 
     #http://docs.python.org/howto/logging.html#logging-basic-tutorial
-    logging.config.fileConfig('logging.conf')
+    #logging.config.fileConfig('logging.conf')
     import ConfigParser
     config = ConfigParser.RawConfigParser()
     config_file = os.path.expanduser("~/.cloudenabling/config.sys")
@@ -67,7 +53,7 @@ def start(args):
                       'POST_PROCESSING_DEST_PATH_PREFIX','POST_PAYLOAD_COMPILE_FILE',
                       'POST_PAYLOAD_CLOUD_DIRNAME']
 
-#['CUSTOM_PROMPT'] "[smart-connector_prompt]$"
+    #['CUSTOM_PROMPT'] "[smart-connector_prompt]$"
     import json
     #settings = type('', (), {})()
     settings = {}
@@ -80,7 +66,7 @@ def start(args):
             field_val = json.loads(val)    # use JSON to parse values
         except ValueError, e:
             file_val = ""
-        # and make fake object to hold them
+            # and make fake object to hold them
         settings[field]=field_val
         #setattr(settings, field, field_val)
         logger.debug("%s" % field_val)
@@ -88,78 +74,26 @@ def start(args):
     # get command line options
     parser = OptionParser()
     parser.add_option("-n", "--nodeid", dest="instance_id",
-                      help="The instance id from the cloud infrastructure")
+        help="The instance id from the cloud infrastructure")
     parser.add_option("-i", "--inputdir", dest="input_dir",
-                      help="The local directory holding \
+        help="The local directory holding \
                       input files for the task")
     parser.add_option("-o", "--outputdir", dest="output_dir",
-                      help="The local directory which will \
+        help="The local directory which will \
                       hold output files for the task")
     parser.add_option("-g", "--group", dest="group_id",
-                      help="The group id from the cloud infrastructure")
+        help="The group id from the cloud infrastructure")
     parser.add_option("-v", "--number-vm-instances", type="int",
-                      dest="number_vm_instances",
-                      help="The number of VM instances to " +
-                      "be created as a group")
+        dest="number_vm_instances",
+        help="The number of VM instances to " +
+             "be created as a group")
     parser.add_option("-s", "--seed", dest="seed",
-                      help="The master seed that generates all other seeds")
+        help="The master seed that generates all other seeds")
 
     (options, args) = parser.parse_args(args)
 
-    if 'smart' in args:
-        context = {'number_vm_instances': 2}
-        context['seed'] = 32
 
-        HOME_DIR = os.path.expanduser("~")
-        global_filesystem = os.path.join(HOME_DIR, "testStages")
-        context['global_filesystem'] = global_filesystem
-        context['provider'] = 'nectar'
-
-        if context['provider'].lower() == 'nectar':
-            context['config.sys'] = "./config.sys.json"
-        elif context['provider'].lower() == 'amazon':
-            context['config.sys'] =  "./config.sys.json.ec2"
-        else:
-            print "unknown cloud service provider"
-            sys.exit()
-
-        #number_of_iterations = 3
-        error_threshold = 10000
-        smart_conn = SmartConnector()
-
-        for stage in (Configure(), Schedule(), Create()):
-            #, Setup(), Run(), Finished(), Transform(), Converge(error_threshold), Teardown()):
-            smart_conn.register(stage)
-
-        #while loop is infinite:
-        # check the semantics for 'dropping data' into
-        # designated location.
-        #What happens if data is dropped while
-        #another is in progress?
-        while (True):
-            done = 0
-            not_triggered = 0
-            for stage in smart_conn.stages:
-                print "Working in stage", stage.__class__
-                if stage.triggered(context):
-                    logger.debug("triggered")
-                    stage.process(context)
-                    context = stage.output(context)
-                    logger.debug("Context", context)
-                else:
-                    logger.debug("not triggered")
-                    not_triggered += 1
-                    #smart_con.unregister(stage)
-                    #print "Deleting stage",stage
-                    print context
-                logger.debug(done, " ", len(smart_conn.stages))
-
-            if not_triggered == len(smart_conn.stages):
-                break
-
-        clear_temp_files(context)
-
-    elif 'create' in args:
+    if 'create' in args:
         if options.number_vm_instances:
             res = create_environ(options.number_vm_instances, settings)
             logger.debug(res)
@@ -197,7 +131,7 @@ def start(args):
                     sys.exit(1)
 
             prepare_multi_input(group_id, options.input_dir,
-                                settings, options.seed)
+                settings, options.seed)
 
             try:
                 pids = run_multi_task(group_id, options.input_dir, settings)
@@ -208,8 +142,8 @@ def start(args):
                 sys.exit(1)
 
             while (not packages_complete(group_id,
-                                         options.output_dir,
-                                         settings)):
+                options.output_dir,
+                settings)):
                 print("job is running.  Wait or CTRL-C to exit here. \
                  run 'check' command to poll again")
                 time.sleep(settings['SLEEP_TIME'])
@@ -228,8 +162,8 @@ def start(args):
 
             group_id = options.group_id
             is_finished = packages_complete(group_id,
-                                            options.output_dir,
-                                            settings)
+                options.output_dir,
+                settings)
 
             if is_finished:
                 print "done. output is available at %s" % options.output_dir
@@ -262,8 +196,8 @@ def start(args):
             parser.print_help()
             sys.exit(1)
 
-#    elif 'print' in args:
-#        print_running_node_id(settings)
+        #    elif 'print' in args:
+        #        print_running_node_id(settings)
 
     elif 'info' in args:
         print "Summary of Computing Environment"
