@@ -31,7 +31,7 @@ def start(args):
     if os.path.exists(config_file):
         config.read(config_file)
     else:
-        config_file = os.path.expanduser("config.sys")  # a default config file
+        config_file = "/home/iman/cloudenabling/bdphpcprovider/smartconnectorscheduler/config.sys"  # a default config file
         if os.path.exists(config_file):
             config.read(config_file)
         else:
@@ -97,6 +97,7 @@ def start(args):
         if options.number_vm_instances:
             res = create_environ(options.number_vm_instances, settings)
             logger.debug(res)
+            return res
         else:
             logging.error("enter number of VM instances to be created")
             parser.print_help()
