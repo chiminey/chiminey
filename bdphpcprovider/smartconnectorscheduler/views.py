@@ -72,3 +72,18 @@ def callback(message):
     req = urllib2.Request(url, data)
     response = urllib2.urlopen(req)
     the_page = response.read()
+
+
+def hello(request):
+    template = loader.get_template('hello.html')
+    context = Context({
+        'text': "world",
+    })
+    #print_greeting("Iman")
+    start(['create', '-v','1'])
+    return HttpResponse(template.render(context))
+
+def getoutput(request, file_id):
+    """ Return an output fiel identified by file_id"""
+    file_text = "this is the text for %s" % file_id
+    return HttpResponse(file_text, mimetype='text/plain')
