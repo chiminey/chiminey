@@ -83,7 +83,7 @@ TEMPLATE_LOADERS = (
 MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'djangoflash.middleware.FlashMiddleware',
+    #'djangoflash.middleware.FlashMiddleware',
     #'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -91,8 +91,8 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.transaction.TransactionMiddleware'
 )
 
-FLASH_IGNORE_MEDIA = True
-FLASH_STORAGE = 'session' # Optional
+#FLASH_IGNORE_MEDIA = True
+#FLASH_STORAGE = 'session' # Optional
 
 ROOT_URLCONF = 'bdphpcprovider.urls'
 
@@ -110,7 +110,8 @@ TEMPLATE_CONTEXT_PROCESSORS = ("django.contrib.auth.context_processors.auth",
      "django.core.context_processors.debug",
      "django.core.context_processors.i18n",
      "django.contrib.messages.context_processors.messages",
-     'djangoflash.context_processors.flash')
+     #'djangoflash.context_processors.flash'
+)
 
 OUR_APPS = ('bdphpcprovider.smartconnectorscheduler',)
 
@@ -177,6 +178,20 @@ LOGGING = {
             'handlers': ['console', 'mail_admins'],
             'level': 'INFO',
 
+            },
+        'bdphpcprovider.smartconnectorscheduler.botocloudconnector': {
+            'handlers': ['console', 'mail_admins'],
+            'level': 'DEBUG',
+
+            },
+        'bdphpcprovider.smartconnectorscheduler.hrmcimpl': {
+            'handlers': ['console', 'mail_admins'],
+            'level': 'DEBUG',
+
+            },
+        'bdphpcprovider.smartconnectorscheduler.sshconnector': {
+            'handlers': ['console', 'mail_admins'],
+            'level': 'DEBUG',
             }
     }
 }

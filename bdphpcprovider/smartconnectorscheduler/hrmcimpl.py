@@ -14,9 +14,9 @@ from sshconnector import get_package_pids
 from sshconnector import find_remote_files
 
 
-from cloudconnector import is_instance_running
-from cloudconnector import get_rego_nodes
-from cloudconnector import get_instance_ip
+from botocloudconnector import is_instance_running
+from botocloudconnector import get_rego_nodes
+from botocloudconnector import get_instance_ip
 
 logger = logging.getLogger(__name__)
 

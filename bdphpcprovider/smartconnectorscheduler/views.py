@@ -30,6 +30,8 @@ def index(request):
                     message = "Your group ID is %s" % group_id
                     callback(message)
                 elif stage == 'Setup':
+                    print "Setup %s", group_id
+
                     start(['setup', '-g', group_id])
                 elif stage == 'Run':
                     zipped_input_dir = '/home/iman/myfile.zip'
@@ -47,14 +49,12 @@ def index(request):
                         start(['run',
                                '-g', group_id,
                                '-i', extracted_input_dir+"/input",
-                               '-o','/tmp/output5'])
+                               '-o','/tmp/output6'])
                     except KeyError:
                         print 'Input directory not given.' \
                               ' Run stage is skipped'
-
-
-
                 else:
+                    start(['teardown', '-g', group_id])
                     print stage
 
 

@@ -5,12 +5,13 @@ import time
 import logging
 import logging.config
 
-import cloudconnector
-from cloudconnector import create_environ
-from cloudconnector import collect_instances
-from cloudconnector import print_all_information
-from cloudconnector import confirm_teardown
-from cloudconnector import destroy_environ
+
+from botocloudconnector import create_environ
+from botocloudconnector import collect_instances
+from botocloudconnector import print_all_information
+from botocloudconnector import confirm_teardown
+from botocloudconnector import destroy_environ
+from botocloudconnector import get_ids_of_instances
 
 from hrmcimpl import prepare_multi_input
 from hrmcimpl import setup_multi_task
@@ -182,16 +183,19 @@ def start(args):
 
         if options.group_id:
             all_instances = collect_instances(settings, group_id=options.group_id)
-            if confirm_teardown(settings, all_instances):
-                destroy_environ(settings, all_instances)
+            ids_of_instances = get_ids_of_instances(all_instances)
+            #TODO: uncomment confirmation
+            #if confirm_teardown(settings, all_instances):
+            destroy_environ(settings, all_instances, ids_of_instances)
         elif options.instance_id:
             all_instances = collect_instances(settings, instance_id=options.instance_id)
             if confirm_teardown(settings, all_instances):
-                destroy_environ(settings, all_instances)
+                destroy_environ(settings, all_instances, options.instance_id)
         elif 'teardown_all' in args:
             all_instances = collect_instances(settings, all_VM=True)
+            ids_of_instances = get_ids_of_instances(all_instances)
             if confirm_teardown(settings, all_instances):
-                destroy_environ(settings, all_instances)
+                destroy_environ(settings, all_instances, ids_of_instances)
         else:
             logger.error("Enter either group id or instance id of the package")
             parser.print_help()
