@@ -34,7 +34,7 @@ DATABASES = {
 # timezone as the operating system.
 # If running in a Windows environment this must be set to the same as your
 # system time zone.
-TIME_ZONE = None
+TIME_ZONE = 'Australia/Melbourne'
 
 # Language code for this installation. All choices can be found here:
 # http://www.i18nguy.com/unicode/language-identifiers.html
@@ -204,3 +204,7 @@ FIXTURE_DIRS = (
 
 AUTH_PROFILE_MODULE = "smartconnectorscheduler.UserProfile"
 
+# BDPHPCProvider-specific settings
+MYTARDIS_HPC_RESPONSE_URL = 'http://127.0.0.1:8001/apps/mytardis-hpc-app/response/'
+BDP_INPUT_DIR_PATH = "/home/iman"
+BDP_OUTPUT_DIR_PATH = "/home/iman"
