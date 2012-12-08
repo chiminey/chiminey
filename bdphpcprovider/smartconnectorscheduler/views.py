@@ -1,26 +1,20 @@
 # Create your views here.
-
+import os
 from django.http import HttpResponse
 from django.template import Context, RequestContext, loader
-#from scribble import print_greeting
 from mc import start
-import json
-import os
+from django.conf import settings
+
 
 def index(request):
-    from django.contrib import messages
-
+    print "language code", settings.LANGUAGE_CODE
     template = loader.get_template('index.html')
     context = RequestContext(request, {})
     if request.method == 'POST':
         input_parameters = request.POST
         stages = input_parameters['stages']
         group_id = str(input_parameters['group_id'])
-
-
         requested_stages_list=str(stages).split("'")
-        print "Splitted ", requested_stages_list
-
         STAGES = ['Create', 'Setup', 'Run', 'Terminate']
         for stage in STAGES:
             if stage in requested_stages_list:
@@ -29,13 +23,16 @@ def index(request):
                     group_id = start(['create', '-v', number_of_cores])
                     message = "Your group ID is %s" % group_id
                     callback(message)
+                    print "Create stage completed"
                 elif stage == 'Setup':
-                    print "Setup %s", group_id
-
                     start(['setup', '-g', group_id])
+                    message = "Setup stage completed"
+                    print message
+                    callback(message)
                 elif stage == 'Run':
-                    zipped_input_dir = '/home/iman/myfile.zip'
-                    extracted_input_dir = '/tmp/%s' % group_id
+                    zipped_input_dir = '%s/input.zip' % settings.BDP_INPUT_DIR_PATH
+                    extracted_input_dir = '%s/%s' % (settings.BDP_INPUT_DIR_PATH, group_id)
+                    print "Extracted ", extracted_input_dir
                     import base64
                     try:
                         encoded_input_dir = input_parameters['input_dir']
@@ -43,30 +40,35 @@ def index(request):
                         f=open(zipped_input_dir,"wb")
                         f.write(decoded_input_dir)
                         f.close()
-                        os.system('unzip -o -d %s %s' % (extracted_input_dir,
-                                                      zipped_input_dir))
-                        print 'Input Dir', extracted_input_dir
+                        command = 'unzip -o -d %s %s' % (extracted_input_dir,
+                                                         zipped_input_dir)
+                        os.system(command)
+                        output_dir = '%s/%s/output' % (settings.BDP_OUTPUT_DIR_PATH,
+                                                group_id)
+                        os.system('rm -rf %s ' % output_dir)
                         start(['run',
                                '-g', group_id,
                                '-i', extracted_input_dir+"/input",
-                               '-o','/tmp/output6'])
+                               '-o', output_dir])
+                        message = "Run stage completed"
+                        print message
+                        callback(message)
                     except KeyError:
                         print 'Input directory not given.' \
                               ' Run stage is skipped'
                 else:
                     start(['teardown', '-g', group_id, 'yes'])
-                    print stage
-
-
+                    message = "Terminate stage completed"
+                    print message
+                    callback(message)
         print "Done"
-
     return HttpResponse(template.render(context))
 
 
 def callback(message):
     import urllib
     import urllib2
-    url = "http://127.0.0.1:8001/apps/mytardis-hpc-app/response/"
+    url = settings.MYTARDIS_HPC_RESPONSE_URL
     values = {'message': message}
     data = urllib.urlencode(values)
     req = urllib2.Request(url, data)
@@ -79,11 +81,9 @@ def hello(request):
     context = Context({
         'text': "world",
     })
-    #print_greeting("Iman")
-    start(['create', '-v','1'])
     return HttpResponse(template.render(context))
 
 def getoutput(request, file_id):
-    """ Return an output fiel identified by file_id"""
+    """ Return an output field identified by file_id"""
     file_text = "this is the text for %s" % file_id
     return HttpResponse(file_text, mimetype='text/plain')
