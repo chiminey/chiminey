@@ -42,7 +42,9 @@ def is_ssh_ready(settings, ip_address):
             ssh_ready = True
         except Exception, e:
             sleep(settings['CLOUD_SLEEP_INTERVAL'])
-            #print ("Connecting to %s in progress ..." % ip_address)
+            print ("Connecting to %s in progress ..." % ip_address)
+            #import traceback, sys
+
             #traceback.print_exc(file=sys.stdout)
     return ssh_ready
 
