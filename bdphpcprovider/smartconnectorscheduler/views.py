@@ -54,7 +54,7 @@ def index(request):
                         print 'Input directory not given.' \
                               ' Run stage is skipped'
                 else:
-                    start(['teardown', '-g', group_id])
+                    start(['teardown', '-g', group_id, 'yes'])
                     print stage
 
 

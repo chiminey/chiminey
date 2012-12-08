@@ -91,6 +91,7 @@ def start(args):
     parser.add_option("-s", "--seed", dest="seed",
         help="The master seed that generates all other seeds")
 
+
     (options, args) = parser.parse_args(args)
 
 
@@ -181,20 +182,30 @@ def start(args):
         # that is running the package and no some random VM, probably by
         # logging in and checking state.
 
+        #TODO: refactor the following if, elif else statements
+
         if options.group_id:
             all_instances = collect_instances(settings, group_id=options.group_id)
             ids_of_instances = get_ids_of_instances(all_instances)
-            #TODO: uncomment confirmation
-            #if confirm_teardown(settings, all_instances):
-            destroy_environ(settings, all_instances, ids_of_instances)
+            confirm = True
+            if not "yes" in args:
+                confirm = confirm_teardown(settings, all_instances)
+            if confirm:
+                destroy_environ(settings, all_instances, ids_of_instances)
         elif options.instance_id:
             all_instances = collect_instances(settings, instance_id=options.instance_id)
-            if confirm_teardown(settings, all_instances):
+            confirm = True
+            if not "yes" in args:
+                confirm = confirm_teardown(settings, all_instances)
+            if confirm:
                 destroy_environ(settings, all_instances, options.instance_id)
         elif 'teardown_all' in args:
             all_instances = collect_instances(settings, all_VM=True)
             ids_of_instances = get_ids_of_instances(all_instances)
-            if confirm_teardown(settings, all_instances):
+            confirm = True
+            if not "yes" in args:
+                confirm = confirm_teardown(settings, all_instances)
+            if confirm:
                 destroy_environ(settings, all_instances, ids_of_instances)
         else:
             logger.error("Enter either group id or instance id of the package")
