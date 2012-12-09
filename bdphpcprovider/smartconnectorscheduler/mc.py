@@ -170,8 +170,10 @@ def start(args):
 
             if is_finished:
                 print "done. output is available at %s" % options.output_dir
+                return 'DONE'
             else:
                 print "job still running"
+                return 'RUNNING'
         else:
             logger.error("enter group id of the run")
             parser.print_help()
