@@ -112,6 +112,7 @@ TEMPLATE_CONTEXT_PROCESSORS = ("django.contrib.auth.context_processors.auth",
      #'djangoflash.context_processors.flash'
 )
 
+
 OUR_APPS = ('bdphpcprovider.smartconnectorscheduler',)
 
 INSTALLED_APPS = (
