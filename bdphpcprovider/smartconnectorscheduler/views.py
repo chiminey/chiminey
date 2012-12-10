@@ -13,6 +13,7 @@ def index(request):
     if request.method == 'POST':
         input_parameters = request.POST
         stages = input_parameters['stages']
+        experiment_id = input_parameters['experiment_id']
         group_id = str(input_parameters['group_id'])
         requested_stages_list=str(stages).split("'")
         STAGES = ['Create', 'Setup', 'Run', 'Terminate']
@@ -50,9 +51,19 @@ def index(request):
                                '-g', group_id,
                                '-i', extracted_input_dir+"/input",
                                '-o', output_dir])
-                        message = "Run stage completed"
+
+                        status = "RUNNING"
+                        while status == 'RUNNING':
+                            status = start('check',
+                              '-g', group_id,
+                              '-o', output_dir)
+
+                        get_results(experiment_id, group_id)
+
+                        message = "Run stage completed. Results are ready"
                         print message
                         callback(message, stage, group_id)
+                        callback(message)
                     except KeyError:
                         print 'Input directory not given.' \
                               ' Run stage is skipped'
@@ -84,9 +95,13 @@ def hello(request):
     context = Context({
         'text': "world",
     })
+    #print_greeting("Iman")
+    #start(['create', '-v','1'])
     return HttpResponse(template.render(context))
 
-def getoutput(request, file_id):
-    """ Return an output field identified by file_id"""
-    file_text = "this is the text for %s" % file_id
+
+def getoutput(request, group_id, file_id):
+    """ Return an output file identified by file_id"""
+    # FIXME: add validation for group_id and file_id access
+    file_text = fopen("/tmp/output5/%s" % file_id).read()
     return HttpResponse(file_text, mimetype='text/plain')
