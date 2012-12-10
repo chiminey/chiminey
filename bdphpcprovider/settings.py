@@ -192,6 +192,10 @@ LOGGING = {
         'bdphpcprovider.smartconnectorscheduler.sshconnector': {
             'handlers': ['console', 'mail_admins'],
             'level': 'DEBUG',
+            },
+        'bdphpcprovider.smartconnectorscheduler.getresults': {
+            'handlers': ['console', 'mail_admins'],
+            'level': 'DEBUG',
             }
     }
 }
@@ -206,5 +210,7 @@ AUTH_PROFILE_MODULE = "smartconnectorscheduler.UserProfile"
 
 # BDPHPCProvider-specific settings
 MYTARDIS_HPC_RESPONSE_URL = 'http://127.0.0.1:8001/apps/mytardis-hpc-app/response/'
+MYTARDIS_HPC_RESULT_URL = 'http://127.0.0.1:8001/apps/mytardis-hpc-app/resultsready/'
+
 BDP_INPUT_DIR_PATH = "/home/iman"
 BDP_OUTPUT_DIR_PATH = "/home/iman"
