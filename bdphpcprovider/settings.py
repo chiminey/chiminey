@@ -1,4 +1,3 @@
-
 # Django settings for the SMRA project deployed under runserver
 
 from os import path
