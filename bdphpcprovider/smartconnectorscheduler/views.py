@@ -22,13 +22,13 @@ def index(request):
                     number_of_cores = input_parameters['number_of_cores']
                     group_id = start(['create', '-v', number_of_cores])
                     message = "Your group ID is %s" % group_id
-                    callback(message)
+                    callback(message, stage, group_id)
                     print "Create stage completed"
                 elif stage == 'Setup':
                     start(['setup', '-g', group_id])
                     message = "Setup stage completed"
                     print message
-                    callback(message)
+                    callback(message, stage, group_id)
                 elif stage == 'Run':
                     zipped_input_dir = '%s/input.zip' % settings.BDP_INPUT_DIR_PATH
                     extracted_input_dir = '%s/%s' % (settings.BDP_INPUT_DIR_PATH, group_id)
@@ -52,7 +52,7 @@ def index(request):
                                '-o', output_dir])
                         message = "Run stage completed"
                         print message
-                        callback(message)
+                        callback(message, stage, group_id)
                     except KeyError:
                         print 'Input directory not given.' \
                               ' Run stage is skipped'
@@ -60,16 +60,19 @@ def index(request):
                     start(['teardown', '-g', group_id, 'yes'])
                     message = "Terminate stage completed"
                     print message
-                    callback(message)
+                    callback(message, stage, group_id)
+
         print "Done"
     return HttpResponse(template.render(context))
 
 
-def callback(message):
+def callback(message, stage, group_id):
     import urllib
     import urllib2
     url = settings.MYTARDIS_HPC_RESPONSE_URL
-    values = {'message': message}
+    values = {'message': message,
+              'stage': stage,
+              'group_id': group_id}
     data = urllib.urlencode(values)
     req = urllib2.Request(url, data)
     response = urllib2.urlopen(req)
