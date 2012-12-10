@@ -3,7 +3,13 @@ from django.conf.urls import patterns, url, include
 from django.contrib import admin
 admin.autodiscover()
 
-urlpatterns = patterns('',
-    (r'^$', 'bdphpcprovider.smartconnectorscheduler.views.index'),
+from bdphpcprovider.smartconnectorscheduler import views
+
+urlpatterns = patterns('bdphpcprovider.smartconnectorscheduler',
+    (r'^$', 'views.index'),
     url(r'^admin/', include(admin.site.urls)),
+    (r'^hello/$', views.hello),
+    url(r'^admin/', include(admin.site.urls)),
+    url(r'^output/(?P<group_id>\w+)/(?P<file_id>[\w.]+)/$', views.getoutput, name="getoutput")
+
 )
