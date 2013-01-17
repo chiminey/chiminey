@@ -42,9 +42,9 @@ from smartconnector import Stage
 logger = logging.getLogger('stages')
 
 class VASP(Stage):
-    """ 
-    Given a filesystem vasp contining VASP files, extracts metadata and stores in 
-    output/metadata.json 
+    """
+    Given a filesystem vasp contining VASP files, extracts metadata and stores in
+    output/metadata.json
     """
     def __init__(self):
         pass
@@ -96,4 +96,5 @@ class VASP(Stage):
         do.setContent(dump)
         self.fsys.create_local_filesystem('output')
         self.fsys.create('output', do)
+        return context
 
