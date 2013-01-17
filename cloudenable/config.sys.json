@@ -1,0 +1,37 @@
+{
+"USER_NAME": "centos",
+"PASSWORD": "",
+"PRIVATE_KEY": "/home/centos/sandbox/cloudenabling/iantnc2.pem",
+"PRIVATE_KEY_NAME": "iantnc2",
+"SECURITY_GROUP": ["ssh"],
+"VM_SIZE": "m1.small",
+"VM_IMAGE": "ami-0000000d",
+
+"GROUP_ID_DIR": "groupid",
+"PAYLOAD_LOCAL_DIRNAME": "/home/centos/sandbox/cloudenabling/payload",
+"PAYLOAD": "aeao_v1_1_package.tar.gz",
+
+"DEST_PATH_PREFIX": "package",
+"DEPENDS": ["dos2unix","gcc-gfortran","compat-gcc-34-g77.x86_64"],
+"COMPILER":"g77",
+"COMPILE_FILE": "HRMC",
+"PAYLOAD_CLOUD_DIRNAME": "AEAO_v1_1",
+
+"SLEEP_TIME": 10,
+"RETRY_ATTEMPTS": 10,
+
+"OUTPUT_FILES": ["output","energy01.dat", "engchn01.dat","engerr01.dat", "error01.dat","frnmc01.dat", "frsp301.dat", "grchn01.dat","grerr01.dat","spchn01.dat","sperr01.dat","sqchn01.dat","sqerr01.dat","hrmc01.xyz","hrmcpr01.xyz","start01.xyz", "sqinput.dat","rmcen.inp"],
+
+"TEST_VM_IP": "",
+"EC2_ACCESS_KEY":"foo",
+"EC2_SECRET_KEY":"bar",
+"CLOUD_SLEEP_INTERVAL": 5,
+"MAX_SEED_INT": 512,
+"CUSTOM_PROMPT":"[smart-connector_prompt]$",
+"PAYLOAD_LOCAL_DIRNAME":"/home/centos/sandbox/cloudenablingnew/payload",
+"POST_PROCESSING_LOCAL_PATH":"/home/centos/sandbox/cloudenablingnew/post_payload",
+"POST_PAYLOAD":"PSDCode.zip",
+"POST_PROCESSING_DEST_PATH_PREFIX":"post_package",
+"POST_PAYLOAD_COMPILE_FILE":"PSD"
+
+}
