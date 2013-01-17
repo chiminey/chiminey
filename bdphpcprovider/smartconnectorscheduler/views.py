@@ -6,7 +6,7 @@ from django.http import HttpResponse
 from django.template import Context, RequestContext, loader
 from django.conf import settings
 
-from mc import start
+from bdphpcprovider.smartconnectorscheduler import mc
 from getresults import get_results
 
 
@@ -26,12 +26,12 @@ def index(request):
             if stage in requested_stages_list:
                 if  stage == 'Create':
                     number_of_cores = input_parameters['number_of_cores']
-                    group_id = start(['create', '-v', number_of_cores])
+                    group_id = mc.start(['create', '-v', number_of_cores])
                     message = "Your group ID is %s" % group_id
                     callback(message, stage, group_id)
                     print "Create stage completed"
                 elif stage == 'Setup':
-                    start(['setup', '-g', group_id])
+                    mc.start(['setup', '-g', group_id])
                     message = "Setup stage completed"
                     print message
                     callback(message, stage, group_id)
@@ -54,18 +54,16 @@ def index(request):
 
                         os.system('rm -rf %s ' % output_dir)
 
-                        start(['run',
+                        mc.start(['run',
                                '-g', group_id,
                                '-i', extracted_input_dir+"/input",
                                '-o', output_dir])
 
-
                         status = "RUNNING"
                         while status == 'RUNNING':
-                            status = start('check',
+                            status = mc.start('check',
                               '-g', group_id,
                               '-o', output_dir)
-
 
                         hrmc_output = [f for f in os.listdir(output_dir) if os.path.isdir(output_dir)
                         and not f.endswith("_post")]
@@ -89,11 +87,10 @@ def index(request):
                         print 'Input directory not given.' \
                               ' Run stage is skipped'
                 else:
-                    start(['teardown', '-g', group_id, 'yes'])
+                    mc.start(['teardown', '-g', group_id, 'yes'])
                     message = "Terminate stage completed"
                     print message
                     callback(message, stage, group_id)
-
         print "Done"
     return HttpResponse(template.render(context))
 

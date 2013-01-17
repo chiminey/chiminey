@@ -6,7 +6,7 @@ admin.autodiscover()
 from bdphpcprovider.smartconnectorscheduler import views
 
 urlpatterns = patterns('bdphpcprovider.smartconnectorscheduler',
-    (r'^$', 'views.index'),
+    (r'^index/$', 'views.index'),
     url(r'^admin/', include(admin.site.urls)),
     (r'^hello/$', views.hello),
     url(r'^admin/', include(admin.site.urls)),
