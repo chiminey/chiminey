@@ -1,22 +1,12 @@
 import os
 import logging
 
-from sshconnector import open_connection
-from sshconnector import run_command
-from sshconnector import install_deps
-from sshconnector import unpack
-from sshconnector import unzip
-from sshconnector import compile
-from sshconnector import mkdir
-from sshconnector import get_file
-from sshconnector import put_file
-from sshconnector import get_package_pids
-from sshconnector import find_remote_files
+from bdphpcprovider.smartconnectorscheduler.sshconnector import open_connection, run_command, install_deps, unpack, unzip, compile, mkdir, get_file, put_file
+from bdphpcprovider.smartconnectorscheduler.sshconnector import get_package_pids
+from bdphpcprovider.smartconnectorscheduler.sshconnector import find_remote_files
 
 
-from botocloudconnector import is_instance_running
-from botocloudconnector import get_rego_nodes
-from botocloudconnector import get_instance_ip
+from bdphpcprovider.smartconnectorscheduler.botocloudconnector import is_instance_running, get_rego_nodes, get_instance_ip
 
 logger = logging.getLogger(__name__)
 
