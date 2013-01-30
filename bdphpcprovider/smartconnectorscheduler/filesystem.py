@@ -34,8 +34,8 @@ import tempfile
 import logging
 import logging.config
 
-from hrmcimpl import _upload_input
-from hrmcimpl import get_output
+from bdphpcprovider.smartconnectorscheduler.hrmcimpl import _upload_input
+from bdphpcprovider.smartconnectorscheduler.hrmcimpl import get_output
 
 logging.config.fileConfig('logging.conf')
 logger = logging.getLogger(__name__)
