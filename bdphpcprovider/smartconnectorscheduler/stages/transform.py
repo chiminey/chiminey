@@ -22,13 +22,9 @@ import re
 import logging
 import logging.config
 
-from hrmcstages import get_settings
-from hrmcstages import get_run_info
-from hrmcstages import get_filesys
-from hrmcstages import update_key
-from filesystem import DataObject
+from bdphpcprovider.smartconnectorscheduler.hrmcstages import get_settings, get_run_info, get_filesys, update_key, DataObject
 
-from smartconnector import Stage
+from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 
 logger = logging.getLogger('stages')
 
@@ -274,5 +270,5 @@ class Transform(Stage):
 
         update_key('transformed', True, context)
         print "End of Transformation: \n %s" % self.audit
-        
+
         return context

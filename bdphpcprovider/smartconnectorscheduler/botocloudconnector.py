@@ -31,10 +31,7 @@ import hashlib
 from boto.ec2.regioninfo import RegionInfo
 from boto.exception import EC2ResponseError
 
-from sshconnector import open_connection
-from sshconnector import run_command
-from sshconnector import is_ssh_ready
-from sshconnector import AuthError
+from bdphpcprovider.smartconnectorscheduler.sshconnector import open_connection, run_command, is_ssh_ready, AuthError
 
 logger = logging.getLogger(__name__)
 NODE_STATE = ['RUNNING', 'REBOOTING', 'TERMINATED', 'PENDING', 'UNKNOWN']
