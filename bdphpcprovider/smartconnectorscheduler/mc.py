@@ -19,6 +19,8 @@ from hrmcimpl import run_multi_task
 from hrmcimpl import packages_complete
 from hrmcimpl import PackageFailedError
 
+from stages.setup import setup
+
 logger = logging.getLogger(__name__)
 
 
@@ -29,10 +31,13 @@ def start(args):
     import ConfigParser
     config = ConfigParser.RawConfigParser()
     config_file = os.path.expanduser("~/.cloudenabling/config.sys")
+    config_file="/opt/cloudenabling/current/bdphpcprovider/smartconnectorscheduler/config.sys"
     if os.path.exists(config_file):
+        print "here"
         config.read(config_file)
     else:
         config_file = "/home/iman/cloudenabling/bdphpcprovider/smartconnectorscheduler/config.sys"  # a default config file
+        print "there"
         if os.path.exists(config_file):
             config.read(config_file)
         else:
@@ -52,7 +57,8 @@ def start(args):
                       'PROVIDER', 'CUSTOM_PROMPT',
                       'POST_PROCESSING_LOCAL_PATH', 'POST_PAYLOAD',
                       'POST_PROCESSING_DEST_PATH_PREFIX','POST_PAYLOAD_COMPILE_FILE',
-                      'POST_PAYLOAD_CLOUD_DIRNAME']
+                      'POST_PAYLOAD_CLOUD_DIRNAME',
+                      'PAYLOAD_SOURCE', 'PAYLOAD_DESTINATION', 'PAYLOAD_NAME']
 
     #['CUSTOM_PROMPT'] "[smart-connector_prompt]$"
     import json
@@ -108,11 +114,16 @@ def start(args):
     elif 'setup' in args:
         if options.group_id:
             group_id = options.group_id
-            setup_multi_task(group_id, settings)
+            node_config_list = ['Makefile']
+            setup(settings, group_id, node_config_list)
+            #setup_multi_task(group_id, settings)
         else:
             logging.error("enter nodeid of the package")
             parser.print_help()
             sys.exit(1)
+
+
+
 
     elif 'run' in args:
         if options.group_id:
