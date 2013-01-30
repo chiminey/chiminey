@@ -199,6 +199,32 @@ def put_file(ssh_client, source_path, package_file, environ_dir):
     ftp.put(source_file, dest_file)
 
 
+def put_payload(ssh_client, source, destination):
+    ftp = ssh_client.open_sftp()
+    logger.debug("Transferring payload from %s to %s" %(source, destination))
+
+    for root, dirs, files in os.walk(source):
+        prefix = os.path.dirname(root)
+        if len(prefix) < len(root):
+            relative_root = root[len(prefix)+1:]
+            print 'Relative root', relative_root
+            command = 'mkdir -p %s' % os.path.join(destination, relative_root)
+            run_command(ssh_client, command)
+        break
+
+    for root, dirs, files in os.walk(source):
+        relative_root = root[len(prefix)+1:]
+        if dirs:
+            for dir in dirs:
+                command = 'mkdir -p %s' % os.path.join(destination,
+                    relative_root, dir)
+                run_command(ssh_client, command)
+        if files:
+            for file in files:
+                ftp.put(os.path.join(root, file), os.path.join(destination,
+                    relative_root, file))
+
+
 def get_package_pids(ssh_client, command):
     #FIXME: the output of pidof is not entirely clear.,
     logger.debug("get_package_pids")

@@ -1,16 +1,27 @@
 [basic]
 USER_NAME = "centos" #account name of instance
 PASSWORD = ""  #account password of instance
-PRIVATE_KEY = "/path/to/nectar_id"  #The nectar private key
-PRIVATE_KEY_NAME = "your_key" #the name of the private key
+PRIVATE_KEY = "/home/ec2-user/.ssh/nectar_key.pem"  #The nectar private key
+PRIVATE_KEY_NAME = "nectar_key" #the name of the private key
 SECURITY_GROUP = ["ssh"]
 VM_SIZE = "m1.small"
 VM_IMAGE= "ami-0000000d"
 CUSTOM_PROMPT = "[smart-connector_prompt]$"
+PROVIDER = "nectar"
 
 GROUP_ID_DIR = "group_id"
 PAYLOAD_LOCAL_DIRNAME = "/home/iyusuf/cloudenabling/payload" # The directory of the payload to be deployed on the cloud
 PAYLOAD = "aeao_v1_1_package.tar.gz" # the filename of the package
+PAYLOAD_SOURCE="/home/ec2-user/iman_payload"
+PAYLOAD_DESTINATION="/home/centos/abc"
+PAYLOAD_NAME="iman_payload"
+
+POST_PROCESSING_LOCAL_PATH = ""
+POST_PAYLOAD=""
+POST_PROCESSING_DEST_PATH_PREFIX=""
+POST_PAYLOAD_COMPILE_FILE=""
+POST_PAYLOAD_CLOUD_DIRNAME=""
+
 
 DEST_PATH_PREFIX="package" # The destination directory for the software to run
 DEPENDS = ["dos2unix","gcc-gfortran","compat-gcc-34-g77.x86_64"] # yum
