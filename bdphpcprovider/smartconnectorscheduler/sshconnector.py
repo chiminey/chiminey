@@ -165,7 +165,7 @@ def compile(ssh_client, environ_dir, compile_file,
 
 
 def mkdir(ssh_client, dir):
-    run_command(ssh_client, "mkdir %s" % dir)
+    run_command(ssh_client, "mkdir -p %s" % dir)
 
 
 def find_remote_files(ssh, remote_dir, type='f'):
@@ -208,17 +208,15 @@ def put_payload(ssh_client, source, destination):
         if len(prefix) < len(root):
             relative_root = root[len(prefix)+1:]
             print 'Relative root', relative_root
-            command = 'mkdir -p %s' % os.path.join(destination, relative_root)
-            run_command(ssh_client, command)
+            mkdir(ssh_client, os.path.join(destination, relative_root))
         break
 
     for root, dirs, files in os.walk(source):
         relative_root = root[len(prefix)+1:]
         if dirs:
             for dir in dirs:
-                command = 'mkdir -p %s' % os.path.join(destination,
-                    relative_root, dir)
-                run_command(ssh_client, command)
+                mkdir(ssh_client, os.path.join(destination,
+                    relative_root, dir))
         if files:
             for file in files:
                 ftp.put(os.path.join(root, file), os.path.join(destination,

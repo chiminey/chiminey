@@ -58,7 +58,7 @@ def start(args):
                       'POST_PROCESSING_LOCAL_PATH', 'POST_PAYLOAD',
                       'POST_PROCESSING_DEST_PATH_PREFIX','POST_PAYLOAD_COMPILE_FILE',
                       'POST_PAYLOAD_CLOUD_DIRNAME',
-                      'PAYLOAD_SOURCE', 'PAYLOAD_DESTINATION', 'PAYLOAD_NAME']
+                      'PAYLOAD_SOURCE', 'PAYLOAD_DESTINATION']
 
     #['CUSTOM_PROMPT'] "[smart-connector_prompt]$"
     import json
@@ -114,8 +114,8 @@ def start(args):
     elif 'setup' in args:
         if options.group_id:
             group_id = options.group_id
-            node_config_list = ['Makefile']
-            setup(settings, group_id, node_config_list)
+            setup(settings, group_id)
+
             #setup_multi_task(group_id, settings)
         else:
             logging.error("enter nodeid of the package")
