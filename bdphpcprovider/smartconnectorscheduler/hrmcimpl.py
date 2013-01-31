@@ -103,40 +103,6 @@ def prepare_input(instance_id, input_dir, settings, seed):
                               settings['PAYLOAD_CLOUD_DIRNAME'])))
 
 
-def run_task(instance_id, settings):
-    """
-        Start the task on the instance, then hang and
-        periodically check its state.
-    """
-    logger.info("run_task %s" % instance_id)
-    ip = get_instance_ip(instance_id, settings)
-    ssh = open_connection(ip_address=ip,
-                          settings=settings)
-    pids = get_package_pids(ssh, settings['COMPILE_FILE'])
-    logger.debug("pids=%s" % pids)
-    if len(pids) > 1:
-        logger.error("warning:multiple packages running")
-        raise PackageFailedError("multiple packages running")
-    run_command(ssh, "cd %s; ./%s >& %s &\
-    " % (os.path.join(settings['DEST_PATH_PREFIX'],
-                      settings['PAYLOAD_CLOUD_DIRNAME']),
-         settings['COMPILE_FILE'], "output"))
-
-    import time
-    attempts = settings['RETRY_ATTEMPTS']
-    logger.debug("checking for package start")
-    for x in range(0, attempts):
-        time.sleep(5)  # to give process enough time to start
-        pids = get_package_pids(ssh, settings['COMPILE_FILE'])
-        logger.debug("pids=%s" % pids)
-        if pids:
-            break
-    else:
-        raise PackageFailedError("package did not start")
-    # pids should have maximum of one element
-    return pids
-
-
 def get_output(instance_id, output_dir, settings):
     """
         Retrieve the output from the task on the node
@@ -192,17 +158,6 @@ def get_post_output(instance_id, output_dir, settings):
 
 
 
-def job_finished(instance_id, settings):
-    """
-        Return True if package job on instance_id has job_finished
-    """
-    ip = get_instance_ip(instance_id, settings)
-    ssh = open_connection(ip_address=ip, settings=settings)
-    pids = get_package_pids(ssh, settings['COMPILE_FILE'])
-    logger.debug("pids=%s" % repr(pids))
-    return pids == [""]
-
-
 def setup_multi_task(group_id, settings):
     """
     Transfer the task package to the instances in group_id and install
@@ -252,29 +207,6 @@ def packages_complete(group_id, output_dir, settings):
         return True
 
     return False
-
-
-def run_multi_task(group_id, output_dir, settings):
-    """
-    Run the package on each of the nodes in the group and grab
-    any output as needed
-    """
-    nodes = get_rego_nodes(group_id, settings)
-
-    pids = []
-    for node in nodes:
-        try:
-            instance_id = node.id
-            pids_for_task = run_task(instance_id, settings)
-        except PackageFailedError, e:
-            logger.error(e)
-            logger.error("unable to start package on node %s" % node)
-            #TODO: cleanup node of copied input files etc.
-        else:
-            pids.append(pids_for_task)
-
-    all_pids = dict(zip(nodes, pids))
-    return all_pids
 
 
 def prepare_multi_input(group_id, input_dir, settings, seed):
