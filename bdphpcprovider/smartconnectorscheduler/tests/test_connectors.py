@@ -30,41 +30,33 @@ import json
 import sys
 import re
 
-from cloudconnector import *
+from bdphpcprovider.smartconnectorscheduler.cloudconnector import *
 #from sshconnector import get_package_pids
-from hrmcimpl import *
+from bdphpcprovider.smartconnectorscheduler.hrmcimpl import *
 
-import cloudconnector
-import sshconnector
+import bdphpcprovider.smartconnectorscheduler.cloudconnector
+import bdphpcprovider.smartconnectorscheduler.sshconnector
 #import hrmcimpl
 
 #from hrmcstages import get_filesys
 #from hrmcstages import get_file
-from hrmcstages import get_run_info
-from hrmcstages import get_run_info_file
-
-from hrmcstages import get_settings
+from bdphpcprovider.smartconnectorscheduler.hrmcstages import get_run_info, get_run_info_file, get_settings
 
 
 from libcloud.compute.drivers.ec2 import EucNodeDriver
 
 logger = logging.getLogger('tests')
 
-from smartconnector import Stage
-from smartconnector import SequentialStage
+from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, SequentialStage
 #from smartconnector import SmartConnector
 #from hrmcstages import Create,
-from hrmcstages import Configure
-from hrmcstages import Setup
-from hrmcstages import Run
-from hrmcstages import Finished
-from hrmcstages import Schedule
-from stages.transform import Transform
-from stages.converge import Converge
+from bdphpcprovider.smartconnectorscheduler.hrmcstages import Configure, Setup, Run, Finished
+from bdphpcprovider.smartconnectorscheduler.hrmcstages import Schedule
+from bdphpcprovider.smartconnectorscheduler.stages.transform import Transform
+from bdphpcprovider.smartconnectorscheduler.stages.converge import Converge
 #from hrmcstages import Teardown
 
-from filesystem import DataObject
-from filesystem import FileSystem
+from bdphpcprovider.smartconnectorscheduler.filesystem import DataObject, FileSystem
 
 from fs import path
 
@@ -135,7 +127,7 @@ class ConfigureStageTests(unittest.TestCase):
         HOME_DIR = os.path.expanduser("~")
         global_filesystem = HOME_DIR + '/test_runstageTests'
         context['global_filesystem'] = global_filesystem
-        context['config.sys'] = "./config.sys.json"
+        context['config.sys'] = "config.sys.json"
         context['provider'] = "nectar"
 
         con = Configure()
@@ -180,11 +172,11 @@ class SetupStageTests(unittest.TestCase):
             'COMPILE_FILE': "foo", 'MAX_SEED_INT': 100, 'RETRY_ATTEMPTS': 3,
             'OUTPUT_FILES': ['a', 'b'], 'PROVIDER': "nectar",
             'CUSTOM_PROMPT': "[smart-connector_prompt]$",
-            'POST_PROCESSING_DEST_PATH_PREFIX':"post_package",
-            'POST_PAYLOAD_CLOUD_DIRNAME':'post',
-            'POST_PROCESSING_LOCAL_PATH':'./post_payload',
-            'POST_PAYLOAD':"PSDCode.zip",
-            'POST_PAYLOAD_COMPILE_FILE':'PSD'}
+            'POST_PROCESSING_DEST_PATH_PREFIX': "post_package",
+            'POST_PAYLOAD_CLOUD_DIRNAME': 'post',
+            'POST_PROCESSING_LOCAL_PATH': './post_payload',
+            'POST_PAYLOAD': "PSDCode.zip",
+            'POST_PAYLOAD_COMPILE_FILE': 'PSD'}
 
     def test_setup_simple(self):
 
@@ -233,6 +225,8 @@ class SetupStageTests(unittest.TestCase):
             create_node=lambda name, size, image, ex_keyname, ex_securitygroup: fakenode_state1)
         fakecloud.should_receive('list_nodes') \
             .and_return((fakenode_state2,))
+
+
         flexmock(EucNodeDriver).new_instances(fakecloud)
 
         # Setup fsys and initial config files for setup
@@ -262,7 +256,7 @@ class SetupStageTests(unittest.TestCase):
         content = json.loads(config.retrieve())
         self.assertEquals(content,
                           {'group_id': group_id,
-                           'id':0,
+                           'id': 0,
                            'setup_finished': 1})
 
 
@@ -344,7 +338,7 @@ class RunStageTests(unittest.TestCase):
         flexmock(EucNodeDriver).new_instances(fakecloud)
 
         # FIXME: This does not appear to work and is ignored.
-        flexmock(sshconnector) \
+        flexmock(bdphpcprovider.smartconnectorscheduler.sshconnector) \
             .should_receive('get_package_pids') \
             .and_return([1])
 
@@ -395,7 +389,7 @@ class RunStageTests(unittest.TestCase):
             "setup_finished": 1,
             "id": 0})
 
-        self.assertEquals(s1.numbfile, run_num+1)
+        self.assertEquals(s1.numbfile, run_num + 1)
 
 
 class FinishedStageTests(unittest.TestCase):
@@ -476,7 +470,7 @@ class FinishedStageTests(unittest.TestCase):
         flexmock(EucNodeDriver).new_instances(fakecloud)
 
         # FIXME: This does not appear to work and is ignored.
-        flexmock(sshconnector).should_receive('get_package_pids') \
+        flexmock(bdphpcprovider.smartconnectorscheduler.sshconnector).should_receive('get_package_pids') \
             .and_return([1])
 
         f1 = DataObject("config.sys")
@@ -763,8 +757,8 @@ class CloudTests(unittest.TestCase):
             'COMPILE_FILE': "foo", 'MAX_SEED_INT': 100, 'RETRY_ATTEMPTS': 3,
             'OUTPUT_FILES': ['a', 'b'], 'PROVIDER': "nectar",
             'CUSTOM_PROMPT': "[smart-connector_prompt]$",
-            "POST_PROCESSING_DEST_PATH_PREFIX":"",
-            "POST_PAYLOAD_CLOUD_DIRNAME":""}
+            "POST_PROCESSING_DEST_PATH_PREFIX": "",
+            "POST_PAYLOAD_CLOUD_DIRNAME": ""}
 
     def test_create_connection(self):
 
@@ -808,7 +802,7 @@ class CloudTests(unittest.TestCase):
             .and_return((fakenode_state2,))
 
         group_id = 'acbd18db4cc2f85cedef654fccc4a4d8'
-        flexmock(cloudconnector).should_receive('_generate_group_id') \
+        flexmock(bdphpcprovider.smartconnectorscheduler.cloudconnector).should_receive('_generate_group_id') \
             .and_return(group_id)
 
         flexmock(EucNodeDriver).new_instances(fakecloud)
@@ -972,7 +966,7 @@ class CloudTests(unittest.TestCase):
 
         flexmock(EucNodeDriver).new_instances(fakecloud)
 
-        flexmock(sshconnector).should_receive('get_package_pids') \
+        flexmock(bdphpcprovider.smartconnectorscheduler.sshconnector).should_receive('get_package_pids') \
             .with_args(fakessh1, "command") \
             .and_return([99]) \
             .and_return(None) \
@@ -1014,9 +1008,9 @@ class CloudTests(unittest.TestCase):
         flexmock(os).should_receive('listdir').and_return(['mydirectory'])
         flexmock(time).should_receive('sleep')
         flexmock(EucNodeDriver).new_instances(fakecloud)
-        flexmock(sshconnector).should_receive('get_package_pids') \
+        flexmock(bdphpcprovider.smartconnectorscheduler.sshconnector).should_receive('get_package_pids') \
             .and_return(None)
-        res = packages_complete("foobar", "", self.settings)
+        packages_complete("foobar", "", self.settings)
         #TODO: this test case fails
         #self.assertEquals(res, True)
 
@@ -1053,7 +1047,7 @@ class CloudTests(unittest.TestCase):
         flexmock(os).should_receive('listdir').and_return(['mydirectory'])
         flexmock(time).should_receive('sleep')
         flexmock(EucNodeDriver).new_instances(fakecloud)
-        flexmock(sshconnector).should_receive('get_package_pids') \
+        flexmock(bdphpcprovider.smartconnectorscheduler.sshconnector).should_receive('get_package_pids') \
             .and_return(None)
         res = collect_instances(self.settings, group_id="foobar")
         logger.debug("res= %s" % res)
@@ -1094,7 +1088,7 @@ class CloudTests(unittest.TestCase):
             .and_return([fakenode1, fakenode2_state1]) \
             .and_return([fakenode1, fakenode2_state2])
         flexmock(EucNodeDriver).new_instances(fakecloud)
-        flexmock(sshconnector).should_receive('get_package_pids') \
+        flexmock(bdphpcprovider.smartconnectorscheduler.sshconnector).should_receive('get_package_pids') \
             .and_return(None)
         res = destroy_environ(self.settings, [fakenode1, fakenode2_state1])
 
