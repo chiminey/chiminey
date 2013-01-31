@@ -19,7 +19,17 @@ from hrmcimpl import run_multi_task
 from hrmcimpl import packages_complete
 from hrmcimpl import PackageFailedError
 
-from stages.setup import setup
+
+
+from smartconnector import SmartConnector
+from hrmcstages import Configure
+from hrmcstages import Create
+from stages.setup import Setup
+from hrmcstages import Run
+from hrmcstages import Finished
+#from hrmcstages import Converge
+from hrmcstages import Teardown
+from hrmcstages import clear_temp_files
 
 logger = logging.getLogger(__name__)
 
@@ -100,8 +110,64 @@ def start(args):
 
     (options, args) = parser.parse_args(args)
 
+    if 'smart' in args:
+        context = {'number_vm_instances': 1}
+        context['seed'] = 32
+        context['group_id'] = "bf16c62b1927e100a10922ef36bce5e8"
 
-    if 'create' in args:
+        HOME_DIR = os.path.expanduser("~")
+        global_filesystem = os.path.join(HOME_DIR, "testStages")
+        context['global_filesystem'] = global_filesystem
+        context['provider'] = 'nectar'
+
+        if context['provider'].lower() == 'nectar':
+            context['config.sys'] = "./config.sys.json"
+        elif context['provider'].lower() == 'amazon':
+            context['config.sys'] =  "./config.sys.json.ec2"
+        else:
+            print "unknown cloud service provider"
+            sys.exit()
+
+        number_of_iterations = 1
+        smart_conn = SmartConnector()
+
+        #for stage in (Configure(), Setup() ):#Create () Setup(), Run(), Finished(), Converge(number_of_iterations)):#, Teardown()):#, Check(), Teardown()):
+        #for stage in (Configure(), Transform()):
+         #   smart_conn.register(stage)
+
+        smart_conn.register(Configure())
+        smart_conn.register(Setup())
+        #while loop is infinite:
+        # check the semantics for 'dropping data' into
+        # designated location.
+        #What happens if data is dropped while
+        #another is in progress?
+        while (True):
+            print "Loop started"
+            done = 0
+            not_triggered = 0
+            for stage in smart_conn.stages:
+                print "Working in stage", stage
+                if stage.triggered(context):
+                    stage.process(context)
+                    context = stage.output(context)
+                    logger.debug("Context %s" % context)
+                else:
+                    not_triggered += 1
+                    #smart_con.unregister(stage)
+                    #print "Deleting stage",stage
+                    print context
+                logger.debug(done, " ", len(smart_conn.stages))
+
+            if not_triggered == len(smart_conn.stages):
+                break
+
+        #clear_temp_files(context)
+
+
+
+
+    elif 'create' in args:
         if options.number_vm_instances:
             res = create_environ(options.number_vm_instances, settings)
             logger.debug(res)
@@ -114,15 +180,13 @@ def start(args):
     elif 'setup' in args:
         if options.group_id:
             group_id = options.group_id
-            setup(settings, group_id)
+            Setup().setup(settings, group_id)
 
             #setup_multi_task(group_id, settings)
         else:
             logging.error("enter nodeid of the package")
             parser.print_help()
             sys.exit(1)
-
-
 
 
     elif 'run' in args:
