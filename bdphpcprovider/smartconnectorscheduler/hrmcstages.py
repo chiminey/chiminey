@@ -40,12 +40,12 @@ from smartconnector import SmartConnector
 from filesystem import FileSystem
 from filesystem import DataObject
 
-from cloudconnector import create_environ
-from cloudconnector import get_rego_nodes
-from cloudconnector import open_connection
-from cloudconnector import get_instance_ip
-from cloudconnector import collect_instances
-from cloudconnector import destroy_environ
+from botocloudconnector import create_environ
+from botocloudconnector import get_rego_nodes
+from botocloudconnector import open_connection
+from botocloudconnector import get_instance_ip
+from botocloudconnector import collect_instances
+from botocloudconnector import destroy_environ
 
 from hrmcimpl import setup_multi_task
 #from hrmcimpl import prepare_multi_input
@@ -403,52 +403,6 @@ class Create(Stage):
                                        'PROVIDER': self.provider}))
         filesystem = get_filesys(context)
         filesystem.create(local_filesystem, data_object)
-        return context
-
-
-class Setup(Stage):
-    """
-    Handles creation of a running executable on the VMS in a group
-    """
-
-    def __init__(self):
-        self.settings = {}
-        self.group_id = ''
-
-    def triggered(self, context):
-        """
-        Triggered if appropriate vms exist and we have not finished setup
-        """
-        # triggered if the set of the VMS has been established.
-        self.settings = get_run_settings(context)
-        #logger.debug("settings = %s" % self.settings)
-
-        self.group_id = self.settings["group_id"]
-        logger.debug("group_id = %s" % self.group_id)
-
-        if 'setup_finished' in self.settings:
-            return False
-
-        self.packaged_nodes = get_rego_nodes(self.group_id, self.settings)
-        logger.debug("packaged_nodes = %s" % self.packaged_nodes)
-
-        logger.debug("Setup on %s" % self.settings['PROVIDER'])
-        return len(self.packaged_nodes)
-
-    def process(self, context):
-        """
-        Setup all the nodes
-        """
-        setup_multi_task(self.group_id, self.settings)
-
-    def output(self, context):
-        """
-        Store number of packages nodes as setup_finished in runinfo.sys
-        """
-        update_key('setup_finished', len(self.packaged_nodes), context)
-        # So initial input goes in input_0 directory
-        update_key('id', 0, context)
-
         return context
 
 
