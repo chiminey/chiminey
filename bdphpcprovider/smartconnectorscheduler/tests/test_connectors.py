@@ -50,7 +50,7 @@ logger = logging.getLogger('tests')
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, SequentialStage
 #from smartconnector import SmartConnector
 #from hrmcstages import Create,
-from bdphpcprovider.smartconnectorscheduler.hrmcstages import Configure, Setup, Run, Finished
+from bdphpcprovider.smartconnectorscheduler.hrmcstages import Configure, Setup, Finished
 from bdphpcprovider.smartconnectorscheduler.hrmcstages import Schedule
 from bdphpcprovider.smartconnectorscheduler.stages.transform import Transform
 from bdphpcprovider.smartconnectorscheduler.stages.converge import Converge

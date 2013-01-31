@@ -37,9 +37,9 @@ from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, UI, Sma
 
 from bdphpcprovider.smartconnectorscheduler.filesystem import FileSystem, DataObject
 
-from bdphpcprovider.smartconnectorscheduler.cloudconnector import create_environ, get_rego_nodes, open_connection, get_instance_ip, collect_instances, destroy_environ
+from bdphpcprovider.smartconnectorscheduler.botocloudconnector import create_environ, get_rego_nodes, open_connection, get_instance_ip, collect_instances, destroy_environ
 
-from bdphpcprovider.smartconnectorscheduler.hrmcimpl import setup_multi_task, PackageFailedError, run_multi_task, is_instance_running, job_finished
+from bdphpcprovider.smartconnectorscheduler.hrmcimpl import setup_multi_task, PackageFailedError, is_instance_running
 #from hrmcimpl import prepare_multi_input
 #from hrmcimpl import _normalize_dirpath
 #from hrmcimpl import _status_of_nodeset
@@ -81,9 +81,9 @@ def get_settings(context):
     fsys = get_filesys(context)
     logger.debug("fsys= %s" % fsys)
     config = get_file(fsys, "default/config.sys")
-    #logger.debug("config= %s" % config)
+    print("config= %s" % config)
     settings_text = config.retrieve()
-    #logger.debug("settings_text= %s" % settings_text)
+    print("settings_text= %s" % settings_text)
     res = json.loads(settings_text)
     #logger.debug("res=%s" % dict(res))
     settings = dict(res)
@@ -103,7 +103,7 @@ def get_run_info_file(context):
 
 def get_run_info(context):
     """
-    Returns the content of the run info file as a dict. If problem, return None
+    Returns the content of the run info as file a dict. If problem, return None
     """
     fsys = get_filesys(context)
 
@@ -282,7 +282,9 @@ class Schedule(Stage):
         logger.debug(user_requirement)
 
         import DecisionTree
-        training_datafile = 'provider_training.dat'
+
+        training_datafile = os.path.join(os.path.dirname(__file__),'provider_training.dat').replace('\\','/')
+
         dt = DecisionTree.DecisionTree(training_datafile=training_datafile,
                                 entropy_threshold=0.1,
                                 max_depth_desired=3,
@@ -436,204 +438,7 @@ class Setup(Stage):
         return context
 
 
-class Run(Stage):
-    """
-    Start applicaiton on nodes and return status
-    """
-    def __init__(self):
-        self.numbfile = 0
 
-    def triggered(self, context):
-        # triggered when we now that we have N nodes setup and ready to run.
-        # input_dir is assumed to be populated.
-        '''
-        TODO: - uncomment during transformation is in progress
-              - change context to self.settings
-              - move the code after self.settings.update
-
-               self.input_dir = "input"
-        '''
-
-        print "Run stage triggered"
-        self.settings = get_settings(context)
-        logger.debug("settings = %s" % self.settings)
-
-        run_info = get_run_info(context)
-        logger.debug("runinfo=%s" % run_info)
-
-        self.settings.update(run_info)
-        logger.debug("settings = %s" % self.settings)
-
-        if 'id' in self.settings:
-            self.id = self.settings['id']
-            self.input_dir = "input_%s" % self.id
-        else:
-            self.input_dir = "input"
-
-        self.group_id = self.settings['group_id']
-        logger.debug("group_id = %s" % self.group_id)
-
-        if 'setup_finished' in self.settings:
-            setup_nodes = self.settings['setup_finished']
-            logger.debug("setup_nodes = %s" % setup_nodes)
-            packaged_nodes = len(get_rego_nodes(self.group_id, self.settings))
-            logger.debug("packaged_nodes = %s" % packaged_nodes)
-
-            if 'runs_left' in self.settings:
-                logger.debug("found runs_left")
-                return False
-
-            if packaged_nodes == setup_nodes:
-                return True
-            else:
-                logger.error("Indicated number of setup nodes does not match allocated number")
-                logger.error("%s != %s" % (packaged_nodes, setup_nodes))
-                return False
-        else:
-            logger.info("setup was not finished")
-            return False
-
-    def _create_input(self, instance_id, seeds, node, fsys):
-        """
-        Move the input files to the VM
-        """
-        ip = get_instance_ip(instance_id, self.settings)
-        ssh = open_connection(ip_address=ip, settings=self.settings)
-
-        # get all files from the payload directory
-        dest_files = find_remote_files(ssh, os.path.join(self.settings['DEST_PATH_PREFIX'],
-            self.settings['PAYLOAD_CLOUD_DIRNAME']))
-        logger.debug("dest_files=%s" % dest_files)
-
-        # keep results of setup stages
-        for f in [self.settings['COMPILE_FILE'], "..", "."]:
-            try:
-                dest_files.remove(os.path.join(self.settings['DEST_PATH_PREFIX'],
-                    self.settings['PAYLOAD_CLOUD_DIRNAME'], f))
-            except ValueError:
-                logger.info("no %s found to remove" % f)
-
-        logger.debug("dest_files=%s" % dest_files)
-        # and delete all the rest
-        for f in dest_files:
-            run_command(ssh, "/bin/rm -f %s" % f)
-
-        fsys.upload_input(ssh, self.input_dir, os.path.join(
-            self.settings['DEST_PATH_PREFIX'],
-            self.settings['PAYLOAD_CLOUD_DIRNAME']))
-        run_command(ssh, "cd %s; cp rmcen.inp rmcen.inp.orig" %
-                    (os.path.join(self.settings['DEST_PATH_PREFIX'],
-                                  self.settings['PAYLOAD_CLOUD_DIRNAME'])))
-        run_command(ssh, "cd %s; dos2unix rmcen.inp" %
-                    (os.path.join(self.settings['DEST_PATH_PREFIX'],
-                                  self.settings['PAYLOAD_CLOUD_DIRNAME'])))
-        run_command(ssh, "cd %s; sed -i '/^$/d' rmcen.inp" %
-                    (os.path.join(self.settings['DEST_PATH_PREFIX'],
-                                  self.settings['PAYLOAD_CLOUD_DIRNAME'])))
-        run_command(ssh, "cd %s; sed -i 's/[0-9]*[ \t]*iseed.*$/%s\tiseed/' rmcen.inp" %
-                    (os.path.join(self.settings['DEST_PATH_PREFIX'],
-                                  self.settings['PAYLOAD_CLOUD_DIRNAME']), seeds[node]))
-        run_command(ssh, "cd %s; sed -i 's/[0-9]*[ \t]*numbfile.*$/%s\tnumbfile/' rmcen.inp" %
-                    (os.path.join(self.settings['DEST_PATH_PREFIX'],
-                                  self.settings['PAYLOAD_CLOUD_DIRNAME']), self.numbfile))
-        self.numbfile += 1
-
-    def _prepare_input(self, context):
-        """
-        Copy the input parameters for the package to the VM
-        """
-
-        fsys = get_filesys(context)
-        logger.debug("fsys= %s" % fsys)
-
-        run_info = get_run_info(context)
-        logger.debug("runinfo=%s" % run_info)
-
-        if 'seed' in self.settings:
-            seed = self.settings['seed']
-        else:
-            seed = 42
-            logger.warn("No seed specified. Using default value")
-        # NOTE we assume that correct local file system has been created.
-
-        import random
-        random.seed(seed)
-
-        seeds = {}
-
-        nodes = get_rego_nodes(self.group_id, self.settings)
-        for node in nodes:
-            # FIXME: is the random supposed to be positive or negative?
-            seeds[node] = random.randrange(0, self.settings['MAX_SEED_INT'])
-        if seed:
-            print ("seed for full package run = %s" % seed)
-        else:
-            print ("seeds for each node in group %s = %s"
-                   % (self.group_id, [(x.name, seeds[x])
-                         for x in seeds.keys()]))
-
-        logger.debug("seeds = %s" % seeds)
-
-        # Get starting value for numbfile from new input file
-        # each deployed rmcen.inp has numbfile relative to this.
-        rmcen = fsys.retrieve_new(self.input_dir, "rmcen.inp")
-        text = rmcen.retrieve()
-        p = re.compile("^([0-9]*)[ \t]*numbfile.*$", re.MULTILINE)
-        m = p.search(text)
-        if m:
-            self.numbfile = int(m.group(1))
-        else:
-            logger.error("could not find numbfile in rmcen.inp")
-            self.numbfile = 100  # should not collide with other previous iterations.
-
-        # copy up the new input files to VMs
-        for node in nodes:
-            instance_id = node.id
-            logger.info("prepare_input %s %s" % (instance_id, self.input_dir))
-            self._create_input(instance_id, seeds, node, fsys)
-
-    def process(self, context):
-
-        self._prepare_input(context)
-
-        try:
-            pids = run_multi_task(self.group_id, self.input_dir, self.settings)
-        except PackageFailedError, e:
-            logger.error(e)
-            logger.error("unable to start packages")
-            #TODO: cleanup node of copied input files etc.
-            sys.exit(1)
-        return pids
-
-    def output(self, context):
-        """
-        Assume that no nodes have finished yet and indicate to future stages
-        """
-        #TODO: make function for get fsys, run_info and settings
-        fsys = get_filesys(context)
-        logger.debug("fsys= %s" % fsys)
-
-        run_info_file = get_file(fsys, "default/runinfo.sys")
-        logger.debug("run_info_file= %s" % run_info_file)
-
-        settings_text = run_info_file.retrieve()
-        logger.debug("runinfo_text= %s" % settings_text)
-
-        nodes = get_rego_nodes(self.group_id, self.settings)
-        logger.debug("nodes = %s" % nodes)
-
-        config = json.loads(settings_text)
-        # We assume that none of runs have finished yet.
-        config['runs_left'] = len(nodes)  # FIXME: possible race condition?
-        #config['error_nodes'] = len(error_nodes)
-        logger.debug("config=%s" % config)
-        run_info_text = json.dumps(config)
-        run_info_file.setContent(run_info_text)
-        logger.debug("run_info_file=%s" % run_info_file)
-        fsys.update("default", run_info_file)
-        # FIXME: check to make sure not retriggered
-
-        return context
 
 
 class Finished(Stage):
