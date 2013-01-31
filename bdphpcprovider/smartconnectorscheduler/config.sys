@@ -12,9 +12,8 @@ PROVIDER = "nectar"
 GROUP_ID_DIR = "group_id"
 PAYLOAD_LOCAL_DIRNAME = "/home/iyusuf/cloudenabling/payload" # The directory of the payload to be deployed on the cloud
 PAYLOAD = "aeao_v1_1_package.tar.gz" # the filename of the package
-PAYLOAD_SOURCE="/home/ec2-user/iman_payload"
-PAYLOAD_DESTINATION="/home/centos/abc"
-PAYLOAD_NAME="iman_payload"
+PAYLOAD_SOURCE = "/home/ec2-user/iman_payload"
+PAYLOAD_DESTINATION = "test_payload"
 
 POST_PROCESSING_LOCAL_PATH = ""
 POST_PAYLOAD=""
