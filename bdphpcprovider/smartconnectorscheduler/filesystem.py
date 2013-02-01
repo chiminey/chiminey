@@ -22,7 +22,7 @@
 import os
 import os.path
 import time
-import re
+import re€⁄
 
 from fs.osfs import OSFS
 from fs import path
@@ -48,7 +48,7 @@ class FileSystem(object):
     # directory, and should only interact vis osfs api calls.  For example,
     # use fs.mkdir not os.mkdir.
     # FIXME: remove os.path.join references and use fs.path.join instead
-    # TODO: replace this with a File based abstraction such as django.storages.backend.ß
+    # TODO: replace this with a File based abstraction such as django.storages.backend.
 
     def __init__(self, global_filesystem, local_filesystem=None):
         self._create_global_filesystem(global_filesystem)
