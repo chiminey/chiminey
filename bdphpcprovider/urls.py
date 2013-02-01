@@ -2,6 +2,8 @@ from django.conf.urls import patterns, url, include
 
 from django.contrib import admin
 admin.autodiscover()
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
+
 
 from bdphpcprovider.smartconnectorscheduler import views
 
@@ -13,3 +15,5 @@ urlpatterns = patterns('bdphpcprovider.smartconnectorscheduler',
     url(r'^output/(?P<group_id>\w+)/(?P<file_id>[\w.]+)/$', views.getoutput, name="getoutput")
 
 )
+urlpatterns += staticfiles_urlpatterns()
+
