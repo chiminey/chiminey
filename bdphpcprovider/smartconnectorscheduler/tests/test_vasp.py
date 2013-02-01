@@ -33,7 +33,9 @@ import unittest
 import os
 import logging
 import logging.config
-from bdphpcprovider.smartconnectorscheduler.hrmcstages import Stage
+
+from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
+
 from bdphpcprovider.smartconnectorscheduler.stages.vasp import VASP
 from bdphpcprovider.smartconnectorscheduler.filesystem import DataObject, FileSystem
 
@@ -79,7 +81,7 @@ class MetadataTests(unittest.TestCase):
         s1 = VASP()
         context = {}
         fs = FileSystem(self.global_filesystem, self.local_filesystem)
-        input_path = os.path.join("testing", "dataset1")
+        input_path = os.path.join(os.path.dirname(__file__), "testing", "dataset1")
         # move input files to fs
         from shutil import copytree
         copytree(os.path.abspath(input_path),

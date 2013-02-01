@@ -47,6 +47,7 @@ class FileSystem(object):
     # directory, and should only interact vis osfs api calls.  For example,
     # use fs.mkdir not os.mkdir.
     # FIXME: remove os.path.join references and use fs.path.join instead
+    # TODO: replace this with a File based abstraction such as django.storages.backend.
 
     def __init__(self, global_filesystem, local_filesystem=None):
         self._create_global_filesystem(global_filesystem)
@@ -226,6 +227,19 @@ class FileSystem(object):
             logger.debug("Destination %s" % dest)
 
             _upload_input(ssh, input_dir,  fname, dest)
+
+    def upload_iter_input_dir(self, ssh, local_filesystem, iter_inputdir, dest):
+        input_dir = os.path.join(self.global_filesystem, local_filesystem, iter_inputdir)
+        logger.debug("input_dir =%s" % input_dir)
+        dirList = os.listdir(input_dir)
+        for fname in dirList:
+
+            logger.debug("fname=%s" % fname)
+            #dest = os.path.join("/home/centos",dest)
+            logger.debug("Destination %s" % dest)
+
+            _upload_input(ssh, input_dir,  fname, dest)
+
 
     def download_output(self, ssh, instance_id, local_filesystem, settings):
         output_dir = os.path.join(self.global_filesystem,
