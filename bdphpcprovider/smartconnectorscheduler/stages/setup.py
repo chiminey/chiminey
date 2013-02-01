@@ -1,14 +1,13 @@
-from botocloudconnector import get_rego_nodes
-from botocloudconnector import get_instance_ip
+from bdphpcprovider.smartconnectorscheduler import botocloudconnector
+from bdphpcprovider.smartconnectorscheduler.sshconnector import open_connection
+from bdphpcprovider.smartconnectorscheduler.sshconnector import put_payload
+from bdphpcprovider.smartconnectorscheduler.sshconnector import run_sudo_command
+from bdphpcprovider.smartconnectorscheduler.sshconnector import mkdir
 
-from sshconnector import open_connection
-from sshconnector import put_payload
-from sshconnector import run_sudo_command
-from sshconnector import mkdir
+from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
+from bdphpcprovider.smartconnectorscheduler.hrmcstages import get_run_settings
+from bdphpcprovider.smartconnectorscheduler.hrmcstages import update_key
 
-from smartconnector import Stage
-from hrmcstages import get_run_settings
-from hrmcstages import update_key
 
 import os
 import logging
@@ -44,7 +43,7 @@ class Setup(Stage):
         if 'setup_finished' in self.settings:
             return False
 
-        self.packaged_nodes = get_rego_nodes(self.group_id, self.settings)
+        self.packaged_nodes = botocloudconnector.get_rego_nodes(self.group_id, self.settings)
         logger.debug("packaged_nodes = %s" % self.packaged_nodes)
 
         logger.debug("Setup on %s" % self.settings['PROVIDER'])
@@ -71,7 +70,7 @@ class Setup(Stage):
 
 
     def setup(self, settings, group_id, maketarget_nodegroup_pair={}):
-        available_nodes = get_rego_nodes(group_id, settings)
+        available_nodes = list(botocloudconnector.get_rego_nodes(group_id, settings))
         requested_nodes=0
 
         if not maketarget_nodegroup_pair:
@@ -100,7 +99,7 @@ class Setup(Stage):
             for i in range(0, maketarget_nodegroup_pair[make_target]):
                 logger.debug("starting thread")
                 instance = available_nodes[0]
-                node_ip = get_instance_ip(instance.id, settings)
+                node_ip = botocloudconnector.get_instance_ip(instance.id, settings)
                 t = threading.Thread(target=setup_worker,
                     args=(node_ip, make_target))
                 threads_running.append(t)
@@ -127,6 +126,7 @@ class Setup(Stage):
         mkdir(ssh, destination)
         put_payload(ssh, source, destination)
 
+        payload_top_dir = ""
         for root, dirs, files in os.walk(source):
             payload_top_dir = os.path.basename(root)
             break

@@ -37,7 +37,6 @@ import logging.config
 from bdphpcprovider.smartconnectorscheduler.hrmcimpl import _upload_input
 from bdphpcprovider.smartconnectorscheduler.hrmcimpl import get_output
 
-logging.config.fileConfig('logging.conf')
 logger = logging.getLogger(__name__)
 
 #TODO: make filesystem-specific exceptions

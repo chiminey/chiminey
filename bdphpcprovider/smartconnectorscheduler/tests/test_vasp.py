@@ -33,7 +33,7 @@ import unittest
 import os
 import logging
 import logging.config
-from bdphpcprovider.smartconnectorscheduler import Stage
+from bdphpcprovider.smartconnectorscheduler.hrmcstages import Stage
 from bdphpcprovider.smartconnectorscheduler.stages.vasp import VASP
 from bdphpcprovider.smartconnectorscheduler.filesystem import DataObject, FileSystem
 

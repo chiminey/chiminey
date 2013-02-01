@@ -4,9 +4,7 @@ import logging
 from bdphpcprovider.smartconnectorscheduler.sshconnector import open_connection, run_command, install_deps, unpack, unzip, compile, mkdir, get_file, put_file
 from bdphpcprovider.smartconnectorscheduler.sshconnector import get_package_pids
 from bdphpcprovider.smartconnectorscheduler.sshconnector import find_remote_files
-
-
-from bdphpcprovider.smartconnectorscheduler.botocloudconnector import is_instance_running, get_rego_nodes, get_instance_ip
+from bdphpcprovider.smartconnectorscheduler import botocloudconnector
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +24,7 @@ def setup_task(instance_id, settings):
 
     logger.info("setup_task %s " % instance_id)
 
-    ip = get_instance_ip(instance_id, settings)
+    ip = botocloudconnector.get_instance_ip(instance_id, settings)
     logger.debug("Setup %s IP" % ip)
     ssh = open_connection(ip_address=ip, settings=settings)
     logger.debug("Setup %s ssh" % ssh)
@@ -83,7 +81,7 @@ def prepare_input(instance_id, input_dir, settings, seed):
 
     """
     logger.info("prepare_input %s %s" % (instance_id, input_dir))
-    ip = get_instance_ip(instance_id, settings)
+    ip = botocloudconnector.get_instance_ip(instance_id, settings)
     ssh = open_connection(ip_address=ip, settings=settings)
     input_dir = _normalize_dirpath(input_dir)
     dirList = os.listdir(input_dir)
@@ -109,7 +107,7 @@ def run_task(instance_id, settings):
         periodically check its state.
     """
     logger.info("run_task %s" % instance_id)
-    ip = get_instance_ip(instance_id, settings)
+    ip = botocloudconnector.get_instance_ip(instance_id, settings)
     ssh = open_connection(ip_address=ip,
                           settings=settings)
     pids = get_package_pids(ssh, settings['COMPILE_FILE'])
@@ -142,7 +140,7 @@ def get_output(instance_id, output_dir, settings):
         Retrieve the output from the task on the node
     """
     logger.info("get_output %s" % instance_id)
-    ip = get_instance_ip(instance_id, settings)
+    ip = botocloudconnector.get_instance_ip(instance_id, settings)
     ssh = open_connection(ip_address=ip, settings=settings)
     try:
         os.makedirs(output_dir)  # NOTE: makes intermediate directories
@@ -169,7 +167,7 @@ def get_post_output(instance_id, output_dir, settings):
         Retrieve the output from the task on the node
     """
     logger.info("get_post_output %s" % instance_id)
-    ip = get_instance_ip(instance_id, settings)
+    ip = botocloudconnector.get_instance_ip(instance_id, settings)
     ssh = open_connection(ip_address=ip, settings=settings)
     try:
         os.makedirs(output_dir)  # NOTE: makes intermediate directories
@@ -196,7 +194,7 @@ def job_finished(instance_id, settings):
     """
         Return True if package job on instance_id has job_finished
     """
-    ip = get_instance_ip(instance_id, settings)
+    ip = botocloudconnector.get_instance_ip(instance_id, settings)
     ssh = open_connection(ip_address=ip, settings=settings)
     pids = get_package_pids(ssh, settings['COMPILE_FILE'])
     logger.debug("pids=%s" % repr(pids))
@@ -208,7 +206,7 @@ def setup_multi_task(group_id, settings):
     Transfer the task package to the instances in group_id and install
     """
     logger.info("setup_multi_task %s " % group_id)
-    packaged_nodes = get_rego_nodes(group_id, settings)
+    packaged_nodes = botocloudconnector.get_rego_nodes(group_id, settings)
     import threading
     import datetime
     logger.debug("packaged_nodes = %s" % packaged_nodes)
@@ -239,7 +237,7 @@ def packages_complete(group_id, output_dir, settings):
     Indicates if all the package nodes have finished and generate
     any output as needed
     """
-    nodes = get_rego_nodes(group_id, settings)
+    nodes = botocloudconnector.get_rego_nodes(group_id, settings)
     error_nodes, finished_nodes = _status_of_nodeset(nodes,
                                                      output_dir,
                                                      settings)
@@ -259,7 +257,7 @@ def run_multi_task(group_id, output_dir, settings):
     Run the package on each of the nodes in the group and grab
     any output as needed
     """
-    nodes = get_rego_nodes(group_id, settings)
+    nodes = botocloudconnector.get_rego_nodes(group_id, settings)
 
     pids = []
     for node in nodes:
@@ -283,7 +281,7 @@ def prepare_multi_input(group_id, input_dir, settings, seed):
         instances in the group and ready
 
     """
-    nodes = get_rego_nodes(group_id, settings)
+    nodes = botocloudconnector.get_rego_nodes(group_id, settings)
 
     import random
     random.seed(seed)
@@ -302,7 +300,7 @@ def prepare_multi_input(group_id, input_dir, settings, seed):
     for node in nodes:
         instance_id = node.id
         logger.info("prepare_input %s %s" % (instance_id, input_dir))
-        ip = get_instance_ip(instance_id, settings)
+        ip = botocloudconnector.get_instance_ip(instance_id, settings)
         ssh = open_connection(ip_address=ip, settings=settings)
         input_dir = _normalize_dirpath(input_dir)
         dirList = os.listdir(input_dir)
@@ -368,7 +366,7 @@ def _status_of_nodeset(nodes, output_dir, settings):
     for node in nodes:
         instance_id = node.id
 
-        if not is_instance_running(instance_id, settings):
+        if not botocloudconnector.is_instance_running(instance_id, settings):
             # An unlikely situation where the node crashed after is was
             # detected as registered.
             logging.error('Instance %s not running' % instance_id)
@@ -390,7 +388,7 @@ def _status_of_nodeset(nodes, output_dir, settings):
             finished_nodes.append(node)
         else:
             print "job still running on %s: %s\
-            " % (instance_id, get_instance_ip(instance_id, settings))
+            " % (instance_id, botocloudconnector.get_instance_ip(instance_id, settings))
 
     return (error_nodes, finished_nodes)
 
@@ -401,7 +399,7 @@ def run_post_task(instance_id, settings):
         periodically check its state.
     """
     logger.info("run_post_task %s" % instance_id)
-    ip = get_instance_ip(instance_id, settings)
+    ip = botocloudconnector.get_instance_ip(instance_id, settings)
     ssh = open_connection(ip_address=ip,
         settings=settings)
 

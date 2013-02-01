@@ -34,7 +34,9 @@ from bdphpcprovider.smartconnectorscheduler.cloudconnector import *
 #from sshconnector import get_package_pids
 from bdphpcprovider.smartconnectorscheduler.hrmcimpl import *
 
-import bdphpcprovider.smartconnectorscheduler.cloudconnector
+from bdphpcprovider.smartconnectorscheduler import botocloudconnector
+from bdphpcprovider.smartconnectorscheduler import cloudconnector
+
 import bdphpcprovider.smartconnectorscheduler.sshconnector
 #import hrmcimpl
 
@@ -50,7 +52,9 @@ logger = logging.getLogger('tests')
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, SequentialStage
 #from smartconnector import SmartConnector
 #from hrmcstages import Create,
-from bdphpcprovider.smartconnectorscheduler.hrmcstages import Configure, Setup, Run, Finished
+
+from bdphpcprovider.smartconnectorscheduler.hrmcstages import Configure, Run, Finished
+from bdphpcprovider.smartconnectorscheduler.stages.setup import Setup
 from bdphpcprovider.smartconnectorscheduler.hrmcstages import Schedule
 from bdphpcprovider.smartconnectorscheduler.stages.transform import Transform
 from bdphpcprovider.smartconnectorscheduler.stages.converge import Converge
@@ -176,7 +180,11 @@ class SetupStageTests(unittest.TestCase):
             'POST_PAYLOAD_CLOUD_DIRNAME': 'post',
             'POST_PROCESSING_LOCAL_PATH': './post_payload',
             'POST_PAYLOAD': "PSDCode.zip",
-            'POST_PAYLOAD_COMPILE_FILE': 'PSD'}
+            'POST_PAYLOAD_COMPILE_FILE': 'PSD',
+            'PAYLOAD_SOURCE': "",
+            'PAYLOAD_DESTINATION': "payload"}
+
+
 
     def test_setup_simple(self):
 
@@ -222,12 +230,20 @@ class SetupStageTests(unittest.TestCase):
             found=True,
             list_images=lambda: [fakeimage],
             list_sizes=lambda: [fakesize],
-            create_node=lambda name, size, image, ex_keyname, ex_securitygroup: fakenode_state1)
+            create_node=lambda name, size, image, ex_keyname, ex_securitygroup: fakenode_state2)
         fakecloud.should_receive('list_nodes') \
             .and_return((fakenode_state2,))
 
 
         flexmock(EucNodeDriver).new_instances(fakecloud)
+
+
+        flexmock(botocloudconnector).should_receive('get_rego_nodes')\
+        .and_return(cloudconnector.get_rego_nodes(group_id, self.settings))
+
+        flexmock(botocloudconnector).should_receive('get_instance_ip')\
+        .and_return(cloudconnector.get_instance_ip(fakenode_state2.id, self.settings))
+
 
         # Setup fsys and initial config files for setup
         f1 = DataObject("config.sys")
@@ -260,6 +276,7 @@ class SetupStageTests(unittest.TestCase):
                            'setup_finished': 1})
 
 
+
 class RunStageTests(unittest.TestCase):
     """
     Tests the HRMC Run Stage
@@ -288,6 +305,7 @@ class RunStageTests(unittest.TestCase):
             'COMPILE_FILE': "foo", 'MAX_SEED_INT': 100, 'RETRY_ATTEMPTS': 3,
             'OUTPUT_FILES': ['a', 'b'], 'PROVIDER': "nectar",
             'CUSTOM_PROMPT': "[smart-connector_prompt]$"}
+
 
     def test_run(self):
 
@@ -336,6 +354,12 @@ class RunStageTests(unittest.TestCase):
         flexmock(time).should_receive('sleep')
 
         flexmock(EucNodeDriver).new_instances(fakecloud)
+
+        flexmock(botocloudconnector).should_receive('get_rego_nodes')\
+        .and_return(cloudconnector.get_rego_nodes(group_id, self.settings))
+
+        flexmock(botocloudconnector).should_receive('get_instance_ip')\
+        .and_return(cloudconnector.get_instance_ip(fakenode_state1.id, self.settings))
 
         # FIXME: This does not appear to work and is ignored.
         flexmock(bdphpcprovider.smartconnectorscheduler.sshconnector) \
@@ -421,6 +445,7 @@ class FinishedStageTests(unittest.TestCase):
             'OUTPUT_FILES': ['a', 'b'], 'PROVIDER': "nectar",
             'CUSTOM_PROMPT': "[smart-connector_prompt]$"}
 
+
     def test_finished(self):
 
         logger.debug("%s:%s" % (self.__class__.__name__,
@@ -470,8 +495,18 @@ class FinishedStageTests(unittest.TestCase):
         flexmock(EucNodeDriver).new_instances(fakecloud)
 
         # FIXME: This does not appear to work and is ignored.
-        flexmock(bdphpcprovider.smartconnectorscheduler.sshconnector).should_receive('get_package_pids') \
+        flexmock(bdphpcprovider.smartconnectorscheduler.sshconnector)\
+        .should_receive('get_package_pids') \
             .and_return([1])
+
+        flexmock(botocloudconnector).should_receive('get_rego_nodes')\
+        .and_return(cloudconnector.get_rego_nodes(group_id, self.settings))
+
+        flexmock(botocloudconnector).should_receive('get_instance_ip')\
+        .and_return(cloudconnector.get_instance_ip(fakenode_state1.id, self.settings))
+
+        flexmock(botocloudconnector).should_receive('is_instance_running')\
+        .and_return(True)
 
         f1 = DataObject("config.sys")
         self.settings['seed'] = 42
@@ -535,6 +570,7 @@ class FinishedStageTests(unittest.TestCase):
         #    "setup_finished": 1})
 
 
+
 class FileSystemTests(unittest.TestCase):
     #FIXME: These testcases should not know about the underlying filesystem implementation
     HOME_DIR = os.path.expanduser("~")
@@ -588,7 +624,7 @@ class FileSystemTests(unittest.TestCase):
             retrieved_data_object = self.filesystem.retrieve(file_to_be_retrieved)
         except IOError:
             pass
-        except e:
+        except Exception, e:
             self.fail('Unexpected exception thrown:', e)
         else:
             self.fail('ExpectedException not thrown')
@@ -608,7 +644,7 @@ class FileSystemTests(unittest.TestCase):
                                             updated_data_object)
         except IOError:
             pass
-        except e:
+        except Exception, e:
             self.fail('Unexpected exception thrown:', e)
         else:
             self.fail('ExpectedException not thrown')
@@ -633,13 +669,13 @@ class FileSystemTests(unittest.TestCase):
             is_deleted = self.filesystem.delete(file_to_be_deleted)
         except IOError:
             pass
-        except e:
+        except Exception, e:
             self.fail('Unexpected exception thrown:', e)
         else:
             self.fail('ExpectedException not thrown')
 
-    """
-     def test_simpletest(self):
+    '''
+    def test_simpletest(self):
         fsys = FileSystem()
 
         f1 = DataObject("c")
@@ -659,7 +695,7 @@ class FileSystemTests(unittest.TestCase):
 
         fsys.delete("a/b/c")
         #assert statement
-    """
+    '''
 
 
 class ConnectorTests(unittest.TestCase):
@@ -809,6 +845,7 @@ class CloudTests(unittest.TestCase):
 
         self.assertEquals(create_environ(1, self.settings), group_id)
 
+
     def test_setup_multi_task(self):
 
         logger.debug("test_setup_multi_tasks")
@@ -880,11 +917,21 @@ class CloudTests(unittest.TestCase):
 
         flexmock(EucNodeDriver).new_instances(fakecloud)
 
+        flexmock(botocloudconnector).should_receive('get_rego_nodes')\
+        .and_return(cloudconnector.get_rego_nodes(group_id, self.settings))
+
+
         self.assertEquals(setup_multi_task(group_id, self.settings), None)
+
+
+
+
 
     def test_prepare_multi_input(self):
 
         logger.debug("test_prepare_multi_input")
+
+        group_id = "sq42kdjshasdkjghauiwytuiawjmkghasjkghasg"
 
         # Make fake sftp connection
         fakesftp = flexmock(put=lambda x, y: True)
@@ -923,14 +970,24 @@ class CloudTests(unittest.TestCase):
 
         flexmock(EucNodeDriver).new_instances(fakecloud)
 
+        flexmock(botocloudconnector).should_receive('get_rego_nodes')\
+        .and_return(cloudconnector.get_rego_nodes(group_id, self.settings))
+
+        flexmock(botocloudconnector).should_receive('get_instance_ip')\
+        .and_return(cloudconnector.get_instance_ip(fakenode_state1.id, self.settings))
+
         self.assertEquals(prepare_multi_input("foobar",
                                               "",
                                               self.settings,
                                               None),
                           None)
 
+
+
     def test_run_multi_task(self):
         logger.debug("test_run_multi_task")
+
+        group_id = "addsfdsfwefdsafwefasfe"
 
         # Make fake ssh connection
         fakessh1 = flexmock(load_system_host_keys=lambda x: True,
@@ -972,12 +1029,22 @@ class CloudTests(unittest.TestCase):
             .and_return(None) \
             .and_return([99])
 
+        flexmock(botocloudconnector).should_receive('get_rego_nodes')\
+        .and_return(cloudconnector.get_rego_nodes(group_id, self.settings))
+
+        flexmock(botocloudconnector).should_receive('get_instance_ip')\
+        .and_return(cloudconnector.get_instance_ip(fakenode_state1.id, self.settings))
+
+
         res = run_multi_task("foobar", "", self.settings)
         #TODO: this test case fails?
         self.assertEquals(res.values(), [['1\n']])
 
+
     def test_packages_complete(self):
         logger.debug("test_packages_complete")
+
+        group_id = "fgwefasfresafasdfdsaf"
         # Make fake sftp connection
         fakesftp = flexmock(get=lambda x, y: True, put=lambda x, y: True)
         exec_ret = ["", flexmock(readlines=lambda: ["1\n"]),
@@ -1008,11 +1075,24 @@ class CloudTests(unittest.TestCase):
         flexmock(os).should_receive('listdir').and_return(['mydirectory'])
         flexmock(time).should_receive('sleep')
         flexmock(EucNodeDriver).new_instances(fakecloud)
-        flexmock(bdphpcprovider.smartconnectorscheduler.sshconnector).should_receive('get_package_pids') \
+        flexmock(bdphpcprovider.smartconnectorscheduler.sshconnector)\
+        .should_receive('get_package_pids') \
             .and_return(None)
+
+        flexmock(botocloudconnector).should_receive('get_rego_nodes')\
+        .and_return(cloudconnector.get_rego_nodes(group_id, self.settings))
+
+        flexmock(botocloudconnector).should_receive('get_instance_ip')\
+        .and_return(cloudconnector.get_instance_ip(fakenode_state1.id, self.settings))
+
+        flexmock(botocloudconnector).should_receive('is_instance_running')\
+        .and_return(True)
+
         packages_complete("foobar", "", self.settings)
         #TODO: this test case fails
         #self.assertEquals(res, True)
+
+
 
     def test_collect_instances(self):
         logger.debug("test_collect_instances")
@@ -1107,8 +1187,8 @@ class SchedulerStageTest(unittest.TestCase):
         self.assertEquals(True, True)
         import DecisionTree
 
-        training_datafile = os.path.join("testing", "decisiontree", "training.dat")
-        #training_datafile = "training.dat.org" #Iman's training.dat
+        #TODO change the path to relative one
+        training_datafile = "./smartconnectorscheduler/testing/decisiontree/training.dat" #Iman's training.dat
 
         dt = DecisionTree.DecisionTree(
             training_datafile=training_datafile,
@@ -1118,10 +1198,9 @@ class SchedulerStageTest(unittest.TestCase):
             debug2=1,
            )
         dt.get_training_data()
-
         #   UNCOMMENT THE FOLLOWING LINE if you would like to see the training
         #   data that was read from the disk file:
-        #dt.show_training_data()
+        dt.show_training_data()
 
         root_node = dt.construct_decision_tree_classifier()
 
@@ -1144,6 +1223,7 @@ class SchedulerStageTest(unittest.TestCase):
         print("\n\n")
         print("Number of nodes created: ", root_node.how_many_nodes())
 
+
     def test_simple(self):
         context = {}
 
@@ -1164,6 +1244,7 @@ class SchedulerStageTest(unittest.TestCase):
             mymock.should_receive('raw_input').and_return(*test).one_by_one()
             res = stage.process(context)
             self.assertEquals(res, test)
+
         context =  stage.output(context)
         run_info_file = get_run_info_file(context)
         logger.debug("run_info_file=%s" % run_info_file)

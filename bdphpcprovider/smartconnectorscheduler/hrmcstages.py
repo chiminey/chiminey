@@ -37,9 +37,11 @@ from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, UI, Sma
 
 from bdphpcprovider.smartconnectorscheduler.filesystem import FileSystem, DataObject
 
-from bdphpcprovider.smartconnectorscheduler.botocloudconnector import create_environ, get_rego_nodes, open_connection, get_instance_ip, collect_instances, destroy_environ
+from bdphpcprovider.smartconnectorscheduler.botocloudconnector import create_environ, open_connection, collect_instances, destroy_environ
+from bdphpcprovider.smartconnectorscheduler import botocloudconnector
 
-from bdphpcprovider.smartconnectorscheduler.hrmcimpl import setup_multi_task, PackageFailedError, run_multi_task, is_instance_running, job_finished
+
+from bdphpcprovider.smartconnectorscheduler.hrmcimpl import setup_multi_task, PackageFailedError, run_multi_task, job_finished
 #from hrmcimpl import prepare_multi_input
 #from hrmcimpl import _normalize_dirpath
 #from hrmcimpl import _status_of_nodeset
@@ -282,7 +284,7 @@ class Schedule(Stage):
         logger.debug(user_requirement)
 
         import DecisionTree
-        training_datafile = 'provider_training.dat'
+        training_datafile = './smartconnectorscheduler/provider_training.dat'
         dt = DecisionTree.DecisionTree(training_datafile=training_datafile,
                                 entropy_threshold=0.1,
                                 max_depth_desired=3,
@@ -430,7 +432,7 @@ class Run(Stage):
         if 'setup_finished' in self.settings:
             setup_nodes = self.settings['setup_finished']
             logger.debug("setup_nodes = %s" % setup_nodes)
-            packaged_nodes = len(get_rego_nodes(self.group_id, self.settings))
+            packaged_nodes = len(botocloudconnector.get_rego_nodes(self.group_id, self.settings))
             logger.debug("packaged_nodes = %s" % packaged_nodes)
 
             if 'runs_left' in self.settings:
@@ -451,7 +453,7 @@ class Run(Stage):
         """
         Move the input files to the VM
         """
-        ip = get_instance_ip(instance_id, self.settings)
+        ip = botocloudconnector.get_instance_ip(instance_id, self.settings)
         ssh = open_connection(ip_address=ip, settings=self.settings)
 
         # get all files from the payload directory
@@ -515,7 +517,7 @@ class Run(Stage):
 
         seeds = {}
 
-        nodes = get_rego_nodes(self.group_id, self.settings)
+        nodes = botocloudconnector.get_rego_nodes(self.group_id, self.settings)
         for node in nodes:
             # FIXME: is the random supposed to be positive or negative?
             seeds[node] = random.randrange(0, self.settings['MAX_SEED_INT'])
@@ -573,7 +575,7 @@ class Run(Stage):
         settings_text = run_info_file.retrieve()
         logger.debug("runinfo_text= %s" % settings_text)
 
-        nodes = get_rego_nodes(self.group_id, self.settings)
+        nodes = botocloudconnector.get_rego_nodes(self.group_id, self.settings)
         logger.debug("nodes = %s" % nodes)
 
         config = json.loads(settings_text)
@@ -628,15 +630,15 @@ class Finished(Stage):
         fsys = get_filesys(context)
         logger.debug("fsys= %s" % fsys)
 
-        self.nodes = get_rego_nodes(self.group_id, self.settings)
+        self.nodes = botocloudconnector.get_rego_nodes(self.group_id, self.settings)
 
         self.error_nodes = []
         self.finished_nodes = []
         for node in self.nodes:
             instance_id = node.id
-            ip = get_instance_ip(instance_id, self.settings)
+            ip = botocloudconnector.get_instance_ip(instance_id, self.settings)
             ssh = open_connection(ip_address=ip, settings=self.settings)
-            if not is_instance_running(instance_id, self.settings):
+            if not botocloudconnector.is_instance_running(instance_id, self.settings):
                 # An unlikely situation where the node crashed after is was
                 # detected as registered.
                 #FIXME: should error nodes be counted as finished?
@@ -663,7 +665,7 @@ class Finished(Stage):
             else:
                 print "job still running on %s: %s\
                 " % (instance_id,
-                     get_instance_ip(instance_id, self.settings))
+                     botocloudconnector.get_instance_ip(instance_id, self.settings))
 
     def output(self, context):
         """

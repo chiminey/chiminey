@@ -19,7 +19,7 @@ from stages.setup import Setup
 from hrmcstages import Run
 from hrmcstages import Finished
 #from hrmcstages import Converge
-from hrmcstages import Teardown
+from hrmcstages import Teardown, Schedule
 from hrmcstages import clear_temp_files
 
 logger = logging.getLogger(__name__)
@@ -112,7 +112,7 @@ def start(args):
         context['provider'] = 'nectar'
 
         if context['provider'].lower() == 'nectar':
-            context['config.sys'] = "./config.sys.json"
+            context['config.sys'] = "/opt/cloudenabling/current/bdphpcprovider/config.sys.json"
         elif context['provider'].lower() == 'amazon':
             context['config.sys'] =  "./config.sys.json.ec2"
         else:
@@ -127,7 +127,8 @@ def start(args):
          #   smart_conn.register(stage)
 
         smart_conn.register(Configure())
-        smart_conn.register(Setup())
+        smart_conn.register(Schedule())
+        #smart_conn.register(Setup())
         #while loop is infinite:
         # check the semantics for 'dropping data' into
         # designated location.
