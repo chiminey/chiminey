@@ -22,7 +22,7 @@
 import os
 import os.path
 import time
-import re€⁄
+import re
 
 from fs.osfs import OSFS
 from fs import path
