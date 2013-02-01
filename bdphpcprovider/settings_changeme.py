@@ -68,7 +68,7 @@ MEDIA_URL = ''
 # URL prefix for admin media -- CSS, JavaScript and images. Make sure to use a
 # trailing slash.
 # Examples: "http://foo.com/media/", "/media/".
-ADMIN_MEDIA_PREFIX = '/media/'
+#ADMIN_MEDIA_PREFIX = '/media/'
 
 # Make this unique, and don't share it with anybody.
 SECRET_KEY = 'lpw@bqiq#lwcx0w=xo=j@z9#h!d&8svwz5fwv0_j1319^%92p_'
@@ -108,6 +108,29 @@ TEMPLATE_CONTEXT_PROCESSORS = ("django.contrib.auth.context_processors.auth",
 
 OUR_APPS = ('bdphpcprovider.smartconnectorscheduler',)
 
+def get_admin_media_path():
+    import pkgutil
+    package = pkgutil.get_loader("django.contrib.admin")
+    return path.join(package.filename, 'static', 'admin')
+
+ADMIN_MEDIA_STATIC_DOC_ROOT = get_admin_media_path()
+
+# Static content location
+STATIC_URL = '/static/'
+
+# Used by "django collectstatic"
+STATIC_ROOT = path.abspath(path.join(path.dirname(__file__),'..','static'))
+
+# URL prefix for admin media -- CSS, JavaScript and images. Make sure to use a
+# trailing slash.
+# Examples: "http://foo.com/media/", "/media/".
+ADMIN_MEDIA_PREFIX = STATIC_URL + '/admin/'
+
+STATICFILES_DIRS = (
+    ('admin', ADMIN_MEDIA_STATIC_DOC_ROOT),
+)
+
+
 INSTALLED_APPS = (
     'django_extensions',
     'django.contrib.auth',
@@ -118,6 +141,7 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'django.contrib.admindocs',
     'django.contrib.markup',
+    'django.contrib.staticfiles',
     'django_nose',
     'south'
 ) + OUR_APPS
