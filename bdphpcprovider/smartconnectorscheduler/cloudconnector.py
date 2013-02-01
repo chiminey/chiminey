@@ -31,10 +31,7 @@ from libcloud.compute.types import NodeState
 from libcloud.compute.providers import get_driver
 
 #from sshconnector import *
-from sshconnector import open_connection
-from sshconnector import run_command
-from sshconnector import is_ssh_ready
-from sshconnector import AuthError
+from bdphpcprovider.smartconnectorscheduler.sshconnector import open_connection, run_command, is_ssh_ready, AuthError
 
 
 import libcloud.security

@@ -6,18 +6,9 @@ import logging
 import logging.config
 
 
-from botocloudconnector import create_environ
-from botocloudconnector import collect_instances
-from botocloudconnector import print_all_information
-from botocloudconnector import confirm_teardown
-from botocloudconnector import destroy_environ
-from botocloudconnector import get_ids_of_instances
+from bdphpcprovider.smartconnectorscheduler.botocloudconnector import create_environ, collect_instances, print_all_information, confirm_teardown, destroy_environ, get_ids_of_instances
 
-from hrmcimpl import prepare_multi_input
-from hrmcimpl import setup_multi_task
-from hrmcimpl import run_multi_task
-from hrmcimpl import packages_complete
-from hrmcimpl import PackageFailedError
+from bdphpcprovider.smartconnectorscheduler.hrmcimpl import prepare_multi_input, setup_multi_task, run_multi_task, packages_complete, PackageFailedError
 
 logger = logging.getLogger(__name__)
 

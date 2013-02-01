@@ -24,14 +24,11 @@ import logging
 import sys
 import logging.config
 
-from hrmcstages import get_run_settings
-from hrmcstages import update_key
-from hrmcstages import get_filesys
-from hrmcstages import delete_key
+from bdphpcprovider.smartconnectorscheduler.hrmcstages import get_run_settings, update_key, get_filesys, delete_key
 
 logger = logging.getLogger('stages')
 
-from smartconnector import Stage
+from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 
 
 class IterationConverge(Stage):

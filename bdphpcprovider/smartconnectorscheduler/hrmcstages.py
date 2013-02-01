@@ -33,33 +33,17 @@ import re
 logger = logging.getLogger(__name__)
 
 
-from smartconnector import Stage
-from smartconnector import UI
-from smartconnector import SmartConnector
+from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, UI, SmartConnector
 
-from filesystem import FileSystem
-from filesystem import DataObject
+from bdphpcprovider.smartconnectorscheduler.filesystem import FileSystem, DataObject
 
-from cloudconnector import create_environ
-from cloudconnector import get_rego_nodes
-from cloudconnector import open_connection
-from cloudconnector import get_instance_ip
-from cloudconnector import collect_instances
-from cloudconnector import destroy_environ
+from bdphpcprovider.smartconnectorscheduler.cloudconnector import create_environ, get_rego_nodes, open_connection, get_instance_ip, collect_instances, destroy_environ
 
-from hrmcimpl import setup_multi_task
+from bdphpcprovider.smartconnectorscheduler.hrmcimpl import setup_multi_task, PackageFailedError, run_multi_task, is_instance_running, job_finished
 #from hrmcimpl import prepare_multi_input
-
-
-from hrmcimpl import PackageFailedError
-from hrmcimpl import run_multi_task
 #from hrmcimpl import _normalize_dirpath
 #from hrmcimpl import _status_of_nodeset
-from hrmcimpl import is_instance_running
-from hrmcimpl import job_finished
-from sshconnector import find_remote_files
-
-from sshconnector import run_command
+from bdphpcprovider.smartconnectorscheduler.sshconnector import find_remote_files, run_command
 
 
 def get_elem(context, key):
