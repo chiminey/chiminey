@@ -5,10 +5,21 @@ import time
 import logging
 import logging.config
 
+import cloudconnector
+from bdphpcprovider.smartconnectorscheduler.cloudconnector import create_environ,  collect_instances, \
+    print_all_information, confirm_teardown, destroy_environ
 
-from bdphpcprovider.smartconnectorscheduler.botocloudconnector import create_environ, collect_instances, print_all_information, confirm_teardown, destroy_environ, get_ids_of_instances
+from bdphpcprovider.smartconnectorscheduler.hrmcimpl import prepare_multi_input, setup_multi_task, \
+    packages_complete, PackageFailedError
 
-from bdphpcprovider.smartconnectorscheduler.hrmcimpl import prepare_multi_input, setup_multi_task, run_multi_task, packages_complete, PackageFailedError
+from bdphpcprovider.smartconnectorscheduler.stages.run import Run
+from bdphpcprovider.smartconnectorscheduler.smartconnector import SmartConnector
+from bdphpcprovider.smartconnectorscheduler.hrmcstages import Configure, Create, Setup,Finished
+
+from bdphpcprovider.smartconnectorscheduler.hrmcstages import Teardown, Schedule, clear_temp_files
+
+from bdphpcprovider.smartconnectorscheduler.stages.converge import Converge
+from bdphpcprovider.smartconnectorscheduler.stages.transform import Transform
 
 
 
@@ -26,9 +37,8 @@ logger = logging.getLogger(__name__)
 
 
 def start(args):
-
     #http://docs.python.org/howto/logging.html#logging-basic-tutorial
-    #logging.config.fileConfig('logging.conf')
+    logging.config.fileConfig('logging.conf')
     import ConfigParser
     config = ConfigParser.RawConfigParser()
     config_file = os.path.expanduser("~/.cloudenabling/config.sys")
@@ -37,8 +47,9 @@ def start(args):
         print "here"
         config.read(config_file)
     else:
-        config_file = "/home/iman/cloudenabling/bdphpcprovider/smartconnectorscheduler/config.sys"  # a default config file
-        print "there"
+        #config_file = "/home/iman/cloudenabling/bdphpcprovider/smartconnectorscheduler/config.sys"  # a default config file
+        config_file = os.path.expanduser("config.sys")  # a default config file
+
         if os.path.exists(config_file):
             config.read(config_file)
         else:
@@ -61,7 +72,7 @@ def start(args):
                       'POST_PAYLOAD_CLOUD_DIRNAME',
                       'PAYLOAD_SOURCE', 'PAYLOAD_DESTINATION']
 
-    #['CUSTOM_PROMPT'] "[smart-connector_prompt]$"
+#['CUSTOM_PROMPT'] "[smart-connector_prompt]$"
     import json
     #settings = type('', (), {})()
     settings = {}
@@ -74,37 +85,36 @@ def start(args):
             field_val = json.loads(val)    # use JSON to parse values
         except ValueError, e:
             file_val = ""
-            # and make fake object to hold them
+        # and make fake object to hold them
         settings[field]=field_val
         #setattr(settings, field, field_val)
         logger.debug("%s" % field_val)
 
+    # TODO: replace the config.sys with the equivalent code using config.sys.json as they are same information.
     # get command line options
     parser = OptionParser()
     parser.add_option("-n", "--nodeid", dest="instance_id",
-        help="The instance id from the cloud infrastructure")
+                      help="The instance id from the cloud infrastructure")
     parser.add_option("-i", "--inputdir", dest="input_dir",
-        help="The local directory holding \
-                      input files for the task")
+                      help="The local directory holding \
+                      input directories for the task")
     parser.add_option("-o", "--outputdir", dest="output_dir",
-        help="The local directory which will \
+                      help="The local directory which will \
                       hold output files for the task")
     parser.add_option("-g", "--group", dest="group_id",
-        help="The group id from the cloud infrastructure")
+                      help="The group id from the cloud infrastructure")
     parser.add_option("-v", "--number-vm-instances", type="int",
-        dest="number_vm_instances",
-        help="The number of VM instances to " +
-             "be created as a group")
+                      dest="number_vm_instances",
+                      help="The number of VM instances to " +
+                      "be created as a group")
     parser.add_option("-s", "--seed", dest="seed",
-        help="The master seed that generates all other seeds")
-
+                      help="The master seed that generates all other seeds")
 
     (options, args) = parser.parse_args(args)
 
     if 'smart' in args:
-        context = {'number_vm_instances': 1}
+        context = {'number_vm_instances': 2}
         context['seed'] = 32
-        context['group_id'] = "bf16c62b1927e100a10922ef36bce5e8"
 
         HOME_DIR = os.path.expanduser("~")
         global_filesystem = os.path.join(HOME_DIR, "testStages")
@@ -112,39 +122,41 @@ def start(args):
         context['provider'] = 'nectar'
 
         if context['provider'].lower() == 'nectar':
-            context['config.sys'] = "/opt/cloudenabling/current/bdphpcprovider/config.sys.json"
+            context['config.sys'] = "./smartconnectorscheduler/config.sys.json"
         elif context['provider'].lower() == 'amazon':
-            context['config.sys'] =  "./config.sys.json.ec2"
+            context['config.sys'] =  "./smartconnectorscheduler/config.sys.json.ec2"
         else:
             print "unknown cloud service provider"
             sys.exit()
 
-        number_of_iterations = 1
+        #number_of_iterations = 3
+        error_threshold = 10000
         smart_conn = SmartConnector()
 
-        #for stage in (Configure(), Setup() ):#Create () Setup(), Run(), Finished(), Converge(number_of_iterations)):#, Teardown()):#, Check(), Teardown()):
-        #for stage in (Configure(), Transform()):
-         #   smart_conn.register(stage)
+        for stage in (
+         #Configure(), Schedule(), Create(),  Setup(),
+            Run(),
+         #Finished(), Transform(), Converge(error_threshold), Teardown()
+         ):
+            smart_conn.register(stage)
 
-        smart_conn.register(Configure())
-        smart_conn.register(Schedule())
-        #smart_conn.register(Setup())
         #while loop is infinite:
         # check the semantics for 'dropping data' into
         # designated location.
         #What happens if data is dropped while
         #another is in progress?
         while (True):
-            print "Loop started"
             done = 0
             not_triggered = 0
             for stage in smart_conn.stages:
-                print "Working in stage", stage
+                print "Working in stage", stage.__class__
                 if stage.triggered(context):
+                    logger.debug("triggered")
                     stage.process(context)
                     context = stage.output(context)
-                    logger.debug("Context %s" % context)
+                    logger.debug("Context", context)
                 else:
+                    logger.debug("not triggered")
                     not_triggered += 1
                     #smart_con.unregister(stage)
                     #print "Deleting stage",stage
@@ -154,16 +166,12 @@ def start(args):
             if not_triggered == len(smart_conn.stages):
                 break
 
-        #clear_temp_files(context)
-
-
-
+        clear_temp_files(context)
 
     elif 'create' in args:
         if options.number_vm_instances:
             res = create_environ(options.number_vm_instances, settings)
             logger.debug(res)
-            return res
         else:
             logging.error("enter number of VM instances to be created")
             parser.print_help()
@@ -184,7 +192,7 @@ def start(args):
     elif 'run' in args:
         if options.group_id:
 
-            group_id = options.group_id
+            run_stage = Run()
 
             if not options.output_dir:
                 logging.error("specify output directory")
@@ -200,20 +208,32 @@ def start(args):
                     logger.error("output directory %s already exists" % options.output_dir)
                     sys.exit(1)
 
-            prepare_multi_input(group_id, options.input_dir,
-                settings, options.seed)
+            #prepare_multi_input(group_id, options.input_dir,
+            #                    settings, options.seed)
 
-            try:
-                pids = run_multi_task(group_id, options.input_dir, settings)
-            except PackageFailedError, e:
-                logger.error(e)
-                logger.error("unable to start packages")
-                #TODO: cleanup node of copied input files etc.
-                sys.exit(1)
+            # try:
+            #     pids = run_stage.run_multi_task(group_id, options.input_dir, settings)
+            # except PackageFailedError, e:
+            #     logger.error(e)
+            #     logger.error("unable to start packages")
+            #     #TODO: cleanup node of copied input files etc.
+            #     sys.exit(1)
 
-            while (not packages_complete(group_id,
-                options.output_dir,
-                settings)):
+            context = {}
+            # FIXME: bypass triggered by setting required process values directly.
+            run_stage.group_id = options.group_id
+            # NOTE: for basic one input directory basic version, input directory must NOW be in
+            #  child directory  of options.input_dir so that it will work for multiple input directories in the future
+            run_stage.iter_inputdir = options.input_dir # !!!
+            run_stage.settings = settings
+            run_stage.id = 0
+
+            # We fake run_stage triggered() and don't need to signal other stages, so skip output()
+            run_stage.process(context)
+
+            while (not packages_complete(options.group_id,
+                                         options.output_dir,
+                                         settings)):
                 print("job is running.  Wait or CTRL-C to exit here. \
                  run 'check' command to poll again")
                 time.sleep(settings['SLEEP_TIME'])
@@ -232,15 +252,13 @@ def start(args):
 
             group_id = options.group_id
             is_finished = packages_complete(group_id,
-                options.output_dir,
-                settings)
+                                            options.output_dir,
+                                            settings)
 
             if is_finished:
                 print "done. output is available at %s" % options.output_dir
-                return 'DONE'
             else:
                 print "job still running"
-                return 'RUNNING'
         else:
             logger.error("enter group id of the run")
             parser.print_help()
@@ -251,38 +269,25 @@ def start(args):
         # that is running the package and no some random VM, probably by
         # logging in and checking state.
 
-        #TODO: refactor the following if, elif else statements
-
         if options.group_id:
             all_instances = collect_instances(settings, group_id=options.group_id)
-            ids_of_instances = get_ids_of_instances(all_instances)
-            confirm = True
-            if not "yes" in args:
-                confirm = confirm_teardown(settings, all_instances)
-            if confirm:
-                destroy_environ(settings, all_instances, ids_of_instances)
+            if confirm_teardown(settings, all_instances):
+                destroy_environ(settings, all_instances)
         elif options.instance_id:
             all_instances = collect_instances(settings, instance_id=options.instance_id)
-            confirm = True
-            if not "yes" in args:
-                confirm = confirm_teardown(settings, all_instances)
-            if confirm:
-                destroy_environ(settings, all_instances, options.instance_id)
+            if confirm_teardown(settings, all_instances):
+                destroy_environ(settings, all_instances)
         elif 'teardown_all' in args:
             all_instances = collect_instances(settings, all_VM=True)
-            ids_of_instances = get_ids_of_instances(all_instances)
-            confirm = True
-            if not "yes" in args:
-                confirm = confirm_teardown(settings, all_instances)
-            if confirm:
-                destroy_environ(settings, all_instances, ids_of_instances)
+            if confirm_teardown(settings, all_instances):
+                destroy_environ(settings, all_instances)
         else:
             logger.error("Enter either group id or instance id of the package")
             parser.print_help()
             sys.exit(1)
 
-        #    elif 'print' in args:
-        #        print_running_node_id(settings)
+#    elif 'print' in args:
+#        print_running_node_id(settings)
 
     elif 'info' in args:
         print "Summary of Computing Environment"
