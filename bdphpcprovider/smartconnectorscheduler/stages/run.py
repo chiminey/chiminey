@@ -65,6 +65,7 @@ class Run(Stage):
     """
     def __init__(self):
         self.numbfile = 0
+        self.initial_numbfile = 1
 
     def triggered(self, context):
         # triggered when we now that we have N nodes setup and ready to run.
@@ -228,10 +229,11 @@ class Run(Stage):
                                   self.settings['PAYLOAD_CLOUD_DIRNAME']), self.numbfile))
         self.numbfile += 1
 
-    def _generate_variations(self, template, maps):
+    def _generate_variations(self, template, maps, initial_numbfile):
 
         # FIXME: doesn't handle multipe template files together
         res = []
+        numbfile = initial_numbfile
         for iter, template_map in enumerate(maps):
             print "iter #%d" % iter
             temp_num = 0
@@ -242,6 +244,8 @@ class Run(Stage):
                 context = {}
                 for i, k in enumerate(map_keys):
                     context[k] = str(z[i])  # str() so that 0 doesn't default value
+                context['run_counter'] = numbfile
+                numbfile += 1
                 print context
                 t = Template(template)
                 con = Context(context)
@@ -291,7 +295,7 @@ class Run(Stage):
                     # TODO: only handles a single template at a file at the moment.
                     N = 2
                     map_start = {
-                        'temp': [301],
+                        'temp': [5000],
                         'iseed': [randrange(0, 1000) for x in xrange(0, N)],
                     }
                     if not mat.groups():
@@ -301,7 +305,10 @@ class Run(Stage):
                         base_fname = mat.group(1)
                         logger.debug("base_fname=%s" % base_fname)
                         # generates a set of variations for the template fname
-                        variations[base_fname] = self._generate_variations(template, [map_start])
+                        variation_set = self._generate_variations(template,
+                            [map_start], self.initial_numbfile)
+                        self.initial_numbfile += len(variation_set)
+                        variations[base_fname] =variation_set
             else:
                 # normal file
                 pass
