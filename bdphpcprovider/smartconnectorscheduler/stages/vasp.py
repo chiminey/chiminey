@@ -32,12 +32,11 @@
 import logging
 import logging.config
 
-from metadata import rulesets
-from metadata import process_datafile
-from filesystem import DataObject
-from filesystem import FileSystem
-from hrmcstages import get_filesys
-from smartconnector import Stage
+from bdphpcprovider.smartconnectorscheduler.metadata import rulesets
+from bdphpcprovider.smartconnectorscheduler.metadata import process_datafile
+from bdphpcprovider.smartconnectorscheduler.filesystem import DataObject, FileSystem
+from bdphpcprovider.smartconnectorscheduler.hrmcstages import get_filesys
+from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 
 logger = logging.getLogger('stages')
 

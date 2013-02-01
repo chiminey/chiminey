@@ -33,10 +33,9 @@ import unittest
 import os
 import logging
 import logging.config
-from smartconnector import Stage
-from stages.vasp import VASP
-from filesystem import DataObject
-from filesystem import FileSystem
+from bdphpcprovider.smartconnectorscheduler import Stage
+from bdphpcprovider.smartconnectorscheduler.stages.vasp import VASP
+from bdphpcprovider.smartconnectorscheduler.filesystem import DataObject, FileSystem
 
 
 logger = logging.getLogger('tests')
