@@ -28,25 +28,35 @@ import os
 import sys
 import re
 import tempfile
+from itertools import product
+from random import randrange
+from django.template import Context, Template
+
 
 logger = logging.getLogger(__name__)
 
 
-from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, UI, SmartConnector
+from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, \
+    UI, SmartConnector
 
-from bdphpcprovider.smartconnectorscheduler.filesystem import FileSystem, DataObject
+from bdphpcprovider.smartconnectorscheduler.filesystem import FileSystem, \
+    DataObject
 
-from bdphpcprovider.smartconnectorscheduler.cloudconnector import create_environ, get_rego_nodes, \
-    open_connection, get_instance_ip, collect_instances, destroy_environ
+from bdphpcprovider.smartconnectorscheduler.botocloudconnector import  \
+    create_environ, get_rego_nodes, open_connection, get_instance_ip, \
+    collect_instances, destroy_environ
 
 from bdphpcprovider.smartconnectorscheduler.hrmcimpl import PackageFailedError
 #from hrmcimpl import prepare_multi_input
 #from hrmcimpl import _normalize_dirpath
 #from hrmcimpl import _status_of_nodeset
-from bdphpcprovider.smartconnectorscheduler.sshconnector import find_remote_files, run_command
+from bdphpcprovider.smartconnectorscheduler.sshconnector import \
+    find_remote_files, run_command, put_file
 
-from bdphpcprovider.smartconnectorscheduler.hrmcstages import get_settings, get_run_info
+from bdphpcprovider.smartconnectorscheduler.hrmcstages import get_settings, \
+    get_run_info, get_filesys, get_file
 
+from bdphpcprovider.smartconnectorscheduler.sshconnector import get_package_pids
 
 
 class Run(Stage):
@@ -68,6 +78,8 @@ class Run(Stage):
         '''
 
         print "Run stage triggered"
+        print __name__
+        logger.debug("context = %s" % context)
         self.settings = get_settings(context)
         logger.debug("settings = %s" % self.settings)
 
@@ -106,7 +118,50 @@ class Run(Stage):
             logger.info("setup was not finished")
             return False
 
-    def run_multi_task(self, group_id, output_dir, settings):
+    def run_task(self, instance_id, settings):
+        """
+            Start the task on the instance, then hang and
+            periodically check its state.
+        """
+        logger.info("run_task %s" % instance_id)
+        ip = get_instance_ip(instance_id, settings)
+        ssh = open_connection(ip_address=ip,
+                              settings=settings)
+        pids = get_package_pids(ssh, settings['COMPILE_FILE'])
+        logger.debug("pids=%s" % pids)
+        if len(pids) > 1:
+            logger.error("warning:multiple packages running")
+            raise PackageFailedError("multiple packages running")
+        run_command(ssh, "cd %s; ./%s >& %s &\
+        " % (os.path.join(settings['DEST_PATH_PREFIX'],
+                          settings['PAYLOAD_CLOUD_DIRNAME']),
+             settings['COMPILE_FILE'], "output"))
+
+        import time
+        attempts = settings['RETRY_ATTEMPTS']
+        logger.debug("checking for package start")
+        for x in range(0, attempts):
+            time.sleep(5)  # to give process enough time to start
+            pids = get_package_pids(ssh, settings['COMPILE_FILE'])
+            logger.debug("pids=%s" % pids)
+            if pids:
+                break
+        else:
+            raise PackageFailedError("package did not start")
+        # pids should have maximum of one element
+        return pids
+
+    def job_finished(instance_id, settings):
+        """
+            Return True if package job on instance_id has job_finished
+        """
+        ip = get_instance_ip(instance_id, settings)
+        ssh = open_connection(ip_address=ip, settings=settings)
+        pids = get_package_pids(ssh, settings['COMPILE_FILE'])
+        logger.debug("pids=%s" % repr(pids))
+        return pids == [""]
+
+    def run_multi_task(self, group_id, iter_inputdir, settings):
         """
         Run the package on each of the nodes in the group and grab
         any output as needed
@@ -173,8 +228,9 @@ class Run(Stage):
                                   self.settings['PAYLOAD_CLOUD_DIRNAME']), self.numbfile))
         self.numbfile += 1
 
-    def generate_inputs(template, maps):
+    def _generate_variations(self, template, maps):
 
+        # FIXME: doesn't handle multipe template files together
         res = []
         for iter, template_map in enumerate(maps):
             print "iter #%d" % iter
@@ -195,10 +251,6 @@ class Run(Stage):
 
         return res
 
-    # #should remove this directory
-    # def _upload_input(ssh, source_path_prefix, input_file, dest_path_prefix):
-    #     put_file(ssh, source_path_prefix, input_file, dest_path_prefix)
-
     def _prepare_input(self, context):
         """
         """
@@ -218,7 +270,7 @@ class Run(Stage):
 
         # come in with N input directoires
 
-        tpattern = "(*)_template"
+        tpattern = "(.*)_template"
         template_pat = re.compile(tpattern)
         nodes = get_rego_nodes(self.group_id, self.settings)
         node_ind = 0
@@ -236,15 +288,20 @@ class Run(Stage):
                     template = data_object.retrieve()
                     logger.debug("template content = %s" % template)
                     #
+                    # TODO: only handles a single template at a file at the moment.
                     N = 2
                     map_start = {
                         'temp': [301],
                         'iseed': [randrange(0, 1000) for x in xrange(0, N)],
                     }
-                    base_fname = map.group(1)
-                    logger.debug("base_fname=%s" % base_fname)
-                    # generates a set of variations for the template fname
-                    variations[base_fname] = generate_varations(template, [map_start])
+                    if not mat.groups():
+                        logger.info("found odd template matching file %s" % fname)
+                    else:
+
+                        base_fname = mat.group(1)
+                        logger.debug("base_fname=%s" % base_fname)
+                        # generates a set of variations for the template fname
+                        variations[base_fname] = self._generate_variations(template, [map_start])
             else:
                 # normal file
                 pass
@@ -252,7 +309,9 @@ class Run(Stage):
             logger.debug("variations = %s" % variations)
             # generate variations for the input_dir
             for var_fname in variations.keys():
+                logger.debug("var_fname=%s" % var_fname)
                 for var_content, values in variations[var_fname]:
+                    logger.debug("var_content = %s" % var_content)
                     var_node = nodes[node_ind]
                     node_ind += 1
                     ip = get_instance_ip(var_node.id, self.settings)
@@ -279,30 +338,32 @@ class Run(Stage):
                         run_command(ssh, "/bin/rm -f %s" % f)
 
                     # first copy up all existing input files to new variation
-                    fs.upload_iter_input_dir(ssh, self.iter_inputdir, input_dir)
+                    fs.upload_iter_input_dir(ssh, self.iter_inputdir, input_dir, os.path.join(
+                        self.settings['DEST_PATH_PREFIX'],
+                        self.settings['PAYLOAD_CLOUD_DIRNAME']))
 
                     # FIXME: handle exceptions
 
                     # then create template variated file
                     varied_fdir = tempfile.mkdtemp()
                     print "varied_fdir=%s" % varied_fdir
-                    fpath = os.path(varied_fdir, var_fname)
+                    fpath = os.path.join(varied_fdir, var_fname)
                     f = open(fpath, "w")
                     f.write(var_content)
                     f.close()
 
                     # plus store used val in substitution incase next iter needs them.
                     values_fname = "%s_values" % var_fname
-                    vpath = os.path(varied_fdir, values_fname)
+                    vpath = os.path.join(varied_fdir, values_fname)
                     v = open(vpath, "w")
                     v.write(json.dumps(values))
                     v.close()
 
                     # and overwrite on the remote
-                    fs.put_file(ssh, varied_fdir, var_fname, os.path.join(
+                    put_file(ssh, varied_fdir, var_fname, os.path.join(
                         self.settings['DEST_PATH_PREFIX'],
                         self.settings['PAYLOAD_CLOUD_DIRNAME']))
-                    fs.put_file(ssh, varied_fdir, values_fname, os.path.join(
+                    put_file(ssh, varied_fdir, values_fname, os.path.join(
                         self.settings['DEST_PATH_PREFIX'],
                         self.settings['PAYLOAD_CLOUD_DIRNAME']))
 
@@ -349,50 +410,6 @@ class Run(Stage):
         #     logger.info("prepare_input %s %s" % (instance_id, self.iter_inputdir))
         #     self._create_input(instance_id, seeds, node, fsys)
 
-    def run_task(instance_id, settings):
-        """
-            Start the task on the instance, then hang and
-            periodically check its state.
-        """
-        logger.info("run_task %s" % instance_id)
-        ip = get_instance_ip(instance_id, settings)
-        ssh = open_connection(ip_address=ip,
-                              settings=settings)
-        pids = get_package_pids(ssh, settings['COMPILE_FILE'])
-        logger.debug("pids=%s" % pids)
-        if len(pids) > 1:
-            logger.error("warning:multiple packages running")
-            raise PackageFailedError("multiple packages running")
-        run_command(ssh, "cd %s; ./%s >& %s &\
-        " % (os.path.join(settings['DEST_PATH_PREFIX'],
-                          settings['PAYLOAD_CLOUD_DIRNAME']),
-             settings['COMPILE_FILE'], "output"))
-
-        import time
-        attempts = settings['RETRY_ATTEMPTS']
-        logger.debug("checking for package start")
-        for x in range(0, attempts):
-            time.sleep(5)  # to give process enough time to start
-            pids = get_package_pids(ssh, settings['COMPILE_FILE'])
-            logger.debug("pids=%s" % pids)
-            if pids:
-                break
-        else:
-            raise PackageFailedError("package did not start")
-        # pids should have maximum of one element
-        return pids
-
-    def job_finished(instance_id, settings):
-        """
-            Return True if package job on instance_id has job_finished
-        """
-        ip = get_instance_ip(instance_id, settings)
-        ssh = open_connection(ip_address=ip, settings=settings)
-        pids = get_package_pids(ssh, settings['COMPILE_FILE'])
-        logger.debug("pids=%s" % repr(pids))
-        return pids == [""]
-
-
 
 
     def process(self, context):
@@ -404,7 +421,7 @@ class Run(Stage):
         logger.debug("running tasks")
 
         try:
-            pids = run_multi_task(self.group_id, self.iter_inputdir, self.settings)
+            pids = self.run_multi_task(self.group_id, self.iter_inputdir, self.settings)
         except PackageFailedError, e:
             logger.error(e)
             logger.error("unable to start packages")
@@ -425,6 +442,8 @@ class Run(Stage):
 
         settings_text = run_info_file.retrieve()
         logger.debug("runinfo_text= %s" % settings_text)
+
+
 
         nodes = get_rego_nodes(self.group_id, self.settings)
         logger.debug("nodes = %s" % nodes)
