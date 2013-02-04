@@ -56,6 +56,8 @@ from bdphpcprovider.smartconnectorscheduler.hrmcstages import get_settings, \
 
 from bdphpcprovider.smartconnectorscheduler.sshconnector import get_package_pids, open_connection
 
+class BadSpecificationError(Exception):
+    pass
 
 class Run(Stage):
     """
@@ -183,53 +185,51 @@ class Run(Stage):
         return all_pids
 
 
-    '''
-    def _create_input(self, instance_id, seeds, node, fsys):
-        """
-        Move the input files to the VM
-        """
-        ip = botocloudconnector.get_instance_ip(instance_id, self.settings)
-        ssh = open_connection(ip_address=ip, settings=self.settings)
+    # def _create_input(self, instance_id, seeds, node, fsys):
+    #     """
+    #     Move the input files to the VM
+    #     """
+    #     ip = get_instance_ip(instance_id, self.settings)
+    #     ssh = open_connection(ip_address=ip, settings=self.settings)
 
-        # get all files from the payload directory
-        dest_files = find_remote_files(ssh, os.path.join(self.settings['DEST_PATH_PREFIX'],
-            self.settings['PAYLOAD_CLOUD_DIRNAME']))
-        logger.debug("dest_files=%s" % dest_files)
+    #     # get all files from the payload directory
+    #     dest_files = find_remote_files(ssh, os.path.join(self.settings['DEST_PATH_PREFIX'],
+    #         self.settings['PAYLOAD_CLOUD_DIRNAME']))
+    #     logger.debug("dest_files=%s" % dest_files)
 
-        # keep results of setup stages
-        for f in [self.settings['COMPILE_FILE'], "..", "."]:
-            try:
-                dest_files.remove(os.path.join(self.settings['DEST_PATH_PREFIX'],
-                    self.settings['PAYLOAD_CLOUD_DIRNAME'], f))
-            except ValueError:
-                logger.info("no %s found to remove" % f)
+    #     # keep results of setup stages
+    #     for f in [self.settings['COMPILE_FILE'], "..", "."]:
+    #         try:
+    #             dest_files.remove(os.path.join(self.settings['DEST_PATH_PREFIX'],
+    #                 self.settings['PAYLOAD_CLOUD_DIRNAME'], f))
+    #         except ValueError:
+    #             logger.info("no %s found to remove" % f)
 
-        logger.debug("dest_files=%s" % dest_files)
-        # and delete all the rest
-        for f in dest_files:
-            run_command(ssh, "/bin/rm -f %s" % f)
+    #     logger.debug("dest_files=%s" % dest_files)
+    #     # and delete all the rest
+    #     for f in dest_files:
+    #         run_command(ssh, "/bin/rm -f %s" % f)
 
-        fsys.upload_input(ssh, self.iter_inputdir, os.path.join(
-            self.settings['DEST_PATH_PREFIX'],
-            self.settings['PAYLOAD_CLOUD_DIRNAME']))
-        run_command(ssh, "cd %s; cp rmcen.inp rmcen.inp.orig" %
-                    (os.path.join(self.settings['DEST_PATH_PREFIX'],
-                                  self.settings['PAYLOAD_CLOUD_DIRNAME'])))
-        run_command(ssh, "cd %s; dos2unix rmcen.inp" %
-                    (os.path.join(self.settings['DEST_PATH_PREFIX'],
-                                  self.settings['PAYLOAD_CLOUD_DIRNAME'])))
-        run_command(ssh, "cd %s; sed -i '/^$/d' rmcen.inp" %
-                    (os.path.join(self.settings['DEST_PATH_PREFIX'],
-                                  self.settings['PAYLOAD_CLOUD_DIRNAME'])))
-        run_command(ssh, "cd %s; sed -i 's/[0-9]*[ \t]*iseed.*$/%s\tiseed/' rmcen.inp" %
-                    (os.path.join(self.settings['DEST_PATH_PREFIX'],
-                                  self.settings['PAYLOAD_CLOUD_DIRNAME']), seeds[node]))
-        run_command(ssh, "cd %s; sed -i 's/[0-9]*[ \t]*numbfile.*$/%s\tnumbfile/' rmcen.inp" %
-                    (os.path.join(self.settings['DEST_PATH_PREFIX'],
-                                  self.settings['PAYLOAD_CLOUD_DIRNAME']), self.numbfile))
-        self.numbfile += 1
+    #     fsys.upload_input(ssh, self.iter_inputdir, os.path.join(
+    #         self.settings['DEST_PATH_PREFIX'],
+    #         self.settings['PAYLOAD_CLOUD_DIRNAME']))
+    #     run_command(ssh, "cd %s; cp rmcen.inp rmcen.inp.orig" %
+    #                 (os.path.join(self.settings['DEST_PATH_PREFIX'],
+    #                               self.settings['PAYLOAD_CLOUD_DIRNAME'])))
+    #     run_command(ssh, "cd %s; dos2unix rmcen.inp" %
+    #                 (os.path.join(self.settings['DEST_PATH_PREFIX'],
+    #                               self.settings['PAYLOAD_CLOUD_DIRNAME'])))
+    #     run_command(ssh, "cd %s; sed -i '/^$/d' rmcen.inp" %
+    #                 (os.path.join(self.settings['DEST_PATH_PREFIX'],
+    #                               self.settings['PAYLOAD_CLOUD_DIRNAME'])))
+    #     run_command(ssh, "cd %s; sed -i 's/[0-9]*[ \t]*iseed.*$/%s\tiseed/' rmcen.inp" %
+    #                 (os.path.join(self.settings['DEST_PATH_PREFIX'],
+    #                               self.settings['PAYLOAD_CLOUD_DIRNAME']), seeds[node]))
+    #     run_command(ssh, "cd %s; sed -i 's/[0-9]*[ \t]*numbfile.*$/%s\tnumbfile/' rmcen.inp" %
+    #                 (os.path.join(self.settings['DEST_PATH_PREFIX'],
+    #                               self.settings['PAYLOAD_CLOUD_DIRNAME']), self.numbfile))
+    #     self.numbfile += 1
 
-        '''
 
 
     def _generate_variations(self, template, maps, initial_numbfile):
@@ -297,12 +297,34 @@ class Run(Stage):
                     template = data_object.retrieve()
                     logger.debug("template content = %s" % template)
                     #
-                    # TODO: only handles a single template at a file at the moment.
-                    N = 2
-                    map_start = {
-                        'temp': [300],
-                        'iseed': [randrange(0, 1000) for x in xrange(0, N)],
-                    }
+                    num_dim = 2
+                    N = 1
+
+                    if num_dim == 1:
+                        map = {
+                            'temp': [300],
+                            'iseed': [randrange(0, self.settings['MAX_SEED_INT']) for x in xrange(0, N)],
+                            'istart': [1 if self.id > 0  else 2]
+                        }
+                    elif num_dim == 2:
+                        map = {
+                            'temp': [300],
+                            'iseed': [randrange(0, self.settings['MAX_SEED_INT']) for x in xrange(0, 4 * N)],
+                            'istart': [1]
+
+                        }
+
+                        if self.id > 0:
+                            map = {
+                                'temp': [i for i in [300, 700, 1100, 1500]],
+                                'iseed': [randrange(0, self.settings['MAX_SEED_INT'])],
+                                'istart': [2]
+
+                                }
+                    else:
+                        logger.error("Uknown dimensionality of problem")
+                        raise  BadSpecificationError()
+
                     if not mat.groups():
                         logger.info("found odd template matching file %s" % fname)
                     else:
@@ -311,7 +333,7 @@ class Run(Stage):
                         logger.debug("base_fname=%s" % base_fname)
                         # generates a set of variations for the template fname
                         variation_set = self._generate_variations(template,
-                            [map_start], self.initial_numbfile)
+                            [map], self.initial_numbfile)
                         self.initial_numbfile += len(variation_set)
                         variations[base_fname] =variation_set
             else:
