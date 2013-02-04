@@ -81,7 +81,7 @@ class MetadataTests(unittest.TestCase):
         s1 = VASP()
         context = {}
         fs = FileSystem(self.global_filesystem, self.local_filesystem)
-        input_path = os.path.join(os.path.dirname(__file__), "testing", "dataset1")
+        input_path = os.path.join("smartconnectorscheduler", "testing", "dataset1")
         # move input files to fs
         from shutil import copytree
         copytree(os.path.abspath(input_path),

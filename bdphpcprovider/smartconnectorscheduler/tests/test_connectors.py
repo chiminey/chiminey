@@ -250,6 +250,7 @@ class SetupStageTests(unittest.TestCase):
         .and_return(cloudconnector.get_instance_ip(fakenode_state2.id, self.settings))
 
 
+
         # Setup fsys and initial config files for setup
         f1 = DataObject("config.sys")
         f1.create(json.dumps(self.settings))
@@ -265,9 +266,18 @@ class SetupStageTests(unittest.TestCase):
         print("context=%s" % context)
         s1 = Setup()
 
+        from threading import Thread
+        flexmock(Thread).should_receive('start').\
+        and_return(s1.setup_task(self.settings,
+            fakenode_state2.public_ips[0], make_target=""))
+
+        flexmock(Thread).should_receive('join').and_return()
+
         res = s1.triggered(context)
         print res
         self.assertEquals(res, True)
+
+
         self.assertEquals(s1.group_id, group_id)
 
         s1.process(context)
@@ -279,6 +289,7 @@ class SetupStageTests(unittest.TestCase):
                           {'group_id': group_id,
                            'id': 0,
                            'setup_finished': 1})
+
 
 
 
