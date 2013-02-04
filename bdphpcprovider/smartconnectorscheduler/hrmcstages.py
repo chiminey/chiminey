@@ -418,7 +418,7 @@ class Setup(Stage):
         self.packaged_nodes = get_rego_nodes(self.group_id, self.settings)
         logger.debug("packaged_nodes = %s" % self.packaged_nodes)
 
-        logger.debug("Setup on %s" % self.settqings['PROVIDER'])
+        logger.debug("Setup on %s" % self.settings['PROVIDER'])
         return len(self.packaged_nodes)
 
     def process(self, context):
