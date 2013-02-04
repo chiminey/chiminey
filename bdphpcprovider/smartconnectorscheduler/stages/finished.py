@@ -1,18 +1,11 @@
 
 import logging
 
-from bdphpcprovider.smartconnectorscheduler.botocloudconnector import  \
-    create_environ, get_rego_nodes, open_connection, get_instance_ip, \
-    collect_instances, destroy_environ
-
-from bdphpcprovider.smartconnectorscheduler.sshconnector import get_package_pids
-
-from bdphpcprovider.smartconnectorscheduler.hrmcimpl import setup_multi_task, PackageFailedError
-
+from bdphpcprovider.smartconnectorscheduler.sshconnector import get_package_pids, open_connection
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, UI, SmartConnector
 
-from bdphpcprovider.smartconnectorscheduler.botocloudconnector import is_instance_running
+from bdphpcprovider.smartconnectorscheduler import botocloudconnector
 
 from bdphpcprovider.smartconnectorscheduler.hrmcstages import get_settings, \
     get_run_info, get_filesys, get_file, get_run_settings, update_key
@@ -55,7 +48,7 @@ class Finished(Stage):
         """
             Return True if package job on instance_id has job_finished
         """
-        ip = get_instance_ip(instance_id, settings)
+        ip = botocloudconnector.get_instance_ip(instance_id, settings)
         ssh = open_connection(ip_address=ip, settings=settings)
         pids = get_package_pids(ssh, settings['COMPILE_FILE'])
         logger.debug("pids=%s" % repr(pids))
@@ -69,15 +62,15 @@ class Finished(Stage):
         fsys = get_filesys(context)
         logger.debug("fsys= %s" % fsys)
 
-        self.nodes = get_rego_nodes(self.group_id, self.settings)
+        self.nodes = botocloudconnector.get_rego_nodes(self.group_id, self.settings)
 
         self.error_nodes = []
         self.finished_nodes = []
         for node in self.nodes:
             instance_id = node.id
-            ip = get_instance_ip(instance_id, self.settings)
+            ip = botocloudconnector.get_instance_ip(instance_id, self.settings)
             ssh = open_connection(ip_address=ip, settings=self.settings)
-            if not is_instance_running(instance_id, self.settings):
+            if not botocloudconnector.is_instance_running(instance_id, self.settings):
                 # An unlikely situation where the node crashed after is was
                 # detected as registered.
                 #FIXME: should error nodes be counted as finished?
@@ -104,7 +97,7 @@ class Finished(Stage):
             else:
                 print "job still running on %s: %s\
                 " % (instance_id,
-                     get_instance_ip(instance_id, self.settings))
+                     botocloudconnector.get_instance_ip(instance_id, self.settings))
 
     def output(self, context):
         """

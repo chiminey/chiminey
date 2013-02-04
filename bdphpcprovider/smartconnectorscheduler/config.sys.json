@@ -19,7 +19,7 @@
 "PAYLOAD_CLOUD_DIRNAME": "AEAO_v1_1",
 
 "PAYLOAD_SOURCE": "/home/ec2-user/iman_payload",
-"PAYLOAD_DESTINATION": "test_payload",
+"PAYLOAD_DESTINATION": "payload3",
 
 "SLEEP_TIME": 10,
 "RETRY_ATTEMPTS": 10,

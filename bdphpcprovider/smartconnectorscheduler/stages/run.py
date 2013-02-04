@@ -42,9 +42,7 @@ from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, \
 from bdphpcprovider.smartconnectorscheduler.filesystem import FileSystem, \
     DataObject
 
-from bdphpcprovider.smartconnectorscheduler.botocloudconnector import  \
-    create_environ, get_rego_nodes, open_connection, get_instance_ip, \
-    collect_instances, destroy_environ
+from bdphpcprovider.smartconnectorscheduler import botocloudconnector
 
 from bdphpcprovider.smartconnectorscheduler.hrmcimpl import PackageFailedError
 #from hrmcimpl import prepare_multi_input
@@ -56,7 +54,7 @@ from bdphpcprovider.smartconnectorscheduler.sshconnector import \
 from bdphpcprovider.smartconnectorscheduler.hrmcstages import get_settings, \
     get_run_info, get_filesys, get_file
 
-from bdphpcprovider.smartconnectorscheduler.sshconnector import get_package_pids
+from bdphpcprovider.smartconnectorscheduler.sshconnector import get_package_pids, open_connection
 
 
 class Run(Stage):
@@ -102,7 +100,7 @@ class Run(Stage):
         if 'setup_finished' in self.settings:
             setup_nodes = self.settings['setup_finished']
             logger.debug("setup_nodes = %s" % setup_nodes)
-            packaged_nodes = len(get_rego_nodes(self.group_id, self.settings))
+            packaged_nodes = len(botocloudconnector.get_rego_nodes(self.group_id, self.settings))
             logger.debug("packaged_nodes = %s" % packaged_nodes)
 
             if 'runs_left' in self.settings:
@@ -125,7 +123,7 @@ class Run(Stage):
             periodically check its state.
         """
         logger.info("run_task %s" % instance_id)
-        ip = get_instance_ip(instance_id, settings)
+        ip = botocloudconnector.get_instance_ip(instance_id, settings)
         ssh = open_connection(ip_address=ip,
                               settings=settings)
         pids = get_package_pids(ssh, settings['COMPILE_FILE'])
@@ -134,7 +132,7 @@ class Run(Stage):
             logger.error("warning:multiple packages running")
             raise PackageFailedError("multiple packages running")
         run_command(ssh, "cd %s; ./%s >& %s &\
-        " % (os.path.join(settings['DEST_PATH_PREFIX'],
+        " % (os.path.join(settings['PAYLOAD_DESTINATION'],
                           settings['PAYLOAD_CLOUD_DIRNAME']),
              settings['COMPILE_FILE'], "output"))
 
@@ -156,7 +154,7 @@ class Run(Stage):
         """
             Return True if package job on instance_id has job_finished
         """
-        ip = get_instance_ip(instance_id, settings)
+        ip = botocloudconnector.get_instance_ip(instance_id, settings)
         ssh = open_connection(ip_address=ip, settings=settings)
         pids = get_package_pids(ssh, settings['COMPILE_FILE'])
         logger.debug("pids=%s" % repr(pids))
@@ -167,7 +165,7 @@ class Run(Stage):
         Run the package on each of the nodes in the group and grab
         any output as needed
         """
-        nodes = get_rego_nodes(group_id, settings)
+        nodes = botocloudconnector.get_rego_nodes(group_id, settings)
 
         pids = []
         for node in nodes:
@@ -184,11 +182,13 @@ class Run(Stage):
         all_pids = dict(zip(nodes, pids))
         return all_pids
 
+
+    '''
     def _create_input(self, instance_id, seeds, node, fsys):
         """
         Move the input files to the VM
         """
-        ip = get_instance_ip(instance_id, self.settings)
+        ip = botocloudconnector.get_instance_ip(instance_id, self.settings)
         ssh = open_connection(ip_address=ip, settings=self.settings)
 
         # get all files from the payload directory
@@ -229,6 +229,9 @@ class Run(Stage):
                                   self.settings['PAYLOAD_CLOUD_DIRNAME']), self.numbfile))
         self.numbfile += 1
 
+        '''
+
+
     def _generate_variations(self, template, maps, initial_numbfile):
 
         # FIXME: doesn't handle multipe template files together
@@ -259,7 +262,7 @@ class Run(Stage):
         """
         """
         fs = get_filesys(context)
-        logger.debug("fs= %s" % fs)
+        logger.debug("fs= %s GLobal %s" % (fs, fs.global_filesystem))
 
         run_info = get_run_info(context)
         logger.debug("runinfo=%s" % run_info)
@@ -276,10 +279,12 @@ class Run(Stage):
 
         tpattern = "(.*)_template"
         template_pat = re.compile(tpattern)
-        nodes = get_rego_nodes(self.group_id, self.settings)
+        nodes = botocloudconnector.get_rego_nodes(self.group_id, self.settings)
         node_ind = 0
+        logger.debug("Iteration Inpt dir %s" % self.iter_inputdir)
         input_dirs = fs.get_local_subdirectories(self.iter_inputdir)
         for input_dir in input_dirs:
+            logger.debug("Inpt dir %s" % input_dir)
             # get any templated files
             variations = {}
             for fname in fs.get_local_subdirectory_files(self.iter_inputdir, input_dir):
@@ -295,7 +300,7 @@ class Run(Stage):
                     # TODO: only handles a single template at a file at the moment.
                     N = 2
                     map_start = {
-                        'temp': [5000],
+                        'temp': [300],
                         'iseed': [randrange(0, 1000) for x in xrange(0, N)],
                     }
                     if not mat.groups():
@@ -321,19 +326,19 @@ class Run(Stage):
                     logger.debug("var_content = %s" % var_content)
                     var_node = nodes[node_ind]
                     node_ind += 1
-                    ip = get_instance_ip(var_node.id, self.settings)
+                    ip = botocloudconnector.get_instance_ip(var_node.id, self.settings)
                     ssh = open_connection(ip_address=ip, settings=self.settings)
 
                     # Cleanup any existing runs already there
                     # get all files from the payload directory
                     dest_files = find_remote_files(ssh,
-                        os.path.join(self.settings['DEST_PATH_PREFIX'],
+                        os.path.join(self.settings['PAYLOAD_DESTINATION'],
                         self.settings['PAYLOAD_CLOUD_DIRNAME']))
 
                     # keep the compile exec from setup
                     for f in [self.settings['COMPILE_FILE'], "..", "."]:
                         try:
-                            dest_files.remove(os.path.join(self.settings['DEST_PATH_PREFIX'],
+                            dest_files.remove(os.path.join(self.settings['PAYLOAD_DESTINATION'],
                                 self.settings['PAYLOAD_CLOUD_DIRNAME'], f))
                         except ValueError:
                             logger.info("no %s found to remove" % f)
@@ -346,7 +351,7 @@ class Run(Stage):
 
                     # first copy up all existing input files to new variation
                     fs.upload_iter_input_dir(ssh, self.iter_inputdir, input_dir, os.path.join(
-                        self.settings['DEST_PATH_PREFIX'],
+                        self.settings['PAYLOAD_DESTINATION'],
                         self.settings['PAYLOAD_CLOUD_DIRNAME']))
 
                     # FIXME: handle exceptions
@@ -368,10 +373,10 @@ class Run(Stage):
 
                     # and overwrite on the remote
                     put_file(ssh, varied_fdir, var_fname, os.path.join(
-                        self.settings['DEST_PATH_PREFIX'],
+                        self.settings['PAYLOAD_DESTINATION'],
                         self.settings['PAYLOAD_CLOUD_DIRNAME']))
                     put_file(ssh, varied_fdir, values_fname, os.path.join(
-                        self.settings['DEST_PATH_PREFIX'],
+                        self.settings['PAYLOAD_DESTINATION'],
                         self.settings['PAYLOAD_CLOUD_DIRNAME']))
 
 
@@ -452,7 +457,7 @@ class Run(Stage):
 
 
 
-        nodes = get_rego_nodes(self.group_id, self.settings)
+        nodes = botocloudconnector.get_rego_nodes(self.group_id, self.settings)
         logger.debug("nodes = %s" % nodes)
 
         config = json.loads(settings_text)

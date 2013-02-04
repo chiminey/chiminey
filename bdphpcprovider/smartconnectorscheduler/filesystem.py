@@ -34,8 +34,11 @@ import tempfile
 import logging
 import logging.config
 
-from bdphpcprovider.smartconnectorscheduler.hrmcimpl import _upload_input
-from bdphpcprovider.smartconnectorscheduler.hrmcimpl import get_output
+
+#from bdphpcprovider.smartconnectorscheduler.hrmcimpl import get_output
+from bdphpcprovider.smartconnectorscheduler.botocloudconnector import get_instance_ip
+from bdphpcprovider.smartconnectorscheduler.sshconnector import put_file, open_connection, find_remote_files, get_file
+
 
 logger = logging.getLogger(__name__)
 
@@ -190,7 +193,12 @@ class FileSystem(object):
         """
         path_to_subdirectories = os.path.join(self.global_filesystem,
                                               local_filesystem)
+
+        logger.debug("Gloabl FS %s Path to Subdir %s" %(self.global_filesystem,
+                                                        path_to_subdirectories))
         list_of_subdirectories = os.listdir(path_to_subdirectories)
+
+        logger.debug("List of Directories %s" % list_of_subdirectories)
 
         return list_of_subdirectories
 
@@ -226,7 +234,7 @@ class FileSystem(object):
             #dest = os.path.join("/home/centos",dest)
             logger.debug("Destination %s" % dest)
 
-            _upload_input(ssh, input_dir,  fname, dest)
+            put_file(ssh, input_dir,  fname, dest)
 
     def upload_iter_input_dir(self, ssh, local_filesystem, iter_inputdir, dest):
         input_dir = os.path.join(self.global_filesystem, local_filesystem, iter_inputdir)
@@ -238,14 +246,20 @@ class FileSystem(object):
             #dest = os.path.join("/home/centos",dest)
             logger.debug("Destination %s" % dest)
 
-            _upload_input(ssh, input_dir,  fname, dest)
+
+            put_file(ssh, input_dir,  fname, dest)
 
 
     def download_output(self, ssh, instance_id, local_filesystem, settings):
         output_dir = os.path.join(self.global_filesystem,
                                   local_filesystem,
                                   instance_id)
-        get_output(instance_id, output_dir, settings)
+        from bdphpcprovider.smartconnectorscheduler import hrmcimpl
+        hrmcimpl.get_output(instance_id, output_dir, settings)
+
+
+
+
 
     def exec_command(self, file_to_be_executed, command, wildcard=False):
         import subprocess

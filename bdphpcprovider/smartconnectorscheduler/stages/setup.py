@@ -126,15 +126,8 @@ class Setup(Stage):
         mkdir(ssh, destination)
         put_payload(ssh, source, destination)
 
-        payload_top_dir = ""
-        for root, dirs, files in os.walk(source):
-            payload_top_dir = os.path.basename(root)
-            break
-
-        makefile_path = os.path.join(settings['PAYLOAD_DESTINATION'],
-            payload_top_dir)
-
-        # Check whether make is installed. If not install
+        makefile_path = settings['PAYLOAD_DESTINATION']
+       # Check whether make is installed. If not install
         check_make_installation = '`command -v make  > /dev/null 2>&1 || echo sudo yum install -y make`; '
         execute_setup =  "cd %s; make %s " % (makefile_path, make_target)
         command = check_make_installation + execute_setup
