@@ -38,16 +38,10 @@ from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, UI, Sma
 from bdphpcprovider.smartconnectorscheduler.filesystem import FileSystem, DataObject
 
 
-from bdphpcprovider.smartconnectorscheduler.botocloudconnector import create_environ, open_connection, collect_instances, destroy_environ
-from bdphpcprovider.smartconnectorscheduler import botocloudconnector
+from bdphpcprovider.smartconnectorscheduler.botocloudconnector import create_environ, collect_instances, destroy_environ
 
 
-from bdphpcprovider.smartconnectorscheduler.hrmcimpl import setup_multi_task, PackageFailedError, run_multi_task, job_finished
 
-#from hrmcimpl import prepare_multi_input
-#from hrmcimpl import _normalize_dirpath
-#from hrmcimpl import _status_of_nodeset
-from bdphpcprovider.smartconnectorscheduler.sshconnector import find_remote_files, run_command
 
 
 def get_elem(context, key):

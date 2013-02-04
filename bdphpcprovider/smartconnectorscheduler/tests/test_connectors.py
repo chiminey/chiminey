@@ -32,7 +32,7 @@ import re
 
 from bdphpcprovider.smartconnectorscheduler.cloudconnector import *
 #from sshconnector import get_package_pids
-from bdphpcprovider.smartconnectorscheduler.hrmcimpl import *
+from bdphpcprovider.smartconnectorscheduler import hrmcimpl
 
 from bdphpcprovider.smartconnectorscheduler import botocloudconnector
 from bdphpcprovider.smartconnectorscheduler import cloudconnector
@@ -54,8 +54,11 @@ from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, Sequent
 #from hrmcstages import Create,
 
 
-from bdphpcprovider.smartconnectorscheduler.hrmcstages import Configure, Run, Finished
+from bdphpcprovider.smartconnectorscheduler.hrmcstages import Configure
+
 from bdphpcprovider.smartconnectorscheduler.stages.setup import Setup
+from bdphpcprovider.smartconnectorscheduler.stages.run import Run
+from bdphpcprovider.smartconnectorscheduler.stages.finished import Finished
 
 from bdphpcprovider.smartconnectorscheduler.hrmcstages import Schedule
 from bdphpcprovider.smartconnectorscheduler.stages.transform import Transform
@@ -306,7 +309,8 @@ class RunStageTests(unittest.TestCase):
             'PAYLOAD_LOCAL_DIRNAME': "", 'COMPILER': "g77", 'PAYLOAD': "payload",
             'COMPILE_FILE': "foo", 'MAX_SEED_INT': 100, 'RETRY_ATTEMPTS': 3,
             'OUTPUT_FILES': ['a', 'b'], 'PROVIDER': "nectar",
-            'CUSTOM_PROMPT': "[smart-connector_prompt]$"}
+            'CUSTOM_PROMPT': "[smart-connector_prompt]$",
+            "PAYLOAD_DESTINATION":""}
 
 
     def test_run(self):
@@ -351,8 +355,7 @@ class RunStageTests(unittest.TestCase):
                                  ex_securitygroup: fakenode_state1)
 
         fakecloud.should_receive('list_nodes').and_return((fakenode_state1,))
-        flexmock(os).should_receive('listdir').and_return(['inputfile1',
-                                                           'inputfile2'])
+
         flexmock(time).should_receive('sleep')
 
         flexmock(EucNodeDriver).new_instances(fakecloud)
@@ -377,14 +380,18 @@ class RunStageTests(unittest.TestCase):
         print("f2=%s" % f2)
 
         f3 = DataObject("rmcen.inp")
+        f4 = DataObject("xyz.txt")
         run_num = 42
         f3.create("%s numbfile\n23 iseed\n" % run_num)
+        f4.create("Non template files")
 
         fs = FileSystem(self.global_filesystem, self.local_filesystem)
         fs.create(self.local_filesystem, f1)
         fs.create(self.local_filesystem, f2)
         fs.create_local_filesystem("input_0")
-        fs.create("input_0", f3)
+        fs.create_local_filesystem("input_0/initial")
+        fs.create("input_0/initial", f3)
+        fs.create("input_0/initial", f4)
         print("fs=%s" % fs)
 
         context = {'filesys': fs}
@@ -407,7 +414,7 @@ class RunStageTests(unittest.TestCase):
         config = fs.retrieve("default/runinfo.sys")
         content = json.loads(config.retrieve())
         logger.debug("content=%s" % content)
-        self.assertEquals(s1.input_dir, "input_%s" % myid)
+        self.assertEquals(s1.iter_inputdir, "input_%s" % myid)
 
         self.assertEquals(content, {
             "runs_left": 1,
@@ -415,7 +422,7 @@ class RunStageTests(unittest.TestCase):
             "setup_finished": 1,
             "id": 0})
 
-        self.assertEquals(s1.numbfile, run_num + 1)
+
 
 
 class FinishedStageTests(unittest.TestCase):
@@ -796,7 +803,8 @@ class CloudTests(unittest.TestCase):
             'OUTPUT_FILES': ['a', 'b'], 'PROVIDER': "nectar",
             'CUSTOM_PROMPT': "[smart-connector_prompt]$",
             "POST_PROCESSING_DEST_PATH_PREFIX": "",
-            "POST_PAYLOAD_CLOUD_DIRNAME": ""}
+            "POST_PAYLOAD_CLOUD_DIRNAME": "", "PAYLOAD_DESTINATION": "",}
+
 
     def test_create_connection(self):
 
@@ -923,7 +931,7 @@ class CloudTests(unittest.TestCase):
         .and_return(cloudconnector.get_rego_nodes(group_id, self.settings))
 
 
-        self.assertEquals(setup_multi_task(group_id, self.settings), None)
+        self.assertEquals(hrmcimpl.setup_multi_task(group_id, self.settings), None)
 
 
 
@@ -978,7 +986,7 @@ class CloudTests(unittest.TestCase):
         flexmock(botocloudconnector).should_receive('get_instance_ip')\
         .and_return(cloudconnector.get_instance_ip(fakenode_state1.id, self.settings))
 
-        self.assertEquals(prepare_multi_input("foobar",
+        self.assertEquals(hrmcimpl.prepare_multi_input("foobar",
                                               "",
                                               self.settings,
                                               None),
@@ -1037,8 +1045,8 @@ class CloudTests(unittest.TestCase):
         flexmock(botocloudconnector).should_receive('get_instance_ip')\
         .and_return(cloudconnector.get_instance_ip(fakenode_state1.id, self.settings))
 
-
-        res = run_multi_task("foobar", "", self.settings)
+        run = Run()
+        res = run.run_multi_task("foobar", "", self.settings)
         #TODO: this test case fails?
         self.assertEquals(res.values(), [['1\n']])
 
@@ -1090,7 +1098,8 @@ class CloudTests(unittest.TestCase):
         flexmock(botocloudconnector).should_receive('is_instance_running')\
         .and_return(True)
 
-        packages_complete("foobar", "", self.settings)
+
+        hrmcimpl.packages_complete("foobar", "", self.settings)
         #TODO: this test case fails
         #self.assertEquals(res, True)
 

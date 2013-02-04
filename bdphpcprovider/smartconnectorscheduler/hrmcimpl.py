@@ -6,7 +6,7 @@ from bdphpcprovider.smartconnectorscheduler.sshconnector import get_package_pids
 from bdphpcprovider.smartconnectorscheduler.sshconnector import find_remote_files
 from bdphpcprovider.smartconnectorscheduler import botocloudconnector
 
-from bdphpcprovider.smartconnectorscheduler.stages.finished import job_finished
+from bdphpcprovider.smartconnectorscheduler.stages.finished import Finished
 logger = logging.getLogger(__name__)
 
 
@@ -33,17 +33,17 @@ def setup_task(instance_id, settings):
     res = install_deps(ssh, packages=settings['DEPENDS'],
                        settings=settings, instance_id=instance_id)
     logger.debug("install res=%s" % res)
-    res = mkdir(ssh, dir=settings['DEST_PATH_PREFIX'])
+    res = mkdir(ssh, dir=settings['PAYLOAD_DESTINATION'])
     logger.debug("mkdir res=%s" % res)
     put_file(ssh,
              source_path=settings['PAYLOAD_LOCAL_DIRNAME'],
              package_file=settings['PAYLOAD'],
-             environ_dir=settings['DEST_PATH_PREFIX'])
+             environ_dir=settings['PAYLOAD_DESTINATION'])
 
-    unpack(ssh, environ_dir=settings['DEST_PATH_PREFIX'],
+    unpack(ssh, environ_dir=settings['PAYLOAD_DESTINATION'],
            package_file=settings['PAYLOAD'])
 
-    compile(ssh, environ_dir=settings['DEST_PATH_PREFIX'],
+    compile(ssh, environ_dir=settings['PAYLOAD_DESTINATION'],
             compile_file=settings['COMPILE_FILE'],
             package_dirname=settings['PAYLOAD_CLOUD_DIRNAME'],
             compiler_command=settings['COMPILER'])
@@ -75,6 +75,7 @@ def setup_task(instance_id, settings):
             compiler_command=settings['COMPILER'])
 
 
+
 def prepare_input(instance_id, input_dir, settings, seed):
     """
         Take the input_dir and move all the contained files to the
@@ -89,16 +90,16 @@ def prepare_input(instance_id, input_dir, settings, seed):
     for fname in dirList:
         logger.debug(fname)
         _upload_input(ssh, input_dir, fname,
-                      os.path.join(settings['DEST_PATH_PREFIX'],
+                      os.path.join(settings['PAYLOAD_DESTINATION'],
                                    settings['PAYLOAD_CLOUD_DIRNAME']))
     run_command(ssh, "cd %s; cp rmcen.inp rmcen.inp.orig" %
-                (os.path.join(settings['DEST_PATH_PREFIX'],
+                (os.path.join(settings['PAYLOAD_DESTINATION'],
                               settings['PAYLOAD_CLOUD_DIRNAME'])))
     run_command(ssh, "cd %s; dos2unix rmcen.inp" %
-                (os.path.join(settings['DEST_PATH_PREFIX'],
+                (os.path.join(settings['PAYLOAD_DESTINATION'],
                               settings['PAYLOAD_CLOUD_DIRNAME'])))
     run_command(ssh, "cd %s; sed -i '/^$/d' rmcen.inp" %
-                (os.path.join(settings['DEST_PATH_PREFIX'],
+                (os.path.join(settings['PAYLOAD_DESTINATION'],
                               settings['PAYLOAD_CLOUD_DIRNAME'])))
 
 
@@ -112,17 +113,18 @@ def get_output(instance_id, output_dir, settings):
     try:
         os.makedirs(output_dir)  # NOTE: makes intermediate directories
     except OSError, e:
+        #Fixme: If directory exists, we should systematically give unique output folder name
         logger.debug("output directory %s already exists: %s\
         " % (output_dir, e))
         #sys.exit(1)
     logger.info("output directory is %s" % output_dir)
-    cloud_path = os.path.join(settings['DEST_PATH_PREFIX'],
+    cloud_path = os.path.join(settings['PAYLOAD_DESTINATION'],
                               settings['PAYLOAD_CLOUD_DIRNAME'])
     remote_files = [os.path.basename(x) for x in find_remote_files(ssh,
                                                                    cloud_path)]
     logger.debug("remote_files=%s" % remote_files)
     for file in remote_files:
-        get_file(ssh, os.path.join(settings['DEST_PATH_PREFIX'],
+        get_file(ssh, os.path.join(settings['PAYLOAD_DESTINATION'],
                                    settings['PAYLOAD_CLOUD_DIRNAME']),
                  file, output_dir)
     # TODO: do integrity check on output files
@@ -240,21 +242,21 @@ def prepare_multi_input(group_id, input_dir, settings, seed):
         for fname in dirList:
             logger.debug(fname)
             _upload_input(ssh, input_dir, fname,
-                          os.path.join(settings['DEST_PATH_PREFIX'],
+                          os.path.join(settings['PAYLOAD_DESTINATION'],
                                        settings['PAYLOAD_CLOUD_DIRNAME']))
 
         run_command(ssh, "cd %s; cp rmcen.inp rmcen.inp.orig" %
-                    (os.path.join(settings['DEST_PATH_PREFIX'],
+                    (os.path.join(settings['PAYLOAD_DESTINATION'],
                                   settings['PAYLOAD_CLOUD_DIRNAME'])))
         run_command(ssh, "cd %s; dos2unix rmcen.inp" %
-                    (os.path.join(settings['DEST_PATH_PREFIX'],
+                    (os.path.join(settings['PAYLOAD_DESTINATION'],
                                   settings['PAYLOAD_CLOUD_DIRNAME'])))
         run_command(ssh, "cd %s; sed -i '/^$/d' rmcen.inp" %
-                    (os.path.join(settings['DEST_PATH_PREFIX'],
+                    (os.path.join(settings['PAYLOAD_DESTINATION'],
                                   settings['PAYLOAD_CLOUD_DIRNAME'])))
         run_command(ssh, "cd %s;\
                     sed -i 's/[0-9]*[ \t]*iseed.*$/%s\tiseed/' rmcen.inp\
-                    " % (os.path.join(settings['DEST_PATH_PREFIX'],
+                    " % (os.path.join(settings['PAYLOAD_DESTINATION'],
                                       settings['PAYLOAD_CLOUD_DIRNAME']),
                          seeds[node]))
 
@@ -288,6 +290,7 @@ def _normalize_dirpath(dirpath):
     return dirpath
 
 
+
 def _status_of_nodeset(nodes, output_dir, settings):
     """
     Return lists that describe which of the set of nodes are finished or
@@ -306,7 +309,8 @@ def _status_of_nodeset(nodes, output_dir, settings):
             error_nodes.append(node)
             continue
 
-        if job_finished(instance_id, settings):
+        finished = Finished()
+        if finished.job_finished(instance_id, settings):
             print "done. output is available"
             get_output(instance_id,
                        "%s/%s" % (output_dir, instance_id),
@@ -346,7 +350,7 @@ def run_post_task(instance_id, settings):
         settings['POST_PAYLOAD_CLOUD_DIRNAME'])
 
     run_command(ssh, "cp %s %s &\
-    " % (os.path.join(settings['DEST_PATH_PREFIX'],
+    " % (os.path.join(settings['PAYLOAD_DESTINATION'],
         settings['PAYLOAD_CLOUD_DIRNAME'],
          "hrmc01.xyz"), post_processing_dest))
 

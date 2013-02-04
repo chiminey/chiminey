@@ -192,10 +192,16 @@ def get_file(ssh_client, source_path, package_file, environ_dir):
 
 def put_file(ssh_client, source_path, package_file, environ_dir):
     ftp = ssh_client.open_sftp()
+    print "sftp connection opened"
     logger.debug("%s %s" % (source_path, environ_dir))
     source_file = os.path.join(source_path, package_file).replace('\\', '/')
+    print "source %s" %source_file
     dest_file = os.path.join(environ_dir, package_file).replace('\\', '/')
+    print "destination %s" %dest_file
+
     logger.debug("%s %s" % (source_file, dest_file))
+    logger.debug("Source file %s, destination %s" %(source_file, dest_file))
+    print ("Source file %s, destination %s" %(source_file, dest_file))
     ftp.put(source_file, dest_file)
 
 
@@ -204,11 +210,7 @@ def put_payload(ssh_client, source, destination):
     logger.debug("Transferring payload from %s to %s" %(source, destination))
 
     for root, dirs, files in os.walk(source):
-        prefix = os.path.dirname(root)
-        if len(prefix) < len(root):
-            relative_root = root[len(prefix)+1:]
-            print 'Relative root', relative_root
-            mkdir(ssh_client, os.path.join(destination, relative_root))
+        prefix = root
         break
 
     for root, dirs, files in os.walk(source):
@@ -221,6 +223,7 @@ def put_payload(ssh_client, source, destination):
             for file in files:
                 ftp.put(os.path.join(root, file), os.path.join(destination,
                     relative_root, file))
+    #TODO Check close statement in paramiko
 
 
 def get_package_pids(ssh_client, command):

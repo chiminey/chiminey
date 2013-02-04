@@ -5,33 +5,23 @@ import time
 import logging
 import logging.config
 
-import cloudconnector
-from bdphpcprovider.smartconnectorscheduler.cloudconnector import create_environ,  collect_instances, \
+from bdphpcprovider.smartconnectorscheduler.botocloudconnector import create_environ,  collect_instances, \
     print_all_information, confirm_teardown, destroy_environ
 
-from bdphpcprovider.smartconnectorscheduler.hrmcimpl import prepare_multi_input, setup_multi_task, \
-    packages_complete, PackageFailedError
+from bdphpcprovider.smartconnectorscheduler.hrmcimpl import packages_complete
 
 from bdphpcprovider.smartconnectorscheduler.stages.run import Run
+from bdphpcprovider.smartconnectorscheduler.stages.setup import Setup
+from bdphpcprovider.smartconnectorscheduler.stages.finished import Finished
+
 from bdphpcprovider.smartconnectorscheduler.smartconnector import SmartConnector
-from bdphpcprovider.smartconnectorscheduler.hrmcstages import Configure, Create, Setup,Finished
+from bdphpcprovider.smartconnectorscheduler.hrmcstages import Configure, Create
 
 from bdphpcprovider.smartconnectorscheduler.hrmcstages import Teardown, Schedule, clear_temp_files
 
 from bdphpcprovider.smartconnectorscheduler.stages.converge import Converge
 from bdphpcprovider.smartconnectorscheduler.stages.transform import Transform
 
-
-
-from smartconnector import SmartConnector
-from hrmcstages import Configure
-from hrmcstages import Create
-from stages.setup import Setup
-from hrmcstages import Run
-from hrmcstages import Finished
-#from hrmcstages import Converge
-from hrmcstages import Teardown, Schedule
-from hrmcstages import clear_temp_files
 
 logger = logging.getLogger(__name__)
 
@@ -129,14 +119,15 @@ def start(args):
             print "unknown cloud service provider"
             sys.exit()
 
-        #number_of_iterations = 3
+        number_of_iterations = 1
         error_threshold = 10000
         smart_conn = SmartConnector()
 
         for stage in (
-         #Configure(), Schedule(), Create(),  Setup(),
-            Run(),
-         #Finished(), Transform(), Converge(error_threshold), Teardown()
+         Configure(), Schedule(),
+          Create(),
+            Setup(), Run(),
+         Finished(), #Transform(), Converge(error_threshold), Teardown()
          ):
             smart_conn.register(stage)
 
