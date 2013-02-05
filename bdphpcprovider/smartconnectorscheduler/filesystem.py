@@ -142,8 +142,8 @@ class FileSystem(object):
         #       to created externally, which is
         # leaky abstraction
         if not self.connector_fs.exists(file_to_be_retrieved):
-            logger.error("File'%s' does not exist" % file_to_be_retrieved)
-            raise IOError("File'%s' does not exist" % file_to_be_retrieved)
+            logger.error("File'%s' does not exist.." % file_to_be_retrieved)
+            raise IOError
 
         retrieved_file_absolute_path = os.path.join(self.global_filesystem,
                                                     file_to_be_retrieved)
@@ -206,9 +206,8 @@ class FileSystem(object):
         """
         Returns list of names of directories immediately below local_filesystem
         """
-        path_to_subdirectories = os.path.join(self.global_filesystem,
-                                              local_filesystem, directory)
-        list_of_subdirectories = os.listdir(path_to_subdirectories)
+        path_to_subdirectories = os.path.join(local_filesystem, directory)
+        list_of_subdirectories = self.connector_fs.listdir(path_to_subdirectories)
 
         return list_of_subdirectories
 
@@ -286,6 +285,29 @@ class FileSystem(object):
                                    overwrite)
         except ResourceNotFoundError as e:
             raise IOError(e)  # FIXME: make filesystem specfic exceptions
+
+
+    def copy_files_with_pattern(self, local_filesystem, source_dir,
+                                 dest_dir, pattern, overwrite=True):
+        import fnmatch, fs
+        pattern_source_dir = path.join(
+            local_filesystem, source_dir)
+        for file in self.connector_fs.listdir(pattern_source_dir):
+            if fnmatch.fnmatch(file, pattern):
+                try:
+                    logger.debug("To be copied %s " % os.path.join(pattern_source_dir,
+                        file))
+                    logger.debug("Dest %s " % os.path.join(dest_dir, file))
+                    self.connector_fs.copy(path.join(pattern_source_dir,
+                        file),
+                        path.join(dest_dir, file),
+                        overwrite)
+                except ResourceNotFoundError, e:
+                    import sys, traceback
+                    traceback.print_exc(file=sys.stdout)
+
+                    raise IOError(e)  # FIXME: make filesystem specfic exceptions
+
 
     def glob(self, local_filesystem, directory, pattern):
         """

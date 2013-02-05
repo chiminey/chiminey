@@ -209,6 +209,7 @@ class Configure(Stage, UI):
         """
         Store ref to filesystem in context
         """
+
         context['filesys'] = self.filesystem
         return context
 
