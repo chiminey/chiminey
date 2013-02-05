@@ -88,8 +88,15 @@ class Finished(Stage):
                 #its output will be retrieved, but it may again when the other node fails, because
                 #we cannot tell whether we have prevous retrieved this output before and finished_nodes
                 # is not maintained between triggerings...
+
+
                 if not (node.id in [x.id for x in self.finished_nodes]):
                     fsys.download_output(ssh, instance_id, self.output_dir, self.settings)
+                    #FIXME Delete audit.txt
+                    import os
+                    audit_file = os.path.join(self.output_dir, instance_id, "audit.txt")
+                    if os.path.exists(audit_file):
+                        fsys.delete()
                 else:
                     logger.info("We have already "
                         + "processed output from node %s" % node.id)

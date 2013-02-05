@@ -285,6 +285,10 @@ class Run(Stage):
         input_dirs = fs.get_local_subdirectories(self.iter_inputdir)
         for input_dir in input_dirs:
             logger.debug("Inpt dir %s" % input_dir)
+
+            if not fs.isdir(self.iter_inputdir, input_dir):
+                continue
+
             # get any templated files
             variations = {}
             for fname in fs.get_local_subdirectory_files(self.iter_inputdir, input_dir):
@@ -297,8 +301,8 @@ class Run(Stage):
                     template = data_object.retrieve()
                     logger.debug("template content = %s" % template)
                     #
-                    num_dim = 1
-                    self.threshold = self.settings['threshold']
+                    num_dim = 2
+                    self.threshold = context['threshold']
                     N = self.threshold[0]
 
                     if num_dim == 1:

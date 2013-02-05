@@ -131,5 +131,5 @@ class Setup(Stage):
         check_make_installation = '`command -v make  > /dev/null 2>&1 || echo sudo yum install -y make`; '
         execute_setup =  "cd %s; make %s " % (makefile_path, make_target)
         command = check_make_installation + execute_setup
-        logger.debug("Setting up environment using makefile with taget %s" % make_target)
+        logger.debug("Setting up environment using makefile with target %s" % make_target)
         run_sudo_command(ssh, command, settings, "")

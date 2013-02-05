@@ -141,6 +141,9 @@ class Converge(Stage):
             if not fs:
                 logger.error("cannot retrieve filesystem")
                 raise IOError
+
+            if not fs.isdir(self.iter_inputdir, input_dir):
+                continue
             try:
                 text = fs.retrieve_under_dir(self.iter_inputdir, input_dir,
                     "audit.txt").retrieve()
