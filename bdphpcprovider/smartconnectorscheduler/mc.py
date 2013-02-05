@@ -103,7 +103,7 @@ def start(args):
     (options, args) = parser.parse_args(args)
 
     if 'smart' in args:
-        context = {'number_vm_instances': 2, 'threshold': [1],}
+        context = {'number_vm_instances': 8, 'threshold': [2],}
         context['seed'] = 32
 
         HOME_DIR = os.path.expanduser("~")
@@ -123,22 +123,23 @@ def start(args):
         error_threshold = 10000
         smart_conn = SmartConnector()
 
-        if 'seed' in self.settings:
-            seed = self.settings['seed']
+        if 'seed' in context:
+            seed = context['seed']
         else:
             seed = 42
             logger.warn("No seed specified. Using default value")
         logger.info("Using random seed %s" % seed)
+        import random
         random.seed(seed)
 
 
         for stage in (
          Configure(),
-         #Schedule(),
-          #Create(),
-            #Setup(), Run(),
-         #Finished(),
-         Transform(),# Converge(error_threshold), Teardown()
+         Schedule(),
+          Create(),
+            Setup(), Run(),
+         Finished(),
+         Transform(), Converge(error_threshold), # Teardown()
          ):
             smart_conn.register(stage)
 
@@ -168,7 +169,7 @@ def start(args):
             if not_triggered == len(smart_conn.stages):
                 break
 
-        clear_temp_files(context)
+        #clear_temp_files(context)
 
     elif 'create' in args:
         if options.number_vm_instances:

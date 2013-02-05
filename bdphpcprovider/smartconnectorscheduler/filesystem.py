@@ -146,7 +146,7 @@ class FileSystem(object):
         # leaky abstraction
         if not self.connector_fs.exists(file_to_be_retrieved):
             logger.error("File'%s' does not exist.." % file_to_be_retrieved)
-            raise IOError
+            raise IOError("File'%s' does not exist.." % file_to_be_retrieved)
 
         retrieved_file_absolute_path = os.path.join(self.global_filesystem,
                                                     file_to_be_retrieved)

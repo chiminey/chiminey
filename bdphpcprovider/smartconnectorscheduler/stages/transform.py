@@ -54,7 +54,7 @@ class Transform(Stage):
         #logger.debug("settings = %s" % self.settings)
         self.group_id = self.settings['group_id']
         #logger.debug("group_id = %s" % self.group_id)
-        self.threshold = self.settings['threshold']
+        self.threshold = context['threshold']
 
         if 'id' in self.settings:
             self.id = self.settings['id']
