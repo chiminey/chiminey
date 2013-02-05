@@ -30,6 +30,7 @@ logger = logging.getLogger(__name__)
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 
+
 class BadInputException(Exception):
     pass
 
@@ -122,11 +123,6 @@ class Converge(Stage):
 
     def process(self, context):
 
-        # TODO: should keep track of the criterion from the last iteration
-        # to handle the error condition where criterion is diverging
-        # TODO: should could number of iterations to indicate if the
-        # convergence is very slow.
-
         # retrive the audit file for last iteration
         fs = get_filesys(context)
 
@@ -135,7 +131,9 @@ class Converge(Stage):
 
         input_dirs = fs.get_local_subdirectories(self.iter_inputdir)
         logger.debug("input_dirs = %s" % input_dirs)
-        import sys
+
+        # TODO: store all audit info in single file in input_X directory in transform,
+        # so we do not have to load individual files within node directories here.
         min_crit = sys.float_info.max - 1.0
         min_crit_index = sys.maxint
         for input_dir in input_dirs:
@@ -159,7 +157,8 @@ class Converge(Stage):
             if m:
                 criterion = float(m.group(2))
                 best_numb = int(m.group(1))
-                best_node = input_dir # assumes that subdir in new input will have same name as best output
+                # NB: assumes that subdirss in new input_x will have same names as output dir that created it.
+                best_node = input_dir
             else:
                 message = "cannot extract criterion from audit file for iteration %s" % (self.id + 1)
                 logger.warn(message)
