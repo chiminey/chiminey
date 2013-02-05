@@ -1496,8 +1496,9 @@ class ConvergeStageTests(unittest.TestCase):
                         % (id_to_test, test_criterion))
 
         fs.create(self.local_filesystem, f1)
-        fs.create_local_filesystem("input_%s" % (id_to_test + 1))
-        fs.create("input_%s" % (id_to_test + 1), f3a)
+        iter_inputdir = "input_%s" % (id_to_test + 1)
+        fs.create_local_filesystem(iter_inputdir)
+        fs.create_under_dir(iter_inputdir, "nodeoutput", f3a)
 
         print("fs=%s" % fs)
         context = {'filesys': fs}
@@ -1513,8 +1514,11 @@ class ConvergeStageTests(unittest.TestCase):
         self.assertEquals(s1.criterion, test_criterion)
         self.assertEquals(content['converged'], False)
         self.assertTrue(not 'runs_left' in content)
+        self.assertEquals(s1.prev_criterion, 500)
+
         self.assertTrue(not 'error_nodes' in content)
         criterion = float(content['criterion'])
+        self.assertEquals(criterion, 324)
         self.assertTrue(criterion <= s1.prev_criterion)
 
 
@@ -1545,9 +1549,15 @@ class ConvergeStageTests(unittest.TestCase):
                         % (id_to_test, test_criterion))
 
         fs.create(self.local_filesystem, f1)
-        fs.create_local_filesystem("input_%s" % (id_to_test + 1))
+        #fs.create_local_filesystem("input_%s" % (id_to_test + 1))
         fs.create_local_filesystem('output')
-        fs.create("input_%s" % (id_to_test + 1), f3a)
+        #fs.create("input_%s" % (id_to_test + 1), f3a)
+
+
+        fs.create(self.local_filesystem, f1)
+        iter_inputdir = "input_%s" % (id_to_test + 1)
+        fs.create_local_filesystem(iter_inputdir)
+        fs.create_under_dir(local_filesystem=iter_inputdir, directory='node1', data_object=f3a)
 
 
         f4 = DataObject('grerr%s.dat' % str(id_to_test).zfill(2))
@@ -1595,7 +1605,7 @@ class ConvergeStageTests(unittest.TestCase):
 
 
     def test_diverge(self):
-        """ Tests situation where converence has happened
+        """ Tests situation where converence has diverged
         """
 
         s1 = Converge(10)
@@ -1620,9 +1630,16 @@ class ConvergeStageTests(unittest.TestCase):
         f3a.setContent("Run %s preserved (error %f)\nspawning diamond runs\n"
                         % (id_to_test, test_criterion))
 
+        #fs.create(self.local_filesystem, f1)
+        #fs.create_local_filesystem("input_%s" % (id_to_test + 1))
+        #fs.create("input_%s" % (id_to_test + 1), f3a)
+
+
         fs.create(self.local_filesystem, f1)
-        fs.create_local_filesystem("input_%s" % (id_to_test + 1))
-        fs.create("input_%s" % (id_to_test + 1), f3a)
+        iter_inputdir = "input_%s" % (id_to_test + 1)
+        fs.create_local_filesystem(iter_inputdir)
+        fs.create_under_dir(local_filesystem=iter_inputdir, directory='nodeoutput', data_object=f3a)
+
 
         print("fs=%s" % fs)
         context = {'filesys': fs}
