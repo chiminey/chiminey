@@ -123,6 +123,15 @@ def start(args):
         error_threshold = 10000
         smart_conn = SmartConnector()
 
+        if 'seed' in self.settings:
+            seed = self.settings['seed']
+        else:
+            seed = 42
+            logger.warn("No seed specified. Using default value")
+        logger.info("Using random seed %s" % seed)
+        random.seed(seed)
+
+
         for stage in (
          Configure(), Schedule(),
           Create(),
