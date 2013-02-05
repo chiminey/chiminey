@@ -103,7 +103,7 @@ def start(args):
     (options, args) = parser.parse_args(args)
 
     if 'smart' in args:
-        context = {'number_vm_instances': 2}
+        context = {'number_vm_instances': 2, 'threshold': [1],}
         context['seed'] = 32
 
         HOME_DIR = os.path.expanduser("~")
@@ -119,15 +119,17 @@ def start(args):
             print "unknown cloud service provider"
             sys.exit()
 
-        number_of_iterations = 1
+        number_of_iterations = 2
         error_threshold = 10000
         smart_conn = SmartConnector()
 
         for stage in (
-         Configure(), Schedule(),
-          Create(),
-            Setup(), Run(),
-         Finished(), #Transform(), Converge(error_threshold), Teardown()
+         Configure(),
+         #Schedule(),
+          #Create(),
+            #Setup(), Run(),
+         #Finished(),
+         Transform(),# Converge(error_threshold), Teardown()
          ):
             smart_conn.register(stage)
 

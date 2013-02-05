@@ -297,8 +297,9 @@ class Run(Stage):
                     template = data_object.retrieve()
                     logger.debug("template content = %s" % template)
                     #
-                    num_dim = 2
-                    N = 1
+                    num_dim = 1
+                    self.threshold = self.settings['threshold']
+                    N = self.threshold[0]
 
                     if num_dim == 1:
                         map = {
@@ -310,7 +311,7 @@ class Run(Stage):
                         map = {
                             'temp': [300],
                             'iseed': [randrange(0, self.settings['MAX_SEED_INT']) for x in xrange(0, 4 * N)],
-                            'istart': [1]
+                            'istart': [2]
 
                         }
 
@@ -318,7 +319,7 @@ class Run(Stage):
                             map = {
                                 'temp': [i for i in [300, 700, 1100, 1500]],
                                 'iseed': [randrange(0, self.settings['MAX_SEED_INT'])],
-                                'istart': [2]
+                                'istart': [1]
 
                                 }
                     else:
