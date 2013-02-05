@@ -81,6 +81,7 @@ class Transform(Stage):
         return False
 
     def process(self, context):
+        #TODO: break up this function as it is way too long
 
         self.audit = ""
         res = []

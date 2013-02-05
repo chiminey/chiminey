@@ -106,14 +106,17 @@ class FileSystem(object):
     def create_under_dir(self, local_filesystem, directory,
                          data_object, message='CREATED'):
         if not self.connector_fs.exists(local_filesystem):
+            logger.debug("error")
             logger.error("Destination filesystem '%s' does not exist"
                          % local_filesystem)
             return False
         #mport ipdb
         #ipdb.set_trace()
         direct = path.join("/", local_filesystem, directory)
+        logger.debug("direct = %s" % direct)
         self.connector_fs.makedir(direct, allow_recreate=True)
         dest_file_name = path.join(direct, data_object.getName())
+        logger.debug("dest_file_name = %s" % dest_file_name)
         #FIXME: Not sure why we need this
         #if not local_filesystem:
         #    destination_file_name = os.path.join(self.global_filesystem,
@@ -121,7 +124,7 @@ class FileSystem(object):
         dest_file = self.connector_fs.open(dest_file_name, 'w')
         dest_file.write(data_object.getContent())
         dest_file.close()
-        logger.debug("File '%s' %s" % (dest_file, message))
+        logger.debug("FileX '%s' %s" % (dest_file, message))
         return True
 
     def retrieve_new(self, directory, file):

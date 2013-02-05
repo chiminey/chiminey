@@ -112,9 +112,9 @@ def start(args):
         context['provider'] = 'nectar'
 
         if context['provider'].lower() == 'nectar':
-            context['config.sys'] = "./smartconnectorscheduler/config.sys.json"
+            context['config.sys'] = "./config.sys.json"
         elif context['provider'].lower() == 'amazon':
-            context['config.sys'] =  "./smartconnectorscheduler/config.sys.json.ec2"
+            context['config.sys'] =  "./config.sys.json.ec2"
         else:
             print "unknown cloud service provider"
             sys.exit()
