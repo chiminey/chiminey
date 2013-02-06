@@ -103,7 +103,7 @@ def start(args):
     (options, args) = parser.parse_args(args)
 
     if 'smart' in args:
-        context = {'number_vm_instances': 8, 'threshold': [2],}
+        context = {'number_vm_instances': 2, 'threshold': [1],}
         context['seed'] = 32
 
         HOME_DIR = os.path.expanduser("~")
