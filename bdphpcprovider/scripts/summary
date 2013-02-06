@@ -1,0 +1,33 @@
+#!/bin/bash
+
+top_directory=$1
+
+echo ""
+echo "iseed values from input/:"
+
+grep iseed  $top_directory/input_*/*/rmcen.inp
+
+echo ""
+echo "iseed values from output/:"
+grep iseed  $top_directory/output_*/*/rmcen.inp
+
+echo ""
+echo "tempK1 values from output/:"
+grep "tempK1"  $top_directory/output_*/*/rmcen.inp
+
+
+echo ""
+echo "tempK2 values from output/:"
+grep tempK2  $top_directory/output_*/*/rmcen.inp
+
+echo ""
+echo "istart values from output/:"
+grep istart  $top_directory/output_*/*/rmcen.inp
+
+echo ""
+echo "Sorted md5sum for grerr*. Only one duplicate expected"
+find $top_directory  -name "grer*"  -exec md5sum {} \; | sort
+
+echo ""
+echo "Trace of run output selection"
+find ~/testStages/input_* -maxdepth 1 -name "audit*"  -exec grep -v "spaw"  {} \;  | sort -k 4 -r 
