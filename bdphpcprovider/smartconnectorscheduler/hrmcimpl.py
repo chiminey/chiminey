@@ -110,13 +110,19 @@ def get_output(instance_id, output_dir, settings):
     logger.info("get_output %s" % instance_id)
     ip = botocloudconnector.get_instance_ip(instance_id, settings)
     ssh = open_connection(ip_address=ip, settings=settings)
-    try:
-        os.makedirs(output_dir)  # NOTE: makes intermediate directories
-    except OSError, e:
-        #Fixme: If directory exists, we should systematically give unique output folder name
-        logger.debug("output directory %s already exists: %s\
-        " % (output_dir, e))
-        #sys.exit(1)
+    directory_created = False
+    while not directory_created:
+        try:
+            os.makedirs(output_dir)  # NOTE: makes intermediate directories
+            directory_created = True
+        except OSError, e:
+            logger.debug("output directory %s already exists: %s Deleting the existing directory ...\
+                         " % (output_dir, output_dir))
+            import shutil
+            shutil.rmtree(output_dir)
+            logger.debug("Existing directory %s along with its previous content deleted" % output_dir)
+            logger.debug("Empty directory %s created" % output_dir)
+            #sys.exit(1)
     logger.info("output directory is %s" % output_dir)
     cloud_path = os.path.join(settings['PAYLOAD_DESTINATION'],
                               settings['PAYLOAD_CLOUD_DIRNAME'])

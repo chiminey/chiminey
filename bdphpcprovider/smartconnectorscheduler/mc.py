@@ -136,10 +136,11 @@ def start(args):
         for stage in (
          Configure(),
          Schedule(),
-          Create(),
-            Setup(), Run(),
+         Create(),
+         Setup(), Run(),
          Finished(),
-         Transform(), Converge(error_threshold), # Teardown()
+         Transform(), Converge(error_threshold), #
+         #Teardown()
          ):
             smart_conn.register(stage)
 

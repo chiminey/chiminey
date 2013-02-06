@@ -42,6 +42,7 @@ class Finished(Stage):
         # if we have no runs_left then we must have finished all the runs
         if 'runs_left' in self.settings:
             return self.settings['runs_left']
+        logger.debug("Finished NOT Triggered")
         return False
 
     def job_finished(self, instance_id, settings):
@@ -62,6 +63,7 @@ class Finished(Stage):
         fsys = get_filesys(context)
         logger.debug("fsys= %s" % fsys)
 
+        logger.debug("Finished stage process began")
         self.nodes = botocloudconnector.get_rego_nodes(self.group_id, self.settings)
 
         self.error_nodes = []
@@ -89,14 +91,13 @@ class Finished(Stage):
                 #we cannot tell whether we have prevous retrieved this output before and finished_nodes
                 # is not maintained between triggerings...
 
-
                 if not (node.id in [x.id for x in self.finished_nodes]):
                     fsys.download_output(ssh, instance_id, self.output_dir, self.settings)
-                    #FIXME Delete audit.txt
                     import os
                     audit_file = os.path.join(self.output_dir, instance_id, "audit.txt")
-                    if os.path.exists(audit_file):
-                        fsys.delete()
+                    logger.debug("Audit file path %s" % audit_file)
+                    if  fsys.exists(self.output_dir, instance_id, "audit.txt"):
+                        fsys.delete(audit_file)
                 else:
                     logger.info("We have already "
                         + "processed output from node %s" % node.id)
