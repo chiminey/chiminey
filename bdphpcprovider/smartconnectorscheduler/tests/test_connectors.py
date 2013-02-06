@@ -1279,12 +1279,13 @@ class SchedulerStageTest(unittest.TestCase):
 class TransformStageTests(unittest.TestCase):
 
     keep_directories = True
+    HOME_DIR = os.path.expanduser("~")
 
     def setUp(self):
 
         import tempfile
 
-        self.global_filesystem = tempfile.mkdtemp()
+        self.global_filesystem = os.path.join(self.HOME_DIR, "test_transformstagetests")
         logger.debug("global_filesystem=%s" % self.global_filesystem)
         self.local_filesystem = 'default'
 
@@ -1363,7 +1364,9 @@ class TransformStageTests(unittest.TestCase):
         fs.create_under_dir("output_%s" % id_to_test, "i-0001b", f5b)
 
         default_output_content = "foobar\n"
-        for node in ['i-0001a', 'i-0001b']:
+        node_1 = 'i-0001a'
+        node_2 = 'i-0001b'
+        for node in [node_1, node_2]:
             for file in ['output', 'frnmc01.dat', 'sinput.dat',
                          'grexp.dat', 'initial.xyz', 'pore.xyz', 'sqexp.dat']:
                 f = DataObject(file)
@@ -1380,9 +1383,10 @@ class TransformStageTests(unittest.TestCase):
         f3 = DataObject('hrmc3.xyz')
         f3.setContent("foo3\n")
 
-        fs.create_under_dir("output_%s" % id_to_test, 'i-0001a', f1)
-        fs.create_under_dir("output_%s" % id_to_test, 'i-0001a', f2)
-        fs.create_under_dir("output_%s" % id_to_test, 'i-0001a', f3)
+
+        fs.create_under_dir("output_%s" % id_to_test, node_1, f1)
+        fs.create_under_dir("output_%s" % id_to_test, node_1, f2)
+        fs.create_under_dir("output_%s" % id_to_test, node_1, f3)
 
         f4 = DataObject('hrmc1.xyz')
         f4.setContent("bar1")
@@ -1390,11 +1394,12 @@ class TransformStageTests(unittest.TestCase):
         f6 = DataObject('hrmc%s.xyz' % str(test_number+1).zfill(2))
         f6.setContent("bar3")
 
-        fs.create_under_dir("output_%s" % id_to_test, 'i-0001b', f4)
-        fs.create_under_dir("output_%s" % id_to_test, 'i-0001b', f6)
+
+        fs.create_under_dir("output_%s" % id_to_test, node_2, f4)
+        fs.create_under_dir("output_%s" % id_to_test, node_2, f6)
 
         print("fs=%s" % fs)
-        context = {'filesys': fs}
+        context = {'filesys': fs, 'threshold': [1]}
         print("context=%s" % context)
         s1 = Transform()
         res = s1.triggered(context)
@@ -1412,12 +1417,12 @@ class TransformStageTests(unittest.TestCase):
         content = json.loads(config.retrieve())
         self.assertTrue('transformed' in content and content['transformed'])
 
-        new_rmcen = fs.retrieve_new("input_%s" % (id_to_test + 1), "rmcen.inp")
+        new_rmcen = fs.retrieve_new(path.join("input_%s" % (id_to_test + 1), node_1), "rmcen.inp")
         self.assertEquals(
             new_rmcen.getContent(),
             "firstline\n%s    numbfile\n1     istart\n" % (test_number + 2))
 
-        ff = fs.retrieve_new("input_%s" % (id_to_test + 1), "initial.xyz")
+        ff = fs.retrieve_new(path.join("input_%s" % (id_to_test + 1), node_1), "initial.xyz")
         self.assertEquals(ff.getContent(), hrmc2_content)
 
         ff = fs.retrieve_new("input_%s" % (id_to_test + 1), "audit.txt")
@@ -1426,7 +1431,7 @@ class TransformStageTests(unittest.TestCase):
                 float(min(test_criterion1, test_criterion2))))
 
         for f in ['pore.xyz', 'sqexp.dat']:
-            ff = fs.retrieve_new("input_%s" % (id_to_test + 1), f)
+            ff = fs.retrieve_new(path.join("input_%s" % (id_to_test + 1), node_1), f)
             self.assertEquals(ff.getContent(), default_output_content)
 
 
