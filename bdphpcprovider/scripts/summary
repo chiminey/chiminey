@@ -36,4 +36,4 @@ find $top_directory  -name "grer*"  -exec md5sum {} \; | awk '{print $1}' | sort
 
 echo ""
 echo "Trace of run output selection"
-find ~/testStages/input_* -maxdepth 1 -name "audit*"  -exec grep -v "spaw"  {} \;  | sort -k 4 -r 
+find $top_directory/input_* -maxdepth 1 -name "audit*"  -exec grep -v "spaw"  {} \;  | sort -k 4 -r 
