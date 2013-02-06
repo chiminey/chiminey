@@ -301,17 +301,19 @@ class Run(Stage):
                     template = data_object.retrieve()
                     logger.debug("template content = %s" % template)
                     #
-                    num_dim = 2
-                    self.threshold = context['threshold']
-                    N = self.threshold[0]
+                    num_dim = 1
+
 
                     if num_dim == 1:
+                        N = context['number_vm_instances']
                         map = {
                             'temp': [300],
                             'iseed': [randrange(0, self.settings['MAX_SEED_INT']) for x in xrange(0, N)],
                             'istart': [1 if self.id > 0  else 2]
                         }
                     elif num_dim == 2:
+                        self.threshold = context['threshold']
+                        N = self.threshold[0]
                         map = {
                             'temp': [300],
                             'iseed': [randrange(0, self.settings['MAX_SEED_INT']) for x in xrange(0, 4 * N)],
