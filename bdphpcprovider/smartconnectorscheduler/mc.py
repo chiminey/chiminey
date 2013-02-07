@@ -10,18 +10,17 @@ from bdphpcprovider.smartconnectorscheduler.botocloudconnector import create_env
 
 from bdphpcprovider.smartconnectorscheduler.hrmcimpl import packages_complete
 
-from bdphpcprovider.smartconnectorscheduler.stages.run import Run
+from bdphpcprovider.smartconnectorscheduler.stages.configure import Configure
+from bdphpcprovider.smartconnectorscheduler.stages.create import Create
+from bdphpcprovider.smartconnectorscheduler.stages.schedule import Schedule
 from bdphpcprovider.smartconnectorscheduler.stages.setup import Setup
+from bdphpcprovider.smartconnectorscheduler.stages.run import Run
 from bdphpcprovider.smartconnectorscheduler.stages.finished import Finished
-
-from bdphpcprovider.smartconnectorscheduler.smartconnector import SmartConnector
-from bdphpcprovider.smartconnectorscheduler.hrmcstages import Configure, Create
-
-
-from bdphpcprovider.smartconnectorscheduler.hrmcstages import  Schedule, Teardown
-
 from bdphpcprovider.smartconnectorscheduler.stages.hrmc.transform import Transform
 from bdphpcprovider.smartconnectorscheduler.stages.hrmc.converge import Converge
+from bdphpcprovider.smartconnectorscheduler.stages.teardown import Teardown
+
+from bdphpcprovider.smartconnectorscheduler.smartconnector import SmartConnector
 
 
 logger = logging.getLogger(__name__)
