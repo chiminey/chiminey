@@ -24,16 +24,14 @@ import logging
 import sys
 import logging.config
 
-from bdphpcprovider.smartconnectorscheduler.hrmcstages import get_run_settings, update_key, get_filesys, delete_key
+from bdphpcprovider.smartconnectorscheduler.hrmcstages import get_all_settings, update_key, get_filesys, delete_key
 
 logger = logging.getLogger(__name__)
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 
 
-class BadInputException(Exception):
-    pass
-
+from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
 
 class IterationConverge(Stage):
     """
@@ -42,20 +40,24 @@ class IterationConverge(Stage):
     # TODO: Might be clearer to count up rather than down as id goes up
 
     def __init__(self, number_of_iterations):
-        print "hello"
+        """
+        """
         logger.debug("created iteration converge")
         self.total_iterations = number_of_iterations
         self.number_of_remaining_iterations = number_of_iterations
         self.id = 0
 
     def triggered(self, context):
-        self.settings = get_run_settings(context)
+        """
+        """
+        self.settings = get_all_settings(context)
         logger.debug("settings = %s" % self.settings)
 
-        self.settings = get_run_settings(context)
-        logger.debug("settings = %s" % self.settings)
-
-        self.id = self.settings['id']
+        try:
+            self.id = self.settings['id']
+        except KeyError:
+            logger.warn("Cannot retrieve id. Maybe first iteration?")
+            self.id = 0
         logger.debug("id = %s" % self.id)
 
         if 'transformed' in self.settings:
@@ -65,12 +67,15 @@ class IterationConverge(Stage):
         return False
 
     def process(self, context):
+        """
+        """
         self.number_of_remaining_iterations -= 1
         print "Number of Iterations Left %d" \
             % self.number_of_remaining_iterations
 
     def output(self, context):
-
+        """
+        """
         if self.number_of_remaining_iterations > 0:
             # trigger first of iteration stages
             logger.debug("nonconvergence")
@@ -97,12 +102,16 @@ class Converge(Stage):
     # TODO: Might be clearer to count up rather than down as id goes up
 
     def __init__(self, error_threshold):
+        """
+        """
         logger.debug("created converge")
         self.error_threshold = error_threshold
         self.id = 0
 
     def triggered(self, context):
-        self.settings = get_run_settings(context)
+        """
+        """
+        self.settings = get_all_settings(context)
         logger.debug("settings = %s" % self.settings)
 
         if 'id' in self.settings:
@@ -113,7 +122,7 @@ class Converge(Stage):
         else:
             self.output_dir = "output"
             self.iter_inputdir = "input"
-            #self.new_iter_inputdir = "input_1"
+            self.id = 0
 
         if 'transformed' in self.settings:
             self.transformed = self.settings["transformed"]
@@ -126,7 +135,7 @@ class Converge(Stage):
         # retrive the audit file for last iteration
         fs = get_filesys(context)
 
-        self.settings = get_run_settings(context)
+        self.settings = get_all_settings(context)
         logger.debug("settings = %s" % self.settings)
 
         input_dirs = fs.get_local_subdirectories(self.iter_inputdir)
@@ -139,8 +148,8 @@ class Converge(Stage):
         for input_dir in input_dirs:
             # Retrieve audit file
             if not fs:
-                logger.error("cannot retrieve filesystem")
-                raise IOError
+                logger.error("Cannot retrieve filesystem from context")
+                raise IOError("Cannot retrieve filesystem from context")
 
             if not fs.isdir(self.iter_inputdir, input_dir):
                 continue
@@ -148,7 +157,7 @@ class Converge(Stage):
                 text = fs.retrieve_under_dir(self.iter_inputdir, input_dir,
                     "audit.txt").retrieve()
             except IOError:
-                logger.warn("no audit found")
+                logger.warn("Cannot retrieve audit.txt file from node directory")
                 raise
             logger.debug("text=%s" % text)
 
@@ -163,7 +172,7 @@ class Converge(Stage):
                 # NB: assumes that subdirss in new input_x will have same names as output dir that created it.
                 best_node = input_dir
             else:
-                message = "cannot extract criterion from audit file for iteration %s" % (self.id + 1)
+                message = "Cannot extract criterion from audit file for iteration %s" % (self.id + 1)
                 logger.warn(message)
                 raise IOError(message)
 
@@ -212,7 +221,7 @@ class Converge(Stage):
                 directory=crit_node,
                 file="grerr%s.dat" % str(crit_index).zfill(2)).retrieve()
         except IOError:
-            logger.warn("no gerr found at %s/%s" % (self.iter_inputdir, crit_node))
+            logger.warn("No gerrX.dat found at %s/%s" % (self.iter_inputdir, crit_node))
 
         if gerr_object:
             files_to_copy = fs.get_local_subdirectory_files(self.output_dir, crit_node)
@@ -220,7 +229,10 @@ class Converge(Stage):
 
             for f in files_to_copy:
                 logger.debug("f=%s" % f)
-                fs.copy(self.output_dir, crit_node, f, new_output_dir, f)
+                try:
+                    fs.copy(self.output_dir, crit_node, f, new_output_dir, f)
+                except IOError:
+                    logger.exception("Cannot copy output file %s to final destination %s " % (f, new_output_dir))
             else:
                 logger.debug("skipping %s" % f)
 

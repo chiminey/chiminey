@@ -5,18 +5,16 @@ from bdphpcprovider.smartconnectorscheduler.sshconnector import run_sudo_command
 from bdphpcprovider.smartconnectorscheduler.sshconnector import mkdir
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
-from bdphpcprovider.smartconnectorscheduler.hrmcstages import get_run_settings
+from bdphpcprovider.smartconnectorscheduler.hrmcstages import get_all_settings
 from bdphpcprovider.smartconnectorscheduler.hrmcstages import update_key
-
+from bdphpcprovider.smartconnectorscheduler.stages.errors import InsufficientResourceError
+from bdphpcprovider.smartconnectorscheduler.stages.errors import MissingConfigurationError
 
 import os
 import logging
 
 logger = logging.getLogger(__name__)
 
-
-class InsufficientResourceError(Exception):
-    pass
 
 
 class Setup(Stage):
@@ -28,16 +26,19 @@ class Setup(Stage):
         self.settings = {}
         self.group_id = ''
 
-
     def triggered(self, context):
         """
         Triggered if appropriate vms exist and we have not finished setup
         """
         # triggered if the set of the VMS has been established.
-        self.settings = get_run_settings(context)
+        self.settings = get_all_settings(context)
         #logger.debug("settings = %s" % self.settings)
 
-        self.group_id = self.settings["group_id"]
+        if 'group_id' in self.settings:
+            self.group_id = self.settings["group_id"]
+        else:
+            logger.warn("no group_id found when expected")
+            return False
         logger.debug("group_id = %s" % self.group_id)
 
         if 'setup_finished' in self.settings:
@@ -49,7 +50,6 @@ class Setup(Stage):
         logger.debug("Setup on %s" % self.settings['PROVIDER'])
         return len(self.packaged_nodes)
 
-
     def process(self, context):
         """
         Setup all the nodes
@@ -57,40 +57,55 @@ class Setup(Stage):
         #setup_multi_task(self.group_id, self.settings)
         self.setup(self.settings, self.group_id)
 
-
     def output(self, context):
         """
         Store number of packages nodes as setup_finished in runinfo.sys
         """
         update_key('setup_finished', len(self.packaged_nodes), context)
         # So initial input goes in input_0 directory
+
+        # FIXME: probably should be set at beginning of run or connector?
         update_key('id', 0, context)
 
         return context
 
-
     def setup(self, settings, group_id, maketarget_nodegroup_pair={}):
         available_nodes = list(botocloudconnector.get_rego_nodes(group_id, settings))
-        requested_nodes=0
+        requested_nodes = 0
+
+        if 'PAYLOAD_SOURCE' in settings:
+            source = settings['PAYLOAD_SOURCE']
+        else:
+            message = "PAYLOAD_SOURCE is not set"
+            logger.exception(message)
+            raise MissingConfigurationError(message)
+
+        if 'PAYLOAD_DESTINATION' in settings:
+            destination = settings['PAYLOAD_DESTINATION']
+        else:
+            message = "PAYLOAD_DESTINATION is not set"
+            logger.exception(message)
+            raise MissingConfigurationError(message)
 
         if not maketarget_nodegroup_pair:
             EMPTY_MAKE_TARGET = ''
             requested_nodes = len(available_nodes)
             maketarget_nodegroup_pair[EMPTY_MAKE_TARGET] = requested_nodes
         else:
-            for i in maketarget_nodegroup_pair:
+            for i in maketarget_nodegroup_pair.keys():
                 requested_nodes += maketarget_nodegroup_pair[i]
             if requested_nodes > len(available_nodes):
-                logger.exception("Requested nodes %d; but available nodes %s "
-                                   % (requested_nodes, len(available_nodes)))
-                raise InsufficientResourceError
+                message = "Requested nodes %d; but available nodes %s " \
+                    % (requested_nodes, len(available_nodes))
+                logger.exception(message)
+                raise InsufficientResourceError(message)
         logger.info("Requested nodes %d: \nAvailable nodes %s "
                % (requested_nodes, len(available_nodes)))
 
-        def setup_worker(node_ip, make_target):
-            logger.info("Setting up node with IP %s using makefile %s"
-                        %(node_ip, make_target))
-            self.setup_task(settings, node_ip, make_target)
+        def setup_worker(node_ip, make_target, source, destination):
+            logger.info("Setting up node with IP %s using makefile %s" \
+                % (node_ip, make_target))
+            self.setup_task(settings, node_ip, make_target, source, destination)
             logger.info("Setting up machine with IP %s completed" % node_ip)
 
         import threading
@@ -101,7 +116,7 @@ class Setup(Stage):
                 instance = available_nodes[0]
                 node_ip = botocloudconnector.get_instance_ip(instance.id, settings)
                 t = threading.Thread(target=setup_worker,
-                    args=(node_ip, make_target))
+                    args=(node_ip, make_target, source, destination))
                 threads_running.append(t)
                 t.start()
                 available_nodes.pop(0)
@@ -111,8 +126,7 @@ class Setup(Stage):
             t.join()
         logger.debug("all threads are done")
 
-
-    def setup_task(self, settings, node_ip, make_target):
+    def setup_task(self, settings, node_ip, make_target, source, destination):
         """
         Transfer the task package to the node and install
         """
@@ -120,8 +134,6 @@ class Setup(Stage):
         ssh = open_connection(ip_address=node_ip, settings=settings)
         logger.debug("Setup %s ssh" % ssh)
 
-        source = settings['PAYLOAD_SOURCE']
-        destination = settings['PAYLOAD_DESTINATION']
 
         mkdir(ssh, destination)
         put_payload(ssh, source, destination)

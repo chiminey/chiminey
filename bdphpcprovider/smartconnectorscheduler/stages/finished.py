@@ -8,7 +8,7 @@ from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, UI, Sma
 from bdphpcprovider.smartconnectorscheduler import botocloudconnector
 
 from bdphpcprovider.smartconnectorscheduler.hrmcstages import get_settings, \
-    get_run_info, get_filesys, get_file, get_run_settings, update_key
+    get_run_info, get_filesys, get_all_settings, update_key
 
 
 logger = logging.getLogger(__name__)
@@ -27,10 +27,14 @@ class Finished(Stage):
         """
             Checks whether there is a non-zero number of runs still going.
         """
-        self.settings = get_run_settings(context)
+        self.settings = get_all_settings(context)
         logger.debug("settings = %s" % self.settings)
 
-        self.group_id = self.settings['group_id']
+        try:
+            self.group_id = self.settings['group_id']
+        except KeyError:
+            logger.warn("group_id is not set in settings")
+            return False
         logger.debug("group_id = %s" % self.group_id)
 
         if 'id' in self.settings:
@@ -96,7 +100,7 @@ class Finished(Stage):
                     import os
                     audit_file = os.path.join(self.output_dir, instance_id, "audit.txt")
                     logger.debug("Audit file path %s" % audit_file)
-                    if  fsys.exists(self.output_dir, instance_id, "audit.txt"):
+                    if fsys.exists(self.output_dir, instance_id, "audit.txt"):
                         fsys.delete(audit_file)
                 else:
                     logger.info("We have already "

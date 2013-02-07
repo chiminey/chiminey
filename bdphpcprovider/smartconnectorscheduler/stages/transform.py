@@ -22,7 +22,8 @@ import re
 import logging
 import logging.config
 
-from bdphpcprovider.smartconnectorscheduler.hrmcstages import get_settings, get_run_info, get_filesys, update_key, DataObject
+from bdphpcprovider.smartconnectorscheduler.hrmcstages import get_all_settings, \
+    get_filesys, update_key, DataObject
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 
@@ -45,15 +46,9 @@ class Transform(Stage):
         pass
 
     def triggered(self, context):
-        self.settings = get_settings(context)
-        #logger.debug("settings = %s" % self.settings)
-        run_info = get_run_info(context)
-        #logger.debug("runinfo=%s" % run_info)
-        self.group_id = run_info['group_id']
-        self.settings.update(run_info)
-        #logger.debug("settings = %s" % self.settings)
+
+        self.settings = get_all_settings(context)
         self.group_id = self.settings['group_id']
-        #logger.debug("group_id = %s" % self.group_id)
         self.threshold = context['threshold']
 
         if 'id' in self.settings:
@@ -62,6 +57,7 @@ class Transform(Stage):
             self.input_dir = "input_%d" % self.id
             self.new_input_dir = "input_%d" % (self.id + 1)
         else:
+            # FIXME: Not clear that this a valid path through stages
             self.output_dir = "output"
             self.output_dir = "input"
             self.new_input_dir = "input_1"
@@ -78,10 +74,10 @@ class Transform(Stage):
             else:
                 self.transformed = False
             if self.runs_left == 0 and not self.transformed and not self.converged:
-                print("Transform triggered")
+                logger.debug("Transform triggered")
                 return True
 
-        print ("Transform NOT triggered")
+        logger.debug("Transform NOT triggered")
         return False
 
     def process(self, context):
@@ -223,8 +219,6 @@ class Transform(Stage):
                 logger.debug("best_index=%s" % best_index)
                 logger.debug("grerr_file=%s" % grerr_file)
                 logger.debug("number=%s" % number)
-
-
 
                 if self.alt_specification:
                     try:
