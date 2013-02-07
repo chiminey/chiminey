@@ -138,9 +138,9 @@ def start(args):
          Configure(),
          Schedule(),
          Create(),
-         Setup(), Run(),
-         Finished(),
-         Transform(), Converge(error_threshold), #
+         Setup()#, Run(),
+         #Finished(),
+         #Transform(), Converge(error_threshold), #
          #Teardown()
          ):
             smart_conn.register(stage)
