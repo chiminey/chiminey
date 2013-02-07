@@ -28,7 +28,6 @@ import logging.config
 import paramiko
 import json
 import sys
-import re
 
 from bdphpcprovider.smartconnectorscheduler.cloudconnector import *
 #from sshconnector import get_package_pids
@@ -61,8 +60,8 @@ from bdphpcprovider.smartconnectorscheduler.stages.run import Run
 from bdphpcprovider.smartconnectorscheduler.stages.finished import Finished
 
 from bdphpcprovider.smartconnectorscheduler.hrmcstages import Schedule
-from bdphpcprovider.smartconnectorscheduler.stages.transform import Transform
-from bdphpcprovider.smartconnectorscheduler.stages.converge import Converge
+from bdphpcprovider.smartconnectorscheduler.stages.hrmc.transform import Transform
+from bdphpcprovider.smartconnectorscheduler.stages.hrmc.converge import Converge
 #from hrmcstages import Teardown
 
 from bdphpcprovider.smartconnectorscheduler.filesystem import DataObject, FileSystem
@@ -1283,8 +1282,6 @@ class TransformStageTests(unittest.TestCase):
     HOME_DIR = os.path.expanduser("~")
 
     def setUp(self):
-
-        import tempfile
 
         self.global_filesystem = os.path.join(self.HOME_DIR, "test_transformstagetests")
         logger.debug("global_filesystem=%s" % self.global_filesystem)
