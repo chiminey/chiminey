@@ -26,7 +26,7 @@ from bdphpcprovider.smartconnectorscheduler.hrmcstages import get_settings, get_
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 
-logger = logging.getLogger('stages')
+logger = logging.getLogger(__name__)
 
 
 class Transform(Stage):
@@ -34,7 +34,7 @@ class Transform(Stage):
         Convert output into input for next iteration.
     """
     # FIXME: put part of config file, or pull from original input file
-    input_files = ['pore.xyz', 'sqexp.dat', 'grexp.dat']
+    input_files = ['pore.xyz', 'sqexp.dat', 'grexp.dat', ]
 
     def __init__(self):
         logger.debug("creating transform")
@@ -46,14 +46,15 @@ class Transform(Stage):
 
     def triggered(self, context):
         self.settings = get_settings(context)
-        logger.debug("settings = %s" % self.settings)
+        #logger.debug("settings = %s" % self.settings)
         run_info = get_run_info(context)
-        logger.debug("runinfo=%s" % run_info)
+        #logger.debug("runinfo=%s" % run_info)
         self.group_id = run_info['group_id']
         self.settings.update(run_info)
-        logger.debug("settings = %s" % self.settings)
+        #logger.debug("settings = %s" % self.settings)
         self.group_id = self.settings['group_id']
-        logger.debug("group_id = %s" % self.group_id)
+        #logger.debug("group_id = %s" % self.group_id)
+        self.threshold = context['threshold']
 
         if 'id' in self.settings:
             self.id = self.settings['id']
@@ -77,10 +78,14 @@ class Transform(Stage):
             else:
                 self.transformed = False
             if self.runs_left == 0 and not self.transformed and not self.converged:
+                print("Transform triggered")
                 return True
+
+        print ("Transform NOT triggered")
         return False
 
     def process(self, context):
+        #TODO: break up this function as it is way too long
 
         self.audit = ""
         res = []
@@ -167,97 +172,129 @@ class Transform(Stage):
         logger.debug("res=%s" % res)
         res.sort(key=lambda x: int(x[3]))
         logger.debug("res=%s" % res)
+
+        total_picks = 1
+        if len(self.threshold) > 1:
+            for i in self.threshold:
+                total_picks *= self.threshold[i]
+        else:
+            total_picks = self.threshold[0]
+
         if res:
-            (best_node_dir, best_index, number, criterion, grerr_file) = res[0]
+            self.new_input_dir_base = self.new_input_dir
+            fs.create_local_filesystem(self.new_input_dir_base)
+            import os
+            for i in range(0, total_picks):
+                (best_node_dir, best_index, number, criterion, grerr_file) = res[i]
+
+                self.new_input_dir = os.path.join(self.new_input_dir_base, best_node_dir)
+                fs.create_local_filesystem(self.new_input_dir)
+                logger.debug("New input dir %s" % self.new_input_dir)
+
+                # Transfer rmcen.inp to next iteration inputdir initially unchanged
+                fs.copy(self.output_dir, best_node_dir,
+                    'rmcen.inp', self.new_input_dir, 'rmcen.inp')
+
+                # Move all existing input files unchanged to next input directory
+                for f in self.input_files:
+                    try:
+                        fs.copy(self.output_dir, best_node_dir,
+                            f, self.new_input_dir, f)
+                    except IOError as e:
+                        logger.warn("no %s found in  %s/%s: %s"
+                                    % (f, self.output_dir, best_node_dir, e))
+                        continue
+
+                pattern = "*_values"
+                fs.copy_files_with_pattern(self.output_dir, best_node_dir, self.new_input_dir, pattern)
+
+                pattern = "*_template"
+                fs.copy_files_with_pattern(self.output_dir, best_node_dir, self.new_input_dir, pattern)
+
+                # NB: Converge stage triggers based on criterion value from audit.
+                info = "Run %s preserved (error %s)\n" % (number, criterion)
+                audit_file = DataObject('audit.txt')
+                audit_file.create(info)
+                logger.debug("audit=%s" % info)
+                fs.create(self.new_input_dir, audit_file)
+                self.audit += info
+
+                logger.debug("best_node_dir=%s" % best_node_dir)
+                logger.debug("best_index=%s" % best_index)
+                logger.debug("grerr_file=%s" % grerr_file)
+                logger.debug("number=%s" % number)
+
+
+
+                if self.alt_specification:
+                    try:
+                        xyzfiles = ['hrmc%s.xyz' % str(number).zfill(2)]
+                        f = fs.retrieve_under_dir(self.output_dir,
+                            best_node_dir,
+                            'hrmc%s.xyz' % str(number).zfill(2)).retrieve()
+                    except IOError:
+                        logger.warn("no hrmcstages found")
+                else:
+                    # Copy hrmc[best_index].xyz file from best run new input directory
+                    # as initial.xyz
+                    xyzfiles = fs.glob(self.output_dir, best_node_dir, 'hrmc[0-9]+\.xyz')
+                    logger.debug("xyzfiles=%s " % xyzfiles)
+                    xyzfiles.sort()  # FIXME: assume we use only the last
+                logger.debug("xyzfiles=%s " % xyzfiles)
+
+                found = False
+                for file_name in xyzfiles:
+                    if file_name == 'hrmc%s.xyz' % (str(number).zfill(2)):
+                    #if file_name == grerr_file:
+                        logger.debug("%s -> %s" % (file_name, 'initial.xyz'))
+                        try:
+                            fs.copy(self.output_dir, best_node_dir,
+                                file_name, self.new_input_dir,
+                                'initial.xyz', overwrite=True)
+                        except IOError as e:
+                            logger.warn("no %s found in  %s/%s: %s"
+                                        % (file_name, self.output_dir, best_node_dir, e))
+                            continue
+                        found = True
+                if not found:
+                    logger.warn("No matching %s file found to transfer" % grerr_file)
+                rmcen = fs.retrieve_new(self.new_input_dir, "rmcen.inp")
+                text = rmcen.retrieve()
+
+                # Change numfile to be higher than any of previous iteration
+                p = re.compile("^([0-9]*)[ \t]*numbfile.*$", re.MULTILINE)
+                m = p.search(text)
+                if m:
+                    numbfile = int(m.group(1))
+                else:
+                    logger.warn("could not find numbfile in rmcen.inp")
+                    numbfile = self.id
+                text = re.sub(p, "%d    numbfile" % (max_numbfile + 1), text)
+                logger.debug("numfile = %d" % numbfile)
+
+                # Change istart from 2 to 1 after first iteration
+                p = re.compile("^([0-9]*)[ \t]*istart.*$", re.MULTILINE)
+                m = p.search(text)
+                if m:
+                    logger.debug("match = %s" % m.groups())
+                    text = re.sub(p, "1     istart", text)
+                else:
+                    logger.warn("Cloud not find istart in rmcen.inp")
+                logger.debug("text = %s" % text)
+
+                # Write back changes
+                rmcen.setContent(text)
+                logger.debug("rmcen=%s" % rmcen)
+                fs.update(self.new_input_dir, rmcen)
+
+                self.audit += "spawning diamond runs\n"
+
         else:
             # FIXME: can we carry on here?
             logger.warning("no output directory found")
             (best_node_dir, best_index, number, criterion, grerr_file) = ("", 0, 0, 0, "")  # ?
 
-        # NB: Converge stage triggers based on criterion value from audit.
-        self.audit += "Run %s preserved (error %s)\n" % (number, criterion)
-        logger.debug("best_node_dir=%s" % best_node_dir)
-        logger.debug("best_index=%s" % best_index)
-        logger.debug("grerr_file=%s" % grerr_file)
-        logger.debug("number=%s" % number)
 
-        fs.create_local_filesystem(self.new_input_dir)
-
-        # Transfer rmcen.inp to next iteration inputdir initially unchanged
-        fs.copy(self.output_dir, best_node_dir,
-                'rmcen.inp', self.new_input_dir, 'rmcen.inp')
-
-        # Move all existing input files unchanged to next input directory
-        for f in self.input_files:
-            try:
-                fs.copy(self.output_dir, best_node_dir,
-                        f, self.new_input_dir, f)
-            except IOError as e:
-                logger.warn("no %s found in  %s/%s: %s"
-                    % (f, self.output_dir, best_node_dir, e))
-                continue
-
-        if self.alt_specification:
-            try:
-                xyzfiles = ['hrmc%s.xyz' % str(number).zfill(2)]
-                f = fs.retrieve_under_dir(self.output_dir,
-                             best_node_dir,
-                            'hrmc%s.xyz' % str(number).zfill(2)).retrieve()
-            except IOError:
-                logger.warn("no hrmcstages found")
-        else:
-            # Copy hrmc[best_index].xyz file from best run new input directory
-            # as initial.xyz
-            xyzfiles = fs.glob(self.output_dir, best_node_dir, 'hrmc[0-9]+\.xyz')
-            logger.debug("xyzfiles=%s " % xyzfiles)
-            xyzfiles.sort()  # FIXME: assume we use only the last
-        logger.debug("xyzfiles=%s " % xyzfiles)
-        found = False
-        for file_name in xyzfiles:
-            if file_name == 'hrmc%s.xyz' % (str(number).zfill(2)):
-            #if file_name == grerr_file:
-                logger.debug("%s -> %s" % (file_name, 'initial.xyz'))
-                try:
-                    fs.copy(self.output_dir, best_node_dir,
-                            file_name, self.new_input_dir,
-                            'initial.xyz', overwrite=True)
-                except IOError as e:
-                    logger.warn("no %s found in  %s/%s: %s"
-                        % (file_name, self.output_dir, best_node_dir, e))
-                    continue
-                found = True
-        if not found:
-            logger.warn("No matching %s file found to transfer" % grerr_file)
-        rmcen = fs.retrieve_new(self.new_input_dir, "rmcen.inp")
-        text = rmcen.retrieve()
-
-        # Change numfile to be higher than any of previous iteration
-        p = re.compile("^([0-9]*)[ \t]*numbfile.*$", re.MULTILINE)
-        m = p.search(text)
-        if m:
-            numbfile = int(m.group(1))
-        else:
-            logger.warn("could not find numbfile in rmcen.inp")
-            numbfile = self.id
-        text = re.sub(p, "%d    numbfile" % (max_numbfile + 1), text)
-        logger.debug("numfile = %d" % numbfile)
-
-        # Change istart from 2 to 1 after first iteration
-        p = re.compile("^([0-9]*)[ \t]*istart.*$", re.MULTILINE)
-        m = p.search(text)
-        if m:
-            logger.debug("match = %s" % m.groups())
-            text = re.sub(p, "1     istart", text)
-        else:
-            logger.warn("Cloud not find istart in rmcen.inp")
-        logger.debug("text = %s" % text)
-
-        # Write back changes
-        rmcen.setContent(text)
-        logger.debug("rmcen=%s" % rmcen)
-        fs.update(self.new_input_dir, rmcen)
-
-        self.audit += "spawning diamond runs\n"
 
     def output(self, context):
         logger.debug("transform.output")
@@ -266,7 +303,7 @@ class Transform(Stage):
         audit.create(self.audit)
         logger.debug("audit=%s" % audit)
         fs = get_filesys(context)
-        fs.create(self.new_input_dir, audit)
+        fs.create(self.new_input_dir_base, audit)
 
         update_key('transformed', True, context)
         print "End of Transformation: \n %s" % self.audit
