@@ -32,9 +32,11 @@ import re
 
 from bdphpcprovider.smartconnectorscheduler.cloudconnector import *
 #from sshconnector import get_package_pids
-from bdphpcprovider.smartconnectorscheduler.hrmcimpl import *
+from bdphpcprovider.smartconnectorscheduler import hrmcimpl
 
-import bdphpcprovider.smartconnectorscheduler.cloudconnector
+from bdphpcprovider.smartconnectorscheduler import botocloudconnector
+from bdphpcprovider.smartconnectorscheduler import cloudconnector
+
 import bdphpcprovider.smartconnectorscheduler.sshconnector
 #import hrmcimpl
 
@@ -50,7 +52,14 @@ logger = logging.getLogger('tests')
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, SequentialStage
 #from smartconnector import SmartConnector
 #from hrmcstages import Create,
-from bdphpcprovider.smartconnectorscheduler.hrmcstages import Configure, Setup, Run, Finished
+
+
+from bdphpcprovider.smartconnectorscheduler.hrmcstages import Configure
+
+from bdphpcprovider.smartconnectorscheduler.stages.setup import Setup
+from bdphpcprovider.smartconnectorscheduler.stages.run import Run
+from bdphpcprovider.smartconnectorscheduler.stages.finished import Finished
+
 from bdphpcprovider.smartconnectorscheduler.hrmcstages import Schedule
 from bdphpcprovider.smartconnectorscheduler.stages.transform import Transform
 from bdphpcprovider.smartconnectorscheduler.stages.converge import Converge
@@ -176,7 +185,11 @@ class SetupStageTests(unittest.TestCase):
             'POST_PAYLOAD_CLOUD_DIRNAME': 'post',
             'POST_PROCESSING_LOCAL_PATH': './post_payload',
             'POST_PAYLOAD': "PSDCode.zip",
-            'POST_PAYLOAD_COMPILE_FILE': 'PSD'}
+            'POST_PAYLOAD_COMPILE_FILE': 'PSD',
+            'PAYLOAD_SOURCE': "",
+            'PAYLOAD_DESTINATION': "payload"}
+
+
 
     def test_setup_simple(self):
 
@@ -222,12 +235,21 @@ class SetupStageTests(unittest.TestCase):
             found=True,
             list_images=lambda: [fakeimage],
             list_sizes=lambda: [fakesize],
-            create_node=lambda name, size, image, ex_keyname, ex_securitygroup: fakenode_state1)
+            create_node=lambda name, size, image, ex_keyname, ex_securitygroup: fakenode_state2)
         fakecloud.should_receive('list_nodes') \
             .and_return((fakenode_state2,))
 
 
         flexmock(EucNodeDriver).new_instances(fakecloud)
+
+
+        flexmock(botocloudconnector).should_receive('get_rego_nodes')\
+        .and_return(cloudconnector.get_rego_nodes(group_id, self.settings))
+
+        flexmock(botocloudconnector).should_receive('get_instance_ip')\
+        .and_return(cloudconnector.get_instance_ip(fakenode_state2.id, self.settings))
+
+
 
         # Setup fsys and initial config files for setup
         f1 = DataObject("config.sys")
@@ -244,9 +266,18 @@ class SetupStageTests(unittest.TestCase):
         print("context=%s" % context)
         s1 = Setup()
 
+        from threading import Thread
+        flexmock(Thread).should_receive('start').\
+        and_return(s1.setup_task(self.settings,
+            fakenode_state2.public_ips[0], make_target=""))
+
+        flexmock(Thread).should_receive('join').and_return()
+
         res = s1.triggered(context)
         print res
         self.assertEquals(res, True)
+
+
         self.assertEquals(s1.group_id, group_id)
 
         s1.process(context)
@@ -258,6 +289,8 @@ class SetupStageTests(unittest.TestCase):
                           {'group_id': group_id,
                            'id': 0,
                            'setup_finished': 1})
+
+
 
 
 class RunStageTests(unittest.TestCase):
@@ -287,7 +320,9 @@ class RunStageTests(unittest.TestCase):
             'PAYLOAD_LOCAL_DIRNAME': "", 'COMPILER': "g77", 'PAYLOAD': "payload",
             'COMPILE_FILE': "foo", 'MAX_SEED_INT': 100, 'RETRY_ATTEMPTS': 3,
             'OUTPUT_FILES': ['a', 'b'], 'PROVIDER': "nectar",
-            'CUSTOM_PROMPT': "[smart-connector_prompt]$"}
+            'CUSTOM_PROMPT': "[smart-connector_prompt]$",
+            "PAYLOAD_DESTINATION":""}
+
 
     def test_run(self):
 
@@ -331,11 +366,16 @@ class RunStageTests(unittest.TestCase):
                                  ex_securitygroup: fakenode_state1)
 
         fakecloud.should_receive('list_nodes').and_return((fakenode_state1,))
-        flexmock(os).should_receive('listdir').and_return(['inputfile1',
-                                                           'inputfile2'])
+
         flexmock(time).should_receive('sleep')
 
         flexmock(EucNodeDriver).new_instances(fakecloud)
+
+        flexmock(botocloudconnector).should_receive('get_rego_nodes')\
+        .and_return(cloudconnector.get_rego_nodes(group_id, self.settings))
+
+        flexmock(botocloudconnector).should_receive('get_instance_ip')\
+        .and_return(cloudconnector.get_instance_ip(fakenode_state1.id, self.settings))
 
         # FIXME: This does not appear to work and is ignored.
         flexmock(bdphpcprovider.smartconnectorscheduler.sshconnector) \
@@ -351,14 +391,18 @@ class RunStageTests(unittest.TestCase):
         print("f2=%s" % f2)
 
         f3 = DataObject("rmcen.inp")
+        f4 = DataObject("xyz.txt")
         run_num = 42
         f3.create("%s numbfile\n23 iseed\n" % run_num)
+        f4.create("Non template files")
 
         fs = FileSystem(self.global_filesystem, self.local_filesystem)
         fs.create(self.local_filesystem, f1)
         fs.create(self.local_filesystem, f2)
         fs.create_local_filesystem("input_0")
-        fs.create("input_0", f3)
+        fs.create_local_filesystem("input_0/initial")
+        fs.create("input_0/initial", f3)
+        fs.create("input_0/initial", f4)
         print("fs=%s" % fs)
 
         context = {'filesys': fs}
@@ -381,7 +425,7 @@ class RunStageTests(unittest.TestCase):
         config = fs.retrieve("default/runinfo.sys")
         content = json.loads(config.retrieve())
         logger.debug("content=%s" % content)
-        self.assertEquals(s1.input_dir, "input_%s" % myid)
+        self.assertEquals(s1.iter_inputdir, "input_%s" % myid)
 
         self.assertEquals(content, {
             "runs_left": 1,
@@ -389,7 +433,7 @@ class RunStageTests(unittest.TestCase):
             "setup_finished": 1,
             "id": 0})
 
-        self.assertEquals(s1.numbfile, run_num + 1)
+
 
 
 class FinishedStageTests(unittest.TestCase):
@@ -420,6 +464,7 @@ class FinishedStageTests(unittest.TestCase):
             'COMPILE_FILE': "foo", 'MAX_SEED_INT': 100, 'RETRY_ATTEMPTS': 3,
             'OUTPUT_FILES': ['a', 'b'], 'PROVIDER': "nectar",
             'CUSTOM_PROMPT': "[smart-connector_prompt]$"}
+
 
     def test_finished(self):
 
@@ -470,8 +515,18 @@ class FinishedStageTests(unittest.TestCase):
         flexmock(EucNodeDriver).new_instances(fakecloud)
 
         # FIXME: This does not appear to work and is ignored.
-        flexmock(bdphpcprovider.smartconnectorscheduler.sshconnector).should_receive('get_package_pids') \
+        flexmock(bdphpcprovider.smartconnectorscheduler.sshconnector)\
+        .should_receive('get_package_pids') \
             .and_return([1])
+
+        flexmock(botocloudconnector).should_receive('get_rego_nodes')\
+        .and_return(cloudconnector.get_rego_nodes(group_id, self.settings))
+
+        flexmock(botocloudconnector).should_receive('get_instance_ip')\
+        .and_return(cloudconnector.get_instance_ip(fakenode_state1.id, self.settings))
+
+        flexmock(botocloudconnector).should_receive('is_instance_running')\
+        .and_return(True)
 
         f1 = DataObject("config.sys")
         self.settings['seed'] = 42
@@ -535,6 +590,7 @@ class FinishedStageTests(unittest.TestCase):
         #    "setup_finished": 1})
 
 
+
 class FileSystemTests(unittest.TestCase):
     #FIXME: These testcases should not know about the underlying filesystem implementation
     HOME_DIR = os.path.expanduser("~")
@@ -588,7 +644,7 @@ class FileSystemTests(unittest.TestCase):
             retrieved_data_object = self.filesystem.retrieve(file_to_be_retrieved)
         except IOError:
             pass
-        except e:
+        except Exception, e:
             self.fail('Unexpected exception thrown:', e)
         else:
             self.fail('ExpectedException not thrown')
@@ -608,7 +664,7 @@ class FileSystemTests(unittest.TestCase):
                                             updated_data_object)
         except IOError:
             pass
-        except e:
+        except Exception, e:
             self.fail('Unexpected exception thrown:', e)
         else:
             self.fail('ExpectedException not thrown')
@@ -633,13 +689,13 @@ class FileSystemTests(unittest.TestCase):
             is_deleted = self.filesystem.delete(file_to_be_deleted)
         except IOError:
             pass
-        except e:
+        except Exception, e:
             self.fail('Unexpected exception thrown:', e)
         else:
             self.fail('ExpectedException not thrown')
 
-    """
-     def test_simpletest(self):
+    '''
+    def test_simpletest(self):
         fsys = FileSystem()
 
         f1 = DataObject("c")
@@ -659,7 +715,7 @@ class FileSystemTests(unittest.TestCase):
 
         fsys.delete("a/b/c")
         #assert statement
-    """
+    '''
 
 
 class ConnectorTests(unittest.TestCase):
@@ -758,7 +814,8 @@ class CloudTests(unittest.TestCase):
             'OUTPUT_FILES': ['a', 'b'], 'PROVIDER': "nectar",
             'CUSTOM_PROMPT': "[smart-connector_prompt]$",
             "POST_PROCESSING_DEST_PATH_PREFIX": "",
-            "POST_PAYLOAD_CLOUD_DIRNAME": ""}
+            "POST_PAYLOAD_CLOUD_DIRNAME": "", "PAYLOAD_DESTINATION": "",}
+
 
     def test_create_connection(self):
 
@@ -808,6 +865,7 @@ class CloudTests(unittest.TestCase):
         flexmock(EucNodeDriver).new_instances(fakecloud)
 
         self.assertEquals(create_environ(1, self.settings), group_id)
+
 
     def test_setup_multi_task(self):
 
@@ -880,11 +938,21 @@ class CloudTests(unittest.TestCase):
 
         flexmock(EucNodeDriver).new_instances(fakecloud)
 
-        self.assertEquals(setup_multi_task(group_id, self.settings), None)
+        flexmock(botocloudconnector).should_receive('get_rego_nodes')\
+        .and_return(cloudconnector.get_rego_nodes(group_id, self.settings))
+
+
+        self.assertEquals(hrmcimpl.setup_multi_task(group_id, self.settings), None)
+
+
+
+
 
     def test_prepare_multi_input(self):
 
         logger.debug("test_prepare_multi_input")
+
+        group_id = "sq42kdjshasdkjghauiwytuiawjmkghasjkghasg"
 
         # Make fake sftp connection
         fakesftp = flexmock(put=lambda x, y: True)
@@ -923,14 +991,24 @@ class CloudTests(unittest.TestCase):
 
         flexmock(EucNodeDriver).new_instances(fakecloud)
 
-        self.assertEquals(prepare_multi_input("foobar",
+        flexmock(botocloudconnector).should_receive('get_rego_nodes')\
+        .and_return(cloudconnector.get_rego_nodes(group_id, self.settings))
+
+        flexmock(botocloudconnector).should_receive('get_instance_ip')\
+        .and_return(cloudconnector.get_instance_ip(fakenode_state1.id, self.settings))
+
+        self.assertEquals(hrmcimpl.prepare_multi_input("foobar",
                                               "",
                                               self.settings,
                                               None),
                           None)
 
+
+
     def test_run_multi_task(self):
         logger.debug("test_run_multi_task")
+
+        group_id = "addsfdsfwefdsafwefasfe"
 
         # Make fake ssh connection
         fakessh1 = flexmock(load_system_host_keys=lambda x: True,
@@ -972,12 +1050,22 @@ class CloudTests(unittest.TestCase):
             .and_return(None) \
             .and_return([99])
 
-        res = run_multi_task("foobar", "", self.settings)
+        flexmock(botocloudconnector).should_receive('get_rego_nodes')\
+        .and_return(cloudconnector.get_rego_nodes(group_id, self.settings))
+
+        flexmock(botocloudconnector).should_receive('get_instance_ip')\
+        .and_return(cloudconnector.get_instance_ip(fakenode_state1.id, self.settings))
+
+        run = Run()
+        res = run.run_multi_task("foobar", "", self.settings)
         #TODO: this test case fails?
         self.assertEquals(res.values(), [['1\n']])
 
+
     def test_packages_complete(self):
         logger.debug("test_packages_complete")
+
+        group_id = "fgwefasfresafasdfdsaf"
         # Make fake sftp connection
         fakesftp = flexmock(get=lambda x, y: True, put=lambda x, y: True)
         exec_ret = ["", flexmock(readlines=lambda: ["1\n"]),
@@ -1008,11 +1096,25 @@ class CloudTests(unittest.TestCase):
         flexmock(os).should_receive('listdir').and_return(['mydirectory'])
         flexmock(time).should_receive('sleep')
         flexmock(EucNodeDriver).new_instances(fakecloud)
-        flexmock(bdphpcprovider.smartconnectorscheduler.sshconnector).should_receive('get_package_pids') \
+        flexmock(bdphpcprovider.smartconnectorscheduler.sshconnector)\
+        .should_receive('get_package_pids') \
             .and_return(None)
-        packages_complete("foobar", "", self.settings)
+
+        flexmock(botocloudconnector).should_receive('get_rego_nodes')\
+        .and_return(cloudconnector.get_rego_nodes(group_id, self.settings))
+
+        flexmock(botocloudconnector).should_receive('get_instance_ip')\
+        .and_return(cloudconnector.get_instance_ip(fakenode_state1.id, self.settings))
+
+        flexmock(botocloudconnector).should_receive('is_instance_running')\
+        .and_return(True)
+
+
+        hrmcimpl.packages_complete("foobar", "", self.settings)
         #TODO: this test case fails
         #self.assertEquals(res, True)
+
+
 
     def test_collect_instances(self):
         logger.debug("test_collect_instances")
@@ -1107,8 +1209,8 @@ class SchedulerStageTest(unittest.TestCase):
         self.assertEquals(True, True)
         import DecisionTree
 
-        training_datafile = os.path.join("testing", "decisiontree", "training.dat")
-        #training_datafile = "training.dat.org" #Iman's training.dat
+        #TODO change the path to relative one
+        training_datafile = "./smartconnectorscheduler/testing/decisiontree/training.dat" #Iman's training.dat
 
         dt = DecisionTree.DecisionTree(
             training_datafile=training_datafile,
@@ -1118,10 +1220,9 @@ class SchedulerStageTest(unittest.TestCase):
             debug2=1,
            )
         dt.get_training_data()
-
         #   UNCOMMENT THE FOLLOWING LINE if you would like to see the training
         #   data that was read from the disk file:
-        #dt.show_training_data()
+        dt.show_training_data()
 
         root_node = dt.construct_decision_tree_classifier()
 
@@ -1144,6 +1245,7 @@ class SchedulerStageTest(unittest.TestCase):
         print("\n\n")
         print("Number of nodes created: ", root_node.how_many_nodes())
 
+
     def test_simple(self):
         context = {}
 
@@ -1164,6 +1266,7 @@ class SchedulerStageTest(unittest.TestCase):
             mymock.should_receive('raw_input').and_return(*test).one_by_one()
             res = stage.process(context)
             self.assertEquals(res, test)
+
         context =  stage.output(context)
         run_info_file = get_run_info_file(context)
         logger.debug("run_info_file=%s" % run_info_file)
@@ -1176,12 +1279,13 @@ class SchedulerStageTest(unittest.TestCase):
 class TransformStageTests(unittest.TestCase):
 
     keep_directories = True
+    HOME_DIR = os.path.expanduser("~")
 
     def setUp(self):
 
         import tempfile
 
-        self.global_filesystem = tempfile.mkdtemp()
+        self.global_filesystem = os.path.join(self.HOME_DIR, "test_transformstagetests")
         logger.debug("global_filesystem=%s" % self.global_filesystem)
         self.local_filesystem = 'default'
 
@@ -1260,7 +1364,9 @@ class TransformStageTests(unittest.TestCase):
         fs.create_under_dir("output_%s" % id_to_test, "i-0001b", f5b)
 
         default_output_content = "foobar\n"
-        for node in ['i-0001a', 'i-0001b']:
+        node_1 = 'i-0001a'
+        node_2 = 'i-0001b'
+        for node in [node_1, node_2]:
             for file in ['output', 'frnmc01.dat', 'sinput.dat',
                          'grexp.dat', 'initial.xyz', 'pore.xyz', 'sqexp.dat']:
                 f = DataObject(file)
@@ -1277,9 +1383,10 @@ class TransformStageTests(unittest.TestCase):
         f3 = DataObject('hrmc3.xyz')
         f3.setContent("foo3\n")
 
-        fs.create_under_dir("output_%s" % id_to_test, 'i-0001a', f1)
-        fs.create_under_dir("output_%s" % id_to_test, 'i-0001a', f2)
-        fs.create_under_dir("output_%s" % id_to_test, 'i-0001a', f3)
+
+        fs.create_under_dir("output_%s" % id_to_test, node_1, f1)
+        fs.create_under_dir("output_%s" % id_to_test, node_1, f2)
+        fs.create_under_dir("output_%s" % id_to_test, node_1, f3)
 
         f4 = DataObject('hrmc1.xyz')
         f4.setContent("bar1")
@@ -1287,11 +1394,12 @@ class TransformStageTests(unittest.TestCase):
         f6 = DataObject('hrmc%s.xyz' % str(test_number+1).zfill(2))
         f6.setContent("bar3")
 
-        fs.create_under_dir("output_%s" % id_to_test, 'i-0001b', f4)
-        fs.create_under_dir("output_%s" % id_to_test, 'i-0001b', f6)
+
+        fs.create_under_dir("output_%s" % id_to_test, node_2, f4)
+        fs.create_under_dir("output_%s" % id_to_test, node_2, f6)
 
         print("fs=%s" % fs)
-        context = {'filesys': fs}
+        context = {'filesys': fs, 'threshold': [1]}
         print("context=%s" % context)
         s1 = Transform()
         res = s1.triggered(context)
@@ -1309,12 +1417,12 @@ class TransformStageTests(unittest.TestCase):
         content = json.loads(config.retrieve())
         self.assertTrue('transformed' in content and content['transformed'])
 
-        new_rmcen = fs.retrieve_new("input_%s" % (id_to_test + 1), "rmcen.inp")
+        new_rmcen = fs.retrieve_new(path.join("input_%s" % (id_to_test + 1), node_1), "rmcen.inp")
         self.assertEquals(
             new_rmcen.getContent(),
             "firstline\n%s    numbfile\n1     istart\n" % (test_number + 2))
 
-        ff = fs.retrieve_new("input_%s" % (id_to_test + 1), "initial.xyz")
+        ff = fs.retrieve_new(path.join("input_%s" % (id_to_test + 1), node_1), "initial.xyz")
         self.assertEquals(ff.getContent(), hrmc2_content)
 
         ff = fs.retrieve_new("input_%s" % (id_to_test + 1), "audit.txt")
@@ -1323,7 +1431,7 @@ class TransformStageTests(unittest.TestCase):
                 float(min(test_criterion1, test_criterion2))))
 
         for f in ['pore.xyz', 'sqexp.dat']:
-            ff = fs.retrieve_new("input_%s" % (id_to_test + 1), f)
+            ff = fs.retrieve_new(path.join("input_%s" % (id_to_test + 1), node_1), f)
             self.assertEquals(ff.getContent(), default_output_content)
 
 
@@ -1393,8 +1501,9 @@ class ConvergeStageTests(unittest.TestCase):
                         % (id_to_test, test_criterion))
 
         fs.create(self.local_filesystem, f1)
-        fs.create_local_filesystem("input_%s" % (id_to_test + 1))
-        fs.create("input_%s" % (id_to_test + 1), f3a)
+        iter_inputdir = "input_%s" % (id_to_test + 1)
+        fs.create_local_filesystem(iter_inputdir)
+        fs.create_under_dir(iter_inputdir, "nodeoutput", f3a)
 
         print("fs=%s" % fs)
         context = {'filesys': fs}
@@ -1410,8 +1519,11 @@ class ConvergeStageTests(unittest.TestCase):
         self.assertEquals(s1.criterion, test_criterion)
         self.assertEquals(content['converged'], False)
         self.assertTrue(not 'runs_left' in content)
+        self.assertEquals(s1.prev_criterion, 500)
+
         self.assertTrue(not 'error_nodes' in content)
         criterion = float(content['criterion'])
+        self.assertEquals(criterion, 324)
         self.assertTrue(criterion <= s1.prev_criterion)
 
 
@@ -1442,9 +1554,15 @@ class ConvergeStageTests(unittest.TestCase):
                         % (id_to_test, test_criterion))
 
         fs.create(self.local_filesystem, f1)
-        fs.create_local_filesystem("input_%s" % (id_to_test + 1))
+        #fs.create_local_filesystem("input_%s" % (id_to_test + 1))
         fs.create_local_filesystem('output')
-        fs.create("input_%s" % (id_to_test + 1), f3a)
+        #fs.create("input_%s" % (id_to_test + 1), f3a)
+
+
+        fs.create(self.local_filesystem, f1)
+        iter_inputdir = "input_%s" % (id_to_test + 1)
+        fs.create_local_filesystem(iter_inputdir)
+        fs.create_under_dir(local_filesystem=iter_inputdir, directory='node1', data_object=f3a)
 
 
         f4 = DataObject('grerr%s.dat' % str(id_to_test).zfill(2))
@@ -1492,7 +1610,7 @@ class ConvergeStageTests(unittest.TestCase):
 
 
     def test_diverge(self):
-        """ Tests situation where converence has happened
+        """ Tests situation where converence has diverged
         """
 
         s1 = Converge(10)
@@ -1517,9 +1635,16 @@ class ConvergeStageTests(unittest.TestCase):
         f3a.setContent("Run %s preserved (error %f)\nspawning diamond runs\n"
                         % (id_to_test, test_criterion))
 
+        #fs.create(self.local_filesystem, f1)
+        #fs.create_local_filesystem("input_%s" % (id_to_test + 1))
+        #fs.create("input_%s" % (id_to_test + 1), f3a)
+
+
         fs.create(self.local_filesystem, f1)
-        fs.create_local_filesystem("input_%s" % (id_to_test + 1))
-        fs.create("input_%s" % (id_to_test + 1), f3a)
+        iter_inputdir = "input_%s" % (id_to_test + 1)
+        fs.create_local_filesystem(iter_inputdir)
+        fs.create_under_dir(local_filesystem=iter_inputdir, directory='nodeoutput', data_object=f3a)
+
 
         print("fs=%s" % fs)
         context = {'filesys': fs}

@@ -34,10 +34,12 @@ import tempfile
 import logging
 import logging.config
 
-from bdphpcprovider.smartconnectorscheduler.hrmcimpl import _upload_input
-from bdphpcprovider.smartconnectorscheduler.hrmcimpl import get_output
 
-logging.config.fileConfig('logging.conf')
+#from bdphpcprovider.smartconnectorscheduler.hrmcimpl import get_output
+from bdphpcprovider.smartconnectorscheduler.botocloudconnector import get_instance_ip
+from bdphpcprovider.smartconnectorscheduler.sshconnector import put_file, open_connection, find_remote_files, get_file
+
+
 logger = logging.getLogger(__name__)
 
 #TODO: make filesystem-specific exceptions
@@ -48,6 +50,7 @@ class FileSystem(object):
     # directory, and should only interact vis osfs api calls.  For example,
     # use fs.mkdir not os.mkdir.
     # FIXME: remove os.path.join references and use fs.path.join instead
+    # TODO: replace this with a File based abstraction such as django.storages.backend.
 
     def __init__(self, global_filesystem, local_filesystem=None):
         self._create_global_filesystem(global_filesystem)
@@ -103,14 +106,17 @@ class FileSystem(object):
     def create_under_dir(self, local_filesystem, directory,
                          data_object, message='CREATED'):
         if not self.connector_fs.exists(local_filesystem):
+            logger.debug("error")
             logger.error("Destination filesystem '%s' does not exist"
                          % local_filesystem)
             return False
         #mport ipdb
         #ipdb.set_trace()
         direct = path.join("/", local_filesystem, directory)
+        logger.debug("direct = %s" % direct)
         self.connector_fs.makedir(direct, allow_recreate=True)
         dest_file_name = path.join(direct, data_object.getName())
+        logger.debug("dest_file_name = %s" % dest_file_name)
         #FIXME: Not sure why we need this
         #if not local_filesystem:
         #    destination_file_name = os.path.join(self.global_filesystem,
@@ -118,7 +124,7 @@ class FileSystem(object):
         dest_file = self.connector_fs.open(dest_file_name, 'w')
         dest_file.write(data_object.getContent())
         dest_file.close()
-        logger.debug("File '%s' %s" % (dest_file, message))
+        logger.debug("FileX '%s' %s" % (dest_file, message))
         return True
 
     def retrieve_new(self, directory, file):
@@ -139,8 +145,8 @@ class FileSystem(object):
         #       to created externally, which is
         # leaky abstraction
         if not self.connector_fs.exists(file_to_be_retrieved):
-            logger.error("File'%s' does not exist" % file_to_be_retrieved)
-            raise IOError("File'%s' does not exist" % file_to_be_retrieved)
+            logger.error("File'%s' does not exist.." % file_to_be_retrieved)
+            raise IOError("File'%s' does not exist.." % file_to_be_retrieved)
 
         retrieved_file_absolute_path = os.path.join(self.global_filesystem,
                                                     file_to_be_retrieved)
@@ -190,7 +196,12 @@ class FileSystem(object):
         """
         path_to_subdirectories = os.path.join(self.global_filesystem,
                                               local_filesystem)
+
+        logger.debug("Gloabl FS %s Path to Subdir %s" %(self.global_filesystem,
+                                                        path_to_subdirectories))
         list_of_subdirectories = os.listdir(path_to_subdirectories)
+
+        logger.debug("List of Directories %s" % list_of_subdirectories)
 
         return list_of_subdirectories
 
@@ -198,9 +209,8 @@ class FileSystem(object):
         """
         Returns list of names of directories immediately below local_filesystem
         """
-        path_to_subdirectories = os.path.join(self.global_filesystem,
-                                              local_filesystem, directory)
-        list_of_subdirectories = os.listdir(path_to_subdirectories)
+        path_to_subdirectories = os.path.join(local_filesystem, directory)
+        list_of_subdirectories = self.connector_fs.listdir(path_to_subdirectories)
 
         return list_of_subdirectories
 
@@ -226,13 +236,32 @@ class FileSystem(object):
             #dest = os.path.join("/home/centos",dest)
             logger.debug("Destination %s" % dest)
 
-            _upload_input(ssh, input_dir,  fname, dest)
+            put_file(ssh, input_dir,  fname, dest)
+
+    def upload_iter_input_dir(self, ssh, local_filesystem, iter_inputdir, dest):
+        input_dir = os.path.join(self.global_filesystem, local_filesystem, iter_inputdir)
+        logger.debug("input_dir =%s" % input_dir)
+        dirList = os.listdir(input_dir)
+        for fname in dirList:
+
+            logger.debug("fname=%s" % fname)
+            #dest = os.path.join("/home/centos",dest)
+            logger.debug("Destination %s" % dest)
+
+
+            put_file(ssh, input_dir,  fname, dest)
+
 
     def download_output(self, ssh, instance_id, local_filesystem, settings):
         output_dir = os.path.join(self.global_filesystem,
                                   local_filesystem,
                                   instance_id)
-        get_output(instance_id, output_dir, settings)
+        from bdphpcprovider.smartconnectorscheduler import hrmcimpl
+        hrmcimpl.get_output(instance_id, output_dir, settings)
+
+
+
+
 
     def exec_command(self, file_to_be_executed, command, wildcard=False):
         import subprocess
@@ -259,6 +288,29 @@ class FileSystem(object):
                                    overwrite)
         except ResourceNotFoundError as e:
             raise IOError(e)  # FIXME: make filesystem specfic exceptions
+
+
+    def copy_files_with_pattern(self, local_filesystem, source_dir,
+                                 dest_dir, pattern, overwrite=True):
+        import fnmatch, fs
+        pattern_source_dir = path.join(
+            local_filesystem, source_dir)
+        for file in self.connector_fs.listdir(pattern_source_dir):
+            if fnmatch.fnmatch(file, pattern):
+                try:
+                    logger.debug("To be copied %s " % os.path.join(pattern_source_dir,
+                        file))
+                    logger.debug("Dest %s " % os.path.join(dest_dir, file))
+                    self.connector_fs.copy(path.join(pattern_source_dir,
+                        file),
+                        path.join(dest_dir, file),
+                        overwrite)
+                except ResourceNotFoundError, e:
+                    import sys, traceback
+                    traceback.print_exc(file=sys.stdout)
+
+                    raise IOError(e)  # FIXME: make filesystem specfic exceptions
+
 
     def glob(self, local_filesystem, directory, pattern):
         """

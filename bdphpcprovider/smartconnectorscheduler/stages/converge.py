@@ -26,9 +26,13 @@ import logging.config
 
 from bdphpcprovider.smartconnectorscheduler.hrmcstages import get_run_settings, update_key, get_filesys, delete_key
 
-logger = logging.getLogger('stages')
+logger = logging.getLogger(__name__)
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
+
+
+class BadInputException(Exception):
+    pass
 
 
 class IterationConverge(Stage):
@@ -101,16 +105,15 @@ class Converge(Stage):
         self.settings = get_run_settings(context)
         logger.debug("settings = %s" % self.settings)
 
-
         if 'id' in self.settings:
             self.id = self.settings['id']
             self.output_dir = "output_%d" % self.id
-            self.input_dir = "input_%d" % self.id
-            self.new_input_dir = "input_%d" % (self.id + 1)
+            self.iter_inputdir = "input_%d" % (self.id + 1)
+            #self.new_iter_inputdir = "input_%d" % (self.id + 1)
         else:
             self.output_dir = "output"
-            self.output_dir = "input"
-            self.new_input_dir = "input_1"
+            self.iter_inputdir = "input"
+            #self.new_iter_inputdir = "input_1"
 
         if 'transformed' in self.settings:
             self.transformed = self.settings["transformed"]
@@ -120,86 +123,106 @@ class Converge(Stage):
 
     def process(self, context):
 
-        # TODO: should keep track of the criterion from the last iteration
-        # to handle the error condition where criterion is diverging
-        # TODO: should could number of iterations to indicate if the
-        # convergence is very slow.
-
         # retrive the audit file for last iteration
         fs = get_filesys(context)
-        if not fs:
-            logger.error("cannot retrieve filesystem")
-            raise IOError
-        try:
-            text = fs.retrieve_new(directory=self.new_input_dir,
-                          file="audit.txt").retrieve()
-        except IOError:
-            logger.warn("no audit found")
-            raise
-        logger.debug("text=%s" % text)
 
         self.settings = get_run_settings(context)
         logger.debug("settings = %s" % self.settings)
 
+        input_dirs = fs.get_local_subdirectories(self.iter_inputdir)
+        logger.debug("input_dirs = %s" % input_dirs)
+
+        # TODO: store all audit info in single file in input_X directory in transform,
+        # so we do not have to load individual files within node directories here.
+        min_crit = sys.float_info.max - 1.0
+        min_crit_index = sys.maxint
+        for input_dir in input_dirs:
+            # Retrieve audit file
+            if not fs:
+                logger.error("cannot retrieve filesystem")
+                raise IOError
+
+            if not fs.isdir(self.iter_inputdir, input_dir):
+                continue
+            try:
+                text = fs.retrieve_under_dir(self.iter_inputdir, input_dir,
+                    "audit.txt").retrieve()
+            except IOError:
+                logger.warn("no audit found")
+                raise
+            logger.debug("text=%s" % text)
+
+            # extract the best criterion error
+            # FIXME: audit.txt is potentially debug file so format may not be fixed.
+            p = re.compile("Run (\d+) preserved \(error[ \t]*([0-9\.]+)\)", re.MULTILINE)
+            m = p.search(text)
+            criterion = None
+            if m:
+                criterion = float(m.group(2))
+                best_numb = int(m.group(1))
+                # NB: assumes that subdirss in new input_x will have same names as output dir that created it.
+                best_node = input_dir
+            else:
+                message = "cannot extract criterion from audit file for iteration %s" % (self.id + 1)
+                logger.warn(message)
+                raise IOError(message)
+
+            if criterion < min_crit:
+                min_crit = criterion
+                min_crit_index = best_numb
+                min_crit_node = best_node
+
+        logger.debug("min_crit = %s at %s" % (min_crit, min_crit_index))
+
+        if min_crit_index >= sys.maxint:
+            raise BadInputException("Unable to find minimum criterion of input files")
+
+        # get previous best criterion
         if 'criterion' in self.settings:
             self.prev_criterion = float(self.settings['criterion'])
         else:
             self.prev_criterion = sys.float_info.max - 1.0
             logger.warn("no previous criterion found")
 
-        # extract the best criterion error from last iteration
-        p = re.compile("Run (\d+) preserved \(error[ \t]*([0-9\.]+)\)", re.MULTILINE)
-        m = p.search(text)
-        self.criterion = None
-        if m:
-            self.criterion = float(m.group(2))
-            self.best_num = int(m.group(1))
-        else:
-            message = "cannot extract criterion from audit file for iteration %s" % (self.id + 1)
-            logger.warn(message)
-            raise IOError(message)
-
         # check whether we are under the error threshold
-        logger.debug("best_num=%s" % self.best_num)
+        logger.debug("best_num=%s" % best_numb)
         logger.debug("prev_criterion = %f" % self.prev_criterion)
-        logger.debug("criterion = %f" % self.criterion)
+        logger.debug("min_crit = %f" % min_crit)
         self.done_iterating = False
-        if self.criterion > self.prev_criterion:
-            logger.error('iteration %s is diverging' % self.best_num)
+        if min_crit > self.prev_criterion:
+            logger.error('iteration %s is diverging' % best_numb)
             self.done_iterating = True  # if we are diverging then end now
-        elif (self.prev_criterion - self.criterion) <= self.error_threshold:
+
+        elif (self.prev_criterion - min_crit) <= self.error_threshold:
             self.done_iterating = True
-            self._ready_final_output(fs)
+            self._ready_final_output(fs, min_crit_node, min_crit_index)
         else:
             logger.debug("iteration continues")
+        self.criterion = min_crit
 
-    def _ready_final_output(self, fs):
-
+    def _ready_final_output(self, fs, crit_node, crit_index):
 
         new_output_dir = 'output'
         # FIXME: check new_output_dir does not already exist
         fs.create_local_filesystem(new_output_dir)
 
-        for node_dir in fs.get_local_subdirectories(self.output_dir):
-            grerr = None
-            try:
-                grerr = fs.retrieve_under_dir(local_filesystem=self.output_dir,
-                                             directory=node_dir,
-                                             file="grerr%s.dat" % str(self.best_num).zfill(2)).retrieve()
-            except IOError:
-                logger.warn("no grerr found")
+        gerr_object = None
+        try:
+            gerr_object = fs.retrieve_under_dir(local_filesystem=self.output_dir,
+                directory=crit_node,
+                file="grerr%s.dat" % str(crit_index).zfill(2)).retrieve()
+        except IOError:
+            logger.warn("no gerr found at %s/%s" % (self.iter_inputdir, crit_node))
 
-            if grerr:
-                files_to_copy = fs.get_local_subdirectory_files(self.output_dir,
-                                             node_dir)
-                logger.debug("files_to_copy=%s" % files_to_copy)
+        if gerr_object:
+            files_to_copy = fs.get_local_subdirectory_files(self.output_dir, crit_node)
+            logger.debug("files_to_copy=%s" % files_to_copy)
 
-                for f in files_to_copy:
-                    logger.debug("f=%s" % f)
-                    fs.copy(self.output_dir, node_dir, f, new_output_dir, f)
+            for f in files_to_copy:
+                logger.debug("f=%s" % f)
+                fs.copy(self.output_dir, crit_node, f, new_output_dir, f)
             else:
-                logger.debug("skipping %s" % node_dir)
-
+                logger.debug("skipping %s" % f)
 
     def output(self, context):
 

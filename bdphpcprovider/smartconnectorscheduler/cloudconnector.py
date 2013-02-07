@@ -87,14 +87,11 @@ def create_environ(number_vm_instances, settings):
         Create the Nectar VM instance and return id
     """
     logger.info("create_environ")
-    #TODO: review next 2 lines when list_nodes() API is fixed
-    fake_vm = Fake_VM()
-    all_instances = [fake_vm] #_create_VM_instances(number_vm_instances, settings)
+    all_instances = _create_VM_instances(number_vm_instances, settings)
     logger.debug("Printing ---- %s " % all_instances)
 
     if all_instances:
-        #TODO: review the next line when list_nodes() API is fixed
-        all_running_instances = all_instances #_wait_for_instance_to_start_running(all_instances, settings)
+        all_running_instances = _wait_for_instance_to_start_running(all_instances, settings)
         group_id = _store_md5_on_instances(all_running_instances, settings)
         _customize_prompt(all_running_instances, settings)
         print "Group ID %s" % group_id
@@ -166,7 +163,7 @@ def _store_md5_on_instances(all_instances, settings):
             logger.debug("Group ID file created")
         else:
             print "VM instance %s will not be registered to group '%s'\
-            " % (instance_id, ip, group_id)
+            " % (instance_id, group_id)
 
     return group_id
 
@@ -262,9 +259,7 @@ def is_instance_running(instance_id, settings):
     """
     instance_running = False
     connection = _create_cloud_connection(settings)
-    #TODO: review next 2 lines when list_nodes() API is fixed
-    fake_vm = Fake_VM()
-    nodes = [fake_vm]#connection.list_nodes()
+    nodes = connection.list_nodes()
     for i in nodes:
         if i.id == instance_id and i.state == NodeState.RUNNING:
             instance_running = True
@@ -380,9 +375,7 @@ def get_instance_ip(instance_id, settings):
 
 def get_running_instances(settings):
     connection = _create_cloud_connection(settings)
-    #TODO: review next 2 lines when list_nodes() API is fixed
-    fake_vm = Fake_VM()
-    all_instances = [fake_vm] #connection.list_nodes()
+    all_instances = connection.list_nodes()
     all_running_instances = []
 
     for instance in all_instances:
@@ -404,9 +397,7 @@ def get_rego_nodes(group_id, settings):
     conn = _create_cloud_connection(settings)
 
     packaged_node = []
-    #TODO: review next 2 lines when list_nodes() API is fixed
-    fake_vm = Fake_VM()
-    running_instances = [fake_vm] # get_running_instances(settings)
+    running_instances = get_running_instances(settings)
     for node in running_instances:
         # login and check for md5 file
         instance_id = node.id

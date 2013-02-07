@@ -1,13 +1,14 @@
 {
 "USER_NAME": "centos",
 "PASSWORD": "",
-"PRIVATE_KEY": "/home/centos/sandbox/cloudenabling/iantnc2.pem",
-"PRIVATE_KEY_NAME": "iantnc2",
+"PRIVATE_KEY": "/home/ec2-user/.ssh/nectar_key.pem",
+"PRIVATE_KEY_NAME": "nectar_key",
+
 "SECURITY_GROUP": ["ssh"],
 "VM_SIZE": "m1.small",
 "VM_IMAGE": "ami-0000000d",
 
-"GROUP_ID_DIR": "groupid",
+"GROUP_ID_DIR": "group_id",
 "PAYLOAD_LOCAL_DIRNAME": "/home/centos/sandbox/cloudenabling/payload",
 "PAYLOAD": "aeao_v1_1_package.tar.gz",
 
@@ -17,14 +18,17 @@
 "COMPILE_FILE": "HRMC",
 "PAYLOAD_CLOUD_DIRNAME": "AEAO_v1_1",
 
+"PAYLOAD_SOURCE": "/home/ec2-user/iman_payload",
+"PAYLOAD_DESTINATION": "payload3",
+
 "SLEEP_TIME": 10,
 "RETRY_ATTEMPTS": 10,
 
 "OUTPUT_FILES": ["output","energy01.dat", "engchn01.dat","engerr01.dat", "error01.dat","frnmc01.dat", "frsp301.dat", "grchn01.dat","grerr01.dat","spchn01.dat","sperr01.dat","sqchn01.dat","sqerr01.dat","hrmc01.xyz","hrmcpr01.xyz","start01.xyz", "sqinput.dat","rmcen.inp"],
 
 "TEST_VM_IP": "",
-"EC2_ACCESS_KEY":"foo",
-"EC2_SECRET_KEY":"bar",
+"EC2_ACCESS_KEY":"",
+"EC2_SECRET_KEY":"",
 "CLOUD_SLEEP_INTERVAL": 5,
 "MAX_SEED_INT": 512,
 "CUSTOM_PROMPT":"[smart-connector_prompt]$",
@@ -35,3 +39,4 @@
 "POST_PAYLOAD_COMPILE_FILE":"PSD"
 
 }
+

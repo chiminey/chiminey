@@ -4,10 +4,9 @@ import logging
 from bdphpcprovider.smartconnectorscheduler.sshconnector import open_connection, run_command, install_deps, unpack, unzip, compile, mkdir, get_file, put_file
 from bdphpcprovider.smartconnectorscheduler.sshconnector import get_package_pids
 from bdphpcprovider.smartconnectorscheduler.sshconnector import find_remote_files
+from bdphpcprovider.smartconnectorscheduler import botocloudconnector
 
-
-from bdphpcprovider.smartconnectorscheduler.botocloudconnector import is_instance_running, get_rego_nodes, get_instance_ip
-
+from bdphpcprovider.smartconnectorscheduler.stages.finished import Finished
 logger = logging.getLogger(__name__)
 
 
@@ -26,7 +25,7 @@ def setup_task(instance_id, settings):
 
     logger.info("setup_task %s " % instance_id)
 
-    ip = get_instance_ip(instance_id, settings)
+    ip = botocloudconnector.get_instance_ip(instance_id, settings)
     logger.debug("Setup %s IP" % ip)
     ssh = open_connection(ip_address=ip, settings=settings)
     logger.debug("Setup %s ssh" % ssh)
@@ -34,17 +33,17 @@ def setup_task(instance_id, settings):
     res = install_deps(ssh, packages=settings['DEPENDS'],
                        settings=settings, instance_id=instance_id)
     logger.debug("install res=%s" % res)
-    res = mkdir(ssh, dir=settings['DEST_PATH_PREFIX'])
+    res = mkdir(ssh, dir=settings['PAYLOAD_DESTINATION'])
     logger.debug("mkdir res=%s" % res)
     put_file(ssh,
              source_path=settings['PAYLOAD_LOCAL_DIRNAME'],
              package_file=settings['PAYLOAD'],
-             environ_dir=settings['DEST_PATH_PREFIX'])
+             environ_dir=settings['PAYLOAD_DESTINATION'])
 
-    unpack(ssh, environ_dir=settings['DEST_PATH_PREFIX'],
+    unpack(ssh, environ_dir=settings['PAYLOAD_DESTINATION'],
            package_file=settings['PAYLOAD'])
 
-    compile(ssh, environ_dir=settings['DEST_PATH_PREFIX'],
+    compile(ssh, environ_dir=settings['PAYLOAD_DESTINATION'],
             compile_file=settings['COMPILE_FILE'],
             package_dirname=settings['PAYLOAD_CLOUD_DIRNAME'],
             compiler_command=settings['COMPILER'])
@@ -76,6 +75,7 @@ def setup_task(instance_id, settings):
             compiler_command=settings['COMPILER'])
 
 
+
 def prepare_input(instance_id, input_dir, settings, seed):
     """
         Take the input_dir and move all the contained files to the
@@ -83,58 +83,24 @@ def prepare_input(instance_id, input_dir, settings, seed):
 
     """
     logger.info("prepare_input %s %s" % (instance_id, input_dir))
-    ip = get_instance_ip(instance_id, settings)
+    ip = botocloudconnector.get_instance_ip(instance_id, settings)
     ssh = open_connection(ip_address=ip, settings=settings)
     input_dir = _normalize_dirpath(input_dir)
     dirList = os.listdir(input_dir)
     for fname in dirList:
         logger.debug(fname)
         _upload_input(ssh, input_dir, fname,
-                      os.path.join(settings['DEST_PATH_PREFIX'],
+                      os.path.join(settings['PAYLOAD_DESTINATION'],
                                    settings['PAYLOAD_CLOUD_DIRNAME']))
     run_command(ssh, "cd %s; cp rmcen.inp rmcen.inp.orig" %
-                (os.path.join(settings['DEST_PATH_PREFIX'],
+                (os.path.join(settings['PAYLOAD_DESTINATION'],
                               settings['PAYLOAD_CLOUD_DIRNAME'])))
     run_command(ssh, "cd %s; dos2unix rmcen.inp" %
-                (os.path.join(settings['DEST_PATH_PREFIX'],
+                (os.path.join(settings['PAYLOAD_DESTINATION'],
                               settings['PAYLOAD_CLOUD_DIRNAME'])))
     run_command(ssh, "cd %s; sed -i '/^$/d' rmcen.inp" %
-                (os.path.join(settings['DEST_PATH_PREFIX'],
+                (os.path.join(settings['PAYLOAD_DESTINATION'],
                               settings['PAYLOAD_CLOUD_DIRNAME'])))
-
-
-def run_task(instance_id, settings):
-    """
-        Start the task on the instance, then hang and
-        periodically check its state.
-    """
-    logger.info("run_task %s" % instance_id)
-    ip = get_instance_ip(instance_id, settings)
-    ssh = open_connection(ip_address=ip,
-                          settings=settings)
-    pids = get_package_pids(ssh, settings['COMPILE_FILE'])
-    logger.debug("pids=%s" % pids)
-    if len(pids) > 1:
-        logger.error("warning:multiple packages running")
-        raise PackageFailedError("multiple packages running")
-    run_command(ssh, "cd %s; ./%s >& %s &\
-    " % (os.path.join(settings['DEST_PATH_PREFIX'],
-                      settings['PAYLOAD_CLOUD_DIRNAME']),
-         settings['COMPILE_FILE'], "output"))
-
-    import time
-    attempts = settings['RETRY_ATTEMPTS']
-    logger.debug("checking for package start")
-    for x in range(0, attempts):
-        time.sleep(5)  # to give process enough time to start
-        pids = get_package_pids(ssh, settings['COMPILE_FILE'])
-        logger.debug("pids=%s" % pids)
-        if pids:
-            break
-    else:
-        raise PackageFailedError("package did not start")
-    # pids should have maximum of one element
-    return pids
 
 
 def get_output(instance_id, output_dir, settings):
@@ -142,22 +108,29 @@ def get_output(instance_id, output_dir, settings):
         Retrieve the output from the task on the node
     """
     logger.info("get_output %s" % instance_id)
-    ip = get_instance_ip(instance_id, settings)
+    ip = botocloudconnector.get_instance_ip(instance_id, settings)
     ssh = open_connection(ip_address=ip, settings=settings)
-    try:
-        os.makedirs(output_dir)  # NOTE: makes intermediate directories
-    except OSError, e:
-        logger.debug("output directory %s already exists: %s\
-        " % (output_dir, e))
-        #sys.exit(1)
+    directory_created = False
+    while not directory_created:
+        try:
+            os.makedirs(output_dir)  # NOTE: makes intermediate directories
+            directory_created = True
+        except OSError, e:
+            logger.debug("output directory %s already exists: %s Deleting the existing directory ...\
+                         " % (output_dir, output_dir))
+            import shutil
+            shutil.rmtree(output_dir)
+            logger.debug("Existing directory %s along with its previous content deleted" % output_dir)
+            logger.debug("Empty directory %s created" % output_dir)
+            #sys.exit(1)
     logger.info("output directory is %s" % output_dir)
-    cloud_path = os.path.join(settings['DEST_PATH_PREFIX'],
+    cloud_path = os.path.join(settings['PAYLOAD_DESTINATION'],
                               settings['PAYLOAD_CLOUD_DIRNAME'])
     remote_files = [os.path.basename(x) for x in find_remote_files(ssh,
                                                                    cloud_path)]
     logger.debug("remote_files=%s" % remote_files)
     for file in remote_files:
-        get_file(ssh, os.path.join(settings['DEST_PATH_PREFIX'],
+        get_file(ssh, os.path.join(settings['PAYLOAD_DESTINATION'],
                                    settings['PAYLOAD_CLOUD_DIRNAME']),
                  file, output_dir)
     # TODO: do integrity check on output files
@@ -169,7 +142,7 @@ def get_post_output(instance_id, output_dir, settings):
         Retrieve the output from the task on the node
     """
     logger.info("get_post_output %s" % instance_id)
-    ip = get_instance_ip(instance_id, settings)
+    ip = botocloudconnector.get_instance_ip(instance_id, settings)
     ssh = open_connection(ip_address=ip, settings=settings)
     try:
         os.makedirs(output_dir)  # NOTE: makes intermediate directories
@@ -192,23 +165,12 @@ def get_post_output(instance_id, output_dir, settings):
 
 
 
-def job_finished(instance_id, settings):
-    """
-        Return True if package job on instance_id has job_finished
-    """
-    ip = get_instance_ip(instance_id, settings)
-    ssh = open_connection(ip_address=ip, settings=settings)
-    pids = get_package_pids(ssh, settings['COMPILE_FILE'])
-    logger.debug("pids=%s" % repr(pids))
-    return pids == [""]
-
-
 def setup_multi_task(group_id, settings):
     """
     Transfer the task package to the instances in group_id and install
     """
     logger.info("setup_multi_task %s " % group_id)
-    packaged_nodes = get_rego_nodes(group_id, settings)
+    packaged_nodes = botocloudconnector.get_rego_nodes(group_id, settings)
     import threading
     import datetime
     logger.debug("packaged_nodes = %s" % packaged_nodes)
@@ -239,7 +201,7 @@ def packages_complete(group_id, output_dir, settings):
     Indicates if all the package nodes have finished and generate
     any output as needed
     """
-    nodes = get_rego_nodes(group_id, settings)
+    nodes = botocloudconnector.get_rego_nodes(group_id, settings)
     error_nodes, finished_nodes = _status_of_nodeset(nodes,
                                                      output_dir,
                                                      settings)
@@ -254,36 +216,13 @@ def packages_complete(group_id, output_dir, settings):
     return False
 
 
-def run_multi_task(group_id, output_dir, settings):
-    """
-    Run the package on each of the nodes in the group and grab
-    any output as needed
-    """
-    nodes = get_rego_nodes(group_id, settings)
-
-    pids = []
-    for node in nodes:
-        try:
-            instance_id = node.id
-            pids_for_task = run_task(instance_id, settings)
-        except PackageFailedError, e:
-            logger.error(e)
-            logger.error("unable to start package on node %s" % node)
-            #TODO: cleanup node of copied input files etc.
-        else:
-            pids.append(pids_for_task)
-
-    all_pids = dict(zip(nodes, pids))
-    return all_pids
-
-
 def prepare_multi_input(group_id, input_dir, settings, seed):
     """
         Take the input_dir and move all the contained files to the
         instances in the group and ready
 
     """
-    nodes = get_rego_nodes(group_id, settings)
+    nodes = botocloudconnector.get_rego_nodes(group_id, settings)
 
     import random
     random.seed(seed)
@@ -302,28 +241,28 @@ def prepare_multi_input(group_id, input_dir, settings, seed):
     for node in nodes:
         instance_id = node.id
         logger.info("prepare_input %s %s" % (instance_id, input_dir))
-        ip = get_instance_ip(instance_id, settings)
+        ip = botocloudconnector.get_instance_ip(instance_id, settings)
         ssh = open_connection(ip_address=ip, settings=settings)
         input_dir = _normalize_dirpath(input_dir)
         dirList = os.listdir(input_dir)
         for fname in dirList:
             logger.debug(fname)
             _upload_input(ssh, input_dir, fname,
-                          os.path.join(settings['DEST_PATH_PREFIX'],
+                          os.path.join(settings['PAYLOAD_DESTINATION'],
                                        settings['PAYLOAD_CLOUD_DIRNAME']))
 
         run_command(ssh, "cd %s; cp rmcen.inp rmcen.inp.orig" %
-                    (os.path.join(settings['DEST_PATH_PREFIX'],
+                    (os.path.join(settings['PAYLOAD_DESTINATION'],
                                   settings['PAYLOAD_CLOUD_DIRNAME'])))
         run_command(ssh, "cd %s; dos2unix rmcen.inp" %
-                    (os.path.join(settings['DEST_PATH_PREFIX'],
+                    (os.path.join(settings['PAYLOAD_DESTINATION'],
                                   settings['PAYLOAD_CLOUD_DIRNAME'])))
         run_command(ssh, "cd %s; sed -i '/^$/d' rmcen.inp" %
-                    (os.path.join(settings['DEST_PATH_PREFIX'],
+                    (os.path.join(settings['PAYLOAD_DESTINATION'],
                                   settings['PAYLOAD_CLOUD_DIRNAME'])))
         run_command(ssh, "cd %s;\
                     sed -i 's/[0-9]*[ \t]*iseed.*$/%s\tiseed/' rmcen.inp\
-                    " % (os.path.join(settings['DEST_PATH_PREFIX'],
+                    " % (os.path.join(settings['PAYLOAD_DESTINATION'],
                                       settings['PAYLOAD_CLOUD_DIRNAME']),
                          seeds[node]))
 
@@ -357,6 +296,7 @@ def _normalize_dirpath(dirpath):
     return dirpath
 
 
+
 def _status_of_nodeset(nodes, output_dir, settings):
     """
     Return lists that describe which of the set of nodes are finished or
@@ -368,14 +308,15 @@ def _status_of_nodeset(nodes, output_dir, settings):
     for node in nodes:
         instance_id = node.id
 
-        if not is_instance_running(instance_id, settings):
+        if not botocloudconnector.is_instance_running(instance_id, settings):
             # An unlikely situation where the node crashed after is was
             # detected as registered.
             logging.error('Instance %s not running' % instance_id)
             error_nodes.append(node)
             continue
 
-        if job_finished(instance_id, settings):
+        finished = Finished()
+        if finished.job_finished(instance_id, settings):
             print "done. output is available"
             get_output(instance_id,
                        "%s/%s" % (output_dir, instance_id),
@@ -390,7 +331,7 @@ def _status_of_nodeset(nodes, output_dir, settings):
             finished_nodes.append(node)
         else:
             print "job still running on %s: %s\
-            " % (instance_id, get_instance_ip(instance_id, settings))
+            " % (instance_id, botocloudconnector.get_instance_ip(instance_id, settings))
 
     return (error_nodes, finished_nodes)
 
@@ -401,7 +342,7 @@ def run_post_task(instance_id, settings):
         periodically check its state.
     """
     logger.info("run_post_task %s" % instance_id)
-    ip = get_instance_ip(instance_id, settings)
+    ip = botocloudconnector.get_instance_ip(instance_id, settings)
     ssh = open_connection(ip_address=ip,
         settings=settings)
 
@@ -415,7 +356,7 @@ def run_post_task(instance_id, settings):
         settings['POST_PAYLOAD_CLOUD_DIRNAME'])
 
     run_command(ssh, "cp %s %s &\
-    " % (os.path.join(settings['DEST_PATH_PREFIX'],
+    " % (os.path.join(settings['PAYLOAD_DESTINATION'],
         settings['PAYLOAD_CLOUD_DIRNAME'],
          "hrmc01.xyz"), post_processing_dest))
 
