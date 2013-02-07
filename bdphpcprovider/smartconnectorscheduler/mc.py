@@ -17,10 +17,11 @@ from bdphpcprovider.smartconnectorscheduler.stages.finished import Finished
 from bdphpcprovider.smartconnectorscheduler.smartconnector import SmartConnector
 from bdphpcprovider.smartconnectorscheduler.hrmcstages import Configure, Create
 
-from bdphpcprovider.smartconnectorscheduler.hrmcstages import Teardown, Schedule, clear_temp_files
 
-from bdphpcprovider.smartconnectorscheduler.stages.converge import Converge
-from bdphpcprovider.smartconnectorscheduler.stages.transform import Transform
+from bdphpcprovider.smartconnectorscheduler.hrmcstages import  Schedule, Teardown
+
+from bdphpcprovider.smartconnectorscheduler.stages.hrmc.transform import Transform
+from bdphpcprovider.smartconnectorscheduler.stages.hrmc.converge import Converge
 
 
 logger = logging.getLogger(__name__)
@@ -137,9 +138,9 @@ def start(args):
          Configure(),
          Schedule(),
          Create(),
-         Setup(), Run(),
-         Finished(),
-         Transform(), Converge(error_threshold), #
+         Setup()#, Run(),
+         #Finished(),
+         #Transform(), Converge(error_threshold), #
          #Teardown()
          ):
             smart_conn.register(stage)
