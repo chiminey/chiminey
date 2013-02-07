@@ -230,7 +230,7 @@ def confirm_teardown(settings, all_instances):
         return False
 
 
-def destroy_environ(settings, all_instances, ids_of_all_instances):
+def destroy_environ(settings, all_instances, ids_of_all_instances=None):
     """
         Terminate
             - all instances, or
@@ -238,9 +238,15 @@ def destroy_environ(settings, all_instances, ids_of_all_instances):
             - a single instance
     """
     logger.info("destroy_environ")
-    if not ids_of_all_instances:
+    if not all_instances:
         logging.error("No running instance(s)")
         sys.exit(1)
+
+    if not ids_of_all_instances:
+        ids_of_all_instances = []
+        for instance in all_instances:
+            ids_of_all_instances.append(instance.id)
+
 
     print "Terminating %d VM instance(s)" % len(ids_of_all_instances)
     connection = _create_cloud_connection(settings)
