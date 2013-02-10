@@ -35,29 +35,19 @@ from django.template import Context, Template
 
 logger = logging.getLogger(__name__)
 
-
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, \
     UI, SmartConnector
-
 from bdphpcprovider.smartconnectorscheduler.filesystem import FileSystem, \
     DataObject
-
 from bdphpcprovider.smartconnectorscheduler import botocloudconnector
-
 from bdphpcprovider.smartconnectorscheduler.hrmcimpl import PackageFailedError
-#from hrmcimpl import prepare_multi_input
-#from hrmcimpl import _normalize_dirpath
-#from hrmcimpl import _status_of_nodeset
 from bdphpcprovider.smartconnectorscheduler.sshconnector import \
     find_remote_files, run_command, put_file
-
 from bdphpcprovider.smartconnectorscheduler.hrmcstages import get_settings, \
-    get_run_info, get_filesys, get_file
+    get_run_info, get_filesys, update_key, get_all_settings
+from bdphpcprovider.smartconnectorscheduler.sshconnector import \
+    get_package_pids, open_connection
 
-from bdphpcprovider.smartconnectorscheduler.sshconnector import get_package_pids, open_connection
-
-class BadSpecificationError(Exception):
-    pass
 
 class Run(Stage):
     """
@@ -70,33 +60,25 @@ class Run(Stage):
     def triggered(self, context):
         # triggered when we now that we have N nodes setup and ready to run.
         # input_dir is assumed to be populated.
-        '''
-        TODO: - uncomment during transformation is in progress
-              - change context to self.settings
-              - move the code after self.settings.update
 
-               self.iter_inputdir = "input"
-        '''
+        logger.debug("Run stage triggered")
+        logger.debug(__name__)
 
-        print "Run stage triggered"
-        print __name__
-        logger.debug("context = %s" % context)
-        self.settings = get_settings(context)
-        logger.debug("settings = %s" % self.settings)
-
-        run_info = get_run_info(context)
-        logger.debug("runinfo=%s" % run_info)
-
-        self.settings.update(run_info)
-        logger.debug("settings = %s" % self.settings)
+        self.settings = get_all_settings(context)
 
         if 'id' in self.settings:
             self.id = self.settings['id']
             self.iter_inputdir = "input_%s" % self.id
         else:
+            self.id = 0
             self.iter_inputdir = "input"
+        logger.debug("id = %s" % id)
 
-        self.group_id = self.settings['group_id']
+        if 'group_id' in self.settings:
+            self.group_id = self.settings['group_id']
+        else:
+            logger.warn("no group_id found when expected")
+            return False
         logger.debug("group_id = %s" % self.group_id)
 
         if 'setup_finished' in self.settings:
@@ -184,61 +166,15 @@ class Run(Stage):
         all_pids = dict(zip(nodes, pids))
         return all_pids
 
-
-    # def _create_input(self, instance_id, seeds, node, fsys):
-    #     """
-    #     Move the input files to the VM
-    #     """
-    #     ip = get_instance_ip(instance_id, self.settings)
-    #     ssh = open_connection(ip_address=ip, settings=self.settings)
-
-    #     # get all files from the payload directory
-    #     dest_files = find_remote_files(ssh, os.path.join(self.settings['DEST_PATH_PREFIX'],
-    #         self.settings['PAYLOAD_CLOUD_DIRNAME']))
-    #     logger.debug("dest_files=%s" % dest_files)
-
-    #     # keep results of setup stages
-    #     for f in [self.settings['COMPILE_FILE'], "..", "."]:
-    #         try:
-    #             dest_files.remove(os.path.join(self.settings['DEST_PATH_PREFIX'],
-    #                 self.settings['PAYLOAD_CLOUD_DIRNAME'], f))
-    #         except ValueError:
-    #             logger.info("no %s found to remove" % f)
-
-    #     logger.debug("dest_files=%s" % dest_files)
-    #     # and delete all the rest
-    #     for f in dest_files:
-    #         run_command(ssh, "/bin/rm -f %s" % f)
-
-    #     fsys.upload_input(ssh, self.iter_inputdir, os.path.join(
-    #         self.settings['DEST_PATH_PREFIX'],
-    #         self.settings['PAYLOAD_CLOUD_DIRNAME']))
-    #     run_command(ssh, "cd %s; cp rmcen.inp rmcen.inp.orig" %
-    #                 (os.path.join(self.settings['DEST_PATH_PREFIX'],
-    #                               self.settings['PAYLOAD_CLOUD_DIRNAME'])))
-    #     run_command(ssh, "cd %s; dos2unix rmcen.inp" %
-    #                 (os.path.join(self.settings['DEST_PATH_PREFIX'],
-    #                               self.settings['PAYLOAD_CLOUD_DIRNAME'])))
-    #     run_command(ssh, "cd %s; sed -i '/^$/d' rmcen.inp" %
-    #                 (os.path.join(self.settings['DEST_PATH_PREFIX'],
-    #                               self.settings['PAYLOAD_CLOUD_DIRNAME'])))
-    #     run_command(ssh, "cd %s; sed -i 's/[0-9]*[ \t]*iseed.*$/%s\tiseed/' rmcen.inp" %
-    #                 (os.path.join(self.settings['DEST_PATH_PREFIX'],
-    #                               self.settings['PAYLOAD_CLOUD_DIRNAME']), seeds[node]))
-    #     run_command(ssh, "cd %s; sed -i 's/[0-9]*[ \t]*numbfile.*$/%s\tnumbfile/' rmcen.inp" %
-    #                 (os.path.join(self.settings['DEST_PATH_PREFIX'],
-    #                               self.settings['PAYLOAD_CLOUD_DIRNAME']), self.numbfile))
-    #     self.numbfile += 1
-
-
-
-    def _generate_variations(self, template, maps, initial_numbfile):
-
+    def _expand_variations(self, template, maps, initial_numbfile):
+        """
+        Based on maps, generate all range variations from the template
+        """
         # FIXME: doesn't handle multipe template files together
         res = []
         numbfile = initial_numbfile
         for iter, template_map in enumerate(maps):
-            print "iter #%d" % iter
+            logger.debug("iter #%d" % iter)
             temp_num = 0
             # ensure ordering of the template_map entries
             map_keys = template_map.keys()
@@ -249,18 +185,158 @@ class Run(Stage):
                     context[k] = str(z[i])  # str() so that 0 doesn't default value
                 context['run_counter'] = numbfile
                 numbfile += 1
-                print context
+                logger.debug(context)
                 t = Template(template)
                 con = Context(context)
                 res.append((t.render(con), context))
                 temp_num += 1
-            print "%d files created" % (temp_num)
-
+            logger.debug("%d files created" % (temp_num))
         return res
 
-    def _prepare_input(self, context):
+    def _upload_variation_inputs(self,variations):
         """
+        Create input packages for each variation and upload the vms
         """
+        logger.debug("variations = %s" % variations)
+        # generate variations for the input_dir
+        for var_fname in variations.keys():
+            logger.debug("var_fname=%s" % var_fname)
+            for var_content, values in variations[var_fname]:
+                logger.debug("var_content = %s" % var_content)
+                var_node = nodes[node_ind]
+                node_ind += 1
+                ip = botocloudconnector.get_instance_ip(var_node.id, self.settings)
+                ssh = open_connection(ip_address=ip, settings=self.settings)
+
+                # Cleanup any existing runs already there
+                # get all files from the payload directory
+                dest_files = find_remote_files(ssh,
+                    os.path.join(self.settings['PAYLOAD_DESTINATION'],
+                    self.settings['PAYLOAD_CLOUD_DIRNAME']))
+
+                # keep the compile exec from setup
+                for f in [self.settings['COMPILE_FILE'], "..", "."]:
+                    try:
+                        dest_files.remove(os.path.join(self.settings['PAYLOAD_DESTINATION'],
+                            self.settings['PAYLOAD_CLOUD_DIRNAME'], f))
+                    except ValueError:
+                        logger.info("no %s found to remove" % f)
+
+                logger.debug("dest_files=%s" % dest_files)
+                # and delete all the rest
+                for f in dest_files:
+                    logger.debug("deleting remote %s" % f)
+                    run_command(ssh, "/bin/rm -f %s" % f)
+
+                # first copy up all existing input files to new variation
+                fs.upload_iter_input_dir(ssh, self.iter_inputdir, input_dir, os.path.join(
+                    self.settings['PAYLOAD_DESTINATION'],
+                    self.settings['PAYLOAD_CLOUD_DIRNAME']))
+
+                # FIXME: handle exceptions
+
+                # then create template variated file
+                varied_fdir = tempfile.mkdtemp()
+                logger.debug("varied_fdir=%s" % varied_fdir)
+                fpath = os.path.join(varied_fdir, var_fname)
+                f = open(fpath, "w")
+                f.write(var_content)
+                f.close()
+
+                # plus store used val in substitution incase next iter needs them.
+                values_fname = "%s_values" % var_fname
+                vpath = os.path.join(varied_fdir, values_fname)
+                v = open(vpath, "w")
+                v.write(json.dumps(values))
+                v.close()
+
+                # and overwrite on the remote
+                put_file(ssh, varied_fdir, var_fname, os.path.join(
+                    self.settings['PAYLOAD_DESTINATION'],
+                    self.settings['PAYLOAD_CLOUD_DIRNAME']))
+                put_file(ssh, varied_fdir, values_fname, os.path.join(
+                    self.settings['PAYLOAD_DESTINATION'],
+                    self.settings['PAYLOAD_CLOUD_DIRNAME']))
+
+
+                # cleanup
+                import shutil
+                shutil.rmtree(varied_fdir)
+
+    def _generate_variations(self, input_dir, fs):
+        """
+        For each templated file in input_dir, generate all variations
+        """
+        template_pat = re.compile("(.*)_template")
+        variations = {}
+        for fname in fs.get_local_subdirectory_files(self.iter_inputdir,
+                input_dir):
+            logger.debug("trying %s/%s/%s" % (self.iter_inputdir, input_dir,
+                fname))
+            data_object = fs.retrieve_under_dir(self.iter_inputdir, input_dir,
+                fname)
+
+            mat = template_pat.match(fname)
+            if mat:
+                # template file
+                template = data_object.retrieve()
+                logger.debug("template content = %s" % template)
+                #
+                num_dim = 1
+
+                if num_dim == 1:
+                    N = context['number_vm_instances']
+                    map = {
+                        'temp': [300],
+                        'iseed': [randrange(0, self.settings['MAX_SEED_INT'])
+                            for x in xrange(0, N)],
+                        'istart': [1 if self.id > 0  else 2]
+                    }
+                elif num_dim == 2:
+                    self.threshold = context['threshold']
+                    N = self.threshold[0]
+                    map = {
+                        'temp': [300],
+                        'iseed': [randrange(0, self.settings['MAX_SEED_INT'])
+                            for x in xrange(0, 4 * N)],
+                        'istart': [2]
+
+                    }
+
+                    if self.id > 0:
+                        map = {
+                            'temp': [i for i in [300, 700, 1100, 1500]],
+                            'iseed': [randrange(0,
+                                self.settings['MAX_SEED_INT'])],
+                            'istart': [1]
+
+                            }
+                else:
+                    message = "Unknown dimensionality of problem"
+                    logger.error(message)
+                    raise  BadSpecificationError(message)
+
+                if not mat.groups():
+                    logger.info("found odd template matching file %s" % fname)
+                else:
+
+                    base_fname = mat.group(1)
+                    logger.debug("base_fname=%s" % base_fname)
+                    # generates a set of variations for the template fname
+                    variation_set = self._expand_variations(template,
+                        [map], self.initial_numbfile)
+                    self.initial_numbfile += len(variation_set)
+                    variations[base_fname] =variation_set
+        else:
+            # normal file
+            pass
+        return variations
+
+    def _prepare_inputs(self, context):
+        """
+        Upload all input files for this run
+        """
+        logger.debug("preparing inputs")
         fs = get_filesys(context)
         logger.debug("fs= %s GLobal %s" % (fs, fs.global_filesystem))
 
@@ -277,8 +353,6 @@ class Run(Stage):
 
         # come in with N input directoires
 
-        tpattern = "(.*)_template"
-        template_pat = re.compile(tpattern)
         nodes = botocloudconnector.get_rego_nodes(self.group_id, self.settings)
         node_ind = 0
         logger.debug("Iteration Inpt dir %s" % self.iter_inputdir)
@@ -289,183 +363,21 @@ class Run(Stage):
             if not fs.isdir(self.iter_inputdir, input_dir):
                 continue
 
-            # get any templated files
-            variations = {}
-            for fname in fs.get_local_subdirectory_files(self.iter_inputdir, input_dir):
-                logger.debug("trying %s/%s/%s" % (self.iter_inputdir, input_dir, fname))
-                data_object = fs.retrieve_under_dir(self.iter_inputdir, input_dir, fname)
-
-                mat = template_pat.match(fname)
-                if mat:
-                    # template file
-                    template = data_object.retrieve()
-                    logger.debug("template content = %s" % template)
-                    #
-                    num_dim = 1
-
-
-                    if num_dim == 1:
-                        N = context['number_vm_instances']
-                        map = {
-                            'temp': [300],
-                            'iseed': [randrange(0, self.settings['MAX_SEED_INT']) for x in xrange(0, N)],
-                            'istart': [1 if self.id > 0  else 2]
-                        }
-                    elif num_dim == 2:
-                        self.threshold = context['threshold']
-                        N = self.threshold[0]
-                        map = {
-                            'temp': [300],
-                            'iseed': [randrange(0, self.settings['MAX_SEED_INT']) for x in xrange(0, 4 * N)],
-                            'istart': [2]
-
-                        }
-
-                        if self.id > 0:
-                            map = {
-                                'temp': [i for i in [300, 700, 1100, 1500]],
-                                'iseed': [randrange(0, self.settings['MAX_SEED_INT'])],
-                                'istart': [1]
-
-                                }
-                    else:
-                        logger.error("Uknown dimensionality of problem")
-                        raise  BadSpecificationError()
-
-                    if not mat.groups():
-                        logger.info("found odd template matching file %s" % fname)
-                    else:
-
-                        base_fname = mat.group(1)
-                        logger.debug("base_fname=%s" % base_fname)
-                        # generates a set of variations for the template fname
-                        variation_set = self._generate_variations(template,
-                            [map], self.initial_numbfile)
-                        self.initial_numbfile += len(variation_set)
-                        variations[base_fname] =variation_set
-            else:
-                # normal file
-                pass
-
-            logger.debug("variations = %s" % variations)
-            # generate variations for the input_dir
-            for var_fname in variations.keys():
-                logger.debug("var_fname=%s" % var_fname)
-                for var_content, values in variations[var_fname]:
-                    logger.debug("var_content = %s" % var_content)
-                    var_node = nodes[node_ind]
-                    node_ind += 1
-                    ip = botocloudconnector.get_instance_ip(var_node.id, self.settings)
-                    ssh = open_connection(ip_address=ip, settings=self.settings)
-
-                    # Cleanup any existing runs already there
-                    # get all files from the payload directory
-                    dest_files = find_remote_files(ssh,
-                        os.path.join(self.settings['PAYLOAD_DESTINATION'],
-                        self.settings['PAYLOAD_CLOUD_DIRNAME']))
-
-                    # keep the compile exec from setup
-                    for f in [self.settings['COMPILE_FILE'], "..", "."]:
-                        try:
-                            dest_files.remove(os.path.join(self.settings['PAYLOAD_DESTINATION'],
-                                self.settings['PAYLOAD_CLOUD_DIRNAME'], f))
-                        except ValueError:
-                            logger.info("no %s found to remove" % f)
-
-                    logger.debug("dest_files=%s" % dest_files)
-                    # and delete all the rest
-                    for f in dest_files:
-                        logger.debug("deleting remote %s" % f)
-                        run_command(ssh, "/bin/rm -f %s" % f)
-
-                    # first copy up all existing input files to new variation
-                    fs.upload_iter_input_dir(ssh, self.iter_inputdir, input_dir, os.path.join(
-                        self.settings['PAYLOAD_DESTINATION'],
-                        self.settings['PAYLOAD_CLOUD_DIRNAME']))
-
-                    # FIXME: handle exceptions
-
-                    # then create template variated file
-                    varied_fdir = tempfile.mkdtemp()
-                    print "varied_fdir=%s" % varied_fdir
-                    fpath = os.path.join(varied_fdir, var_fname)
-                    f = open(fpath, "w")
-                    f.write(var_content)
-                    f.close()
-
-                    # plus store used val in substitution incase next iter needs them.
-                    values_fname = "%s_values" % var_fname
-                    vpath = os.path.join(varied_fdir, values_fname)
-                    v = open(vpath, "w")
-                    v.write(json.dumps(values))
-                    v.close()
-
-                    # and overwrite on the remote
-                    put_file(ssh, varied_fdir, var_fname, os.path.join(
-                        self.settings['PAYLOAD_DESTINATION'],
-                        self.settings['PAYLOAD_CLOUD_DIRNAME']))
-                    put_file(ssh, varied_fdir, values_fname, os.path.join(
-                        self.settings['PAYLOAD_DESTINATION'],
-                        self.settings['PAYLOAD_CLOUD_DIRNAME']))
-
-
-                    # cleanup
-                    #import shutil
-                    #shutil.rmtree(varied_fdir)
-
-
-        # # NOTE we assume that correct local file system has been created.
-
-        # import random
-        # random.seed(seed)
-
-        # seeds = {}
-
-        # for node in nodes:
-        #     # FIXME: is the random supposed to be positive or negative?
-        #     seeds[node] = random.randrange(0, self.settings['MAX_SEED_INT'])
-        # if seed:
-        #     print ("seed for full package run = %s" % seed)
-        # else:
-        #     print ("seeds for each node in group %s = %s"
-        #            % (self.group_id, [(x.name, seeds[x])
-        #                  for x in seeds.keys()]))
-
-        # logger.debug("seeds = %s" % seeds)
-
-        # Get starting value for numbfile from new input file
-        # each deployed rmcen.inp has numbfile relative to this.
-        # rmcen = fsys.retrieve_new(self.iter_inputdir, "rmcen.inp")
-        # text = rmcen.retrieve()
-        # p = re.compile("^([0-9]*)[ \t]*numbfile.*$", re.MULTILINE)
-        # m = p.search(text)
-        # if m:
-        #     self.numbfile = int(m.group(1))
-        # else:
-        #     logger.error("could not find numbfile in rmcen.inp")
-        #     self.numbfile = 100  # should not collide with other previous iterations.
-
-        # # copy up the new input files to VMs
-        # for node in nodes:
-        #     instance_id = node.id
-        #     logger.info("prepare_input %s %s" % (instance_id, self.iter_inputdir))
-        #     self._create_input(instance_id, seeds, node, fsys)
-
-
+            self._upload_variation_inputs(
+                self._generate_variations(input_dir,fs))
 
     def process(self, context):
 
         logger.debug("processing run stage")
-        logger.debug("preparing inputs")
 
-        self._prepare_input(context)
+        self._prepare_inputs(context)
         logger.debug("running tasks")
 
         try:
             pids = self.run_multi_task(self.group_id, self.iter_inputdir, self.settings)
         except PackageFailedError, e:
             logger.error(e)
-            logger.error("unable to start packages")
+            logger.error("unable to start packages: %s" % e)
             #TODO: cleanup node of copied input files etc.
             sys.exit(1)
         return pids
@@ -474,30 +386,10 @@ class Run(Stage):
         """
         Assume that no nodes have finished yet and indicate to future stages
         """
-        #TODO: make function for get fsys, run_info and settings
-        fsys = get_filesys(context)
-        logger.debug("fsys= %s" % fsys)
-
-        run_info_file = get_file(fsys, "default/runinfo.sys")
-        logger.debug("run_info_file= %s" % run_info_file)
-
-        settings_text = run_info_file.retrieve()
-        logger.debug("runinfo_text= %s" % settings_text)
-
-
 
         nodes = botocloudconnector.get_rego_nodes(self.group_id, self.settings)
         logger.debug("nodes = %s" % nodes)
 
-        config = json.loads(settings_text)
-        # We assume that none of runs have finished yet.
-        config['runs_left'] = len(nodes)  # FIXME: possible race condition?
-        #config['error_nodes'] = len(error_nodes)
-        logger.debug("config=%s" % config)
-        run_info_text = json.dumps(config)
-        run_info_file.setContent(run_info_text)
-        logger.debug("run_info_file=%s" % run_info_file)
-        fsys.update("default", run_info_file)
-        # FIXME: check to make sure not retriggered
+        update_key('runs_left', len(nodes), context)
 
         return context
