@@ -18,7 +18,9 @@ class Stage(object):
         pass
 
     def triggered(self, context):
-        """ return true if the directory pattern triggers this stage
+        """
+        Return true if the directory pattern triggers this stage, or there
+        has been any other error
         """
         # FIXME: Need to verify that triggered is idempotent.
         return True

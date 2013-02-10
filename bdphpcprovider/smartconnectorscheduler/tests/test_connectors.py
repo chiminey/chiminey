@@ -41,7 +41,7 @@ import bdphpcprovider.smartconnectorscheduler.sshconnector
 
 #from hrmcstages import get_filesys
 #from hrmcstages import get_file
-from bdphpcprovider.smartconnectorscheduler.hrmcstages import get_run_info, get_run_info_file, get_settings
+from bdphpcprovider.smartconnectorscheduler.hrmcstages import get_run_info, get_settings
 
 
 from libcloud.compute.drivers.ec2 import EucNodeDriver
@@ -268,7 +268,8 @@ class SetupStageTests(unittest.TestCase):
         from threading import Thread
         flexmock(Thread).should_receive('start').\
         and_return(s1.setup_task(self.settings,
-            fakenode_state2.public_ips[0], make_target=""))
+            fakenode_state2.public_ips[0], make_target="",
+                source=self.settings['PAYLOAD_SOURCE'],destination=self.settings['PAYLOAD_DESTINATION']))
 
         flexmock(Thread).should_receive('join').and_return()
 
@@ -1267,8 +1268,8 @@ class SchedulerStageTest(unittest.TestCase):
             self.assertEquals(res, test)
 
         context =  stage.output(context)
-        run_info_file = get_run_info_file(context)
-        logger.debug("run_info_file=%s" % run_info_file)
+        # run_info_file = get_run_info_file(context)
+        # logger.debug("run_info_file=%s" % run_info_file)
         run_info = get_run_info(context)
         provider = run_info['PROVIDER']
         self.assertEquals(provider,"nectar")

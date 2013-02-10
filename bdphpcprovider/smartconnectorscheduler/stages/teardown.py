@@ -1,5 +1,5 @@
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
-from bdphpcprovider.smartconnectorscheduler.hrmcstages import get_run_settings, update_key
+from bdphpcprovider.smartconnectorscheduler.hrmcstages import get_all_settings, update_key
 from bdphpcprovider.smartconnectorscheduler.botocloudconnector import collect_instances, destroy_environ
 
 import logging
@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 class Teardown(Stage):
     def triggered(self, context):
-        self.settings = get_run_settings(context)
+        self.settings = get_all_settings(context)
         logger.debug("settings = %s" % self.settings)
 
         self.group_id = self.settings["group_id"]
@@ -28,4 +28,3 @@ class Teardown(Stage):
     def output(self, context):
         update_key('run_finished', True, context)
         return context
-

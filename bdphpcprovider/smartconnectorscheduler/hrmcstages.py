@@ -32,43 +32,35 @@ import re
 
 logger = logging.getLogger(__name__)
 
-
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, UI, SmartConnector
-
 from bdphpcprovider.smartconnectorscheduler.filesystem import FileSystem, DataObject
-
-
-from bdphpcprovider.smartconnectorscheduler.botocloudconnector import create_environ, collect_instances, destroy_environ
-
-
-
-
-
-def get_elem(context, key):
-    try:
-        elem = context[key]
-    except KeyError, e:
-        logger.error("cannot load element %s from %s" % (e, context))
-        return None
-    return elem
+from bdphpcprovider.smartconnectorscheduler.botocloudconnector import create_environ, \
+    collect_instances, destroy_environ
+from bdphpcprovider.smartconnectorscheduler.errors import ContextKeyMissing
 
 
 def get_filesys(context):
     """
     Return the filesys in the context
     """
-    return get_elem(context, 'filesys')
+    try:
+        val = context['filesys']
+    except KeyError:
+        message = 'Context missing "filesys" key'
+        logger.exception(message)
+        return ContextKeyMissing(message)
+    return val
 
 
-def get_file(fsys, file):
+def _load_file(fsys, fname):
     """
-    Return contents of file
+    Returns the dataobject for fname in fsys, or empty data object if error
     """
     try:
-        config = fsys.retrieve(file)
+        config = fsys.retrieve(fname)
     except KeyError, e:
-        logger.error("cannot load %s %s" % (file, e))
-        return {}
+        config = DataObject(fname, '')
+        logger.warn("Cannot load %s %s" % (fname, e))
     return config
 
 
@@ -78,35 +70,36 @@ def get_settings(context):
     """
     fsys = get_filesys(context)
     logger.debug("fsys= %s" % fsys)
-    config = get_file(fsys, "default/config.sys")
+    fname = "default/config.sys"
+    config = _load_file(fsys, fname)
     print("config= %s" % config)
     settings_text = config.retrieve()
     print("settings_text= %s" % settings_text)
-    res = json.loads(settings_text)
-    #logger.debug("res=%s" % dict(res))
-    settings = dict(res)
+    settings = dict(json.loads(settings_text))
     return settings
 
 
-def get_run_info_file(context):
+def _get_run_info_file(context):
     """
-    Returns the actual runinfo file. If problem, return None
+    Returns the actual runinfo data object. If problem, return blank data object
     """
     fsys = get_filesys(context)
     logger.debug("fsys= %s" % fsys)
-    config = get_file(fsys, "default/runinfo.sys")
+    config = _load_file(fsys, "default/runinfo.sys")
     logger.debug("config= %s" % config)
     return config
 
 
 def get_run_info(context):
     """
-    Returns the content of the run info as file a dict. If problem, return None
+    Returns the content of the run info as file a dict. If problem, return {}
     """
-    fsys = get_filesys(context)
-
+    try:
+        fsys = get_filesys(context)
+    except ContextKeyMissing:
+        return {}
     logger.debug("fsys= %s" % fsys)
-    config = get_file(fsys, "default/runinfo.sys")
+    config = _get_run_info_file(context)
     logger.debug("config= %s" % config)
     if config:
         settings_text = config.retrieve()
@@ -114,10 +107,13 @@ def get_run_info(context):
         res = json.loads(settings_text)
         logger.debug("res=%s" % dict(res))
         return dict(res)
-    return None
+    return {}
 
 
-def get_run_settings(context):
+def get_all_settings(context):
+    """
+    Returns a single dict containing content of config.sys and runinfo.sys
+    """
     settings = get_settings(context)
     run_info = get_run_info(context)
     settings.update(run_info)
@@ -126,10 +122,13 @@ def get_run_settings(context):
 
 
 def update_key(key, value, context):
+    """
+    Updates key from the filesystem runinfo.sys file to a new values
+    """
     filesystem = get_filesys(context)
     logger.debug("filesystem= %s" % filesystem)
 
-    run_info_file = get_file(filesystem, "default/runinfo.sys")
+    run_info_file = _load_file(filesystem, "default/runinfo.sys")
     logger.debug("run_info_file= %s" % run_info_file)
 
     run_info_file_content = run_info_file.retrieve()
@@ -146,10 +145,13 @@ def update_key(key, value, context):
 
 
 def delete_key(key, context):
+    """
+    Removes key from the filesystem runinfo.sys file
+    """
     filesystem = get_filesys(context)
     logger.debug("filesystem= %s" % filesystem)
 
-    run_info_file = get_file(filesystem, "default/runinfo.sys")
+    run_info_file = _load_file(filesystem, "default/runinfo.sys")
     logger.debug("run_info_file= %s" % run_info_file)
 
     run_info_file_content = run_info_file.retrieve()
@@ -166,10 +168,9 @@ def delete_key(key, context):
 
 def clear_temp_files(context):
     """
-    Deletes temporary files
+    Deletes "default" files from filesystem
     """
     filesystem = get_filesys(context)
     print "Deleting temporary files ..."
     filesystem.delete_local_filesystem('default')
     print "done."
-
