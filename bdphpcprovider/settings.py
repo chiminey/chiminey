@@ -5,3 +5,5 @@ MYTARDIS_HPC_RESULT_URL = 'http://127.0.0.1:8001/apps/mytardis-hpc-app/resultsre
 
 BDP_INPUT_DIR_PATH = "/home/ec2-user"
 BDP_OUTPUT_DIR_PATH = "/home/ec2-user"
+
+
