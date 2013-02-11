@@ -1,6 +1,6 @@
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, UI
 from bdphpcprovider.smartconnectorscheduler.filesystem import FileSystem, DataObject
-from bdphpcprovider.smartconnectorscheduler.hrmcstages import get_filesys
+from bdphpcprovider.smartconnectorscheduler.hrmcstages import get_settings
 from bdphpcprovider.smartconnectorscheduler.errors import ContextKeyMissing
 
 import logging
@@ -18,16 +18,19 @@ class Configure(Stage, UI):
         True if filesystem does not exist in context
         """
         try:
-            fsys = get_filesys(context)
+            fsys = get_settings(context)
         except ContextKeyMissing:
-            return False
-        else:
+            logger.debug("Configure triggered")
             return True
+        else:
+            logger.debug("Configure not triggered")
+            return False
 
     def process(self, context):
         """
         Create global filesystem and then load config.sys to the filesystem
         """
+        logger.debug("Process context %s" % context)
         global_filesystem = context['global_filesystem']
         local_filesystem = 'default'
         self.filesystem = FileSystem(global_filesystem, local_filesystem)
@@ -45,6 +48,8 @@ class Configure(Stage, UI):
         """
         Store ref to new filesystem in context
         """
+
         context['filesys'] = self.filesystem
+        logger.debug("output context %s" % context)
         return context
 

@@ -292,7 +292,6 @@ class SetupStageTests(unittest.TestCase):
 
 
 
-
 class RunStageTests(unittest.TestCase):
     """
     Tests the HRMC Run Stage
@@ -432,8 +431,6 @@ class RunStageTests(unittest.TestCase):
             "group_id": "sq42kdjshasdkjghauiwytuiawjmkghasjkghasg",
             "setup_finished": 1,
             "id": 0})
-
-
 
 
 class FinishedStageTests(unittest.TestCase):

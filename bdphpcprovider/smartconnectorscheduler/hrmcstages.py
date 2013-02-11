@@ -48,7 +48,7 @@ def get_filesys(context):
     except KeyError:
         message = 'Context missing "filesys" key'
         logger.exception(message)
-        return ContextKeyMissing(message)
+        raise ContextKeyMissing(message)
     return val
 
 
@@ -68,15 +68,19 @@ def get_settings(context):
     """
     Return contents of config.sys file as a dictionary
     """
-    fsys = get_filesys(context)
-    logger.debug("fsys= %s" % fsys)
-    fname = "default/config.sys"
-    config = _load_file(fsys, fname)
-    print("config= %s" % config)
-    settings_text = config.retrieve()
-    print("settings_text= %s" % settings_text)
-    settings = dict(json.loads(settings_text))
-    return settings
+    try:
+        fsys = get_filesys(context)
+        logger.debug("fsys= %s" % fsys)
+        fname = "default/config.sys"
+        config = _load_file(fsys, fname)
+        print("config= %s" % config)
+        settings_text = config.retrieve()
+        print("settings_text= %s" % settings_text)
+        settings = dict(json.loads(settings_text))
+        return settings
+    except ContextKeyMissing, e:
+        logger.debug('ContextKeyMissing exception')
+        raise
 
 
 def _get_run_info_file(context):
