@@ -26,6 +26,7 @@ class Schedule(Stage):
                 self.settings = get_settings(context)
                 logger.debug("settings = %s" % self.settings)
                 return True
+        logger.debug("Scheduler not triggered")
         return False
 
     def process(self, context):
