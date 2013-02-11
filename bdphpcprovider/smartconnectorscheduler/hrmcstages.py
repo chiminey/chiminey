@@ -170,6 +170,22 @@ def delete_key(key, context):
     filesystem.update("default", run_info_file)
 
 
+def get_fanout(parameter_value_list):
+    '''
+    total_fanout = 1
+    if len(self.threshold) > 1:
+        for i in self.threshold:
+            total_fanout *= self.threshold[i]
+    else:
+        total_picks = self.threshold[0]
+    '''
+    pass
+
+
+def get_threshold():
+    pass
+
+
 def clear_temp_files(context):
     """
     Deletes "default" files from filesystem
