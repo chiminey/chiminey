@@ -10,6 +10,7 @@ from bdphpcprovider.smartconnectorscheduler import botocloudconnector
 from bdphpcprovider.smartconnectorscheduler.hrmcstages import get_settings, \
     get_run_info, get_filesys, get_all_settings, update_key
 
+from bdphpcprovider.smartconnectorscheduler import sshconnector
 
 logger = logging.getLogger(__name__)
 
@@ -55,9 +56,16 @@ class Finished(Stage):
         """
         ip = botocloudconnector.get_instance_ip(instance_id, settings)
         ssh = open_connection(ip_address=ip, settings=settings)
-        pids = get_package_pids(ssh, settings['COMPILE_FILE'])
-        logger.debug("pids=%s" % repr(pids))
-        return pids == [""]
+        makefile_path = settings['PAYLOAD_DESTINATION']
+
+        command = "cd %s; make %s" % (makefile_path, 'running')
+        command_out, _ = sshconnector.run_sudo_command(ssh, command, settings, instance_id)
+        if command_out:
+            logger.debug("command_out = %s" % command_out)
+            still_going = 'stillrunning' in command_out
+            logger.debug("still_going = %s" % still_going)
+            return not still_going
+        return False  # FIXME: this may be undesirable
 
     def process(self, context):
         """
@@ -120,6 +128,5 @@ class Finished(Stage):
         # FIXME: possible race condition?
         update_key('error_nodes', len(self.error_nodes), context)
         update_key('runs_left', nodes_working, context)
-
         # NOTE: runs_left cannot be deleted or run() will trigger
         return context

@@ -89,6 +89,64 @@ def run_command(ssh_client, command, current_dir=None):
     return res
 
 
+def run_sudo_command_with_status(ssh_client, command, settings, instance_id):
+    """
+    Runs command at the ssh_client remote but also returns error code
+    """
+    chan = ssh_client.invoke_shell()
+    logger.debug("Channel %s" % chan)
+    chan.send('sudo -s\n')
+    logger.debug("Sending through channel %s" % chan)
+    full_buff = ''
+    buff = ''
+    command_prompt = settings['CUSTOM_PROMPT']
+
+    while not command_prompt in buff:
+        resp = chan.recv(9999)
+        print resp
+        buff += resp
+    logger.debug("buff = %s" % buff)
+    full_buff += buff
+
+    chan.send("%s\n" % command)
+    logger.debug("Command %s" % command)
+    buff = ''
+
+    while not command_prompt in buff:
+        resp = chan.recv(9999)
+        print resp
+        buff += resp
+    logger.debug("buff = %s" % buff)
+    full_buff += buff
+
+    chan.send("echo $!\n") # NOTE: we assume bash
+    logger.debug("Command %s" % command)
+    buff = ''
+
+    while not command_prompt in buff:
+        resp = chan.recv(9999)
+        print resp
+        buff += resp
+    logger.debug("buff = %s" % buff)
+    error_code = buff
+    full_buff += buff
+
+    # TODO: handle stderr
+
+    chan.send("exit\n")
+    buff = ''
+
+    while not command_prompt in buff:
+        resp = chan.recv(9999)
+        print resp
+        buff += resp
+    logger.debug("buff = %s" % buff)
+    full_buff += buff
+
+    chan.close()
+    return (error_code, full_buff, '')
+
+
 def run_sudo_command(ssh_client, command, settings, instance_id):
     chan = ssh_client.invoke_shell()
     logger.debug("Channel %s" % chan)
@@ -131,6 +189,10 @@ def run_sudo_command(ssh_client, command, settings, instance_id):
     chan.close()
     return (full_buff, '')
 
+
+# def run_sudo_command(self, ssh_client, command, settings, instance_id):
+#     _, res = self.run_sudo_command_with_status(ssh_client, command, settings, instance_id)
+#     return res
 
 def install_deps(ssh_client, packages, settings, instance_id):
     for pack in packages:
