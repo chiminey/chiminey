@@ -171,10 +171,6 @@ LOGGING = {
     },
 
     'loggers': {
-        'smra': {
-            'handlers': ['file'],
-            'level': 'DEBUG',
-            },
         'bdphpcprovider.smartconnectorscheduler': {
             'handlers': ['console', 'file'],
             'level': 'DEBUG',
