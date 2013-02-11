@@ -41,17 +41,18 @@ from bdphpcprovider.smartconnectorscheduler.filesystem import FileSystem, \
     DataObject
 from bdphpcprovider.smartconnectorscheduler import botocloudconnector
 from bdphpcprovider.smartconnectorscheduler.hrmcimpl import PackageFailedError
-from bdphpcprovider.smartconnectorscheduler.sshconnector import \
-    find_remote_files, run_command, put_file
+#from bdphpcprovider.smartconnectorscheduler.sshconnector import \
+#    find_remote_files, run_command, put_file, run_sudo_command_with_status
 from bdphpcprovider.smartconnectorscheduler.hrmcstages import get_settings, \
     get_run_info, get_filesys, update_key, get_all_settings
-from bdphpcprovider.smartconnectorscheduler.sshconnector import \
-    get_package_pids, open_connection
+from bdphpcprovider.smartconnectorscheduler import sshconnector
+
+from bdphpcprovider.smartconnectorscheduler.stages.errors import BadSpecificationError
 
 
 class Run(Stage):
     """
-    Start applicaiton on nodes and return status
+    Start application on nodes and return status
     """
     def __init__(self):
         self.numbfile = 0
@@ -108,24 +109,22 @@ class Run(Stage):
         """
         logger.info("run_task %s" % instance_id)
         ip = botocloudconnector.get_instance_ip(instance_id, settings)
-        ssh = open_connection(ip_address=ip,
+        ssh = sshconnector.open_connection(ip_address=ip,
                               settings=settings)
-        pids = get_package_pids(ssh, settings['COMPILE_FILE'])
-        logger.debug("pids=%s" % pids)
-        if len(pids) > 1:
-            logger.error("warning:multiple packages running")
-            raise PackageFailedError("multiple packages running")
-        run_command(ssh, "cd %s; ./%s >& %s &\
-        " % (os.path.join(settings['PAYLOAD_DESTINATION'],
-                          settings['PAYLOAD_CLOUD_DIRNAME']),
-             settings['COMPILE_FILE'], "output"))
+        makefile_path = settings['PAYLOAD_DESTINATION']
+        command = "cd %s; make %s" % (makefile_path, 'startrun')
+        sshconnector.run_sudo_command_with_status(ssh, command, settings, instance_id)
 
-        import time
+        # run_command(ssh, "cd %s; ./%s >& %s &\
+        # " % (os.path.join(settings['PAYLOAD_DESTINATION'],
+        #                   settings['PAYLOAD_CLOUD_DIRNAME']),
+        #      settings['COMPILE_FILE'], "output"))
+
         attempts = settings['RETRY_ATTEMPTS']
         logger.debug("checking for package start")
         for x in range(0, attempts):
             time.sleep(5)  # to give process enough time to start
-            pids = get_package_pids(ssh, settings['COMPILE_FILE'])
+            pids = sshconnector.get_package_pids(ssh, settings['COMPILE_FILE'])
             logger.debug("pids=%s" % pids)
             if pids:
                 break
@@ -134,15 +133,47 @@ class Run(Stage):
         # pids should have maximum of one element
         return pids
 
-    def job_finished(instance_id, settings):
+    def run_task_old(self, instance_id, settings):
         """
-            Return True if package job on instance_id has job_finished
+            Start the task on the instance, then hang and
+            periodically check its state.
         """
+        logger.info("run_task %s" % instance_id)
         ip = botocloudconnector.get_instance_ip(instance_id, settings)
-        ssh = open_connection(ip_address=ip, settings=settings)
-        pids = get_package_pids(ssh, settings['COMPILE_FILE'])
-        logger.debug("pids=%s" % repr(pids))
-        return pids == [""]
+        ssh = sshconnector.open_connection(ip_address=ip,
+                              settings=settings)
+        pids = sshconnector.get_package_pids(ssh, settings['COMPILE_FILE'])
+        logger.debug("pids=%s" % pids)
+        if len(pids) > 1:
+            logger.error("warning:multiple packages running")
+            raise PackageFailedError("multiple packages running")
+        sshconnector.run_command(ssh, "cd %s; ./%s >& %s &\
+        " % (os.path.join(settings['PAYLOAD_DESTINATION'],
+                          settings['PAYLOAD_CLOUD_DIRNAME']),
+             settings['COMPILE_FILE'], "output"))
+
+        attempts = settings['RETRY_ATTEMPTS']
+        logger.debug("checking for package start")
+        for x in range(0, attempts):
+            time.sleep(5)  # to give process enough time to start
+            pids = sshconnector.get_package_pids(ssh, settings['COMPILE_FILE'])
+            logger.debug("pids=%s" % pids)
+            if pids:
+                break
+        else:
+            raise PackageFailedError("package did not start")
+        # pids should have maximum of one element
+        return pids
+
+    # def job_finished(instance_id, settings):
+    #     """
+    #         Return True if package job on instance_id has job_finished
+    #     """
+    #     ip = botocloudconnector.get_instance_ip(instance_id, settings)
+    #     ssh = open_connection(ip_address=ip, settings=settings)
+    #     pids = get_package_pids(ssh, settings['COMPILE_FILE'])
+    #     logger.debug("pids=%s" % repr(pids))
+    #     return pids == [""]
 
     def run_multi_task(self, group_id, iter_inputdir, settings):
         """
@@ -193,7 +224,7 @@ class Run(Stage):
             logger.debug("%d files created" % (temp_num))
         return res
 
-    def _upload_variation_inputs(self,variations):
+    def _upload_variation_inputs(self, variations, nodes, input_dir, fs):
         """
         Create input packages for each variation and upload the vms
         """
@@ -203,14 +234,14 @@ class Run(Stage):
             logger.debug("var_fname=%s" % var_fname)
             for var_content, values in variations[var_fname]:
                 logger.debug("var_content = %s" % var_content)
-                var_node = nodes[node_ind]
-                node_ind += 1
+                var_node = nodes[self.node_ind]
+                self.node_ind += 1
                 ip = botocloudconnector.get_instance_ip(var_node.id, self.settings)
-                ssh = open_connection(ip_address=ip, settings=self.settings)
+                ssh = sshconnector.open_connection(ip_address=ip, settings=self.settings)
 
                 # Cleanup any existing runs already there
                 # get all files from the payload directory
-                dest_files = find_remote_files(ssh,
+                dest_files = sshconnector.find_remote_files(ssh,
                     os.path.join(self.settings['PAYLOAD_DESTINATION'],
                     self.settings['PAYLOAD_CLOUD_DIRNAME']))
 
@@ -226,7 +257,7 @@ class Run(Stage):
                 # and delete all the rest
                 for f in dest_files:
                     logger.debug("deleting remote %s" % f)
-                    run_command(ssh, "/bin/rm -f %s" % f)
+                    sshconnector.run_command(ssh, "/bin/rm -f %s" % f)
 
                 # first copy up all existing input files to new variation
                 fs.upload_iter_input_dir(ssh, self.iter_inputdir, input_dir, os.path.join(
@@ -251,19 +282,18 @@ class Run(Stage):
                 v.close()
 
                 # and overwrite on the remote
-                put_file(ssh, varied_fdir, var_fname, os.path.join(
+                sshconnector.put_file(ssh, varied_fdir, var_fname, os.path.join(
                     self.settings['PAYLOAD_DESTINATION'],
                     self.settings['PAYLOAD_CLOUD_DIRNAME']))
-                put_file(ssh, varied_fdir, values_fname, os.path.join(
+                sshconnector.put_file(ssh, varied_fdir, values_fname, os.path.join(
                     self.settings['PAYLOAD_DESTINATION'],
                     self.settings['PAYLOAD_CLOUD_DIRNAME']))
-
 
                 # cleanup
                 import shutil
                 shutil.rmtree(varied_fdir)
 
-    def _generate_variations(self, input_dir, fs):
+    def _generate_variations(self, input_dir, fs, context):
         """
         For each templated file in input_dir, generate all variations
         """
@@ -290,7 +320,7 @@ class Run(Stage):
                         'temp': [300],
                         'iseed': [randrange(0, self.settings['MAX_SEED_INT'])
                             for x in xrange(0, N)],
-                        'istart': [1 if self.id > 0  else 2]
+                        'istart': [1 if self.id > 0 else 2]
                     }
                 elif num_dim == 2:
                     self.threshold = context['threshold']
@@ -314,7 +344,7 @@ class Run(Stage):
                 else:
                     message = "Unknown dimensionality of problem"
                     logger.error(message)
-                    raise  BadSpecificationError(message)
+                    raise BadSpecificationError(message)
 
                 if not mat.groups():
                     logger.info("found odd template matching file %s" % fname)
@@ -326,7 +356,7 @@ class Run(Stage):
                     variation_set = self._expand_variations(template,
                         [map], self.initial_numbfile)
                     self.initial_numbfile += len(variation_set)
-                    variations[base_fname] =variation_set
+                    variations[base_fname] = variation_set
         else:
             # normal file
             pass
@@ -343,18 +373,18 @@ class Run(Stage):
         run_info = get_run_info(context)
         logger.debug("runinfo=%s" % run_info)
 
-        #get initial seed
-        # FIXME: this is domain specific code
-        if 'seed' in self.settings:
-            seed = self.settings['seed']
-        else:
-            seed = 42
-            logger.warn("No seed specified. Using default value")
+        # #get initial seed
+        # # FIXME: this is domain specific code
+        # if 'seed' in self.settings:
+        #     seed = self.settings['seed']
+        # else:
+        #     seed = 42
+        #     logger.warn("No seed specified. Using default value")
 
         # come in with N input directoires
 
         nodes = botocloudconnector.get_rego_nodes(self.group_id, self.settings)
-        node_ind = 0
+        self.node_ind = 0
         logger.debug("Iteration Inpt dir %s" % self.iter_inputdir)
         input_dirs = fs.get_local_subdirectories(self.iter_inputdir)
         for input_dir in input_dirs:
@@ -363,8 +393,8 @@ class Run(Stage):
             if not fs.isdir(self.iter_inputdir, input_dir):
                 continue
 
-            self._upload_variation_inputs(
-                self._generate_variations(input_dir,fs))
+            self._upload_variation_inputs(self._generate_variations(input_dir,
+                                            fs, context), nodes, input_dir, fs)
 
     def process(self, context):
 

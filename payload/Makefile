@@ -14,3 +14,10 @@ setup_psd:
 
 print:
 	@echo Setup completed
+
+startrun:
+	@cd AEAO_v1_1 ; ./HRMC >& output &  echo "$$!" > "run.pid"
+
+running:
+	@sh ./running.sh
+
