@@ -458,7 +458,8 @@ class FinishedStageTests(unittest.TestCase):
             'PAYLOAD_LOCAL_DIRNAME': "", 'COMPILER': "g77", 'PAYLOAD': "payload",
             'COMPILE_FILE': "foo", 'MAX_SEED_INT': 100, 'RETRY_ATTEMPTS': 3,
             'OUTPUT_FILES': ['a', 'b'], 'PROVIDER': "nectar",
-            'CUSTOM_PROMPT': "[smart-connector_prompt]$"}
+            'CUSTOM_PROMPT': "[smart-connector_prompt]$",
+            'PAYLOAD_DESTINATION':""}
 
     def test_finished(self):
 
@@ -524,6 +525,11 @@ class FinishedStageTests(unittest.TestCase):
 
         flexmock(sshconnector) \
             .should_receive('run_sudo_command').and_return(['done', ''])
+
+        import shutil
+        flexmock(shutil).should_receive('rmtree')
+        flexmock(os).should_receive('makedirs')
+
 
         f1 = DataObject("config.sys")
         self.settings['seed'] = 42
@@ -810,7 +816,8 @@ class CloudTests(unittest.TestCase):
             'OUTPUT_FILES': ['a', 'b'], 'PROVIDER': "nectar",
             'CUSTOM_PROMPT': "[smart-connector_prompt]$",
             "POST_PROCESSING_DEST_PATH_PREFIX": "",
-            "POST_PAYLOAD_CLOUD_DIRNAME": "", "PAYLOAD_DESTINATION": ""}
+            "POST_PAYLOAD_CLOUD_DIRNAME": "", "PAYLOAD_DESTINATION": "",
+            "POST_PAYLOAD_COMPILE_FILE": ""}
 
     def test_create_connection(self):
 
@@ -1041,16 +1048,24 @@ class CloudTests(unittest.TestCase):
             .and_return(['', 'done', ''])
         flexmock(sshconnector).should_receive('run_sudo_command') \
             .and_return(['done', ''])
+        import shutil
+        flexmock(shutil).should_receive('rmtree')
+        flexmock(os).should_receive('makedirs')
+
         flexmock(botocloudconnector).should_receive('get_rego_nodes')\
         .and_return(cloudconnector.get_rego_nodes(group_id, self.settings))
 
         flexmock(botocloudconnector).should_receive('get_instance_ip')\
         .and_return(cloudconnector.get_instance_ip(fakenode_state1.id, self.settings))
 
+        flexmock(sshconnector).should_receive('get_package_pids') \
+            .and_return([1])
+        flexmock(sshconnector).should_receive('run_sudo_command') \
+            .and_return(['done', ''])
+
         run = Run()
         res = run.run_multi_task("foobar", "", self.settings)
-        #TODO: this test case fails?
-        self.assertEquals(res.values(), [['1\n']])
+        self.assertEquals(res.values(), [[1]])
 
     def test_packages_complete(self):
         logger.debug("test_packages_complete")
@@ -1102,6 +1117,15 @@ class CloudTests(unittest.TestCase):
         flexmock(botocloudconnector).should_receive('is_instance_running')\
         .and_return(True)
 
+        flexmock(sshconnector).should_receive('get_package_pids') \
+            .and_return(None)
+        flexmock(sshconnector).should_receive('run_sudo_command') \
+            .and_return(['done', ''])
+
+        flexmock(os).should_receive('makedirs')
+        import shutil
+        flexmock(shutil).should_receive('rmtree')
+
         hrmcimpl.packages_complete("foobar", "", self.settings)
         #TODO: this test case fails
         #self.assertEquals(res, True)
@@ -1149,6 +1173,9 @@ class CloudTests(unittest.TestCase):
             .and_return(None)
         flexmock(sshconnector).should_receive('run_sudo_command') \
             .and_return(['done', ''])
+
+        import shutil
+        flexmock(shutil).should_receive('rmtree')
 
         res = collect_instances(self.settings, group_id="foobar")
         logger.debug("res= %s" % res)

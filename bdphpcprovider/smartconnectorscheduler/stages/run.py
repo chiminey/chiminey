@@ -122,6 +122,7 @@ class Run(Stage):
 
         attempts = settings['RETRY_ATTEMPTS']
         logger.debug("checking for package start")
+        #FIXME: remove following and instead use a specific MakeFile target to return pid
         for x in range(0, attempts):
             time.sleep(5)  # to give process enough time to start
             pids = sshconnector.get_package_pids(ssh, settings['COMPILE_FILE'])
