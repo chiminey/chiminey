@@ -18,20 +18,18 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-#import paramiko
 import sys
 import boto
 import os
 import time
-import traceback
 import logging
 import hashlib
 
 
 from boto.ec2.regioninfo import RegionInfo
 from boto.exception import EC2ResponseError
-
-from bdphpcprovider.smartconnectorscheduler.sshconnector import open_connection, run_command, is_ssh_ready, AuthError
+from bdphpcprovider.smartconnectorscheduler.sshconnector import open_connection,\
+    run_command, is_ssh_ready, AuthError
 
 logger = logging.getLogger(__name__)
 NODE_STATE = ['RUNNING', 'REBOOTING', 'TERMINATED', 'PENDING', 'UNKNOWN']
@@ -170,6 +168,7 @@ def _customize_prompt(all_instances, settings):
     for instance in all_instances:
         instance_id = instance.id
         ip_address = get_instance_ip(instance_id, settings)
+        logger.info("Customizing command prompt")
         ssh_ready = is_ssh_ready(settings, ip_address)
         if ssh_ready:
             ssh_client = open_connection(ip_address=ip_address, settings=settings)
@@ -252,7 +251,8 @@ def destroy_environ(settings, all_instances, ids_of_all_instances=None):
     connection = _create_cloud_connection(settings)
     connection.terminate_instances(ids_of_all_instances)
 
-    '''for instance in all_instances:
+    '''
+    for instance in all_instances:
         try:
 
             connection.destroy_node(instance)

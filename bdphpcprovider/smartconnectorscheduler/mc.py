@@ -3,33 +3,29 @@ import sys
 import os
 import time
 import logging
-import logging.config
 
 from bdphpcprovider.smartconnectorscheduler.botocloudconnector import create_environ,  collect_instances, \
     print_all_information, confirm_teardown, destroy_environ
 
 from bdphpcprovider.smartconnectorscheduler.hrmcimpl import packages_complete
 
-from bdphpcprovider.smartconnectorscheduler.stages.run import Run
+from bdphpcprovider.smartconnectorscheduler.stages.configure import Configure
+from bdphpcprovider.smartconnectorscheduler.stages.create import Create
+from bdphpcprovider.smartconnectorscheduler.stages.schedule import Schedule
 from bdphpcprovider.smartconnectorscheduler.stages.setup import Setup
+from bdphpcprovider.smartconnectorscheduler.stages.run import Run
 from bdphpcprovider.smartconnectorscheduler.stages.finished import Finished
-
-from bdphpcprovider.smartconnectorscheduler.smartconnector import SmartConnector
-from bdphpcprovider.smartconnectorscheduler.hrmcstages import Configure, Create
-
-
-from bdphpcprovider.smartconnectorscheduler.hrmcstages import  Schedule, Teardown
-
 from bdphpcprovider.smartconnectorscheduler.stages.hrmc.transform import Transform
 from bdphpcprovider.smartconnectorscheduler.stages.hrmc.converge import Converge
+from bdphpcprovider.smartconnectorscheduler.stages.teardown import Teardown
+
+from bdphpcprovider.smartconnectorscheduler.smartconnector import SmartConnector
 
 
 logger = logging.getLogger(__name__)
 
 
 def start(args):
-    #http://docs.python.org/howto/logging.html#logging-basic-tutorial
-    logging.config.fileConfig('logging.conf')
     import ConfigParser
     config = ConfigParser.RawConfigParser()
     config_file = os.path.expanduser("~/.cloudenabling/config.sys")
@@ -138,7 +134,7 @@ def start(args):
          Configure(),
          Schedule(),
          Create(),
-         Setup()#, Run(),
+         Setup(), #Run(),
          #Finished(),
          #Transform(), Converge(error_threshold), #
          #Teardown()

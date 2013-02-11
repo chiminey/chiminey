@@ -54,13 +54,13 @@ from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, Sequent
 #from hrmcstages import Create,
 
 
-from bdphpcprovider.smartconnectorscheduler.hrmcstages import Configure
+from bdphpcprovider.smartconnectorscheduler.stages.configure import Configure
 
 from bdphpcprovider.smartconnectorscheduler.stages.setup import Setup
 from bdphpcprovider.smartconnectorscheduler.stages.run import Run
 from bdphpcprovider.smartconnectorscheduler.stages.finished import Finished
 
-from bdphpcprovider.smartconnectorscheduler.hrmcstages import Schedule
+from bdphpcprovider.smartconnectorscheduler.stages.schedule import Schedule
 from bdphpcprovider.smartconnectorscheduler.stages.hrmc.transform import Transform
 from bdphpcprovider.smartconnectorscheduler.stages.hrmc.converge import Converge
 #from hrmcstages import Teardown
@@ -113,7 +113,6 @@ class TestStage(Stage):
 class ConfigureStageTests(unittest.TestCase):
 
     def setUp(self):
-        logging.config.fileConfig('logging.conf')
         self.vm_size = 100
         self.image_name = "ami-0000000d"  # FIXME: is hardcoded in
                                           # simplepackage
@@ -164,7 +163,6 @@ class SetupStageTests(unittest.TestCase):
     local_filesystem = 'default'
 
     def setUp(self):
-        logging.config.fileConfig('logging.conf')
         self.vm_size = 100
         self.image_name = "ami-0000000d"  # FIXME: is hardcoded in
                                           # simplepackage
@@ -296,7 +294,6 @@ class RunStageTests(unittest.TestCase):
     local_filesystem = 'default'
 
     def setUp(self):
-        logging.config.fileConfig('logging.conf')
         self.vm_size = 100
         self.image_name = "ami-0000000d"  # FIXME: is hardcoded in
                                           # simplepackage
@@ -441,7 +438,6 @@ class FinishedStageTests(unittest.TestCase):
     local_filesystem = 'default'
 
     def setUp(self):
-        logging.config.fileConfig('logging.conf')
         self.vm_size = 100
         self.image_name = "ami-0000000d"  # FIXME: is hardcoded in
                                           # simplepackage
@@ -797,7 +793,6 @@ class CloudTests(unittest.TestCase):
     # and return real results from paramiko and cloud calls to validate.
 
     def setUp(self):
-        logging.config.fileConfig('logging.conf')
         self.vm_size = 100
         self.image_name = "ami-0000000d"  # FIXME: is hardcoded in
                                           # simplepackage
@@ -1310,7 +1305,6 @@ class TransformStageTests(unittest.TestCase):
         logger.debug("global_filesystem=%s" % self.global_filesystem)
         self.local_filesystem = 'default'
 
-        logging.config.fileConfig('logging.conf')
         self.vm_size = 100
         self.image_name = "ami-0000000d"  # FIXME: is hardcoded in
                                           # simplepackage
@@ -1463,7 +1457,6 @@ class ConvergeStageTests(unittest.TestCase):
         logger.debug("global_filesystem=%s" % self.global_filesystem)
         self.local_filesystem = 'default'
 
-        logging.config.fileConfig('logging.conf')
         self.vm_size = 100
         self.image_name = "ami-0000000d"  # FIXME: is hardcoded in
                                           # simplepackage
@@ -1671,5 +1664,4 @@ class ConvergeStageTests(unittest.TestCase):
         self.assertTrue(criterion > s1.prev_criterion)
 
 if __name__ == '__main__':
-     logging.config.fileConfig('logging.conf')
      unittest.main()

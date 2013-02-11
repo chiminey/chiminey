@@ -165,7 +165,7 @@ LOGGING = {
         'file': {
             'level':'DEBUG',
             'class': 'logging.FileHandler',
-            'filename': './smra.log',
+            'filename': './bdphpcprovider.log',
             'formatter': 'simple'
         },
     },
@@ -175,7 +175,11 @@ LOGGING = {
             'handlers': ['file'],
             'level': 'DEBUG',
             },
-    },
+        'bdphpcprovider.smartconnectorscheduler': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            },
+        },
 }
 
 
