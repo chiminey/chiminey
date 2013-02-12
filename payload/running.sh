@@ -13,7 +13,7 @@ then
         echo stillrunning
 
     else
-        mkdir AEAO_v1_1/PSD_output
+        mkdir -p AEAO_v1_1/PSD_output
         cp PSDCode/psd_output AEAO_v1_1/PSD_output/
         cp PSDCode/PSD_exp.dat AEAO_v1_1/PSD_output/
         cp PSDCode/psd.dat AEAO_v1_1/PSD_output/
@@ -22,6 +22,12 @@ then
     fi
 
 else
-  make run_psd
+    PSD_PACKAGE="PSDCode"
+    rm -f $PSD_PACKAGE/hrmc*
+  	cp -f AEAO_v1_1/hrmc[0-9]* $PSD_PACKAGE/
+  	rm $PSD_PACKAGE/hrmc*.out
+  	cp -f $PSD_PACKAGE/hrmc*.xyz $PSD_PACKAGE/hrmc01.xyz
+  	cd $PSD_PACKAGE; ./PSD >& psd_output &  echo "$!" > "run.pid"
+  	echo stillrunning
 
 fi

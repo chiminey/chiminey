@@ -195,7 +195,10 @@ def get_output(fs, instance_id, output_dir, settings):
     logger.debug("paths = %s" % paths)
 
     for p in paths:
-        ftp.get(os.path.join(cloud_path, p), os.path.join(output_dir, p))
+        if isdir(ftp, os.path.join(cloud_path, p)):
+            os.mkdir(os.path.join(output_dir, p))
+        else:
+            ftp.get(os.path.join(cloud_path, p), os.path.join(output_dir, p))
 
     ftp.close()
     ssh.close()
