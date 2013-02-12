@@ -59,6 +59,7 @@ from bdphpcprovider.smartconnectorscheduler.stages.configure import Configure
 from bdphpcprovider.smartconnectorscheduler.stages.setup import Setup
 from bdphpcprovider.smartconnectorscheduler.stages.run import Run
 from bdphpcprovider.smartconnectorscheduler.stages.finished import Finished
+from bdphpcprovider.smartconnectorscheduler.stages.finished import packages_complete
 
 from bdphpcprovider.smartconnectorscheduler.stages.schedule import Schedule
 from bdphpcprovider.smartconnectorscheduler.stages.hrmc.transform import Transform
@@ -1121,7 +1122,7 @@ class CloudTests(unittest.TestCase):
         import shutil
         flexmock(shutil).should_receive('rmtree')
 
-        hrmcimpl.packages_complete("foobar", "", self.settings)
+        packages_complete("foobar", "", self.settings)
         #TODO: this test case fails
         #self.assertEquals(res, True)
 

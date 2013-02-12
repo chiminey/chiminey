@@ -197,7 +197,7 @@ class FileSystem(object):
         path_to_subdirectories = os.path.join(self.global_filesystem,
                                               local_filesystem)
 
-        logger.debug("Gloabl FS %s Path to Subdir %s" %(self.global_filesystem,
+        logger.debug("Gloabl FS %s Path to Subdir %s" % (self.global_filesystem,
                                                         path_to_subdirectories))
         list_of_subdirectories = os.listdir(path_to_subdirectories)
 
@@ -243,25 +243,17 @@ class FileSystem(object):
         logger.debug("input_dir =%s" % input_dir)
         dirList = os.listdir(input_dir)
         for fname in dirList:
-
             logger.debug("fname=%s" % fname)
             #dest = os.path.join("/home/centos",dest)
             logger.debug("Destination %s" % dest)
-
-
             put_file(ssh, input_dir,  fname, dest)
 
-
-    def download_output(self, ssh, instance_id, local_filesystem, settings):
-        output_dir = os.path.join(self.global_filesystem,
-                                  local_filesystem,
-                                  instance_id)
-        from bdphpcprovider.smartconnectorscheduler import hrmcimpl
-        hrmcimpl.get_output(instance_id, output_dir, settings)
-
-
-
-
+    # def download_output(self, ssh, instance_id, local_filesystem, settings):
+    #     output_dir = os.path.join(self.global_filesystem,
+    #                               local_filesystem,
+    #                               instance_id)
+    #     from bdphpcprovider.smartconnectorscheduler import hrmcimpl
+    #     hrmcimpl.get_output(instance_id, output_dir, settings)
 
     def exec_command(self, file_to_be_executed, command, wildcard=False):
         import subprocess
@@ -288,7 +280,6 @@ class FileSystem(object):
                                    overwrite)
         except ResourceNotFoundError as e:
             raise IOError(e)  # FIXME: make filesystem specfic exceptions
-
 
     def copy_files_with_pattern(self, local_filesystem, source_dir,
                                  dest_dir, pattern, overwrite=True):

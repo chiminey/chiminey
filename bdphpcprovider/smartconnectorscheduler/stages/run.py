@@ -40,7 +40,7 @@ from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, \
 from bdphpcprovider.smartconnectorscheduler.filesystem import FileSystem, \
     DataObject
 from bdphpcprovider.smartconnectorscheduler import botocloudconnector
-from bdphpcprovider.smartconnectorscheduler.hrmcimpl import PackageFailedError
+from bdphpcprovider.smartconnectorscheduler.errors import PackageFailedError
 #from bdphpcprovider.smartconnectorscheduler.sshconnector import \
 #    find_remote_files, run_command, put_file, run_sudo_command_with_status
 from bdphpcprovider.smartconnectorscheduler.hrmcstages import get_settings, \

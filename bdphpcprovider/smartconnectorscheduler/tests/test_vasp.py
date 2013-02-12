@@ -59,7 +59,6 @@ class MetadataTests(unittest.TestCase):
         logger.debug("global_filesystem=%s" % self.global_filesystem)
         self.local_filesystem = 'default'
 
-        logging.config.fileConfig('logging.conf')
         self.vm_size = 100
         self.image_name = "ami-0000000d"  # FIXME: is hardcoded in
                                           # simplepackage
