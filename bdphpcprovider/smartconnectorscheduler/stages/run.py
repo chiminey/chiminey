@@ -313,7 +313,7 @@ class Run(Stage):
                 template = data_object.retrieve()
                 logger.debug("template content = %s" % template)
                 #
-                num_dim = 1
+                num_dim = 2
 
                 if num_dim == 1:
                     N = context['number_vm_instances']
