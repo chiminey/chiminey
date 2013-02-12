@@ -152,9 +152,8 @@ def _get_paths(sftp, dir):
         if isdir(sftp, str(item)):
             p = _get_paths(sftp, item)
             for x in p:
-                dirs.append(x)
-        else:
-            dirs.append(item)
+                dirs.append(os.path.join(dir,x))
+        dirs.append(os.path.join(dir, item))
     return dirs
 
 
@@ -195,7 +194,13 @@ def get_output(fs, instance_id, output_dir, settings):
     logger.debug("paths = %s" % paths)
 
     for p in paths:
-        ftp.get(os.path.join(cloud_path, p), os.path.join(output_dir, p))
+        source = os.path.join(cloud_path, p)
+        dest = os.path.join(output_dir, p)
+        logger.debug("%s to %s" % (source, dest))
+        if isdir(ftp, source):
+            os.makedirs(dest)
+        else:
+            ftp.get(source, dest)
 
     ftp.close()
     ssh.close()
