@@ -1083,6 +1083,7 @@ class CloudTests(unittest.TestCase):
         for p in ['/package/file1', '/package/dir1/file2', '/package/dir1/file3']:
             flexmock(hrmcimpl).should_receive('isdir').with_args(fakesftp,p).and_return(False)
         flexmock(hrmcimpl).should_receive('isdir').with_args(fakesftp,'/package/dir1').and_return(True)
+        flexmock(os).should_receive('makedirs')
 
         #fakesftp.should_receive('listdir').with_args(os.path('package')).and_return(['/package/file1','package/dir1'])
         #fakesftp.should_receive('listdir').with_args('package/dir1').and_return(['/package/file2','package/file3'])

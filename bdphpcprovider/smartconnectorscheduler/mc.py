@@ -134,7 +134,7 @@ def start(args):
          Create(),
          Setup(), Run(),
          Finished(),
-         #Transform(), Converge(error_threshold), #
+         Transform(), Converge(error_threshold), #
          #Teardown()
          ):
             smart_conn.register(stage)

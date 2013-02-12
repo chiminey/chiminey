@@ -213,8 +213,15 @@ class Converge(Stage):
 
         new_output_dir = 'output'
         # FIXME: check new_output_dir does not already exist
-        fs.create_local_filesystem(new_output_dir)
+        #fs.create_local_filesystem(new_output_dir)
 
+        import shutil, os.path
+        source = os.path.join(fs.get_global_filesystem(), self.output_dir, crit_node)
+        dest = os.path.join(fs.get_global_filesystem(), new_output_dir)
+        logger.debug("Convergence Source %s Destination %s " % (source, dest))
+        shutil.copytree(source, dest)
+
+        ''''
         gerr_object = None
         try:
             gerr_object = fs.retrieve_under_dir(local_filesystem=self.output_dir,
@@ -235,6 +242,7 @@ class Converge(Stage):
                     logger.exception("Cannot copy output file %s to final destination %s " % (f, new_output_dir))
             else:
                 logger.debug("skipping %s" % f)
+        '''
 
     def output(self, context):
 

@@ -148,13 +148,16 @@ def _get_paths(sftp, dir):
     file_list = sftp.listdir(path=dir)
     logger.debug("file_qlist=%s" % file_list)
     dirs = []
+
     for item in file_list:
-        if isdir(sftp, str(item)):
-            p = _get_paths(sftp, item)
+        logger.debug("Item %s" % str(item))
+        if isdir(sftp, os.path.join(dir, item)):
+            logger.debug("Directory %s" % str(item))
+            p = _get_paths(sftp, os.path.join(dir, item))
             for x in p:
+                logger.debug("Inside Directory %s" % x)
                 dirs.append(x)
-        else:
-            dirs.append(item)
+        dirs.append(os.path.join(dir, item))
     return dirs
 
 
@@ -192,13 +195,28 @@ def get_output(fs, instance_id, output_dir, settings):
                               settings['PAYLOAD_CLOUD_DIRNAME'])
     logger.debug("Transferring output from %s to %s" % (cloud_path, output_dir))
     paths = _get_paths(ftp, cloud_path)
+    relative_paths = []
+    for p in paths:
+        relative_paths.append(p[len(cloud_path)+1:])
+
     logger.debug("paths = %s" % paths)
 
-    for p in paths:
-        if isdir(ftp, os.path.join(cloud_path, p)):
-            os.mkdir(os.path.join(output_dir, p))
-        else:
-            ftp.get(os.path.join(cloud_path, p), os.path.join(output_dir, p))
+    for p in relative_paths:
+        source = os.path.join(cloud_path, p)
+        dest = os.path.join(output_dir, p)
+        logger.debug("%s to %s" % (source, dest))
+        if isdir(ftp, source):
+            try:
+                os.makedirs(dest)
+            except os.error:
+                pass
+
+    for p in relative_paths:
+        source = os.path.join(cloud_path, p)
+        dest = os.path.join(output_dir, p)
+        logger.debug("%s to %s" % (source, dest))
+        if not isdir(ftp, source):
+            ftp.get(source, dest)
 
     ftp.close()
     ssh.close()
