@@ -11,8 +11,69 @@ from bdphpcprovider.smartconnectorscheduler.hrmcstages import get_settings, \
     get_run_info, get_filesys, get_all_settings, update_key
 
 from bdphpcprovider.smartconnectorscheduler import sshconnector
+from bdphpcprovider.smartconnectorscheduler import hrmcimpl
 
 logger = logging.getLogger(__name__)
+
+
+def _status_of_nodeset(fs, nodes, output_dir, settings):
+    """
+    Return lists that describe which of the set of nodes are finished or
+    have disappeared
+    """
+    error_nodes = []
+    finished_nodes = []
+
+    for node in nodes:
+        instance_id = node.id
+
+        if not botocloudconnector.is_instance_running(instance_id, settings):
+            # An unlikely situation where the node crashed after is was
+            # detected as registered.
+            logging.error('Instance %s not running' % instance_id)
+            error_nodes.append(node)
+            continue
+
+        finished = Finished()
+        if finished.job_finished(instance_id, settings):
+            print "done. output is available"
+            hrmcimpl.get_output(fs, instance_id,
+                       "%s/%s" % (output_dir, instance_id),
+                       settings)
+
+            hrmcimpl.run_post_task(instance_id, settings)
+            post_output_dir = instance_id + "_post"
+            hrmcimpl.get_post_output(instance_id,
+                "%s/%s" % (output_dir, post_output_dir),
+                settings)
+
+            finished_nodes.append(node)
+        else:
+            print "job still running on %s: %s\
+            " % (instance_id, botocloudconnector.get_instance_ip(instance_id, settings))
+
+    return (error_nodes, finished_nodes)
+
+
+
+def packages_complete(fs, group_id, output_dir, settings):
+    """
+    Indicates if all the package nodes have finished and generate
+    any output as needed
+    """
+    nodes = botocloudconnector.get_rego_nodes(group_id, settings)
+    error_nodes, finished_nodes = _status_of_nodeset(fs, nodes,
+                                                     output_dir,
+                                                     settings)
+    if finished_nodes + error_nodes == nodes:
+        logger.info("Package Finished")
+        return True
+
+    if error_nodes:
+        logger.warn("error nodes: %s" % error_nodes)
+        return True
+
+    return False
 
 
 class Finished(Stage):
@@ -49,6 +110,7 @@ class Finished(Stage):
             return self.settings['runs_left']
         logger.debug("Finished NOT Triggered")
         return False
+
 
     def job_finished(self, instance_id, settings):
         """
@@ -104,7 +166,8 @@ class Finished(Stage):
                 # is not maintained between triggerings...
 
                 if not (node.id in [x.id for x in self.finished_nodes]):
-                    fsys.download_output(ssh, instance_id, self.output_dir, self.settings)
+                    hrmcimpl.get_output(fsys, instance_id, self.output_dir, self.settings)
+                    #fsys.download_output(ssh, instance_id, self.output_dir, self.settings)
                     import os
                     audit_file = os.path.join(self.output_dir, instance_id, "audit.txt")
                     logger.debug("Audit file path %s" % audit_file)

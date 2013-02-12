@@ -26,6 +26,7 @@ from flexmock import flexmock
 import logging
 import paramiko
 import json
+import tempfile
 import sys
 
 from bdphpcprovider.smartconnectorscheduler.cloudconnector import *
@@ -58,6 +59,7 @@ from bdphpcprovider.smartconnectorscheduler.stages.configure import Configure
 from bdphpcprovider.smartconnectorscheduler.stages.setup import Setup
 from bdphpcprovider.smartconnectorscheduler.stages.run import Run
 from bdphpcprovider.smartconnectorscheduler.stages.finished import Finished
+from bdphpcprovider.smartconnectorscheduler.stages.finished import packages_complete
 
 from bdphpcprovider.smartconnectorscheduler.stages.schedule import Schedule
 from bdphpcprovider.smartconnectorscheduler.stages.hrmc.transform import Transform
@@ -453,7 +455,8 @@ class FinishedStageTests(unittest.TestCase):
             'PAYLOAD_LOCAL_DIRNAME': "", 'COMPILER': "g77", 'PAYLOAD': "payload",
             'COMPILE_FILE': "foo", 'MAX_SEED_INT': 100, 'RETRY_ATTEMPTS': 3,
             'OUTPUT_FILES': ['a', 'b'], 'PROVIDER': "nectar",
-            'CUSTOM_PROMPT': "[smart-connector_prompt]$"}
+            'CUSTOM_PROMPT': "[smart-connector_prompt]$",
+            'PAYLOAD_DESTINATION':""}
 
     def test_finished(self):
 
@@ -464,7 +467,12 @@ class FinishedStageTests(unittest.TestCase):
         #TODO: copy input files into filesystem
 
         # Make fake sftp connection
-        fakesftp = flexmock(get=lambda x, y: True, put=lambda x, y: True)
+        fakesftp = flexmock(get=lambda x, y: True, put=lambda x, y: True, close=lambda: True)
+        fakesftp.should_receive('listdir').and_return(['/package/file1','/package/dir1']).and_return(
+            ['/package/dir1/file2','/package/dir1/file3'])
+        for p in ['/package/file1', '/package/dir1/file2', '/package/dir1/file3']:
+            flexmock(hrmcimpl).should_receive('isdir').with_args(fakesftp,p).and_return(False)
+        flexmock(hrmcimpl).should_receive('isdir').with_args(fakesftp,'/package/dir1').and_return(True)
 
         # Make fake ssh connection
         fakessh1 = flexmock(load_system_host_keys=lambda x: True,
@@ -475,7 +483,8 @@ class FinishedStageTests(unittest.TestCase):
                             "",
                             flexmock(readlines=lambda: ["1\n"]),
                             flexmock(readlines=lambda: [""])],
-                        open_sftp=lambda: fakesftp
+                        open_sftp=lambda: fakesftp,
+                        close=lambda: True
                         )
 
         # and use fake for paramiko
@@ -519,6 +528,11 @@ class FinishedStageTests(unittest.TestCase):
 
         flexmock(sshconnector) \
             .should_receive('run_sudo_command').and_return(['done', ''])
+
+        import shutil
+        flexmock(shutil).should_receive('rmtree')
+        flexmock(os).should_receive('makedirs')
+
 
         f1 = DataObject("config.sys")
         self.settings['seed'] = 42
@@ -790,6 +804,9 @@ class CloudTests(unittest.TestCase):
         self.image_name = "ami-0000000d"  # FIXME: is hardcoded in
                                           # simplepackage
         self.instance_name = "foo"
+        self.global_filesystem = tempfile.mkdtemp()
+        logger.debug("global_filesystem=%s" % self.global_filesystem)
+        self.local_filesystem = 'default'
 
         self.settings = {
             'USER_NAME': "accountname", 'PASSWORD': "mypassword",
@@ -804,7 +821,8 @@ class CloudTests(unittest.TestCase):
             'OUTPUT_FILES': ['a', 'b'], 'PROVIDER': "nectar",
             'CUSTOM_PROMPT': "[smart-connector_prompt]$",
             "POST_PROCESSING_DEST_PATH_PREFIX": "",
-            "POST_PAYLOAD_CLOUD_DIRNAME": "", "PAYLOAD_DESTINATION": ""}
+            "POST_PAYLOAD_CLOUD_DIRNAME": "", "PAYLOAD_DESTINATION": "",
+            "POST_PAYLOAD_COMPILE_FILE": ""}
 
     def test_create_connection(self):
 
@@ -1035,23 +1053,41 @@ class CloudTests(unittest.TestCase):
             .and_return(['', 'done', ''])
         flexmock(sshconnector).should_receive('run_sudo_command') \
             .and_return(['done', ''])
+        import shutil
+        flexmock(shutil).should_receive('rmtree')
+        flexmock(os).should_receive('makedirs')
+
         flexmock(botocloudconnector).should_receive('get_rego_nodes')\
         .and_return(cloudconnector.get_rego_nodes(group_id, self.settings))
 
         flexmock(botocloudconnector).should_receive('get_instance_ip')\
         .and_return(cloudconnector.get_instance_ip(fakenode_state1.id, self.settings))
 
+        flexmock(sshconnector).should_receive('get_package_pids') \
+            .and_return([1])
+        flexmock(sshconnector).should_receive('run_sudo_command') \
+            .and_return(['done', ''])
+
         run = Run()
         res = run.run_multi_task("foobar", "", self.settings)
-        #TODO: this test case fails?
-        self.assertEquals(res.values(), [['1\n']])
+        self.assertEquals(res.values(), [[1]])
 
     def test_packages_complete(self):
         logger.debug("test_packages_complete")
 
         group_id = "fgwefasfresafasdfdsaf"
         # Make fake sftp connection
-        fakesftp = flexmock(get=lambda x, y: True, put=lambda x, y: True)
+        fakesftp = flexmock(get=lambda x, y: True, put=lambda x, y: True, close=lambda: True)
+        fakesftp.should_receive('listdir').and_return(['/package/file1','/package/dir1']).and_return(
+            ['/package/dir1/file2','/package/dir1/file3'])
+        for p in ['/package/file1', '/package/dir1/file2', '/package/dir1/file3']:
+            flexmock(hrmcimpl).should_receive('isdir').with_args(fakesftp,p).and_return(False)
+        flexmock(hrmcimpl).should_receive('isdir').with_args(fakesftp,'/package/dir1').and_return(True)
+
+        #fakesftp.should_receive('listdir').with_args(os.path('package')).and_return(['/package/file1','package/dir1'])
+        #fakesftp.should_receive('listdir').with_args('package/dir1').and_return(['/package/file2','package/file3'])
+
+
         exec_ret = ["", flexmock(readlines=lambda: ["1\n"]),
                     flexmock(readlines=lambda: [""])]
         # Make fake ssh connection
@@ -1060,7 +1096,8 @@ class CloudTests(unittest.TestCase):
                         connect=lambda ipaddress, username,
                                        password, timeout: True,
                         exec_command=lambda command: exec_ret,
-                        open_sftp=lambda: fakesftp)
+                        open_sftp=lambda: fakesftp,
+                        close=lambda: True)
         # and use fake for paramiko
         flexmock(paramiko).should_receive('SSHClient').and_return(fakessh1)
         # Make fake cloud connection
@@ -1096,7 +1133,19 @@ class CloudTests(unittest.TestCase):
         flexmock(botocloudconnector).should_receive('is_instance_running')\
         .and_return(True)
 
-        hrmcimpl.packages_complete("foobar", "", self.settings)
+        flexmock(sshconnector).should_receive('get_package_pids') \
+            .and_return(None)
+        flexmock(sshconnector).should_receive('run_sudo_command') \
+            .and_return(['done', ''])
+
+        flexmock(os).should_receive('makedirs')
+        import shutil
+        flexmock(shutil).should_receive('rmtree')
+
+        fs = FileSystem(self.global_filesystem, self.local_filesystem)
+
+
+        packages_complete(fs,"foobar", "", self.settings)
         #TODO: this test case fails
         #self.assertEquals(res, True)
 
@@ -1143,6 +1192,9 @@ class CloudTests(unittest.TestCase):
             .and_return(None)
         flexmock(sshconnector).should_receive('run_sudo_command') \
             .and_return(['done', ''])
+
+        import shutil
+        flexmock(shutil).should_receive('rmtree')
 
         res = collect_instances(self.settings, group_id="foobar")
         logger.debug("res= %s" % res)
@@ -1423,7 +1475,6 @@ class ConvergeStageTests(unittest.TestCase):
 
     def setUp(self):
 
-        import tempfile
 
         self.global_filesystem = tempfile.mkdtemp()
         logger.debug("global_filesystem=%s" % self.global_filesystem)
