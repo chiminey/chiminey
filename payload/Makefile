@@ -18,10 +18,13 @@ setup_psd:
 print:
 	@echo Setup completed
 
-startrun: run_hrmc
+startrun: psd_run_setup run_hrmc
 
 run_hrmc:
 	@cd AEAO_v1_1 ; ./HRMC >& output &  echo "$$!" > "run.pid"
+
+psd_run_setup:
+	rm -f $(PSD_PACKAGE)/run.pid
 
 run_psd:
 	rm -f $(PSD_PACKAGE)/hrmc*
@@ -32,13 +35,4 @@ run_psd:
 
 running:
 	@sh ./running.sh
-
-
-prepare_psd_input:
-	@cd PSD_package; cp PSD.inp PSD.inp.org
-	@cd PSD_package; dos2unix PSD.inp
-	@cd PSD_package; sed -i '/^$/d' PSD.inp
-#sed -i 's/[0-9]*[ \t]*iseed.*$/%s\tiseed/' PSD.inp
-
-
-
+	

@@ -1,6 +1,8 @@
 #!/bin/sh
 
 PID=`cat AEAO_v1_1/run.pid`
+PSD_PACKAGE="PSDCode"
+
 echo $PID
 if [ `ps -p $PID | wc -l` -gt 1 ]
 then
@@ -22,10 +24,11 @@ then
     fi
 
 else
-    PSD_PACKAGE="PSDCode"
     rm -f $PSD_PACKAGE/hrmc*
+    rm -f $PSD_PACKAGE/psd.dat
+    rm -f $PSD_PACKAGE/psd_output
   	cp -f AEAO_v1_1/hrmc[0-9]* $PSD_PACKAGE/
-  	rm $PSD_PACKAGE/hrmc*.out
+  	rm -f $PSD_PACKAGE/hrmc*.out
   	cp -f $PSD_PACKAGE/hrmc*.xyz $PSD_PACKAGE/hrmc01.xyz
   	cd $PSD_PACKAGE; ./PSD >& psd_output &  echo "$!" > "run.pid"
   	echo stillrunning
