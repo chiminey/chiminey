@@ -6,7 +6,6 @@ from bdphpcprovider.smartconnectorscheduler.sshconnector import get_package_pids
 from bdphpcprovider.smartconnectorscheduler.sshconnector import find_remote_files
 from bdphpcprovider.smartconnectorscheduler import botocloudconnector
 
-from bdphpcprovider.smartconnectorscheduler.stages.finished import Finished
 logger = logging.getLogger(__name__)
 
 
@@ -14,8 +13,6 @@ class Error(Exception):
     pass
 
 
-class PackageFailedError(Error):
-    pass
 
 
 def setup_task(instance_id, settings):
@@ -196,24 +193,24 @@ def setup_multi_task(group_id, settings):
     logger.debug("all threads are done")
 
 
-def packages_complete(group_id, output_dir, settings):
-    """
-    Indicates if all the package nodes have finished and generate
-    any output as needed
-    """
-    nodes = botocloudconnector.get_rego_nodes(group_id, settings)
-    error_nodes, finished_nodes = _status_of_nodeset(nodes,
-                                                     output_dir,
-                                                     settings)
-    if finished_nodes + error_nodes == nodes:
-        logger.info("Package Finished")
-        return True
+# def packages_complete(group_id, output_dir, settings):
+#     """
+#     Indicates if all the package nodes have finished and generate
+#     any output as needed
+#     """
+#     nodes = botocloudconnector.get_rego_nodes(group_id, settings)
+#     error_nodes, finished_nodes = _status_of_nodeset(nodes,
+#                                                      output_dir,
+#                                                      settings)
+#     if finished_nodes + error_nodes == nodes:
+#         logger.info("Package Finished")
+#         return True
 
-    if error_nodes:
-        logger.warn("error nodes: %s" % error_nodes)
-        return True
+#     if error_nodes:
+#         logger.warn("error nodes: %s" % error_nodes)
+#         return True
 
-    return False
+#     return False
 
 
 def prepare_multi_input(group_id, input_dir, settings, seed):
@@ -297,43 +294,43 @@ def _normalize_dirpath(dirpath):
 
 
 
-def _status_of_nodeset(nodes, output_dir, settings):
-    """
-    Return lists that describe which of the set of nodes are finished or
-    have disappeared
-    """
-    error_nodes = []
-    finished_nodes = []
+# def _status_of_nodeset(nodes, output_dir, settings):
+#     """
+#     Return lists that describe which of the set of nodes are finished or
+#     have disappeared
+#     """
+#     error_nodes = []
+#     finished_nodes = []
 
-    for node in nodes:
-        instance_id = node.id
+#     for node in nodes:
+#         instance_id = node.id
 
-        if not botocloudconnector.is_instance_running(instance_id, settings):
-            # An unlikely situation where the node crashed after is was
-            # detected as registered.
-            logging.error('Instance %s not running' % instance_id)
-            error_nodes.append(node)
-            continue
+#         if not botocloudconnector.is_instance_running(instance_id, settings):
+#             # An unlikely situation where the node crashed after is was
+#             # detected as registered.
+#             logging.error('Instance %s not running' % instance_id)
+#             error_nodes.append(node)
+#             continue
 
-        finished = Finished()
-        if finished.job_finished(instance_id, settings):
-            print "done. output is available"
-            get_output(instance_id,
-                       "%s/%s" % (output_dir, instance_id),
-                       settings)
+#         finished = Fin()
+#         if finished.job_finished(instance_id, settings):
+#             print "done. output is available"
+#             get_output(instance_id,
+#                        "%s/%s" % (output_dir, instance_id),
+#                        settings)
 
-            run_post_task(instance_id, settings)
-            post_output_dir = instance_id + "_post"
-            get_post_output(instance_id,
-                "%s/%s" % (output_dir, post_output_dir),
-                settings)
+#             run_post_task(instance_id, settings)
+#             post_output_dir = instance_id + "_post"
+#             get_post_output(instance_id,
+#                 "%s/%s" % (output_dir, post_output_dir),
+#                 settings)
 
-            finished_nodes.append(node)
-        else:
-            print "job still running on %s: %s\
-            " % (instance_id, botocloudconnector.get_instance_ip(instance_id, settings))
+#             finished_nodes.append(node)
+#         else:
+#             print "job still running on %s: %s\
+#             " % (instance_id, botocloudconnector.get_instance_ip(instance_id, settings))
 
-    return (error_nodes, finished_nodes)
+#     return (error_nodes, finished_nodes)
 
 
 def run_post_task(instance_id, settings):

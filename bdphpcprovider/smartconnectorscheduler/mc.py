@@ -7,8 +7,6 @@ import logging
 from bdphpcprovider.smartconnectorscheduler.botocloudconnector import create_environ,  collect_instances, \
     print_all_information, confirm_teardown, destroy_environ
 
-from bdphpcprovider.smartconnectorscheduler.hrmcimpl import packages_complete
-
 from bdphpcprovider.smartconnectorscheduler.stages.configure import Configure
 from bdphpcprovider.smartconnectorscheduler.stages.create import Create
 from bdphpcprovider.smartconnectorscheduler.stages.schedule import Schedule
@@ -232,7 +230,7 @@ def start(args):
             # We fake run_stage triggered() and don't need to signal other stages, so skip output()
             run_stage.process(context)
 
-            while (not packages_complete(options.group_id,
+            while (not Finished.packages_complete(options.group_id,
                                          options.output_dir,
                                          settings)):
                 print("job is running.  Wait or CTRL-C to exit here. \
@@ -252,7 +250,7 @@ def start(args):
                 sys.exit(1)
 
             group_id = options.group_id
-            is_finished = packages_complete(group_id,
+            is_finished = Finished.packages_complete(group_id,
                                             options.output_dir,
                                             settings)
 
