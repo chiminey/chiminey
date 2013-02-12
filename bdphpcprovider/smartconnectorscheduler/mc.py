@@ -134,8 +134,8 @@ def start(args):
          Configure(),
          Schedule(),
          Create(),
-         Setup(), #Run(),
-         #Finished(),
+         Setup(), Run(),
+         Finished(),
          #Transform(), Converge(error_threshold), #
          #Teardown()
          ):
