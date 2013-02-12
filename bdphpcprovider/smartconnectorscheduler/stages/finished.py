@@ -16,7 +16,7 @@ from bdphpcprovider.smartconnectorscheduler import hrmcimpl
 logger = logging.getLogger(__name__)
 
 
-def _status_of_nodeset(nodes, output_dir, settings):
+def _status_of_nodeset(fs, nodes, output_dir, settings):
     """
     Return lists that describe which of the set of nodes are finished or
     have disappeared
@@ -37,7 +37,7 @@ def _status_of_nodeset(nodes, output_dir, settings):
         finished = Finished()
         if finished.job_finished(instance_id, settings):
             print "done. output is available"
-            hrmcimpl.get_output(instance_id,
+            hrmcimpl.get_output(fs, instance_id,
                        "%s/%s" % (output_dir, instance_id),
                        settings)
 
@@ -56,13 +56,13 @@ def _status_of_nodeset(nodes, output_dir, settings):
 
 
 
-def packages_complete(group_id, output_dir, settings):
+def packages_complete(fs, group_id, output_dir, settings):
     """
     Indicates if all the package nodes have finished and generate
     any output as needed
     """
     nodes = botocloudconnector.get_rego_nodes(group_id, settings)
-    error_nodes, finished_nodes = _status_of_nodeset(nodes,
+    error_nodes, finished_nodes = _status_of_nodeset(fs, nodes,
                                                      output_dir,
                                                      settings)
     if finished_nodes + error_nodes == nodes:
@@ -166,7 +166,7 @@ class Finished(Stage):
                 # is not maintained between triggerings...
 
                 if not (node.id in [x.id for x in self.finished_nodes]):
-                    hrmcimpl.get_output(instance_id, self.output_dir, self.settings)
+                    hrmcimpl.get_output(fsys, instance_id, self.output_dir, self.settings)
                     #fsys.download_output(ssh, instance_id, self.output_dir, self.settings)
                     import os
                     audit_file = os.path.join(self.output_dir, instance_id, "audit.txt")

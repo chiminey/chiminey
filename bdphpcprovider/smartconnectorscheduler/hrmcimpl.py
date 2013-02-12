@@ -100,7 +100,7 @@ def prepare_input(instance_id, input_dir, settings, seed):
                               settings['PAYLOAD_CLOUD_DIRNAME'])))
 
 
-def get_output(instance_id, output_dir, settings):
+def get_output_old(instance_id, output_dir, settings):
     """
         Retrieve the output from the task on the node
     """
@@ -132,6 +132,73 @@ def get_output(instance_id, output_dir, settings):
                  file, output_dir)
     # TODO: do integrity check on output files
     pass
+
+from stat import S_ISDIR
+
+
+def isdir(sftp, path):
+    try:
+        return S_ISDIR(sftp.stat(path).st_mode)
+    except IOError:
+        #Path does not exist, so by definition not a directory
+        return False
+
+
+def _get_paths(sftp, dir):
+    file_list = sftp.listdir(path=dir)
+    logger.debug("file_qlist=%s" % file_list)
+    dirs = []
+    for item in file_list:
+        if isdir(sftp, str(item)):
+            p = _get_paths(sftp, item)
+            for x in p:
+                dirs.append(x)
+        else:
+            dirs.append(item)
+    return dirs
+
+
+def get_output(fs, instance_id, output_dir, settings):
+    """
+        Retrieve the output from the task on the node
+    """
+    logger.info("get_output %s" % instance_id)
+    output_dir = os.path.join(fs, fs.get_global_filesystem(),
+                                   output_dir,
+                                   instance_id)
+    logger.debug("new output_dir = %s" % output_dir)
+    directory_created = False
+    while not directory_created:
+        try:
+            os.makedirs(output_dir)  # NOTE: makes intermediate directories
+            directory_created = True
+        except OSError, e:
+            logger.debug("output directory %s already exists: %s Deleting the existing directory ...\
+                         " % (output_dir, output_dir))
+            import shutil
+            shutil.rmtree(output_dir)
+            logger.debug("Existing directory %s along with its previous content deleted" % output_dir)
+            logger.debug("Empty directory %s created" % output_dir)
+            #sys.exit(1)
+    logger.info("output directory is %s" % output_dir)
+
+    cloud_path = os.path.join(settings['PAYLOAD_DESTINATION'],
+                              settings['PAYLOAD_CLOUD_DIRNAME'])
+    logger.debug("Transferring output from %s to %s" % (cloud_path, output_dir))
+    ip = botocloudconnector.get_instance_ip(instance_id, settings)
+    ssh = open_connection(ip_address=ip, settings=settings)
+    ftp = ssh.open_sftp()
+    cloud_path = os.path.join(settings['PAYLOAD_DESTINATION'],
+                              settings['PAYLOAD_CLOUD_DIRNAME'])
+    logger.debug("Transferring output from %s to %s" % (cloud_path, output_dir))
+    paths = _get_paths(ftp, cloud_path)
+    logger.debug("paths = %s" % paths)
+
+    for p in paths:
+        ftp.get(os.path.join(cloud_path, p), os.path.join(output_dir, p))
+
+    ftp.close()
+    ssh.close()
 
 
 def get_post_output(instance_id, output_dir, settings):
