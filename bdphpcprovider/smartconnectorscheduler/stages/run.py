@@ -40,7 +40,7 @@ from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, \
 from bdphpcprovider.smartconnectorscheduler.filesystem import FileSystem, \
     DataObject
 from bdphpcprovider.smartconnectorscheduler import botocloudconnector
-from bdphpcprovider.smartconnectorscheduler.hrmcimpl import PackageFailedError
+from bdphpcprovider.smartconnectorscheduler.errors import PackageFailedError
 #from bdphpcprovider.smartconnectorscheduler.sshconnector import \
 #    find_remote_files, run_command, put_file, run_sudo_command_with_status
 from bdphpcprovider.smartconnectorscheduler.hrmcstages import get_settings, \
@@ -122,6 +122,7 @@ class Run(Stage):
 
         attempts = settings['RETRY_ATTEMPTS']
         logger.debug("checking for package start")
+        #FIXME: remove following and instead use a specific MakeFile target to return pid
         for x in range(0, attempts):
             time.sleep(5)  # to give process enough time to start
             pids = sshconnector.get_package_pids(ssh, settings['COMPILE_FILE'])

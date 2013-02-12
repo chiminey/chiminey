@@ -6,7 +6,6 @@ from bdphpcprovider.smartconnectorscheduler.sshconnector import get_package_pids
 from bdphpcprovider.smartconnectorscheduler.sshconnector import find_remote_files
 from bdphpcprovider.smartconnectorscheduler import botocloudconnector
 
-from bdphpcprovider.smartconnectorscheduler.stages.finished import Finished
 logger = logging.getLogger(__name__)
 
 
@@ -14,8 +13,6 @@ class Error(Exception):
     pass
 
 
-class PackageFailedError(Error):
-    pass
 
 
 def setup_task(instance_id, settings):
@@ -103,7 +100,7 @@ def prepare_input(instance_id, input_dir, settings, seed):
                               settings['PAYLOAD_CLOUD_DIRNAME'])))
 
 
-def get_output(instance_id, output_dir, settings):
+def get_output_old(instance_id, output_dir, settings):
     """
         Retrieve the output from the task on the node
     """
@@ -135,6 +132,73 @@ def get_output(instance_id, output_dir, settings):
                  file, output_dir)
     # TODO: do integrity check on output files
     pass
+
+from stat import S_ISDIR
+
+
+def isdir(sftp, path):
+    try:
+        return S_ISDIR(sftp.stat(path).st_mode)
+    except IOError:
+        #Path does not exist, so by definition not a directory
+        return False
+
+
+def _get_paths(sftp, dir):
+    file_list = sftp.listdir(path=dir)
+    logger.debug("file_qlist=%s" % file_list)
+    dirs = []
+    for item in file_list:
+        if isdir(sftp, str(item)):
+            p = _get_paths(sftp, item)
+            for x in p:
+                dirs.append(x)
+        else:
+            dirs.append(item)
+    return dirs
+
+
+def get_output(fs, instance_id, output_dir, settings):
+    """
+        Retrieve the output from the task on the node
+    """
+    logger.info("get_output %s" % instance_id)
+    output_dir = os.path.join(fs, fs.get_global_filesystem(),
+                                   output_dir,
+                                   instance_id)
+    logger.debug("new output_dir = %s" % output_dir)
+    directory_created = False
+    while not directory_created:
+        try:
+            os.makedirs(output_dir)  # NOTE: makes intermediate directories
+            directory_created = True
+        except OSError, e:
+            logger.debug("output directory %s already exists: %s Deleting the existing directory ...\
+                         " % (output_dir, output_dir))
+            import shutil
+            shutil.rmtree(output_dir)
+            logger.debug("Existing directory %s along with its previous content deleted" % output_dir)
+            logger.debug("Empty directory %s created" % output_dir)
+            #sys.exit(1)
+    logger.info("output directory is %s" % output_dir)
+
+    cloud_path = os.path.join(settings['PAYLOAD_DESTINATION'],
+                              settings['PAYLOAD_CLOUD_DIRNAME'])
+    logger.debug("Transferring output from %s to %s" % (cloud_path, output_dir))
+    ip = botocloudconnector.get_instance_ip(instance_id, settings)
+    ssh = open_connection(ip_address=ip, settings=settings)
+    ftp = ssh.open_sftp()
+    cloud_path = os.path.join(settings['PAYLOAD_DESTINATION'],
+                              settings['PAYLOAD_CLOUD_DIRNAME'])
+    logger.debug("Transferring output from %s to %s" % (cloud_path, output_dir))
+    paths = _get_paths(ftp, cloud_path)
+    logger.debug("paths = %s" % paths)
+
+    for p in paths:
+        ftp.get(os.path.join(cloud_path, p), os.path.join(output_dir, p))
+
+    ftp.close()
+    ssh.close()
 
 
 def get_post_output(instance_id, output_dir, settings):
@@ -196,24 +260,24 @@ def setup_multi_task(group_id, settings):
     logger.debug("all threads are done")
 
 
-def packages_complete(group_id, output_dir, settings):
-    """
-    Indicates if all the package nodes have finished and generate
-    any output as needed
-    """
-    nodes = botocloudconnector.get_rego_nodes(group_id, settings)
-    error_nodes, finished_nodes = _status_of_nodeset(nodes,
-                                                     output_dir,
-                                                     settings)
-    if finished_nodes + error_nodes == nodes:
-        logger.info("Package Finished")
-        return True
+# def packages_complete(group_id, output_dir, settings):
+#     """
+#     Indicates if all the package nodes have finished and generate
+#     any output as needed
+#     """
+#     nodes = botocloudconnector.get_rego_nodes(group_id, settings)
+#     error_nodes, finished_nodes = _status_of_nodeset(nodes,
+#                                                      output_dir,
+#                                                      settings)
+#     if finished_nodes + error_nodes == nodes:
+#         logger.info("Package Finished")
+#         return True
 
-    if error_nodes:
-        logger.warn("error nodes: %s" % error_nodes)
-        return True
+#     if error_nodes:
+#         logger.warn("error nodes: %s" % error_nodes)
+#         return True
 
-    return False
+#     return False
 
 
 def prepare_multi_input(group_id, input_dir, settings, seed):
@@ -297,43 +361,43 @@ def _normalize_dirpath(dirpath):
 
 
 
-def _status_of_nodeset(nodes, output_dir, settings):
-    """
-    Return lists that describe which of the set of nodes are finished or
-    have disappeared
-    """
-    error_nodes = []
-    finished_nodes = []
+# def _status_of_nodeset(nodes, output_dir, settings):
+#     """
+#     Return lists that describe which of the set of nodes are finished or
+#     have disappeared
+#     """
+#     error_nodes = []
+#     finished_nodes = []
 
-    for node in nodes:
-        instance_id = node.id
+#     for node in nodes:
+#         instance_id = node.id
 
-        if not botocloudconnector.is_instance_running(instance_id, settings):
-            # An unlikely situation where the node crashed after is was
-            # detected as registered.
-            logging.error('Instance %s not running' % instance_id)
-            error_nodes.append(node)
-            continue
+#         if not botocloudconnector.is_instance_running(instance_id, settings):
+#             # An unlikely situation where the node crashed after is was
+#             # detected as registered.
+#             logging.error('Instance %s not running' % instance_id)
+#             error_nodes.append(node)
+#             continue
 
-        finished = Finished()
-        if finished.job_finished(instance_id, settings):
-            print "done. output is available"
-            get_output(instance_id,
-                       "%s/%s" % (output_dir, instance_id),
-                       settings)
+#         finished = Fin()
+#         if finished.job_finished(instance_id, settings):
+#             print "done. output is available"
+#             get_output(instance_id,
+#                        "%s/%s" % (output_dir, instance_id),
+#                        settings)
 
-            run_post_task(instance_id, settings)
-            post_output_dir = instance_id + "_post"
-            get_post_output(instance_id,
-                "%s/%s" % (output_dir, post_output_dir),
-                settings)
+#             run_post_task(instance_id, settings)
+#             post_output_dir = instance_id + "_post"
+#             get_post_output(instance_id,
+#                 "%s/%s" % (output_dir, post_output_dir),
+#                 settings)
 
-            finished_nodes.append(node)
-        else:
-            print "job still running on %s: %s\
-            " % (instance_id, botocloudconnector.get_instance_ip(instance_id, settings))
+#             finished_nodes.append(node)
+#         else:
+#             print "job still running on %s: %s\
+#             " % (instance_id, botocloudconnector.get_instance_ip(instance_id, settings))
 
-    return (error_nodes, finished_nodes)
+#     return (error_nodes, finished_nodes)
 
 
 def run_post_task(instance_id, settings):
