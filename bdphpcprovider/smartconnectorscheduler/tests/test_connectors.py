@@ -451,7 +451,7 @@ class FinishedStageTests(unittest.TestCase):
             'VM_IMAGE': "ami-0000000d",
             'PRIVATE_KEY_NAME': "", 'PRIVATE_KEY': "", 'SECURITY_GROUP': "",
             'CLOUD_SLEEP_INTERVAL': 0, 'GROUP_ID_DIR': "", 'DEPENDS': ('a',),
-            'DEST_PATH_PREFIX': "package", 'PAYLOAD_CLOUD_DIRNAME': "package",
+            'DEST_PATH_PREFIX': "package", 'PAYLOAD_CLOUD_DIRNAME': "packagedir",
             'PAYLOAD_LOCAL_DIRNAME': "", 'COMPILER': "g77", 'PAYLOAD': "payload",
             'COMPILE_FILE': "foo", 'MAX_SEED_INT': 100, 'RETRY_ATTEMPTS': 3,
             'OUTPUT_FILES': ['a', 'b'], 'PROVIDER': "nectar",
@@ -466,13 +466,22 @@ class FinishedStageTests(unittest.TestCase):
 
         #TODO: copy input files into filesystem
 
-        # Make fake sftp connection
         fakesftp = flexmock(get=lambda x, y: True, put=lambda x, y: True, close=lambda: True)
-        fakesftp.should_receive('listdir').and_return(['/package/file1','/package/dir1']).and_return(
-            ['/package/dir1/file2','/package/dir1/file3'])
-        for p in ['/package/file1', '/package/dir1/file2', '/package/dir1/file3']:
-            flexmock(hrmcimpl).should_receive('isdir').with_args(fakesftp,p).and_return(False)
-        flexmock(hrmcimpl).should_receive('isdir').with_args(fakesftp,'/package/dir1').and_return(True)
+        fakesftp.should_receive('listdir').and_return(['file1','dir1']).and_return(
+            ['file2','file3'])
+        for p in ['packagedir/file1', 'packagedir/dir1/file2', 'packagedir/dir1/file3']:
+            flexmock(hrmcimpl).should_receive('isdir').with_args(fakesftp,p
+                ).and_return(False).times(3)
+        flexmock(hrmcimpl).should_receive('isdir').with_args(fakesftp,'packagedir/dir1').and_return(True)
+        flexmock(os).should_receive('makedirs')
+
+        # # Make fake sftp connection
+        # fakesftp = flexmock(get=lambda x, y: True, put=lambda x, y: True, close=lambda: True)
+        # fakesftp.should_receive('listdir').and_return(['/package/file1','/package/dir1']).and_return(
+        #     ['/package/dir1/file2','/package/dir1/file3'])
+        # for p in ['/package/file1', '/package/dir1/file2', '/package/dir1/file3']:
+        #     flexmock(hrmcimpl).should_receive('isdir').with_args(fakesftp,p).and_return(False)
+        # flexmock(hrmcimpl).should_receive('isdir').with_args(fakesftp,'/package/dir1').and_return(True)
 
         # Make fake ssh connection
         fakessh1 = flexmock(load_system_host_keys=lambda x: True,
@@ -815,7 +824,7 @@ class CloudTests(unittest.TestCase):
             'VM_IMAGE': "ami-0000000d",
             'PRIVATE_KEY_NAME': "", 'PRIVATE_KEY': "", 'SECURITY_GROUP': "",
             'CLOUD_SLEEP_INTERVAL': 0, 'GROUP_ID_DIR': "", 'DEPENDS': ('a',),
-            'DEST_PATH_PREFIX': "package", 'PAYLOAD_CLOUD_DIRNAME': "package",
+            'DEST_PATH_PREFIX': "package", 'PAYLOAD_CLOUD_DIRNAME': "packagedir",
             'PAYLOAD_LOCAL_DIRNAME': "", 'COMPILER': "g77", 'PAYLOAD': "payload",
             'COMPILE_FILE': "foo", 'MAX_SEED_INT': 100, 'RETRY_ATTEMPTS': 3,
             'OUTPUT_FILES': ['a', 'b'], 'PROVIDER': "nectar",
@@ -1078,11 +1087,12 @@ class CloudTests(unittest.TestCase):
         group_id = "fgwefasfresafasdfdsaf"
         # Make fake sftp connection
         fakesftp = flexmock(get=lambda x, y: True, put=lambda x, y: True, close=lambda: True)
-        fakesftp.should_receive('listdir').and_return(['/package/file1','/package/dir1']).and_return(
-            ['/package/dir1/file2','/package/dir1/file3'])
-        for p in ['/package/file1', '/package/dir1/file2', '/package/dir1/file3']:
-            flexmock(hrmcimpl).should_receive('isdir').with_args(fakesftp,p).and_return(False)
-        flexmock(hrmcimpl).should_receive('isdir').with_args(fakesftp,'/package/dir1').and_return(True)
+        fakesftp.should_receive('listdir').and_return(['file1','dir1']).and_return(
+            ['file2','file3'])
+        for p in ['packagedir/file1', 'packagedir/dir1/file2', 'packagedir/dir1/file3']:
+            flexmock(hrmcimpl).should_receive('isdir').with_args(fakesftp,p
+                ).and_return(False).times(3)
+        flexmock(hrmcimpl).should_receive('isdir').with_args(fakesftp,'packagedir/dir1').and_return(True)
         flexmock(os).should_receive('makedirs')
 
         #fakesftp.should_receive('listdir').with_args(os.path('package')).and_return(['/package/file1','package/dir1'])
@@ -1104,7 +1114,7 @@ class CloudTests(unittest.TestCase):
         # Make fake cloud connection
         fakeimage = flexmock(id=self.image_name)
         fakesize = flexmock(id=self.vm_size)
-        fakenode_state1 = flexmock(id="foo",
+        fakenode_state1 = flexmock(id="foonode",
                                    state=NodeState.RUNNING,
                                    public_ips=[1])
         fakecloud = flexmock(
@@ -1146,7 +1156,7 @@ class CloudTests(unittest.TestCase):
         fs = FileSystem(self.global_filesystem, self.local_filesystem)
 
 
-        packages_complete(fs,"foobar", "", self.settings)
+        packages_complete(fs, "mygroup", "output_X", self.settings)
         #TODO: this test case fails
         #self.assertEquals(res, True)
 
@@ -1586,7 +1596,7 @@ class ConvergeStageTests(unittest.TestCase):
 
         fs.create(self.local_filesystem, f1)
         #fs.create_local_filesystem("input_%s" % (id_to_test + 1))
-        fs.create_local_filesystem('output')
+        #fs.create_local_filesystem('output')
         #fs.create("input_%s" % (id_to_test + 1), f3a)
 
         fs.create(self.local_filesystem, f1)

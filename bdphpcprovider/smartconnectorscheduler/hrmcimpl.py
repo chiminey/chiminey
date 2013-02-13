@@ -146,7 +146,7 @@ def isdir(sftp, path):
 
 def _get_paths(sftp, dir):
     file_list = sftp.listdir(path=dir)
-    logger.debug("file_qlist=%s" % file_list)
+    logger.debug("file_list from %s=%s" % (dir, file_list))
     dirs = []
 
     for item in file_list:
@@ -187,20 +187,19 @@ def get_output(fs, instance_id, output_dir, settings):
 
     cloud_path = os.path.join(settings['PAYLOAD_DESTINATION'],
                               settings['PAYLOAD_CLOUD_DIRNAME'])
+    logger.debug("cloud_path=%s" % cloud_path)
     logger.debug("Transferring output from %s to %s" % (cloud_path, output_dir))
     ip = botocloudconnector.get_instance_ip(instance_id, settings)
     ssh = open_connection(ip_address=ip, settings=settings)
     ftp = ssh.open_sftp()
-    cloud_path = os.path.join(settings['PAYLOAD_DESTINATION'],
-                              settings['PAYLOAD_CLOUD_DIRNAME'])
-    logger.debug("Transferring output from %s to %s" % (cloud_path, output_dir))
-    paths = _get_paths(ftp, cloud_path)
-    relative_paths = []
-    for p in paths:
-        relative_paths.append(p[len(cloud_path)+1:])
 
+    paths = _get_paths(ftp, cloud_path)
     logger.debug("paths = %s" % paths)
 
+    relative_paths = []
+    for p in paths:
+        relative_paths.append(p[len(cloud_path) + 1:])
+    logger.debug("relative_paths = %s" % relative_paths)
     for p in relative_paths:
         source = os.path.join(cloud_path, p)
         dest = os.path.join(output_dir, p)
