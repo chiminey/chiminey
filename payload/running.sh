@@ -24,9 +24,6 @@ then
     fi
 
 else
-    rm -f $PSD_PACKAGE/hrmc*
-    rm -f $PSD_PACKAGE/psd.dat
-    rm -f $PSD_PACKAGE/psd_output
   	cp -f AEAO_v1_1/hrmc[0-9]* $PSD_PACKAGE/
   	rm -f $PSD_PACKAGE/hrmc*.out
   	cp -f $PSD_PACKAGE/hrmc*.xyz $PSD_PACKAGE/hrmc01.xyz

@@ -130,7 +130,7 @@ def start(args):
 
         for stage in (
          Configure(),
-         #Schedule(),
+         Schedule(),
          Create(),
          Setup(), Run(),
          Finished(),

@@ -25,6 +25,10 @@ run_hrmc:
 
 psd_run_setup:
 	rm -f $(PSD_PACKAGE)/run.pid
+	rm -f $(PSD_PACKAGE)/hrmc*
+	rm -f $(PSD_PACKAGE)/psd.dat
+	rm -f $(PSD_PACKAGE)/psd_output
+
 
 run_psd:
 	rm -f $(PSD_PACKAGE)/hrmc*
@@ -35,4 +39,3 @@ run_psd:
 
 running:
 	@sh ./running.sh
-	
