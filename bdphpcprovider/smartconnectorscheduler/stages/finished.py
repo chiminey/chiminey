@@ -26,6 +26,7 @@ def _status_of_nodeset(fs, nodes, output_dir, settings):
 
     for node in nodes:
         instance_id = node.id
+        logger.debug("instance_id = %s" % instance_id)
 
         if not botocloudconnector.is_instance_running(instance_id, settings):
             # An unlikely situation where the node crashed after is was
@@ -38,8 +39,9 @@ def _status_of_nodeset(fs, nodes, output_dir, settings):
         if finished.job_finished(instance_id, settings):
             print "done. output is available"
             hrmcimpl.get_output(fs, instance_id,
-                       "%s/%s" % (output_dir, instance_id),
-                       settings)
+#                       "%s/%s" % (output_dir, instance_id),
+                output_dir,
+                settings)
 
             hrmcimpl.run_post_task(instance_id, settings)
             post_output_dir = instance_id + "_post"
