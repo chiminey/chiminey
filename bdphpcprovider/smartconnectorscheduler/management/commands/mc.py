@@ -2,8 +2,8 @@ from django.core.management.base import BaseCommand, CommandError
 from bdphpcprovider.smartconnectorscheduler import mc
 
 class Command(BaseCommand):
-    args = '<poll_id poll_id ...>'
-    help = 'Closes the specified poll for voting'
+    args = '<mc>'
+    help = 'Runs the BDPHPCProvider'
 
     def handle(self, *args, **options):
         new_args = list(args)
