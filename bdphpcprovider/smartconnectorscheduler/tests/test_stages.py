@@ -42,11 +42,22 @@ def unix_find(pathin):
 class TestOutputView(unittest.TestCase):
     """
     """
+
+    keep_directories = False
+
     def setUp(self):
         self.view_dir = tempfile.mkdtemp()
         logger.debug("view_dir=%s" % self.view_dir)
         self.output_dir = os.path.join("smartconnectorscheduler", "testing", "outputdir")
         logger.debug("output_dir=%s" % self.output_dir)
+
+    def tearDown(self):
+        if not self.keep_directories:
+            import shutil
+            shutil.rmtree(self.view_dir)
+        else:
+            logger.warn("Keeping directory %s" % self.keep_directories)
+        pass
 
     def test_view(self):
         view.convert_output(self.output_dir, self.view_dir)
