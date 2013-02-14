@@ -70,12 +70,12 @@ def get_settings(context):
     """
     try:
         fsys = get_filesys(context)
-        logger.debug("fsys= %s" % fsys)
+        #logger.debug("fsys= %s" % fsys)
         fname = "default/config.sys"
         config = _load_file(fsys, fname)
-        print("config= %s" % config)
+        #logger.debug("config= %s" % config)
         settings_text = config.retrieve()
-        print("settings_text= %s" % settings_text)
+        #logger.debug("settings_text= %s" % settings_text)
         settings = dict(json.loads(settings_text))
         return settings
     except ContextKeyMissing, e:
@@ -88,9 +88,9 @@ def _get_run_info_file(context):
     Returns the actual runinfo data object. If problem, return blank data object
     """
     fsys = get_filesys(context)
-    logger.debug("fsys= %s" % fsys)
+    #logger.debug("fsys= %s" % fsys)
     config = _load_file(fsys, "default/runinfo.sys")
-    logger.debug("config= %s" % config)
+    #logger.debug("config= %s" % config)
     return config
 
 
@@ -102,14 +102,14 @@ def get_run_info(context):
         fsys = get_filesys(context)
     except ContextKeyMissing:
         return {}
-    logger.debug("fsys= %s" % fsys)
+    #logger.debug("fsys= %s" % fsys)
     config = _get_run_info_file(context)
-    logger.debug("config= %s" % config)
+    #logger.debug("config= %s" % config)
     if config:
         settings_text = config.retrieve()
-        logger.debug("runinfo_text= %s" % settings_text)
+        #logger.debug("runinfo_text= %s" % settings_text)
         res = json.loads(settings_text)
-        logger.debug("res=%s" % dict(res))
+        #logger.debug("res=%s" % dict(res))
         return dict(res)
     return {}
 
