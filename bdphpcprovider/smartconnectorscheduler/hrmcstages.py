@@ -37,6 +37,8 @@ from bdphpcprovider.smartconnectorscheduler.filesystem import FileSystem, DataOb
 from bdphpcprovider.smartconnectorscheduler.botocloudconnector import create_environ, \
     collect_instances, destroy_environ
 from bdphpcprovider.smartconnectorscheduler.errors import ContextKeyMissing
+from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
+from bdphpcprovider.smartconnectorscheduler import models
 
 
 def get_filesys(context):
@@ -62,6 +64,27 @@ def _load_file(fsys, fname):
         config = DataObject(fname, '')
         logger.warn("Cannot load %s %s" % (fname, e))
     return config
+
+
+def retrieve_settings(context):
+    """
+    Using the user_id in the context, retrieves all the settings files from the profile models
+    """
+    user_id = context['user_id']
+    user = models.User.objects.get(id=user_id)
+    profile = user.get_profile()
+    settings = {}
+    for param in models.UserProfileParameter.objects.filter(paramset__user_profile=profile):
+
+        try:
+            settings[param.name.name] = param.getValue()
+        except Exception:
+            logger.error("Invalid settings values found for %s"% param)
+            raise BadInputException()
+        logger.debug("%s %s %s" % (param.paramset.schema, param.name,
+            param.getValue()))
+
+    return settings
 
 
 def get_settings(context):

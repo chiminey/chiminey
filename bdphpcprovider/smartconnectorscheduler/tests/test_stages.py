@@ -23,9 +23,13 @@ import tempfile
 import unittest
 import logging
 import logging.config
+
+from django.contrib.auth.models import User
+from django import test as djangotest
 from bdphpcprovider.smartconnectorscheduler.management.commands import view
-
-
+from bdphpcprovider.smartconnectorscheduler import models
+from bdphpcprovider.smartconnectorscheduler import hrmcstages
+from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
 logger = logging.getLogger(__name__)
 
 
@@ -41,9 +45,10 @@ def unix_find(pathin):
 
 class TestOutputView(unittest.TestCase):
     """
+    Tests being able to generate new output directory formats
     """
 
-    keep_directories = False
+    keep_directories = True
 
     def setUp(self):
         self.view_dir = tempfile.mkdtemp()
@@ -89,6 +94,70 @@ class TestOutputView(unittest.TestCase):
              '/raw/output_1/node2/rmcen.inp_values',
              '/raw/output_2/node1/rmcen.inp_values',
              '/raw/output_2/node2/rmcen.inp_values']
-        self.assertEquals(correct, view_dir_walk)
+
+        logger.debug("corrct=%s", correct)
+        self.assertEquals(correct, view_dir_walk, "diff=%s %s" % (correct, view_dir_walk))
+
+
+class TestUserSettings(djangotest.TestCase):
+    """
+    Test the retrieve_settings which allows configuration parmeters to be extracted from
+    a user profile
+    """
+
+    def setUp(self):
+        pass
+
+    def _load_data(self, params, paramtype):
+
+        self.user = User.objects.create_user(username="username1",
+            password="password")
+        profile = models.UserProfile(
+                      user=self.user)
+        profile.save()
+        sch = models.Schema(namespace="http://www.rmit.edu.au/user/profile/1",
+            description="Information about user",
+            name="userprofile1")
+        sch.save()
+        param_set = models.UserProfileParameterSet(user_profile=profile, schema=sch)
+        param_set.save()
+        for k, v in params.items():
+            param_name = models.ParameterName(schema=sch, name=k, type=paramtype[k])
+            param_name.save()
+            param = models.UserProfileParameter(name=param_name, paramset=param_set,
+                value=v)
+            param.save()
+
+    def test_retrievesettings(self):
+        PARAMS = {'param1name': 'param1val',
+            'param2name': '42'}
+        PARAMS_RIGHTTYPES = {'param1name': 'param1val',
+            'param2name': 42}
+        PARAMTYPE = {'param1name': models.ParameterName.STRING,
+            'param2name': models.ParameterName.NUMERIC}
+
+        self._load_data(PARAMS, PARAMTYPE)
+        context = {'user_id': self.user.id}
+        settings = hrmcstages.retrieve_settings(context)
+        self.assertEquals(PARAMS_RIGHTTYPES, settings)
+
+    def test_retrievebadsettings(self):
+        PARAMS = {'param1name': 'param1val',
+            'param2name': '42'}
+        PARAMTYPE = {'param1name': models.ParameterName.STRING,
+            'param2name': models.ParameterName.NUMERIC}
+        PARAMTYPE['param1name'] = models.ParameterName.NUMERIC
+
+        self._load_data(PARAMS, PARAMTYPE)
+        context = {'user_id': self.user.id}
+        logger.debug("PARAMTYPE =%s" % PARAMTYPE)
+        try:
+            settings = hrmcstages.retrieve_settings(context)
+        except BadInputException, e:
+            logger.debug("e=%s" % e)
+            pass
+        else:
+            logger.debug("settings=%s" % settings)
+            self.assertTrue(False)
 
 
