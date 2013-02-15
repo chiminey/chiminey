@@ -20,7 +20,6 @@
 
 import re
 import logging
-import logging.config
 
 from bdphpcprovider.smartconnectorscheduler.hrmcstages import get_all_settings, \
     get_filesys, update_key, DataObject
@@ -157,6 +156,7 @@ class Transform(Stage):
                 grerr_info = ()  # FIXME: can recover from this?
             criterion = grerr_info[2]
             f = grerr_info[1]
+            logger.debug("f: %s" %f)
 
             res.append((node_output_dir, index, number, criterion, f))
 
@@ -289,7 +289,6 @@ class Transform(Stage):
             (best_node_dir, best_index, number, criterion, grerr_file) = ("", 0, 0, 0, "")  # ?
 
 
-
     def output(self, context):
         logger.debug("transform.output")
 
@@ -303,3 +302,75 @@ class Transform(Stage):
         print "End of Transformation: \n %s" % self.audit
 
         return context
+
+    def get_minimum_criterion(self, fs, node_output_dirs):
+        for node_output_dir in node_output_dirs:
+            if not fs.isdir(self.output_dir, node_output_dir):
+                logger.warn("%s is not a directory" % node_output_dir)
+                # FIXME: do we really want to skip here?
+                continue
+                #file_rmcen = os.path.join(node_output_dir, 'rmcen.inp')
+            if not fs.exists(self.output_dir, node_output_dir, 'rmcen.inp'):
+                logger.warn("rmcen.inp not found")
+                # FIXME: do we really want to skip here?
+                continue
+            if not fs.isfile(self.output_dir, node_output_dir, 'rmcen.inp'):
+                logger.warn("rmcen.inp not a file")
+                # FIXME: do we really want to skip here?
+                continue
+
+            # Get numbfile from rmcen.inp
+            numb = [x.split()[0] for x
+                    in fs.retrieve_under_dir(self.output_dir,
+                                             node_output_dir,
+                                             'rmcen.inp').retrieve().split('\n')
+                    if 'numbfile' in x]
+            if numb:
+                number = int(numb[0])
+            else:
+                raise ValueError("No numbfile record found")
+
+            if self.alt_specification:
+                try:
+                    grerr_files = ['grerr%s.dat' % str(number).zfill(2)]
+                    f = fs.retrieve_under_dir(self.output_dir,
+                                              node_output_dir,
+                                              'grerr%s.dat' % str(number).zfill(2)).retrieve()
+                except IOError:
+                    logger.warn("no grerr found")
+            else:
+                # for each grerr*.dat file, get criterion
+                grerr_files = fs.glob(self.output_dir, node_output_dir, 'grerr[0-9]+.dat')
+                grerr_files.sort()
+
+            logger.debug("grerr_files=%s " % grerr_files)
+            criterions = []
+            for (index, f) in enumerate(grerr_files):
+
+                grerr_content = fs.retrieve_under_dir(self.output_dir,
+                                                      node_output_dir,
+                                                      grerr_files[-1]).retrieve()
+                logger.debug("grerr_content=%s" % grerr_content)
+                try:
+                    criterion = float(grerr_content.strip().split('\n')[-1]
+                    .split()[1])
+                except ValueError as e:
+                    logger.warn("invalid criteron found in grerr "
+                                + "file for  %s/%s: %s"
+                                % (self.output_dir, node_output_dir, e))
+                    continue
+                logger.debug("criterion=%s" % criterion)
+                criterions.append((index, f, criterion))
+
+            # Find minimum criterion
+            criterions.sort(key=lambda x: x[2])
+            if criterions:
+                grerr_info = criterions[0]
+            else:
+                logger.error("no grerr files found")
+                grerr_info = ()  # FIXME: can recover from this?
+            criterion = grerr_info[2]
+            f = grerr_info[1]
+            logger.debug("f: %s" %f)
+
+            res.append((node_output_dir, index, number, criterion, f))
