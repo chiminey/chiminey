@@ -37,6 +37,8 @@ from bdphpcprovider.smartconnectorscheduler.filesystem import FileSystem, DataOb
 from bdphpcprovider.smartconnectorscheduler.botocloudconnector import create_environ, \
     collect_instances, destroy_environ
 from bdphpcprovider.smartconnectorscheduler.errors import ContextKeyMissing
+from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
+from bdphpcprovider.smartconnectorscheduler import models
 
 
 def get_filesys(context):
@@ -64,18 +66,39 @@ def _load_file(fsys, fname):
     return config
 
 
+def retrieve_settings(context):
+    """
+    Using the user_id in the context, retrieves all the settings files from the profile models
+    """
+    user_id = context['user_id']
+    user = models.User.objects.get(id=user_id)
+    profile = user.get_profile()
+    settings = {}
+    for param in models.UserProfileParameter.objects.filter(paramset__user_profile=profile):
+
+        try:
+            settings[param.name.name] = param.getValue()
+        except Exception:
+            logger.error("Invalid settings values found for %s"% param)
+            raise BadInputException()
+        logger.debug("%s %s %s" % (param.paramset.schema, param.name,
+            param.getValue()))
+
+    return settings
+
+
 def get_settings(context):
     """
     Return contents of config.sys file as a dictionary
     """
     try:
         fsys = get_filesys(context)
-        logger.debug("fsys= %s" % fsys)
+        #logger.debug("fsys= %s" % fsys)
         fname = "default/config.sys"
         config = _load_file(fsys, fname)
-        print("config= %s" % config)
+        #logger.debug("config= %s" % config)
         settings_text = config.retrieve()
-        print("settings_text= %s" % settings_text)
+        #logger.debug("settings_text= %s" % settings_text)
         settings = dict(json.loads(settings_text))
         return settings
     except ContextKeyMissing, e:
@@ -88,9 +111,9 @@ def _get_run_info_file(context):
     Returns the actual runinfo data object. If problem, return blank data object
     """
     fsys = get_filesys(context)
-    logger.debug("fsys= %s" % fsys)
+    #logger.debug("fsys= %s" % fsys)
     config = _load_file(fsys, "default/runinfo.sys")
-    logger.debug("config= %s" % config)
+    #logger.debug("config= %s" % config)
     return config
 
 
@@ -102,14 +125,14 @@ def get_run_info(context):
         fsys = get_filesys(context)
     except ContextKeyMissing:
         return {}
-    logger.debug("fsys= %s" % fsys)
+    #logger.debug("fsys= %s" % fsys)
     config = _get_run_info_file(context)
-    logger.debug("config= %s" % config)
+    #logger.debug("config= %s" % config)
     if config:
         settings_text = config.retrieve()
-        logger.debug("runinfo_text= %s" % settings_text)
+        #logger.debug("runinfo_text= %s" % settings_text)
         res = json.loads(settings_text)
-        logger.debug("res=%s" % dict(res))
+        #logger.debug("res=%s" % dict(res))
         return dict(res)
     return {}
 
