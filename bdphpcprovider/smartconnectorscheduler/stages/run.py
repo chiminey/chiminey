@@ -1,4 +1,4 @@
-# Copyright (C) 2012, RMIT University
+# Copyright (C) 2013, RMIT University
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to
@@ -198,7 +198,7 @@ class Run(Stage):
         all_pids = dict(zip(nodes, pids))
         return all_pids
 
-    def _expand_variations(self, template, maps, initial_numbfile):
+    def _expand_variations(self, template, maps, initial_numbfile, generator_counter):
         """
         Based on maps, generate all range variations from the template
         """
@@ -206,16 +206,20 @@ class Run(Stage):
         res = []
         numbfile = initial_numbfile
         for iter, template_map in enumerate(maps):
+            logger.debug("template_map=%s" % template_map)
             logger.debug("iter #%d" % iter)
             temp_num = 0
             # ensure ordering of the template_map entries
             map_keys = template_map.keys()
+            logger.debug("map_keys %s" % map_keys)
             map_ranges = [list(template_map[x]) for x in map_keys]
             for z in product(*map_ranges):
                 context = {}
                 for i, k in enumerate(map_keys):
                     context[k] = str(z[i])  # str() so that 0 doesn't default value
+                #instance special variables into the template context
                 context['run_counter'] = numbfile
+                context['generator_counter'] = generator_counter
                 numbfile += 1
                 logger.debug(context)
                 t = Template(template)
@@ -299,6 +303,7 @@ class Run(Stage):
         For each templated file in input_dir, generate all variations
         """
         template_pat = re.compile("(.*)_template")
+
         variations = {}
         for fname in fs.get_local_subdirectory_files(self.iter_inputdir,
                 input_dir):
@@ -307,14 +312,37 @@ class Run(Stage):
             data_object = fs.retrieve_under_dir(self.iter_inputdir, input_dir,
                 fname)
 
-            mat = template_pat.match(fname)
-            if mat:
-                # template file
+            template_mat = template_pat.match(fname)
+            if template_mat:
+                # get the template
                 template = data_object.retrieve()
                 logger.debug("template content = %s" % template)
-                #
-                num_dim = 2
 
+                base_fname = template_mat.group(1)
+                logger.debug("base_fname=%s" % base_fname)
+
+                # find assocaited values file and generator_counter
+                generator_counter = 0
+                try:
+                    values_file = fs.retrieve_under_dir(self.iter_inputdir,
+                        input_dir,
+                        "%s_values" % base_fname)
+                except IOError:
+                    logger.warn("no values file found")
+                else:
+
+                    logger.debug("values_file=%s" % values_file)
+                    values_content = values_file.retrieve()
+                    logger.debug("values_content = %s" % values_content)
+                    values_map = dict(json.loads(values_content))
+                    logger.debug("values_map=%s" % values_map)
+                    try:
+                        generator_counter = values_map.get('run_counter')
+                    except KeyError:
+                        logger.warn("could not retrieve generator counter")
+
+                num_dim = 1
+                # variations map spectification
                 if num_dim == 1:
                     N = context['number_vm_instances']
                     map = {
@@ -333,7 +361,6 @@ class Run(Stage):
                         'istart': [2]
 
                     }
-
                     if self.id > 0:
                         map = {
                             'temp': [i for i in [300, 700, 1100, 1500]],
@@ -346,18 +373,17 @@ class Run(Stage):
                     message = "Unknown dimensionality of problem"
                     logger.error(message)
                     raise BadSpecificationError(message)
-
-                if not mat.groups():
+                logger.debug("generator_counter= %s" % generator_counter)
+                if not template_mat.groups():
                     logger.info("found odd template matching file %s" % fname)
                 else:
 
-                    base_fname = mat.group(1)
-                    logger.debug("base_fname=%s" % base_fname)
                     # generates a set of variations for the template fname
                     variation_set = self._expand_variations(template,
-                        [map], self.initial_numbfile)
+                        [map], self.initial_numbfile, generator_counter)
                     self.initial_numbfile += len(variation_set)
                     variations[base_fname] = variation_set
+                logger.debug("map=%s" % map)
         else:
             # normal file
             pass

@@ -131,6 +131,9 @@ STATICFILES_DIRS = (
 )
 
 
+AUTH_PROFILE_MODULE='smartconnectorscheduler.UserProfile'
+
+
 INSTALLED_APPS = (
     'django_extensions',
     'django.contrib.auth',
