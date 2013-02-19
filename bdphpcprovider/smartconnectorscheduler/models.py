@@ -163,3 +163,129 @@ class UserProfileParameter(models.Model):
     class Meta:
         ordering = ("name",)
 
+
+from mptt.models import MPTTModel, TreeForeignKey
+
+
+class Stage(MPTTModel):
+    """
+    The units of execution.
+    """
+    name = models.CharField(max_length=256,)
+    impl = models.CharField(max_length=256, null=True)
+    description = models.TextField(default="")
+    order = models.IntegerField(default=0)
+    parent = TreeForeignKey('self', null=True, blank=True, related_name='children')
+
+    class MPTTMeta:
+        order_insertion_by = ['order']
+
+
+
+# class DirectiveArgument(models.Model):
+#     """
+#     A parameter in a directive (unparsed)
+#     """
+#     directive = models.ForeignKey(Directive)
+#     arg = models.charField()
+
+
+
+class Platform(models.Model):
+    name = models.CharField(max_length=256)
+
+    
+
+class Directive(models.Model):
+    """
+    Holds an platform independent operation provided by an API
+    """
+    name = models.CharField(max_length=256)
+
+
+class Command(models.Model):
+    """
+    Holds a platform specific operation that uses an external API
+    Initialised from the specified stage
+    """
+    directive = models.ForeignKey(Directive)
+    initial_stage = models.ForeignKey(Stage)
+    platform = models.ForeignKey(Platform)
+    path= models.CharField(max_length=256)
+    pass
+
+
+class DirectiveArgSet(models.Model):
+    """
+    Describes the argument of a directive.
+    The idea is to specify a type for each of the arguments of the directive as high level schemas
+    which can then be checked against usage.
+    """
+    directive = models.ForeignKey(Directive)
+    order = models.IntegerField()
+    schema = models.ForeignKey(Schema)
+
+
+class SmartConnector(models.Model):
+    """
+    Pointer to a composite stage that specfies a smart connector
+    """
+    composite_stage = models.ForeignKey(Stage)
+
+
+class Context(models.Model):
+    """ Holds a pointer to the currently to be executed stage and all the arguments and variable storage for
+    that execution
+    """
+    owner = models.ForeignKey(UserProfile)
+    current_stage = models.ForeignKey(Stage)
+
+
+class ContextParameterSet(models.Model):
+    """
+    All the information required to run the stage in the context
+    """
+    context = models.ForeignKey(Context)
+    schema = models.ForeignKey(Schema, verbose_name="Schema")
+    ranking = models.IntegerField(default=0)
+
+    class Meta:
+        ordering = ["-ranking"]
+
+
+# class CommandArgMetaParameter(models.Model):
+#     name = models.CharField()
+#     paramset = models.ForeignKey(CommandParameterSet)
+#     value = models.TextField()
+
+
+class CommandArgument(models.Model):
+    """
+    A the level of command a representation of a local or remote file or dataset
+    """
+    template_url = models.URLField()
+
+
+
+class ContextParameter(models.Model):
+    name = models.ForeignKey(ParameterName, verbose_name="Parameter Name")
+    paramset = models.ForeignKey(ContextParameterSet, verbose_name="Parameter Set")
+    value = models.TextField(verbose_name="Parameter Value", help_text="The Value of this parameter")
+    #ranking = models.IntegerField(default=0,help_text="Describes the relative ordering of parameters when displaying: the larger the number, the more prominent the results")
+
+    def __unicode__(self):
+        return u'%s %s %s' % (self.name, self.paramset, self.value)
+
+    def getValue(self,):
+        try:
+            val =  self.name.get_value(self.value)
+        except ValueError:
+            logger.error("got bad value")
+            raise
+        return val
+
+
+    class Meta:
+        ordering = ("name",)
+
+
