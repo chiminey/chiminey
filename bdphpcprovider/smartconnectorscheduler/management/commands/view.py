@@ -41,7 +41,7 @@ def getdirs(dir):
     return [p for p in os.listdir(dir) if os.path.isdir(os.path.join(dir,p))]
 
 
-def convert_output(output_dir, view_dir):
+def convert_output(output_dir, view_dir, NM=8):
 
     raw_dir = os.path.join(view_dir, RAW_PREFIX)
 
@@ -60,23 +60,59 @@ def convert_output(output_dir, view_dir):
     except os.error, e:
         print "error %s" % e
 
+    trans = {}
     input_pat = re.compile("%s_([0-9]+)" % INPUT_PREFIX)
     input_dirs = [d for d in getdirs(raw_dir) if input_pat.match(d)]
-    for d in input_dirs :
-        try:
-            os.symlink(os.path.join(raw_dir,d), os.path.join(view_dir, INPUT_PREFIX, d))
-            #shutil.copytree(os.path.join(raw_dir,d), os.path.join(view_dir,INPUT_PREFIX,d))
-        except os.error, e:
-            print "error %s" % e
+    for i, indir in enumerate(input_dirs):
+
+        input_iter_mat = input_pat.match(indir)
+        if input_iter_mat:
+            input_iter = input_iter_mat.group(1)
+            logger.debug("input_iter=%s" % input_iter)
+        else:
+            logger.debug("invalid output suffix number")
+            continue
+
+        for node in getdirs(os.path.join(view_dir, RAW_PREFIX, indir)):
+            rmcen_path = os.path.join(view_dir, RAW_PREFIX,  indir, node, "rmcen.inp_values")
+            if os.path.exists(rmcen_path):
+                logger.debug("rmcen_path=%s" % rmcen_path)
+                f = open(rmcen_path, "r")  # only works for one template
+                values_map = dict(json.loads(f.read()))
+                if 'run_counter' in values_map:
+                    run_counter = values_map['run_counter']
+                    if run_counter:
+                        counter_alpha = chr(ord('a') + ((run_counter % NM) -1) % NM)
+                    else:
+                        counter_alpha = "_"
+            else:
+                counter_alpha = "_"
+            trans[os.path.join(indir, node)] = "%s%s" % (input_iter, counter_alpha )
+
+    from pprint import pformat
+    logger.debug("trans=%s" % pformat(trans))
+
+    for source, dest in trans.items():
+        os.symlink(os.path.join(view_dir, RAW_PREFIX, source),
+            os.path.join(view_dir, INPUT_PREFIX, dest))
+
+    try:
+        os.symlink(os.path.join(view_dir, RAW_PREFIX, OUTPUT_PREFIX),
+            os.path.join(view_dir, OUTPUT_PREFIX, OUTPUT_PREFIX))
+        #shutil.copytree(os.path.join(raw_dir,d), os.path.join(view_dir,INPUT_PREFIX,d))
+    except os.error, e:
+        print "error %s" % e
+
+
 
 
     output_pat = re.compile("%s_([0-9]+)" % OUTPUT_PREFIX)
     output_dirs = [d for d in getdirs(raw_dir) if output_pat.match(d)]
     trans = {}
-    for i,outdir in enumerate(output_dirs):
+    for i, outdir in enumerate(output_dirs):
         NM = len(getdirs(os.path.join(view_dir, RAW_PREFIX, outdir)))  # should always be same value
         logger.debug("NM = %s" % NM)
-        logger.debug("#%s %s" % (i,outdir))
+        logger.debug("#%s %s" % (i, outdir))
         output_iter_mat = output_pat.match(outdir)
         if output_iter_mat:
             output_iter = output_iter_mat.group(1)
@@ -87,13 +123,13 @@ def convert_output(output_dir, view_dir):
 
         for node in getdirs(os.path.join(view_dir, RAW_PREFIX, outdir)):
             logger.debug("node=%s" % node)
-            f = open(os.path.join(view_dir, RAW_PREFIX,  outdir, node,"rmcen.inp_values"),"r")  # only works for one template
+            f = open(os.path.join(view_dir, RAW_PREFIX,  outdir, node, "rmcen.inp_values"),"r")  # only works for one template
             values_map = dict(json.loads(f.read()))
             if 'generator_counter' in values_map:
                 prev_numbfile = values_map['generator_counter']
                 if prev_numbfile:
                     logger.debug("prev_numbfile=%s" % prev_numbfile)
-                    prev_alpha = chr(ord('a') + (prev_numbfile % NM))
+                    prev_alpha = chr(ord('a') + ((prev_numbfile % NM) -1) % NM)
                 else:
                     prev_alpha = "_"
 
@@ -104,7 +140,10 @@ def convert_output(output_dir, view_dir):
             curr_numbfile = values_map['run_counter']
             logger.debug("curr_numbfile=%s" % curr_numbfile)
 
-            trans[os.path.join(outdir,node)] = "%s%s%s" % (output_iter, prev_alpha, curr_numbfile % NM)
+#            trans[os.path.join(outdir,node)] = "%s%s%s" % (output_iter, prev_alpha, curr_numbfile % NM)
+#            trans[os.path.join(outdir, node)] = "%s_%s_%s" % (output_iter, prev_numbfile, curr_numbfile )
+            trans[os.path.join(outdir, node)] = "%s%s%s" % (output_iter,
+                prev_alpha, ((curr_numbfile %NM) -1) % NM)
 
     from pprint import pformat
     logger.debug("trans=%s" % pformat(trans))

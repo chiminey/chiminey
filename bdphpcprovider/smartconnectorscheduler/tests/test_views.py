@@ -26,13 +26,18 @@ import logging.config
 from flexmock import flexmock
 from tempfile import mkstemp
 from string import lower
-import tempfile
 
 from django.test import TestCase
 from django.test.client import Client
 from django.conf import settings
 from django.template import Context, Template
 from django.contrib.auth.models import User
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+from storages.backends.sftpstorage import SFTPStorage
+from django.utils.importlib import import_module
+from django.core.exceptions import ImproperlyConfigured
+from django.core.files.storage import FileSystemStorage
 
 
 from bdphpcprovider.smartconnectorscheduler import views
@@ -45,6 +50,23 @@ from bdphpcprovider.smartconnectorscheduler import models
 logger = logging.getLogger(__name__)
 
 
+class NCIStorage(SFTPStorage):
+
+    def __init__(self, settings=None):
+
+       # normally, settings come from settings.py file, but this class allow use of
+       # parameter, which is needed if
+
+        super(NCIStorage, self).__init__()
+        if 'params' in settings:
+            super(NCIStorage, self).__dict__["_params"] = settings['params']
+        if 'root' in settings:
+            super(NCIStorage, self).__dict__["_root_path"] = settings['root']
+        if 'host' in settings:
+            super(NCIStorage, self).__dict__["_host"] = settings['host']
+        print super(NCIStorage, self)
+
+
 class SmartConnectorSchedulerTest(TestCase):
     def setUp(self):
         self.index_url = '/index/'
@@ -52,7 +74,7 @@ class SmartConnectorSchedulerTest(TestCase):
         self.experiment_id = '1'
         self.group_id = "TEST_ID000000"
         self.number_of_cores = '1'
-        self.input_parameters = {'experiment_id' : self.experiment_id}
+        self.input_parameters = {'experiment_id': self.experiment_id}
         self.input_parameters['group_id'] = self.group_id
         self.input_parameters['number_of_cores'] = self.number_of_cores
 
@@ -64,7 +86,7 @@ class SmartConnectorSchedulerTest(TestCase):
 
         current_stage = 'Create'
         self.input_parameters['stages'] = [current_stage]
-        create_parameters= [lower(current_stage), '-v', self.number_of_cores]
+        create_parameters = [lower(current_stage), '-v', self.number_of_cores]
         message = "Your group ID is %s" % self.group_id
 
         flexmock(mc).should_receive('start')\
@@ -77,12 +99,11 @@ class SmartConnectorSchedulerTest(TestCase):
         response = self.client.post(self.index_url, data=self.input_parameters)
         self.assertEqual(response.status_code, 200)
 
-
     # Testing Setup Stage
     def test_index_setup(self):
         current_stage = 'Setup'
         self.input_parameters['stages'] = [current_stage]
-        setup_parameters= [lower(current_stage), '-g', self.group_id]
+        setup_parameters = [lower(current_stage), '-g', self.group_id]
         message = "Setup stage completed"
 
         flexmock(mc).should_receive('start')\
@@ -93,7 +114,6 @@ class SmartConnectorSchedulerTest(TestCase):
 
         response = self.client.post(self.index_url, data=self.input_parameters)
         self.assertEqual(response.status_code, 200)
-
 
     # Testing Run Stage
     def test_run(self):
@@ -127,13 +147,13 @@ class SmartConnectorSchedulerTest(TestCase):
         command = 'rm -rf %s; mkdir -p %s; cd %s;'\
                   'mkdir output_1; cd output_1;'\
                   'echo "Computation completed" > %s'\
-                  %(output_dir, output_dir, output_dir, output_file)
+                  % (output_dir, output_dir, output_dir, output_file)
         os.system(command)
 
         zipped_input_dir = '%s/input.zip' % settings.BDP_INPUT_DIR_PATH
         extracted_input_dir = '%s/%s' % (settings.BDP_INPUT_DIR_PATH,
                                          self.group_id)
-        unzip_inputdir_cmd =  'unzip -o -d %s %s' % (extracted_input_dir,
+        unzip_inputdir_cmd = 'unzip -o -d %s %s' % (extracted_input_dir,
                                                      zipped_input_dir)
 
         flexmock(os).should_receive('system').with_args(unzip_inputdir_cmd)\
@@ -166,12 +186,11 @@ class SmartConnectorSchedulerTest(TestCase):
         response = self.client.post(self.index_url, data=self.input_parameters)
         self.assertEqual(response.status_code, 200)
 
-
     # Testing Terminate Stage
     def test_index_terminate(self):
         current_stage = 'Terminate'
         self.input_parameters['stages'] = [current_stage]
-        terminate_parameters=  ['teardown', '-g', self.group_id, 'yes']
+        terminate_parameters = ['teardown', '-g', self.group_id, 'yes']
         message = "Terminate stage completed"
 
         flexmock(mc).should_receive('start')\
@@ -221,7 +240,37 @@ class TestDirectiveCommands(TestCase):
     """
 
     def setUp(self):
-        pass
+        self.remote_fs_path = os.path.join(
+            os.path.dirname(__file__), '..', 'testing', 'remotesys')
+        logger.debug("self.remote_fs_path=%s" % self.remote_fs_path)
+        self.remote_fs = FileSystemStorage(location=self.remote_fs_path)
+
+    def tearDown(self):
+        files = self._get_paths("")
+        logger.debug("files=%s", '\n'.join(files))
+        # NB: directories are not deletable using remote_fs api
+        for f in files:
+            self.remote_fs.delete(f)
+            self.assertFalse(self.remote_fs.exists(f))
+
+    def _get_paths(self, dir):
+        (dir_list, file_list) = self.remote_fs.listdir(path=dir)
+        logger.debug("file_list from %s=%s" % (dir, file_list))
+        dirs = []
+
+        for item in dir_list:
+            logger.debug("Directory %s" % str(item))
+            p = self._get_paths(os.path.join(dir, item))
+            for x in p:
+                logger.debug("Inside Directory %s" % x)
+                dirs.append(x)
+            #dirs.append(os.path.join(dir, item))
+
+        for item in file_list:
+            logger.debug("Item %s" % str(item))
+            dirs.append(os.path.join(dir, item))
+
+        return dirs
 
     def _load_data(self, params, paramtype):
 
@@ -233,34 +282,82 @@ class TestDirectiveCommands(TestCase):
 
         for ns, name, desc in [('http://www.rmit.edu.au/user/profile/1',
             "userprofile1", "Information about user"),
-            ('http://tardis.edu.au/schemas/hrmc/dfmeta/',"datafile1","datafile 1 schema"),
-            ('http://tardis.edu.au/schemas/hrmc/dfmeta2/', "datafile2", "datafile 2 schema"),
-            ('http://tardis.edu.au/schemas/hrmc/create', "create", "create stage" ),
-            ("http://nci.org.au/schemas/hrmc/custom_command/", "custom", "custom command")
+            ('http://tardis.edu.au/schemas/hrmc/dfmeta/', "datafile1",
+                "datafile 1 schema"),
+            ('http://tardis.edu.au/schemas/hrmc/dfmeta2/', "datafile2",
+                "datafile 2 schema"),
+            ('http://tardis.edu.au/schemas/hrmc/create', "create",
+                "create stage"),
+            ("http://nci.org.au/schemas/hrmc/custom_command/", "custom",
+                "custom command")
             ]:
             sch = models.Schema(namespace=ns, name=name, description=desc)
             sch.save()
             logger.debug("sch=%s" % sch)
 
-
-        param_set = models.UserProfileParameterSet(user_profile=profile, schema=sch)
+        param_set = models.UserProfileParameterSet(user_profile=profile,
+            schema=sch)
         param_set.save()
         for k, v in params.items():
-            param_name = models.ParameterName(schema=sch, name=k, type=paramtype[k])
+            param_name = models.ParameterName(schema=sch,
+                name=k,
+                type=paramtype[k])
             param_name.save()
-            param = models.UserProfileParameter(name=param_name, paramset=param_set,
+            param = models.UserProfileParameter(name=param_name,
+                paramset=param_set,
                 value=v)
             param.save()
 
-        # comm = Command(platform="nci")
-        # comm.save()
-        
-#        m = models.CommandMapping(directive=direct, command=comm)
-#        m.save()
+        platform = models.Platform(name="nci")
+        platform.save()
 
-#        direct = models.Directive(name="smartconnector1",
-#            command='hrmc'
-#        direct.save()
+        directive = models.Directive(name="smartconnector1")
+        directive.save()
+
+        composite = models.Stage.objects.create(name="basic_connector",
+            description="encapsulates a workflow",
+            order=100)
+
+        setup_stage = models.Stage.objects.create(name="setup",
+            parent=composite,
+            description="This is a setup stage of something",
+            package="bdphpcprovider.smartconnectorscheduler.stages.nullstage.NullStage",
+            order=0)
+        run_stage = models.Stage.objects.create(name="run",
+            parent=composite,
+            description="This is the running part",
+            package="bdphpcprovider.smartconnectorscheduler.stages.nullstage.NullStage",
+            order=1)
+        finished_stage = models.Stage.objects.create(name="finished",
+            parent=composite,
+            description="And here we finish everything off",
+            package="bdphpcprovider.smartconnectorscheduler.stages.nullstage.NullStage",
+            order=2)
+
+        comm = models.Command(platform=platform, directive=directive, initial_stage=setup_stage)
+        comm.save()
+
+    def _safe_import(self, path, args, kw):
+
+        try:
+            dot = path.rindex('.')
+        except ValueError:
+            raise ImproperlyConfigured('%s isn\'t a filter module' % path)
+        filter_module, filter_classname = path[:dot], path[dot + 1:]
+        try:
+            mod = import_module(filter_module)
+        except ImportError, e:
+            raise ImproperlyConfigured('Error importing filter %s: "%s"' %
+                                       (filter_module, e))
+        try:
+            filter_class = getattr(mod, filter_classname)
+        except AttributeError:
+            raise ImproperlyConfigured('Filter module "%s" does not define a "%s" class' %
+                                       (filter_module, filter_classname))
+
+        filter_instance = filter_class(*args, **kw)
+        return filter_instance
+
 
 
     def test_simple(self):
@@ -268,37 +365,34 @@ class TestDirectiveCommands(TestCase):
         # setup all needed schemas below
         PARAMS = {'param1name': 'param1val',
             'param2name': '42'}
-        PARAMS_RIGHTTYPES = {'param1name': 'param1val',
-            'param2name': 42}
         PARAMTYPE = {'param1name': models.ParameterName.STRING,
             'param2name': models.ParameterName.NUMERIC}
         self._load_data(PARAMS, PARAMTYPE)
-
 
         # Here is our example directive arguments
         directive_args = []
 
         # Template from mytardis with corresponding metdata brought across
         directive_args.append(['tardis://iant@tardis.edu.au/datafile/15',
-            ['http://tardis.edu.au/schemas/hrmc/dfmeta/',('a','5'), ('b','6')]])
+            ['http://tardis.edu.au/schemas/hrmc/dfmeta/', ('a', '5'), ('b', '6')]])
 
         # Template on remote storage with corresponding multiple parameter sets
         directive_args.append(['hpc://iant@nci.edu.au/input/input.txt',
-            ['http://tardis.edu.au/schemas/hrmc/dfmeta/',('a','3'), ('b','4')],
-            ['http://tardis.edu.au/schemas/hrmc/dfmeta/',('a','1'), ('b','2')],
-            ['http://tardis.edu.au/schemas/hrmc/dfmeta2/',('c','hello')]])
+            ['http://tardis.edu.au/schemas/hrmc/dfmeta/', ('a', '3'), ('b', '4')],
+            ['http://tardis.edu.au/schemas/hrmc/dfmeta/', ('a', '1'), ('b', '2')],
+            ['http://tardis.edu.au/schemas/hrmc/dfmeta2/', ('c', 'hello')]])
 
         # A file (template with no variables)
         directive_args.append(['hpc://iant@nci.edu.au/input/file.txt',
             []])
 
         # A set of commands
-        directive_args.append(['',['http://tardis.edu.au/schemas/hrmc/create',
-            ('num_nodes','5'),('iseed','42')]])
+        directive_args.append(['', ['http://tardis.edu.au/schemas/hrmc/create',
+            ('num_nodes', '5'), ('iseed', '42')]])
 
         # Example of how a nci script might work.
         directive_args.append(['',
-            ['http://nci.org.au/schemas/hrmc/custom_command/',('command','ls')]])
+            ['http://nci.org.au/schemas/hrmc/custom_command/', ('command', 'ls')]])
 
         def get_file(fname):
             """
@@ -320,17 +414,39 @@ class TestDirectiveCommands(TestCase):
             s = models.Schema.objects.get(namespace=sch_ns)
             return s
 
-        def mktempremote():
+        def get_remote_file_path(source_name):
             """
             Create file to hold instantiated template for command execution.
             Kept local now, but could be on nci, nectar etc.
 
-            """ 
-            tf = tempfile.NamedTemporaryFile(delete=False)
-            return tf
+            """
+
+            # # The top of the remote filesystem that will hold a user's files
+            remote_base_path = os.path.join("centos")
+
+            from urlparse import urlparse
+            o = urlparse(source_name)
+            file_path = o.path
+            logger.debug("file_path=%s" % file_path)
+            # if file_path[0] == os.path.sep:
+            #     file_path = file_path[:-1]
+            import uuid
+            randsuffix = str(uuid.uuid4())  # should use some job id here
+
+            relpath = "%s%s" % (file_path, "_%s" % randsuffix)
+
+            if relpath[0] == os.path.sep:
+                relpath = relpath[1:]
+            logger.debug("relpath=%s" % relpath)
+
+            # FIXME: for django storage, do we need to create
+            # intermediate directories
+            dest_path = os.path.join(remote_base_path, relpath)
+            logger.debug("dest_path=%s" % dest_path)
+            return dest_path
 
         def values_match_schema(schema, values):
-            """ 
+            """
                 Given a schema object and a set of (k,v) fields, checking
                 each k has correspondingly named ParameterName in the schema
             """
@@ -355,50 +471,90 @@ class TestDirectiveCommands(TestCase):
                         values = a[1:]
                         logger.debug("values=%s" % values)
                         if not values_match_schema(schema, values):
-                            raise InvalidInputError("specified parameters do not match schema")
+                            raise InvalidInputError(
+                                "specified parameters do not match schema")
 
-                        for k,v in values:
+                        for k, v in values:
                             # FIXME: need way of specifying ns and name in the template
                             # to distinuish between different templates. Here all the variables
                             # across entire template file must be disjoint
                             if not k:
-                                raise InvalidInputError("Cannot have blank key in parameter set")
+                                raise InvalidInputError(
+                                    "Cannot have blank key in parameter set")
 
                             context["%s" % k] = v
             if file_url:
                 logger.debug("file_url %s" % file_url)
                 logger.debug("context = %s" % context)
+                # TODO: don't use temp file, use remote file with
+                # name file_url with suffix based on the command job number?
                 t = Template(f)
                 con = Context(context)
-                tmp_file = mktempremote() # FIXME: make remote
-                tmp_file.write(t.render(con))    
-                tmp_file.flush() 
-                tmp_file.close()               
-                command_args.append(("", tmp_file.name))
+                tmp_fname = get_remote_file_path(file_url)  # FIXME: make remote
+                cont = t.render(con)
+                self.remote_fs.save(tmp_fname, ContentFile(cont.encode('utf-8')))  # NB: ContentFile only takes bytes
+                command_args.append(("", tmp_fname))
             else:
-                for k,v in values:
-                    command_args.append((k,v))
+                for k, v in values:
+                    command_args.append((k, v))
 
         logger.debug("command_args = %s" % command_args)
 
-        self.assertEquals(len(command_args),6)
-        for i,contents in ((0,"a=5 b=6"),(1,"a=1 b=2 c=hello"),(2,"foobar")):
-            k,v = command_args[i]
-            logger.debug("k=%s v=%s" % (k,v))
+        self.assertEquals(len(command_args), 6)
+        for i, contents in ((0, "a=5 b=6"), (1, "a=1 b=2 c=hello"), (2, "foobar")):
+            k, v = command_args[i]
+            logger.debug("k=%s v=%s" % (k, v))
             self.assertFalse(k)
-            f = open(v,"r").read()    
-            logger.debug("f=%s" % f)    
-            self.assertEquals(contents,f)
-            os.remove(v)
-        k,v = command_args[3]
-        self.assertEquals(k,'num_nodes')
-        self.assertEquals(v,'5')
-        k,v = command_args[4]
-        self.assertEquals(k,'iseed')
-        self.assertEquals(v,'42')  # TODO: handle NUMERIC types correctly
-        k,v = command_args[5]
-        self.assertEquals(k,'command')
-        self.assertEquals(v,'ls')
+            f = self.remote_fs.open(v).read()
+            logger.debug("f=%s" % f)
+            self.assertEquals(contents, str(f))
+            #os.remove(v)
+        k, v = command_args[3]
+        self.assertEquals(k, 'num_nodes')
+        self.assertEquals(v, '5')
+        k, v = command_args[4]
+        self.assertEquals(k, 'iseed')
+        self.assertEquals(v, '42')  # TODO: handle NUMERIC types correctly
+        k, v = command_args[5]
+        self.assertEquals(k, 'command')
+        self.assertEquals(v, 'ls')
 
+        platform = models.Platform.objects.get(name="nci")
+        directive = models.Directive.objects.get(name="smartconnector1")
+        command = models.Command.objects.get(directive=directive, platform=platform)
+
+        initial_stage = command.initial_stage
+        logger.debug("initial_stage=%s" % initial_stage)
+
+        stage = self._safe_import(initial_stage.package,[],{})
+        logger.debug("stage=%s" % stage)
+
+        # Get ready for execution
+
+        context = {}
+        arg_num = 0
+        for (k, v) in command_args:
+            if k:
+                context[k] = v
+            else:
+                key = "file%s" % arg_num
+                arg_num += 1
+                context[key] = v
+
+        context['fsys'] = self.remote_fs_path
+
+        if stage.triggered(context):
+            stage.process(context)
+            context = stage.output(context)
+
+
+
+# def main():
+
+    # fs = NCIStorage(settings={'params': {'username':'centos',"password":'XXXX'},
+
+    #                            'host':'115.146.94.198',
+
+    #                            'root':'/home/centos/tmp/'})
 
 

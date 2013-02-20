@@ -153,12 +153,11 @@ class UserProfileParameter(models.Model):
 
     def getValue(self,):
         try:
-            val =  self.name.get_value(self.value)
+            val = self.name.get_value(self.value)
         except ValueError:
             logger.error("got bad value")
             raise
         return val
-
 
     class Meta:
         ordering = ("name",)
@@ -176,10 +175,10 @@ class Stage(MPTTModel):
     description = models.TextField(default="")
     order = models.IntegerField(default=0)
     parent = TreeForeignKey('self', null=True, blank=True, related_name='children')
+    package = models.CharField(max_length=256, default="")
 
     class MPTTMeta:
         order_insertion_by = ['order']
-
 
 
 # class DirectiveArgument(models.Model):
@@ -190,11 +189,9 @@ class Stage(MPTTModel):
 #     arg = models.charField()
 
 
-
 class Platform(models.Model):
     name = models.CharField(max_length=256)
 
-    
 
 class Directive(models.Model):
     """
@@ -211,8 +208,6 @@ class Command(models.Model):
     directive = models.ForeignKey(Directive)
     initial_stage = models.ForeignKey(Stage)
     platform = models.ForeignKey(Platform)
-    path= models.CharField(max_length=256)
-    pass
 
 
 class DirectiveArgSet(models.Model):
@@ -221,7 +216,7 @@ class DirectiveArgSet(models.Model):
     The idea is to specify a type for each of the arguments of the directive as high level schemas
     which can then be checked against usage.
     """
-    directive = models.ForeignKey(Directive)
+    directive = models.ForeignKey(Stage)
     order = models.IntegerField()
     schema = models.ForeignKey(Schema)
 
@@ -266,7 +261,6 @@ class CommandArgument(models.Model):
     template_url = models.URLField()
 
 
-
 class ContextParameter(models.Model):
     name = models.ForeignKey(ParameterName, verbose_name="Parameter Name")
     paramset = models.ForeignKey(ContextParameterSet, verbose_name="Parameter Set")
@@ -278,12 +272,11 @@ class ContextParameter(models.Model):
 
     def getValue(self,):
         try:
-            val =  self.name.get_value(self.value)
+            val = self.name.get_value(self.value)
         except ValueError:
             logger.error("got bad value")
             raise
         return val
-
 
     class Meta:
         ordering = ("name",)
