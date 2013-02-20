@@ -40,6 +40,9 @@ from bdphpcprovider.smartconnectorscheduler.errors import ContextKeyMissing
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
 from bdphpcprovider.smartconnectorscheduler import models
 
+from django.core.files.storage import FileSystemStorage
+
+
 
 def get_filesys(context):
     """
@@ -86,6 +89,16 @@ def retrieve_settings(context):
 
     return settings
 
+
+def get_file_from_context(context, fname):
+    """
+    Retrieve the content of a remote file with fname
+    """
+    fsys_path = context['fsys']
+    remote_fs = FileSystemStorage(location=fsys_path)
+    f = context[fname]
+    content = remote_fs.open(f).read()
+    return content
 
 def get_settings(context):
     """

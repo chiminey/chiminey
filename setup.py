@@ -28,7 +28,8 @@ setup(
         'django-celery==2.5.5',
         'django-kombu',
         'decisiontree',
-        'django-mptt'
+        'django-mptt',
+        'django-storages'
         ],
     dependency_links = [
         'https://github.com/dahlia/wand/tarball/warning-bugfix#egg=Wand-0.1.10',
