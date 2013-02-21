@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
-
+from django.core.exceptions import MultipleObjectsReturned
 import logging
 import logging.config
 
@@ -115,6 +115,7 @@ class ParameterName(models.Model):
                 logger.debug("invalid type")
                 raise
         return res
+
 
 
 class UserProfileParameterSet(models.Model):
@@ -234,6 +235,62 @@ class Context(models.Model):
     """
     owner = models.ForeignKey(UserProfile)
     current_stage = models.ForeignKey(Stage)
+    CONTEXT_SCHEMA_NS = "tardis.edu.au/schemas/context/schema"
+
+
+    def get_context(self):
+        """
+        Returns a readonly dict that holds all the information for the context
+        """
+        context = {}
+        for param in ContextParameter.objects.filter(paramset__context=self):
+            context[param.name.name] = param.getValue()
+        return context
+
+
+    def update_context(self, updated_context):
+        """
+            update the context with new values from a map
+        """
+
+        sch = Schema.objects.get(namespace=self.CONTEXT_SCHEMA_NS)
+        logger.debug("sch=%s" % sch)
+        # FIXME: assumes that each context has only one ContextParameterSet
+        try:
+            paramset = ContextParameterSet.objects.get(
+                schema=sch)
+        except ContextParameterSet.DoesNotExist:
+            logger.exception("Could not find parameterset for context")
+            raise
+        except MultipleObjectsReturned:
+            logger.exception("Found duplicate entry in ContextParamterSet")
+            raise
+
+        logger.debug("paramset=%s" % paramset)
+        #TODO: what if entries in original context have been deleted?
+        for k, v in updated_context.items():
+            logger.debug("k=%s,v=%s" % (k, v))
+            try:
+                pn = ParameterName.objects.get(schema=sch,
+                    name=k)
+            except ParameterName.DoesNotExist:
+                msg = "Unknown parameter %s for context" % k
+                logger.exception(msg)
+                raise InvalidInputError(msg)
+            try:
+                cp = ContextParameter.objects.get(paramset__context=self,
+                    name__name=k, paramset=paramset)
+            except ContextParameter.DoesNotExist:
+                # TODO: need to check type
+                cp = ContextParameter.objects.create(name=pn,
+                    paramset=paramset, value=v)
+            except MultipleObjectsReturned:
+                logger.exception("Found duplicate entry in ContextParamterSet")
+                raise
+            else:
+                # TODO: need to check type
+                cp.value = v
+                cp.save()
 
 
 class ContextParameterSet(models.Model):

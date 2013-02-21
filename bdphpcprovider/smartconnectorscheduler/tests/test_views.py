@@ -45,6 +45,7 @@ from bdphpcprovider.smartconnectorscheduler import mc
 from bdphpcprovider.smartconnectorscheduler import getresults
 from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
 from bdphpcprovider.smartconnectorscheduler import models
+from bdphpcprovider.smartconnectorscheduler import hrmcstages
 
 
 logger = logging.getLogger(__name__)
@@ -232,6 +233,69 @@ class SmartConnectorSchedulerTest(TestCase):
 #         return datetime.datetime.now().strftime(self.format_string)
 
 
+def _get_file(fname):
+    """
+    Fake the use urllib to retrieve the contents at the template and return
+    as a string.  In reality, we would retrieve and cache here if possible.
+    """
+    logger.debug("fname=%s" % fname)
+    if fname == "tardis://iant@tardis.edu.au/datafile/15":
+        return "a={{a}} b={{b}}"
+    elif fname == "hpc://iant@nci.edu.au/input/input.txt":
+        return "a={{a}} b={{b}} c={{c}}"
+    elif fname == "hpc://iant@nci.edu.au/input/file.txt":
+        return "foobar"
+    else:
+        raise InvalidInputError("unknown file")
+
+
+def _get_schema(sch_ns):
+    logger.debug("sch_ns=%s" % sch_ns)
+    s = models.Schema.objects.get(namespace=sch_ns)
+    return s
+
+
+def _get_remote_file_path(source_name):
+    """
+    Create file to hold instantiated template for command execution.
+    Kept local now, but could be on nci, nectar etc.
+
+    """
+
+    # # The top of the remote filesystem that will hold a user's files
+    remote_base_path = os.path.join("centos")
+
+    from urlparse import urlparse
+    o = urlparse(source_name)
+    file_path = o.path.decode('utf-8')
+    logger.debug("file_path=%s" % file_path)
+    # if file_path[0] == os.path.sep:
+    #     file_path = file_path[:-1]
+    import uuid
+    randsuffix = unicode(uuid.uuid4())  # should use some job id here
+
+    relpath = u"%s_%s" % (file_path, randsuffix)
+
+    if relpath[0] == os.path.sep:
+        relpath = relpath[1:]
+    logger.debug("relpath=%s" % relpath)
+
+    # FIXME: for django storage, do we need to create
+    # intermediate directories
+    dest_path = os.path.join(remote_base_path, relpath)
+    logger.debug("dest_path=%s" % dest_path)
+    return dest_path.decode('utf8')
+
+
+def values_match_schema(schema, values):
+    """
+        Given a schema object and a set of (k,v) fields, checking
+        each k has correspondingly named ParameterName in the schema
+    """
+    # TODO:
+    return True
+
+
 class TestDirectiveCommands(TestCase):
     """
     Tests ability to translate directives with arguments
@@ -241,13 +305,13 @@ class TestDirectiveCommands(TestCase):
 
     def setUp(self):
         self.remote_fs_path = os.path.join(
-            os.path.dirname(__file__), '..', 'testing', 'remotesys')
+            os.path.dirname(__file__), '..', 'testing', 'remotesys').decode("utf8")
         logger.debug("self.remote_fs_path=%s" % self.remote_fs_path)
         self.remote_fs = FileSystemStorage(location=self.remote_fs_path)
 
     def tearDown(self):
         files = self._get_paths("")
-        logger.debug("files=%s", '\n'.join(files))
+        #logger.debug("files=%s", '\n'.join(files))
         # NB: directories are not deletable using remote_fs api
         for f in files:
             self.remote_fs.delete(f)
@@ -255,19 +319,19 @@ class TestDirectiveCommands(TestCase):
 
     def _get_paths(self, dir):
         (dir_list, file_list) = self.remote_fs.listdir(path=dir)
-        logger.debug("file_list from %s=%s" % (dir, file_list))
+        #logger.debug("file_list from %s=%s" % (dir, file_list))
         dirs = []
 
         for item in dir_list:
-            logger.debug("Directory %s" % str(item))
+            #logger.debug("Directory %s" % str(item))
             p = self._get_paths(os.path.join(dir, item))
             for x in p:
-                logger.debug("Inside Directory %s" % x)
+                #logger.debug("Inside Directory %s" % x)
                 dirs.append(x)
             #dirs.append(os.path.join(dir, item))
 
         for item in file_list:
-            logger.debug("Item %s" % str(item))
+            #logger.debug("Item %s" % str(item))
             dirs.append(os.path.join(dir, item))
 
         return dirs
@@ -291,22 +355,43 @@ class TestDirectiveCommands(TestCase):
             ("http://nci.org.au/schemas/hrmc/custom_command/", "custom",
                 "custom command")
             ]:
-            sch = models.Schema(namespace=ns, name=name, description=desc)
-            sch.save()
+            sch = models.Schema.objects.create(namespace=ns, name=name, description=desc)
             logger.debug("sch=%s" % sch)
 
-        param_set = models.UserProfileParameterSet(user_profile=profile,
+        context_schema = models.Schema.objects.create(
+            namespace=models.Context.CONTEXT_SCHEMA_NS,
+            name="Context Schema", description="Schema for a context")
+        # We assume that a run_contest has only one schema at the moment, os
+        # we have to load up this schema will all context values used in
+        # any of the stages (and any parameters required for the stage
+        # invocation)
+        # TODO: allow multiple ContextParameterSet each with different schema
+        # so each value will come from a namespace.  e.g., general/fsys
+        # nectar/num_of_nodes, setup/nodes_setup etc.
+        for name, param_type in {
+            u'fsys': models.ParameterName.STRING,
+            u'user_id': models.ParameterName.NUMERIC,
+            u'file0': models.ParameterName.STRING,
+            u'file1': models.ParameterName.STRING,
+            u'file2': models.ParameterName.STRING,
+            u'num_nodes': models.ParameterName.NUMERIC,
+            u'iseed': models.ParameterName.NUMERIC,
+            u'command': models.ParameterName.STRING,
+            u'null_output': models.ParameterName.NUMERIC}.items():
+
+            param = models.ParameterName.objects.create(schema=context_schema,
+                name=name,
+                type=param_type)
+
+        param_set = models.UserProfileParameterSet.objects.create(user_profile=profile,
             schema=sch)
-        param_set.save()
         for k, v in params.items():
-            param_name = models.ParameterName(schema=sch,
+            param_name = models.ParameterName.objects.create(schema=sch,
                 name=k,
                 type=paramtype[k])
-            param_name.save()
-            param = models.UserProfileParameter(name=param_name,
+            param = models.UserProfileParameter.objects.create(name=param_name,
                 paramset=param_set,
                 value=v)
-            param.save()
 
         platform = models.Platform(name="nci")
         platform.save()
@@ -314,28 +399,37 @@ class TestDirectiveCommands(TestCase):
         directive = models.Directive(name="smartconnector1")
         directive.save()
 
-        composite = models.Stage.objects.create(name="basic_connector",
+        composite_stage = models.Stage.objects.create(name="basic_connector",
             description="encapsulates a workflow",
+            package="bdphpcprovider.smartconnectorscheduler.stages.composite.ParallelStage",
             order=100)
 
+        null_stage = models.Stage.objects.create(name="null",
+            description="Null Stage",
+            package="bdphpcprovider.smartconnectorscheduler.stages.nullstage.NullStage",
+            order= 0
+            )
+
         setup_stage = models.Stage.objects.create(name="setup",
-            parent=composite,
+            parent=composite_stage,
             description="This is a setup stage of something",
             package="bdphpcprovider.smartconnectorscheduler.stages.nullstage.NullStage",
             order=0)
         run_stage = models.Stage.objects.create(name="run",
-            parent=composite,
+            parent=composite_stage,
             description="This is the running part",
             package="bdphpcprovider.smartconnectorscheduler.stages.nullstage.NullStage",
             order=1)
         finished_stage = models.Stage.objects.create(name="finished",
-            parent=composite,
+            parent=composite_stage,
             description="And here we finish everything off",
             package="bdphpcprovider.smartconnectorscheduler.stages.nullstage.NullStage",
             order=2)
 
-        comm = models.Command(platform=platform, directive=directive, initial_stage=setup_stage)
+        comm = models.Command(platform=platform, directive=directive, initial_stage=null_stage)
         comm.save()
+
+
 
     def _safe_import(self, path, args, kw):
 
@@ -359,12 +453,11 @@ class TestDirectiveCommands(TestCase):
         return filter_instance
 
 
-
     def test_simple(self):
 
         # setup all needed schemas below
         PARAMS = {'param1name': 'param1val',
-            'param2name': '42'}
+            'param2name': 42}
         PARAMTYPE = {'param1name': models.ParameterName.STRING,
             'param2name': models.ParameterName.NUMERIC}
         self._load_data(PARAMS, PARAMTYPE)
@@ -374,12 +467,12 @@ class TestDirectiveCommands(TestCase):
 
         # Template from mytardis with corresponding metdata brought across
         directive_args.append(['tardis://iant@tardis.edu.au/datafile/15',
-            ['http://tardis.edu.au/schemas/hrmc/dfmeta/', ('a', '5'), ('b', '6')]])
+            ['http://tardis.edu.au/schemas/hrmc/dfmeta/', ('a', 5), ('b', 6)]])
 
         # Template on remote storage with corresponding multiple parameter sets
         directive_args.append(['hpc://iant@nci.edu.au/input/input.txt',
-            ['http://tardis.edu.au/schemas/hrmc/dfmeta/', ('a', '3'), ('b', '4')],
-            ['http://tardis.edu.au/schemas/hrmc/dfmeta/', ('a', '1'), ('b', '2')],
+            ['http://tardis.edu.au/schemas/hrmc/dfmeta/', ('a', 3), ('b', 4)],
+            ['http://tardis.edu.au/schemas/hrmc/dfmeta/', ('a', 1), ('b', 2)],
             ['http://tardis.edu.au/schemas/hrmc/dfmeta2/', ('c', 'hello')]])
 
         # A file (template with no variables)
@@ -388,86 +481,26 @@ class TestDirectiveCommands(TestCase):
 
         # A set of commands
         directive_args.append(['', ['http://tardis.edu.au/schemas/hrmc/create',
-            ('num_nodes', '5'), ('iseed', '42')]])
+            ('num_nodes', 5), ('iseed', 42)]])
 
         # Example of how a nci script might work.
         directive_args.append(['',
             ['http://nci.org.au/schemas/hrmc/custom_command/', ('command', 'ls')]])
 
-        def get_file(fname):
-            """
-            Fake the use urllib to retrieve the contents at the template and return
-            as a string.  In reality, we would retrieve and cache here if possible.
-            """
-            logger.debug("fname=%s" % fname)
-            if fname == "tardis://iant@tardis.edu.au/datafile/15":
-                return "a={{a}} b={{b}}"
-            elif fname == "hpc://iant@nci.edu.au/input/input.txt":
-                return "a={{a}} b={{b}} c={{c}}"
-            elif fname == "hpc://iant@nci.edu.au/input/file.txt":
-                return "foobar"
-            else:
-                raise InvalidInputError("unknown file")
-
-        def get_schema(sch_ns):
-            logger.debug("sch_ns=%s" % sch_ns)
-            s = models.Schema.objects.get(namespace=sch_ns)
-            return s
-
-        def get_remote_file_path(source_name):
-            """
-            Create file to hold instantiated template for command execution.
-            Kept local now, but could be on nci, nectar etc.
-
-            """
-
-            # # The top of the remote filesystem that will hold a user's files
-            remote_base_path = os.path.join("centos")
-
-            from urlparse import urlparse
-            o = urlparse(source_name)
-            file_path = o.path
-            logger.debug("file_path=%s" % file_path)
-            # if file_path[0] == os.path.sep:
-            #     file_path = file_path[:-1]
-            import uuid
-            randsuffix = str(uuid.uuid4())  # should use some job id here
-
-            relpath = "%s%s" % (file_path, "_%s" % randsuffix)
-
-            if relpath[0] == os.path.sep:
-                relpath = relpath[1:]
-            logger.debug("relpath=%s" % relpath)
-
-            # FIXME: for django storage, do we need to create
-            # intermediate directories
-            dest_path = os.path.join(remote_base_path, relpath)
-            logger.debug("dest_path=%s" % dest_path)
-            return dest_path
-
-        def values_match_schema(schema, values):
-            """
-                Given a schema object and a set of (k,v) fields, checking
-                each k has correspondingly named ParameterName in the schema
-            """
-            # TODO:
-            return True
-
         command_args = []
         for darg in directive_args:
             logger.debug("darg=%s" % darg)
-            file_url = darg[0]
+            file_url = darg[0].decode('utf8')
             args = darg[1:]
             if file_url:
-                f = get_file(file_url)
+                f = _get_file(file_url)
             context = {}
             if args:
                 for a in args:
                     logger.debug("a=%s" % a)
                     if a:
-                        sch = a[0]
-                        schema = get_schema(sch)
-
+                        sch = a[0].decode('utf8')
+                        schema = _get_schema(sch)
                         values = a[1:]
                         logger.debug("values=%s" % values)
                         if not values_match_schema(schema, values):
@@ -482,7 +515,11 @@ class TestDirectiveCommands(TestCase):
                                 raise InvalidInputError(
                                     "Cannot have blank key in parameter set")
 
-                            context["%s" % k] = v
+                            try:
+                                v_val = int(v)
+                            except ValueError:
+                                v_val = v.decode('utf8')  # as a string
+                            context[k.decode('utf8')] = v_val
             if file_url:
                 logger.debug("file_url %s" % file_url)
                 logger.debug("context = %s" % context)
@@ -490,13 +527,17 @@ class TestDirectiveCommands(TestCase):
                 # name file_url with suffix based on the command job number?
                 t = Template(f)
                 con = Context(context)
-                tmp_fname = get_remote_file_path(file_url)  # FIXME: make remote
+                tmp_fname = _get_remote_file_path(file_url)  # FIXME: make remote
                 cont = t.render(con)
                 self.remote_fs.save(tmp_fname, ContentFile(cont.encode('utf-8')))  # NB: ContentFile only takes bytes
-                command_args.append(("", tmp_fname))
+                command_args.append((u'', tmp_fname.decode('utf-8')))
             else:
                 for k, v in values:
-                    command_args.append((k, v))
+                    try:
+                        v_val = int(v)
+                    except ValueError:
+                        v_val = v.decode('utf8')  # as a string
+                    command_args.append((k.decode('utf8'), v_val))
 
         logger.debug("command_args = %s" % command_args)
 
@@ -511,13 +552,14 @@ class TestDirectiveCommands(TestCase):
             #os.remove(v)
         k, v = command_args[3]
         self.assertEquals(k, 'num_nodes')
-        self.assertEquals(v, '5')
+        self.assertEquals(v, 5)
         k, v = command_args[4]
         self.assertEquals(k, 'iseed')
-        self.assertEquals(v, '42')  # TODO: handle NUMERIC types correctly
+        self.assertEquals(v, 42)  # TODO: handle NUMERIC types correctly
         k, v = command_args[5]
         self.assertEquals(k, 'command')
         self.assertEquals(v, 'ls')
+
 
         platform = models.Platform.objects.get(name="nci")
         directive = models.Directive.objects.get(name="smartconnector1")
@@ -526,28 +568,73 @@ class TestDirectiveCommands(TestCase):
         initial_stage = command.initial_stage
         logger.debug("initial_stage=%s" % initial_stage)
 
-        stage = self._safe_import(initial_stage.package,[],{})
+        stage = self._safe_import(initial_stage.package,  [], {})
         logger.debug("stage=%s" % stage)
 
-        # Get ready for execution
+        # get the user
+        user = User.objects.get(username="username1")
+        profile = models.UserProfile.objects.get(user=user)
 
+        # make run_context for this user
+        run_context = models.Context.objects.create(owner=profile,
+            current_stage=initial_stage)
+
+        context_schema =_get_schema(models.Context.CONTEXT_SCHEMA_NS)
+        logger.debug("context_schema=%s" % context_schema)
+        # make a single parameter to represent the context
+        param_set = models.ContextParameterSet.objects.create(context=run_context,
+            schema= context_schema,
+            ranking=0)
+
+        # save initial context for current stage
         context = {}
         arg_num = 0
         for (k, v) in command_args:
+            logger.debug("k=%s,v=%s" % (k, v))
+
             if k:
                 context[k] = v
             else:
-                key = "file%s" % arg_num
+                key = u"file%s" % arg_num
                 arg_num += 1
                 context[key] = v
+        context[u'fsys'] = self.remote_fs_path
+        context[u'user_id'] = user.id
+        logger.debug("context=%s" % context)
+        run_context.update_context(context)
 
-        context['fsys'] = self.remote_fs_path
+        # Main processing loop
+        for run_context in models.Context.objects.all():
+            # advance each users context one stage
+            current_stage = run_context.current_stage
+            logger.debug("current_stage=%s" % current_stage)
+            stage = self._safe_import(current_stage.package,  [], {})  # obviously need to cache this
+            logger.debug("stage=%s", stage)
+            cont = run_context.get_context()
+            logger.debug("retrieved cont=%s" % cont)
+            user_settings = hrmcstages.retrieve_settings(cont)
+            if stage.triggered(cont):
+                logger.debug("triggered")
+                stage.process(cont)
+                cont = stage.output(cont)
+                logger.debug("cont=%s" %  cont)
+            else:
+                logger.debug("not triggered")
+            logger.debug("updated cont=%s" % cont)
+            run_context.update_context(cont)
+        logger.debug("finished main loop")
 
-        if stage.triggered(context):
-            stage.process(context)
-            context = stage.output(context)
+        res_context = {}
+        for run_context in models.Context.objects.all():
+            res_context.update(run_context.get_context())
 
+        logger.debug("res_context =  %s" % res_context)
 
+        context[u'null_output'] = 42
+        logger.debug("context =  %s" % context)
+
+        self.assertEquals(res_context, context)
+        self.assertEquals(hrmcstages.retrieve_settings({u'user_id': user.id}),PARAMS )
 
 # def main():
 
@@ -556,5 +643,3 @@ class TestDirectiveCommands(TestCase):
     #                            'host':'115.146.94.198',
 
     #                            'root':'/home/centos/tmp/'})
-
-
