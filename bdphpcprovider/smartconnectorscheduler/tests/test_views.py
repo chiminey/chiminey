@@ -26,6 +26,7 @@ import logging.config
 from flexmock import flexmock
 from tempfile import mkstemp
 from string import lower
+import json
 
 from django.test import TestCase
 from django.test.client import Client
@@ -377,6 +378,7 @@ class TestDirectiveCommands(TestCase):
             u'num_nodes': models.ParameterName.NUMERIC,
             u'iseed': models.ParameterName.NUMERIC,
             u'command': models.ParameterName.STRING,
+            u'transitions': models.ParameterName.STRING,  # TODO: use STRLIST
             u'null_output': models.ParameterName.NUMERIC}.items():
 
             param = models.ParameterName.objects.create(schema=context_schema,
@@ -399,10 +401,16 @@ class TestDirectiveCommands(TestCase):
         directive = models.Directive(name="smartconnector1")
         directive.save()
 
-        composite_stage = models.Stage.objects.create(name="basic_connector",
+        # composite_stage = models.Stage.objects.create(name="basic_connector",
+        #     description="encapsulates a workflow",
+        #     package="bdphpcprovider.smartconnectorscheduler.stages.composite.ParallelStage",
+        #     order=100)
+
+        composite_stage = models.Stage(name="basic_connector",
             description="encapsulates a workflow",
             package="bdphpcprovider.smartconnectorscheduler.stages.composite.ParallelStage",
             order=100)
+        composite_stage.save()
 
         null_stage = models.Stage.objects.create(name="null",
             description="Null Stage",
@@ -410,23 +418,34 @@ class TestDirectiveCommands(TestCase):
             order= 0
             )
 
-        setup_stage = models.Stage.objects.create(name="setup",
+        stage1 = models.Stage.objects.create(name="setup",
             parent=composite_stage,
             description="This is a setup stage of something",
             package="bdphpcprovider.smartconnectorscheduler.stages.nullstage.NullStage",
             order=0)
-        run_stage = models.Stage.objects.create(name="run",
+        stage2 = models.Stage.objects.create(name="run",
             parent=composite_stage,
-            description="This is the running part",
+            description="This is the running connector",
             package="bdphpcprovider.smartconnectorscheduler.stages.nullstage.NullStage",
             order=1)
-        finished_stage = models.Stage.objects.create(name="finished",
+        stage2a = models.Stage.objects.create(name="run1",
+            parent=stage2,
+            description="This is the running part 1",
+            package="bdphpcprovider.smartconnectorscheduler.stages.nullstage.NullStage",
+            order=1)
+        stage2b = models.Stage.objects.create(name="run2",
+            parent=stage2,
+            description="This is the running part 2",
+            package="bdphpcprovider.smartconnectorscheduler.stages.nullstage.NullStage",
+            order=2)
+        stage3 = models.Stage.objects.create(name="finished",
             parent=composite_stage,
             description="And here we finish everything off",
             package="bdphpcprovider.smartconnectorscheduler.stages.nullstage.NullStage",
-            order=2)
-
-        comm = models.Command(platform=platform, directive=directive, initial_stage=null_stage)
+            order=3)
+        logger.debug("stage3=%s" % stage3)
+        logger.debug("stages=%s" % models.Stage.objects.all())
+        comm = models.Command(platform=platform, directive=directive, initial_stage=composite_stage)
         comm.save()
 
 
@@ -601,27 +620,49 @@ class TestDirectiveCommands(TestCase):
         context[u'fsys'] = self.remote_fs_path
         context[u'user_id'] = user.id
         logger.debug("context=%s" % context)
+
+        transitions = make_parallel_stage(command.initial_stage, context)
+        logger.debug("transitions=%s" % transitions)
+        context[u'transitions'] = json.dumps(transitions)
+        logger.debug("context =  %s" % context)
+
         run_context.update_context(context)
 
+        current_stage = command.initial_stage.id
+        logger.debug("initial current_stage = %s" % current_stage)
+
         # Main processing loop
-        for run_context in models.Context.objects.all():
-            # advance each users context one stage
-            current_stage = run_context.current_stage
-            logger.debug("current_stage=%s" % current_stage)
-            stage = self._safe_import(current_stage.package,  [], {})  # obviously need to cache this
-            logger.debug("stage=%s", stage)
-            cont = run_context.get_context()
-            logger.debug("retrieved cont=%s" % cont)
-            user_settings = hrmcstages.retrieve_settings(cont)
-            if stage.triggered(cont):
-                logger.debug("triggered")
-                stage.process(cont)
-                cont = stage.output(cont)
-                logger.debug("cont=%s" %  cont)
-            else:
-                logger.debug("not triggered")
-            logger.debug("updated cont=%s" % cont)
-            run_context.update_context(cont)
+        done = False
+        while (True):
+            for run_context in models.Context.objects.all():
+                cont = run_context.get_context()
+                # advance each users context one stage
+                current_stage = run_context.current_stage.get_next_stage(cont)
+                if not current_stage:
+                    done = True
+                    break
+                #current_stage = run_context.current_stage
+                logger.debug("current_stage=%s" % current_stage)
+                stage = self._safe_import(current_stage.package,  [], {})  # obviously need to cache this
+                logger.debug("stage=%s", stage)
+                logger.debug("retrieved cont=%s" % cont)
+                user_settings = hrmcstages.retrieve_settings(cont)
+                if stage.triggered(cont):
+                    logger.debug("triggered")
+                    stage.process(cont)
+                    cont = stage.output(cont)
+                    logger.debug("cont=%s" %  cont)
+                else:
+                    logger.debug("not triggered")
+                logger.debug("updated cont=%s" % cont)
+                #run_context.current_stage = get_next_stage(cont, current_stage)
+                logger.debug("current_stage=%s" % current_stage)
+                run_context.update_context(cont)
+
+                run_context.current_stage = current_stage
+                run_context.save()
+            if done:
+                break
         logger.debug("finished main loop")
 
         res_context = {}
@@ -630,7 +671,7 @@ class TestDirectiveCommands(TestCase):
 
         logger.debug("res_context =  %s" % res_context)
 
-        context[u'null_output'] = 42
+        context[u'null_output'] = 5
         logger.debug("context =  %s" % context)
 
         self.assertEquals(res_context, context)
@@ -643,3 +684,39 @@ class TestDirectiveCommands(TestCase):
     #                            'host':'115.146.94.198',
 
     #                            'root':'/home/centos/tmp/'})
+
+
+def make_parallel_stage(stage, context):
+    return make_parallel_stage_recur(stage, context, 0)
+
+def make_parallel_stage_recur(stage, context, parent_next_sibling_id):
+    # TODO: testthis carefully
+    logger.debug("mps stage=%s" % stage)
+    transition = {}
+    childs = models.Stage.objects.filter(parent=stage).order_by('order')
+    logger.debug("childs=%s", childs)
+    # FIXME: rewrite this
+    for i, child in enumerate(childs):
+        key = child.id
+        value = childs[i + 1].id if i < len(childs) - 1 else -1
+        transition[key] = value
+        logger.debug("%s -> %s" % (key, value))
+        subtransition = make_parallel_stage_recur(child, context, value)
+        logger.debug("subtransiton=%s", subtransition)
+        transition.update(subtransition)
+
+    if len(childs) > 0:
+        k, v = stage.id, childs[0].id
+        logger.debug("%s -> %s" % (key, value))
+        transition[k] = v
+        k, v = childs.reverse()[0].id, parent_next_sibling_id
+        logger.debug("%s -> %s" % (key, value))
+        transition[k] = v
+    # else:
+    #        transition[stage.id] = 0
+    logger.debug("transition=%s" % transition)
+
+    return transition
+
+
+

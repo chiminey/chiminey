@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core.exceptions import MultipleObjectsReturned
 import logging
+import json
 import logging.config
 
 logger = logging.getLogger(__name__)
@@ -167,7 +168,8 @@ class UserProfileParameter(models.Model):
 from mptt.models import MPTTModel, TreeForeignKey
 
 
-class Stage(MPTTModel):
+#class Stage(MPTTModel):
+class Stage(models.Model):
     """
     The units of execution.
     """
@@ -175,11 +177,36 @@ class Stage(MPTTModel):
     impl = models.CharField(max_length=256, null=True)
     description = models.TextField(default="")
     order = models.IntegerField(default=0)
-    parent = TreeForeignKey('self', null=True, blank=True, related_name='children')
+    parent = models.ForeignKey('self', null=True, blank=True)
+    #parent = TreeForeignKey('self', null=True, blank=True, related_name='children')
     package = models.CharField(max_length=256, default="")
 
     class MPTTMeta:
         order_insertion_by = ['order']
+
+    def __unicode__(self):
+        return u'#%s %s %s %s' % (self.id, self.name, self.description, self.parent)
+
+
+    def get_next_stage(self, context):
+        """
+        Given a stage, determine the next stage to execute, but consulting parent
+        """
+
+        transitions = json.loads(context['transitions'])
+        logger.debug("transitions=%s" % transitions)
+        logger.debug("current_stage=%s" % self)
+
+        next_stage_id = transitions["%s" % self.id]
+        logger.debug("next_stage_id = %s" % next_stage_id)
+
+        if next_stage_id:
+            next_stage = Stage.objects.get(id=next_stage_id)
+        else:
+            return None
+        return next_stage
+
+
 
 
 # class DirectiveArgument(models.Model):
