@@ -20,6 +20,10 @@ class NullStage(Stage):
         # FIXME: Need to verify that triggered is idempotent.
         logger.debug("Null Stage Triggered")
         logger.debug("context=%s" % context)
+        if 'null_output' in context:
+            self.val = context['null_output']
+        else:
+            self.val = 0
         return True
 
     def process(self, context):
@@ -34,5 +38,6 @@ class NullStage(Stage):
         """
         logger.debug("Null Stage Processing")
         logger.debug("context=%s" % context)
-        context['null_output'] = 42
+        self.val += 1
+        context['null_output'] = self.val
         return context
