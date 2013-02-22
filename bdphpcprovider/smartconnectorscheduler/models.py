@@ -5,7 +5,10 @@ import logging
 import json
 import logging.config
 
+from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
+
 logger = logging.getLogger(__name__)
+
 
 class UserProfile(models.Model):
     user = models.ForeignKey(User, unique=True)
@@ -118,7 +121,6 @@ class ParameterName(models.Model):
         return res
 
 
-
 class UserProfileParameterSet(models.Model):
     """ Association of a user profile object with a specific schema.
 
@@ -165,8 +167,44 @@ class UserProfileParameter(models.Model):
         ordering = ("name",)
 
 
-from mptt.models import MPTTModel, TreeForeignKey
+def make_parallel_stage(stage, context):
+    """ Starting at stage, traverse the whole composite stage and record
+    and return the path (assuming no branches).  TODO: branches?
+    """
+    return _make_parallel_stage_recur(stage, context, 0)
 
+
+def _make_parallel_stage_recur(stage, context, parent_next_sibling_id):
+    # TODO: test this carefully
+    logger.debug("mps stage=%s" % stage)
+    transition = {}
+    childs = Stage.objects.filter(parent=stage).order_by('order')
+    logger.debug("childs=%s", childs)
+    # FIXME: rewrite this
+    for i, child in enumerate(childs):
+        key = child.id
+        value = childs[i + 1].id if i < len(childs) - 1 else -1
+        transition[key] = value
+        logger.debug("%s -> %s" % (key, value))
+        subtransition = _make_parallel_stage_recur(child, context, value)
+        logger.debug("subtransiton=%s", subtransition)
+        transition.update(subtransition)
+
+    if len(childs) > 0:
+        k, v = stage.id, childs[0].id
+        logger.debug("%s -> %s" % (key, value))
+        transition[k] = v
+        k, v = childs.reverse()[0].id, parent_next_sibling_id
+        logger.debug("%s -> %s" % (key, value))
+        transition[k] = v
+    # else:
+    #        transition[stage.id] = 0
+    logger.debug("transition=%s" % transition)
+
+    return transition
+
+
+#from mptt.models import MPTTModel, TreeForeignKey
 
 #class Stage(MPTTModel):
 class Stage(models.Model):
@@ -187,10 +225,9 @@ class Stage(models.Model):
     def __unicode__(self):
         return u'#%s %s %s %s' % (self.id, self.name, self.description, self.parent)
 
-
     def get_next_stage(self, context):
         """
-        Given a stage, determine the next stage to execute, but consulting parent
+        Given a stage, determine the next stage to execute, by consulting transition map
         """
 
         transitions = json.loads(context['transitions'])
@@ -207,17 +244,10 @@ class Stage(models.Model):
         return next_stage
 
 
-
-
-# class DirectiveArgument(models.Model):
-#     """
-#     A parameter in a directive (unparsed)
-#     """
-#     directive = models.ForeignKey(Directive)
-#     arg = models.charField()
-
-
 class Platform(models.Model):
+    """
+    The envioronment where directives will be executed.
+    """
     name = models.CharField(max_length=256)
 
 
@@ -234,7 +264,7 @@ class Command(models.Model):
     Initialised from the specified stage
     """
     directive = models.ForeignKey(Directive)
-    initial_stage = models.ForeignKey(Stage)
+    stage = models.ForeignKey(Stage, null=True, blank=True)
     platform = models.ForeignKey(Platform)
 
 
@@ -264,7 +294,6 @@ class Context(models.Model):
     current_stage = models.ForeignKey(Stage)
     CONTEXT_SCHEMA_NS = "tardis.edu.au/schemas/context/schema"
 
-
     def get_context(self):
         """
         Returns a readonly dict that holds all the information for the context
@@ -273,7 +302,6 @@ class Context(models.Model):
         for param in ContextParameter.objects.filter(paramset__context=self):
             context[param.name.name] = param.getValue()
         return context
-
 
     def update_context(self, updated_context):
         """
@@ -330,12 +358,6 @@ class ContextParameterSet(models.Model):
 
     class Meta:
         ordering = ["-ranking"]
-
-
-# class CommandArgMetaParameter(models.Model):
-#     name = models.CharField()
-#     paramset = models.ForeignKey(CommandParameterSet)
-#     value = models.TextField()
 
 
 class CommandArgument(models.Model):
