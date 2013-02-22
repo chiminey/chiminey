@@ -36,8 +36,6 @@ from django.contrib.auth.models import User
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from storages.backends.sftpstorage import SFTPStorage
-from django.utils.importlib import import_module
-from django.core.exceptions import ImproperlyConfigured
 from django.core.files.storage import FileSystemStorage
 
 
@@ -234,74 +232,11 @@ class SmartConnectorSchedulerTest(TestCase):
 #         return datetime.datetime.now().strftime(self.format_string)
 
 
-def _get_file(fname):
-    """
-    Fake the use urllib to retrieve the contents at the template and return
-    as a string.  In reality, we would retrieve and cache here if possible.
-    """
-    logger.debug("fname=%s" % fname)
-    if fname == "tardis://iant@tardis.edu.au/datafile/15":
-        return "a={{a}} b={{b}}"
-    elif fname == "hpc://iant@nci.edu.au/input/input.txt":
-        return "a={{a}} b={{b}} c={{c}}"
-    elif fname == "hpc://iant@nci.edu.au/input/file.txt":
-        return "foobar"
-    else:
-        raise InvalidInputError("unknown file")
-
-
-def _get_schema(sch_ns):
-    logger.debug("sch_ns=%s" % sch_ns)
-    s = models.Schema.objects.get(namespace=sch_ns)
-    return s
-
-
-def _get_remote_file_path(source_name):
-    """
-    Create file to hold instantiated template for command execution.
-    Kept local now, but could be on nci, nectar etc.
-
-    """
-
-    # # The top of the remote filesystem that will hold a user's files
-    remote_base_path = os.path.join("centos")
-
-    from urlparse import urlparse
-    o = urlparse(source_name)
-    file_path = o.path.decode('utf-8')
-    logger.debug("file_path=%s" % file_path)
-    # if file_path[0] == os.path.sep:
-    #     file_path = file_path[:-1]
-    import uuid
-    randsuffix = unicode(uuid.uuid4())  # should use some job id here
-
-    relpath = u"%s_%s" % (file_path, randsuffix)
-
-    if relpath[0] == os.path.sep:
-        relpath = relpath[1:]
-    logger.debug("relpath=%s" % relpath)
-
-    # FIXME: for django storage, do we need to create
-    # intermediate directories
-    dest_path = os.path.join(remote_base_path, relpath)
-    logger.debug("dest_path=%s" % dest_path)
-    return dest_path.decode('utf8')
-
-
-def values_match_schema(schema, values):
-    """
-        Given a schema object and a set of (k,v) fields, checking
-        each k has correspondingly named ParameterName in the schema
-    """
-    # TODO:
-    return True
-
-
-class TestDirectiveCommands(TestCase):
+class TestCommandContextLoop(TestCase):
     """
     Tests ability to translate directives with arguments
     into equivalent commands with correct template instantiated
-    files and parameter type arguments
+    files and parameter type arguments and execute them.
     """
 
     def setUp(self):
@@ -337,14 +272,17 @@ class TestDirectiveCommands(TestCase):
 
         return dirs
 
-    def _load_data(self, params, paramtype):
+    def _load_data(self):
 
+        # Create a user and profile
         self.user = User.objects.create_user(username="username1",
             password="password")
         profile = models.UserProfile(
                       user=self.user)
         profile.save()
 
+        # Create the schemas for template parameters or config info
+        # specfied in directive arguments
         for ns, name, desc in [('http://www.rmit.edu.au/user/profile/1',
             "userprofile1", "Information about user"),
             ('http://tardis.edu.au/schemas/hrmc/dfmeta/', "datafile1",
@@ -359,11 +297,13 @@ class TestDirectiveCommands(TestCase):
             sch = models.Schema.objects.create(namespace=ns, name=name, description=desc)
             logger.debug("sch=%s" % sch)
 
+        # Create the schema for stages (currently only one) and all allowed
+        # values and their types for all stages.
         context_schema = models.Schema.objects.create(
             namespace=models.Context.CONTEXT_SCHEMA_NS,
             name="Context Schema", description="Schema for a context")
-        # We assume that a run_contest has only one schema at the moment, os
-        # we have to load up this schema will all context values used in
+        # We assume that a run_context has only one schema at the moment, as
+        # we have to load up this schema with all context values used in
         # any of the stages (and any parameters required for the stage
         # invocation)
         # TODO: allow multiple ContextParameterSet each with different schema
@@ -379,187 +319,107 @@ class TestDirectiveCommands(TestCase):
             u'iseed': models.ParameterName.NUMERIC,
             u'command': models.ParameterName.STRING,
             u'transitions': models.ParameterName.STRING,  # TODO: use STRLIST
-            u'null_output': models.ParameterName.NUMERIC}.items():
-
-            param = models.ParameterName.objects.create(schema=context_schema,
+            u'null_output': models.ParameterName.NUMERIC,
+            u'parallel_output': models.ParameterName.NUMERIC}.items():
+            models.ParameterName.objects.create(schema=context_schema,
                 name=name,
                 type=param_type)
 
+        # Setup the schema for user configuration information (kept in profile)
+        self.PARAMS = {'userinfo1': 'param1val',
+            'userinfo2': 42}
+        self.PARAMTYPE = {'userinfo1': models.ParameterName.STRING,
+            'userinfo2': models.ParameterName.NUMERIC}
         param_set = models.UserProfileParameterSet.objects.create(user_profile=profile,
             schema=sch)
-        for k, v in params.items():
+        for k, v in self.PARAMS.items():
             param_name = models.ParameterName.objects.create(schema=sch,
                 name=k,
-                type=paramtype[k])
-            param = models.UserProfileParameter.objects.create(name=param_name,
+                type=self.PARAMTYPE[k])
+            models.UserProfileParameter.objects.create(name=param_name,
                 paramset=param_set,
                 value=v)
 
+        # Make a platform for the commands
         platform = models.Platform(name="nci")
         platform.save()
 
+        # Name our smart connector directive
         directive = models.Directive(name="smartconnector1")
         directive.save()
 
-        # composite_stage = models.Stage.objects.create(name="basic_connector",
-        #     description="encapsulates a workflow",
-        #     package="bdphpcprovider.smartconnectorscheduler.stages.composite.ParallelStage",
-        #     order=100)
-
-        composite_stage = models.Stage(name="basic_connector",
-            description="encapsulates a workflow",
-            package="bdphpcprovider.smartconnectorscheduler.stages.composite.ParallelStage",
-            order=100)
-        composite_stage.save()
-
-        null_stage = models.Stage.objects.create(name="null",
-            description="Null Stage",
-            package="bdphpcprovider.smartconnectorscheduler.stages.nullstage.NullStage",
-            order= 0
-            )
-
-        stage1 = models.Stage.objects.create(name="setup",
+        self.null_package = "bdphpcprovider.smartconnectorscheduler.stages.nullstage.NullStage"
+        self.parallel_package = "bdphpcprovider.smartconnectorscheduler.stages.composite.ParallelStage"
+        # Define all the stages that will make up the command.  This structure
+        # has two layers of composition
+        composite_stage = models.Stage.objects.create(name="basic_connector",
+             description="encapsulates a workflow",
+             package=self.parallel_package,
+             order=100)
+        models.Stage.objects.create(name="setup",
             parent=composite_stage,
             description="This is a setup stage of something",
-            package="bdphpcprovider.smartconnectorscheduler.stages.nullstage.NullStage",
+            package=self.null_package,
             order=0)
         stage2 = models.Stage.objects.create(name="run",
             parent=composite_stage,
             description="This is the running connector",
-            package="bdphpcprovider.smartconnectorscheduler.stages.nullstage.NullStage",
+            package=self.parallel_package,
             order=1)
-        stage2a = models.Stage.objects.create(name="run1",
+        models.Stage.objects.create(name="run1",
             parent=stage2,
             description="This is the running part 1",
-            package="bdphpcprovider.smartconnectorscheduler.stages.nullstage.NullStage",
+            package=self.null_package,
             order=1)
-        stage2b = models.Stage.objects.create(name="run2",
+        models.Stage.objects.create(name="run2",
             parent=stage2,
             description="This is the running part 2",
-            package="bdphpcprovider.smartconnectorscheduler.stages.nullstage.NullStage",
+            package=self.null_package,
             order=2)
-        stage3 = models.Stage.objects.create(name="finished",
+        models.Stage.objects.create(name="finished",
             parent=composite_stage,
             description="And here we finish everything off",
-            package="bdphpcprovider.smartconnectorscheduler.stages.nullstage.NullStage",
+            package=self.null_package,
             order=3)
-        logger.debug("stage3=%s" % stage3)
         logger.debug("stages=%s" % models.Stage.objects.all())
-        comm = models.Command(platform=platform, directive=directive, initial_stage=composite_stage)
+        # Make a new command that reliases composite_stage
+        comm = models.Command(platform=platform, directive=directive, stage=composite_stage)
         comm.save()
 
+    def test_event_process_loop(self):
+        """
+        Tests converting directive with arguments into equivalent
+        Composite stage command and executes it in event loop
+        """
 
+        # Create directive, command and stages definitions
+        self._load_data()
 
-    def _safe_import(self, path, args, kw):
-
-        try:
-            dot = path.rindex('.')
-        except ValueError:
-            raise ImproperlyConfigured('%s isn\'t a filter module' % path)
-        filter_module, filter_classname = path[:dot], path[dot + 1:]
-        try:
-            mod = import_module(filter_module)
-        except ImportError, e:
-            raise ImproperlyConfigured('Error importing filter %s: "%s"' %
-                                       (filter_module, e))
-        try:
-            filter_class = getattr(mod, filter_classname)
-        except AttributeError:
-            raise ImproperlyConfigured('Filter module "%s" does not define a "%s" class' %
-                                       (filter_module, filter_classname))
-
-        filter_instance = filter_class(*args, **kw)
-        return filter_instance
-
-
-    def test_simple(self):
-
-        # setup all needed schemas below
-        PARAMS = {'param1name': 'param1val',
-            'param2name': 42}
-        PARAMTYPE = {'param1name': models.ParameterName.STRING,
-            'param2name': models.ParameterName.NUMERIC}
-        self._load_data(PARAMS, PARAMTYPE)
-
+        # directive_args would come from the external API (from mytardis)
         # Here is our example directive arguments
         directive_args = []
-
         # Template from mytardis with corresponding metdata brought across
         directive_args.append(['tardis://iant@tardis.edu.au/datafile/15',
             ['http://tardis.edu.au/schemas/hrmc/dfmeta/', ('a', 5), ('b', 6)]])
-
         # Template on remote storage with corresponding multiple parameter sets
         directive_args.append(['hpc://iant@nci.edu.au/input/input.txt',
             ['http://tardis.edu.au/schemas/hrmc/dfmeta/', ('a', 3), ('b', 4)],
             ['http://tardis.edu.au/schemas/hrmc/dfmeta/', ('a', 1), ('b', 2)],
             ['http://tardis.edu.au/schemas/hrmc/dfmeta2/', ('c', 'hello')]])
-
         # A file (template with no variables)
         directive_args.append(['hpc://iant@nci.edu.au/input/file.txt',
             []])
-
         # A set of commands
         directive_args.append(['', ['http://tardis.edu.au/schemas/hrmc/create',
             ('num_nodes', 5), ('iseed', 42)]])
-
-        # Example of how a nci script might work.
+        # An Example of how a nci script might work.
         directive_args.append(['',
             ['http://nci.org.au/schemas/hrmc/custom_command/', ('command', 'ls')]])
 
-        command_args = []
-        for darg in directive_args:
-            logger.debug("darg=%s" % darg)
-            file_url = darg[0].decode('utf8')
-            args = darg[1:]
-            if file_url:
-                f = _get_file(file_url)
-            context = {}
-            if args:
-                for a in args:
-                    logger.debug("a=%s" % a)
-                    if a:
-                        sch = a[0].decode('utf8')
-                        schema = _get_schema(sch)
-                        values = a[1:]
-                        logger.debug("values=%s" % values)
-                        if not values_match_schema(schema, values):
-                            raise InvalidInputError(
-                                "specified parameters do not match schema")
-
-                        for k, v in values:
-                            # FIXME: need way of specifying ns and name in the template
-                            # to distinuish between different templates. Here all the variables
-                            # across entire template file must be disjoint
-                            if not k:
-                                raise InvalidInputError(
-                                    "Cannot have blank key in parameter set")
-
-                            try:
-                                v_val = int(v)
-                            except ValueError:
-                                v_val = v.decode('utf8')  # as a string
-                            context[k.decode('utf8')] = v_val
-            if file_url:
-                logger.debug("file_url %s" % file_url)
-                logger.debug("context = %s" % context)
-                # TODO: don't use temp file, use remote file with
-                # name file_url with suffix based on the command job number?
-                t = Template(f)
-                con = Context(context)
-                tmp_fname = _get_remote_file_path(file_url)  # FIXME: make remote
-                cont = t.render(con)
-                self.remote_fs.save(tmp_fname, ContentFile(cont.encode('utf-8')))  # NB: ContentFile only takes bytes
-                command_args.append((u'', tmp_fname.decode('utf-8')))
-            else:
-                for k, v in values:
-                    try:
-                        v_val = int(v)
-                    except ValueError:
-                        v_val = v.decode('utf8')  # as a string
-                    command_args.append((k.decode('utf8'), v_val))
-
+        # convert directives args into local instantiated templates and config
+        command_args = hrmcstages.get_directive_args(self.remote_fs,
+            directive_args)
         logger.debug("command_args = %s" % command_args)
-
         self.assertEquals(len(command_args), 6)
         for i, contents in ((0, "a=5 b=6"), (1, "a=1 b=2 c=hello"), (2, "foobar")):
             k, v = command_args[i]
@@ -579,31 +439,14 @@ class TestDirectiveCommands(TestCase):
         self.assertEquals(k, 'command')
         self.assertEquals(v, 'ls')
 
-
-        platform = models.Platform.objects.get(name="nci")
-        directive = models.Directive.objects.get(name="smartconnector1")
-        command = models.Command.objects.get(directive=directive, platform=platform)
-
-        initial_stage = command.initial_stage
-        logger.debug("initial_stage=%s" % initial_stage)
-
-        stage = self._safe_import(initial_stage.package,  [], {})
-        logger.debug("stage=%s" % stage)
-
         # get the user
         user = User.objects.get(username="username1")
         profile = models.UserProfile.objects.get(user=user)
 
-        # make run_context for this user
-        run_context = models.Context.objects.create(owner=profile,
-            current_stage=initial_stage)
-
-        context_schema =_get_schema(models.Context.CONTEXT_SCHEMA_NS)
-        logger.debug("context_schema=%s" % context_schema)
-        # make a single parameter to represent the context
-        param_set = models.ContextParameterSet.objects.create(context=run_context,
-            schema= context_schema,
-            ranking=0)
+        platform = models.Platform.objects.get(name="nci")
+        directive = models.Directive.objects.get(name="smartconnector1")
+        command = models.Command.objects.get(directive=directive, platform=platform)
+        logger.debug("command.stage=%s" % command.stage)
 
         # save initial context for current stage
         context = {}
@@ -618,52 +461,20 @@ class TestDirectiveCommands(TestCase):
                 arg_num += 1
                 context[key] = v
         context[u'fsys'] = self.remote_fs_path
-        context[u'user_id'] = user.id
+        #context[u'user_id'] = user.id
         logger.debug("context=%s" % context)
-
-        transitions = make_parallel_stage(command.initial_stage, context)
+        transitions = models.make_parallel_stage(command.stage, context)
         logger.debug("transitions=%s" % transitions)
         context[u'transitions'] = json.dumps(transitions)
         logger.debug("context =  %s" % context)
+        run_context = hrmcstages.make_new_run_context(command_args, command.stage, profile, context)
 
-        run_context.update_context(context)
+        # save away initial stage
+        run_context.current_stage = command.stage
+        run_context.save()
 
-        current_stage = command.initial_stage.id
-        logger.debug("initial current_stage = %s" % current_stage)
-
-        # Main processing loop
-        done = False
-        while (True):
-            for run_context in models.Context.objects.all():
-                cont = run_context.get_context()
-                # advance each users context one stage
-                current_stage = run_context.current_stage.get_next_stage(cont)
-                if not current_stage:
-                    done = True
-                    break
-                #current_stage = run_context.current_stage
-                logger.debug("current_stage=%s" % current_stage)
-                stage = self._safe_import(current_stage.package,  [], {})  # obviously need to cache this
-                logger.debug("stage=%s", stage)
-                logger.debug("retrieved cont=%s" % cont)
-                user_settings = hrmcstages.retrieve_settings(cont)
-                if stage.triggered(cont):
-                    logger.debug("triggered")
-                    stage.process(cont)
-                    cont = stage.output(cont)
-                    logger.debug("cont=%s" %  cont)
-                else:
-                    logger.debug("not triggered")
-                logger.debug("updated cont=%s" % cont)
-                #run_context.current_stage = get_next_stage(cont, current_stage)
-                logger.debug("current_stage=%s" % current_stage)
-                run_context.update_context(cont)
-
-                run_context.current_stage = current_stage
-                run_context.save()
-            if done:
-                break
-        logger.debug("finished main loop")
+        # do all the processing of stages for all available contexts for all users.
+        hrmcstages.process_all_contexts()
 
         res_context = {}
         for run_context in models.Context.objects.all():
@@ -671,52 +482,14 @@ class TestDirectiveCommands(TestCase):
 
         logger.debug("res_context =  %s" % res_context)
 
-        context[u'null_output'] = 5
+        context[u'null_output'] = models.Stage.objects.filter(package=self.null_package).count()
+        context[u'parallel_output'] = models.Stage.objects.filter(package=self.parallel_package).count()
         logger.debug("context =  %s" % context)
 
         self.assertEquals(res_context, context)
-        self.assertEquals(hrmcstages.retrieve_settings({u'user_id': user.id}),PARAMS )
-
-# def main():
-
-    # fs = NCIStorage(settings={'params': {'username':'centos',"password":'XXXX'},
-
-    #                            'host':'115.146.94.198',
-
-    #                            'root':'/home/centos/tmp/'})
 
 
-def make_parallel_stage(stage, context):
-    return make_parallel_stage_recur(stage, context, 0)
 
-def make_parallel_stage_recur(stage, context, parent_next_sibling_id):
-    # TODO: testthis carefully
-    logger.debug("mps stage=%s" % stage)
-    transition = {}
-    childs = models.Stage.objects.filter(parent=stage).order_by('order')
-    logger.debug("childs=%s", childs)
-    # FIXME: rewrite this
-    for i, child in enumerate(childs):
-        key = child.id
-        value = childs[i + 1].id if i < len(childs) - 1 else -1
-        transition[key] = value
-        logger.debug("%s -> %s" % (key, value))
-        subtransition = make_parallel_stage_recur(child, context, value)
-        logger.debug("subtransiton=%s", subtransition)
-        transition.update(subtransition)
-
-    if len(childs) > 0:
-        k, v = stage.id, childs[0].id
-        logger.debug("%s -> %s" % (key, value))
-        transition[k] = v
-        k, v = childs.reverse()[0].id, parent_next_sibling_id
-        logger.debug("%s -> %s" % (key, value))
-        transition[k] = v
-    # else:
-    #        transition[stage.id] = 0
-    logger.debug("transition=%s" % transition)
-
-    return transition
 
 
 

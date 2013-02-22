@@ -30,6 +30,13 @@ import os
 import sys
 import re
 
+from django.utils.importlib import import_module
+from django.core.exceptions import ImproperlyConfigured
+from django.template import Context, Template
+from django.core.files.base import ContentFile
+
+
+
 logger = logging.getLogger(__name__)
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, UI, SmartConnector
@@ -69,13 +76,10 @@ def _load_file(fsys, fname):
     return config
 
 
-def retrieve_settings(context):
+def retrieve_settings(profile):
     """
     Using the user_id in the context, retrieves all the settings files from the profile models
     """
-    user_id = context['user_id']
-    user = models.User.objects.get(id=user_id)
-    profile = user.get_profile()
     settings = {}
     for param in models.UserProfileParameter.objects.filter(paramset__user_profile=profile):
 
@@ -221,6 +225,223 @@ def get_fanout(parameter_value_list):
 def get_threshold():
     pass
 
+
+def safe_import(path, args, kw):
+    """
+        Dynamically imports a package at path and executes it current namespace with given args
+    """
+
+    try:
+        dot = path.rindex('.')
+    except ValueError:
+        raise ImproperlyConfigured('%s isn\'t a filter module' % path)
+    filter_module, filter_classname = path[:dot], path[dot + 1:]
+    try:
+        mod = import_module(filter_module)
+    except ImportError, e:
+        raise ImproperlyConfigured('Error importing filter %s: "%s"' %
+                                   (filter_module, e))
+    try:
+        filter_class = getattr(mod, filter_classname)
+    except AttributeError:
+        raise ImproperlyConfigured('Filter module "%s" does not define a "%s" class' %
+                                   (filter_module, filter_classname))
+
+    filter_instance = filter_class(*args, **kw)
+    return filter_instance
+
+
+def values_match_schema(schema, values):
+    """
+        Given a schema object and a set of (k,v) fields, checking
+        each k has correspondingly named ParameterName in the schema
+    """
+    # TODO:
+    return True
+
+def _get_file(fname):
+    """
+    Fake the use urllib to retrieve the contents at the template and return
+    as a string.  In reality, we would retrieve and cache here if possible.
+    TODO: implement
+    """
+    logger.debug("fname=%s" % fname)
+    if fname == "tardis://iant@tardis.edu.au/datafile/15":
+        return "a={{a}} b={{b}}"
+    elif fname == "hpc://iant@nci.edu.au/input/input.txt":
+        return "a={{a}} b={{b}} c={{c}}"
+    elif fname == "hpc://iant@nci.edu.au/input/file.txt":
+        return "foobar"
+    else:
+        raise InvalidInputError("unknown file")
+
+
+
+def _get_remote_file_path(source_name):
+    """
+    Create file to hold instantiated template for command execution.
+    Kept local now, but could be on nci, nectar etc.
+
+    """
+
+    # # The top of the remote filesystem that will hold a user's files
+    remote_base_path = os.path.join("centos")
+
+    from urlparse import urlparse
+    o = urlparse(source_name)
+    file_path = o.path.decode('utf-8')
+    logger.debug("file_path=%s" % file_path)
+    # if file_path[0] == os.path.sep:
+    #     file_path = file_path[:-1]
+    import uuid
+    randsuffix = unicode(uuid.uuid4())  # should use some job id here
+
+    relpath = u"%s_%s" % (file_path, randsuffix)
+
+    if relpath[0] == os.path.sep:
+        relpath = relpath[1:]
+    logger.debug("relpath=%s" % relpath)
+
+    # FIXME: for django storage, do we need to create
+    # intermediate directories
+    dest_path = os.path.join(remote_base_path, relpath)
+    logger.debug("dest_path=%s" % dest_path)
+    return dest_path.decode('utf8')
+
+
+def get_directive_args(fs, directive_args):
+    """
+    Parse the directive args to make command args
+    """
+    command_args = []
+    for darg in directive_args:
+        logger.debug("darg=%s" % darg)
+        rendering_context = {}
+        metadatas = darg[1:]
+        file_url = darg[0].decode('utf8')
+
+        if metadatas:
+            # make rendering_context based on metadata key value pairs
+            for metadata in metadatas:
+                logger.debug("metadata=%s" % metadata)
+                # parse configuration parameters
+                if metadata:  # if we have [] as argument
+                    sch = metadata[0].decode('utf8')
+                    # FIXME: error handling
+                    metadata_schema = models.Schema.objects.get(namespace=sch)
+                    variables = metadata[1:]
+                    logger.debug("variables=%s" % variables)
+                    if not values_match_schema(metadata_schema, variables):
+                        raise InvalidInputError(
+                            "specified parameters do not match schema")
+                    for k, v in variables:
+                        # FIXME: need way of specifying ns and name in the template
+                        # to distinuish between different templates. Here all the variables
+                        # across entire template file must be disjoint. Custom
+                        # tag may do it.
+                        if not k:
+                            raise InvalidInputError(
+                                "Cannot have blank key in parameter set")
+                        # FIXME: handle all different tytpes
+                        try:
+                            typed_val = int(v)
+                        except ValueError:
+                            typed_val = v.decode('utf8')  # as a string
+
+                        if file_url:
+                            rendering_context[k.decode('utf8')] = typed_val
+                        else:
+                            command_args.append((k.decode('utf8'), typed_val))
+
+        # retrieve the file url and resolve against rendering_context
+        if file_url:
+            # THis could be an expensive operations if remote, so may need
+            # caching or maybe remote resolution?
+            content = _get_file(file_url)
+            # Parse file parameter and retrieve data
+            logger.debug("file_url %s" % file_url)
+            # TODO: don't use temp file, use remote file with
+            # name file_url with suffix based on the command job number?
+            t = Template(content)
+            logger.debug("rendering_context = %s" % rendering_context)
+            con = Context(rendering_context)
+            remote_file_path = _get_remote_file_path(file_url)  # TODO: make remote
+            cont = t.render(con)
+            fs.save(remote_file_path, ContentFile(cont.encode('utf-8')))  # NB: ContentFile only takes bytes
+            command_args.append((u'', remote_file_path.decode('utf-8')))
+    return command_args
+
+
+def make_new_run_context(command_args, stage, profile, context):
+    """
+    Make a new context  for a user to execute stages based on initial context
+    """
+    # make run_context for this user
+    run_context = models.Context.objects.create(owner=profile,
+        current_stage=stage)
+    context_schema = models.Schema.objects.get(namespace=models.Context.CONTEXT_SCHEMA_NS)
+    logger.debug("context_schema=%s" % context_schema)
+    # make a single parameterset to represent the context
+    models.ContextParameterSet.objects.create(context=run_context,
+        schema=context_schema,
+        ranking=0)
+    run_context.update_context(context)
+    return run_context
+
+def process_all_contexts():
+    """
+    The main processing loop.  For each context owned by a user, find the next stage to execute,
+    get the actual code to execute, then update the context and the filesystem as needed, then advance
+    current stage according to the composite stage structure.
+    TODO: this loop will run continuously as celery task to take Directives into commands into contexts
+    for execution.
+    """
+    done = False
+    while (True):
+        for run_context in models.Context.objects.all():
+            # retrive the stage model to process
+            current_stage = run_context.current_stage
+            logger.debug("current_stage=%s" % current_stage)
+
+            profile = run_context.owner
+            logger.debug("profile=%s" % profile)
+
+            cont = run_context.get_context()
+            logger.debug("retrieved cont=%s" % cont)
+
+            user_settings = retrieve_settings(profile)
+            logger.debug("user_settings=%s" % user_settings)
+
+            # FIXME: do we want to combine cont and user_settings to
+            # pass into the stage?  The original code but the problem is separating them
+            # again before they are serialised.
+
+            # get the actual stage object
+            stage = safe_import(current_stage.package,  [], {})  # obviously need to cache this
+            logger.debug("stage=%s", stage)
+
+            if stage.triggered(cont):
+                logger.debug("triggered")
+                stage.process(cont)
+                cont = stage.output(cont)
+                logger.debug("updated cont=%s" % cont)
+                run_context.update_context(cont)
+                logger.debug("cont=%s" % cont)
+            else:
+                logger.debug("not triggered")
+
+            # advance to the next stage
+            current_stage = run_context.current_stage.get_next_stage(cont)
+            if not current_stage:
+                done = True
+                break
+
+            # save away new stage to process
+            run_context.current_stage = current_stage
+            run_context.save()
+        if done:
+            break
+    logger.debug("finished main loop")
 
 def clear_temp_files(context):
     """
