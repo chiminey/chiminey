@@ -147,7 +147,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'django_nose',
     'south',
-    'storages',
+    'storages'
 
 ) + OUR_APPS
 
@@ -190,5 +190,12 @@ FIXTURE_DIRS = (
 
 
 AUTH_PROFILE_MODULE = "smartconnectorscheduler.UserProfile"
+
+
+
+SFTP_STORAGE_HOST = ""
+SFTP_STORAGE_ROOT = ""
+SFTP_STORAGE_PARAMS = {}
+
 
 
