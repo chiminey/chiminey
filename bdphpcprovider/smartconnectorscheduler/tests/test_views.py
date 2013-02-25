@@ -35,8 +35,9 @@ from django.template import Context, Template
 from django.contrib.auth.models import User
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
-from storages.backends.sftpstorage import SFTPStorage
 from django.core.files.storage import FileSystemStorage
+from storages.backends.sftpstorage import SFTPStorage
+
 
 
 from bdphpcprovider.smartconnectorscheduler import views
@@ -241,7 +242,7 @@ class TestCommandContextLoop(TestCase):
 
     def setUp(self):
         self.remote_fs_path = os.path.join(
-            os.path.dirname(__file__), '..', 'testing', 'remotesys').decode("utf8")
+            os.path.dirname(__file__), '..', 'testing', 'remotesys/').decode("utf8")
         logger.debug("self.remote_fs_path=%s" % self.remote_fs_path)
         self.remote_fs = FileSystemStorage(location=self.remote_fs_path)
 
@@ -249,9 +250,9 @@ class TestCommandContextLoop(TestCase):
         files = self._get_paths("")
         #logger.debug("files=%s", '\n'.join(files))
         # NB: directories are not deletable using remote_fs api
-        for f in files:
-            self.remote_fs.delete(f)
-            self.assertFalse(self.remote_fs.exists(f))
+        #for f in files:
+        #    self.remote_fs.delete(f)
+        #    self.assertFalse(self.remote_fs.exists(f))
 
     def _get_paths(self, dir):
         (dir_list, file_list) = self.remote_fs.listdir(path=dir)
@@ -327,9 +328,18 @@ class TestCommandContextLoop(TestCase):
 
         # Setup the schema for user configuration information (kept in profile)
         self.PARAMS = {'userinfo1': 'param1val',
-            'userinfo2': 42}
+            'userinfo2': 42,
+            'fsys': self.remote_fs_path,
+            'nci_user': 'root',
+            'nci_password': 'dtofaam',
+            'nci_host': '127.0.0.1',
+            }
         self.PARAMTYPE = {'userinfo1': models.ParameterName.STRING,
-            'userinfo2': models.ParameterName.NUMERIC}
+            'userinfo2': models.ParameterName.NUMERIC,
+            'fsys': models.ParameterName.STRING,
+            'nci_user': models.ParameterName.STRING,
+            'nci_password': models.ParameterName.STRING,
+            'nci_host': models.ParameterName.STRING,}
         param_set = models.UserProfileParameterSet.objects.create(user_profile=profile,
             schema=sch)
         for k, v in self.PARAMS.items():
@@ -392,11 +402,24 @@ class TestCommandContextLoop(TestCase):
         Composite stage command and executes it in event loop
         """
 
+
         # Create directive, command and stages definitions
         self._load_data()
 
+
+        self.remote_fs.save("input/input.txt",
+         ContentFile("a={{a}} b={{b}} c={{c}}"))
+
+        self.remote_fs.save("input/file.txt",
+         ContentFile("foobar"))
+
+
+
         # directive_args would come from the external API (from mytardis)
-        # Here is our example directive arguments
+            # Here is our example directive arguments
+
+        directives = []
+        directive_name = "smartconnector1"
         directive_args = []
         # Template from mytardis with corresponding metdata brought across
         directive_args.append(['tardis://iant@tardis.edu.au/datafile/15',
@@ -416,62 +439,41 @@ class TestCommandContextLoop(TestCase):
         directive_args.append(['',
             ['http://nci.org.au/schemas/hrmc/custom_command/', ('command', 'ls')]])
 
-        # convert directives args into local instantiated templates and config
-        command_args = hrmcstages.get_directive_args(self.remote_fs,
-            directive_args)
-        logger.debug("command_args = %s" % command_args)
-        self.assertEquals(len(command_args), 6)
-        for i, contents in ((0, "a=5 b=6"), (1, "a=1 b=2 c=hello"), (2, "foobar")):
-            k, v = command_args[i]
-            logger.debug("k=%s v=%s" % (k, v))
-            self.assertFalse(k)
-            f = self.remote_fs.open(v).read()
-            logger.debug("f=%s" % f)
-            self.assertEquals(contents, str(f))
-            #os.remove(v)
-        k, v = command_args[3]
-        self.assertEquals(k, 'num_nodes')
-        self.assertEquals(v, 5)
-        k, v = command_args[4]
-        self.assertEquals(k, 'iseed')
-        self.assertEquals(v, 42)  # TODO: handle NUMERIC types correctly
-        k, v = command_args[5]
-        self.assertEquals(k, 'command')
-        self.assertEquals(v, 'ls')
+        platform = "nci"
+        directives.append((platform, directive_name, directive_args))
 
-        # get the user
-        user = User.objects.get(username="username1")
-        profile = models.UserProfile.objects.get(user=user)
+        test_info = []
+        for (platform, directive_name, directive_args) in directives:
+            logger.debug("directive_name=%s" % directive_name)
+            logger.debug("directive_args=%s" % directive_args)
 
-        platform = models.Platform.objects.get(name="nci")
-        directive = models.Directive.objects.get(name="smartconnector1")
-        command = models.Command.objects.get(directive=directive, platform=platform)
-        logger.debug("command.stage=%s" % command.stage)
+            (context, command_args,  run_context) = hrmcstages.make_runcontext_for_directive(
+                platform,
+                directive_name,
+                directive_args)
 
-        # save initial context for current stage
-        context = {}
-        arg_num = 0
-        for (k, v) in command_args:
-            logger.debug("k=%s,v=%s" % (k, v))
+            test_info.append((context, command_args))
 
-            if k:
-                context[k] = v
-            else:
-                key = u"file%s" % arg_num
-                arg_num += 1
-                context[key] = v
-        context[u'fsys'] = self.remote_fs_path
-        #context[u'user_id'] = user.id
-        logger.debug("context=%s" % context)
-        transitions = models.make_parallel_stage(command.stage, context)
-        logger.debug("transitions=%s" % transitions)
-        context[u'transitions'] = json.dumps(transitions)
-        logger.debug("context =  %s" % context)
-        run_context = hrmcstages.make_new_run_context(command_args, command.stage, profile, context)
-
-        # save away initial stage
-        run_context.current_stage = command.stage
-        run_context.save()
+        logger.debug("test_info = %s" % test_info)
+        # self.assertEquals(len(test_info[0][1]), 6)
+        # for i, contents in ((0, "a=5 b=6"), (1, "a=1 b=2 c=hello"), (2, "foobar")):
+        #     k, v = test_info[0][1][i]
+        #     logger.debug("k=%s v=%s" % (k, v))
+        #     self.assertFalse(k)
+        #     # FIXME: use urls now
+        #     #f = self.remote_fs.open(v).read()
+        #     #logger.debug("f=%s" % f)
+        #     #self.assertEquals(contents, str(f))
+        #     #os.remove(v)
+        # k, v = test_info[0][1][3]
+        # self.assertEquals(k, 'num_nodes')
+        # self.assertEquals(v, 5)
+        # k, v = test_info[0][1][4]
+        # self.assertEquals(k, 'iseed')
+        # self.assertEquals(v, 42)  # TODO: handle NUMERIC types correctly
+        # k, v = test_info[0][1][5]
+        # self.assertEquals(k, 'command')
+        # self.assertEquals(v, 'ls')
 
         # do all the processing of stages for all available contexts for all users.
         hrmcstages.process_all_contexts()
@@ -482,14 +484,10 @@ class TestCommandContextLoop(TestCase):
 
         logger.debug("res_context =  %s" % res_context)
 
-        context[u'null_output'] = models.Stage.objects.filter(package=self.null_package).count()
-        context[u'parallel_output'] = models.Stage.objects.filter(package=self.parallel_package).count()
-        logger.debug("context =  %s" % context)
+        test_info[0][0][u'null_output'] = models.Stage.objects.filter(package=self.null_package).count()
+        test_info[0][0][u'parallel_output'] = models.Stage.objects.filter(package=self.parallel_package).count()
+        logger.debug("context =  %s" % test_info[0][0])
 
-        self.assertEquals(res_context, context)
-
-
-
-
+        self.assertEquals(res_context, test_info[0][0])
 
 

@@ -35,6 +35,8 @@ from django.core.exceptions import ImproperlyConfigured
 from django.template import Context, Template
 from django.core.files.base import ContentFile
 
+from django.contrib.auth.models import User
+
 
 
 logger = logging.getLogger(__name__)
@@ -43,13 +45,15 @@ from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, UI, Sma
 from bdphpcprovider.smartconnectorscheduler.filesystem import FileSystem, DataObject
 from bdphpcprovider.smartconnectorscheduler.botocloudconnector import create_environ, \
     collect_instances, destroy_environ
-from bdphpcprovider.smartconnectorscheduler.errors import ContextKeyMissing
+from bdphpcprovider.smartconnectorscheduler.errors import ContextKeyMissing, InvalidInputError
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
 from bdphpcprovider.smartconnectorscheduler import models
 
 from django.core.files.storage import FileSystemStorage
 
-
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+from storages.backends.sftpstorage import SFTPStorage
 
 def get_filesys(context):
     """
@@ -82,7 +86,7 @@ def retrieve_settings(profile):
     """
     settings = {}
     for param in models.UserProfileParameter.objects.filter(paramset__user_profile=profile):
-
+        logger.debug("param=%s" % param)
         try:
             settings[param.name.name] = param.getValue()
         except Exception:
@@ -259,28 +263,10 @@ def values_match_schema(schema, values):
     # TODO:
     return True
 
-def _get_file(fname):
-    """
-    Fake the use urllib to retrieve the contents at the template and return
-    as a string.  In reality, we would retrieve and cache here if possible.
-    TODO: implement
-    """
-    logger.debug("fname=%s" % fname)
-    if fname == "tardis://iant@tardis.edu.au/datafile/15":
-        return "a={{a}} b={{b}}"
-    elif fname == "hpc://iant@nci.edu.au/input/input.txt":
-        return "a={{a}} b={{b}} c={{c}}"
-    elif fname == "hpc://iant@nci.edu.au/input/file.txt":
-        return "foobar"
-    else:
-        raise InvalidInputError("unknown file")
 
-
-
-def _get_remote_file_path(source_name):
+def _get_new_local_url(url):
     """
-    Create file to hold instantiated template for command execution.
-    Kept local now, but could be on nci, nectar etc.
+    Create local resource to hold instantiated template for command execution.
 
     """
 
@@ -288,7 +274,7 @@ def _get_remote_file_path(source_name):
     remote_base_path = os.path.join("centos")
 
     from urlparse import urlparse
-    o = urlparse(source_name)
+    o = urlparse(url)
     file_path = o.path.decode('utf-8')
     logger.debug("file_path=%s" % file_path)
     # if file_path[0] == os.path.sep:
@@ -306,10 +292,10 @@ def _get_remote_file_path(source_name):
     # intermediate directories
     dest_path = os.path.join(remote_base_path, relpath)
     logger.debug("dest_path=%s" % dest_path)
-    return dest_path.decode('utf8')
+    return u'local://%s' % dest_path.decode('utf8')
 
 
-def get_directive_args(fs, directive_args):
+def _get_command_actual_args(directive_args, user_settings):
     """
     Parse the directive args to make command args
     """
@@ -357,7 +343,7 @@ def get_directive_args(fs, directive_args):
         if file_url:
             # THis could be an expensive operations if remote, so may need
             # caching or maybe remote resolution?
-            content = _get_file(file_url)
+            content = _get_file(file_url, user_settings)
             # Parse file parameter and retrieve data
             logger.debug("file_url %s" % file_url)
             # TODO: don't use temp file, use remote file with
@@ -365,14 +351,153 @@ def get_directive_args(fs, directive_args):
             t = Template(content)
             logger.debug("rendering_context = %s" % rendering_context)
             con = Context(rendering_context)
-            remote_file_path = _get_remote_file_path(file_url)  # TODO: make remote
-            cont = t.render(con)
-            fs.save(remote_file_path, ContentFile(cont.encode('utf-8')))  # NB: ContentFile only takes bytes
-            command_args.append((u'', remote_file_path.decode('utf-8')))
+            local_url = _get_new_local_url(file_url)  # TODO: make remote
+            logger.debug("local_rul=%s" % local_url)
+            rendered_content = t.render(con)
+            _put_file(local_url, rendered_content, user_settings)
+            #localfs.save(remote_file_path, ContentFile(cont.encode('utf-8')))  # NB: ContentFile only takes bytes
+            #command_args.append((u'', remote_file_path.decode('utf-8')))
+            command_args.append((u'', local_url))
+            #_put_file(file_url, cont.encode('utf8'), fs)
+            #command_args.append((u'', file_url))
     return command_args
 
 
-def make_new_run_context(command_args, stage, profile, context):
+class NCIStorage(SFTPStorage):
+
+    def __init__(self, settings=None):
+        super(NCIStorage, self).__init__()
+        if 'params' in settings:
+            super(NCIStorage, self).__dict__["_params"] = settings['params']
+        if 'root' in settings:
+            super(NCIStorage, self).__dict__["_root_path"] = settings['root']
+        if 'host' in settings:
+            super(NCIStorage, self).__dict__["_host"] = settings['host']
+        print super(NCIStorage, self)
+
+
+def _put_file(file_url, content, user_settings):
+    """
+    Writes out the content to the file url
+    """
+    logger.debug("file_url=%s" % file_url)
+
+    logger.debug("file_url=%s" % file_url)
+    from urlparse import urlparse
+    o = urlparse(file_url)
+    scheme = o.scheme
+    mypath = o.path
+    if mypath[0] == os.path.sep:
+        mypath = mypath[1:]
+    logger.debug("mypath=%s" % mypath)
+
+    if scheme == 'http':
+        # TODO: test
+        import urllib
+        import urllib2
+        values = {'name': 'Michael Foord',
+          'location': 'Northampton',
+          'language': 'Python'}
+        data = urllib.urlencode(values)
+        req = urllib2.Request(file_url, data)
+        response = urllib2.urlopen(req)
+        res = response.read()
+        logger.debug("response=%s" % res)
+    elif scheme == "hpc":
+        remote_fs_path = os.path.join(
+            os.path.dirname(__file__), '..', 'testing', 'remotesys').decode("utf8")
+        nci_settings = {'params': {'username': user_settings['nci_user'],
+            'password': user_settings['nci_password']},
+            'host': user_settings['nci_host'],
+            'root': remote_fs_path}
+        fs = NCIStorage(settings=nci_settings)
+         # FIXME: does this overwrite?
+        fs.save(mypath, ContentFile(content.encode('utf-8')))  # NB: ContentFile only takes bytes
+    elif scheme == "tardis":
+        logger.warn("tardis put not implemented")
+        #raise NotImplementedError()
+    elif scheme == "local":
+        remote_fs_path = user_settings['fsys']
+        logger.debug("remote_fs_path=%s" % remote_fs_path)
+        fs = FileSystemStorage(location=remote_fs_path)
+        dest_path = fs.save(mypath, ContentFile(content.encode('utf-8')))  # NB: ContentFile only takes bytes
+        logger.debug("dest_path=%s" % dest_path)
+    return content
+
+
+def _get_file(file_url, user_settings):
+    """
+    """
+    logger.debug("file_url=%s" % file_url)
+
+    from urlparse import urlparse
+    o = urlparse(file_url)
+    scheme = o.scheme
+    mypath = o.path
+    logger.debug("scheme=%s" % scheme)
+    logger.debug("mypath=%s" % mypath)
+
+    if mypath[0] == os.path.sep:
+        mypath = mypath[1:]
+    logger.debug("mypath=%s" % mypath)
+
+    if scheme == 'http':
+        import urllib2
+        req = urllib2.Request(o)
+        response = urllib2.urlopen(req)
+        content = response.read()
+    elif scheme == "hpc":
+        logger.debug("getting from hpc")
+        # TODO: remote_fs_path should be from user settings
+        remote_fs_path = os.path.join(
+            os.path.dirname(__file__), 'testing', 'remotesys')
+        logger.debug("remote_fs_path=%s" % remote_fs_path)
+
+        nci_settings = {'params': {'username': user_settings['nci_user'],
+            'password': user_settings['nci_password']},
+            'host': user_settings['nci_host'],
+            'root': remote_fs_path}
+        fs = NCIStorage(settings=nci_settings)
+        content = fs.open(mypath).read()
+        logger.debug("content=%s" % content)
+    elif scheme == "tardis":
+        return "a={{a}} b={{b}}"
+        raise NotImplementedError("tardis scheme not implemented")
+    elif scheme == "local":
+        remote_fs_path = user_settings['fsys']
+        logger.debug("self.remote_fs_path=%s" % remote_fs_path)
+        fs = FileSystemStorage(location=remote_fs_path + "/")
+        content = fs.open(mypath).read()
+    logger.debug("content=%s" % content)
+    return content
+
+
+def make_runcontext_for_directive(platform, directive_name,
+    directive_args):
+    # get the user
+    user = User.objects.get(username="username1")
+    profile = models.UserProfile.objects.get(user=user)
+    platform = models.Platform.objects.get(name=platform)
+    directive = models.Directive.objects.get(name=directive_name)
+    command_for_directive = models.Command.objects.get(directive=directive, platform=platform)
+    logger.debug("commandnd_for_directive=%s" % command_for_directive)
+    user_settings = retrieve_settings(profile)
+
+    # turn the user's arguments into real command arguments.
+    command_args = _get_command_actual_args(
+        directive_args, user_settings)
+    logger.debug("command_args=%s" % command_args)
+    # prepare a context for the command to run for this user
+    context = _make_context_for_command(command_for_directive,
+        command_args)
+    run_context = _make_new_run_context(command_for_directive.stage, profile, context)
+    run_context.current_stage = command_for_directive.stage
+    run_context.save()
+    # FIXME: only return command_args and context  because needed for testcases
+    return (context, command_args, run_context)
+
+
+def _make_new_run_context(stage, profile, context):
     """
     Make a new context  for a user to execute stages based on initial context
     """
@@ -387,6 +512,7 @@ def make_new_run_context(command_args, stage, profile, context):
         ranking=0)
     run_context.update_context(context)
     return run_context
+
 
 def process_all_contexts():
     """
@@ -442,6 +568,29 @@ def process_all_contexts():
         if done:
             break
     logger.debug("finished main loop")
+
+
+def _make_context_for_command(command, command_args):
+    """
+    Create a context for the command to execute with
+    """
+    context = {}
+    arg_num = 0
+    for (k, v) in command_args:
+        logger.debug("k=%s,v=%s" % (k, v))
+        if k:
+            context[k] = v
+        else:
+            key = u"file%s" % arg_num
+            arg_num += 1
+            context[key] = v
+    logger.debug("context=%s" % context)
+    transitions = models.make_parallel_stage(command.stage, context)
+    logger.debug("transitions=%s" % transitions)
+    context[u'transitions'] = json.dumps(transitions)
+    logger.debug("context =  %s" % context)
+    return context
+
 
 def clear_temp_files(context):
     """
