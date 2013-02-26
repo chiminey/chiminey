@@ -144,6 +144,7 @@ class Finished(Stage):
 
         self.error_nodes = []
         self.finished_nodes = []
+        import time
         for node in self.nodes:
             instance_id = node.id
             ip = botocloudconnector.get_instance_ip(instance_id, self.settings)
@@ -159,6 +160,19 @@ class Finished(Stage):
             logger.debug("fin=%s" % fin)
             if fin:
                 print "done. output is available"
+                end_time = time.time()
+
+                self.run_time_key = "run_time"
+                run_exec_dict = self.settings[self.run_time_key]
+                run_exec_key = node.ip_address
+                run_exec_vec = run_exec_dict[run_exec_key]
+                run_exec_vec.append(end_time)
+                run_exec_vec.append(end_time-run_exec_vec[(len(run_exec_vec)-2)])
+                run_exec_dict[run_exec_key] = run_exec_vec
+                update_key(self.run_time_key, run_exec_dict, self.settings)
+                logger.debug("Execution time completed on IP[%s] at "
+                             "%f" % (run_exec_key, end_time))
+
 
                 logger.debug("node=%s" % node)
                 logger.debug("finished_nodes=%s" % self.finished_nodes)
@@ -168,6 +182,7 @@ class Finished(Stage):
                 # is not maintained between triggerings...
 
                 if not (node.id in [x.id for x in self.finished_nodes]):
+                    start_time = time.time()
                     hrmcimpl.get_output(fsys, instance_id, self.output_dir, self.settings)
                     #fsys.download_output(ssh, instance_id, self.output_dir, self.settings)
                     import os
@@ -175,9 +190,20 @@ class Finished(Stage):
                     logger.debug("Audit file path %s" % audit_file)
                     if fsys.exists(self.output_dir, instance_id, "audit.txt"):
                         fsys.delete(audit_file)
+                    end_time = time.time()
+
+                    run_exec_vec = run_exec_dict[run_exec_key]
+                    run_exec_vec.append(end_time-start_time)
+                    run_exec_dict[run_exec_key] = run_exec_vec
+                    update_key(self.run_time_key, run_exec_dict, self.settings)
+                    logger.debug("Output at IP[%s] reduced" % (run_exec_key))
+
+
                 else:
                     logger.info("We have already "
                         + "processed output from node %s" % node.id)
+
+
                 self.finished_nodes.append(node)
             else:
                 print "job still running on %s: %s\
