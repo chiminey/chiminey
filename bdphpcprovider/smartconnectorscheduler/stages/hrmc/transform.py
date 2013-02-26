@@ -82,6 +82,10 @@ class Transform(Stage):
     def process(self, context):
         #TODO: break up this function as it is way too long
 
+        import time
+        start_time = time.time()
+        logger.debug("Start time %f "% start_time)
+
         self.audit = ""
         res = []
         fs = get_filesys(context)
@@ -289,6 +293,17 @@ class Transform(Stage):
             (best_node_dir, best_index, number, criterion, grerr_file) = ("", 0, 0, 0, "")  # ?
 
 
+        end_time = time.time()
+        try:
+            transform_vec = self.settings['transform_time']
+        except KeyError:
+            transform_vec = []
+
+        transform_vec.append(end_time-start_time)
+        logger.debug("End time %f "% end_time)
+        update_key("transform_time", transform_vec, self.settings)
+
+
     def output(self, context):
         logger.debug("transform.output")
 
@@ -373,4 +388,4 @@ class Transform(Stage):
             f = grerr_info[1]
             logger.debug("f: %s" %f)
 
-            res.append((node_output_dir, index, number, criterion, f))
+            #res.append((node_output_dir, index, number, criterion, f))
