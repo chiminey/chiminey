@@ -65,7 +65,7 @@ def _create_nectar_connection(settings):
         port=8773,
         path="/services/Cloud")
 
-    logger.info("Connecting to... %s" % region.name)
+    #logger.info("Connecting to... %s" % region.name)
     return connection
 
 
@@ -141,11 +141,11 @@ def _store_md5_on_instances(all_instances, settings):
     print "Creating group '%s' ..." % group_id
     for instance in all_instances:
         # login and store md5 file
-        logger.debug("Instance ID  ...")
+        #logger.debug("Instance ID  ...")
         instance_id = instance.id
-        logger.debug("Instance ID %s" % instance_id)
+        #logger.debug("Instance ID %s" % instance_id)
         ip_address = get_instance_ip(instance_id, settings)
-        logger.debug("Instance IP %s" % ip_address)
+        #logger.debug("Instance IP %s" % ip_address)
         ssh_ready = is_ssh_ready(settings, ip_address)
         if ssh_ready:
             print "Registering %s (%s) to group '%s'\
@@ -168,16 +168,15 @@ def _customize_prompt(all_instances, settings):
     for instance in all_instances:
         instance_id = instance.id
         ip_address = get_instance_ip(instance_id, settings)
-        logger.info("Customizing command prompt")
+        logger.info("Customizing command prompt: %s" % settings['CUSTOM_PROMPT'])
         ssh_ready = is_ssh_ready(settings, ip_address)
         if ssh_ready:
             ssh_client = open_connection(ip_address=ip_address, settings=settings)
             command_bash = 'echo \'export PS1="%s"\' >> .bash_profile' % settings['CUSTOM_PROMPT']
             command_csh = 'echo \'setenv PS1 "%s"\' >> .cshrc' % settings['CUSTOM_PROMPT']
             command = 'cd ~; %s; %s' % (command_bash, command_csh)
-            logger.debug("Command Prompt %s" % command)
+            #logger.debug("Command Prompt %s" % command)
             run_command(ssh_client, command)
-            logger.debug("Customized prompt")
         else:
             print "Unable to customize command " \
                   "prompt for VM instance %s" \
@@ -271,12 +270,13 @@ def is_instance_running(instance_id, settings):
     all_instances =  get_all_instances(settings)
     for instance in all_instances:
         if instance.id == instance_id:
-            logger.debug("Instance Found")
+            #logger.debug("Instance Found")
             if instance.state == "running":
                 instance_running = True
                 break
         else:
-            logger.debug("Instance not found")
+            #logger.debug("Instance not found")
+            pass
     return instance_running
 
 
@@ -288,11 +288,12 @@ def _wait_for_instance_to_start_running(all_instances, settings):
         for instance in all_instances:
             logger.debug("this instance %s" % instance)
             if is_instance_running(instance.id, settings):
-                logger.debug("Instance running %s" % instance)
+                #logger.debug("Instance running %s" % instance)
                 all_running_instances.append(instance)
                 all_instances.remove(instance)
             else:
-                logger.debug("Instance not running %s" % instance)
+                #logger.debug("Instance not running %s" % instance)
+                pass
 
             #print  'Current status of Instance %s: %s' %(instance_id, instance.state)
 
@@ -373,11 +374,11 @@ def _get_this_instance(instance_id, settings):
 def get_all_instances(settings):
     connection = _create_cloud_connection(settings)
     reservations = connection.get_all_instances()
-    logger.debug("Reservation %s" % reservations)
+    #logger.debug("Reservation %s" % reservations)
     all_instances = []
     for reservation in reservations:
         nodes = reservation.instances
-        logger.debug("Nodes %s" % nodes)
+        #logger.debug("Nodes %s" % nodes)
         for i in nodes:
             all_instances.append(i)
     return all_instances
@@ -393,7 +394,7 @@ def get_instance_ip(instance_id, settings):
     for instance in all_instances:
         if instance.id == instance_id:
             ip_address = instance.ip_address
-            logger.debug("IP %s", ip_address)
+            #logger.debug("IP %s", ip_address)
             break
     return ip_address
 
@@ -402,7 +403,7 @@ def get_running_instances(settings):
     all_instances = get_all_instances(settings)
     running_instances = []
     for instance in all_instances:
-        logger.debug(len(all_instances))
+        #logger.debug(len(all_instances))
         if is_instance_running(instance.id, settings):
             running_instances.append(instance)
     return running_instances
