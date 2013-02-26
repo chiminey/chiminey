@@ -132,6 +132,10 @@ class Converge(Stage):
 
     def process(self, context):
 
+        import time
+        start_time = time.time()
+        logger.debug("Start time %f "% start_time)
+
         # retrive the audit file for last iteration
         fs = get_filesys(context)
 
@@ -208,6 +212,19 @@ class Converge(Stage):
         else:
             logger.debug("iteration continues")
         self.criterion = min_crit
+
+
+        end_time = time.time()
+        logger.debug("End time %f "% end_time)
+
+        try:
+            converge_vec = self.settings['converge_time']
+        except KeyError:
+            converge_vec = []
+
+        converge_vec.append(end_time-start_time)
+        update_key("converge_time", converge_vec, self.settings)
+
 
     def _ready_final_output(self, fs, crit_node, crit_index):
 
