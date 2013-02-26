@@ -184,10 +184,30 @@ class Run(Stage):
         nodes = botocloudconnector.get_rego_nodes(group_id, settings)
 
         pids = []
+        import time
+
         for node in nodes:
+            run_exec_key = node.ip_address
+            run_exec_dict = self.settings[self.run_time_key]
+
+            #context[self.run_time_key]
+            logger.debug("Run Exec dictionary %s" %run_exec_dict)
             try:
+                run_exec_vec = run_exec_dict[run_exec_key]
+            except KeyError:
+                run_exec_vec = []
+
+            try:
+                start_time = time.time()
                 instance_id = node.id
                 pids_for_task = self.run_task(instance_id, settings)
+
+                run_exec_vec.append(start_time)
+                run_exec_dict[run_exec_key] = run_exec_vec
+                update_key(self.run_time_key, run_exec_dict, self.settings)
+                logger.debug("Execution time started on IP[%s] at "
+                             "%f" % (run_exec_key, start_time))
+
             except PackageFailedError, e:
                 logger.error(e)
                 logger.error("unable to start package on node %s" % node)
@@ -221,7 +241,7 @@ class Run(Stage):
                 context['run_counter'] = numbfile
                 context['generator_counter'] = generator_counter
                 numbfile += 1
-                logger.debug(context)
+                #logger.debug(context)
                 t = Template(template)
                 con = Context(context)
                 res.append((t.render(con), context))
@@ -233,12 +253,12 @@ class Run(Stage):
         """
         Create input packages for each variation and upload the vms
         """
-        logger.debug("variations = %s" % variations)
+        #logger.debug("variations = %s" % variations)
         # generate variations for the input_dir
         for var_fname in variations.keys():
             logger.debug("var_fname=%s" % var_fname)
             for var_content, values in variations[var_fname]:
-                logger.debug("var_content = %s" % var_content)
+                #logger.debug("var_content = %s" % var_content)
                 var_node = nodes[self.node_ind]
                 self.node_ind += 1
                 ip = botocloudconnector.get_instance_ip(var_node.id, self.settings)
@@ -316,7 +336,7 @@ class Run(Stage):
             if template_mat:
                 # get the template
                 template = data_object.retrieve()
-                logger.debug("template content = %s" % template)
+                #logger.debug("template content = %s" % template)
 
                 base_fname = template_mat.group(1)
                 logger.debug("base_fname=%s" % base_fname)
@@ -341,7 +361,7 @@ class Run(Stage):
                     except KeyError:
                         logger.warn("could not retrieve generator counter")
 
-                num_dim = 1
+                num_dim = context['number_dimensions']
                 # variations map spectification
                 if num_dim == 1:
                     N = context['number_vm_instances']
@@ -415,20 +435,60 @@ class Run(Stage):
         logger.debug("Iteration Inpt dir %s" % self.iter_inputdir)
         input_dirs = fs.get_local_subdirectories(self.iter_inputdir)
         for input_dir in input_dirs:
-            logger.debug("Inpt dir %s" % input_dir)
+            logger.debug("Input dir %s" % input_dir)
 
             if not fs.isdir(self.iter_inputdir, input_dir):
                 continue
 
+
+            input_upload_cost_vec = self.settings[self.input_upload_cost_key]
+
+
+            start_time = time.time()
             self._upload_variation_inputs(self._generate_variations(input_dir,
                                             fs, context), nodes, input_dir, fs)
+            end_time = time.time()
+            input_upload_cost_vec.append(end_time-start_time)
+            update_key(self.input_upload_cost_key, input_upload_cost_vec, self.settings)
+            logger.debug("Total time for uploading input data to %d nodes is: "
+                         "%f" % (len(nodes), (end_time - start_time)))
 
     def process(self, context):
 
         logger.debug("processing run stage")
 
+        self.input_upload_cost_key = 'input_upload_cost'
+        try:
+            input_upload_cost_vec = self.settings[self.input_upload_cost_key]
+        except KeyError:
+            self.settings[self.input_upload_cost_key] = []
+
+        input_prep_key = 'input_prep_time'
+        try:
+            input_prep_vec = self.settings[input_prep_key]
+        except KeyError:
+            input_prep_vec = []
+
+        start_time = time.time()
         self._prepare_inputs(context)
         logger.debug("running tasks")
+        end_time = time.time()
+
+        input_prep_vec.append(end_time-start_time)
+        update_key(input_prep_key, input_prep_vec, self.settings)
+        logger.debug("Total time spent on preparing input data: "
+                     "%f" % (end_time - start_time))
+
+
+
+
+
+        self.run_time_key = "run_time"
+        try:
+            run_time = self.settings[self.run_time_key]
+            logger.debug("run_time key exists %s" % run_time)
+        except KeyError:
+            self.settings[self.run_time_key] = {}
 
         try:
             pids = self.run_multi_task(self.group_id, self.iter_inputdir, self.settings)
