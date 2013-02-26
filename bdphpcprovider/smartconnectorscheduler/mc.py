@@ -98,7 +98,8 @@ def start(args):
     (options, args) = parser.parse_args(args)
 
     if 'smart' in args:
-        context = {'number_vm_instances': 8, 'threshold': [2],}
+        context = {'number_vm_instances': 8, 'threshold': [2],
+                   'number_dimensions':2}
         context['seed'] = 32
 
         HOME_DIR = os.path.expanduser("~")
@@ -115,7 +116,7 @@ def start(args):
             sys.exit()
 
         number_of_iterations = 2
-        error_threshold = 10000
+        error_threshold = 15000
         smart_conn = SmartConnector()
 
         if 'seed' in context:
@@ -136,10 +137,11 @@ def start(args):
          Run(),
          Finished(),
          Transform(), Converge(error_threshold), #
-         #Teardown()
+         Teardown()
          ):
             smart_conn.register(stage)
 
+        import time
         #while loop is infinite:
         # check the semantics for 'dropping data' into
         # designated location.
@@ -152,8 +154,11 @@ def start(args):
                 print "Working in stage", stage.__class__
                 if stage.triggered(context):
                     logger.debug("triggered")
+                    start = time.clock()
                     stage.process(context)
                     context = stage.output(context)
+                    end = time.clock()
+                    logger.info("Execution time of %s is %f seconds" % (stage, (end-start)))
                     logger.debug("Context", context)
                 else:
                     logger.debug("not triggered")
