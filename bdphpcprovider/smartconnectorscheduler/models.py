@@ -167,14 +167,18 @@ class UserProfileParameter(models.Model):
         ordering = ("name",)
 
 
-def make_parallel_stage(stage, context):
+def make_stage_transitions(stage, context):
     """ Starting at stage, traverse the whole composite stage and record
     and return the path (assuming no branches).  TODO: branches?
     """
-    return _make_parallel_stage_recur(stage, context, 0)
+    # FIXME: should be in models.Stage?
+    if Stage.objects.filter(parent=stage).count():
+        return _make_stage_trans_recur(stage, context, 0)
+    else:
+        return {'%s' % stage.id: 0}
 
 
-def _make_parallel_stage_recur(stage, context, parent_next_sibling_id):
+def _make_stage_trans_recur(stage, context, parent_next_sibling_id):
     # TODO: test this carefully
     logger.debug("mps stage=%s" % stage)
     transition = {}
@@ -186,7 +190,7 @@ def _make_parallel_stage_recur(stage, context, parent_next_sibling_id):
         value = childs[i + 1].id if i < len(childs) - 1 else -1
         transition[key] = value
         logger.debug("%s -> %s" % (key, value))
-        subtransition = _make_parallel_stage_recur(child, context, value)
+        subtransition = _make_stage_trans_recur(child, context, value)
         logger.debug("subtransiton=%s", subtransition)
         transition.update(subtransition)
 
@@ -203,8 +207,9 @@ def _make_parallel_stage_recur(stage, context, parent_next_sibling_id):
 
     return transition
 
-
+# TODO: if hierarchies become very complicated, may need to use mptt
 #from mptt.models import MPTTModel, TreeForeignKey
+
 
 #class Stage(MPTTModel):
 class Stage(models.Model):
@@ -233,7 +238,7 @@ class Stage(models.Model):
         transitions = json.loads(context['transitions'])
         logger.debug("transitions=%s" % transitions)
         logger.debug("current_stage=%s" % self)
-
+        logger.debug("self.id=%s" % self.id)
         next_stage_id = transitions["%s" % self.id]
         logger.debug("next_stage_id = %s" % next_stage_id)
 
@@ -271,7 +276,8 @@ class Command(models.Model):
 class DirectiveArgSet(models.Model):
     """
     Describes the argument of a directive.
-    The idea is to specify a type for each of the arguments of the directive as high level schemas
+    The idea is to specify a type for each of the arguments of the directive
+    as high level schemas
     which can then be checked against usage.
     """
     directive = models.ForeignKey(Stage)
@@ -287,7 +293,9 @@ class SmartConnector(models.Model):
 
 
 class Context(models.Model):
-    """ Holds a pointer to the currently to be executed stage and all the arguments and variable storage for
+    """
+    Holds a pointer to the currently to be executed stage and all the
+    arguments and variable storage for
     that execution
     """
     owner = models.ForeignKey(UserProfile)
@@ -329,7 +337,7 @@ class Context(models.Model):
                 pn = ParameterName.objects.get(schema=sch,
                     name=k)
             except ParameterName.DoesNotExist:
-                msg = "Unknown parameter %s for context" % k
+                msg = "Unknown parameter '%s' for context '%s'" % (k, updated_context)
                 logger.exception(msg)
                 raise InvalidInputError(msg)
             try:
@@ -363,6 +371,7 @@ class ContextParameterSet(models.Model):
 class CommandArgument(models.Model):
     """
     A the level of command a representation of a local or remote file or dataset
+    NB: unused
     """
     template_url = models.URLField()
 
