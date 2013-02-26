@@ -158,7 +158,7 @@ LOGGING = {
             'format': '%(levelname)s %(message)s'
         },
         'verbose': {
-            'format': '%(levelname)s %(asctime)s %(module)s: %(message)s'
+            'format': '%(levelname)s %(asctime)s %(module)s %(lineno)d: %(message)s'
         },
     },
 
