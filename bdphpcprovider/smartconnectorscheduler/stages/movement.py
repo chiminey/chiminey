@@ -19,37 +19,57 @@
 # IN THE SOFTWARE.
 
 
-from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 import logging
 import logging.config
+
+from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, UI
+from bdphpcprovider.smartconnectorscheduler import hrmcstages
+
 
 logger = logging.getLogger(__name__)
 
 
-class ParallelStage(Stage):
+class MovementStage(Stage):
     """
-        A list of stages
+    Moves files from one location to another
     """
     def __init__(self, user_settings=None):
+        self.user_settings = user_settings
         pass
 
-    def __unicode__(self):
-        return "ParallelStage"
-
     def triggered(self, context):
-        logger.debug("Parallel Stage Triggered")
-        if 'parallel_output' in context:
-            self.val = context['parallel_output']
+        """
+        Return true if the directory pattern triggers this stage, or there
+        has been any other error
+        """
+        # FIXME: Need to verify that triggered is idempotent.
+        logger.debug("Movement Stage Triggered")
+        logger.debug("context=%s" % context)
+        if 'movement_output' in context:
+            self.val = context['movement_output']
         else:
             self.val = 0
         return True
 
     def process(self, context):
-        logger.debug("Null Stage Processing")
-        pass
+        """ perfrom the stage operation
+        """
+        logger.debug("Movement Stage Processing")
+        logger.debug("context=%s" % context)
+        logger.debug("user_settings=%s", self.user_settings)
+        source_url = context['file0']
+        logger.debug("source_url=%s" % source_url)
+        content = hrmcstages.get_file(source_url, self.user_settings)
+        logger.debug("content=%s", content)
+        dest_url = context['file1']
+        logger.debug("dest_url=%s" % dest_url)
+        hrmcstages.put_file(dest_url, content, self.user_settings)
 
     def output(self, context):
-        logger.debug("Null Stage Output")
+        """ produce the resulting datfiles and metadata
+        """
+        logger.debug("Movement Stage Output")
+        logger.debug("context=%s" % context)
         self.val += 1
-        context['parallel_output'] = self.val
+        context['movement_output'] = self.val
         return context

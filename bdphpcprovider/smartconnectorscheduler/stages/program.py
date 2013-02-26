@@ -18,18 +18,23 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+
 import logging
 import logging.config
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
-
+from bdphpcprovider.smartconnectorscheduler import hrmcstages
+from bdphpcprovider.smartconnectorscheduler import sshconnector
 
 logger = logging.getLogger(__name__)
 
 
-# This stage doesn't do any thing except register its execution
-class NullStage(Stage):
+class ProgramStage(Stage):
+    """
+    Execute a program remotely
+    """
     def __init__(self, user_settings=None):
+        self.user_settings = user_settings
         pass
 
     def triggered(self, context):
@@ -38,26 +43,47 @@ class NullStage(Stage):
         has been any other error
         """
         # FIXME: Need to verify that triggered is idempotent.
-        logger.debug("Null Stage Triggered")
+        logger.debug("Program Stage Triggered")
         logger.debug("context=%s" % context)
-        if 'null_output' in context:
-            self.val = context['null_output']
+        if 'program_output' in context:
+            self.val = context['program_output']
         else:
             self.val = 0
         return True
 
     def process(self, context):
-        """ perfrom the stage operation
         """
-        logger.debug("context=%s" % context)
-        logger.debug("Null Stage Processing")
+        Execute a program with filearguments at the remote server
+        """
+        # TODO: make proper API for all external calls needed here
 
+        logger.debug("Program Stage Processing")
+
+        param_urls = [context[u"file%d" % x] for x in xrange(0, 3)]
+        param_paths = [hrmcstages._get_remote_path(x, self.user_settings) for x in param_urls]
+
+        program = context['program']
+
+        logger.debug("program=%s" % program)
+        logger.debug("remote paths=%s" % param_paths)
+
+        # TODO: implement handling of config arguments
+
+        command = "%s %s %s > %s " % (program, param_paths[0], param_paths[1], param_paths[2])
+
+        # TODO: remotehost should be property of models.Platform, which can hold correct
+        # ip address
+
+        ssh = sshconnector.open_connection(ip_address=context['remotehost'], settings=self.user_settings)
+        sshconnector.run_command(ssh, command, current_dir=self.user_settings[u'fsys'])
+
+        logger.debug("context=%s" % context)
 
     def output(self, context):
         """ produce the resulting datfiles and metadata
         """
-        logger.debug("Null Stage Processing")
+        logger.debug("Program Stage Output")
         logger.debug("context=%s" % context)
         self.val += 1
-        context['null_output'] = self.val
+        context['program_output'] = self.val
         return context

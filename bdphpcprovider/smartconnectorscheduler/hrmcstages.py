@@ -1,4 +1,4 @@
-# Copyright (C) 2012, RMIT University
+# Copyright (C) 2013, RMIT University
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to
@@ -36,8 +36,6 @@ from django.template import Context, Template
 from django.core.files.base import ContentFile
 
 from django.contrib.auth.models import User
-
-
 
 logger = logging.getLogger(__name__)
 
@@ -314,7 +312,12 @@ def _get_command_actual_args(directive_args, user_settings):
                 if metadata:  # if we have [] as argument
                     sch = metadata[0].decode('utf8')
                     # FIXME: error handling
-                    metadata_schema = models.Schema.objects.get(namespace=sch)
+                    try:
+                        metadata_schema = models.Schema.objects.get(namespace=sch)
+                    except models.Schema.DoesNotExist:
+                        msg = "schema %s does not exist" % sch
+                        logger.exception(msg)
+                        raise
                     variables = metadata[1:]
                     logger.debug("variables=%s" % variables)
                     if not values_match_schema(metadata_schema, variables):
@@ -343,18 +346,22 @@ def _get_command_actual_args(directive_args, user_settings):
         if file_url:
             # THis could be an expensive operations if remote, so may need
             # caching or maybe remote resolution?
-            content = _get_file(file_url, user_settings)
-            # Parse file parameter and retrieve data
-            logger.debug("file_url %s" % file_url)
-            # TODO: don't use temp file, use remote file with
-            # name file_url with suffix based on the command job number?
-            t = Template(content)
-            logger.debug("rendering_context = %s" % rendering_context)
-            con = Context(rendering_context)
-            local_url = _get_new_local_url(file_url)  # TODO: make remote
-            logger.debug("local_rul=%s" % local_url)
-            rendered_content = t.render(con)
-            _put_file(local_url, rendered_content, user_settings)
+            if rendering_context:
+                content = get_file(file_url, user_settings)
+                # Parse file parameter and retrieve data
+                logger.debug("file_url %s" % file_url)
+                # TODO: don't use temp file, use remote file with
+                # name file_url with suffix based on the command job number?
+                t = Template(content)
+                logger.debug("rendering_context = %s" % rendering_context)
+                con = Context(rendering_context)
+                local_url = _get_new_local_url(file_url)  # TODO: make remote
+                logger.debug("local_rul=%s" % local_url)
+                rendered_content = t.render(con)
+                put_file(local_url, rendered_content, user_settings)
+            else:
+                logger.debug("no render required")
+                local_url = file_url
             #localfs.save(remote_file_path, ContentFile(cont.encode('utf-8')))  # NB: ContentFile only takes bytes
             #command_args.append((u'', remote_file_path.decode('utf-8')))
             command_args.append((u'', local_url))
@@ -376,9 +383,9 @@ class NCIStorage(SFTPStorage):
         print super(NCIStorage, self)
 
 
-def _put_file(file_url, content, user_settings):
+def put_file(file_url, content, user_settings):
     """
-    Writes out the content to the file url
+    Writes out the content to the file_url using config info from user_settings
     """
     logger.debug("file_url=%s" % file_url)
 
@@ -404,12 +411,14 @@ def _put_file(file_url, content, user_settings):
         res = response.read()
         logger.debug("response=%s" % res)
     elif scheme == "hpc":
+        # FIXME: some of these parameters may come from url
         remote_fs_path = os.path.join(
-            os.path.dirname(__file__), '..', 'testing', 'remotesys').decode("utf8")
+            os.path.dirname(__file__), 'testing', 'remotesys').decode("utf8")
         nci_settings = {'params': {'username': user_settings['nci_user'],
             'password': user_settings['nci_password']},
             'host': user_settings['nci_host'],
             'root': remote_fs_path}
+        logger.debug("nci_settings=%s" % nci_settings)
         fs = NCIStorage(settings=nci_settings)
          # FIXME: does this overwrite?
         fs.save(mypath, ContentFile(content.encode('utf-8')))  # NB: ContentFile only takes bytes
@@ -425,8 +434,9 @@ def _put_file(file_url, content, user_settings):
     return content
 
 
-def _get_file(file_url, user_settings):
+def get_file(file_url, user_settings):
     """
+    Reads in content at file_url using config info from user_settings
     """
     logger.debug("file_url=%s" % file_url)
 
@@ -434,6 +444,7 @@ def _get_file(file_url, user_settings):
     o = urlparse(file_url)
     scheme = o.scheme
     mypath = o.path
+    # TODO: add error checking for urlparse
     logger.debug("scheme=%s" % scheme)
     logger.debug("mypath=%s" % mypath)
 
@@ -472,15 +483,55 @@ def _get_file(file_url, user_settings):
     return content
 
 
+def _get_remote_path(file_url, user_settings):
+    """
+    Find the path at the remote site corresponding to file_url, but don't fetch
+      # TODO: expand to return other parts of parsed url
+    """
+    logger.debug("file_url=%s" % file_url)
+
+    from urlparse import urlparse
+    o = urlparse(file_url)
+    scheme = o.scheme
+    mypath = o.path
+    logger.debug("scheme=%s" % scheme)
+    logger.debug("mypath=%s" % mypath)
+
+    if mypath[0] == os.path.sep:
+        mypath = mypath[1:]
+    logger.debug("mypath=%s" % mypath)
+
+    if scheme == 'http':
+        raise NotImplementedError("http scheme not implemented")
+    elif scheme == "hpc":
+        logger.debug("getting from hpc")
+        # TODO: remote_fs_path should be from user settings
+        remote_fs_path = os.path.join(
+            os.path.dirname(__file__), 'testing', 'remotesys')
+        logger.debug("remote_fs_path=%s" % remote_fs_path)
+        remote_path = os.path.join(remote_fs_path, mypath)
+
+    elif scheme == "tardis":
+        raise NotImplementedError("tardis scheme not implemented")
+    elif scheme == "local":
+        remote_fs_path = user_settings['fsys']
+        remote_path = os.path.join(remote_fs_path, "/", mypath)
+
+    logger.debug("remote_path=%s" % remote_path)
+    return remote_path
+
+
 def make_runcontext_for_directive(platform, directive_name,
-    directive_args):
-    # get the user
-    user = User.objects.get(username="username1")
+    directive_args, context):
+    """
+    Create a new runcontext with the commmand equivalent to the directive on the platform.
+    """
+    user = User.objects.get(username="username1")  # FIXME: pass in username
     profile = models.UserProfile.objects.get(user=user)
     platform = models.Platform.objects.get(name=platform)
     directive = models.Directive.objects.get(name=directive_name)
     command_for_directive = models.Command.objects.get(directive=directive, platform=platform)
-    logger.debug("commandnd_for_directive=%s" % command_for_directive)
+    logger.debug("command_for_directive=%s" % command_for_directive)
     user_settings = retrieve_settings(profile)
 
     # turn the user's arguments into real command arguments.
@@ -488,12 +539,18 @@ def make_runcontext_for_directive(platform, directive_name,
         directive_args, user_settings)
     logger.debug("command_args=%s" % command_args)
     # prepare a context for the command to run for this user
-    context = _make_context_for_command(command_for_directive,
-        command_args)
+    context.update(_make_context_for_command(command_for_directive,
+        command_args, context))
+    logger.debug("updated context=%s" % context)
+    # TODO: each run_context contains one stage and the only way to get a sequence of
+    # is to use a composite.  run_context is built from only one directive so can't execute
+    # multiple directives and have to create a new run_context for each new directive that a
+    # user needs to run.  There is no "directive sequence" model.
     run_context = _make_new_run_context(command_for_directive.stage, profile, context)
     run_context.current_stage = command_for_directive.stage
     run_context.save()
-    # FIXME: only return command_args and context  because needed for testcases
+    logger.debug("runcontext=%s" % run_context)
+    # FIXME: only return command_args and context because they are needed for testcases
     return (context, command_args, run_context)
 
 
@@ -522,9 +579,13 @@ def process_all_contexts():
     TODO: this loop will run continuously as celery task to take Directives into commands into contexts
     for execution.
     """
-    done = False
+    test_info = []
     while (True):
-        for run_context in models.Context.objects.all():
+        run_contexts = models.Context.objects.all()
+        if not run_contexts:
+            break
+        done = None
+        for run_context in run_contexts:
             # retrive the stage model to process
             current_stage = run_context.current_stage
             logger.debug("current_stage=%s" % current_stage)
@@ -543,7 +604,7 @@ def process_all_contexts():
             # again before they are serialised.
 
             # get the actual stage object
-            stage = safe_import(current_stage.package,  [], {})  # obviously need to cache this
+            stage = safe_import(current_stage.package, [], {'user_settings': user_settings})  # obviously need to cache this
             logger.debug("stage=%s", stage)
 
             if stage.triggered(cont):
@@ -559,22 +620,29 @@ def process_all_contexts():
             # advance to the next stage
             current_stage = run_context.current_stage.get_next_stage(cont)
             if not current_stage:
-                done = True
+                done = run_context
                 break
 
             # save away new stage to process
             run_context.current_stage = current_stage
             run_context.save()
         if done:
-            break
+            test_info.append(cont)
+            run_context.delete()
     logger.debug("finished main loop")
+    return test_info
 
 
-def _make_context_for_command(command, command_args):
+def _make_context_for_command(command, command_args, context):
     """
     Create a context for the command to execute with
     """
-    context = {}
+    if u'transitions' in context:
+        curr_trans = json.loads(context[u'transitions'])
+        logger.debug("curr_trans = %s" % curr_trans)
+    else:
+        curr_trans = {}
+    #context = {}
     arg_num = 0
     for (k, v) in command_args:
         logger.debug("k=%s,v=%s" % (k, v))
@@ -585,8 +653,9 @@ def _make_context_for_command(command, command_args):
             arg_num += 1
             context[key] = v
     logger.debug("context=%s" % context)
-    transitions = models.make_parallel_stage(command.stage, context)
+    transitions = models.make_stage_transitions(command.stage, context)
     logger.debug("transitions=%s" % transitions)
+    transitions.update(curr_trans)
     context[u'transitions'] = json.dumps(transitions)
     logger.debug("context =  %s" % context)
     return context

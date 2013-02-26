@@ -273,8 +273,11 @@ class TestCommandContextLoop(TestCase):
 
         return dirs
 
-    def _load_data(self):
-
+    def test_event_process_loop(self):
+        """
+        Tests converting directive with arguments into equivalent
+        Composite stage command and executes it in event loop
+        """
         # Create a user and profile
         self.user = User.objects.create_user(username="username1",
             password="password")
@@ -311,8 +314,6 @@ class TestCommandContextLoop(TestCase):
         # so each value will come from a namespace.  e.g., general/fsys
         # nectar/num_of_nodes, setup/nodes_setup etc.
         for name, param_type in {
-            u'fsys': models.ParameterName.STRING,
-            u'user_id': models.ParameterName.NUMERIC,
             u'file0': models.ParameterName.STRING,
             u'file1': models.ParameterName.STRING,
             u'file2': models.ParameterName.STRING,
@@ -331,7 +332,7 @@ class TestCommandContextLoop(TestCase):
             'userinfo2': 42,
             'fsys': self.remote_fs_path,
             'nci_user': 'root',
-            'nci_password': 'dtofaam',
+            'nci_password': 'password',
             'nci_host': '127.0.0.1',
             }
         self.PARAMTYPE = {'userinfo1': models.ParameterName.STRING,
@@ -396,24 +397,14 @@ class TestCommandContextLoop(TestCase):
         comm = models.Command(platform=platform, directive=directive, stage=composite_stage)
         comm.save()
 
-    def test_event_process_loop(self):
-        """
-        Tests converting directive with arguments into equivalent
-        Composite stage command and executes it in event loop
-        """
+        # done setup
 
-
-        # Create directive, command and stages definitions
-        self._load_data()
-
-
+        # setup the required initial files
         self.remote_fs.save("input/input.txt",
          ContentFile("a={{a}} b={{b}} c={{c}}"))
 
         self.remote_fs.save("input/file.txt",
          ContentFile("foobar"))
-
-
 
         # directive_args would come from the external API (from mytardis)
             # Here is our example directive arguments
@@ -443,6 +434,7 @@ class TestCommandContextLoop(TestCase):
         directives.append((platform, directive_name, directive_args))
 
         test_info = []
+        context = {}
         for (platform, directive_name, directive_args) in directives:
             logger.debug("directive_name=%s" % directive_name)
             logger.debug("directive_args=%s" % directive_args)
@@ -450,44 +442,254 @@ class TestCommandContextLoop(TestCase):
             (context, command_args,  run_context) = hrmcstages.make_runcontext_for_directive(
                 platform,
                 directive_name,
-                directive_args)
+                directive_args, context)
 
-            test_info.append((context, command_args))
+            # self.assertEquals(len(test_info[0][1]), 6)
+            # for i, contents in ((0, "a=5 b=6"), (1, "a=1 b=2 c=hello"), (2, "foobar")):
+            #     k, v = test_info[0][1][i]
+            #     logger.debug("k=%s v=%s" % (k, v))
+            #     self.assertFalse(k)
+            #     # FIXME: use urls now
+            #     #f = self.remote_fs.open(v).read()
+            #     #logger.debug("f=%s" % f)
+            #     #self.assertEquals(contents, str(f))
+            #     #os.remove(v)
+            # k, v = test_info[0][1][3]
+            # self.assertEquals(k, 'num_nodes')
+            # self.assertEquals(v, 5)
+            # k, v = test_info[0][1][4]
+            # self.assertEquals(k, 'iseed')
+            # self.assertEquals(v, 42)  # TODO: handle NUMERIC types correctly
+            # k, v = test_info[0][1][5]
+            # self.assertEquals(k, 'command')
+            # self.assertEquals(v, 'ls')
+
+            # do all the processing of stages for all available contexts for all users.
+            test_info.append(hrmcstages.process_all_contexts())
+            logger.debug("test_info = %s" % test_info)
+
 
         logger.debug("test_info = %s" % test_info)
-        # self.assertEquals(len(test_info[0][1]), 6)
-        # for i, contents in ((0, "a=5 b=6"), (1, "a=1 b=2 c=hello"), (2, "foobar")):
-        #     k, v = test_info[0][1][i]
-        #     logger.debug("k=%s v=%s" % (k, v))
-        #     self.assertFalse(k)
-        #     # FIXME: use urls now
-        #     #f = self.remote_fs.open(v).read()
-        #     #logger.debug("f=%s" % f)
-        #     #self.assertEquals(contents, str(f))
-        #     #os.remove(v)
-        # k, v = test_info[0][1][3]
-        # self.assertEquals(k, 'num_nodes')
-        # self.assertEquals(v, 5)
-        # k, v = test_info[0][1][4]
-        # self.assertEquals(k, 'iseed')
-        # self.assertEquals(v, 42)  # TODO: handle NUMERIC types correctly
-        # k, v = test_info[0][1][5]
-        # self.assertEquals(k, 'command')
-        # self.assertEquals(v, 'ls')
 
-        # do all the processing of stages for all available contexts for all users.
-        hrmcstages.process_all_contexts()
-
-        res_context = {}
-        for run_context in models.Context.objects.all():
-            res_context.update(run_context.get_context())
-
-        logger.debug("res_context =  %s" % res_context)
-
-        test_info[0][0][u'null_output'] = models.Stage.objects.filter(package=self.null_package).count()
-        test_info[0][0][u'parallel_output'] = models.Stage.objects.filter(package=self.parallel_package).count()
+        self.assertEquals(test_info[0][0][u'null_output'],4)
+        self.assertEquals(test_info[0][0][u'parallel_output'],2)
         logger.debug("context =  %s" % test_info[0][0])
 
-        self.assertEquals(res_context, test_info[0][0])
+    def test_multi_remote_commands(self):
+        """
+        Tests converting multiple directives with arguments into equivalent
+        Composite stage command and executes it in event loop
+        """
+
+        # Create a user and profile
+        self.user = User.objects.create_user(username="username1",
+            password="password")
+        profile = models.UserProfile(
+                      user=self.user)
+        profile.save()
+
+        # Create the schemas for template parameters or config info
+        # specfied in directive arguments
+        for ns, name, desc in [('http://www.rmit.edu.au/user/profile/1',
+            "userprofile1", "Information about user"),
+            ('http://rmit.edu.au/schemas/greeting/salutation', "salutation",
+                "The form of salutation"),
+            ("http://rmit.edu.au/schemas/program", "program",
+                "A remote executing program")
+            ]:
+            sch = models.Schema.objects.create(namespace=ns, name=name, description=desc)
+            logger.debug("sch=%s" % sch)
+
+        # Create the schema for stages (currently only one) and all allowed
+        # values and their types for all stages.
+        context_schema = models.Schema.objects.create(
+            namespace=models.Context.CONTEXT_SCHEMA_NS,
+            name="Context Schema", description="Schema for a context")
+        # We assume that a run_context has only one schema at the moment, as
+        # we have to load up this schema with all context values used in
+        # any of the stages (and any parameters required for the stage
+        # invocation)
+        # TODO: allow multiple ContextParameterSet each with different schema
+        # so each value will come from a namespace.  e.g., general/fsys
+        # nectar/num_of_nodes, setup/nodes_setup etc.
+        for name, param_type in {
+            u'file0': models.ParameterName.STRING,
+            u'file1': models.ParameterName.STRING,
+            u'file2': models.ParameterName.STRING,
+            u'program': models.ParameterName.STRING,
+            u'remotehost': models.ParameterName.STRING,
+            u'salutation': models.ParameterName.NUMERIC,
+            u'transitions': models.ParameterName.STRING,  # TODO: use STRLIST
+            u'program_output': models.ParameterName.NUMERIC,
+            u'movement_output': models.ParameterName.NUMERIC
+            }.items():
+            models.ParameterName.objects.create(schema=context_schema,
+                name=name,
+                type=param_type)
+
+        # Setup the schema for user configuration information (kept in profile)
+        self.PARAMS = {'userinfo1': 'param1val',
+            'fsys': self.remote_fs_path,
+            'nci_user': 'root',
+            'nci_password': 'dtofaam',
+            'nci_host': '127.0.0.1',
+            'PASSWORD': 'password',
+            'USER_NAME': 'root',
+            'PRIVATE_KEY': '',
+            }
+        self.PARAMTYPE = {'userinfo1': models.ParameterName.STRING,
+            'fsys': models.ParameterName.STRING,
+            'nci_user': models.ParameterName.STRING,
+            'nci_password': models.ParameterName.STRING,
+            'nci_host': models.ParameterName.STRING,
+            'PASSWORD': models.ParameterName.STRING,
+            'USER_NAME': models.ParameterName.STRING,
+            'PRIVATE_KEY': models.ParameterName.STRING}
+        param_set = models.UserProfileParameterSet.objects.create(user_profile=profile,
+            schema=sch)
+        for k, v in self.PARAMS.items():
+            param_name = models.ParameterName.objects.create(schema=sch,
+                name=k,
+                type=self.PARAMTYPE[k])
+            models.UserProfileParameter.objects.create(name=param_name,
+                paramset=param_set,
+                value=v)
+
+        # Make a platform for the commands
+        platform = models.Platform(name="nci")
+        platform.save()
+
+        copy_dir = models.Directive(name="copy")
+        copy_dir.save()
+        program_dir = models.Directive(name="program")
+        program_dir.save()
+
+        self.movement_stage = "bdphpcprovider.smartconnectorscheduler.stages.movement.MovementStage"
+        self.program_stage = "bdphpcprovider.smartconnectorscheduler.stages.program.ProgramStage"
+        # Define all the stages that will make up the command.  This structure
+        # has two layers of composition
+        copy_stage = models.Stage.objects.create(name="copy",
+             description="data movemement operation",
+             package=self.movement_stage,
+             order=100)
+        program_stage = models.Stage.objects.create(name="program",
+            description="program execution stage",
+            package=self.program_stage,
+            order=0)
+        logger.debug("stages=%s" % models.Stage.objects.all())
+        # Make a new command that reliases composite_stage
+        comm = models.Command(platform=platform, directive=copy_dir, stage=copy_stage)
+        comm.save()
+        comm = models.Command(platform=platform, directive=program_dir, stage=program_stage)
+        comm.save()
+
+        # We could make one command with a composite containing three stages or
+        # three commands each containing a single stage.
+
+        # done setup
+
+        self.remote_fs.save("local/greet.txt",
+            ContentFile("{{salutation}} World"))
+
+        self.remote_fs.save("remote/greetaddon.txt",
+            ContentFile("(remotely)"))
+
+        platform = "nci"
+
+        directives = []
+
+        # Instantiate a template locally, then copy to remote
+        directive_name = "copy"
+        directive_args = []
+        directive_args.append(
+            ['local://12.0.0.1/local/greet.txt',
+                ['http://rmit.edu.au/schemas/greeting/salutation',
+                    ('salutation', 'Hello')]])
+        directive_args.append(['hpc://ncitest.org/remote/greet.txt', []])
+        directives.append((platform, directive_name, directive_args))
+
+        # concatenate that file and another file (already remote) to form result
+        directive_args = []
+        directive_name = "program"
+        directive_args.append(['',
+            ['http://rmit.edu.au/schemas/program', ('program', 'cat'),
+            ('remotehost', '127.0.0.1')]])
+
+        directive_args.append(['hpc://ncitest.org/remote/greet.txt',
+            []])
+        directive_args.append(['hpc://ncitest.org/remote/greetaddon.txt',
+            []])
+        directive_args.append(['hpc://ncitest.org/remote/greetresult.txt',
+            []])
+
+        directives.append((platform, directive_name, directive_args))
+
+        # transfer result back locally.
+        directive_name = "copy"
+        directive_args = []
+        directive_args.append(['hpc://ncitest.org/remote/greetresult.txt',
+            []])
+        directive_args.append(['local://12.0.0.1/local/finalresult.txt',
+            []])
+
+        directives.append((platform, directive_name, directive_args))
+
+        test_info = []
+        context = {}
+        for (platform, directive_name, directive_args) in directives:
+            logger.debug("directive_name=%s" % directive_name)
+            logger.debug("directive_args=%s" % directive_args)
+
+            (context, command_args,  run_context) = hrmcstages.make_runcontext_for_directive(
+                platform,
+                directive_name,
+                directive_args, context)
+
+            # self.assertEquals(len(test_info[0][1]), 6)
+            # for i, contents in ((0, "a=5 b=6"), (1, "a=1 b=2 c=hello"), (2, "foobar")):
+            #     k, v = test_info[0][1][i]
+            #     logger.debug("k=%s v=%s" % (k, v))
+            #     self.assertFalse(k)
+            #     # FIXME: use urls now
+            #     #f = self.remote_fs.open(v).read()
+            #     #logger.debug("f=%s" % f)
+            #     #self.assertEquals(contents, str(f))
+            #     #os.remove(v)
+            # k, v = test_info[0][1][3]
+            # self.assertEquals(k, 'num_nodes')
+            # self.assertEquals(v, 5)
+            # k, v = test_info[0][1][4]
+            # self.assertEquals(k, 'iseed')
+            # self.assertEquals(v, 42)  # TODO: handle NUMERIC types correctly
+            # k, v = test_info[0][1][5]
+            # self.assertEquals(k, 'command')
+            # self.assertEquals(v, 'ls')
+
+            # do all the processing of stages for all available contexts for all users.
+            # NB: a user can have multiple run contexts, but they will be processed
+            # in a undefined order. TODO: build a run_context sequence model of some kind.
+            test_info.append(hrmcstages.process_all_contexts())
+            logger.debug("test_info = %s" % test_info)
+
+
+        logger.debug("test_info = %s" % json.dumps(test_info, indent=4))
+
+        test1 = test_info[0]
+        logger.debug("test1=%s" % test1)
+        test2 = test_info[1]
+        logger.debug("test2=%s" % test2)
+        test3 = test_info[2]
+        logger.debug("test3=%s" % test3)
+        self.assertEquals(test1[0]['movement_output'],1)
+        self.assertEquals(test2[0]['program_output'],1)
+        self.assertEquals(test3[0]['movement_output'],1)
+
+        res = self.remote_fs.open("local/finalresult.txt").read()
+        logger.debug(res)
+        self.assertEquals(res, "Hello World(remotely)")
+
+
+
+
 
 
