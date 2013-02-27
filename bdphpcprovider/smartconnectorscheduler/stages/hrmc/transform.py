@@ -119,50 +119,12 @@ class Transform(Stage):
             else:
                 raise ValueError("No numbfile record found")
 
-            if self.alt_specification:
-                try:
-                    grerr_files = ['grerr%s.dat' % str(number).zfill(2)]
-                    f = fs.retrieve_under_dir(self.output_dir,
-                                          node_output_dir,
-                                         'grerr%s.dat' % str(number).zfill(2)).retrieve()
-                except IOError:
-                        logger.warn("no grerr found")
-            else:
-                # for each grerr*.dat file, get criterion
-                grerr_files = fs.glob(self.output_dir, node_output_dir, 'grerr[0-9]+.dat')
-                grerr_files.sort()
+                #if self.alt_specification:
 
-            logger.debug("grerr_files=%s " % grerr_files)
-            criterions = []
-            for (index, f) in enumerate(grerr_files):
-
-                grerr_content = fs.retrieve_under_dir(self.output_dir,
-                                                  node_output_dir,
-                                                  grerr_files[-1]).retrieve()
-                logger.debug("grerr_content=%s" % grerr_content)
-                try:
-                    criterion = float(grerr_content.strip().split('\n')[-1]
-                        .split()[1])
-                except ValueError as e:
-                    logger.warn("invalid criteron found in grerr "
-                        + "file for  %s/%s: %s"
-                        % (self.output_dir, node_output_dir, e))
-                    continue
-                logger.debug("criterion=%s" % criterion)
-                criterions.append((index, f, criterion))
-
-            # Find minimum criterion
-            criterions.sort(key=lambda x: x[2])
-            if criterions:
-                grerr_info = criterions[0]
-            else:
-                logger.error("no grerr files found")
-                grerr_info = ()  # FIXME: can recover from this?
-            criterion = grerr_info[2]
-            f = grerr_info[1]
-            logger.debug("f: %s" %f)
-
-            res.append((node_output_dir, index, number, criterion, f))
+            criterion = self.compute_psd_criterion(node_output_dir, fs)
+            #criterion = self.compute_hrmc_criterion(number, node_output_dir, fs)
+            index = 0
+            res.append((node_output_dir, index, number, criterion))
 
         # Get Maximum numbfile in all previous runs
         max_numbfile = max([x[2] for x in res])
@@ -185,7 +147,7 @@ class Transform(Stage):
             fs.create_local_filesystem(self.new_input_dir_base)
             import os
             for i in range(0, total_picks):
-                (best_node_dir, best_index, number, criterion, grerr_file) = res[i]
+                (best_node_dir, best_index, number, criterion) = res[i]
 
                 self.new_input_dir = os.path.join(self.new_input_dir_base, best_node_dir)
                 fs.create_local_filesystem(self.new_input_dir)
@@ -221,7 +183,6 @@ class Transform(Stage):
 
                 logger.debug("best_node_dir=%s" % best_node_dir)
                 logger.debug("best_index=%s" % best_index)
-                logger.debug("grerr_file=%s" % grerr_file)
                 logger.debug("number=%s" % number)
 
                 if self.alt_specification:
@@ -243,7 +204,6 @@ class Transform(Stage):
                 found = False
                 for file_name in xyzfiles:
                     if file_name == 'hrmc%s.xyz' % (str(number).zfill(2)):
-                    #if file_name == grerr_file:
                         logger.debug("%s -> %s" % (file_name, 'initial.xyz'))
                         try:
                             fs.copy(self.output_dir, best_node_dir,
@@ -255,7 +215,7 @@ class Transform(Stage):
                             continue
                         found = True
                 if not found:
-                    logger.warn("No matching %s file found to transfer" % grerr_file)
+                    logger.warn("No matching %s file found to transfer" )
                 rmcen = fs.retrieve_new(self.new_input_dir, "rmcen.inp")
                 text = rmcen.retrieve()
 
@@ -290,7 +250,7 @@ class Transform(Stage):
         else:
             # FIXME: can we carry on here?
             logger.warning("no output directory found")
-            (best_node_dir, best_index, number, criterion, grerr_file) = ("", 0, 0, 0, "")  # ?
+            (best_node_dir, best_index, number, criterion) = ("", 0, 0, 0)  # ?
 
 
         end_time = time.time()
@@ -318,74 +278,79 @@ class Transform(Stage):
 
         return context
 
-    def get_minimum_criterion(self, fs, node_output_dirs):
-        for node_output_dir in node_output_dirs:
-            if not fs.isdir(self.output_dir, node_output_dir):
-                logger.warn("%s is not a directory" % node_output_dir)
-                # FIXME: do we really want to skip here?
-                continue
-                #file_rmcen = os.path.join(node_output_dir, 'rmcen.inp')
-            if not fs.exists(self.output_dir, node_output_dir, 'rmcen.inp'):
-                logger.warn("rmcen.inp not found")
-                # FIXME: do we really want to skip here?
-                continue
-            if not fs.isfile(self.output_dir, node_output_dir, 'rmcen.inp'):
-                logger.warn("rmcen.inp not a file")
-                # FIXME: do we really want to skip here?
-                continue
 
-            # Get numbfile from rmcen.inp
-            numb = [x.split()[0] for x
-                    in fs.retrieve_under_dir(self.output_dir,
-                                             node_output_dir,
-                                             'rmcen.inp').retrieve().split('\n')
-                    if 'numbfile' in x]
-            if numb:
-                number = int(numb[0])
-            else:
-                raise ValueError("No numbfile record found")
+    def compute_hrmc_criterion(self, number, node_output_dir, fs):
+        try:
+            grerr_files = 'grerr%s.dat' % str(number).zfill(2)
+            f = fs.retrieve_under_dir(self.output_dir,
+                                      node_output_dir,
+                                      'grerr%s.dat' % str(number).zfill(2)).retrieve()
+        except IOError:
+            logger.warn("no grerr found")
 
-            if self.alt_specification:
-                try:
-                    grerr_files = ['grerr%s.dat' % str(number).zfill(2)]
-                    f = fs.retrieve_under_dir(self.output_dir,
+
+        logger.debug("grerr_files=%s " % grerr_files)
+
+        grerr_content = fs.retrieve_under_dir(self.output_dir,
                                               node_output_dir,
-                                              'grerr%s.dat' % str(number).zfill(2)).retrieve()
-                except IOError:
-                    logger.warn("no grerr found")
-            else:
-                # for each grerr*.dat file, get criterion
-                grerr_files = fs.glob(self.output_dir, node_output_dir, 'grerr[0-9]+.dat')
-                grerr_files.sort()
+                                              grerr_files).retrieve()
+        logger.debug("grerr_content=%s" % grerr_content)
+        try:
+            criterion = float(grerr_content.strip().split('\n')[-1]
+            .split()[1])
+        except ValueError as e:
+            logger.warn("invalid criteron found in grerr "
+                        + "file for  %s/%s: %s"
+                        % (self.output_dir, node_output_dir, e))
+        logger.debug("criterion=%s" % criterion)
+        logger.debug("f: %s" %f)
 
-            logger.debug("grerr_files=%s " % grerr_files)
-            criterions = []
-            for (index, f) in enumerate(grerr_files):
+        return criterion
 
-                grerr_content = fs.retrieve_under_dir(self.output_dir,
-                                                      node_output_dir,
-                                                      grerr_files[-1]).retrieve()
-                logger.debug("grerr_content=%s" % grerr_content)
-                try:
-                    criterion = float(grerr_content.strip().split('\n')[-1]
-                    .split()[1])
-                except ValueError as e:
-                    logger.warn("invalid criteron found in grerr "
-                                + "file for  %s/%s: %s"
-                                % (self.output_dir, node_output_dir, e))
-                    continue
-                logger.debug("criterion=%s" % criterion)
-                criterions.append((index, f, criterion))
 
-            # Find minimum criterion
-            criterions.sort(key=lambda x: x[2])
-            if criterions:
-                grerr_info = criterions[0]
-            else:
-                logger.error("no grerr files found")
-                grerr_info = ()  # FIXME: can recover from this?
-            criterion = grerr_info[2]
-            f = grerr_info[1]
-            logger.debug("f: %s" %f)
 
-            #res.append((node_output_dir, index, number, criterion, f))
+    def compute_psd_criterion(self, node_output_dir, fs):
+        import math
+        import os
+        globalFileSystem = fs.get_global_filesystem()
+        psd = os.path.join(globalFileSystem,
+                           self.output_dir, node_output_dir,
+                           "PSD_output/psd.dat")
+        psd_exp = os.path.join(globalFileSystem,
+                               self.output_dir, node_output_dir,
+                               "PSD_output/PSD_exp.dat")
+        logger.debug("PSD %s %s " % (psd, psd_exp))
+        x_axis=[]
+        y1_axis=[]
+        for line in open(psd):
+            column = line.split()
+            #logger.debug(column)
+            if len(column) > 0:
+                x_axis.append(float(column[0]))
+                y1_axis.append(float(column[1]))
+        logger.debug("x_axis \n %s" % x_axis)
+        logger.debug("y1_axis \n %s" % y1_axis)
+
+        y2_axis=[]
+        for line in open(psd_exp):
+            column = line.split()
+            #logger.debug(column)
+            if len(column) > 0:
+                y2_axis.append(float(column[1]))
+
+        for i in range(len(x_axis) - len(y2_axis)):
+            y2_axis.append(0);
+        logger.debug("y2_axis \n %s" % y2_axis)
+
+        criterion = 0
+        for i in range(len(y1_axis)):
+            criterion += math.pow((y1_axis[i] - y2_axis[i]), 2)
+        logger.debug("Criterion %f" % criterion)
+
+        criterion_file = DataObject('criterion.txt')
+        criterion_file.create(str(criterion))
+        criterion_path = os.path.join(self.output_dir,
+                                      node_output_dir, "PSD_output")
+        fs.create(criterion_path, criterion_file)
+
+        return criterion

@@ -204,13 +204,19 @@ class Converge(Stage):
         self.done_iterating = False
         if min_crit > self.prev_criterion:
             logger.error('iteration %s is diverging' % best_numb)
+
             self.done_iterating = True  # if we are diverging then end now
 
         elif (self.prev_criterion - min_crit) <= self.error_threshold:
             self.done_iterating = True
             self._ready_final_output(fs, min_crit_node, min_crit_index)
+
         else:
             logger.debug("iteration continues")
+
+        logger.error('Current min criterion: %f, Prev '
+                     'criterion: %f' % (min_crit, self.prev_criterion))
+
         self.criterion = min_crit
 
 
