@@ -116,7 +116,7 @@ def start(args):
             sys.exit()
 
         number_of_iterations = 2
-        error_threshold = 15000
+        error_threshold = 1
         smart_conn = SmartConnector()
 
         if 'seed' in context:
@@ -137,7 +137,7 @@ def start(args):
          Run(),
          Finished(),
          Transform(), Converge(error_threshold), #
-         Teardown()
+         #Teardown()
          ):
             smart_conn.register(stage)
 
