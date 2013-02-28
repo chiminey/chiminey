@@ -32,6 +32,9 @@ from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
 logger = logging.getLogger(__name__)
 
+def error(e):
+    raise
+
 
 def unix_find(pathin):
     """Return results similar to the Unix find command run without options
@@ -39,7 +42,7 @@ def unix_find(pathin):
     from http://www.saltycrane.com/blog/2010/04/options-listing-files-directory-python/
     """
     return [os.path.join(path, file)
-            for (path, dirs, files) in os.walk(pathin, followlinks=True)
+            for (path, dirs, files) in os.walk(pathin, followlinks=True, onerror=error)
             for file in files]
 
 
@@ -65,7 +68,7 @@ class TestOutputView(unittest.TestCase):
         pass
 
     def test_view(self):
-        view.convert_output(self.output_dir, self.view_dir)
+        view.convert_output(self.output_dir, self.view_dir, NM=2)
         view_dir_walk = list(unix_find(self.view_dir))
         from pprint import pformat
         logger.debug("view_dir_walk= %s" % pformat(view_dir_walk))
@@ -73,18 +76,39 @@ class TestOutputView(unittest.TestCase):
         view_dir_walk = sorted([x[len(self.view_dir):] for x in view_dir_walk])
         from pprint import pformat
         logger.debug("vie_dir_walk= %s" % pformat(view_dir_walk))
-        correct = [
-             '/input/input_0/initial/rmcen.inp_values',
-             '/input/input_1/node1/rmcen.inp_values',
-             '/input/input_2/node1/rmcen.inp_values',
-             '/input/input_3/node2/rmcen.inp_values',
+        # correct = [
+        #      '/input/input_0/initial/rmcen.inp_values',
+        #      '/input/input_1/node1/rmcen.inp_values',
+        #      '/input/input_2/node1/rmcen.inp_values',
+        #      '/input/input_3/node2/rmcen.inp_values',
+        #      '/output/0_0/rmcen.inp_values',
+        #      '/output/0_1/rmcen.inp_values',
+        #      '/output/1b0/rmcen.inp_values',
+        #      '/output/1b1/rmcen.inp_values',
+        #      '/output/2a0/rmcen.inp_values',
+        #      '/output/2a1/rmcen.inp_values',
+        #      '/raw/input_0/initial/rmcen.inp_values',
+        #      '/raw/input_1/node1/rmcen.inp_values',
+        #      '/raw/input_2/node1/rmcen.inp_values',
+        #      '/raw/input_3/node2/rmcen.inp_values',
+        #      '/raw/output_0/node1/rmcen.inp_values',
+        #      '/raw/output_0/node2/rmcen.inp_values',
+        #      '/raw/output_1/node1/rmcen.inp_values',
+        #      '/raw/output_1/node2/rmcen.inp_values',
+        #      '/raw/output_2/node1/rmcen.inp_values',
+        #      '/raw/output_2/node2/rmcen.inp_values']
+
+        correct =  ['/input/0_/placeholderfile',
+             '/input/1a/rmcen.inp_values',
+             '/input/2a/rmcen.inp_values',
+             '/input/3a/rmcen.inp_values',
              '/output/0_0/rmcen.inp_values',
              '/output/0_1/rmcen.inp_values',
-             '/output/1b0/rmcen.inp_values',
-             '/output/1b1/rmcen.inp_values',
-             '/output/2a0/rmcen.inp_values',
-             '/output/2a1/rmcen.inp_values',
-             '/raw/input_0/initial/rmcen.inp_values',
+             '/output/1a0/rmcen.inp_values',
+             '/output/1a1/rmcen.inp_values',
+             '/output/2b0/rmcen.inp_values',
+             '/output/2b1/rmcen.inp_values',
+             '/raw/input_0/initial/placeholderfile',
              '/raw/input_1/node1/rmcen.inp_values',
              '/raw/input_2/node1/rmcen.inp_values',
              '/raw/input_3/node2/rmcen.inp_values',
@@ -97,6 +121,7 @@ class TestOutputView(unittest.TestCase):
 
         logger.debug("corrct=%s", correct)
         self.assertEquals(correct, view_dir_walk, "diff=%s %s" % (correct, view_dir_walk))
+
 
 
 class TestUserSettings(djangotest.TestCase):
@@ -112,14 +137,14 @@ class TestUserSettings(djangotest.TestCase):
 
         self.user = User.objects.create_user(username="username1",
             password="password")
-        profile = models.UserProfile(
+        self.profile = models.UserProfile(
                       user=self.user)
-        profile.save()
+        self.profile.save()
         sch = models.Schema(namespace="http://www.rmit.edu.au/user/profile/1",
             description="Information about user",
             name="userprofile1")
         sch.save()
-        param_set = models.UserProfileParameterSet(user_profile=profile, schema=sch)
+        param_set = models.UserProfileParameterSet(user_profile=self.profile, schema=sch)
         param_set.save()
         for k, v in params.items():
             param_name = models.ParameterName(schema=sch, name=k, type=paramtype[k])
@@ -138,7 +163,8 @@ class TestUserSettings(djangotest.TestCase):
 
         self._load_data(PARAMS, PARAMTYPE)
         context = {'user_id': self.user.id}
-        settings = hrmcstages.retrieve_settings(context)
+        logger.debug("context=%s" % context)
+        settings = hrmcstages.retrieve_settings(self.profile)
         self.assertEquals(PARAMS_RIGHTTYPES, settings)
 
     def test_retrievebadsettings(self):
@@ -152,7 +178,7 @@ class TestUserSettings(djangotest.TestCase):
         context = {'user_id': self.user.id}
         logger.debug("PARAMTYPE =%s" % PARAMTYPE)
         try:
-            settings = hrmcstages.retrieve_settings(context)
+            settings = hrmcstages.retrieve_settings(self.profile)
         except BadInputException, e:
             logger.debug("e=%s" % e)
             pass

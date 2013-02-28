@@ -6,3 +6,7 @@ class ContextKeyMissing(Exception):
 
 class PackageFailedError(Exception):
     pass
+
+class InvalidInputError(Exception):
+	pass
+	

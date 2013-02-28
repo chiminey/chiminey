@@ -1,4 +1,4 @@
-# Copyright (C) 2012, RMIT University
+# Copyright (C) 2013, RMIT University
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to
@@ -30,16 +30,28 @@ import os
 import sys
 import re
 
+from django.utils.importlib import import_module
+from django.core.exceptions import ImproperlyConfigured
+from django.template import Context, Template
+from django.core.files.base import ContentFile
+
+from django.contrib.auth.models import User
+
 logger = logging.getLogger(__name__)
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, UI, SmartConnector
 from bdphpcprovider.smartconnectorscheduler.filesystem import FileSystem, DataObject
 from bdphpcprovider.smartconnectorscheduler.botocloudconnector import create_environ, \
     collect_instances, destroy_environ
-from bdphpcprovider.smartconnectorscheduler.errors import ContextKeyMissing
+from bdphpcprovider.smartconnectorscheduler.errors import ContextKeyMissing, InvalidInputError
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
 from bdphpcprovider.smartconnectorscheduler import models
 
+from django.core.files.storage import FileSystemStorage
+
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+from storages.backends.sftpstorage import SFTPStorage
 
 def get_filesys(context):
     """
@@ -66,16 +78,13 @@ def _load_file(fsys, fname):
     return config
 
 
-def retrieve_settings(context):
+def retrieve_settings(profile):
     """
     Using the user_id in the context, retrieves all the settings files from the profile models
     """
-    user_id = context['user_id']
-    user = models.User.objects.get(id=user_id)
-    profile = user.get_profile()
     settings = {}
     for param in models.UserProfileParameter.objects.filter(paramset__user_profile=profile):
-
+        logger.debug("param=%s" % param)
         try:
             settings[param.name.name] = param.getValue()
         except Exception:
@@ -86,6 +95,16 @@ def retrieve_settings(context):
 
     return settings
 
+
+def get_file_from_context(context, fname):
+    """
+    Retrieve the content of a remote file with fname
+    """
+    fsys_path = context['fsys']
+    remote_fs = FileSystemStorage(location=fsys_path)
+    f = context[fname]
+    content = remote_fs.open(f).read()
+    return content
 
 def get_settings(context):
     """
@@ -207,6 +226,439 @@ def get_fanout(parameter_value_list):
 
 def get_threshold():
     pass
+
+
+def safe_import(path, args, kw):
+    """
+        Dynamically imports a package at path and executes it current namespace with given args
+    """
+
+    try:
+        dot = path.rindex('.')
+    except ValueError:
+        raise ImproperlyConfigured('%s isn\'t a filter module' % path)
+    filter_module, filter_classname = path[:dot], path[dot + 1:]
+    try:
+        mod = import_module(filter_module)
+    except ImportError, e:
+        raise ImproperlyConfigured('Error importing filter %s: "%s"' %
+                                   (filter_module, e))
+    try:
+        filter_class = getattr(mod, filter_classname)
+    except AttributeError:
+        raise ImproperlyConfigured('Filter module "%s" does not define a "%s" class' %
+                                   (filter_module, filter_classname))
+
+    filter_instance = filter_class(*args, **kw)
+    return filter_instance
+
+
+def values_match_schema(schema, values):
+    """
+        Given a schema object and a set of (k,v) fields, checking
+        each k has correspondingly named ParameterName in the schema
+    """
+    # TODO:
+    return True
+
+
+def _get_new_local_url(url):
+    """
+    Create local resource to hold instantiated template for command execution.
+
+    """
+
+    # # The top of the remote filesystem that will hold a user's files
+    remote_base_path = os.path.join("centos")
+
+    from urlparse import urlparse
+    o = urlparse(url)
+    file_path = o.path.decode('utf-8')
+    logger.debug("file_path=%s" % file_path)
+    # if file_path[0] == os.path.sep:
+    #     file_path = file_path[:-1]
+    import uuid
+    randsuffix = unicode(uuid.uuid4())  # should use some job id here
+
+    relpath = u"%s_%s" % (file_path, randsuffix)
+
+    if relpath[0] == os.path.sep:
+        relpath = relpath[1:]
+    logger.debug("relpath=%s" % relpath)
+
+    # FIXME: for django storage, do we need to create
+    # intermediate directories
+    dest_path = os.path.join(remote_base_path, relpath)
+    logger.debug("dest_path=%s" % dest_path)
+    return u'local://%s' % dest_path.decode('utf8')
+
+
+def _get_command_actual_args(directive_args, user_settings):
+    """
+    Parse the directive args to make command args
+    """
+    command_args = []
+    for darg in directive_args:
+        logger.debug("darg=%s" % darg)
+        rendering_context = {}
+        metadatas = darg[1:]
+        file_url = darg[0].decode('utf8')
+
+        if metadatas:
+            # make rendering_context based on metadata key value pairs
+            for metadata in metadatas:
+                logger.debug("metadata=%s" % metadata)
+                # parse configuration parameters
+                if metadata:  # if we have [] as argument
+                    sch = metadata[0].decode('utf8')
+                    # FIXME: error handling
+                    try:
+                        metadata_schema = models.Schema.objects.get(namespace=sch)
+                    except models.Schema.DoesNotExist:
+                        msg = "schema %s does not exist" % sch
+                        logger.exception(msg)
+                        raise
+                    variables = metadata[1:]
+                    logger.debug("variables=%s" % variables)
+                    if not values_match_schema(metadata_schema, variables):
+                        raise InvalidInputError(
+                            "specified parameters do not match schema")
+                    for k, v in variables:
+                        # FIXME: need way of specifying ns and name in the template
+                        # to distinuish between different templates. Here all the variables
+                        # across entire template file must be disjoint. Custom
+                        # tag may do it.
+                        if not k:
+                            raise InvalidInputError(
+                                "Cannot have blank key in parameter set")
+                        # FIXME: handle all different tytpes
+                        try:
+                            typed_val = int(v)
+                        except ValueError:
+                            typed_val = v.decode('utf8')  # as a string
+
+                        if file_url:
+                            rendering_context[k.decode('utf8')] = typed_val
+                        else:
+                            command_args.append((k.decode('utf8'), typed_val))
+
+        # retrieve the file url and resolve against rendering_context
+        if file_url:
+            # THis could be an expensive operations if remote, so may need
+            # caching or maybe remote resolution?
+            if rendering_context:
+                content = get_file(file_url, user_settings)
+                # Parse file parameter and retrieve data
+                logger.debug("file_url %s" % file_url)
+                # TODO: don't use temp file, use remote file with
+                # name file_url with suffix based on the command job number?
+                t = Template(content)
+                logger.debug("rendering_context = %s" % rendering_context)
+                con = Context(rendering_context)
+                local_url = _get_new_local_url(file_url)  # TODO: make remote
+                logger.debug("local_rul=%s" % local_url)
+                rendered_content = t.render(con)
+                put_file(local_url, rendered_content, user_settings)
+            else:
+                logger.debug("no render required")
+                local_url = file_url
+            #localfs.save(remote_file_path, ContentFile(cont.encode('utf-8')))  # NB: ContentFile only takes bytes
+            #command_args.append((u'', remote_file_path.decode('utf-8')))
+            command_args.append((u'', local_url))
+            #_put_file(file_url, cont.encode('utf8'), fs)
+            #command_args.append((u'', file_url))
+    return command_args
+
+
+class NCIStorage(SFTPStorage):
+
+    def __init__(self, settings=None):
+        super(NCIStorage, self).__init__()
+        if 'params' in settings:
+            super(NCIStorage, self).__dict__["_params"] = settings['params']
+        if 'root' in settings:
+            super(NCIStorage, self).__dict__["_root_path"] = settings['root']
+        if 'host' in settings:
+            super(NCIStorage, self).__dict__["_host"] = settings['host']
+        print super(NCIStorage, self)
+
+
+def put_file(file_url, content, user_settings):
+    """
+    Writes out the content to the file_url using config info from user_settings
+    """
+    logger.debug("file_url=%s" % file_url)
+
+    logger.debug("file_url=%s" % file_url)
+    from urlparse import urlparse
+    o = urlparse(file_url)
+    scheme = o.scheme
+    mypath = o.path
+    if mypath[0] == os.path.sep:
+        mypath = mypath[1:]
+    logger.debug("mypath=%s" % mypath)
+
+    if scheme == 'http':
+        # TODO: test
+        import urllib
+        import urllib2
+        values = {'name': 'Michael Foord',
+          'location': 'Northampton',
+          'language': 'Python'}
+        data = urllib.urlencode(values)
+        req = urllib2.Request(file_url, data)
+        response = urllib2.urlopen(req)
+        res = response.read()
+        logger.debug("response=%s" % res)
+    elif scheme == "hpc":
+        # FIXME: some of these parameters may come from url
+        remote_fs_path = os.path.join(
+            os.path.dirname(__file__), 'testing', 'remotesys').decode("utf8")
+        nci_settings = {'params': {'username': user_settings['nci_user'],
+            'password': user_settings['nci_password']},
+            'host': user_settings['nci_host'],
+            'root': remote_fs_path}
+        logger.debug("nci_settings=%s" % nci_settings)
+        fs = NCIStorage(settings=nci_settings)
+         # FIXME: does this overwrite?
+        fs.save(mypath, ContentFile(content.encode('utf-8')))  # NB: ContentFile only takes bytes
+    elif scheme == "tardis":
+        logger.warn("tardis put not implemented")
+        #raise NotImplementedError()
+    elif scheme == "local":
+        remote_fs_path = user_settings['fsys']
+        logger.debug("remote_fs_path=%s" % remote_fs_path)
+        fs = FileSystemStorage(location=remote_fs_path)
+        dest_path = fs.save(mypath, ContentFile(content.encode('utf-8')))  # NB: ContentFile only takes bytes
+        logger.debug("dest_path=%s" % dest_path)
+    return content
+
+
+def get_file(file_url, user_settings):
+    """
+    Reads in content at file_url using config info from user_settings
+    """
+    logger.debug("file_url=%s" % file_url)
+
+    from urlparse import urlparse
+    o = urlparse(file_url)
+    scheme = o.scheme
+    mypath = o.path
+    # TODO: add error checking for urlparse
+    logger.debug("scheme=%s" % scheme)
+    logger.debug("mypath=%s" % mypath)
+
+    if mypath[0] == os.path.sep:
+        mypath = mypath[1:]
+    logger.debug("mypath=%s" % mypath)
+
+    if scheme == 'http':
+        import urllib2
+        req = urllib2.Request(o)
+        response = urllib2.urlopen(req)
+        content = response.read()
+    elif scheme == "hpc":
+        logger.debug("getting from hpc")
+        # TODO: remote_fs_path should be from user settings
+        remote_fs_path = os.path.join(
+            os.path.dirname(__file__), 'testing', 'remotesys')
+        logger.debug("remote_fs_path=%s" % remote_fs_path)
+
+        nci_settings = {'params': {'username': user_settings['nci_user'],
+            'password': user_settings['nci_password']},
+            'host': user_settings['nci_host'],
+            'root': remote_fs_path}
+        fs = NCIStorage(settings=nci_settings)
+        content = fs.open(mypath).read()
+        logger.debug("content=%s" % content)
+    elif scheme == "tardis":
+        return "a={{a}} b={{b}}"
+        raise NotImplementedError("tardis scheme not implemented")
+    elif scheme == "local":
+        remote_fs_path = user_settings['fsys']
+        logger.debug("self.remote_fs_path=%s" % remote_fs_path)
+        fs = FileSystemStorage(location=remote_fs_path + "/")
+        content = fs.open(mypath).read()
+    logger.debug("content=%s" % content)
+    return content
+
+
+def _get_remote_path(file_url, user_settings):
+    """
+    Find the path at the remote site corresponding to file_url, but don't fetch
+      # TODO: expand to return other parts of parsed url
+    """
+    logger.debug("file_url=%s" % file_url)
+
+    from urlparse import urlparse
+    o = urlparse(file_url)
+    scheme = o.scheme
+    mypath = o.path
+    logger.debug("scheme=%s" % scheme)
+    logger.debug("mypath=%s" % mypath)
+
+    if mypath[0] == os.path.sep:
+        mypath = mypath[1:]
+    logger.debug("mypath=%s" % mypath)
+
+    if scheme == 'http':
+        raise NotImplementedError("http scheme not implemented")
+    elif scheme == "hpc":
+        logger.debug("getting from hpc")
+        # TODO: remote_fs_path should be from user settings
+        remote_fs_path = os.path.join(
+            os.path.dirname(__file__), 'testing', 'remotesys')
+        logger.debug("remote_fs_path=%s" % remote_fs_path)
+        remote_path = os.path.join(remote_fs_path, mypath)
+
+    elif scheme == "tardis":
+        raise NotImplementedError("tardis scheme not implemented")
+    elif scheme == "local":
+        remote_fs_path = user_settings['fsys']
+        remote_path = os.path.join(remote_fs_path, "/", mypath)
+
+    logger.debug("remote_path=%s" % remote_path)
+    return remote_path
+
+
+def make_runcontext_for_directive(platform, directive_name,
+    directive_args, context):
+    """
+    Create a new runcontext with the commmand equivalent to the directive on the platform.
+    """
+    user = User.objects.get(username="username1")  # FIXME: pass in username
+    profile = models.UserProfile.objects.get(user=user)
+    platform = models.Platform.objects.get(name=platform)
+    directive = models.Directive.objects.get(name=directive_name)
+    command_for_directive = models.Command.objects.get(directive=directive, platform=platform)
+    logger.debug("command_for_directive=%s" % command_for_directive)
+    user_settings = retrieve_settings(profile)
+
+    # turn the user's arguments into real command arguments.
+    command_args = _get_command_actual_args(
+        directive_args, user_settings)
+    logger.debug("command_args=%s" % command_args)
+    # prepare a context for the command to run for this user
+    context.update(_make_context_for_command(command_for_directive,
+        command_args, context))
+    logger.debug("updated context=%s" % context)
+    # TODO: each run_context contains one stage and the only way to get a sequence of
+    # is to use a composite.  run_context is built from only one directive so can't execute
+    # multiple directives and have to create a new run_context for each new directive that a
+    # user needs to run.  There is no "directive sequence" model.
+    run_context = _make_new_run_context(command_for_directive.stage, profile, context)
+    run_context.current_stage = command_for_directive.stage
+    run_context.save()
+    logger.debug("runcontext=%s" % run_context)
+    # FIXME: only return command_args and context because they are needed for testcases
+    return (context, command_args, run_context)
+
+
+def _make_new_run_context(stage, profile, context):
+    """
+    Make a new context  for a user to execute stages based on initial context
+    """
+    # make run_context for this user
+    run_context = models.Context.objects.create(owner=profile,
+        current_stage=stage)
+    context_schema = models.Schema.objects.get(namespace=models.Context.CONTEXT_SCHEMA_NS)
+    logger.debug("context_schema=%s" % context_schema)
+    # make a single parameterset to represent the context
+    models.ContextParameterSet.objects.create(context=run_context,
+        schema=context_schema,
+        ranking=0)
+    run_context.update_context(context)
+    return run_context
+
+
+def process_all_contexts():
+    """
+    The main processing loop.  For each context owned by a user, find the next stage to execute,
+    get the actual code to execute, then update the context and the filesystem as needed, then advance
+    current stage according to the composite stage structure.
+    TODO: this loop will run continuously as celery task to take Directives into commands into contexts
+    for execution.
+    """
+    test_info = []
+    while (True):
+        run_contexts = models.Context.objects.all()
+        if not run_contexts:
+            break
+        done = None
+        for run_context in run_contexts:
+            # retrive the stage model to process
+            current_stage = run_context.current_stage
+            logger.debug("current_stage=%s" % current_stage)
+
+            profile = run_context.owner
+            logger.debug("profile=%s" % profile)
+
+            cont = run_context.get_context()
+            logger.debug("retrieved cont=%s" % cont)
+
+            user_settings = retrieve_settings(profile)
+            logger.debug("user_settings=%s" % user_settings)
+
+            # FIXME: do we want to combine cont and user_settings to
+            # pass into the stage?  The original code but the problem is separating them
+            # again before they are serialised.
+
+            # get the actual stage object
+            stage = safe_import(current_stage.package, [], {'user_settings': user_settings})  # obviously need to cache this
+            logger.debug("stage=%s", stage)
+
+            if stage.triggered(cont):
+                logger.debug("triggered")
+                stage.process(cont)
+                cont = stage.output(cont)
+                logger.debug("updated cont=%s" % cont)
+                run_context.update_context(cont)
+                logger.debug("cont=%s" % cont)
+            else:
+                logger.debug("not triggered")
+
+            # advance to the next stage
+            current_stage = run_context.current_stage.get_next_stage(cont)
+            if not current_stage:
+                done = run_context
+                break
+
+            # save away new stage to process
+            run_context.current_stage = current_stage
+            run_context.save()
+        if done:
+            test_info.append(cont)
+            run_context.delete()
+    logger.debug("finished main loop")
+    return test_info
+
+
+def _make_context_for_command(command, command_args, context):
+    """
+    Create a context for the command to execute with
+    """
+    if u'transitions' in context:
+        curr_trans = json.loads(context[u'transitions'])
+        logger.debug("curr_trans = %s" % curr_trans)
+    else:
+        curr_trans = {}
+    #context = {}
+    arg_num = 0
+    for (k, v) in command_args:
+        logger.debug("k=%s,v=%s" % (k, v))
+        if k:
+            context[k] = v
+        else:
+            key = u"file%s" % arg_num
+            arg_num += 1
+            context[key] = v
+    logger.debug("context=%s" % context)
+    transitions = models.make_stage_transitions(command.stage, context)
+    logger.debug("transitions=%s" % transitions)
+    transitions.update(curr_trans)
+    context[u'transitions'] = json.dumps(transitions)
+    logger.debug("context =  %s" % context)
+    return context
 
 
 def clear_temp_files(context):
