@@ -57,6 +57,8 @@ class Run(Stage):
     def __init__(self):
         self.numbfile = 0
         self.initial_numbfile = 1
+        self.run_time_key = 'run_time'
+        self.settings = {}
 
     def triggered(self, context):
         # triggered when we now that we have N nodes setup and ready to run.
@@ -187,8 +189,9 @@ class Run(Stage):
         import time
 
         for node in nodes:
-            run_exec_key = node.ip_address
-            run_exec_dict = self.settings[self.run_time_key]
+            #run_exec_key = node.ip_address
+            run_exec_key = botocloudconnector.get_instance_ip(node.id, self.settings)
+            run_exec_dict = settings[self.run_time_key]
 
             #context[self.run_time_key]
             logger.debug("Run Exec dictionary %s" %run_exec_dict)

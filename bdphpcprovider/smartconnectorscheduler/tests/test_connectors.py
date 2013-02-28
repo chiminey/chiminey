@@ -377,6 +377,8 @@ class RunStageTests(unittest.TestCase):
         flexmock(sshconnector).should_receive('run_sudo_command'). \
             and_return(['done', ''])
 
+        flexmock(time).should_receive('time').and_return(0)
+
         f1 = DataObject("config.sys")
         self.settings['seed'] = 42
         f1.create(json.dumps(self.settings))
@@ -426,7 +428,11 @@ class RunStageTests(unittest.TestCase):
             "runs_left": 1,
             "group_id": "sq42kdjshasdkjghauiwytuiawjmkghasjkghasg",
             "setup_finished": 1,
-            "id": 0})
+            "id": 0,
+            "run_time":{"1": [0]},
+            "input_prep_time": [0],
+            "input_upload_cost": [0]})
+
 
 
 class FinishedStageTests(unittest.TestCase):
@@ -557,7 +563,7 @@ class FinishedStageTests(unittest.TestCase):
         fs.create(self.local_filesystem, f2)
         print("fs=%s" % fs)
         id = "mytestid"
-        context = {'filesys': fs, 'id': id}
+        context = {'filesys': fs, 'id': id, 'run_time':{1:[0]}}
         context['provider'] = "nectar"
         print("context=%s" % context)
         s1 = Finished()
@@ -813,7 +819,9 @@ class CloudTests(unittest.TestCase):
         self.image_name = "ami-0000000d"  # FIXME: is hardcoded in
                                           # simplepackage
         self.instance_name = "foo"
-        self.global_filesystem = tempfile.mkdtemp()
+        #self.global_filesystem = tempfile.mkdtemp()
+        HOME_DIR = os.path.expanduser("~")
+        self.global_filesystem = os.path.join(HOME_DIR, "test_runstagetests")
         logger.debug("global_filesystem=%s" % self.global_filesystem)
         self.local_filesystem = 'default'
 
@@ -1077,7 +1085,12 @@ class CloudTests(unittest.TestCase):
         flexmock(sshconnector).should_receive('run_sudo_command') \
             .and_return(['done', ''])
 
+
+        #self.settings['run_time'] = {}
+        fs = FileSystem(self.global_filesystem, self.local_filesystem)
+        context = {'filesys': fs, 'threshold': [1]}
         run = Run()
+        run.process(context)
         res = run.run_multi_task("foobar", "", self.settings)
         self.assertEquals(res.values(), [[1]])
 
@@ -1394,8 +1407,22 @@ class TransformStageTests(unittest.TestCase):
 
         f4b = DataObject("grerr%s.dat" % str(test_number + 1).zfill(2))
         f4b.setContent("123 456\n0123 %d\n" % test_criterion2)
+
         f5b = DataObject("grerr%s.dat" % str(1).zfill(2))
         f5b.setContent("abc def\nghi jkl\n")
+
+        f_psd_a = DataObject("psd.dat")
+        f_psd_a.setContent("0 2\n1 3\n2 5\n3 1")
+
+        f_psd_exp_a = DataObject("PSD_exp.dat")
+        f_psd_exp_a.setContent("0 2\n1 5\n")
+
+        f_psd_b = DataObject("psd.dat")
+        f_psd_b.setContent("0 4\n1 6\n2 10\n3 2")
+
+        f_psd_exp_b = DataObject("PSD_exp.dat")
+        f_psd_exp_b.setContent("0 4\n1 10\n")
+
 
         print("f2=%s" % f2)
         fs = FileSystem(self.global_filesystem, self.local_filesystem)
@@ -1403,6 +1430,16 @@ class TransformStageTests(unittest.TestCase):
         fs.create_local_filesystem("input_%s" % id_to_test)
         fs.create(self.local_filesystem, f1)
         fs.create(self.local_filesystem, f2)
+
+        psd_ouput_a = path.join("output_%s" % id_to_test, "i-0001a/PSD_output")
+        psd_ouput_b = path.join("output_%s" % id_to_test, "i-0001b/PSD_output")
+        fs.create_local_filesystem(psd_ouput_a)
+        fs.create_local_filesystem(psd_ouput_b)
+        fs.create(psd_ouput_a, f_psd_a)
+        fs.create(psd_ouput_a, f_psd_exp_a)
+        fs.create(psd_ouput_b, f_psd_b)
+        fs.create(psd_ouput_b, f_psd_exp_b)
+
 
         fs.create_under_dir("output_%s" % id_to_test, "i-0001a", f3a)
         fs.create_under_dir("output_%s" % id_to_test, "i-0001a", f4a)
@@ -1472,8 +1509,8 @@ class TransformStageTests(unittest.TestCase):
 
         ff = fs.retrieve_new("input_%s" % (id_to_test + 1), "audit.txt")
         self.assertEquals(ff.getContent(), "Run %s preserved (error %s)\nspawning diamond runs\n" % (
-                test_number,
-                float(min(test_criterion1, test_criterion2))))
+                test_number,'30.0'))
+                #float(min(test_criterion1, test_criterion2))))
 
         for f in ['pore.xyz', 'sqexp.dat']:
             ff = fs.retrieve_new(path.join("input_%s" % (id_to_test + 1), node_1), f)
@@ -1548,7 +1585,7 @@ class ConvergeStageTests(unittest.TestCase):
         fs.create_under_dir(iter_inputdir, "nodeoutput", f3a)
 
         print("fs=%s" % fs)
-        context = {'filesys': fs}
+        context = {'filesys': fs, 'iteration_sofar': 0}
         print("context=%s" % context)
         res = s1.triggered(context)
         print res
@@ -1619,7 +1656,7 @@ class ConvergeStageTests(unittest.TestCase):
         fs.create_under_dir(local_filesystem='output_%s' % id_to_test, directory='node1', data_object=f6)
 
         print("fs=%s" % fs)
-        context = {'filesys': fs}
+        context = {'filesys': fs, 'iteration_sofar': 0}
         print("context=%s" % context)
         res = s1.triggered(context)
         print res
