@@ -99,7 +99,7 @@ def start(args):
 
     if 'smart' in args:
         context = {'number_vm_instances': 8, 'threshold': [2],
-                   'number_dimensions':2}
+                   'number_dimensions':2, 'max_iteration':5}
         context['seed'] = 32
 
         HOME_DIR = os.path.expanduser("~")

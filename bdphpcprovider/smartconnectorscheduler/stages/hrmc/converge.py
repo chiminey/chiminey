@@ -127,7 +127,13 @@ class Converge(Stage):
         if 'transformed' in self.settings:
             self.transformed = self.settings["transformed"]
             if self.transformed:
+                try:
+                    iteration_sofar = context['iteration_sofar']
+                except KeyError:
+                    update_key('iteration_sofar', 0, context)
+
                 return True
+
         return False
 
     def process(self, context):
@@ -203,16 +209,23 @@ class Converge(Stage):
         logger.debug("min_crit = %f" % min_crit)
         self.done_iterating = False
         if min_crit > self.prev_criterion:
-            logger.error('iteration %s is diverging' % best_numb)
+            if  context['iteration_sofar'] >= context['max_iteration']:
+                self.done_iterating = True
+                logger.error('iteration %s is diverging and max iteration reached' % best_numb)
 
-            self.done_iterating = True  # if we are diverging then end now
+             # if we are diverging then end now
 
         elif (self.prev_criterion - min_crit) <= self.error_threshold:
             self.done_iterating = True
-            self._ready_final_output(fs, min_crit_node, min_crit_index)
+
 
         else:
             logger.debug("iteration continues")
+
+
+        if self.done_iterating:
+            self._ready_final_output(fs, min_crit_node, min_crit_index)
+
 
         logger.error('Current min criterion: %f, Prev '
                      'criterion: %f' % (min_crit, self.prev_criterion))
@@ -285,6 +298,10 @@ class Converge(Stage):
         delete_key('transformed', context)
         self.id += 1
         update_key('id', self.id, context)
+
+        iteration_sofar = int(context['iteration_sofar']) + 1
+        update_key('iteration_sofar', iteration_sofar, context)
+
 
         return context
 

@@ -86,6 +86,7 @@ class Finished(Stage):
     def __init__(self):
         self.runs_left = 0
         self.error_nodes = 0
+        self.run_time_key = "run_time"
 
     def triggered(self, context):
         """
@@ -164,7 +165,8 @@ class Finished(Stage):
 
                 self.run_time_key = "run_time"
                 run_exec_dict = self.settings[self.run_time_key]
-                run_exec_key = node.ip_address
+                #run_exec_key = node.ip_address
+                run_exec_key = botocloudconnector.get_instance_ip(instance_id, self.settings)
                 run_exec_vec = run_exec_dict[run_exec_key]
                 run_exec_vec.append(end_time)
                 run_exec_vec.append(end_time-run_exec_vec[(len(run_exec_vec)-2)])
