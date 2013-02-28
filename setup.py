@@ -27,7 +27,9 @@ setup(
         'celery==2.5.5',           # Delayed tasks and queues
         'django-celery==2.5.5',
         'django-kombu',
-        'decisiontree'
+        'decisiontree',
+        'django-mptt',
+        'django-storages'
         ],
     dependency_links = [
         'https://github.com/dahlia/wand/tarball/warning-bugfix#egg=Wand-0.1.10',
