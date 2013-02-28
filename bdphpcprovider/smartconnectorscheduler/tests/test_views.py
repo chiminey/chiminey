@@ -322,7 +322,8 @@ class TestCommandContextLoop(TestCase):
             u'command': models.ParameterName.STRING,
             u'transitions': models.ParameterName.STRING,  # TODO: use STRLIST
             u'null_output': models.ParameterName.NUMERIC,
-            u'parallel_output': models.ParameterName.NUMERIC}.items():
+            u'parallel_output': models.ParameterName.NUMERIC,
+            u'platform': models.ParameterName.NUMERIC}.items():
             models.ParameterName.objects.create(schema=context_schema,
                 name=name,
                 type=param_type)
@@ -340,7 +341,7 @@ class TestCommandContextLoop(TestCase):
             'fsys': models.ParameterName.STRING,
             'nci_user': models.ParameterName.STRING,
             'nci_password': models.ParameterName.STRING,
-            'nci_host': models.ParameterName.STRING,}
+            'nci_host': models.ParameterName.STRING}
         param_set = models.UserProfileParameterSet.objects.create(user_profile=profile,
             schema=sch)
         for k, v in self.PARAMS.items():
@@ -393,7 +394,9 @@ class TestCommandContextLoop(TestCase):
             package=self.null_package,
             order=3)
         logger.debug("stages=%s" % models.Stage.objects.all())
-        # Make a new command that reliases composite_stage
+        # NB: We could remote command and have direcives map directly to stages
+        # except that we still have to store platform somewhere and then every stage
+        # (including those "hidden" inside composites have extra foreign key).
         comm = models.Command(platform=platform, directive=directive, stage=composite_stage)
         comm.save()
 
@@ -413,8 +416,7 @@ class TestCommandContextLoop(TestCase):
         directive_name = "smartconnector1"
         directive_args = []
         # Template from mytardis with corresponding metdata brought across
-        directive_args.append(['tardis://iant@tardis.edu.au/datafile/15',
-            ['http://tardis.edu.au/schemas/hrmc/dfmeta/', ('a', 5), ('b', 6)]])
+        directive_args.append(['tardis://iant@tardis.edu.au/datafile/15', []])
         # Template on remote storage with corresponding multiple parameter sets
         directive_args.append(['hpc://iant@nci.edu.au/input/input.txt',
             ['http://tardis.edu.au/schemas/hrmc/dfmeta/', ('a', 3), ('b', 4)],
@@ -433,47 +435,32 @@ class TestCommandContextLoop(TestCase):
         platform = "nci"
         directives.append((platform, directive_name, directive_args))
 
-        test_info = []
-        context = {}
+        test_final_contexts = []
+        test_initial_contexts = []
         for (platform, directive_name, directive_args) in directives:
             logger.debug("directive_name=%s" % directive_name)
             logger.debug("directive_args=%s" % directive_args)
 
-            (context, command_args,  run_context) = hrmcstages.make_runcontext_for_directive(
+            (context, command_args) = hrmcstages.make_runcontext_for_directive(
                 platform,
                 directive_name,
-                directive_args, context)
-
-            # self.assertEquals(len(test_info[0][1]), 6)
-            # for i, contents in ((0, "a=5 b=6"), (1, "a=1 b=2 c=hello"), (2, "foobar")):
-            #     k, v = test_info[0][1][i]
-            #     logger.debug("k=%s v=%s" % (k, v))
-            #     self.assertFalse(k)
-            #     # FIXME: use urls now
-            #     #f = self.remote_fs.open(v).read()
-            #     #logger.debug("f=%s" % f)
-            #     #self.assertEquals(contents, str(f))
-            #     #os.remove(v)
-            # k, v = test_info[0][1][3]
-            # self.assertEquals(k, 'num_nodes')
-            # self.assertEquals(v, 5)
-            # k, v = test_info[0][1][4]
-            # self.assertEquals(k, 'iseed')
-            # self.assertEquals(v, 42)  # TODO: handle NUMERIC types correctly
-            # k, v = test_info[0][1][5]
-            # self.assertEquals(k, 'command')
-            # self.assertEquals(v, 'ls')
+                directive_args)
+            test_initial_contexts.append((directive_name, context))
 
             # do all the processing of stages for all available contexts for all users.
-            test_info.append(hrmcstages.process_all_contexts())
-            logger.debug("test_info = %s" % test_info)
+            test_final_contexts.append(hrmcstages.process_all_contexts())
 
+        self.assertEquals(test_initial_contexts[0][0],'smartconnector1')
+        self.assertEquals(sorted(test_initial_contexts[0][1].keys()),
+            [u'command', u'file0', u'file1', u'file2',
+            u'iseed', u'num_nodes', 'platform', u'transitions'])
+        # TODO: testing values() is difficult as they files have random strings
 
-        logger.debug("test_info = %s" % test_info)
+        logger.debug("test_final_contexts = %s" % test_final_contexts)
 
-        self.assertEquals(test_info[0][0][u'null_output'],4)
-        self.assertEquals(test_info[0][0][u'parallel_output'],2)
-        logger.debug("context =  %s" % test_info[0][0])
+        self.assertEquals(test_final_contexts[0][0][u'null_output'],4)
+        self.assertEquals(test_final_contexts[0][0][u'parallel_output'],2)
+        logger.debug("context =  %s" % test_final_contexts[0][0])
 
     def test_multi_remote_commands(self):
         """
@@ -521,7 +508,8 @@ class TestCommandContextLoop(TestCase):
             u'salutation': models.ParameterName.NUMERIC,
             u'transitions': models.ParameterName.STRING,  # TODO: use STRLIST
             u'program_output': models.ParameterName.NUMERIC,
-            u'movement_output': models.ParameterName.NUMERIC
+            u'movement_output': models.ParameterName.NUMERIC,
+            u'platform': models.ParameterName.NUMERIC,
             }.items():
             models.ParameterName.objects.create(schema=context_schema,
                 name=name,
@@ -578,6 +566,7 @@ class TestCommandContextLoop(TestCase):
             order=0)
         logger.debug("stages=%s" % models.Stage.objects.all())
         # Make a new command that reliases composite_stage
+        # TODO: add the command program to the model
         comm = models.Command(platform=platform, directive=copy_dir, stage=copy_stage)
         comm.save()
         comm = models.Command(platform=platform, directive=program_dir, stage=program_stage)
@@ -634,58 +623,55 @@ class TestCommandContextLoop(TestCase):
 
         directives.append((platform, directive_name, directive_args))
 
-        test_info = []
+        test_final_contexts = []
+        test_initial_contexts = []
         context = {}
         for (platform, directive_name, directive_args) in directives:
             logger.debug("directive_name=%s" % directive_name)
             logger.debug("directive_args=%s" % directive_args)
 
-            (context, command_args,  run_context) = hrmcstages.make_runcontext_for_directive(
+            (context, command_args) = hrmcstages.make_runcontext_for_directive(
                 platform,
                 directive_name,
-                directive_args, context)
+                directive_args)
 
-            # self.assertEquals(len(test_info[0][1]), 6)
-            # for i, contents in ((0, "a=5 b=6"), (1, "a=1 b=2 c=hello"), (2, "foobar")):
-            #     k, v = test_info[0][1][i]
-            #     logger.debug("k=%s v=%s" % (k, v))
-            #     self.assertFalse(k)
-            #     # FIXME: use urls now
-            #     #f = self.remote_fs.open(v).read()
-            #     #logger.debug("f=%s" % f)
-            #     #self.assertEquals(contents, str(f))
-            #     #os.remove(v)
-            # k, v = test_info[0][1][3]
-            # self.assertEquals(k, 'num_nodes')
-            # self.assertEquals(v, 5)
-            # k, v = test_info[0][1][4]
-            # self.assertEquals(k, 'iseed')
-            # self.assertEquals(v, 42)  # TODO: handle NUMERIC types correctly
-            # k, v = test_info[0][1][5]
-            # self.assertEquals(k, 'command')
-            # self.assertEquals(v, 'ls')
+            test_initial_contexts.append((directive_name, context))
 
             # do all the processing of stages for all available contexts for all users.
             # NB: a user can have multiple run contexts, but they will be processed
             # in a undefined order. TODO: build a run_context sequence model of some kind.
-            test_info.append(hrmcstages.process_all_contexts())
-            logger.debug("test_info = %s" % test_info)
+            test_final_contexts.append(hrmcstages.process_all_contexts())
+            logger.debug("test_final_contexts = %s" % test_final_contexts)
+
+        correct_initial_contexts = [
+        ('copy', [u'file0', u'file1',
+                u'platform', u'transitions']),
+        ('program', [u'file0', u'file1', u'file2', u'program', u'remotehost',
+            u'platform', u'transitions']),
+        ('copy', [u'file0', u'file1',
+                u'platform', u'transitions']),
+        ]
+        for test_initial_context, correct_init_context in zip(test_initial_contexts,
+            correct_initial_contexts):
+            self.assertEquals(test_initial_context[0],correct_init_context[0])
+            self.assertEquals(sorted(test_initial_context[1].keys()),
+                sorted(correct_init_context[1]))
 
 
-        logger.debug("test_info = %s" % json.dumps(test_info, indent=4))
+        logger.debug("test_info = %s" % json.dumps(test_final_contexts, indent=4))
 
-        test1 = test_info[0]
+        test1 = test_final_contexts[0]
         logger.debug("test1=%s" % test1)
-        test2 = test_info[1]
+        test2 = test_final_contexts[1]
         logger.debug("test2=%s" % test2)
-        test3 = test_info[2]
+        test3 = test_final_contexts[2]
         logger.debug("test3=%s" % test3)
         self.assertEquals(test1[0]['movement_output'],1)
         self.assertEquals(test2[0]['program_output'],1)
         self.assertEquals(test3[0]['movement_output'],1)
 
         res = self.remote_fs.open("local/finalresult.txt").read()
-        logger.debug(res)
+        logger.info(res)
         self.assertEquals(res, "Hello World(remotely)")
 
 
