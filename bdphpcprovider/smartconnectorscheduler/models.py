@@ -255,12 +255,18 @@ class Platform(models.Model):
     """
     name = models.CharField(max_length=256)
 
+    def __unicode__(self):
+        return u"Platform:%s" % (self.name)
+
 
 class Directive(models.Model):
     """
     Holds an platform independent operation provided by an API
     """
     name = models.CharField(max_length=256)
+
+    def __unicode__(self):
+        return u"Directive:%s" % (self.name)
 
 
 class Command(models.Model):
@@ -271,6 +277,9 @@ class Command(models.Model):
     directive = models.ForeignKey(Directive)
     stage = models.ForeignKey(Stage, null=True, blank=True)
     platform = models.ForeignKey(Platform)
+
+    def __unicode__(self):
+        return u"Command:%s %s %s" % (self.directive, self.stage, self.platform)
 
 
 class DirectiveArgSet(models.Model):
@@ -355,6 +364,15 @@ class Context(models.Model):
                 cp.value = v
                 cp.save()
 
+    def __unicode__(self):
+        if self.current_stage:
+            res = ContextParameterSet.objects.filter(context=self.current_stage)
+        else:
+            res = "None"
+        logger.debug("res=%s" % res)
+        return u"RunCommand:owner=%s\nstage=%s\nparameters=%s\n" % (self.owner,
+            self.current_stage.name, res
+            )
 
 class ContextParameterSet(models.Model):
     """
@@ -366,6 +384,11 @@ class ContextParameterSet(models.Model):
 
     class Meta:
         ordering = ["-ranking"]
+
+    def __unicode__(self):
+        res = "schema=%s\n" % self.schema
+        res += ('\n'.join([str(cp) for cp in ContextParameter.objects.filter(paramset=self)]))
+        return res
 
 
 class CommandArgument(models.Model):
@@ -384,7 +407,7 @@ class ContextParameter(models.Model):
     #ranking = models.IntegerField(default=0,help_text="Describes the relative ordering of parameters when displaying: the larger the number, the more prominent the results")
 
     def __unicode__(self):
-        return u'%s %s %s' % (self.name, self.paramset, self.value)
+        return u'%s =  %s' % (self.name, self.value)
 
     def getValue(self,):
         try:

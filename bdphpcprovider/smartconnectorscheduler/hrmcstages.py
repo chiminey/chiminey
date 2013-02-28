@@ -522,13 +522,17 @@ def _get_remote_path(file_url, user_settings):
 
 
 def make_runcontext_for_directive(platform, directive_name,
-    directive_args, context):
+    directive_args):
     """
     Create a new runcontext with the commmand equivalent to the directive on the platform.
     """
     user = User.objects.get(username="username1")  # FIXME: pass in username
     profile = models.UserProfile.objects.get(user=user)
     platform = models.Platform.objects.get(name=platform)
+
+    context = {}
+    context[u'platform'] = platform.id
+
     directive = models.Directive.objects.get(name=directive_name)
     command_for_directive = models.Command.objects.get(directive=directive, platform=platform)
     logger.debug("command_for_directive=%s" % command_for_directive)
@@ -539,19 +543,24 @@ def make_runcontext_for_directive(platform, directive_name,
         directive_args, user_settings)
     logger.debug("command_args=%s" % command_args)
     # prepare a context for the command to run for this user
-    context.update(_make_context_for_command(command_for_directive,
-        command_args, context))
+
+    #context.update(_make_context_for_command(command_for_directive,
+    #    command_args, context))
+    context = _make_context_for_command(command_for_directive,
+        command_args, context)
+
     logger.debug("updated context=%s" % context)
     # TODO: each run_context contains one stage and the only way to get a sequence of
     # is to use a composite.  run_context is built from only one directive so can't execute
     # multiple directives and have to create a new run_context for each new directive that a
     # user needs to run.  There is no "directive sequence" model.
     run_context = _make_new_run_context(command_for_directive.stage, profile, context)
-    run_context.current_stage = command_for_directive.stage
+    logger.debug("run_context=%s"% run_context)
+    run_context.current_stage = command_for_directive.stage # !!!!!
     run_context.save()
-    logger.debug("runcontext=%s" % run_context)
+    logger.debug("command=%s new runcontext=%s" % (command_for_directive, run_context))
     # FIXME: only return command_args and context because they are needed for testcases
-    return (context, command_args, run_context)
+    return (context, command_args)
 
 
 def _make_new_run_context(stage, profile, context):
@@ -567,6 +576,7 @@ def _make_new_run_context(stage, profile, context):
     models.ContextParameterSet.objects.create(context=run_context,
         schema=context_schema,
         ranking=0)
+    # !!!!!!
     run_context.update_context(context)
     return run_context
 
@@ -604,7 +614,8 @@ def process_all_contexts():
             # again before they are serialised.
 
             # get the actual stage object
-            stage = safe_import(current_stage.package, [], {'user_settings': user_settings})  # obviously need to cache this
+            stage = safe_import(current_stage.package, [],
+             {'user_settings': user_settings})  # obviously need to cache this
             logger.debug("stage=%s", stage)
 
             if stage.triggered(cont):
@@ -656,7 +667,7 @@ def _make_context_for_command(command, command_args, context):
     transitions = models.make_stage_transitions(command.stage, context)
     logger.debug("transitions=%s" % transitions)
     transitions.update(curr_trans)
-    context[u'transitions'] = json.dumps(transitions)
+    context[u'transitions'] = json.dumps(transitions, ensure_ascii=True)
     logger.debug("context =  %s" % context)
     return context
 
