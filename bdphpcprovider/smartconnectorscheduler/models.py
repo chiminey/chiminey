@@ -167,18 +167,18 @@ class UserProfileParameter(models.Model):
         ordering = ("name",)
 
 
-def make_stage_transitions(stage, context):
+def make_stage_transitions(stage):
     """ Starting at stage, traverse the whole composite stage and record
     and return the path (assuming no branches).  TODO: branches?
     """
     # FIXME: should be in models.Stage?
     if Stage.objects.filter(parent=stage).count():
-        return _make_stage_trans_recur(stage, context, 0)
+        return _make_stage_trans_recur(stage, 0)
     else:
         return {'%s' % stage.id: 0}
 
 
-def _make_stage_trans_recur(stage, context, parent_next_sibling_id):
+def _make_stage_trans_recur(stage, parent_next_sibling_id):
     # TODO: test this carefully
     logger.debug("mps stage=%s" % stage)
     transition = {}
@@ -190,7 +190,7 @@ def _make_stage_trans_recur(stage, context, parent_next_sibling_id):
         value = childs[i + 1].id if i < len(childs) - 1 else -1
         transition[key] = value
         logger.debug("%s -> %s" % (key, value))
-        subtransition = _make_stage_trans_recur(child, context, value)
+        subtransition = _make_stage_trans_recur(child, value)
         logger.debug("subtransiton=%s", subtransition)
         transition.update(subtransition)
 
@@ -320,9 +320,9 @@ class Context(models.Model):
             context[param.name.name] = param.getValue()
         return context
 
-    def update_context(self, updated_context):
+    def update_run_settings(self, run_settings):
         """
-            update the context with new values from a map
+            update the run_settings associated with the context with new values from a map
         """
 
         sch = Schema.objects.get(namespace=self.CONTEXT_SCHEMA_NS)
@@ -340,13 +340,13 @@ class Context(models.Model):
 
         logger.debug("paramset=%s" % paramset)
         #TODO: what if entries in original context have been deleted?
-        for k, v in updated_context.items():
+        for k, v in run_settings.items():
             logger.debug("k=%s,v=%s" % (k, v))
             try:
                 pn = ParameterName.objects.get(schema=sch,
                     name=k)
             except ParameterName.DoesNotExist:
-                msg = "Unknown parameter '%s' for context '%s'" % (k, updated_context)
+                msg = "Unknown parameter '%s' for context '%s'" % (k, run_settings)
                 logger.exception(msg)
                 raise InvalidInputError(msg)
             try:
@@ -373,6 +373,7 @@ class Context(models.Model):
         return u"RunCommand:owner=%s\nstage=%s\nparameters=%s\n" % (self.owner,
             self.current_stage.name, res
             )
+
 
 class ContextParameterSet(models.Model):
     """
