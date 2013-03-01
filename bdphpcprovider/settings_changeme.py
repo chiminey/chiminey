@@ -145,8 +145,8 @@ INSTALLED_APPS = (
     'django.contrib.admindocs',
     'django.contrib.markup',
     'django.contrib.staticfiles',
-    'django_nose',
     'south',
+    'django_nose',
     'storages'
 
 ) + OUR_APPS

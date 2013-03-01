@@ -27,6 +27,8 @@ from flexmock import flexmock
 from tempfile import mkstemp
 from string import lower
 import json
+from pprint import pformat
+
 
 from django.test import TestCase
 from django.test.client import Client
@@ -248,11 +250,11 @@ class TestCommandContextLoop(TestCase):
 
     def tearDown(self):
         files = self._get_paths("")
-        #logger.debug("files=%s", '\n'.join(files))
+        logger.debug("files=%s", '\n'.join(files))
         # NB: directories are not deletable using remote_fs api
-        #for f in files:
-        #    self.remote_fs.delete(f)
-        #    self.assertFalse(self.remote_fs.exists(f))
+        for f in files:
+            self.remote_fs.delete(f)
+            self.assertFalse(self.remote_fs.exists(f))
 
     def _get_paths(self, dir):
         (dir_list, file_list) = self.remote_fs.listdir(path=dir)
@@ -323,6 +325,7 @@ class TestCommandContextLoop(TestCase):
             u'transitions': models.ParameterName.STRING,  # TODO: use STRLIST
             u'null_output': models.ParameterName.NUMERIC,
             u'parallel_output': models.ParameterName.NUMERIC,
+            u'system': models.ParameterName.STRING,
             u'platform': models.ParameterName.NUMERIC}.items():
             models.ParameterName.objects.create(schema=context_schema,
                 name=name,
@@ -351,6 +354,9 @@ class TestCommandContextLoop(TestCase):
             models.UserProfileParameter.objects.create(name=param_name,
                 paramset=param_set,
                 value=v)
+
+        # make the system settings, available to initial stage and merged with run_settings
+        system_settings = {u'system': u'settings'}
 
         # Make a platform for the commands
         platform = models.Platform(name="nci")
@@ -402,6 +408,8 @@ class TestCommandContextLoop(TestCase):
 
         # done setup
 
+        logger.debug("remote_fs_path=%s" % self.remote_fs_path)
+
         # setup the required initial files
         self.remote_fs.save("input/input.txt",
          ContentFile("a={{a}} b={{b}} c={{c}}"))
@@ -435,32 +443,33 @@ class TestCommandContextLoop(TestCase):
         platform = "nci"
         directives.append((platform, directive_name, directive_args))
 
-        test_final_contexts = []
-        test_initial_contexts = []
+        test_final_run_settings = []
+        test_initial_run_settings = []
         for (platform, directive_name, directive_args) in directives:
             logger.debug("directive_name=%s" % directive_name)
             logger.debug("directive_args=%s" % directive_args)
 
-            (context, command_args) = hrmcstages.make_runcontext_for_directive(
+            (run_settings, command_args) = hrmcstages.make_runcontext_for_directive(
                 platform,
                 directive_name,
-                directive_args)
-            test_initial_contexts.append((directive_name, context))
+                directive_args, system_settings)
+            test_initial_run_settings.append((directive_name, run_settings))
 
             # do all the processing of stages for all available contexts for all users.
-            test_final_contexts.append(hrmcstages.process_all_contexts())
+            test_final_run_settings.append(hrmcstages.process_all_contexts())
 
-        self.assertEquals(test_initial_contexts[0][0],'smartconnector1')
-        self.assertEquals(sorted(test_initial_contexts[0][1].keys()),
+        self.assertEquals(test_initial_run_settings[0][0], 'smartconnector1')
+        self.assertEquals(sorted(test_initial_run_settings[0][1].keys()),
+            sorted(
             [u'command', u'file0', u'file1', u'file2',
-            u'iseed', u'num_nodes', 'platform', u'transitions'])
+            u'iseed', u'num_nodes', u'platform', u'transitions', u'system']))
         # TODO: testing values() is difficult as they files have random strings
 
-        logger.debug("test_final_contexts = %s" % test_final_contexts)
+        logger.debug("test_final_run_settings = %s" % test_final_run_settings)
 
-        self.assertEquals(test_final_contexts[0][0][u'null_output'],4)
-        self.assertEquals(test_final_contexts[0][0][u'parallel_output'],2)
-        logger.debug("context =  %s" % test_final_contexts[0][0])
+        self.assertEquals(test_final_run_settings[0][0][u'null_output'], 4)
+        self.assertEquals(test_final_run_settings[0][0][u'parallel_output'], 2)
+        logger.debug("context =  %s" % test_final_run_settings[0][0])
 
     def test_multi_remote_commands(self):
         """
@@ -491,9 +500,9 @@ class TestCommandContextLoop(TestCase):
         # values and their types for all stages.
         context_schema = models.Schema.objects.create(
             namespace=models.Context.CONTEXT_SCHEMA_NS,
-            name="Context Schema", description="Schema for a context")
+            name="Context Schema", description="Schema for run settings")
         # We assume that a run_context has only one schema at the moment, as
-        # we have to load up this schema with all context values used in
+        # we have to load up this schema with all run settings values used in
         # any of the stages (and any parameters required for the stage
         # invocation)
         # TODO: allow multiple ContextParameterSet each with different schema
@@ -510,6 +519,7 @@ class TestCommandContextLoop(TestCase):
             u'program_output': models.ParameterName.NUMERIC,
             u'movement_output': models.ParameterName.NUMERIC,
             u'platform': models.ParameterName.NUMERIC,
+            u'system': models.ParameterName.STRING,
             }.items():
             models.ParameterName.objects.create(schema=context_schema,
                 name=name,
@@ -542,6 +552,9 @@ class TestCommandContextLoop(TestCase):
             models.UserProfileParameter.objects.create(name=param_name,
                 paramset=param_set,
                 value=v)
+
+        # make the system settings, available to initial stage and merged with run_settings
+        system_settings = {u'system': u'settings'}
 
         # Make a platform for the commands
         platform = models.Platform(name="nci")
@@ -576,6 +589,8 @@ class TestCommandContextLoop(TestCase):
         # three commands each containing a single stage.
 
         # done setup
+
+        logger.debug("remote_fs_path=%s" % self.remote_fs_path)
 
         self.remote_fs.save("local/greet.txt",
             ContentFile("{{salutation}} World"))
@@ -623,52 +638,56 @@ class TestCommandContextLoop(TestCase):
 
         directives.append((platform, directive_name, directive_args))
 
-        test_final_contexts = []
-        test_initial_contexts = []
-        context = {}
+        test_final_run_settings = []
+        test_initial_run_settings = []
         for (platform, directive_name, directive_args) in directives:
             logger.debug("directive_name=%s" % directive_name)
             logger.debug("directive_args=%s" % directive_args)
 
-            (context, command_args) = hrmcstages.make_runcontext_for_directive(
+            (run_settings, command_args) = hrmcstages.make_runcontext_for_directive(
                 platform,
                 directive_name,
-                directive_args)
+                directive_args, system_settings)
 
-            test_initial_contexts.append((directive_name, context))
+            test_initial_run_settings.append((directive_name, run_settings))
 
             # do all the processing of stages for all available contexts for all users.
             # NB: a user can have multiple run contexts, but they will be processed
             # in a undefined order. TODO: build a run_context sequence model of some kind.
-            test_final_contexts.append(hrmcstages.process_all_contexts())
-            logger.debug("test_final_contexts = %s" % test_final_contexts)
+            test_final_run_settings.append(hrmcstages.process_all_contexts())
+            logger.debug("test_final_run_settings = %s" % pformat(test_final_run_settings))
 
-        correct_initial_contexts = [
+        logger.debug("test_initial_run_settings = %s" % pformat(test_initial_run_settings))
+
+        correct_initial_run_settings = [
         ('copy', [u'file0', u'file1',
-                u'platform', u'transitions']),
+                u'platform', u'transitions', u'system']),
+
         ('program', [u'file0', u'file1', u'file2', u'program', u'remotehost',
-            u'platform', u'transitions']),
+            u'platform', u'transitions', u'system']),
+
         ('copy', [u'file0', u'file1',
-                u'platform', u'transitions']),
+                u'platform', u'transitions', u'system'])
         ]
-        for test_initial_context, correct_init_context in zip(test_initial_contexts,
-            correct_initial_contexts):
-            self.assertEquals(test_initial_context[0],correct_init_context[0])
-            self.assertEquals(sorted(test_initial_context[1].keys()),
-                sorted(correct_init_context[1]))
+        for test_init_run_settings, correct_init_run_settings in zip(test_initial_run_settings,
+            correct_initial_run_settings):
+            logger.debug("tirs=%s" % sorted(test_init_run_settings[1].keys()))
+            logger.debug("cirs=%s" % sorted(correct_init_run_settings[1]))
+            self.assertEquals(test_init_run_settings[0], correct_init_run_settings[0])
+            self.assertEquals(sorted(test_init_run_settings[1].keys()),
+                sorted(correct_init_run_settings[1]))
 
+        logger.debug("test_info = %s" % json.dumps(test_final_run_settings, indent=4))
 
-        logger.debug("test_info = %s" % json.dumps(test_final_contexts, indent=4))
-
-        test1 = test_final_contexts[0]
+        test1 = test_final_run_settings[0]
         logger.debug("test1=%s" % test1)
-        test2 = test_final_contexts[1]
+        test2 = test_final_run_settings[1]
         logger.debug("test2=%s" % test2)
-        test3 = test_final_contexts[2]
+        test3 = test_final_run_settings[2]
         logger.debug("test3=%s" % test3)
-        self.assertEquals(test1[0]['movement_output'],1)
-        self.assertEquals(test2[0]['program_output'],1)
-        self.assertEquals(test3[0]['movement_output'],1)
+        self.assertEquals(test1[0]['movement_output'], 1)
+        self.assertEquals(test2[0]['program_output'], 1)
+        self.assertEquals(test3[0]['movement_output'], 1)
 
         res = self.remote_fs.open("local/finalresult.txt").read()
         logger.info(res)
