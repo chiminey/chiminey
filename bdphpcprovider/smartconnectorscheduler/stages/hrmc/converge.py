@@ -127,11 +127,6 @@ class Converge(Stage):
         if 'transformed' in self.settings:
             self.transformed = self.settings["transformed"]
             if self.transformed:
-                try:
-                    iteration_sofar = context['iteration_sofar']
-                except KeyError:
-                    update_key('iteration_sofar', 0, context)
-
                 return True
 
         return False
@@ -148,6 +143,7 @@ class Converge(Stage):
         self.settings = get_all_settings(context)
         logger.debug("settings = %s" % self.settings)
 
+        logger.debug("input dir %s" % self.iter_inputdir)
         input_dirs = fs.get_local_subdirectories(self.iter_inputdir)
         logger.debug("input_dirs = %s" % input_dirs)
 
@@ -208,23 +204,27 @@ class Converge(Stage):
         logger.debug("prev_criterion = %f" % self.prev_criterion)
         logger.debug("min_crit = %f" % min_crit)
         self.done_iterating = False
-        if min_crit > self.prev_criterion:
-            if  context['iteration_sofar'] >= context['max_iteration']:
-                self.done_iterating = True
-                logger.error('iteration %s is diverging and max iteration reached' % best_numb)
 
-             # if we are diverging then end now
-
-        elif (self.prev_criterion - min_crit) <= self.error_threshold:
+        difference =  self.prev_criterion - min_crit
+        logger.debug("Difference %f" % difference)
+        if  self.settings['id'] >= context['max_iteration']:
+            logger.debug("Max Iteration Reached %d " % self.settings['id'])
             self.done_iterating = True
 
+        elif min_crit <= self.prev_criterion and difference <= self.error_threshold:
+            self.done_iterating = True
+            logger.debug("Convergence reached %f" % difference)
 
         else:
-            logger.debug("iteration continues")
+            if difference < 0:
+                logger.debug("iteration diverged")
+            logger.debug("iteration continues: %d iteration so far" % self.settings['id'])
 
 
         if self.done_iterating:
+            logger.debug("Total Iterations: %d" % self.settings['id'])
             self._ready_final_output(fs, min_crit_node, min_crit_index)
+
 
 
         logger.error('Current min criterion: %f, Prev '
@@ -298,10 +298,6 @@ class Converge(Stage):
         delete_key('transformed', context)
         self.id += 1
         update_key('id', self.id, context)
-
-        iteration_sofar = int(context['iteration_sofar']) + 1
-        update_key('iteration_sofar', iteration_sofar, context)
-
 
         return context
 
