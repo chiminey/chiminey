@@ -210,10 +210,15 @@ SFTP_STORAGE_PARAMS = {}
 
 
 CELERYBEAT_SCHEDULE = {
-      "test": {
-        "task": "bdphpcprovider.smartconnectorscheduler.hrmcstages.test",
+    "test": {
+        "task": "smartconnectorscheduler.test",
+        "schedule": timedelta(seconds=15)
+    },
+    "test": {
+        "task": "smartconnectorscheduler.run_contexts",
         "schedule": timedelta(seconds=30)
       },
+
     }
 
 djcelery.setup_loader()
