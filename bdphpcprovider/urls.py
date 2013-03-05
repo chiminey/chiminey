@@ -12,7 +12,8 @@ urlpatterns = patterns('bdphpcprovider.smartconnectorscheduler',
     url(r'^admin/', include(admin.site.urls)),
     (r'^hello/$', views.hello),
     url(r'^admin/', include(admin.site.urls)),
-    url(r'^output/(?P<group_id>\w+)/(?P<file_id>[\w.]+)/$', views.getoutput, name="getoutput")
+    url(r'^output/(?P<group_id>\w+)/(?P<file_id>[\w.]+)/$', views.getoutput, name="getoutput"),
+    url(r'^directive/(?P<directive_id>\d+)/$', 'views.test_directive')
 
 )
 urlpatterns += staticfiles_urlpatterns()

@@ -16,4 +16,5 @@ admin.site.register(models.ParameterName)
 admin.site.register(models.UserProfileParameterSet)
 admin.site.register(models.UserProfileParameter)
 admin.site.register(models.Stage)
+admin.site.register(models.Context)
 
