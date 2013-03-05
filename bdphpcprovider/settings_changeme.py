@@ -1,3 +1,4 @@
+import djcelery
 
 # Django settings for the SMRA project deployed under runserver
 
@@ -26,6 +27,11 @@ DATABASES = {
         'PORT': '',                      # Set to empty string for default. Not used with sqlite3.
     }
 }
+
+
+# Celery queue uses Django for persistence
+BROKER_TRANSPORT = 'django'
+
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
@@ -147,7 +153,9 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'south',
     'django_nose',
-    'storages'
+    'storages',
+    'djcelery',
+    'djkombu'
 
 ) + OUR_APPS
 
@@ -196,6 +204,19 @@ AUTH_PROFILE_MODULE = "smartconnectorscheduler.UserProfile"
 SFTP_STORAGE_HOST = ""
 SFTP_STORAGE_ROOT = ""
 SFTP_STORAGE_PARAMS = {}
+
+
+
+CELERYBEAT_SCHEDULE = {
+      "test": {
+        "task": "bdphpcprovider.smartconnectorscheduler.hrmcstages.test",
+        "schedule": timedelta(seconds=30)
+      },
+    }
+
+djcelery.setup_loader()
+
+
 
 
 
