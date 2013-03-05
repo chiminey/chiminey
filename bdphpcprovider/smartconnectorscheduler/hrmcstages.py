@@ -683,3 +683,6 @@ def clear_temp_files(context):
     print "Deleting temporary files ..."
     filesystem.delete_local_filesystem('default')
     print "done."
+
+def test_task():
+    print "Hello World"
