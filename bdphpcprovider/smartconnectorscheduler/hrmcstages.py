@@ -171,8 +171,12 @@ def update_key(key, value, context):
     """
     Updates key from the filesystem runinfo.sys file to a new values
     """
+
+
     filesystem = get_filesys(context)
     logger.debug("filesystem= %s" % filesystem)
+
+    #context[key] = value
 
     run_info_file = _load_file(filesystem, "default/runinfo.sys")
     logger.debug("run_info_file= %s" % run_info_file)
@@ -414,8 +418,16 @@ def put_file(file_url, content, user_settings):
         # FIXME: some of these parameters may come from url
         remote_fs_path = os.path.join(
             os.path.dirname(__file__), 'testing', 'remotesys').decode("utf8")
-        nci_settings = {'params': {'username': user_settings['nci_user'],
-            'password': user_settings['nci_password']},
+
+        if 'nci_private_key' in user_settings:
+            import paramiko
+            mykey = paramiko.RSAKey.from_private_key_file( user_settings['nci_private_key'])
+            params = {'pkey': mykey}
+        else:
+            params = {'username': user_settings['nci_user'],
+                      'password': user_settings['nci_password']}
+
+        nci_settings = {'params': params,
             'host': user_settings['nci_host'],
             'root': remote_fs_path}
         logger.debug("nci_settings=%s" % nci_settings)
@@ -464,8 +476,15 @@ def get_file(file_url, user_settings):
             os.path.dirname(__file__), 'testing', 'remotesys')
         logger.debug("remote_fs_path=%s" % remote_fs_path)
 
-        nci_settings = {'params': {'username': user_settings['nci_user'],
-            'password': user_settings['nci_password']},
+        if 'nci_private_key' in user_settings:
+            import paramiko
+            mykey = paramiko.RSAKey.from_private_key_file( user_settings['nci_private_key'])
+            params = {'pkey': mykey}
+        else:
+            params = {'username': user_settings['nci_user'],
+                      'password': user_settings['nci_password']}
+
+        nci_settings = {'params': params,
             'host': user_settings['nci_host'],
             'root': remote_fs_path}
         fs = NCIStorage(settings=nci_settings)

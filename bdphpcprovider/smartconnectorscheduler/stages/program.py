@@ -33,6 +33,7 @@ class ProgramStage(Stage):
     """
     Execute a program remotely
     """
+    command = ''
     def __init__(self, user_settings=None):
         self.user_settings = user_settings
         pass
@@ -69,13 +70,14 @@ class ProgramStage(Stage):
 
         # TODO: implement handling of config arguments
 
-        command = "%s %s %s > %s " % (program, param_paths[0], param_paths[1], param_paths[2])
+        self.command = "%s %s %s > %s " % (program, param_paths[0], param_paths[1], param_paths[2])
 
         # TODO: remotehost should be property of models.Platform, which can hold correct
         # ip address
 
+        logger.debug("Concatenating command %s" % self.command)
         ssh = sshconnector.open_connection(ip_address=context['remotehost'], settings=self.user_settings)
-        sshconnector.run_command(ssh, command, current_dir=self.user_settings[u'fsys'])
+        sshconnector.run_command(ssh, self.command, current_dir=self.user_settings[u'fsys'])
 
         logger.debug("context=%s" % context)
 
@@ -87,3 +89,4 @@ class ProgramStage(Stage):
         self.val += 1
         context['program_output'] = self.val
         return context
+

@@ -99,7 +99,7 @@ def start(args):
 
     if 'smart' in args:
         context = {'number_vm_instances': 8, 'threshold': [2],
-                   'number_dimensions':2, 'max_iteration':5}
+                   'number_dimensions':2, 'max_iteration':20}
         context['seed'] = 32
 
         HOME_DIR = os.path.expanduser("~")
@@ -116,7 +116,7 @@ def start(args):
             sys.exit()
 
         number_of_iterations = 2
-        error_threshold = 1
+        error_threshold = 0.005
         smart_conn = SmartConnector()
 
         if 'seed' in context:
