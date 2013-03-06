@@ -4,12 +4,14 @@ import fs
 
 import logging
 import logging.config
+from pprint import pformat
 
 from django.http import HttpResponse
 from django.template import Context, RequestContext, loader
 from django.conf import settings
 
 from bdphpcprovider.smartconnectorscheduler import mc
+from bdphpcprovider.smartconnectorscheduler import models
 from getresults import get_results
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
 
@@ -123,15 +125,16 @@ def hello(request):
     #start(['create', '-v','1'])
     return HttpResponse(template.render(context))
 
+
 def test_directive(request, directive_id):
-    """ 
-    Create directives to be processed 
+    """
+    Create example directives to be processed
     """
     if request.user.is_authenticated():
         directives = []
         platform = "nci"
         logger.debug("directive=%s" % directive_id)
-    
+
         if directive_id == "1":
             # Instantiate a template locally, then copy to remote
             directive_name = "copy"
@@ -200,18 +203,22 @@ def test_directive(request, directive_id):
          # make the system settings, available to initial stage and merged with run_settings
         system_settings = {u'system': u'settings'}
 
+        logger.debug("directive=%s" % directives)
+        new_run_contexts = []
         for (platform, directive_name, directive_args) in directives:
             logger.debug("directive_name=%s" % directive_name)
             logger.debug("directive_args=%s" % directive_args)
 
-            (run_settings, command_args) = hrmcstages.make_runcontext_for_directive(
+            (run_settings, command_args, run_context) = hrmcstages.make_runcontext_for_directive(
                 platform,
                 directive_name,
                 directive_args, system_settings)
+            new_run_contexts.append(str(run_context))
 
-    return HttpResponse(directive_id)
 
-        
+    return HttpResponse("runs= %s" % pformat(new_run_contexts))
+
+
 
 def getoutput(request, group_id, file_id):
     """ Return an output file identified by file_id"""

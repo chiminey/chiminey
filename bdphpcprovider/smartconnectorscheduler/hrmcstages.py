@@ -543,7 +543,7 @@ def make_runcontext_for_directive(platform, directive_name,
     command_for_directive = models.Command.objects.get(directive=directive, platform=platform)
     logger.debug("command_for_directive=%s" % command_for_directive)
     user_settings = retrieve_settings(profile)
-
+    logger.debug("user_settings=%s" % pformat(user_settings))
     # turn the user's arguments into real command arguments.
     command_args = _get_command_actual_args(
         directive_args, user_settings)
@@ -564,7 +564,7 @@ def make_runcontext_for_directive(platform, directive_name,
     run_context.save()
     logger.debug("command=%s new runcontext=%s" % (command_for_directive, run_context))
     # FIXME: only return command_args and context because they are needed for testcases
-    return (run_settings, command_args)
+    return (run_settings, command_args, run_context)
 
 
 def _make_new_run_context(stage, profile, run_settings):

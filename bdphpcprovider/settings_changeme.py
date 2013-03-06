@@ -209,6 +209,7 @@ SFTP_STORAGE_PARAMS = {}
 
 
 
+# Warning: celeryd is not safe for muliple workers when backed by sqlite
 CELERYBEAT_SCHEDULE = {
     "test": {
         "task": "smartconnectorscheduler.test",
