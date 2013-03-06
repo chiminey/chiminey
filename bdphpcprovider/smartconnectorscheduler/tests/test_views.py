@@ -449,7 +449,7 @@ class TestCommandContextLoop(TestCase):
             logger.debug("directive_name=%s" % directive_name)
             logger.debug("directive_args=%s" % directive_args)
 
-            (run_settings, command_args) = hrmcstages.make_runcontext_for_directive(
+            (run_settings, command_args, new_run_context) = hrmcstages.make_runcontext_for_directive(
                 platform,
                 directive_name,
                 directive_args, system_settings)
@@ -529,7 +529,7 @@ class TestCommandContextLoop(TestCase):
         self.PARAMS = {'userinfo1': 'param1val',
             'fsys': self.remote_fs_path,
             'nci_user': 'root',
-            'nci_password': 'dtofaam',
+            'nci_password': 'password',
             'nci_host': '127.0.0.1',
             'PASSWORD': 'password',
             'USER_NAME': 'root',
@@ -644,7 +644,7 @@ class TestCommandContextLoop(TestCase):
             logger.debug("directive_name=%s" % directive_name)
             logger.debug("directive_args=%s" % directive_args)
 
-            (run_settings, command_args) = hrmcstages.make_runcontext_for_directive(
+            (run_settings, command_args, new_run_context) = hrmcstages.make_runcontext_for_directive(
                 platform,
                 directive_name,
                 directive_args, system_settings)
