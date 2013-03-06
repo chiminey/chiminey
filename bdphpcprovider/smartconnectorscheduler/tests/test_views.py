@@ -333,6 +333,7 @@ class TestCommandContextLoop(TestCase):
             'fsys': self.remote_fs_path,
             'nci_user': 'root',
             'nci_password': 'password',
+            'nci_private_key': '/home/ec2-user/.ssh/nectar_key.pem',
             'nci_host': '127.0.0.1',
             }
         self.PARAMTYPE = {'userinfo1': models.ParameterName.STRING,
@@ -340,7 +341,8 @@ class TestCommandContextLoop(TestCase):
             'fsys': models.ParameterName.STRING,
             'nci_user': models.ParameterName.STRING,
             'nci_password': models.ParameterName.STRING,
-            'nci_host': models.ParameterName.STRING,}
+            'nci_private_key': models.ParameterName.STRING,
+            'nci_host': models.ParameterName.STRING}
         param_set = models.UserProfileParameterSet.objects.create(user_profile=profile,
             schema=sch)
         for k, v in self.PARAMS.items():
@@ -534,6 +536,7 @@ class TestCommandContextLoop(TestCase):
             'nci_password': 'dtofaam',
             'nci_host': '127.0.0.1',
             'PASSWORD': 'password',
+            'nci_private_key': '/home/ec2-user/.ssh/nectar_key.pem',
             'USER_NAME': 'root',
             'PRIVATE_KEY': '',
             }
@@ -543,6 +546,7 @@ class TestCommandContextLoop(TestCase):
             'nci_password': models.ParameterName.STRING,
             'nci_host': models.ParameterName.STRING,
             'PASSWORD': models.ParameterName.STRING,
+            'nci_private_key': models.ParameterName.STRING,
             'USER_NAME': models.ParameterName.STRING,
             'PRIVATE_KEY': models.ParameterName.STRING}
         param_set = models.UserProfileParameterSet.objects.create(user_profile=profile,
@@ -594,6 +598,9 @@ class TestCommandContextLoop(TestCase):
         self.remote_fs.save("remote/greetaddon.txt",
             ContentFile("(remotely)"))
 
+        self.remote_fs.save("remote/greetresult.txt",
+                            ContentFile("Hello World (remotely)"))
+
         platform = "nci"
 
         directives = []
@@ -633,6 +640,12 @@ class TestCommandContextLoop(TestCase):
             []])
 
         directives.append((platform, directive_name, directive_args))
+
+        from  bdphpcprovider.smartconnectorscheduler import sshconnector
+        from bdphpcprovider.smartconnectorscheduler.stages.program import ProgramStage
+
+        flexmock(sshconnector).should_receive('open_connection')
+        flexmock(sshconnector).should_receive('run_command')
 
         test_info = []
         context = {}
@@ -674,6 +687,7 @@ class TestCommandContextLoop(TestCase):
 
         logger.debug("test_info = %s" % json.dumps(test_info, indent=4))
 
+
         test1 = test_info[0]
         logger.debug("test1=%s" % test1)
         test2 = test_info[1]
@@ -688,8 +702,10 @@ class TestCommandContextLoop(TestCase):
         logger.debug(res)
         self.assertEquals(res, "Hello World(remotely)")
 
+        program_cmd = str(ProgramStage.command)
+        concatenation_paths = "cat %s/../testing/remotesys/remote/greet.txt %s/../testing/remotesys/remote/greetaddon.txt > %s/../testg/remotesys/remote/greetresult.txt " % (__file__, __file__, __file__)
+        logger.debug("Program Command %s" %  program_cmd)
+        logger.debug("Paths %s" %concatenation_paths)
 
-
-
-
+        self.assertEquals(program_cmd, concatenation_paths)
 
