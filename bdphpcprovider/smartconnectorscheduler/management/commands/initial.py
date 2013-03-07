@@ -3,7 +3,9 @@ import os
 import logging
 import logging.config
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import Permission
+
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
 from django.core.management.base import BaseCommand
@@ -26,18 +28,39 @@ class Command(BaseCommand):
     help = 'Setup an initial task structure.'
 
     def setup(self):
+        confirm = raw_input("This will ERASE and reset the database.  Are you sure [Yes|No]")
+        if confirm != "Yes":
+            print "action aborted by user"
+            return
 
         self.remote_fs_path = os.path.join(
-            os.path.dirname(__file__), '..', '..', 'testing', 'remotesys/').decode("utf8")
+            'bdphpcprovider', 'smartconnectorscheduler', 'testing', 'remotesys/').decode("utf8")
         logger.debug("self.remote_fs_path=%s" % self.remote_fs_path)
         self.remote_fs = FileSystemStorage(location=self.remote_fs_path)
 
-        # Create a user and profile
-        self.user, _ = User.objects.get_or_create(username="username1",
-            defaults={"password": "password"})
-        logger.debug("user=%s" % self.user)
-        profile, _ = models.UserProfile.objects.get_or_create(
-                      user=self.user)
+        self.group, _ = Group.objects.get_or_create(name="standarduser")
+        self.group.save()
+
+        for model_name in ('userprofileparameter', 'userprofileparameterset'):
+            #add_model = Permission.objects.get(codename="add_%s" % model_name)
+            change_model = Permission.objects.get(codename="change_%s" % model_name)
+            #delete_model = Permission.objects.get(codename="delete_%s" % model_name)
+            #self.group.permissions.add(add_model)
+            self.group.permissions.add(change_model)
+            #self.group.permissions.add(delete_model)
+
+        self.group.save()
+
+        # # Create a user and profile
+        # self.user, _ = User.objects.get_or_create(username="username1",
+        #     defaults={"password": "password"})
+        # self.user.groups.add(self.group)
+        # self.user.save()
+
+        # logger.debug("user=%s" % self.user)
+        # profile, _ = models.UserProfile.objects.get_or_create(
+        #               user=self.user)
+
         # Create the schemas for template parameters or config info
         # specfied in directive arguments
         for ns, name, desc in [(models.UserProfile.PROFILE_SCHEMA_NS,
@@ -93,17 +116,6 @@ class Command(BaseCommand):
                 name=name,
                 type=param_type)
 
-        # Setup the schema for user configuration information (kept in profile)
-        self.PARAMS = {'userinfo1': 'param1val',
-            'userinfo2': 42,
-            'fsys': self.remote_fs_path,
-            'nci_user': 'root',
-            'nci_password': 'changemepassword',  # NB: change this password
-            'nci_host': '127.0.0.1',
-            'PASSWORD': 'changemepassword',   # NB: change this password
-            'USER_NAME': 'root',
-            'PRIVATE_KEY': ''
-            }
         self.PARAMTYPE = {'userinfo1': models.ParameterName.STRING,
             'userinfo2': models.ParameterName.NUMERIC,
             'fsys': models.ParameterName.STRING,
@@ -113,15 +125,10 @@ class Command(BaseCommand):
             'PASSWORD': models.ParameterName.STRING,
             'USER_NAME': models.ParameterName.STRING,
             'PRIVATE_KEY': models.ParameterName.STRING}
-        param_set, _ = models.UserProfileParameterSet.objects.get_or_create(user_profile=profile,
-            schema=user_schema)
-        for k, v in self.PARAMS.items():
+        for k, v in self.PARAMTYPE.items():
             param_name, _ = models.ParameterName.objects.get_or_create(schema=user_schema,
                 name=k,
                 type=self.PARAMTYPE[k])
-            models.UserProfileParameter.objects.get_or_create(name=param_name,
-                paramset=param_set,
-                value=v)
 
         # Make a platform for the commands
         platform, _ = models.Platform.objects.get_or_create(name="nci")
