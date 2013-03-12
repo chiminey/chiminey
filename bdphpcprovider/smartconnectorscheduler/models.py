@@ -392,6 +392,7 @@ class ContextParameterSet(models.Model):
 
     class Meta:
         ordering = ["-ranking"]
+        app_label="smartconnectorscheduler"
 
     def __unicode__(self):
         res = "schema=%s\n" % self.schema

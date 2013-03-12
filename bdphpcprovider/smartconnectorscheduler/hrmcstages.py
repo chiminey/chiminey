@@ -473,8 +473,10 @@ def get_file(file_url, user_settings):
     elif scheme == "hpc":
         logger.debug("getting from hpc")
         # TODO: remote_fs_path should be from user settings
-        remote_fs_path = os.path.join(
-            os.path.dirname(__file__), 'testing', 'remotesys')
+        remote_fs_path = user_settings['fsys']
+
+        #os.path.join(
+        #    os.path.dirname(__file__), 'testing', 'remotesys')
         logger.debug("remote_fs_path=%s" % remote_fs_path)
 
         if 'nci_private_key' in user_settings:
@@ -532,8 +534,9 @@ def _get_remote_path(file_url, user_settings):
     elif scheme == "hpc":
         logger.debug("getting from hpc")
         # TODO: remote_fs_path should be from user settings
-        remote_fs_path = os.path.join(
-            os.path.dirname(__file__), 'testing', 'remotesys')
+#        remote_fs_path = os.path.join(
+#            os.path.dirname(__file__), 'testing', 'remotesys')
+        remote_fs_path = user_settings['fsys']
         logger.debug("remote_fs_path=%s" % remote_fs_path)
         remote_path = os.path.join(remote_fs_path, mypath)
 
@@ -548,11 +551,14 @@ def _get_remote_path(file_url, user_settings):
 
 
 def make_runcontext_for_directive(platform, directive_name,
-    directive_args, initial_settings):
+    directive_args, initial_settings, username):
     """
     Create a new runcontext with the commmand equivalent to the directive on the platform.
     """
-    user = User.objects.get(username="iman")  # FIXME: pass in username
+
+    #user = User.objects.get(username="iman")  # FIXME: pass in username
+    user = User.objects.get(username=username)  # FIXME: pass in username
+
     profile = models.UserProfile.objects.get(user=user)
     platform = models.Platform.objects.get(name=platform)
 
