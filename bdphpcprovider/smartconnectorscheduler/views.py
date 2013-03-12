@@ -227,7 +227,7 @@ def test_directive(request, directive_id):
             (run_settings, command_args, run_context) = hrmcstages.make_runcontext_for_directive(
                 platform,
                 directive_name,
-                directive_args, system_settings)
+                directive_args, system_settings, request.user.username)
             new_run_contexts.append(str(run_context))
 
 
