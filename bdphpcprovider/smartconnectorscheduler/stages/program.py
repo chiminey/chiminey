@@ -25,6 +25,8 @@ import logging.config
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.smartconnectorscheduler import sshconnector
+from bdphpcprovider.smartconnectorscheduler import models
+
 
 logger = logging.getLogger(__name__)
 
@@ -68,16 +70,22 @@ class ProgramStage(Stage):
         logger.debug("program=%s" % program)
         logger.debug("remote paths=%s" % param_paths)
 
-        # TODO: implement handling of config arguments
 
-        self.command = "%s %s %s > %s " % (program, param_paths[0], param_paths[1], param_paths[2])
+        logger.debug("context[u'platform'] = %s" % context[u'platform'])
+        platform = models.Platform.objects.get(id=context[u'platform'])
+        logger.debug("platform=%s" % platform)
 
-        # TODO: remotehost should be property of models.Platform, which can hold correct
-        # ip address
+        if platform.name == 'nci':
+            # TODO: implement handling of config arguments
+            command = "%s %s %s > %s " % (program, param_paths[0], param_paths[1], param_paths[2])
+            # TODO: remotehost should be property of models.Platform, which can hold correct
+            # ip address
+            ssh = sshconnector.open_connection(ip_address=context['remotehost'], settings=self.user_settings)
+            sshconnector.run_command(ssh, command, current_dir=self.user_settings[u'fsys'])
+        else:
+            raise NotImplementedError("ProgramStage not supported for this platform")
 
-        logger.debug("Concatenating command %s" % self.command)
-        ssh = sshconnector.open_connection(ip_address=context['remotehost'], settings=self.user_settings)
-        sshconnector.run_command(ssh, self.command, current_dir=self.user_settings[u'fsys'])
+
 
         logger.debug("context=%s" % context)
 

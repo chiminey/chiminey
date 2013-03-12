@@ -1585,7 +1585,7 @@ class ConvergeStageTests(unittest.TestCase):
         fs.create_under_dir(iter_inputdir, "nodeoutput", f3a)
 
         print("fs=%s" % fs)
-        context = {'filesys': fs, 'iteration_sofar': 0}
+        context = {'filesys': fs, 'max_iteration': 2}
         print("context=%s" % context)
         res = s1.triggered(context)
         print res
