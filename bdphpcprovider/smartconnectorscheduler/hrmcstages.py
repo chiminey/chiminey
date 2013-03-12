@@ -29,6 +29,7 @@ import json
 import os
 import sys
 import re
+from pprint import pformat
 
 from django.utils.importlib import import_module
 from django.core.exceptions import ImproperlyConfigured
@@ -429,7 +430,7 @@ def put_file(file_url, content, user_settings):
 
         nci_settings = {'params': params,
             'host': user_settings['nci_host'],
-            'root': remote_fs_path}
+            'root': remote_fs_path + "/"}
         logger.debug("nci_settings=%s" % nci_settings)
         fs = NCIStorage(settings=nci_settings)
          # FIXME: does this overwrite?
@@ -487,9 +488,15 @@ def get_file(file_url, user_settings):
         nci_settings = {'params': params,
             'host': user_settings['nci_host'],
             'root': remote_fs_path}
+
         fs = NCIStorage(settings=nci_settings)
-        content = fs.open(mypath).read()
+        logger.debug("fs=%s" % fs)
+        logger.debug("mypath=%s"% mypath)
+        fp = fs.open(mypath)
+        logger.debug("fp opened")
+        content = fp.read()
         logger.debug("content=%s" % content)
+
     elif scheme == "tardis":
         return "a={{a}} b={{b}}"
         raise NotImplementedError("tardis scheme not implemented")
@@ -541,39 +548,46 @@ def _get_remote_path(file_url, user_settings):
 
 
 def make_runcontext_for_directive(platform, directive_name,
-    directive_args, context):
+    directive_args, initial_settings):
     """
     Create a new runcontext with the commmand equivalent to the directive on the platform.
     """
-    user = User.objects.get(username="username1")  # FIXME: pass in username
+    user = User.objects.get(username="iman")  # FIXME: pass in username
     profile = models.UserProfile.objects.get(user=user)
     platform = models.Platform.objects.get(name=platform)
+
+    run_settings = dict(initial_settings)  # we may share initial_settings
+    run_settings[u'platform'] = platform.id
+
     directive = models.Directive.objects.get(name=directive_name)
     command_for_directive = models.Command.objects.get(directive=directive, platform=platform)
     logger.debug("command_for_directive=%s" % command_for_directive)
     user_settings = retrieve_settings(profile)
-
+    logger.debug("user_settings=%s" % pformat(user_settings))
     # turn the user's arguments into real command arguments.
     command_args = _get_command_actual_args(
         directive_args, user_settings)
     logger.debug("command_args=%s" % command_args)
     # prepare a context for the command to run for this user
-    context.update(_make_context_for_command(command_for_directive,
-        command_args, context))
-    logger.debug("updated context=%s" % context)
+
+    run_settings = _make_run_settings_for_command(command_for_directive,
+        command_args, run_settings)
+
+    logger.debug("updated run_settings=%s" % run_settings)
     # TODO: each run_context contains one stage and the only way to get a sequence of
     # is to use a composite.  run_context is built from only one directive so can't execute
     # multiple directives and have to create a new run_context for each new directive that a
     # user needs to run.  There is no "directive sequence" model.
-    run_context = _make_new_run_context(command_for_directive.stage, profile, context)
+    run_context = _make_new_run_context(command_for_directive.stage, profile, run_settings)
+    logger.debug("run_context =%s" % run_context)
     run_context.current_stage = command_for_directive.stage
     run_context.save()
-    logger.debug("runcontext=%s" % run_context)
+    logger.debug("command=%s new runcontext=%s" % (command_for_directive, run_context))
     # FIXME: only return command_args and context because they are needed for testcases
-    return (context, command_args, run_context)
+    return (run_settings, command_args, run_context)
 
 
-def _make_new_run_context(stage, profile, context):
+def _make_new_run_context(stage, profile, run_settings):
     """
     Make a new context  for a user to execute stages based on initial context
     """
@@ -586,7 +600,7 @@ def _make_new_run_context(stage, profile, context):
     models.ContextParameterSet.objects.create(context=run_context,
         schema=context_schema,
         ranking=0)
-    run_context.update_context(context)
+    run_context.update_run_settings(run_settings)
     return run_context
 
 
@@ -612,8 +626,8 @@ def process_all_contexts():
             profile = run_context.owner
             logger.debug("profile=%s" % profile)
 
-            cont = run_context.get_context()
-            logger.debug("retrieved cont=%s" % cont)
+            run_settings = run_context.get_context()
+            logger.debug("retrieved run_settings=%s" % run_settings)
 
             user_settings = retrieve_settings(profile)
             logger.debug("user_settings=%s" % user_settings)
@@ -623,21 +637,22 @@ def process_all_contexts():
             # again before they are serialised.
 
             # get the actual stage object
-            stage = safe_import(current_stage.package, [], {'user_settings': user_settings})  # obviously need to cache this
+            stage = safe_import(current_stage.package, [],
+             {'user_settings': user_settings})  # obviously need to cache this
             logger.debug("stage=%s", stage)
 
-            if stage.triggered(cont):
+            if stage.triggered(run_settings):
                 logger.debug("triggered")
-                stage.process(cont)
-                cont = stage.output(cont)
-                logger.debug("updated cont=%s" % cont)
-                run_context.update_context(cont)
-                logger.debug("cont=%s" % cont)
+                stage.process(run_settings)
+                run_settings = stage.output(run_settings)
+                logger.debug("updated run_settings=%s" % run_settings)
+                run_context.update_run_settings(run_settings)
+                logger.debug("run_settings=%s" % run_settings)
             else:
                 logger.debug("not triggered")
 
             # advance to the next stage
-            current_stage = run_context.current_stage.get_next_stage(cont)
+            current_stage = run_context.current_stage.get_next_stage(run_settings)
             if not current_stage:
                 done = run_context
                 break
@@ -646,18 +661,18 @@ def process_all_contexts():
             run_context.current_stage = current_stage
             run_context.save()
         if done:
-            test_info.append(cont)
+            test_info.append(run_settings)
             run_context.delete()
     logger.debug("finished main loop")
     return test_info
 
 
-def _make_context_for_command(command, command_args, context):
+def _make_run_settings_for_command(command, command_args, run_settings):
     """
-    Create a context for the command to execute with
+    Create run_settings for the command to execute with
     """
-    if u'transitions' in context:
-        curr_trans = json.loads(context[u'transitions'])
+    if u'transitions' in run_settings:
+        curr_trans = json.loads(run_settings[u'transitions'])
         logger.debug("curr_trans = %s" % curr_trans)
     else:
         curr_trans = {}
@@ -666,18 +681,18 @@ def _make_context_for_command(command, command_args, context):
     for (k, v) in command_args:
         logger.debug("k=%s,v=%s" % (k, v))
         if k:
-            context[k] = v
+            run_settings[k] = v
         else:
             key = u"file%s" % arg_num
             arg_num += 1
-            context[key] = v
-    logger.debug("context=%s" % context)
-    transitions = models.make_stage_transitions(command.stage, context)
+            run_settings[key] = v
+    logger.debug("run_settings=%s" % run_settings)
+    transitions = models.make_stage_transitions(command.stage)
     logger.debug("transitions=%s" % transitions)
     transitions.update(curr_trans)
-    context[u'transitions'] = json.dumps(transitions)
-    logger.debug("context =  %s" % context)
-    return context
+    run_settings[u'transitions'] = json.dumps(transitions, ensure_ascii=True)
+    logger.debug("run_settings =  %s" % run_settings)
+    return run_settings
 
 
 def clear_temp_files(context):
@@ -688,3 +703,6 @@ def clear_temp_files(context):
     print "Deleting temporary files ..."
     filesystem.delete_local_filesystem('default')
     print "done."
+
+def test_task():
+    print "Hello World"

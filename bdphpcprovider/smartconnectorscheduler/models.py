@@ -11,9 +11,11 @@ logger = logging.getLogger(__name__)
 
 
 class UserProfile(models.Model):
-    user = models.ForeignKey(User, unique=True)
-    company = models.CharField(max_length=255, blank=True, null=True)
-    nickname = models.CharField(max_length=255, blank=True, null=True)
+    user = models.ForeignKey(User, unique=True, help_text="Information about the user")
+    company = models.CharField(max_length=255, blank=True, null=True, help_text="Company of the user")
+    nickname = models.CharField(max_length=255, blank=True, null=True, help_text="User's nickname")
+
+    PROFILE_SCHEMA_NS = "http://www.rmit.edu.au/schemas/userprofile1"
 
     def __unicode__(self):
         return self.user.username
@@ -28,8 +30,8 @@ class Schema(models.Model):
         :attribute description: displayable text describing the schema
 
     """
-    namespace = models.URLField(verify_exists=False, max_length=400)
-    description = models.CharField(max_length=80, default="")
+    namespace = models.URLField(verify_exists=False, max_length=400, help_text="A URI that uniquely ids the schema")
+    description = models.CharField(max_length=80, default="", help_text="The description of this schema")
     name = models.SlugField(default="", help_text="A unique identifier for the schema")
 
     class Meta:
@@ -51,7 +53,7 @@ class ParameterName(models.Model):
         :attribute help_text: text that appears in admin tool
         :attribute max_length: maximum length for STRING types
     """
-    schema = models.ForeignKey(Schema)
+    schema = models.ForeignKey(Schema, help_text="Schema that contains this parameter")
     name = models.CharField(max_length=50)
     # TODO: need to do this so that each paramter can appear only once
     # in each schema
@@ -149,7 +151,7 @@ class UserProfileParameter(models.Model):
     """
     name = models.ForeignKey(ParameterName, verbose_name="Parameter Name")
     paramset = models.ForeignKey(UserProfileParameterSet, verbose_name="Parameter Set")
-    value = models.TextField(verbose_name="Parameter Value", help_text="The Value of this parameter")
+    value = models.TextField(null=True, blank=True, verbose_name="Parameter Value", help_text="The Value of this parameter")
     #ranking = models.IntegerField(default=0,help_text="Describes the relative ordering of parameters when displaying: the larger the number, the more prominent the results")
 
     def __unicode__(self):
@@ -167,18 +169,18 @@ class UserProfileParameter(models.Model):
         ordering = ("name",)
 
 
-def make_stage_transitions(stage, context):
+def make_stage_transitions(stage):
     """ Starting at stage, traverse the whole composite stage and record
     and return the path (assuming no branches).  TODO: branches?
     """
     # FIXME: should be in models.Stage?
     if Stage.objects.filter(parent=stage).count():
-        return _make_stage_trans_recur(stage, context, 0)
+        return _make_stage_trans_recur(stage, 0)
     else:
         return {'%s' % stage.id: 0}
 
 
-def _make_stage_trans_recur(stage, context, parent_next_sibling_id):
+def _make_stage_trans_recur(stage, parent_next_sibling_id):
     # TODO: test this carefully
     logger.debug("mps stage=%s" % stage)
     transition = {}
@@ -190,7 +192,7 @@ def _make_stage_trans_recur(stage, context, parent_next_sibling_id):
         value = childs[i + 1].id if i < len(childs) - 1 else -1
         transition[key] = value
         logger.debug("%s -> %s" % (key, value))
-        subtransition = _make_stage_trans_recur(child, context, value)
+        subtransition = _make_stage_trans_recur(child, value)
         logger.debug("subtransiton=%s", subtransition)
         transition.update(subtransition)
 
@@ -255,12 +257,18 @@ class Platform(models.Model):
     """
     name = models.CharField(max_length=256)
 
+    def __unicode__(self):
+        return u"Platform:%s" % (self.name)
+
 
 class Directive(models.Model):
     """
     Holds an platform independent operation provided by an API
     """
     name = models.CharField(max_length=256)
+
+    def __unicode__(self):
+        return u"Directive:%s" % (self.name)
 
 
 class Command(models.Model):
@@ -271,6 +279,9 @@ class Command(models.Model):
     directive = models.ForeignKey(Directive)
     stage = models.ForeignKey(Stage, null=True, blank=True)
     platform = models.ForeignKey(Platform)
+
+    def __unicode__(self):
+        return u"Command:%s %s %s" % (self.directive, self.stage, self.platform)
 
 
 class DirectiveArgSet(models.Model):
@@ -300,7 +311,7 @@ class Context(models.Model):
     """
     owner = models.ForeignKey(UserProfile)
     current_stage = models.ForeignKey(Stage)
-    CONTEXT_SCHEMA_NS = "tardis.edu.au/schemas/context/schema"
+    CONTEXT_SCHEMA_NS = "http://rmit.edu.au/schemas/context1"
 
     def get_context(self):
         """
@@ -311,9 +322,9 @@ class Context(models.Model):
             context[param.name.name] = param.getValue()
         return context
 
-    def update_context(self, updated_context):
+    def update_run_settings(self, run_settings):
         """
-            update the context with new values from a map
+            update the run_settings associated with the context with new values from a map
         """
 
         sch = Schema.objects.get(namespace=self.CONTEXT_SCHEMA_NS)
@@ -321,7 +332,7 @@ class Context(models.Model):
         # FIXME: assumes that each context has only one ContextParameterSet
         try:
             paramset = ContextParameterSet.objects.get(
-                schema=sch)
+                schema=sch, context=self)
         except ContextParameterSet.DoesNotExist:
             logger.exception("Could not find parameterset for context")
             raise
@@ -331,13 +342,13 @@ class Context(models.Model):
 
         logger.debug("paramset=%s" % paramset)
         #TODO: what if entries in original context have been deleted?
-        for k, v in updated_context.items():
+        for k, v in run_settings.items():
             logger.debug("k=%s,v=%s" % (k, v))
             try:
                 pn = ParameterName.objects.get(schema=sch,
                     name=k)
             except ParameterName.DoesNotExist:
-                msg = "Unknown parameter '%s' for context '%s'" % (k, updated_context)
+                msg = "Unknown parameter '%s' for context '%s'" % (k, run_settings)
                 logger.exception(msg)
                 raise InvalidInputError(msg)
             try:
@@ -345,15 +356,30 @@ class Context(models.Model):
                     name__name=k, paramset=paramset)
             except ContextParameter.DoesNotExist:
                 # TODO: need to check type
+                logger.debug("new param =%s" % pn)
                 cp = ContextParameter.objects.create(name=pn,
                     paramset=paramset, value=v)
             except MultipleObjectsReturned:
                 logger.exception("Found duplicate entry in ContextParamterSet")
                 raise
             else:
+                logger.debug("updating %s to %s" % (cp.name, v))
                 # TODO: need to check type
                 cp.value = v
                 cp.save()
+
+    def __unicode__(self):
+        if self.current_stage:
+            res = self.current_stage.name
+        else:
+            res = "None"
+        logger.debug("res=%s" % res)
+        res2 = ContextParameterSet.objects.filter(context=self)
+        logger.debug("res2=%s" % res2)
+
+        return u"RunCommand:owner=%s\nstage=%s\nparameters=%s\n" % (self.owner,
+             res, [unicode(x) for x in res2]
+            )
 
 
 class ContextParameterSet(models.Model):
@@ -366,6 +392,11 @@ class ContextParameterSet(models.Model):
 
     class Meta:
         ordering = ["-ranking"]
+
+    def __unicode__(self):
+        res = "schema=%s\n" % self.schema
+        res += ('\n'.join([str(cp) for cp in ContextParameter.objects.filter(paramset=self)]))
+        return res
 
 
 class CommandArgument(models.Model):
@@ -380,11 +411,11 @@ class CommandArgument(models.Model):
 class ContextParameter(models.Model):
     name = models.ForeignKey(ParameterName, verbose_name="Parameter Name")
     paramset = models.ForeignKey(ContextParameterSet, verbose_name="Parameter Set")
-    value = models.TextField(verbose_name="Parameter Value", help_text="The Value of this parameter")
+    value = models.TextField(null=True, blank=True, verbose_name="Parameter Value", help_text="The Value of this parameter")
     #ranking = models.IntegerField(default=0,help_text="Describes the relative ordering of parameters when displaying: the larger the number, the more prominent the results")
 
     def __unicode__(self):
-        return u'%s %s %s' % (self.name, self.paramset, self.value)
+        return u'%s =  %s' % (self.name, self.value)
 
     def getValue(self,):
         try:

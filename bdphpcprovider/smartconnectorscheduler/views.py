@@ -2,12 +2,20 @@
 import os
 import fs
 
+import logging
+import logging.config
+from pprint import pformat
+
 from django.http import HttpResponse
 from django.template import Context, RequestContext, loader
 from django.conf import settings
 
 from bdphpcprovider.smartconnectorscheduler import mc
+from bdphpcprovider.smartconnectorscheduler import models
 from getresults import get_results
+from bdphpcprovider.smartconnectorscheduler import hrmcstages
+
+logger = logging.getLogger(__name__)
 
 
 def index(request):
@@ -116,6 +124,115 @@ def hello(request):
     #print_greeting("Iman")
     #start(['create', '-v','1'])
     return HttpResponse(template.render(context))
+
+
+def test_directive(request, directive_id):
+    """
+    Create example directives to be processed
+    """
+    post = request.POST
+
+    #username = post['username']
+    #password = post['password']
+
+    #ok = Users.authenticate(username=username, password=password)
+    #if ok:
+
+    if request.user.is_authenticated():
+        directives = []
+        platform = "nci"
+        logger.debug("directive=%s" % directive_id)
+
+        if directive_id == "1":
+            # Instantiate a template locally, then copy to remote
+            directive_name = "copy"
+            logger.debug("%s" % directive_name)
+            directive_args = []
+            directive_args.append(
+                ['local://12.0.0.1/local/greet.txt',
+                    ['http://rmit.edu.au/schemas/greeting/salutation',
+                        ('salutation', 'Hello')]])
+            directive_args.append(['hpc://ncitest.org/remote/greet.txt', []])
+            directives.append((platform, directive_name, directive_args))
+
+        if directive_id == "2":
+            # concatenate that file and another file (already remote) to form result
+            directive_args = []
+            directive_name = "program"
+            logger.debug("%s" % directive_name)
+            directive_args.append(['',
+                ['http://rmit.edu.au/schemas/program', ('program', 'cat'),
+                ('remotehost', '127.0.0.1')]])
+
+            directive_args.append(['hpc://ncitest.org/remote/greet.txt',
+                []])
+            directive_args.append(['hpc://ncitest.org/remote/greetaddon.txt',
+                []])
+            directive_args.append(['hpc://ncitest.org/remote/greetresult.txt',
+                []])
+
+            directives.append((platform, directive_name, directive_args))
+
+        if directive_id == "3":
+            # transfer result back locally.
+            directive_name = "copy"
+            logger.debug("%s" % directive_name)
+            directive_args = []
+            directive_args.append(['hpc://ncitest.org/remote/greetresult.txt',
+                []])
+            directive_args.append(['local://12.0.0.1/local/finalresult.txt',
+                []])
+
+            directives.append((platform, directive_name, directive_args))
+
+        if directive_id == "4":
+            directive_name = "smartconnector1"
+            logger.debug("%s" % directive_name)
+            directive_args = []
+            # Template from mytardis with corresponding metdata brought across
+            directive_args.append(['tardis://iant@tardis.edu.au/datafile/15', []])
+            # Template on remote storage with corresponding multiple parameter sets
+            directive_args.append(['hpc://iant@nci.edu.au/input/input.txt',
+                ['http://tardis.edu.au/schemas/hrmc/dfmeta/', ('a', 3), ('b', 4)],
+                ['http://tardis.edu.au/schemas/hrmc/dfmeta/', ('a', 1), ('b', 2)],
+                ['http://tardis.edu.au/schemas/hrmc/dfmeta2/', ('c', 'hello')]])
+            # A file (template with no variables)
+            directive_args.append(['hpc://iant@nci.edu.au/input/file.txt',
+                []])
+            # A set of commands
+            directive_args.append(['', ['http://tardis.edu.au/schemas/hrmc/create',
+                ('num_nodes', 5), ('iseed', 42)]])
+            # An Example of how a nci script might work.
+            directive_args.append(['',
+                ['http://nci.org.au/schemas/hrmc/custom_command/', ('command', 'ls')]])
+
+            directives.append((platform, directive_name, directive_args))
+
+        if directive_id == "5":
+            directive_name = "smartconnectorconfigure"
+            logger.debug("%s" % directive_name)
+            directive_args = []
+            directives.append((platform, directive_name, directive_args))
+
+         # make the system settings, available to initial stage and merged with run_settings
+        system_settings = {u'system': u'settings'}
+
+        logger.debug("directive=%s" % directives)
+        new_run_contexts = []
+        for (platform, directive_name, directive_args) in directives:
+            logger.debug("directive_name=%s" % directive_name)
+            logger.debug("directive_args=%s" % directive_args)
+
+            #Directive are translated t o commands in make_runcontext_for_directive
+            (run_settings, command_args, run_context) = hrmcstages.make_runcontext_for_directive(
+                platform,
+                directive_name,
+                directive_args, system_settings)
+            new_run_contexts.append(str(run_context))
+
+
+    return HttpResponse("runs= %s" % pformat(new_run_contexts))
+
 
 
 def getoutput(request, group_id, file_id):
