@@ -207,19 +207,21 @@ SFTP_STORAGE_HOST = ""
 SFTP_STORAGE_ROOT = ""
 SFTP_STORAGE_PARAMS = {}
 
-
-
+#CELERYBEAT_SCHEDULER="djcelery.schedulers.DatabaseScheduler"
 # Warning: celeryd is not safe for muliple workers when backed by sqlite
 CELERYBEAT_SCHEDULE = {
     "test": {
         "task": "smartconnectorscheduler.test",
-        "schedule": timedelta(seconds=15)
+        "schedule": timedelta(seconds=15),
     },
-    "test": {
+    #"test2": {
+    #    "task": "smartconnectorscheduler.run_contexts",
+    #    "schedule": timedelta(seconds=30)
+    #  },
+    "run_contexts": {
         "task": "smartconnectorscheduler.run_contexts",
-        "schedule": timedelta(seconds=30)
-      },
-
+        "schedule": timedelta(seconds=10)
+        },
     }
 
 djcelery.setup_loader()

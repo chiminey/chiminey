@@ -326,7 +326,15 @@ class TestCommandContextLoop(TestCase):
             u'null_output': models.ParameterName.NUMERIC,
             u'parallel_output': models.ParameterName.NUMERIC,
             u'system': models.ParameterName.STRING,
-            u'platform': models.ParameterName.NUMERIC}.items():
+            u'platform': models.ParameterName.NUMERIC,
+            u'program_success': models.ParameterName.STRING,
+            u'null_output': models.ParameterName.NUMERIC,
+            u'parallel_output': models.ParameterName.NUMERIC,
+            u'null_number': models.ParameterName.NUMERIC,
+            u'parallel_number': models.ParameterName.NUMERIC,
+            u'null_index': models.ParameterName.NUMERIC,
+            u'parallel_index': models.ParameterName.NUMERIC,
+            }.items():
             models.ParameterName.objects.create(schema=context_schema,
                 name=name,
                 type=param_type)
@@ -435,7 +443,7 @@ class TestCommandContextLoop(TestCase):
             []])
         # A set of commands
         directive_args.append(['', ['http://tardis.edu.au/schemas/hrmc/create',
-            ('num_nodes', 5), ('iseed', 42)]])
+            ('num_nodes', 5), ('iseed', 42), ('null_number', 4), ('parallel_number', 1)]])
         # An Example of how a nci script might work.
         directive_args.append(['',
             ['http://nci.org.au/schemas/hrmc/custom_command/', ('command', 'ls')]])
@@ -452,7 +460,7 @@ class TestCommandContextLoop(TestCase):
             (run_settings, command_args, new_run_context) = hrmcstages.make_runcontext_for_directive(
                 platform,
                 directive_name,
-                directive_args, system_settings)
+                directive_args, system_settings, self.user.username)
             test_initial_run_settings.append((directive_name, run_settings))
 
             # do all the processing of stages for all available contexts for all users.
@@ -462,13 +470,14 @@ class TestCommandContextLoop(TestCase):
         self.assertEquals(sorted(test_initial_run_settings[0][1].keys()),
             sorted(
             [u'command', u'file0', u'file1', u'file2',
-            u'iseed', u'num_nodes', u'platform', u'transitions', u'system']))
+            u'iseed', u'num_nodes', u'platform', u'transitions', u'system',
+            u'null_number', u'parallel_number']))
         # TODO: testing values() is difficult as they files have random strings
 
         logger.debug("test_final_run_settings = %s" % test_final_run_settings)
 
         self.assertEquals(test_final_run_settings[0][0][u'null_output'], 4)
-        self.assertEquals(test_final_run_settings[0][0][u'parallel_output'], 2)
+        self.assertEquals(test_final_run_settings[0][0][u'parallel_output'], 1)
         logger.debug("context =  %s" % test_final_run_settings[0][0])
 
     def test_multi_remote_commands(self):
@@ -520,6 +529,13 @@ class TestCommandContextLoop(TestCase):
             u'movement_output': models.ParameterName.NUMERIC,
             u'platform': models.ParameterName.NUMERIC,
             u'system': models.ParameterName.STRING,
+            u'program_success': models.ParameterName.STRING,
+            u'null_output': models.ParameterName.NUMERIC,
+            u'parallel_output': models.ParameterName.NUMERIC,
+            u'null_number': models.ParameterName.NUMERIC,
+            u'parallel_number': models.ParameterName.NUMERIC,
+            u'null_index': models.ParameterName.NUMERIC,
+            u'parallel_index': models.ParameterName.NUMERIC,
             }.items():
             models.ParameterName.objects.create(schema=context_schema,
                 name=name,
@@ -647,7 +663,7 @@ class TestCommandContextLoop(TestCase):
             (run_settings, command_args, new_run_context) = hrmcstages.make_runcontext_for_directive(
                 platform,
                 directive_name,
-                directive_args, system_settings)
+                directive_args, system_settings, self.user.username)
 
             test_initial_run_settings.append((directive_name, run_settings))
 

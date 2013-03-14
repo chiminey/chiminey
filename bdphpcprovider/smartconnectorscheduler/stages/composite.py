@@ -42,14 +42,33 @@ class ParallelStage(Stage):
             self.val = context['parallel_output']
         else:
             self.val = 0
-        return True
+
+        # parallel_index indicates which of a set of identical nullstages in
+        # a composite have been triggered.  It is must be set via passed
+        # directive argument.  FIXME: this should be a smart connector specific
+        # parameter set during directive definition
+
+        if 'parallel_index' in context:
+            self.parallel_index = context['parallel_index']
+        else:
+            self.parallel_index = context['parallel_number']
+
+        if self.parallel_index:
+            return True
+
+        return False
 
     def process(self, context):
-        logger.debug("Null Stage Processing")
+        logger.debug("Parallel Stage Processing")
         pass
 
     def output(self, context):
-        logger.debug("Null Stage Output")
+        logger.debug("Parallel Stage Output")
         self.val += 1
         context['parallel_output'] = self.val
+
+        self.parallel_index -= 1
+        context['parallel_index'] = self.parallel_index
+
+
         return context
