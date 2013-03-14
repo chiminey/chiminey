@@ -107,10 +107,15 @@ class Command(BaseCommand):
             u'platform': models.ParameterName.NUMERIC,
             u'system': models.ParameterName.STRING,
             u'num_nodes': models.ParameterName.NUMERIC,
+            u'program_success': models.ParameterName.STRING,
             u'iseed': models.ParameterName.NUMERIC,
             u'command': models.ParameterName.STRING,
             u'null_output': models.ParameterName.NUMERIC,
-            u'parallel_output': models.ParameterName.NUMERIC
+            u'parallel_output': models.ParameterName.NUMERIC,
+            u'null_number': models.ParameterName.NUMERIC,
+            u'parallel_number': models.ParameterName.NUMERIC,
+            u'null_index': models.ParameterName.NUMERIC,
+            u'parallel_index': models.ParameterName.NUMERIC,
             }.items():
             models.ParameterName.objects.get_or_create(schema=context_schema,
                 name=name,

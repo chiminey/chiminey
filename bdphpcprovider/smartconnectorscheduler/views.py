@@ -193,7 +193,7 @@ def test_directive(request, directive_id):
                 []])
             # A set of commands
             directive_args.append(['', ['http://tardis.edu.au/schemas/hrmc/create',
-                ('num_nodes', 5), ('iseed', 42)]])
+                ('num_nodes', 5), ('iseed', 42), ('null_number', 4), ('parallel_number', 2)]])
             # An Example of how a nci script might work.
             directive_args.append(['',
                 ['http://nci.org.au/schemas/hrmc/custom_command/', ('command', 'ls')]])

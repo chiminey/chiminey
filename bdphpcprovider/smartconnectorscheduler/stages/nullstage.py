@@ -44,7 +44,21 @@ class NullStage(Stage):
             self.val = context['null_output']
         else:
             self.val = 0
-        return True
+
+        # null_number indicates which of a set of identical nullstages in
+        # a composite have been triggered.  It is must be set via passed
+        # directive argument.  FIXME: this should be a smart connector specific
+        # parameter set during directive definition.
+
+        if 'null_index' in context:
+            self.null_index = context['null_index']
+        else:
+            self.null_index = context['null_number']
+
+        if self.null_index:
+            return True
+
+        return False
 
     def process(self, context):
         """ perfrom the stage operation
@@ -60,4 +74,8 @@ class NullStage(Stage):
         logger.debug("context=%s" % context)
         self.val += 1
         context['null_output'] = self.val
+
+        self.null_index -= 1
+        context['null_index'] = self.null_index
+
         return context

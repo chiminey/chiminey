@@ -92,6 +92,21 @@ def run_command(ssh_client, command, current_dir=None):
     return res
 
 
+def run_command_with_status(ssh_client, command, current_dir=None):
+    logger.debug("run_command %s; %s " % (current_dir, command))
+    if current_dir:
+        command = "cd %s;%s" % (current_dir, command)
+    logger.debug(command)
+    stdin, stdout, stderr = ssh_client.exec_command(command)
+    res = stdout.readlines()
+    errs = stderr.readlines()
+    logger.debug("run_command_stdout=%s" % res)
+    if stderr:
+        logger.debug("run_command_stderr=%s" % stderr.readlines())
+    return (res, errs)
+
+
+
 def run_sudo_command_with_status(ssh_client, command, settings, instance_id):
     """
     Runs command at the ssh_client remote but also returns error code

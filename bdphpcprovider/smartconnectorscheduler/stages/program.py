@@ -51,6 +51,10 @@ class ProgramStage(Stage):
             self.val = context['program_output']
         else:
             self.val = 0
+
+        if 'program_success' in context:
+            return False
+
         return True
 
     def process(self, context):
@@ -79,12 +83,16 @@ class ProgramStage(Stage):
             # TODO: remotehost should be property of models.Platform, which can hold correct
             # ip address
             ssh = sshconnector.open_connection(ip_address=context['remotehost'], settings=self.user_settings)
-            sshconnector.run_command(ssh, command, current_dir=self.user_settings[u'fsys'])
+            res, errs = sshconnector.run_command_with_status(ssh, command, current_dir=self.user_settings[u'fsys'])
+            if not errs:
+                context['program_success'] = True
         else:
             raise NotImplementedError("ProgramStage not supported for this platform")
 
 
         logger.debug("context=%s" % context)
+
+
 
     def output(self, context):
         """ produce the resulting datfiles and metadata

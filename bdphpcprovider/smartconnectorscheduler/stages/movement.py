@@ -49,7 +49,16 @@ class MovementStage(Stage):
             self.val = context['movement_output']
         else:
             self.val = 0
-        return True
+
+        dest_url = context['file1']
+        try:
+            content = hrmcstages.get_file(dest_url, self.user_settings)
+        except IOError:
+            # TODO: should check checksum of dest to make sure we have correct transfer
+            logger.debug("dest file does not exist: %s" % dest_url)
+            return True
+
+        return False
 
     def process(self, context):
         """ perfrom the stage operation
