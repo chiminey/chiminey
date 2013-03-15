@@ -234,6 +234,7 @@ def safe_import(path, args, kw):
         Dynamically imports a package at path and executes it current namespace with given args
     """
 
+    logger.debug("path %s args %s kw %s  " % (path, args, kw))
     try:
         dot = path.rindex('.')
     except ValueError:
@@ -530,17 +531,21 @@ def _get_remote_path(file_url, user_settings):
     return remote_path
 
 
-def make_runcontext_for_directive(platform, directive_name,
+def make_runcontext_for_directive(platform_name, directive_name,
     directive_args, initial_settings, username):
     """
     Create a new runcontext with the commmand equivalent to the directive on the platform.
     """
+    logger.debug("Platform Name %s" % platform_name)
+
+
     user = User.objects.get(username=username)  # FIXME: pass in username
     profile = models.UserProfile.objects.get(user=user)
-    platform = models.Platform.objects.get(name=platform)
+    platform = models.Platform.objects.get(name=platform_name)
 
     run_settings = dict(initial_settings)  # we may share initial_settings
-    run_settings[u'platform'] = platform.id
+    logger.debug("PlatformM %s" % platform_name)
+    run_settings[u'platform'] = platform_name #platform.id
 
     directive = models.Directive.objects.get(name=directive_name)
     command_for_directive = models.Command.objects.get(directive=directive, platform=platform)
