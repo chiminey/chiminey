@@ -1,6 +1,7 @@
 from celery.task import task
 import celery
 from django.db import transaction
+from django.db import DatabaseError
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
 
@@ -19,15 +20,20 @@ def test():
 def run_contexts():
     for context in models.Context.objects.all():
         logger.debug("processing %s" % context)
-        progress_context(context.id)
+        progress_context.delay(context.id)
 
 
+@task(name="smartconnectorscheduler.progress_context", ignore_result=True)
 def progress_context(context_id):
     run_context = models.Context.objects.get(id=context_id)
     logger.debug("process context %s" % run_context)
 
     with transaction.commit_on_success():
-        run_context = models.Context.objects.select_for_update().get(id=run_context.id)
+        try:
+            run_context = models.Context.objects.select_for_update(nowait=True).get(id=run_context.id)
+        except DatabaseError:
+            logger.info("progress context for %s is already running.  exiting" % context_id)
+            return
         stage = run_context.current_stage
         logger.debug("stage=%s" % stage)
         children = models.Stage.objects.filter(parent=stage)

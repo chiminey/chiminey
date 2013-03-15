@@ -34,7 +34,7 @@ class Command(BaseCommand):
             return
 
         self.remote_fs_path = os.path.join(
-            'bdphpcprovider', 'smartconnectorscheduler', 'testing', 'remotesys/').decode("utf8")
+            'smartconnectorscheduler', 'testing', 'remotesys/').decode("utf8")
         logger.debug("self.remote_fs_path=%s" % self.remote_fs_path)
         self.remote_fs = FileSystemStorage(location=self.remote_fs_path)
 
