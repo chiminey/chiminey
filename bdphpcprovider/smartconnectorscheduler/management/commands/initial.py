@@ -104,17 +104,31 @@ class Command(BaseCommand):
             u'transitions': models.ParameterName.STRING,  # TODO: use STRLIST
             u'program_output': models.ParameterName.NUMERIC,
             u'movement_output': models.ParameterName.NUMERIC,
-            u'platform': models.ParameterName.NUMERIC,
+            u'platform': models.ParameterName.STRING,
             u'system': models.ParameterName.STRING,
             u'num_nodes': models.ParameterName.NUMERIC,
             u'iseed': models.ParameterName.NUMERIC,
+            u'number_vm_instances': models.ParameterName.NUMERIC,
             u'command': models.ParameterName.STRING,
             u'null_output': models.ParameterName.NUMERIC,
-            u'parallel_output': models.ParameterName.NUMERIC
+            u'parallel_output': models.ParameterName.NUMERIC,
+            u'USER_NAME': models.ParameterName.STRING,
+            u'PASSWORD':models.ParameterName.STRING,
+            u'SECURITY_GROUP': models.ParameterName.STRLIST,
+            u'VM_SIZE': models.ParameterName.STRING,
+            u'VM_IMAGE': models.ParameterName.STRING,
+            u'GROUP_ID_DIR': models.ParameterName.STRING,
+            u'CUSTOM_PROMPT': models.ParameterName.STRING,
+            u'group_id': models.ParameterName.STRING,
+            u'flag': models.ParameterName.NUMERIC,
+            u'CLOUD_SLEEP_INTERVAL': models.ParameterName.NUMERIC
             }.items():
-            models.ParameterName.objects.get_or_create(schema=context_schema,
+            _, created = models.ParameterName.objects.get_or_create(schema=context_schema,
                 name=name,
-                type=param_type)
+                defaults={'type': param_type}
+                )
+            if not created:
+                models.ParameterName.objects.filter(name=name).update(type=param_type)
 
         self.PARAMTYPE = {'userinfo1': models.ParameterName.STRING,
             'userinfo2': models.ParameterName.NUMERIC,
@@ -124,18 +138,25 @@ class Command(BaseCommand):
             'nci_host': models.ParameterName.STRING,
             'PASSWORD': models.ParameterName.STRING,
             'USER_NAME': models.ParameterName.STRING,
-            'PRIVATE_KEY': models.ParameterName.STRING}
+            'PRIVATE_KEY': models.ParameterName.STRING,
+            'PRIVATE_KEY_NAME': models.ParameterName.STRING,
+            'EC2_ACCESS_KEY': models.ParameterName.STRING,
+            'EC2_SECRET_KEY': models.ParameterName.STRING}
+
         for k, v in self.PARAMTYPE.items():
             param_name, _ = models.ParameterName.objects.get_or_create(schema=user_schema,
                 name=k,
                 type=self.PARAMTYPE[k])
+            logger.debug(param_name)
 
         # Make a platform for the commands
-        platform, _ = models.Platform.objects.get_or_create(name="nci")
+        platform, _ = models.Platform.objects.get_or_create(name="nectar")
 
         copy_dir, _ = models.Directive.objects.get_or_create(name="copy")
         program_dir, _ = models.Directive.objects.get_or_create(name="program")
         smart_dir, _ = models.Directive.objects.get_or_create(name="smartconnector1")
+
+        hrmc_smart_dir, _ = models.Directive.objects.get_or_create(name="smartconnector_hrmc")
 
         self.movement_stage = "bdphpcprovider.smartconnectorscheduler.stages.movement.MovementStage"
         self.program_stage = "bdphpcprovider.smartconnectorscheduler.stages.program.ProgramStage"
@@ -184,12 +205,37 @@ class Command(BaseCommand):
             package=self.null_package,
             order=3)
 
+        self.configure_package = "bdphpcprovider.smartconnectorscheduler.stages.configure.Configure"
+        self.create_package = "bdphpcprovider.smartconnectorscheduler.stages.create.Create"
+
+        hrmc_composite_stage, _ = models.Stage.objects.get_or_create(name="hrmc_connector",
+                                                                description="Encapsultes HRMC smart connector workflow",
+                                                                package=self.parallel_package,
+                                                                order=100)
+
+        configure_stage, _ = models.Stage.objects.get_or_create(name="configure",
+                                                                description="This is configure stage of HRMC smart connector",
+                                                                parent=hrmc_composite_stage,
+                                                                package=self.configure_package,
+                                                                order=0)
+
+        create_stage, _ = models.Stage.objects.get_or_create(name="create",
+                                                                description="This is create stage of HRMC smart connector",
+                                                                parent=hrmc_composite_stage,
+                                                                package=self.create_package,
+                                                                order=1)
+
+
+
+
         logger.debug("stages=%s" % models.Stage.objects.all())
         # Make a new command that reliases composite_stage
         # TODO: add the command program to the model
         comm, _ = models.Command.objects.get_or_create(platform=platform, directive=copy_dir, stage=copy_stage)
         comm, _ = models.Command.objects.get_or_create(platform=platform, directive=program_dir, stage=program_stage)
         comm, _ = models.Command.objects.get_or_create(platform=platform, directive=smart_dir, stage=composite_stage)
+        comm, _ = models.Command.objects.get_or_create(platform=platform, directive=hrmc_smart_dir, stage=hrmc_composite_stage)
+
 
         # We could make one command with a composite containing three stages or
         # three commands each containing a single stage.
