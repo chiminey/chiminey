@@ -141,13 +141,13 @@ def test_directive(request, directive_id):
             logger.debug("%s" % directive_name)
             directive_args = []
             directive_args.append(
-                ['local://12.0.0.1/local/greet.txt',
+                ['local://127.0.0.1/local/greet.txt',
                     ['http://rmit.edu.au/schemas/greeting/salutation',
-                        ('salutation', 'Hello')]])
+                        ('salutation', 'Hello Iman')]])
             directive_args.append(['hpc://ncitest.org/remote/greet.txt', []])
             directives.append((platform, directive_name, directive_args))
 
-        if directive_id == "2":
+        elif directive_id == "2":
             # concatenate that file and another file (already remote) to form result
             directive_args = []
             directive_name = "program"
@@ -165,19 +165,19 @@ def test_directive(request, directive_id):
 
             directives.append((platform, directive_name, directive_args))
 
-        if directive_id == "3":
+        elif directive_id == "3":
             # transfer result back locally.
             directive_name = "copy"
             logger.debug("%s" % directive_name)
             directive_args = []
             directive_args.append(['hpc://ncitest.org/remote/greetresult.txt',
                 []])
-            directive_args.append(['local://12.0.0.1/local/finalresult.txt',
+            directive_args.append(['local://127.0.0.1/local/finalresult.txt',
                 []])
 
             directives.append((platform, directive_name, directive_args))
 
-        if directive_id == "4":
+        elif directive_id == "4":
             directive_name = "smartconnector1"
             logger.debug("%s" % directive_name)
             directive_args = []
@@ -200,7 +200,23 @@ def test_directive(request, directive_id):
 
             directives.append((platform, directive_name, directive_args))
 
-         # make the system settings, available to initial stage and merged with run_settings
+
+        elif directive_id == "5":
+            platform = 'nectar'
+            directive_name = "smartconnector_hrmc"
+            logger.debug("%s" % directive_name)
+            directive_args = []
+            directive_args.append(['', ['http://rmit.edu.au/schemas/context1',
+                                        ('number_vm_instances', 1), ('iseed', 42),
+                ('VM_IMAGE', 'ami-0000000d'), ('VM_SIZE', 'm1.small'),
+                ('SECURITY_GROUP', u"['ssh']"), ('USER_NAME', 'centos'), ('PASSWORD', ''),
+                ('CUSTOM_PROMPT', '[smart-connector_prompt]$'),
+                ('GROUP_ID_DIR', 'group_id'), ('group_id', ''),
+                ('flag', 0), ('CLOUD_SLEEP_INTERVAL', 5)]])
+            directives.append((platform, directive_name, directive_args))
+
+
+            # make the system settings, available to initial stage and merged with run_settings
         system_settings = {u'system': u'settings'}
 
         logger.debug("directive=%s" % directives)
