@@ -110,16 +110,30 @@ class ParameterName(models.Model):
                 return str
         return "UNKNOWN"
 
+    #TODO: Check MyTardis code base for consistency
     def get_value(self, val):
         logger.debug("type=%s" % self.type)
         logger.debug("val=%s" % val)
         res = val
-        if self.type == self.NUMERIC:
+        if self.type == self.STRING:
+            res = val
+        elif self.type == self.NUMERIC:
             try:
                 res = int(val)
             except ValueError:
                 logger.debug("invalid type")
                 raise
+        elif self.type == self.STRLIST:
+            try:
+                import ast
+                res = ast.literal_eval(val)
+                logger.debug('STRLIST %s length %d' % (res, len(res)))
+            except ValueError:
+                logger.debug("invalid type")
+                raise
+        else:
+            logger.debug("Unsupported Type")
+            raise ValueError
         return res
 
 
@@ -326,7 +340,9 @@ class Context(models.Model):
         """
             update the run_settings associated with the context with new values from a map
         """
-
+        #FIXME This oly works for CONTEXT_SCHEMA_NS.
+        # We need to be able to
+        #  identify parameters based on their name and the schema they belong to
         sch = Schema.objects.get(namespace=self.CONTEXT_SCHEMA_NS)
         logger.debug("sch=%s" % sch)
         # FIXME: assumes that each context has only one ContextParameterSet
@@ -343,7 +359,7 @@ class Context(models.Model):
         logger.debug("paramset=%s" % paramset)
         #TODO: what if entries in original context have been deleted?
         for k, v in run_settings.items():
-            logger.debug("k=%s,v=%s" % (k, v))
+            #logger.debug("k=%s,v=%s" % (k, v))
             try:
                 pn = ParameterName.objects.get(schema=sch,
                     name=k)
@@ -363,7 +379,7 @@ class Context(models.Model):
                 logger.exception("Found duplicate entry in ContextParamterSet")
                 raise
             else:
-                logger.debug("updating %s to %s" % (cp.name, v))
+                #logger.debug("updating %s to %s" % (cp.name, v))
                 # TODO: need to check type
                 cp.value = v
                 cp.save()
