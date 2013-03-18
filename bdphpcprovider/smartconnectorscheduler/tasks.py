@@ -18,9 +18,11 @@ def test():
 
 @task(name="smartconnectorscheduler.run_contexts", ignore_result=True)
 def run_contexts():
-    for context in models.Context.objects.all():
-        logger.debug("processing %s" % context)
-        progress_context.delay(context.id)
+    try:
+        for context in models.Context.objects.all():
+            progress_context.delay(context.id)
+    except Context.DoesNotExist, e:
+        logger.warn("Context removed from other thread")
 
 
 @task(name="smartconnectorscheduler.progress_context", ignore_result=True)
@@ -34,6 +36,8 @@ def progress_context(context_id):
         except DatabaseError:
             logger.info("progress context for %s is already running.  exiting" % context_id)
             return
+        else:
+            logger.info("processing %s" % context_id)
         stage = run_context.current_stage
         logger.debug("stage=%s" % stage)
         children = models.Stage.objects.filter(parent=stage)
@@ -79,6 +83,8 @@ def progress_context(context_id):
         if not triggered:
             logger.debug("none triggered")
             run_context.delete()
+
+        logger.info("context task %s complete" % context_id)
 
 def progress_context_old(context_id):
 
