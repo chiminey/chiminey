@@ -121,7 +121,12 @@ class Command(BaseCommand):
             u'CUSTOM_PROMPT': models.ParameterName.STRING,
             u'group_id': models.ParameterName.STRING,
             u'flag': models.ParameterName.NUMERIC,
-            u'CLOUD_SLEEP_INTERVAL': models.ParameterName.NUMERIC
+            u'CLOUD_SLEEP_INTERVAL': models.ParameterName.NUMERIC,
+            u'setup_finished': models.ParameterName.NUMERIC,
+            u'id': models.ParameterName.NUMERIC,
+            u'PAYLOAD_SOURCE': models.ParameterName.STRING,
+            u'PAYLOAD_DESTINATION': models.ParameterName.STRING,
+            u'local_fs_path': models.ParameterName.STRING
             }.items():
             _, created = models.ParameterName.objects.get_or_create(schema=context_schema,
                 name=name,
@@ -207,6 +212,7 @@ class Command(BaseCommand):
 
         self.configure_package = "bdphpcprovider.smartconnectorscheduler.stages.configure.Configure"
         self.create_package = "bdphpcprovider.smartconnectorscheduler.stages.create.Create"
+        self.setup_package = "bdphpcprovider.smartconnectorscheduler.stages.setup.Setup"
 
         hrmc_composite_stage, _ = models.Stage.objects.get_or_create(name="hrmc_connector",
                                                                 description="Encapsultes HRMC smart connector workflow",
@@ -221,10 +227,15 @@ class Command(BaseCommand):
 
         create_stage, _ = models.Stage.objects.get_or_create(name="create",
                                                                 description="This is create stage of HRMC smart connector",
-                                                                parent=hrmc_composite_stage,
+                                                                #parent=hrmc_composite_stage,
                                                                 package=self.create_package,
                                                                 order=1)
 
+        setup_stage, _ = models.Stage.objects.get_or_create(name="setup",
+                                                             description="This is setup stage of HRMC smart connector",
+                                                             parent=hrmc_composite_stage,
+                                                             package=self.setup_package,
+                                                             order=1)
 
 
 
