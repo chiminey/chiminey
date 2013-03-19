@@ -384,6 +384,87 @@ class NCIStorage(SFTPStorage):
             super(NCIStorage, self).__dict__["_host"] = settings['host']
         print super(NCIStorage, self)
 
+    def get_available_name(self, name):
+        """
+        Returns a filename that's free on the target storage system, and
+        available for new content to be written to.
+        """
+        if self.exists(name):
+            self.delete(name)
+        return name
+
+
+class LocalStorage(FileSystemStorage):
+    def __init__(self, location=None, base_url=None):
+        super(LocalStorage, self).__init__(location, base_url)
+
+    def get_available_name(self, name):
+        """
+        Returns a filename that's free on the target storage system, and
+        available for new content to be written to.
+        """
+        if self.exists(name):
+            self.delete(name)
+        return name
+
+
+# Supports only local and hpc schemes
+def copy_directories(source_url, destination_url, user_settings):
+    from urlparse import urlparse
+    source = urlparse(source_url)
+    source_scheme = source.scheme
+    source_location = source.netloc
+    source_path = source.path
+    if source_path[0] == os.path.sep:
+        source_path = source_path[1:]
+
+    if source_scheme == "local":
+        remote_fs_path = user_settings['fsys']
+        logger.debug("self.remote_fs_path=%s" % remote_fs_path)
+        fs = LocalStorage(location=remote_fs_path + "/")
+    elif source_scheme == "hpc":
+        logger.debug("getting from hpc")
+        # TODO: remote_fs_path should be from user settings
+        remote_fs_path = os.path.join(
+            "/home", "centos", 'testing', 'remotesys')
+        logger.debug("remote_fs_path=%s" % remote_fs_path)
+        nci_settings = {'params': {'key_filename': user_settings['PRIVATE_KEY'],
+                                   'username': str(user_settings['nci_user']),
+                                   'password': str(user_settings['nci_password'])},
+                        'host': source_location, #str(user_settings['nci_host']),
+                        'root': remote_fs_path + "/"}
+        logger.debug("nci_settings=%s" % pformat(nci_settings))
+        fs = NCIStorage(settings=nci_settings)
+        logger.debug("fs=%s" % fs)
+    else:
+        logger.warn("scheme: %s not supported" % source_scheme)
+    current_content = fs.listdir(source_path)
+    current_path_pointer = source_path
+    file_path_holder = []
+    dir_path_holder = []
+    while len(current_content) > 0:
+        for i in current_content[1]:
+            file_path = str(os.path.join(current_path_pointer, i))
+            file_path_holder.append(file_path)
+            content = fs.open(file_path).read()
+            put_file(os.path.join(destination_url, file_path), content, user_settings)
+        for j in current_content[0]:
+            list = [os.path.join(current_path_pointer, j), True]
+            dir_path_holder.append(list)
+
+        current_content = []
+        for k in dir_path_holder:
+            if k[1]:
+                k[1] = False
+                current_path_pointer = k[0]
+                current_content = fs.listdir(current_path_pointer)
+                logger.debug("Current pointer %s " % current_path_pointer)
+                break
+    logger.debug("All files")
+    logger.debug(file_path_holder)
+    logger.debug(dir_path_holder)
+    logger.debug("end of copy_directories")
+
 
 def put_file(file_url, content, user_settings):
     """
@@ -396,6 +477,7 @@ def put_file(file_url, content, user_settings):
     o = urlparse(file_url)
     scheme = o.scheme
     mypath = o.path
+    destination = o.netloc
     if mypath[0] == os.path.sep:
         mypath = mypath[1:]
     logger.debug("mypath=%s" % mypath)
@@ -415,23 +497,27 @@ def put_file(file_url, content, user_settings):
     elif scheme == "hpc":
         # FIXME: some of these parameters may come from url
         remote_fs_path = os.path.join(
-            os.path.dirname(__file__), 'testing', 'remotesys')
-        nci_settings = {'params': {'username': user_settings['nci_user'],
-            'password': user_settings['nci_password']},
-            'host': user_settings['nci_host'],
-            'root': remote_fs_path + "/"}
+            "/home", "centos", 'testing', 'remotesys')
+        logger.debug("remote path %s" % remote_fs_path)
+        nci_settings = {'params': {'key_filename': user_settings['PRIVATE_KEY'],
+                                   'username': user_settings['nci_user'],
+                                   'password': user_settings['nci_password']},
+                        'host': destination,#user_settings['nci_host'],
+                        'root': remote_fs_path + "/"}
         logger.debug("nci_settings=%s" % nci_settings)
         fs = NCIStorage(settings=nci_settings)
          # FIXME: does this overwrite?
-        fs.save(mypath, ContentFile(content.encode('utf-8')))  # NB: ContentFile only takes bytes
+        fs.save(mypath, ContentFile(content))  # NB: ContentFile only takes bytes
+
+        logger.debug("File to be written on %s" % destination)
     elif scheme == "tardis":
         logger.warn("tardis put not implemented")
         #raise NotImplementedError()
     elif scheme == "local":
         remote_fs_path = user_settings['fsys']
         logger.debug("remote_fs_path=%s" % remote_fs_path)
-        fs = FileSystemStorage(location=remote_fs_path)
-        dest_path = fs.save(mypath, ContentFile(content.encode('utf-8')))  # NB: ContentFile only takes bytes
+        fs = LocalStorage(location=remote_fs_path)
+        dest_path = fs.save(mypath, ContentFile(content))  # NB: ContentFile only takes bytes
         logger.debug("dest_path=%s" % dest_path)
     return content
 
@@ -439,19 +525,22 @@ def put_file(file_url, content, user_settings):
 def get_file(file_url, user_settings):
     """
     Reads in content at file_url using config info from user_settings
+    Returns byte strings
     """
     logger.debug("file_url=%s" % file_url)
 
     from urlparse import urlparse
     o = urlparse(file_url)
-    scheme = o.scheme
-    mypath = o.path
+    scheme = str(o.scheme)
+    mypath = str(o.path)
+    destination = o.netloc
+
     # TODO: add error checking for urlparse
     logger.debug("scheme=%s" % scheme)
     logger.debug("mypath=%s" % mypath)
 
     if mypath[0] == os.path.sep:
-        mypath = mypath[1:]
+        mypath = str(mypath[1:])
     logger.debug("mypath=%s" % mypath)
 
     if scheme == 'http':
@@ -462,15 +551,19 @@ def get_file(file_url, user_settings):
     elif scheme == "hpc":
         logger.debug("getting from hpc")
         # TODO: remote_fs_path should be from user settings
-        remote_fs_path = user_settings['fsys']
+        remote_fs_path = os.path.join(
+            "/home", "centos", 'testing', 'remotesys')
+
+        #remote_fs_path = user_settings['fsys']
 
         #os.path.join(
         #    os.path.dirname(__file__), 'testing', 'remotesys')
         logger.debug("remote_fs_path=%s" % remote_fs_path)
 
-        nci_settings = {'params': {'username': str(user_settings['nci_user']),
+        nci_settings = {'params': {'key_filename': user_settings['PRIVATE_KEY'],
+                                   'username': str(user_settings['nci_user']),
             'password': str(user_settings['nci_password'])},
-            'host': str(user_settings['nci_host']),
+            'host': destination, #str(user_settings['nci_host']),
             'root': remote_fs_path + "/"}
         logger.debug("nci_settings=%s" % pformat(nci_settings))
         fs = NCIStorage(settings=nci_settings)
@@ -486,8 +579,9 @@ def get_file(file_url, user_settings):
     elif scheme == "local":
         remote_fs_path = user_settings['fsys']
         logger.debug("self.remote_fs_path=%s" % remote_fs_path)
-        fs = FileSystemStorage(location=remote_fs_path + "/")
+        fs = LocalStorage(location=remote_fs_path + "/")
         content = fs.open(mypath).read()
+        logger.debug("content=%s" % content)
     logger.debug("content=%s" % content)
     return content
 
