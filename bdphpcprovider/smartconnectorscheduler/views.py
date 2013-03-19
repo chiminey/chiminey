@@ -206,13 +206,20 @@ def test_directive(request, directive_id):
             directive_name = "smartconnector_hrmc"
             logger.debug("%s" % directive_name)
             directive_args = []
+            local_fs_path = os.path.join(
+                'bdphpcprovider', 'smartconnectorscheduler', 'testing', 'remotesys/').decode("utf8")
+
             directive_args.append(['', ['http://rmit.edu.au/schemas/context1',
                                         ('number_vm_instances', 1), ('iseed', 42),
                 ('VM_IMAGE', 'ami-0000000d'), ('VM_SIZE', 'm1.small'),
                 ('SECURITY_GROUP', u"['ssh']"), ('USER_NAME', 'centos'), ('PASSWORD', ''),
                 ('CUSTOM_PROMPT', '[smart-connector_prompt]$'),
-                ('GROUP_ID_DIR', 'group_id'), ('group_id', ''),
-                ('flag', 0), ('CLOUD_SLEEP_INTERVAL', 5)]])
+                ('GROUP_ID_DIR', 'group_id'), ('group_id', 'c4573e9b0cc9ecf326c8729c7e928a9a'),
+                ('flag', 0), ('CLOUD_SLEEP_INTERVAL', 5),
+                ('setup_finished', 0), ('id', 0),
+                ('PAYLOAD_DESTINATION', 'celery_payload'),
+                ('PAYLOAD_SOURCE', 'local://127.0.0.1/local/testpayload'),
+                ('local_fs_path', local_fs_path)]])
             directives.append((platform, directive_name, directive_args))
 
 

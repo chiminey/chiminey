@@ -24,17 +24,14 @@ class Create(Stage):
             Return True if there is a platform
             but not group_id
         """
-        #self.settings = get_settings(run_settings)
-        #self.run_info = get_run_info(run_settings)
 
         logger.debug("User_settings %s \n Run_settings %s" % (self.user_settings, run_settings))
-        if (not run_settings[u'group_id']) and run_settings[u'flag'] == 0 :
+        if not run_settings[u'group_id']:
             if u'platform' in run_settings:
                 self.platform = run_settings[u'platform']
             self.settings.update(run_settings)
             logger.debug("Settings: %s" % self.settings)
             logger.debug("Create Stage: Triggered")
-            run_settings[u'flag'] = 1
             return True
         logger.debug("Create Stage: Not Triggered")
         return False

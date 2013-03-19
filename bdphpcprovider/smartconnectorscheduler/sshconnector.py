@@ -270,6 +270,7 @@ def put_file(ssh_client, source_path, package_file, environ_dir):
     ftp.put(source_file, dest_file)
 
 
+# see /bdphpcprovider/smartconnectorscheduler/hrmcstages.py:439 - done
 def put_payload(ssh_client, source, destination):
     ftp = ssh_client.open_sftp()
     logger.debug("Transferring payload from %s to %s" %(source, destination))

@@ -108,12 +108,12 @@ def _create_VM_instances(number_vm_instances, settings):
         while instance_count < number_vm_instances:
             logger.debug(number_vm_instances)
             reservation = connection.run_instances(
-                image_id=settings[u'VM_IMAGE'],
+                image_id=settings['VM_IMAGE'],
                 min_count=1,
                 max_count=1,
-                key_name=settings[u'PRIVATE_KEY_NAME'],
-                security_groups=settings[u'SECURITY_GROUP'],
-                instance_type=settings[u'VM_SIZE'])
+                key_name=settings['PRIVATE_KEY_NAME'],
+                security_groups=settings['SECURITY_GROUP'],
+                instance_type=settings['VM_SIZE'])
             logger.debug("Created Reservation %s" % reservation)
             new_instance = reservation.instances[0]
             logger.debug("Created Instance %s" % new_instance)
