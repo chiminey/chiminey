@@ -22,52 +22,59 @@ class Setup(Stage):
     Handles creation of a running executable on the VMS in a group
     """
 
-    def __init__(self):
-        self.settings = {}
+    def __init__(self, user_settings=None):
+        self.user_settings = user_settings
+        self.settings = dict(self.user_settings)
         self.group_id = ''
+        self.platform = None
 
-    def triggered(self, context):
+    def triggered(self, run_settings):
         """
         Triggered if appropriate vms exist and we have not finished setup
         """
         # triggered if the set of the VMS has been established.
-        self.settings = get_all_settings(context)
+        #self.settings = get_all_settings(context)
         #logger.debug("settings = %s" % self.settings)
 
-        if 'group_id' in self.settings:
-            self.group_id = self.settings["group_id"]
+        self.settings.update(run_settings)
+        if self.settings['group_id']:
+            self.group_id = self.settings['group_id']
         else:
             logger.warn("no group_id found when expected")
             return False
+
         logger.debug("group_id = %s" % self.group_id)
 
-        if 'setup_finished' in self.settings:
+        if self.settings['setup_finished']:
+            logger.debug(self.settings['setup_finished'])
             return False
 
         self.packaged_nodes = botocloudconnector.get_rego_nodes(self.group_id, self.settings)
         logger.debug("packaged_nodes = %s" % self.packaged_nodes)
 
-        logger.debug("Setup on %s" % self.settings['PROVIDER'])
+        logger.debug("Setup on %s" % self.settings['platform'])
         return len(self.packaged_nodes)
 
-    def process(self, context):
+    def process(self, run_settings):
         """
         Setup all the nodes
         """
         #setup_multi_task(self.group_id, self.settings)
         self.setup(self.settings, self.group_id)
 
-    def output(self, context):
+    def output(self, run_settings):
         """
         Store number of packages nodes as setup_finished in runinfo.sys
         """
-        update_key('setup_finished', len(self.packaged_nodes), context)
+        run_settings['setup_finished'] = len(self.packaged_nodes)
+        run_settings['id'] = 0
+        #update_key('setup_finished', len(self.packaged_nodes), context)
         # So initial input goes in input_0 directory
 
         # FIXME: probably should be set at beginning of run or connector?
-        update_key('id', 0, context)
+        #update_key('id', 0, context)
 
-        return context
+        return run_settings
 
     def setup(self, settings, group_id, maketarget_nodegroup_pair={}):
         available_nodes = list(botocloudconnector.get_rego_nodes(group_id, settings))
@@ -115,6 +122,7 @@ class Setup(Stage):
                 logger.debug("starting thread")
                 instance = available_nodes[0]
                 node_ip = botocloudconnector.get_instance_ip(instance.id, settings)
+                destination = "hpc://" + node_ip + "/" + settings['PAYLOAD_DESTINATION']
                 t = threading.Thread(target=setup_worker,
                     args=(node_ip, make_target, source, destination))
                 threads_running.append(t)
@@ -134,9 +142,8 @@ class Setup(Stage):
         ssh = open_connection(ip_address=node_ip, settings=settings)
         logger.debug("Setup %s ssh" % ssh)
 
-
-        mkdir(ssh, destination)
-        put_payload(ssh, source, destination)
+        from bdphpcprovider.smartconnectorscheduler import hrmcstages
+        hrmcstages.copy_directories(source, destination, settings)
 
         makefile_path = settings['PAYLOAD_DESTINATION']
        # Check whether make is installed. If not install
