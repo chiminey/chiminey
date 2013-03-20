@@ -4,6 +4,13 @@ import utility
 #Every stage may be thrown away after completion
 
 
+import logging
+import logging.config
+
+logger = logging.getLogger(__name__)
+
+
+
 class Error(Exception):
     pass
 
@@ -35,6 +42,15 @@ class Stage(object):
         """
         pass
 
+    def _exists(self, context, *parts):
+            c = dict(context)
+            for p in parts:
+                if p in c:
+                    c = c[p]
+                else:
+                    logger.warn("%s not found in context" % p)
+                    return False
+            return True
 
 class UI(object):
     pass

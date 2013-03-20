@@ -30,6 +30,7 @@ def progress_context(context_id):
     run_context = models.Context.objects.get(id=context_id)
     logger.debug("process context %s" % run_context)
 
+    test_info = []
     with transaction.commit_on_success():
         try:
             run_context = models.Context.objects.select_for_update(nowait=True).get(id=run_context.id)
@@ -82,9 +83,11 @@ def progress_context(context_id):
 
         if not triggered:
             logger.debug("none triggered")
+            test_info = run_settings
             run_context.delete()
 
         logger.info("context task %s complete" % context_id)
+        return test_info
 
 def progress_context_old(context_id):
 

@@ -48,6 +48,7 @@ from bdphpcprovider.smartconnectorscheduler import getresults
 from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
+from bdphpcprovider.smartconnectorscheduler import tasks
 
 
 logger = logging.getLogger(__name__)
@@ -287,27 +288,27 @@ class TestCommandContextLoop(TestCase):
                       user=self.user)
         profile.save()
 
-        # Create the schemas for template parameters or config info
-        # specfied in directive arguments
-        for ns, name, desc in [('http://www.rmit.edu.au/user/profile/1',
-            "userprofile1", "Information about user"),
-            ('http://tardis.edu.au/schemas/hrmc/dfmeta/', "datafile1",
-                "datafile 1 schema"),
-            ('http://tardis.edu.au/schemas/hrmc/dfmeta2/', "datafile2",
-                "datafile 2 schema"),
-            ('http://tardis.edu.au/schemas/hrmc/create', "create",
-                "create stage"),
-            ("http://nci.org.au/schemas/hrmc/custom_command/", "custom",
-                "custom command")
-            ]:
-            sch = models.Schema.objects.create(namespace=ns, name=name, description=desc)
-            logger.debug("sch=%s" % sch)
+        # # Create the schemas for template parameters or config info
+        # # specfied in directive arguments
+        # for ns, name, desc in [('http://www.rmit.edu.au/user/profile/1',
+        #     "userprofile1", "Information about user"),
+        #     ('http://tardis.edu.au/schemas/hrmc/dfmeta', "datafile1",
+        #         "datafile 1 schema"),
+        #     ('http://tardis.edu.au/schemas/hrmc/dfmeta2', "datafile2",
+        #         "datafile 2 schema"),
+        #     ('http://tardis.edu.au/schemas/hrmc/create', "create",
+        #         "create stage"),
+        #     ("http://nci.org.au/schemas/hrmc/custom_command", "custom",
+        #         "custom command")
+        #     ]:
+        #     sch = models.Schema.objects.create(namespace=ns, name=name, description=desc)
+        #     logger.debug("sch=%s" % sch)
 
         # Create the schema for stages (currently only one) and all allowed
         # values and their types for all stages.
-        context_schema = models.Schema.objects.create(
-            namespace=models.Context.CONTEXT_SCHEMA_NS,
-            name="Context Schema", description="Schema for a context")
+        # context_schema = models.Schema.objects.create(
+        #     namespace=models.Context.CONTEXT_SCHEMA_NS,
+        #     name="Context Schema", description="Schema for a context")
         # We assume that a run_context has only one schema at the moment, as
         # we have to load up this schema with all context values used in
         # any of the stages (and any parameters required for the stage
@@ -315,56 +316,176 @@ class TestCommandContextLoop(TestCase):
         # TODO: allow multiple ContextParameterSet each with different schema
         # so each value will come from a namespace.  e.g., general/fsys
         # nectar/num_of_nodes, setup/nodes_setup etc.
-        for name, param_type in {
-            u'file0': models.ParameterName.STRING,
-            u'file1': models.ParameterName.STRING,
-            u'file2': models.ParameterName.STRING,
-            u'num_nodes': models.ParameterName.NUMERIC,
-            u'iseed': models.ParameterName.NUMERIC,
-            u'command': models.ParameterName.STRING,
-            u'transitions': models.ParameterName.STRING,  # TODO: use STRLIST
-            u'null_output': models.ParameterName.NUMERIC,
-            u'parallel_output': models.ParameterName.NUMERIC,
-            u'system': models.ParameterName.STRING,
-            u'platform': models.ParameterName.NUMERIC,
-            u'program_success': models.ParameterName.STRING,
-            u'null_output': models.ParameterName.NUMERIC,
-            u'parallel_output': models.ParameterName.NUMERIC,
-            u'null_number': models.ParameterName.NUMERIC,
-            u'parallel_number': models.ParameterName.NUMERIC,
-            u'null_index': models.ParameterName.NUMERIC,
-            u'parallel_index': models.ParameterName.NUMERIC,
-            }.items():
-            models.ParameterName.objects.create(schema=context_schema,
-                name=name,
-                type=param_type)
+        # for name, param_type in {
+        #     u'file0': models.ParameterName.STRING,
+        #     u'file1': models.ParameterName.STRING,
+        #     u'file2': models.ParameterName.STRING,
+        #     u'num_nodes': models.ParameterName.NUMERIC,
+        #     u'iseed': models.ParameterName.NUMERIC,
+        #     u'command': models.ParameterName.STRING,
+        #     u'transitions': models.ParameterName.STRING,  # TODO: use STRLIST
+        #     u'null_output': models.ParameterName.NUMERIC,
+        #     u'parallel_output': models.ParameterName.NUMERIC,
+        #     u'system': models.ParameterName.STRING,
+        #     u'platform': models.ParameterName.NUMERIC,
+        #     u'program_success': models.ParameterName.STRING,
+        #     u'null_output': models.ParameterName.NUMERIC,
+        #     u'parallel_output': models.ParameterName.NUMERIC,
+        #     u'null_number': models.ParameterName.NUMERIC,
+        #     u'parallel_number': models.ParameterName.NUMERIC,
+        #     u'null_index': models.ParameterName.NUMERIC,
+        #     u'parallel_index': models.ParameterName.NUMERIC,
+        #     }.items():
+        #     models.ParameterName.objects.create(schema=context_schema,
+        #         name=name,
+        #         type=param_type)
+
+
+ # sorted([u'http://nci.org.au/schemas/smartconnector1/custom',
+ #                u'http://rmit.edu.au/schemas/smartconnector1/create',
+ #                u'http://rmit.edu.au/schemas/smartconnector1/files',
+ #                u'http://rmit.edu.au/schemas/system',
+ #                u'http://rmit.edu.au/schemas/system/misc']))
+
+
+        schema_data = {
+            u'http://rmit.edu.au/schemas//files':
+                [u'general input files for directive',
+                {
+                u'file0': models.ParameterName.STRING,
+                u'file1': models.ParameterName.STRING,
+                u'file2': models.ParameterName.STRING,
+                }
+                ],
+             # Note that file schema ns must match regex
+             # protocol://host/schemas/{directective.name}/files
+             # otherwise files will not be matched correctly.
+             # TODO: make fall back to directive files in case specfici
+             # version not defined here.
+             u'http://rmit.edu.au/schemas/smartconnector1/files':
+                 [u'the smartconnector1 input files',
+                 {
+                 u'file0': models.ParameterName.STRING,
+                 u'file1': models.ParameterName.STRING,
+                 u'file2': models.ParameterName.STRING,
+                 }
+                 ],
+            u'http://rmit.edu.au/schemas/smartconnector1/create':
+                [u'the smartconnector1 create stage config',
+                {
+                u'iseed': models.ParameterName.NUMERIC,
+                u'num_nodes': models.ParameterName.NUMERIC,
+                u'null_number': models.ParameterName.NUMERIC,
+                u'parallel_number': models.ParameterName.NUMERIC,
+                }
+                ],
+            # we might want to reuse schemas in muliple contextsets
+            # hence we could merge next too stages, for example.
+            # However, current ContextParameterSets are unamed in the
+            # URI so we can't identify which one to use.
+            u'http://rmit.edu.au/schemas/stages/null/testing':
+                [u'the null stage internal testing',
+                {
+                u'output': models.ParameterName.NUMERIC,
+                u'index': models.ParameterName.NUMERIC,
+                }
+                ],
+            u'http://rmit.edu.au/schemas/stages/parallel/testing':
+                [u'the parallel stage internal testing',
+                {
+
+                u'output': models.ParameterName.NUMERIC,
+                u'index': models.ParameterName.NUMERIC
+                }
+                ],
+            u'http://nci.org.au/schemas/smartconnector1/custom':
+                [u'the smartconnector1 custom command',
+                {
+                u'command': models.ParameterName.STRING
+                }
+                ],
+            u'http://rmit.edu.au/schemas/system/misc':
+                [u'system level misc values',
+                {
+                u'transitions': models.ParameterName.STRING,  # deprecated
+                u'system': models.ParameterName.STRING
+                }
+                ],
+            u'http://rmit.edu.au/schemas/system':
+                [u'Information about the deployment platform',
+                {
+                u'platform': models.ParameterName.NUMERIC,  # deprecated
+                }
+                ],
+            u'http://tardis.edu.au/schemas/hrmc/dfmeta':
+                ["datafile",
+                {
+                u"a": models.ParameterName.NUMERIC,
+                u'b': models.ParameterName.NUMERIC,
+                }
+                ],
+            u'http://tardis.edu.au/schemas/hrmc/dfmeta2':
+                ["datafile2",
+                {
+                u'c': models.ParameterName.STRING,
+                }
+                ],
+            u'http://www.rmit.edu.au/user/profile/1':
+                [u'user profile',
+                {
+                    u'userinfo1': models.ParameterName.STRING,
+                    u'userinfo2': models.ParameterName.NUMERIC,
+                    u'fsys': models.ParameterName.STRING,
+                    u'nci_user': models.ParameterName.STRING,
+                    u'nci_password': models.ParameterName.STRING,
+                    u'nci_host': models.ParameterName.STRING,
+                    u'PASSWORD': models.ParameterName.STRING,
+                    u'USER_NAME': models.ParameterName.STRING,
+                    u'PRIVATE_KEY': models.ParameterName.STRING
+                }
+                ],
+        }
+
+        for ns in schema_data:
+            l = schema_data[ns]
+            logger.debug("l=%s" % l)
+            desc = l[0]
+            logger.debug("desc=%s" % desc)
+            kv = l[1:][0]
+            logger.debug("kv=%s", kv)
+            context_schema = models.Schema.objects.create(
+                namespace=ns,
+                name="Context Schema", description=desc)
+
+            for k, v in kv.items():
+                models.ParameterName.objects.create(schema=context_schema,
+                    name=k,
+                    type=v)
 
         # Setup the schema for user configuration information (kept in profile)
         self.PARAMS = {'userinfo1': 'param1val',
             'userinfo2': 42,
             'fsys': self.remote_fs_path,
             'nci_user': 'root',
-            'nci_password': 'password',
+            'nci_password': 'dtofaam',
             'nci_host': '127.0.0.1',
             }
-        self.PARAMTYPE = {'userinfo1': models.ParameterName.STRING,
-            'userinfo2': models.ParameterName.NUMERIC,
-            'fsys': models.ParameterName.STRING,
-            'nci_user': models.ParameterName.STRING,
-            'nci_password': models.ParameterName.STRING,
-            'nci_host': models.ParameterName.STRING}
+
+        self.PARAMTYPE = {}
+        sch = models.Schema.objects.get(namespace="http://www.rmit.edu.au/user/profile/1")
+        #paramtype = schema_data['http://www.rmit.edu.au/user/profile/1'][1]
         param_set = models.UserProfileParameterSet.objects.create(user_profile=profile,
             schema=sch)
         for k, v in self.PARAMS.items():
-            param_name = models.ParameterName.objects.create(schema=sch,
-                name=k,
-                type=self.PARAMTYPE[k])
+            param_name = models.ParameterName.objects.get(schema=sch,
+                name=k)
             models.UserProfileParameter.objects.create(name=param_name,
                 paramset=param_set,
                 value=v)
 
         # make the system settings, available to initial stage and merged with run_settings
-        system_settings = {u'system': u'settings'}
+        system_dict = {u'system': u'settings'}
+        system_settings = {u'http://rmit.edu.au/schemas/system/misc': system_dict}
 
         # Make a platform for the commands
         platform = models.Platform(name="nci")
@@ -435,18 +556,18 @@ class TestCommandContextLoop(TestCase):
         directive_args.append(['tardis://iant@tardis.edu.au/datafile/15', []])
         # Template on remote storage with corresponding multiple parameter sets
         directive_args.append(['hpc://iant@nci.edu.au/input/input.txt',
-            ['http://tardis.edu.au/schemas/hrmc/dfmeta/', ('a', 3), ('b', 4)],
-            ['http://tardis.edu.au/schemas/hrmc/dfmeta/', ('a', 1), ('b', 2)],
-            ['http://tardis.edu.au/schemas/hrmc/dfmeta2/', ('c', 'hello')]])
+            ['http://tardis.edu.au/schemas/hrmc/dfmeta', ('a', 3), ('b', 4)],
+            ['http://tardis.edu.au/schemas/hrmc/dfmeta', ('a', 1), ('b', 2)],
+            ['http://tardis.edu.au/schemas/hrmc/dfmeta2', ('c', 'hello')]])
         # A file (template with no variables)
         directive_args.append(['hpc://iant@nci.edu.au/input/file.txt',
             []])
         # A set of commands
-        directive_args.append(['', ['http://tardis.edu.au/schemas/hrmc/create',
+        directive_args.append(['', ['http://rmit.edu.au/schemas/smartconnector1/create',
             ('num_nodes', 5), ('iseed', 42), ('null_number', 4), ('parallel_number', 1)]])
         # An Example of how a nci script might work.
         directive_args.append(['',
-            ['http://nci.org.au/schemas/hrmc/custom_command/', ('command', 'ls')]])
+            ['http://nci.org.au/schemas/smartconnector1/custom', ('command', 'ls')]])
 
         platform = "nci"
         directives.append((platform, directive_name, directive_args))
@@ -463,21 +584,35 @@ class TestCommandContextLoop(TestCase):
                 directive_args, system_settings, self.user.username)
             test_initial_run_settings.append((directive_name, run_settings))
 
-            # do all the processing of stages for all available contexts for all users.
-            test_final_run_settings.append(hrmcstages.process_all_contexts())
+            #test_final_run_settings.append(hrmcstages.process_all_contexts())
+
+            res = []
+            while True:
+                contexts = models.Context.objects.all()
+                if not len(contexts):
+                    break
+                r = tasks.progress_context(contexts[0].id)
+                if r:
+                    res.append(r)
+
+            test_final_run_settings.append(res)
 
         self.assertEquals(test_initial_run_settings[0][0], 'smartconnector1')
+
         self.assertEquals(sorted(test_initial_run_settings[0][1].keys()),
-            sorted(
-            [u'command', u'file0', u'file1', u'file2',
-            u'iseed', u'num_nodes', u'platform', u'transitions', u'system',
-            u'null_number', u'parallel_number']))
+            sorted([u'http://nci.org.au/schemas/smartconnector1/custom',
+                u'http://rmit.edu.au/schemas/smartconnector1/create',
+                u'http://rmit.edu.au/schemas/smartconnector1/files',
+                u'http://rmit.edu.au/schemas/system',
+                u'http://rmit.edu.au/schemas/system/misc']))
         # TODO: testing values() is difficult as they files have random strings
 
-        logger.debug("test_final_run_settings = %s" % test_final_run_settings)
+        logger.debug("test_final_run_settings = %s" % pformat(test_final_run_settings))
+        logger.debug("test_final_run_settings[0][0] = %s" % pformat(test_final_run_settings[0][0]))
+        logger.debug("test_final_run_settings[0][0] = %s" % pformat(test_final_run_settings[0][0].keys()))
 
-        self.assertEquals(test_final_run_settings[0][0][u'null_output'], 4)
-        self.assertEquals(test_final_run_settings[0][0][u'parallel_output'], 1)
+        self.assertEquals(test_final_run_settings[0][0][u'http://rmit.edu.au/schemas/stages/null/testing']['output'], 4)
+        self.assertEquals(test_final_run_settings[0][0][u'http://rmit.edu.au/schemas/stages/parallel/testing']['output'], 1)
         logger.debug("context =  %s" % test_final_run_settings[0][0])
 
     def test_multi_remote_commands(self):
@@ -493,17 +628,16 @@ class TestCommandContextLoop(TestCase):
                       user=self.user)
         profile.save()
 
-        # Create the schemas for template parameters or config info
-        # specfied in directive arguments
-        for ns, name, desc in [('http://www.rmit.edu.au/user/profile/1',
-            "userprofile1", "Information about user"),
-            ('http://rmit.edu.au/schemas/greeting/salutation', "salutation",
-                "The form of salutation"),
-            ("http://rmit.edu.au/schemas/program", "program",
-                "A remote executing program")
-            ]:
-            sch = models.Schema.objects.create(namespace=ns, name=name, description=desc)
-            logger.debug("sch=%s" % sch)
+#         # Create the schemas for template parameters or config info
+#         # specfied in directive arguments
+#         for ns, name, desc in [('http://www.rmit.edu.au/user/profile/1',
+#             "userprofile1", "Information about user"),
+
+# #            ("http://rmit.edu.au/schemas/program", "program",
+# #                "A remote executing program")
+#             ]:
+#             sch = models.Schema.objects.create(namespace=ns, name=name, description=desc)
+#             logger.debug("sch=%s" % sch)
 
         # Create the schema for stages (currently only one) and all allowed
         # values and their types for all stages.
@@ -517,60 +651,154 @@ class TestCommandContextLoop(TestCase):
         # TODO: allow multiple ContextParameterSet each with different schema
         # so each value will come from a namespace.  e.g., general/fsys
         # nectar/num_of_nodes, setup/nodes_setup etc.
-        for name, param_type in {
-            u'file0': models.ParameterName.STRING,
-            u'file1': models.ParameterName.STRING,
-            u'file2': models.ParameterName.STRING,
-            u'program': models.ParameterName.STRING,
-            u'remotehost': models.ParameterName.STRING,
-            u'salutation': models.ParameterName.NUMERIC,
-            u'transitions': models.ParameterName.STRING,  # TODO: use STRLIST
-            u'program_output': models.ParameterName.NUMERIC,
-            u'movement_output': models.ParameterName.NUMERIC,
-            u'platform': models.ParameterName.NUMERIC,
-            u'system': models.ParameterName.STRING,
-            u'program_success': models.ParameterName.STRING,
-            u'null_output': models.ParameterName.NUMERIC,
-            u'parallel_output': models.ParameterName.NUMERIC,
-            u'null_number': models.ParameterName.NUMERIC,
-            u'parallel_number': models.ParameterName.NUMERIC,
-            u'null_index': models.ParameterName.NUMERIC,
-            u'parallel_index': models.ParameterName.NUMERIC,
-            }.items():
-            models.ParameterName.objects.create(schema=context_schema,
-                name=name,
-                type=param_type)
+        # for name, param_type in {
+        #     u'file0': models.ParameterName.STRING,
+        #     u'file1': models.ParameterName.STRING,
+        #     u'file2': models.ParameterName.STRING,
+        #     u'program': models.ParameterName.STRING,
+        #     u'remotehost': models.ParameterName.STRING,
+        #     u'salutation': models.ParameterName.NUMERIC,
+        #     u'transitions': models.ParameterName.STRING,  # TODO: use STRLIST
+        #     u'program_output': models.ParameterName.NUMERIC,
+        #     u'movement_output': models.ParameterName.NUMERIC,
+        #     u'platform': models.ParameterName.NUMERIC,
+        #     u'system': models.ParameterName.STRING,
+        #     u'program_success': models.ParameterName.STRING,
+        #     u'null_output': models.ParameterName.NUMERIC,
+        #     u'parallel_output': models.ParameterName.NUMERIC,
+        #     u'null_number': models.ParameterName.NUMERIC,
+        #     u'parallel_number': models.ParameterName.NUMERIC,
+        #     u'null_index': models.ParameterName.NUMERIC,
+        #     u'parallel_index': models.ParameterName.NUMERIC,
+        #     }.items():
+        #     models.ParameterName.objects.create(schema=context_schema,
+        #         name=name,
+        #         type=param_type)
+
+        schema_data = {
+            u'http://rmit.edu.au/schemas//files':
+                [u'general input files for directive',
+                {
+                u'file0': models.ParameterName.STRING,
+                u'file1': models.ParameterName.STRING,
+                u'file2': models.ParameterName.STRING,
+                }
+                ],
+             # Note that file schema ns must match regex
+             # protocol://host/schemas/{directective.name}/files
+             # otherwise files will not be matched correctly.
+             # TODO: make fall back to directive files in case specfici
+             # version not defined here.
+            u'http://rmit.edu.au/schemas/copy/files':
+                 [u'the copy input files',
+                 {
+                 u'file0': models.ParameterName.STRING,
+                 u'file1': models.ParameterName.STRING,
+                 }
+                 ],
+            u'http://rmit.edu.au/schemas/program/files':
+                 [u'the copy input files',
+                 {
+                 u'file0': models.ParameterName.STRING,
+                 u'file1': models.ParameterName.STRING,
+                 u'file2': models.ParameterName.STRING,
+                 }
+                 ],
+            u'http://rmit.edu.au/schemas/stages/copy/testing':
+                [u'the copy stage internal testing',
+                {
+                u'output': models.ParameterName.NUMERIC,
+                }
+                ],
+            u'http://rmit.edu.au/schemas/stages/program/testing':
+                [u'the program stage internal testing',
+                {
+                u'output': models.ParameterName.NUMERIC,
+                }
+                ],
+            u'http://rmit.edu.au/schemas/program/config':
+                [u'the program command internal config',
+                {
+                u'program': models.ParameterName.STRING,
+                u'remotehost': models.ParameterName.STRING,
+                u'program_success': models.ParameterName.STRING
+                }
+                ],
+            u'http://rmit.edu.au/schemas/system/misc':
+                [u'system level misc values',
+                {
+                u'transitions': models.ParameterName.STRING,  # deprecated
+                u'system': models.ParameterName.STRING
+                }
+                ],
+            u'http://rmit.edu.au/schemas/system':
+                [u'Information about the deployment platform',
+                {
+                u'platform': models.ParameterName.NUMERIC,  # deprecated
+                }
+                ],
+            u'http://www.rmit.edu.au/user/profile/1':
+                [u'user profile',
+                {
+                    u'userinfo1': models.ParameterName.STRING,
+                    u'fsys': models.ParameterName.STRING,
+                    u'nci_user': models.ParameterName.STRING,
+                    u'nci_password': models.ParameterName.STRING,
+                    u'nci_host': models.ParameterName.STRING,
+                    u'PASSWORD': models.ParameterName.STRING,
+                    u'USER_NAME': models.ParameterName.STRING,
+                    u'PRIVATE_KEY': models.ParameterName.STRING
+                }
+                ],
+            u'http://rmit.edu.au/schemas/greeting/salutation':
+                [u'salute',
+                {
+                    u'salutation': models.ParameterName.STRING
+                }
+                ],
+        }
+
+        for ns in schema_data:
+            l = schema_data[ns]
+            logger.debug("l=%s" % l)
+            desc = l[0]
+            logger.debug("desc=%s" % desc)
+            kv = l[1:][0]
+            logger.debug("kv=%s", kv)
+            context_schema = models.Schema.objects.create(
+                namespace=ns,
+                name="Context Schema", description=desc)
+
+            for k, v in kv.items():
+                models.ParameterName.objects.create(schema=context_schema,
+                    name=k,
+                    type=v)
 
         # Setup the schema for user configuration information (kept in profile)
         self.PARAMS = {'userinfo1': 'param1val',
             'fsys': self.remote_fs_path,
             'nci_user': 'root',
-            'nci_password': 'password',
+            'nci_password': 'dtofaam',
             'nci_host': '127.0.0.1',
-            'PASSWORD': 'password',
+            'PASSWORD': 'dtofaam',
             'USER_NAME': 'root',
             'PRIVATE_KEY': '',
             }
-        self.PARAMTYPE = {'userinfo1': models.ParameterName.STRING,
-            'fsys': models.ParameterName.STRING,
-            'nci_user': models.ParameterName.STRING,
-            'nci_password': models.ParameterName.STRING,
-            'nci_host': models.ParameterName.STRING,
-            'PASSWORD': models.ParameterName.STRING,
-            'USER_NAME': models.ParameterName.STRING,
-            'PRIVATE_KEY': models.ParameterName.STRING}
+        self.PARAMTYPE = {}
+        sch = models.Schema.objects.get(namespace="http://www.rmit.edu.au/user/profile/1")
+        #paramtype = schema_data['http://www.rmit.edu.au/user/profile/1'][1]
         param_set = models.UserProfileParameterSet.objects.create(user_profile=profile,
             schema=sch)
         for k, v in self.PARAMS.items():
-            param_name = models.ParameterName.objects.create(schema=sch,
-                name=k,
-                type=self.PARAMTYPE[k])
+            param_name = models.ParameterName.objects.get(schema=sch,
+                name=k)
             models.UserProfileParameter.objects.create(name=param_name,
                 paramset=param_set,
                 value=v)
 
         # make the system settings, available to initial stage and merged with run_settings
-        system_settings = {u'system': u'settings'}
+        system_dict = {u'system': u'settings'}
+        system_settings = {u'http://rmit.edu.au/schemas/system/misc': system_dict}
 
         # Make a platform for the commands
         platform = models.Platform(name="nci")
@@ -632,7 +860,7 @@ class TestCommandContextLoop(TestCase):
         directive_args = []
         directive_name = "program"
         directive_args.append(['',
-            ['http://rmit.edu.au/schemas/program', ('program', 'cat'),
+            ['http://rmit.edu.au/schemas/program/config', ('program', 'cat'),
             ('remotehost', '127.0.0.1')]])
 
         directive_args.append(['hpc://ncitest.org/remote/greet.txt',
@@ -670,20 +898,43 @@ class TestCommandContextLoop(TestCase):
             # do all the processing of stages for all available contexts for all users.
             # NB: a user can have multiple run contexts, but they will be processed
             # in a undefined order. TODO: build a run_context sequence model of some kind.
-            test_final_run_settings.append(hrmcstages.process_all_contexts())
+
+            res = []
+            while True:
+                contexts = models.Context.objects.all()
+                if not len(contexts):
+                    break
+                r = tasks.progress_context(contexts[0].id)
+                if r:
+                    res.append(r)
+
+            test_final_run_settings.append(res)
+
+
+
+            #test_final_run_settings.append(hrmcstages.process_all_contexts())
             logger.debug("test_final_run_settings = %s" % pformat(test_final_run_settings))
 
         logger.debug("test_initial_run_settings = %s" % pformat(test_initial_run_settings))
 
         correct_initial_run_settings = [
-        ('copy', [u'file0', u'file1',
-                u'platform', u'transitions', u'system']),
+        ('copy',
+            [u'http://rmit.edu.au/schemas/copy/files',
+            u'http://rmit.edu.au/schemas/system',
+            u'http://rmit.edu.au/schemas/system/misc']
+            ),
 
-        ('program', [u'file0', u'file1', u'file2', u'program', u'remotehost',
-            u'platform', u'transitions', u'system']),
-
-        ('copy', [u'file0', u'file1',
-                u'platform', u'transitions', u'system'])
+        ('program',
+            [u'http://rmit.edu.au/schemas/program/config',
+            u'http://rmit.edu.au/schemas/program/files',
+            u'http://rmit.edu.au/schemas/system',
+            u'http://rmit.edu.au/schemas/system/misc']
+            ),
+        ('copy',
+            [u'http://rmit.edu.au/schemas/copy/files',
+            u'http://rmit.edu.au/schemas/system',
+            u'http://rmit.edu.au/schemas/system/misc']
+            ),
         ]
         for test_init_run_settings, correct_init_run_settings in zip(test_initial_run_settings,
             correct_initial_run_settings):
@@ -701,9 +952,9 @@ class TestCommandContextLoop(TestCase):
         logger.debug("test2=%s" % test2)
         test3 = test_final_run_settings[2]
         logger.debug("test3=%s" % test3)
-        self.assertEquals(test1[0]['movement_output'], 1)
-        self.assertEquals(test2[0]['program_output'], 1)
-        self.assertEquals(test3[0]['movement_output'], 1)
+        self.assertEquals(test1[0]['http://rmit.edu.au/schemas/stages/copy/testing']['output'], 1)
+        self.assertEquals(test2[0]['http://rmit.edu.au/schemas/stages/program/testing']['output'], 1)
+        self.assertEquals(test3[0]['http://rmit.edu.au/schemas/stages/copy/testing']['output'], 1)
 
         res = self.remote_fs.open("local/finalresult.txt").read()
         logger.info(res)

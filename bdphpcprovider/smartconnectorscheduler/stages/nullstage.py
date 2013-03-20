@@ -37,11 +37,14 @@ class NullStage(Stage):
         Return true if the directory pattern triggers this stage, or there
         has been any other error
         """
+        # Remember: context is immutable in triggered
+        #FIXME: triggered should make deep copy of context to ensure that it is not modified.
         # FIXME: Need to verify that triggered is idempotent.
         logger.debug("Null Stage Triggered")
         logger.debug("context=%s" % context)
-        if 'null_output' in context:
-            self.val = context['null_output']
+
+        if self._exists(context, 'http://rmit.edu.au/schemas/stages/null/testing', 'output'):
+            self.val = context['http://rmit.edu.au/schemas/stages/null/testing']['output']
         else:
             self.val = 0
 
@@ -50,10 +53,10 @@ class NullStage(Stage):
         # directive argument.  FIXME: this should be a smart connector specific
         # parameter set during directive definition.
 
-        if 'null_index' in context:
-            self.null_index = context['null_index']
+        if self._exists(context, 'http://rmit.edu.au/schemas/stages/null/testing', 'index'):
+            self.null_index = context['http://rmit.edu.au/schemas/stages/null/testing']['index']
         else:
-            self.null_index = context['null_number']
+            self.null_index = context['http://rmit.edu.au/schemas/smartconnector1/create']['null_number']
 
         if self.null_index:
             return True
@@ -66,16 +69,19 @@ class NullStage(Stage):
         logger.debug("context=%s" % context)
         logger.debug("Null Stage Processing")
 
-
     def output(self, context):
         """ produce the resulting datfiles and metadata
         """
         logger.debug("Null Stage Processing")
         logger.debug("context=%s" % context)
+
+        if not self._exists(context, 'http://rmit.edu.au/schemas/stages/null/testing'):
+            context['http://rmit.edu.au/schemas/stages/null/testing'] = {}
+
         self.val += 1
-        context['null_output'] = self.val
+        context['http://rmit.edu.au/schemas/stages/null/testing']['output'] = self.val
 
         self.null_index -= 1
-        context['null_index'] = self.null_index
+        context['http://rmit.edu.au/schemas/stages/null/testing']['index'] = self.null_index
 
         return context

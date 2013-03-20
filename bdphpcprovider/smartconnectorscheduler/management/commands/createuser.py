@@ -176,5 +176,30 @@ class Command(BaseCommand):
                 paramset=param_set,
                 value=v)
 
+
+
+         # # Setup the schema for user configuration information (kept in profile)
+         # self.PARAMS = {'userinfo1': 'param1val',
+         #     'userinfo2': 42,
+         #     'fsys': self.remote_fs_path,
+         #     'nci_user': 'root',
+         #     'nci_password': 'dtofaam',
+         #     'nci_host': '127.0.0.1',
+         #     }
+
+        # self.PARAMTYPE = {}
+        # sch = models.Schema.objects.get(namespace="http://www.rmit.edu.au/user/profile/1")
+        # #paramtype = schema_data['http://www.rmit.edu.au/user/profile/1'][1]
+        # param_set = models.UserProfileParameterSet.objects.create(user_profile=profile,
+        #     schema=sch)
+        # for k, v in self.PARAMS.items():
+        #     param_name = models.ParameterName.objects.get(schema=sch,
+        #         name=k)
+        #     models.UserProfileParameter.objects.create(name=param_name,
+        #         paramset=param_set,
+        #         value=v)
+
+
+
         if verbosity >= 1:
           self.stdout.write("BDPHPCProvider user created successfully.\n")

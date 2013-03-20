@@ -47,12 +47,14 @@ class ProgramStage(Stage):
         # FIXME: Need to verify that triggered is idempotent.
         logger.debug("Program Stage Triggered")
         logger.debug("context=%s" % context)
-        if 'program_output' in context:
-            self.val = context['program_output']
+
+        if self._exists(context, 'http://rmit.edu.au/schemas/stages/program/testing', 'output'):
+            self.val = context['http://rmit.edu.au/schemas/stages/program/testing']['output']
         else:
             self.val = 0
 
-        if 'program_success' in context:
+        if self._exists(context, 'http://rmit.edu.au/schemas/program/config',
+            'program_success'):
             return False
 
         return True
@@ -65,16 +67,15 @@ class ProgramStage(Stage):
 
         logger.debug("Program Stage Processing")
 
-        param_urls = [context[u"file%d" % x] for x in xrange(0, 3)]
+        param_urls = [context[u"http://rmit.edu.au/schemas/program/files"][u"file%d" % x] for x in xrange(0, 3)]
         param_paths = [hrmcstages._get_remote_path(x, self.user_settings) for x in param_urls]
 
-        program = context['program']
-
+        program = context[u"http://rmit.edu.au/schemas/program/config"]['program']
+        platform = context[u"http://rmit.edu.au/schemas/system"][u'platform']
         logger.debug("program=%s" % program)
         logger.debug("remote paths=%s" % param_paths)
 
-        logger.debug("context[u'platform'] = %s" % context[u'platform'])
-        platform = models.Platform.objects.get(id=context[u'platform'])
+        platform = models.Platform.objects.get(id=platform)
         logger.debug("platform=%s" % platform)
 
         if platform.name == 'nci':
@@ -82,13 +83,18 @@ class ProgramStage(Stage):
             command = "%s %s %s > %s " % (program, param_paths[0], param_paths[1], param_paths[2])
             # TODO: remotehost should be property of models.Platform, which can hold correct
             # ip address
-            ssh = sshconnector.open_connection(ip_address=context['remotehost'], settings=self.user_settings)
+
+            remote_host = context[u'http://rmit.edu.au/schemas/program/config'][u'remotehost']
+
+            ssh = sshconnector.open_connection(ip_address=remote_host, settings=self.user_settings)
             res, errs = sshconnector.run_command_with_status(ssh, command, current_dir=self.user_settings[u'fsys'])
             if not errs:
-                context['program_success'] = True
+                self.program_success = True
+            else:
+                self.program_success = False
+
         else:
             raise NotImplementedError("ProgramStage not supported for this platform")
-
 
         logger.debug("context=%s" % context)
 
@@ -100,5 +106,15 @@ class ProgramStage(Stage):
         logger.debug("Program Stage Output")
         logger.debug("context=%s" % context)
         self.val += 1
-        context['program_output'] = self.val
+
+        if not self._exists(context, 'http://rmit.edu.au/schemas/stages/program/testing'):
+            context['http://rmit.edu.au/schemas/stages/program/testing'] = {}
+
+        context['http://rmit.edu.au/schemas/stages/program/testing']['output'] = self.val
+
+        if not self._exists(context, 'http://rmit.edu.au/schemas/program/config'):
+            context['http://rmit.edu.au/schemas/program/config'] = {}
+        context['http://rmit.edu.au/schemas/program/config']['program_success'] = self.program_success
+
+
         return context
