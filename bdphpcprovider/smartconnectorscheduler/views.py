@@ -217,8 +217,8 @@ def test_directive(request, directive_id):
                 ('GROUP_ID_DIR', 'group_id'), ('group_id', 'c4573e9b0cc9ecf326c8729c7e928a9a'),
                 ('flag', 0), ('CLOUD_SLEEP_INTERVAL', 5),
                 ('setup_finished', 0), ('id', 0),
-                ('PAYLOAD_DESTINATION', 'celery_payload'),
-                ('PAYLOAD_SOURCE', 'local://127.0.0.1/local/testpayload'),
+                ('PAYLOAD_DESTINATION', 'nectar@celery_payload_2'),
+                ('PAYLOAD_SOURCE', 'file://127.0.0.1/local/testpayload'),
                 ('local_fs_path', local_fs_path)]])
             directives.append((platform, directive_name, directive_args))
 

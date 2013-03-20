@@ -1,20 +1,13 @@
 from bdphpcprovider.smartconnectorscheduler import botocloudconnector
 from bdphpcprovider.smartconnectorscheduler.sshconnector import open_connection
-from bdphpcprovider.smartconnectorscheduler.sshconnector import put_payload
 from bdphpcprovider.smartconnectorscheduler.sshconnector import run_sudo_command
-from bdphpcprovider.smartconnectorscheduler.sshconnector import mkdir
-
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
-from bdphpcprovider.smartconnectorscheduler.hrmcstages import get_all_settings
-from bdphpcprovider.smartconnectorscheduler.hrmcstages import update_key
 from bdphpcprovider.smartconnectorscheduler.stages.errors import InsufficientResourceError
 from bdphpcprovider.smartconnectorscheduler.stages.errors import MissingConfigurationError
-
-import os
+from bdphpcprovider.smartconnectorscheduler import hrmcstages
 import logging
 
 logger = logging.getLogger(__name__)
-
 
 
 class Setup(Stage):
@@ -80,16 +73,12 @@ class Setup(Stage):
         available_nodes = list(botocloudconnector.get_rego_nodes(group_id, settings))
         requested_nodes = 0
 
-        if 'PAYLOAD_SOURCE' in settings:
-            source = settings['PAYLOAD_SOURCE']
-        else:
+        if 'PAYLOAD_SOURCE' not in settings:
             message = "PAYLOAD_SOURCE is not set"
             logger.exception(message)
             raise MissingConfigurationError(message)
 
-        if 'PAYLOAD_DESTINATION' in settings:
-            destination = settings['PAYLOAD_DESTINATION']
-        else:
+        if 'PAYLOAD_DESTINATION' not in settings:
             message = "PAYLOAD_DESTINATION is not set"
             logger.exception(message)
             raise MissingConfigurationError(message)
@@ -122,7 +111,11 @@ class Setup(Stage):
                 logger.debug("starting thread")
                 instance = available_nodes[0]
                 node_ip = botocloudconnector.get_instance_ip(instance.id, settings)
-                destination = "hpc://" + node_ip + "/" + settings['PAYLOAD_DESTINATION']
+                source = self.get_url_with_pkey(settings, settings['PAYLOAD_SOURCE'])
+                destination = self.get_url_with_pkey(settings, settings['PAYLOAD_DESTINATION'],
+                                                     is_relative_path=True, ip_address=node_ip)
+                logger.debug("Source %s" % source)
+                logger.debug("Destination %s" % destination)
                 t = threading.Thread(target=setup_worker,
                     args=(node_ip, make_target, source, destination))
                 threads_running.append(t)
@@ -138,17 +131,28 @@ class Setup(Stage):
         """
         Transfer the task package to the node and install
         """
-        logger.info("Setup node with IP %s" % node_ip)
-        ssh = open_connection(ip_address=node_ip, settings=settings)
-        logger.debug("Setup %s ssh" % ssh)
+        hrmcstages.copy_directories(source, destination)
 
-        from bdphpcprovider.smartconnectorscheduler import hrmcstages
-        hrmcstages.copy_directories(source, destination, settings)
-
-        makefile_path = settings['PAYLOAD_DESTINATION']
-       # Check whether make is installed. If not install
+        makefile_path = self.get_make_path(destination)
+        # Check whether make is installed. If not install
         check_make_installation = '`command -v make  > /dev/null 2>&1 || echo sudo yum install -y make`; '
         execute_setup =  "cd %s; make %s " % (makefile_path, make_target)
         command = check_make_installation + execute_setup
         logger.debug("Setting up environment using makefile with target %s" % make_target)
+        logger.info("Setup node with IP %s" % node_ip)
+        ssh = open_connection(ip_address=node_ip, settings=settings)
         run_sudo_command(ssh, command, settings, "")
+
+    def get_make_path(self, destination):
+        from urlparse import urlparse, parse_qsl
+        import os
+        destination = hrmcstages.get_http_url(destination)
+        url = urlparse(destination)
+        query = parse_qsl(url.query)
+        query_settings = dict(x[0:] for x in query)
+        path = url.path
+        if path[0] == os.path.sep:
+            path = path[1:]
+        make_path = os.path.join(query_settings['root_path'], path)
+        logger.debug("Makefile path %s %s %s " % (make_path, query_settings['root_path'], path))
+        return make_path

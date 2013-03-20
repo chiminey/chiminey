@@ -265,11 +265,13 @@ class Stage(models.Model):
         return next_stage
 
 
+#FIXME: We assume 1 private key per platform. Relax this assumption
 class Platform(models.Model):
     """
     The envioronment where directives will be executed.
     """
-    name = models.CharField(max_length=256)
+    name = models.CharField(max_length=256, default='nectar')
+    root_path = models.CharField(max_length=512, default='/home/centos')
 
     def __unicode__(self):
         return u"Platform:%s" % (self.name)
