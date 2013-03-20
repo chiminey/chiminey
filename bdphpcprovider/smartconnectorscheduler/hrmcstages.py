@@ -423,7 +423,7 @@ def get_http_url(non_http_url):
 
 def copy_directories(source_url, destination_url):
     """
-    Supports only local and hpc schemes
+    Supports only file and ssh schemes
     :param source_url:
     :param destination_url:
     :return:
@@ -448,27 +448,28 @@ def copy_directories(source_url, destination_url):
     if source_path[0] == os.path.sep:
         source_path = source_path[1:]
 
-    if source_scheme == "local":
+    if source_scheme == "file":
         root_path = get_value('root_path', query_settings)
         logger.debug("self.root_path=%s" % root_path)
         fs = LocalStorage(location=root_path + "/")
-    elif source_scheme == "hpc":
-        logger.debug("getting from hpc")
+    elif source_scheme == "ssh":
+        logger.debug("getting from ssh")
         key_filename = get_value('key_filename', query_settings)
         username = get_value('username', query_settings)
         password = get_value('password', query_settings)
         root_path = get_value('root_path', query_settings)
         logger.debug("root_path=%s" % root_path)
-        hpc_settings = {'params': {'key_filename': key_filename,
+        ssh_settings = {'params': {'key_filename': key_filename,
                                    'username': username,
                                    'password': password},
                         'host': source_location,
                         'root': str(root_path) + "/"}
-        logger.debug("nci_settings=%s" % pformat(hpc_settings))
-        fs = NCIStorage(settings=hpc_settings)
+        logger.debug("nci_settings=%s" % pformat(ssh_settings))
+        fs = NCIStorage(settings=ssh_settings)
         logger.debug("fs=%s" % fs)
     else:
         logger.warn("scheme: %s not supported" % source_scheme)
+        return
 
     current_content = fs.listdir(source_path)
     current_path_pointer = source_path
@@ -479,7 +480,8 @@ def copy_directories(source_url, destination_url):
             file_path = str(os.path.join(current_path_pointer, i))
             file_path_holder.append(file_path)
             content = fs.open(file_path).read()
-            curr_dest_url = os.path.join(destination_prefix, file_path) \
+            updated_file_path = file_path[len(source_path)+1:]
+            curr_dest_url = os.path.join(destination_prefix, updated_file_path) \
                             + destination_suffix
             logger.debug("Current destination url %s" % curr_dest_url)
             put_file(curr_dest_url, content)
@@ -530,27 +532,27 @@ def put_file(file_url, content):
         response = urllib2.urlopen(req)
         res = response.read()
         logger.debug("response=%s" % res)
-    elif scheme == "hpc":
+    elif scheme == "ssh":
         key_filename = get_value('key_filename', query_settings)
         username = get_value('username', query_settings)
         password = get_value('password', query_settings)
         root_path = get_value('root_path', query_settings)
         logger.debug("key_filename=%s" % key_filename)
         logger.debug("root_path=%s" % root_path)
-        hpc_settings = {'params': {'key_filename': (key_filename),
-                                   'username': 'root',
+        ssh_settings = {'params': {'key_filename': key_filename,
+                                   'username': username,
                                    'password': password},
                         'host': location,
                         'root': str(root_path) + "/"}
-        logger.debug("here hpc_settings=%s" % hpc_settings)
-        fs = NCIStorage(settings=hpc_settings)
+        logger.debug("ssh_settings=%s" % ssh_settings)
+        fs = NCIStorage(settings=ssh_settings)
          # FIXME: does this overwrite?
         fs.save(mypath, ContentFile(content))  # NB: ContentFile only takes bytes
         logger.debug("File to be written on %s" % location)
     elif scheme == "tardis":
         logger.warn("tardis put not implemented")
         #raise NotImplementedError()
-    elif scheme == "local":
+    elif scheme == "file":
         root_path = get_value('root_path', query_settings)
         logger.debug("remote_fs_path=%s" % root_path)
         fs = LocalStorage(location=root_path)
@@ -588,20 +590,20 @@ def get_file(file_url):
         req = urllib2.Request(o)
         response = urllib2.urlopen(req)
         content = response.read()
-    elif scheme == "hpc":
+    elif scheme == "ssh":
         logger.debug("getting from hpc")
         key_filename = get_value('key_filename', query_settings)
         username = get_value('username', query_settings)
         password = get_value('password', query_settings)
         root_path = get_value('root_path', query_settings)
         logger.debug("root_path=%s" % root_path)
-        hpc_settings = {'params': {'key_filename': key_filename,
+        ssh_settings = {'params': {'key_filename': key_filename,
                                    'username': username,
                                    'password': password},
                         'host': location,
                         'root': root_path + "/"}
-        logger.debug("hpc_settings=%s" % hpc_settings)
-        fs = NCIStorage(settings=hpc_settings)
+        logger.debug("ssh_settings=%s" % ssh_settings)
+        fs = NCIStorage(settings=ssh_settings)
         logger.debug("fs=%s" % fs)
         logger.debug("mypath=%s"% mypath)
         fp = fs.open(mypath)
@@ -611,7 +613,7 @@ def get_file(file_url):
     elif scheme == "tardis":
         return "a={{a}} b={{b}}"
         raise NotImplementedError("tardis scheme not implemented")
-    elif scheme == "local":
+    elif scheme == "file":
         root_path = get_value('root_path', query_settings)
         logger.debug("self.root_path=%s" % root_path)
         fs = LocalStorage(location=root_path + "/")
