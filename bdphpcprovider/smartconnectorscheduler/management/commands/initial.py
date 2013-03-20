@@ -145,6 +145,8 @@ class Command(BaseCommand):
             'USER_NAME': models.ParameterName.STRING,
             'PRIVATE_KEY': models.ParameterName.STRING,
             'PRIVATE_KEY_NAME': models.ParameterName.STRING,
+            'PRIVATE_KEY_NECTAR': models.ParameterName.STRING,
+            'PRIVATE_KEY_NCI': models.ParameterName.STRING,
             'EC2_ACCESS_KEY': models.ParameterName.STRING,
             'EC2_SECRET_KEY': models.ParameterName.STRING}
 
@@ -237,8 +239,6 @@ class Command(BaseCommand):
                                                              package=self.setup_package,
                                                              order=1)
 
-
-
         logger.debug("stages=%s" % models.Stage.objects.all())
         # Make a new command that reliases composite_stage
         # TODO: add the command program to the model
@@ -247,6 +247,9 @@ class Command(BaseCommand):
         comm, _ = models.Command.objects.get_or_create(platform=platform, directive=smart_dir, stage=composite_stage)
         comm, _ = models.Command.objects.get_or_create(platform=platform, directive=hrmc_smart_dir, stage=hrmc_composite_stage)
 
+        models.Platform.objects.get_or_create(name='local', root_path='/opt/cloudenabling/current/bdphpcprovider/smartconnectorscheduler/testing/remotesys')
+        models.Platform.objects.get_or_create(name='nectar', root_path='/home/centos')
+        models.Platform.objects.get_or_create(name='nci', root_path='/')
 
         # We could make one command with a composite containing three stages or
         # three commands each containing a single stage.
