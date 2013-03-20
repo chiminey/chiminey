@@ -153,7 +153,7 @@ def test_directive(request, directive_id):
             directive_name = "program"
             logger.debug("%s" % directive_name)
             directive_args.append(['',
-                ['http://rmit.edu.au/schemas/program', ('program', 'cat'),
+                ['http://rmit.edu.au/schemas/program/config', ('program', 'cat'),
                 ('remotehost', '127.0.0.1')]])
 
             directive_args.append(['hpc://ncitest.org/remote/greet.txt',
@@ -185,23 +185,24 @@ def test_directive(request, directive_id):
             directive_args.append(['tardis://iant@tardis.edu.au/datafile/15', []])
             # Template on remote storage with corresponding multiple parameter sets
             directive_args.append(['hpc://iant@nci.edu.au/input/input.txt',
-                ['http://tardis.edu.au/schemas/hrmc/dfmeta/', ('a', 3), ('b', 4)],
-                ['http://tardis.edu.au/schemas/hrmc/dfmeta/', ('a', 1), ('b', 2)],
-                ['http://tardis.edu.au/schemas/hrmc/dfmeta2/', ('c', 'hello')]])
+                ['http://tardis.edu.au/schemas/hrmc/dfmeta', ('a', 3), ('b', 4)],
+                ['http://tardis.edu.au/schemas/hrmc/dfmeta', ('a', 1), ('b', 2)],
+                ['http://tardis.edu.au/schemas/hrmc/dfmeta2', ('c', 'hello')]])
             # A file (template with no variables)
             directive_args.append(['hpc://iant@nci.edu.au/input/file.txt',
                 []])
             # A set of commands
-            directive_args.append(['', ['http://tardis.edu.au/schemas/hrmc/create',
+            directive_args.append(['', ['http://rmit.edu.au/schemas/smartconnector1/create',
                 ('num_nodes', 5), ('iseed', 42), ('null_number', 4), ('parallel_number', 2)]])
             # An Example of how a nci script might work.
             directive_args.append(['',
-                ['http://nci.org.au/schemas/hrmc/custom_command/', ('command', 'ls')]])
+                ['http://nci.org.au/schemas/smartconnector1/custom', ('command', 'ls')]])
 
             directives.append((platform, directive_name, directive_args))
 
-         # make the system settings, available to initial stage and merged with run_settings
-        system_settings = {u'system': u'settings'}
+        # make the system settings, available to initial stage and merged with run_settings
+        system_dict = {u'system': u'settings'}
+        system_settings = {u'http://rmit.edu.au/schemas/system/misc': system_dict}
 
         logger.debug("directive=%s" % directives)
         new_run_contexts = []

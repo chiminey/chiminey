@@ -63,77 +63,256 @@ class Command(BaseCommand):
 
         # Create the schemas for template parameters or config info
         # specfied in directive arguments
-        for ns, name, desc in [(models.UserProfile.PROFILE_SCHEMA_NS,
-            "userprofile1", "Information about user"),
-            ('http://rmit.edu.au/schemas/greeting/salutation', "salutation",
-                "The form of salutation"),
-            ("http://rmit.edu.au/schemas/program", "program",
-                "A remote executing program"),
-             ('http://tardis.edu.au/schemas/hrmc/dfmeta/', "datafile1",
-                "datafile 1 schema"),
-            ('http://tardis.edu.au/schemas/hrmc/dfmeta2/', "datafile2",
-                "datafile 2 schema"),
-            ('http://tardis.edu.au/schemas/hrmc/create', "create",
-                "create stage"),
-            ("http://nci.org.au/schemas/hrmc/custom_command/", "custom",
-                "custom command")
-            ]:
-            sch, _ = models.Schema.objects.get_or_create(namespace=ns, name=name, description=desc)
-            logger.debug("sch=%s" % sch)
+        # for ns, name, desc in [(models.UserProfile.PROFILE_SCHEMA_NS,
+        #     "userprofile1", "Information about user"),
+        #     ('http://rmit.edu.au/schemas/greeting/salutation', "salutation",
+        #         "The form of salutation"),
+        #     ("http://rmit.edu.au/schemas/program", "program",
+        #         "A remote executing program"),
+        #      ('http://tardis.edu.au/schemas/hrmc/dfmeta/', "datafile1",
+        #         "datafile 1 schema"),
+        #     ('http://tardis.edu.au/schemas/hrmc/dfmeta2/', "datafile2",
+        #         "datafile 2 schema"),
+        #     ('http://tardis.edu.au/schemas/hrmc/create', "create",
+        #         "create stage"),
+        #     ("http://nci.org.au/schemas/hrmc/custom_command/", "custom",
+        #         "custom command")
+        #     ]:
+        #     sch, _ = models.Schema.objects.get_or_create(namespace=ns, name=name, description=desc)
+        #     logger.debug("sch=%s" % sch)
 
-        user_schema = models.Schema.objects.get(namespace=models.UserProfile.PROFILE_SCHEMA_NS)
-        # Create the schema for stages (currently only one) and all allowed
-        # values and their types for all stages.
-        context_schema, _ = models.Schema.objects.get_or_create(
-            namespace=models.Context.CONTEXT_SCHEMA_NS,
-            name="Context Schema", description="Schema for run settings")
-        # We assume that a run_context has only one schema at the moment, as
-        # we have to load up this schema with all run settings values used in
-        # any of the stages (and any parameters required for the stage
-        # invocation)
-        # TODO: allow multiple ContextParameterSet each with different schema
-        # so each value will come from a namespace.  e.g., general/fsys
-        # nectar/num_of_nodes, setup/nodes_setup etc.
-        for name, param_type in {
-            u'file0': models.ParameterName.STRING,
-            u'file1': models.ParameterName.STRING,
-            u'file2': models.ParameterName.STRING,
-            u'program': models.ParameterName.STRING,
-            u'remotehost': models.ParameterName.STRING,
-            u'salutation': models.ParameterName.NUMERIC,
-            u'transitions': models.ParameterName.STRING,  # TODO: use STRLIST
-            u'program_output': models.ParameterName.NUMERIC,
-            u'movement_output': models.ParameterName.NUMERIC,
-            u'platform': models.ParameterName.NUMERIC,
-            u'system': models.ParameterName.STRING,
-            u'num_nodes': models.ParameterName.NUMERIC,
-            u'program_success': models.ParameterName.STRING,
-            u'iseed': models.ParameterName.NUMERIC,
-            u'command': models.ParameterName.STRING,
-            u'null_output': models.ParameterName.NUMERIC,
-            u'parallel_output': models.ParameterName.NUMERIC,
-            u'null_number': models.ParameterName.NUMERIC,
-            u'parallel_number': models.ParameterName.NUMERIC,
-            u'null_index': models.ParameterName.NUMERIC,
-            u'parallel_index': models.ParameterName.NUMERIC,
-            }.items():
-            models.ParameterName.objects.get_or_create(schema=context_schema,
-                name=name,
-                type=param_type)
 
-        self.PARAMTYPE = {'userinfo1': models.ParameterName.STRING,
-            'userinfo2': models.ParameterName.NUMERIC,
-            'fsys': models.ParameterName.STRING,
-            'nci_user': models.ParameterName.STRING,
-            'nci_password': models.ParameterName.STRING,
-            'nci_host': models.ParameterName.STRING,
-            'PASSWORD': models.ParameterName.STRING,
-            'USER_NAME': models.ParameterName.STRING,
-            'PRIVATE_KEY': models.ParameterName.STRING}
-        for k, v in self.PARAMTYPE.items():
-            param_name, _ = models.ParameterName.objects.get_or_create(schema=user_schema,
-                name=k,
-                type=self.PARAMTYPE[k])
+
+        # user_schema = models.Schema.objects.get(namespace=models.UserProfile.PROFILE_SCHEMA_NS)
+        # # Create the schema for stages (currently only one) and all allowed
+        # # values and their types for all stages.
+        # context_schema, _ = models.Schema.objects.get_or_create(
+        #     namespace=models.Context.CONTEXT_SCHEMA_NS,
+        #     name="Context Schema", description="Schema for run settings")
+        # # We assume that a run_context has only one schema at the moment, as
+        # # we have to load up this schema with all run settings values used in
+        # # any of the stages (and any parameters required for the stage
+        # # invocation)
+        # # TODO: allow multiple ContextParameterSet each with different schema
+        # # so each value will come from a namespace.  e.g., general/fsys
+        # # nectar/num_of_nodes, setup/nodes_setup etc.
+        # for name, param_type in {
+        #     u'file0': models.ParameterName.STRING,
+        #     u'file1': models.ParameterName.STRING,
+        #     u'file2': models.ParameterName.STRING,
+        #     u'program': models.ParameterName.STRING,
+        #     u'remotehost': models.ParameterName.STRING,
+        #     u'salutation': models.ParameterName.NUMERIC,
+        #     u'transitions': models.ParameterName.STRING,  # TODO: use STRLIST
+        #     u'program_output': models.ParameterName.NUMERIC,
+        #     u'movement_output': models.ParameterName.NUMERIC,
+        #     u'platform': models.ParameterName.NUMERIC,
+        #     u'system': models.ParameterName.STRING,
+        #     u'num_nodes': models.ParameterName.NUMERIC,
+        #     u'program_success': models.ParameterName.STRING,
+        #     u'iseed': models.ParameterName.NUMERIC,
+        #     u'command': models.ParameterName.STRING,
+        #     u'null_output': models.ParameterName.NUMERIC,
+        #     u'parallel_output': models.ParameterName.NUMERIC,
+        #     u'null_number': models.ParameterName.NUMERIC,
+        #     u'parallel_number': models.ParameterName.NUMERIC,
+        #     u'null_index': models.ParameterName.NUMERIC,
+        #     u'parallel_index': models.ParameterName.NUMERIC,
+        #     }.items():
+        #     models.ParameterName.objects.get_or_create(schema=context_schema,
+        #         name=name,
+        #         type=param_type)
+
+        # self.PARAMTYPE = {'userinfo1': models.ParameterName.STRING,
+        #     'userinfo2': models.ParameterName.NUMERIC,
+        #     'fsys': models.ParameterName.STRING,
+        #     'nci_user': models.ParameterName.STRING,
+        #     'nci_password': models.ParameterName.STRING,
+        #     'nci_host': models.ParameterName.STRING,
+        #     'PASSWORD': models.ParameterName.STRING,
+        #     'USER_NAME': models.ParameterName.STRING,
+        #     'PRIVATE_KEY': models.ParameterName.STRING}
+        # for k, v in self.PARAMTYPE.items():
+        #     param_name, _ = models.ParameterName.objects.get_or_create(schema=user_schema,
+        #         name=k,
+        #         type=self.PARAMTYPE[k])
+
+
+        schema_data = {
+            u'http://rmit.edu.au/schemas//files':
+                [u'general input files for directive',
+                {
+                u'file0': models.ParameterName.STRING,
+                u'file1': models.ParameterName.STRING,
+                u'file2': models.ParameterName.STRING,
+                }
+                ],
+             # Note that file schema ns must match regex
+             # protocol://host/schemas/{directective.name}/files
+             # otherwise files will not be matched correctly.
+             # TODO: make fall back to directive files in case specfici
+             # version not defined here.
+             u'http://rmit.edu.au/schemas/smartconnector1/files':
+                 [u'the smartconnector1 input files',
+                 {
+                 u'file0': models.ParameterName.STRING,
+                 u'file1': models.ParameterName.STRING,
+                 u'file2': models.ParameterName.STRING,
+                 }
+                 ],
+            u'http://rmit.edu.au/schemas/smartconnector1/create':
+                [u'the smartconnector1 create stage config',
+                {
+                u'iseed': models.ParameterName.NUMERIC,
+                u'num_nodes': models.ParameterName.NUMERIC,
+                u'null_number': models.ParameterName.NUMERIC,
+                u'parallel_number': models.ParameterName.NUMERIC,
+                }
+                ],
+            # we might want to reuse schemas in muliple contextsets
+            # hence we could merge next too stages, for example.
+            # However, current ContextParameterSets are unamed in the
+            # URI so we can't identify which one to use.
+            u'http://rmit.edu.au/schemas/stages/null/testing':
+                [u'the null stage internal testing',
+                {
+                u'output': models.ParameterName.NUMERIC,
+                u'index': models.ParameterName.NUMERIC,
+                }
+                ],
+            u'http://rmit.edu.au/schemas/stages/parallel/testing':
+                [u'the parallel stage internal testing',
+                {
+
+                u'output': models.ParameterName.NUMERIC,
+                u'index': models.ParameterName.NUMERIC
+                }
+                ],
+            u'http://nci.org.au/schemas/smartconnector1/custom':
+                [u'the smartconnector1 custom command',
+                {
+                u'command': models.ParameterName.STRING
+                }
+                ],
+            u'http://rmit.edu.au/schemas/system/misc':
+                [u'system level misc values',
+                {
+                u'transitions': models.ParameterName.STRING,  # deprecated
+                u'system': models.ParameterName.STRING
+                }
+                ],
+            u'http://rmit.edu.au/schemas/system':
+                [u'Information about the deployment platform',
+                {
+                u'platform': models.ParameterName.NUMERIC,  # deprecated
+                }
+                ],
+            u'http://tardis.edu.au/schemas/hrmc/dfmeta':
+                ["datafile",
+                {
+                u"a": models.ParameterName.NUMERIC,
+                u'b': models.ParameterName.NUMERIC,
+                }
+                ],
+            u'http://tardis.edu.au/schemas/hrmc/dfmeta2':
+                ["datafile2",
+                {
+                u'c': models.ParameterName.STRING,
+                }
+                ],
+            models.UserProfile.PROFILE_SCHEMA_NS:
+                [u'user profile',
+                {
+                    u'userinfo1': models.ParameterName.STRING,
+                    u'userinfo2': models.ParameterName.NUMERIC,
+                    u'fsys': models.ParameterName.STRING,
+                    u'nci_user': models.ParameterName.STRING,
+                    u'nci_password': models.ParameterName.STRING,
+                    u'nci_host': models.ParameterName.STRING,
+                    u'PASSWORD': models.ParameterName.STRING,
+                    u'USER_NAME': models.ParameterName.STRING,
+                    u'PRIVATE_KEY': models.ParameterName.STRING
+                }
+                ],
+            u'http://rmit.edu.au/schemas/copy/files':
+                 [u'the copy input files',
+                 {
+                 u'file0': models.ParameterName.STRING,
+                 u'file1': models.ParameterName.STRING,
+                 }
+                 ],
+            u'http://rmit.edu.au/schemas/program/files':
+                 [u'the copy input files',
+                 {
+                 u'file0': models.ParameterName.STRING,
+                 u'file1': models.ParameterName.STRING,
+                 u'file2': models.ParameterName.STRING,
+                 }
+                 ],
+            u'http://rmit.edu.au/schemas/stages/copy/testing':
+                [u'the copy stage internal testing',
+                {
+                u'output': models.ParameterName.NUMERIC,
+                }
+                ],
+            u'http://rmit.edu.au/schemas/stages/program/testing':
+                [u'the program stage internal testing',
+                {
+                u'output': models.ParameterName.NUMERIC,
+                }
+                ],
+            u'http://rmit.edu.au/schemas/program/config':
+                [u'the program command internal config',
+                {
+                u'program': models.ParameterName.STRING,
+                u'remotehost': models.ParameterName.STRING,
+                u'program_success': models.ParameterName.STRING
+                }
+                ],
+            u'http://rmit.edu.au/schemas/greeting/salutation':
+                [u'salute',
+                {
+                    u'salutation': models.ParameterName.STRING
+                }
+                ],
+        }
+
+        for ns in schema_data:
+            l = schema_data[ns]
+            logger.debug("l=%s" % l)
+            desc = l[0]
+            logger.debug("desc=%s" % desc)
+            kv = l[1:][0]
+            logger.debug("kv=%s", kv)
+            context_schema = models.Schema.objects.create(
+                namespace=ns,
+                name="Context Schema", description=desc)
+
+            for k, v in kv.items():
+                models.ParameterName.objects.create(schema=context_schema,
+                    name=k,
+                    type=v)
+
+        # # Setup the schema for user configuration information (kept in profile)
+        # self.PARAMS = {'userinfo1': 'param1val',
+        #     'userinfo2': 42,
+        #     'fsys': self.remote_fs_path,
+        #     'nci_user': 'root',
+        #     'nci_password': 'dtofaam',
+        #     'nci_host': '127.0.0.1',
+        #     }
+
+        # self.PARAMTYPE = {}
+        # sch = models.Schema.objects.get(namespace="http://www.rmit.edu.au/user/profile/1")
+        # #paramtype = schema_data['http://www.rmit.edu.au/user/profile/1'][1]
+        # param_set = models.UserProfileParameterSet.objects.create(user_profile=profile,
+        #     schema=sch)
+        # for k, v in self.PARAMS.items():
+        #     param_name = models.ParameterName.objects.get(schema=sch,
+        #         name=k)
+        #     models.UserProfileParameter.objects.create(name=param_name,
+        #         paramset=param_set,
+        #         value=v)
 
         # Make a platform for the commands
         platform, _ = models.Platform.objects.get_or_create(name="nci")

@@ -29,6 +29,7 @@ import json
 import os
 import sys
 import re
+import collections
 from pprint import pformat
 
 from django.utils.importlib import import_module
@@ -316,7 +317,8 @@ def _get_command_actual_args(directive_args, user_settings):
                     try:
                         metadata_schema = models.Schema.objects.get(namespace=sch)
                     except models.Schema.DoesNotExist:
-                        msg = "schema %s does not exist" % sch
+                        msg = "schema %s does not exist choices are " % sch
+                        msg += ",".join([ x.namespace for x in models.Schema.objects.all()])
                         logger.exception(msg)
                         raise
                     variables = metadata[1:]
@@ -341,7 +343,8 @@ def _get_command_actual_args(directive_args, user_settings):
                         if file_url:
                             rendering_context[k.decode('utf8')] = typed_val
                         else:
-                            command_args.append((k.decode('utf8'), typed_val))
+                            command_args.append((("%s/%s" % (metadata_schema.namespace, k))
+                                .decode('utf8'), typed_val))
 
         # retrieve the file url and resolve against rendering_context
         if file_url:
@@ -474,7 +477,7 @@ def get_file(file_url, user_settings):
         logger.debug("nci_settings=%s" % pformat(nci_settings))
         fs = NCIStorage(settings=nci_settings)
         logger.debug("fs=%s" % fs)
-        logger.debug("mypath=%s"% mypath)
+        logger.debug("mypath=%s" % mypath)
         fp = fs.open(mypath)
         logger.debug("fp opened")
         content = fp.read()
@@ -540,7 +543,8 @@ def make_runcontext_for_directive(platform, directive_name,
     platform = models.Platform.objects.get(name=platform)
 
     run_settings = dict(initial_settings)  # we may share initial_settings
-    run_settings[u'platform'] = platform.id
+    system = {u'platform': platform.id}
+    run_settings[u'http://rmit.edu.au/schemas/system'] = system
 
     directive = models.Directive.objects.get(name=directive_name)
     command_for_directive = models.Command.objects.get(directive=directive, platform=platform)
@@ -577,12 +581,6 @@ def _make_new_run_context(stage, profile, run_settings):
     # make run_context for this user
     run_context = models.Context.objects.create(owner=profile,
         current_stage=stage)
-    context_schema = models.Schema.objects.get(namespace=models.Context.CONTEXT_SCHEMA_NS)
-    logger.debug("context_schema=%s" % context_schema)
-    # make a single parameterset to represent the context
-    models.ContextParameterSet.objects.create(context=run_context,
-        schema=context_schema,
-        ranking=0)
     run_context.update_run_settings(run_settings)
     return run_context
 
@@ -654,26 +652,44 @@ def _make_run_settings_for_command(command, command_args, run_settings):
     """
     Create run_settings for the command to execute with
     """
-    if u'transitions' in run_settings:
-        curr_trans = json.loads(run_settings[u'transitions'])
+    if u'http://rmit.edu.au/schemas/system/misc' in run_settings:
+        misc = run_settings[u'http://rmit.edu.au/schemas/system/misc']
+    else:
+        misc = {}
+
+    if u'transitions' in misc:
+        curr_trans = json.loads(misc[u'transitions'])
         logger.debug("curr_trans = %s" % curr_trans)
     else:
         curr_trans = {}
+
     #context = {}
     arg_num = 0
+    file_args = {}
+    config_args = collections.defaultdict(dict)
     for (k, v) in command_args:
         logger.debug("k=%s,v=%s" % (k, v))
         if k:
-            run_settings[k] = v
+            config_args[os.path.dirname(k)][os.path.basename(k)] = v
         else:
-            key = u"file%s" % arg_num
+            file_args['file%s' % arg_num] = v
             arg_num += 1
-            run_settings[key] = v
+
+    run_settings[u'http://rmit.edu.au/schemas/%s/files' % command.directive.name] = file_args
+    run_settings.update(config_args)
+
     logger.debug("run_settings=%s" % run_settings)
     transitions = models.make_stage_transitions(command.stage)
     logger.debug("transitions=%s" % transitions)
     transitions.update(curr_trans)
-    run_settings[u'transitions'] = json.dumps(transitions, ensure_ascii=True)
+
+    if u'http://rmit.edu.au/schemas/system/misc' in run_settings:
+        misc = run_settings[u'http://rmit.edu.au/schemas/system/misc']
+    else:
+        misc = {}
+        run_settings[u'http://rmit.edu.au/schemas/system/misc'] = misc
+    misc[u'transitions'] = json.dumps(transitions, ensure_ascii=True)
+
     logger.debug("run_settings =  %s" % run_settings)
     return run_settings
 

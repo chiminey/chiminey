@@ -45,12 +45,13 @@ class MovementStage(Stage):
         # FIXME: Need to verify that triggered is idempotent.
         logger.debug("Movement Stage Triggered")
         logger.debug("context=%s" % context)
-        if 'movement_output' in context:
-            self.val = context['movement_output']
+
+        if self._exists(context, 'http://rmit.edu.au/schemas/stages/copy/testing', 'output'):
+            self.val = context['http://rmit.edu.au/schemas/stages/copy/testing']['output']
         else:
             self.val = 0
 
-        dest_url = context['file1']
+        dest_url = context['http://rmit.edu.au/schemas/copy/files']['file1']
         try:
             content = hrmcstages.get_file(dest_url, self.user_settings)
         except IOError:
@@ -66,11 +67,12 @@ class MovementStage(Stage):
         logger.debug("Movement Stage Processing")
         logger.debug("context=%s" % context)
         logger.debug("user_settings=%s", self.user_settings)
-        source_url = context['file0']
+
+        source_url = context['http://rmit.edu.au/schemas/copy/files']['file0']
         logger.debug("source_url=%s" % source_url)
         content = hrmcstages.get_file(source_url, self.user_settings)
         logger.debug("content=%s", content)
-        dest_url = context['file1']
+        dest_url = context['http://rmit.edu.au/schemas/copy/files']['file1']
         logger.debug("dest_url=%s" % dest_url)
         hrmcstages.put_file(dest_url, content, self.user_settings)
 
@@ -79,6 +81,11 @@ class MovementStage(Stage):
         """
         logger.debug("Movement Stage Output")
         logger.debug("context=%s" % context)
+
+        if not self._exists(context, 'http://rmit.edu.au/schemas/stages/copy/testing'):
+            context['http://rmit.edu.au/schemas/stages/copy/testing'] = {}
+
         self.val += 1
-        context['movement_output'] = self.val
+        context['http://rmit.edu.au/schemas/stages/copy/testing']['output'] = self.val
+
         return context

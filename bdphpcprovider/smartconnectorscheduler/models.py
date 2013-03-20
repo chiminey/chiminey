@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core.exceptions import MultipleObjectsReturned
 import logging
+import os
 import json
 import logging.config
 
@@ -15,7 +16,7 @@ class UserProfile(models.Model):
     company = models.CharField(max_length=255, blank=True, null=True, help_text="Company of the user")
     nickname = models.CharField(max_length=255, blank=True, null=True, help_text="User's nickname")
 
-    PROFILE_SCHEMA_NS = "http://www.rmit.edu.au/schemas/userprofile1"
+    PROFILE_SCHEMA_NS = "http://rmit.edu.au/schemas/userprofile1"
 
     def __unicode__(self):
         return self.user.username
@@ -237,7 +238,16 @@ class Stage(models.Model):
         Given a stage, determine the next stage to execute, by consulting transition map
         """
 
-        transitions = json.loads(context['transitions'])
+        if u'http://rmit.edu.au/schemas/system/misc' in context:
+            misc = context[u'http://rmit.edu.au/schemas/system/misc']
+        else:
+            misc = {}
+
+        if u'transitions' in misc:
+            transitions = json.loads(misc[u'transitions'])
+        else:
+            transitions = {}
+
         logger.debug("transitions=%s" % transitions)
         logger.debug("current_stage=%s" % self)
         logger.debug("self.id=%s" % self.id)
@@ -317,56 +327,78 @@ class Context(models.Model):
         """
         Returns a readonly dict that holds all the information for the context
         """
-        context = {}
-        for param in ContextParameter.objects.filter(paramset__context=self):
-            context[param.name.name] = param.getValue()
+        schema_map = {}
+        for cps in ContextParameterSet.objects.filter(context=self):
+            schema = cps.schema.namespace
+            logger.debug("schema=%s" % schema)
+            sch_cont = {}
+            for param in ContextParameter.objects.filter(paramset=cps):
+                sch_cont[param.name.name] = param.getValue()  # NB: Assume that key is unique to each schema
+            sch = schema_map[schema] if schema in schema_map else []
+            sch.append(sch_cont)
+            schema_map[schema] = sch[0]  # NB: assume only one instance of each schema per context
+
+        context = schema_map
+        logger.debug("context=%s" % context)
+
         return context
 
     def update_run_settings(self, run_settings):
         """
             update the run_settings associated with the context with new values from a map
         """
-
-        sch = Schema.objects.get(namespace=self.CONTEXT_SCHEMA_NS)
-        logger.debug("sch=%s" % sch)
-        # FIXME: assumes that each context has only one ContextParameterSet
-        try:
-            paramset = ContextParameterSet.objects.get(
-                schema=sch, context=self)
-        except ContextParameterSet.DoesNotExist:
-            logger.exception("Could not find parameterset for context")
-            raise
-        except MultipleObjectsReturned:
-            logger.exception("Found duplicate entry in ContextParamterSet")
-            raise
-
-        logger.debug("paramset=%s" % paramset)
-        #TODO: what if entries in original context have been deleted?
-        for k, v in run_settings.items():
-            logger.debug("k=%s,v=%s" % (k, v))
+        logger.debug("run_settings=%s" % run_settings)
+        for schdata in run_settings:
+            logger.debug("schdata=%s" % schdata)
             try:
-                pn = ParameterName.objects.get(schema=sch,
-                    name=k)
-            except ParameterName.DoesNotExist:
-                msg = "Unknown parameter '%s' for context '%s'" % (k, run_settings)
-                logger.exception(msg)
-                raise InvalidInputError(msg)
-            try:
-                cp = ContextParameter.objects.get(paramset__context=self,
-                    name__name=k, paramset=paramset)
-            except ContextParameter.DoesNotExist:
-                # TODO: need to check type
-                logger.debug("new param =%s" % pn)
-                cp = ContextParameter.objects.create(name=pn,
-                    paramset=paramset, value=v)
-            except MultipleObjectsReturned:
-                logger.exception("Found duplicate entry in ContextParamterSet")
+                sch = Schema.objects.get(namespace=schdata)
+            except Schema.DoesNotExist:
+                logger.error("schema %s does not exist" % schdata)
                 raise
-            else:
-                logger.debug("updating %s to %s" % (cp.name, v))
-                # TODO: need to check type
-                cp.value = v
-                cp.save()
+            except MultipleObjectsReturned:
+                logger.error("multiple schemas found for %s" % schdata)
+                raise
+            logger.debug("sch=%s" % sch)
+
+            paramset, _ = ContextParameterSet.objects.get_or_create(schema=sch, context=self)
+            # try:
+            #     paramset = ContextParameterSet.objects.get(
+            #         schema=sch, context=self)
+            # except ContextParameterSet.DoesNotExist:
+            #     logger.exception("Could not find parameterset %s for context" % sch.namespace)
+            #     raise
+            # except MultipleObjectsReturned:
+            #     logger.exception("Found duplicate entry in ContextParamterSet")
+            #     raise
+
+            logger.debug("paramset=%s" % paramset)
+            #TODO: what if entries in original context have been deleted?
+            kvs = run_settings[schdata]
+
+            for k in kvs:
+                v = kvs[k]
+                try:
+                    pn = ParameterName.objects.get(schema=sch,
+                        name=k)
+                except ParameterName.DoesNotExist:
+                    msg = "Unknown parameter '%s' for context '%s'" % (k, run_settings)
+                    logger.exception(msg)
+                    raise InvalidInputError(msg)
+                try:
+                    cp = ContextParameter.objects.get(name__name=k, paramset=paramset)
+                except ContextParameter.DoesNotExist:
+                    # TODO: need to check type
+                    logger.debug("new param =%s" % pn)
+                    cp = ContextParameter.objects.create(name=pn,
+                        paramset=paramset, value=v)
+                except MultipleObjectsReturned:
+                    logger.exception("Found duplicate entry in ContextParamterSet")
+                    raise
+                else:
+                    logger.debug("updating %s to %s" % (cp.name, v))
+                    # TODO: need to check type
+                    cp.value = v
+                    cp.save()
 
     def __unicode__(self):
         if self.current_stage:

@@ -38,20 +38,21 @@ class ParallelStage(Stage):
 
     def triggered(self, context):
         logger.debug("Parallel Stage Triggered")
-        if 'parallel_output' in context:
-            self.val = context['parallel_output']
+        logger.debug("context=%s" % context)
+
+        if self._exists(context, u'http://rmit.edu.au/schemas/stages/parallel/testing', u'output'):
+            self.val = context[u'http://rmit.edu.au/schemas/stages/parallel/testing'][u'output']
         else:
             self.val = 0
 
-        # parallel_index indicates which of a set of identical nullstages in
-        # a composite have been triggered.  It is must be set via passed
-        # directive argument.  FIXME: this should be a smart connector specific
-        # parameter set during directive definition
-
-        if 'parallel_index' in context:
-            self.parallel_index = context['parallel_index']
+        if self._exists(context, u'http://rmit.edu.au/schemas/stages/parallel/testing', u'index'):
+            self.parallel_index = context[u'http://rmit.edu.au/schemas/stages/parallel/testing'][u'index']
         else:
-            self.parallel_index = context['parallel_number']
+            try:
+                self.parallel_index = context[u'http://rmit.edu.au/schemas/smartconnector1/create'][u'parallel_number']
+            except KeyError:
+                logger.error("context%s" % context)
+                raise
 
         if self.parallel_index:
             return True
@@ -64,11 +65,13 @@ class ParallelStage(Stage):
 
     def output(self, context):
         logger.debug("Parallel Stage Output")
+
+        if not self._exists(context, u'http://rmit.edu.au/schemas/stages/parallel/testing'):
+            context[u'http://rmit.edu.au/schemas/stages/parallel/testing'] = {}
+
         self.val += 1
-        context['parallel_output'] = self.val
+        context[u'http://rmit.edu.au/schemas/stages/parallel/testing'][u'output'] = self.val
 
         self.parallel_index -= 1
-        context['parallel_index'] = self.parallel_index
-
-
+        context[u'http://rmit.edu.au/schemas/stages/parallel/testing'][u'index'] = self.parallel_index
         return context
