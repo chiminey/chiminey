@@ -18,7 +18,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-
+import os
 import logging
 import logging.config
 
@@ -68,14 +68,14 @@ class ProgramStage(Stage):
         logger.debug("Program Stage Processing")
 
         param_urls = [context[u"http://rmit.edu.au/schemas/program/files"][u"file%d" % x] for x in xrange(0, 3)]
-        param_paths = [hrmcstages._get_remote_path(x, self.user_settings) for x in param_urls]
+        param_paths = [_get_remote_path(x, self.user_settings) for x in param_urls]
 
         program = context[u"http://rmit.edu.au/schemas/program/config"]['program']
         platform = context[u"http://rmit.edu.au/schemas/system"][u'platform']
         logger.debug("program=%s" % program)
         logger.debug("remote paths=%s" % param_paths)
 
-        platform = models.Platform.objects.get(id=platform)
+        platform = models.Platform.objects.get(name=platform)
         logger.debug("platform=%s" % platform)
 
         if platform.name == 'nci':
@@ -92,6 +92,7 @@ class ProgramStage(Stage):
                 self.program_success = True
             else:
                 self.program_success = False
+            logger.debug("program_success =%s" % self.program_success)
 
         else:
             raise NotImplementedError("ProgramStage not supported for this platform")
@@ -118,3 +119,46 @@ class ProgramStage(Stage):
 
 
         return context
+
+
+
+def _get_remote_path(file_url, user_settings):
+    """
+    Find the path at the remote site corresponding to file_url, but don't fetch
+      # TODO: expand to return other parts of parsed url
+    """
+    logger.debug("file_url=%s" % file_url)
+
+    # TODO: the path should be constructed from the Platform model, not from the user setttings.
+
+    from urlparse import urlparse
+    o = urlparse(file_url)
+    scheme = o.scheme
+    mypath = o.path
+    logger.debug("scheme=%s" % scheme)
+    logger.debug("mypath=%s" % mypath)
+
+    if mypath[0] == os.path.sep:
+        mypath = mypath[1:]
+    logger.debug("mypath=%s" % mypath)
+
+    if scheme == 'http':
+        raise NotImplementedError("http scheme not implemented")
+    elif scheme == "ssh":
+        logger.debug("getting from hpc")
+        remote_fs_path = user_settings['fsys']
+        logger.debug("remote_fs_path=%s" % remote_fs_path)
+        remote_path = os.path.join(remote_fs_path, mypath)
+
+    elif scheme == "tardis":
+        raise NotImplementedError("tardis scheme not implemented")
+    elif scheme == "local":
+        remote_fs_path = user_settings['fsys']
+        remote_path = os.path.join(remote_fs_path, "/", mypath)
+    else:
+        raise errors.InvalidInputError()
+
+    logger.debug("remote_path=%s" % remote_path)
+    return remote_path
+
+

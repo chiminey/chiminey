@@ -40,7 +40,7 @@ class NullStage(Stage):
         # Remember: context is immutable in triggered
         #FIXME: triggered should make deep copy of context to ensure that it is not modified.
         # FIXME: Need to verify that triggered is idempotent.
-        logger.debug("Null Stage Triggered")
+        logger.debug("Null Stage Triggered?")
         logger.debug("context=%s" % context)
 
         if self._exists(context, 'http://rmit.edu.au/schemas/stages/null/testing', 'output'):
@@ -57,7 +57,7 @@ class NullStage(Stage):
             self.null_index = context['http://rmit.edu.au/schemas/stages/null/testing']['index']
         else:
             self.null_index = context['http://rmit.edu.au/schemas/smartconnector1/create']['null_number']
-
+            logger.debug("found null_number=%s" % self.null_index)
         if self.null_index:
             return True
 
@@ -66,14 +66,13 @@ class NullStage(Stage):
     def process(self, context):
         """ perfrom the stage operation
         """
-        logger.debug("context=%s" % context)
+        #logger.debug("context=%s" % context)
         logger.debug("Null Stage Processing")
 
     def output(self, context):
         """ produce the resulting datfiles and metadata
         """
-        logger.debug("Null Stage Processing")
-        logger.debug("context=%s" % context)
+        logger.debug("Null Stage Output")
 
         if not self._exists(context, 'http://rmit.edu.au/schemas/stages/null/testing'):
             context['http://rmit.edu.au/schemas/stages/null/testing'] = {}
@@ -83,5 +82,7 @@ class NullStage(Stage):
 
         self.null_index -= 1
         context['http://rmit.edu.au/schemas/stages/null/testing']['index'] = self.null_index
+
+        logger.debug("context=%s" % context)
 
         return context

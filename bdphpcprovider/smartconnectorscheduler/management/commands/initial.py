@@ -33,10 +33,6 @@ class Command(BaseCommand):
             print "action aborted by user"
             return
 
-        self.remote_fs_path = os.path.join(
-            'smartconnectorscheduler', 'testing', 'remotesys/').decode("utf8")
-        logger.debug("self.remote_fs_path=%s" % self.remote_fs_path)
-        self.remote_fs = FileSystemStorage(location=self.remote_fs_path)
 
         self.group, _ = Group.objects.get_or_create(name="standarduser")
         self.group.save()
@@ -137,7 +133,6 @@ class Command(BaseCommand):
         #         name=k,
         #         type=self.PARAMTYPE[k])
 
-
         schema_data = {
             u'http://rmit.edu.au/schemas//files':
                 [u'general input files for directive',
@@ -198,13 +193,14 @@ class Command(BaseCommand):
                 [u'system level misc values',
                 {
                 u'transitions': models.ParameterName.STRING,  # deprecated
-                u'system': models.ParameterName.STRING
+                u'system': models.ParameterName.STRING,
+                u'id': models.ParameterName.NUMERIC
                 }
                 ],
             u'http://rmit.edu.au/schemas/system':
                 [u'Information about the deployment platform',
                 {
-                u'platform': models.ParameterName.NUMERIC,  # deprecated
+                u'platform': models.ParameterName.STRING,  # deprecated
                 }
                 ],
             u'http://tardis.edu.au/schemas/hrmc/dfmeta':
@@ -231,7 +227,15 @@ class Command(BaseCommand):
                     u'nci_host': models.ParameterName.STRING,
                     u'PASSWORD': models.ParameterName.STRING,
                     u'USER_NAME': models.ParameterName.STRING,
-                    u'PRIVATE_KEY': models.ParameterName.STRING
+                    u'PRIVATE_KEY': models.ParameterName.STRING,
+                    u'flag': models.ParameterName.NUMERIC,
+                    u'CLOUD_SLEEP_INTERVAL': models.ParameterName.NUMERIC,
+                    u'local_fs_path': models.ParameterName.STRING,
+                    u'PRIVATE_KEY_NAME': models.ParameterName.STRING,
+                    u'PRIVATE_KEY_NECTAR': models.ParameterName.STRING,
+                    u'PRIVATE_KEY_NCI': models.ParameterName.STRING,
+                    u'EC2_ACCESS_KEY': models.ParameterName.STRING,
+                    u'EC2_SECRET_KEY': models.ParameterName.STRING
                 }
                 ],
             u'http://rmit.edu.au/schemas/copy/files':
@@ -275,7 +279,39 @@ class Command(BaseCommand):
                     u'salutation': models.ParameterName.STRING
                 }
                 ],
+            u'http://rmit.edu.au/schemas/hrmc':
+                [u'the hrmc smart connector input values',
+                {
+                    u'number_vm_instances': models.ParameterName.NUMERIC,
+                    u'iseed': models.ParameterName.NUMERIC
+                }
+                ],
+            u'http://rmit.edu.au/schemas/stages/create':
+                [u'the create state of the smartconnector1',
+                {
+                u'group_id': models.ParameterName.STRING,
+                u'VM_SIZE': models.ParameterName.STRING,
+                u'VM_IMAGE': models.ParameterName.STRING,
+                u'CLOUD_SLEEP_INTERVAL': models.ParameterName.NUMERIC,
+                }
+                ],
+
+            u'http://rmit.edu.au/schemas/stages/setup':
+                [u'the create stage of the smartconnector1',
+                {
+                u'setup_finished': models.ParameterName.NUMERIC,
+                u'PAYLOAD_SOURCE': models.ParameterName.STRING,
+                u'PAYLOAD_DESTINATION': models.ParameterName.STRING,
+                u'SECURITY_GROUP': models.ParameterName.STRLIST,
+                u'GROUP_ID_DIR': models.ParameterName.STRING,
+                u'CUSTOM_PROMPT': models.ParameterName.STRING,
+                }
+                ],
         }
+
+
+        from urlparse import urlparse
+        from django.template.defaultfilters import slugify
 
         for ns in schema_data:
             l = schema_data[ns]
@@ -284,42 +320,60 @@ class Command(BaseCommand):
             logger.debug("desc=%s" % desc)
             kv = l[1:][0]
             logger.debug("kv=%s", kv)
-            context_schema = models.Schema.objects.create(
-                namespace=ns,
-                name="Context Schema", description=desc)
+
+            url = urlparse(ns)
+
+            context_schema, _ = models.Schema.objects.get_or_create(
+                namespace=ns, defaults={'name': slugify(url.path), 'description': desc})
 
             for k, v in kv.items():
-                models.ParameterName.objects.create(schema=context_schema,
-                    name=k,
-                    type=v)
+                models.ParameterName.objects.get_or_create(schema=context_schema,
+                    name=k, defaults={'type': v})
 
-        # # Setup the schema for user configuration information (kept in profile)
-        # self.PARAMS = {'userinfo1': 'param1val',
-        #     'userinfo2': 42,
-        #     'fsys': self.remote_fs_path,
-        #     'nci_user': 'root',
-        #     'nci_password': 'dtofaam',
-        #     'nci_host': '127.0.0.1',
-        #     }
+        # for name, param_type in {
+        #     u'file0': models.ParameterName.STRING,
+        #     u'file1': models.ParameterName.STRING,
+        #     u'file2': models.ParameterName.STRING,
+        #     u'program': models.ParameterName.STRING,
+        #     u'remotehost': models.ParameterName.STRING,
+        #     u'salutation': models.ParameterName.NUMERIC,
+        #     u'transitions': models.ParameterName.STRING,  # TODO: use STRLIST
+        #     u'program_output': models.ParameterName.NUMERIC,
+        #     u'movement_output': models.ParameterName.NUMERIC,
+        #     u'platform': models.ParameterName.STRING,
+        #     u'system': models.ParameterName.STRING,
+        #     u'num_nodes': models.ParameterName.NUMERIC,
+        #     u'iseed': models.ParameterName.NUMERIC,
+        #     u'number_vm_instances': models.ParameterName.NUMERIC,
+        #     u'command': models.ParameterName.STRING,
+        #     u'null_output': models.ParameterName.NUMERIC,
+        #     u'parallel_output': models.ParameterName.NUMERIC,
+        #     u'USER_NAME': models.ParameterName.STRING,
+        #     u'PASSWORD':models.ParameterName.STRING,
+        #     u'SECURITY_GROUP': models.ParameterName.STRLIST,
+        #     u'VM_SIZE': models.ParameterName.STRING,
+        #     u'VM_IMAGE': models.ParameterName.STRING,
+        #     u'GROUP_ID_DIR': models.ParameterName.STRING,
+        #     u'CUSTOM_PROMPT': models.ParameterName.STRING,
+        #     u'group_id': models.ParameterName.STRING,
+        #     u'flag': models.ParameterName.NUMERIC,
+        #     u'CLOUD_SLEEP_INTERVAL': models.ParameterName.NUMERIC,
+        #     u'setup_finished': models.ParameterName.NUMERIC,
+        #     u'id': models.ParameterName.NUMERIC,
+        #     u'PAYLOAD_SOURCE': models.ParameterName.STRING,
+        #     u'PAYLOAD_DESTINATION': models.ParameterName.STRING,
+        #     u'local_fs_path': models.ParameterName.STRING
+        #     }.items():
 
-        # self.PARAMTYPE = {}
-        # sch = models.Schema.objects.get(namespace="http://www.rmit.edu.au/user/profile/1")
-        # #paramtype = schema_data['http://www.rmit.edu.au/user/profile/1'][1]
-        # param_set = models.UserProfileParameterSet.objects.create(user_profile=profile,
-        #     schema=sch)
-        # for k, v in self.PARAMS.items():
-        #     param_name = models.ParameterName.objects.get(schema=sch,
-        #         name=k)
-        #     models.UserProfileParameter.objects.create(name=param_name,
-        #         paramset=param_set,
-        #         value=v)
 
-        # Make a platform for the commands
-        platform, _ = models.Platform.objects.get_or_create(name="nci")
+        # # Make a platform for the commands
+        # platform, _ = models.Platform.objects.get_or_create(name="nectar")
 
         copy_dir, _ = models.Directive.objects.get_or_create(name="copy")
         program_dir, _ = models.Directive.objects.get_or_create(name="program")
         smart_dir, _ = models.Directive.objects.get_or_create(name="smartconnector1")
+
+        hrmc_smart_dir, _ = models.Directive.objects.get_or_create(name="smartconnector_hrmc")
 
         self.movement_stage = "bdphpcprovider.smartconnectorscheduler.stages.movement.MovementStage"
         self.program_stage = "bdphpcprovider.smartconnectorscheduler.stages.program.ProgramStage"
@@ -329,10 +383,13 @@ class Command(BaseCommand):
              description="data movemement operation",
              package=self.movement_stage,
              order=100)
+        copy_stage.update_settings({})
+
         program_stage, _ = models.Stage.objects.get_or_create(name="program",
             description="program execution stage",
             package=self.program_stage,
             order=0)
+        program_stage.update_settings({})
 
         self.null_package = "bdphpcprovider.smartconnectorscheduler.stages.nullstage.NullStage"
         self.parallel_package = "bdphpcprovider.smartconnectorscheduler.stages.composite.ParallelStage"
@@ -342,57 +399,148 @@ class Command(BaseCommand):
              description="encapsulates a workflow",
              package=self.parallel_package,
              order=100)
-        models.Stage.objects.get_or_create(name="setup",
+
+        setup_stage,_ = models.Stage.objects.get_or_create(name="setup",
             parent=composite_stage,
             description="This is a setup stage of something",
             package=self.null_package,
             order=0)
+
+        # stage settings are usable from subsequent stages in a run so only
+        # need to define once for first null or parallel stage
+        setup_stage.update_settings(
+            {
+            u'http://rmit.edu.au/schemas/smartconnector1/create':
+                {
+                    u'null_number': 4,
+                }
+            })
+
         stage2, _ = models.Stage.objects.get_or_create(name="run",
             parent=composite_stage,
             description="This is the running connector",
             package=self.parallel_package,
             order=1)
+
+        stage2.update_settings(
+            {
+            u'http://rmit.edu.au/schemas/smartconnector1/create':
+                {
+                    u'parallel_number': 2
+                }
+            })
+
         models.Stage.objects.get_or_create(name="run1",
             parent=stage2,
             description="This is the running part 1",
             package=self.null_package,
             order=1)
+
         models.Stage.objects.get_or_create(name="run2",
             parent=stage2,
             description="This is the running part 2",
             package=self.null_package,
             order=2)
+
         models.Stage.objects.get_or_create(name="finished",
             parent=composite_stage,
             description="And here we finish everything off",
             package=self.null_package,
             order=3)
 
+        self.configure_package = "bdphpcprovider.smartconnectorscheduler.stages.configure.Configure"
+        self.create_package = "bdphpcprovider.smartconnectorscheduler.stages.create.Create"
+        self.setup_package = "bdphpcprovider.smartconnectorscheduler.stages.setup.Setup"
+
+        hrmc_composite_stage, _ = models.Stage.objects.get_or_create(name="hrmc_connector",
+                                                                description="Encapsultes HRMC smart connector workflow",
+                                                                package=self.parallel_package,
+                                                                order=100)
+
+        # FIXME: tasks.progress_context does not load up composite stage settings
+        hrmc_composite_stage.update_settings({})
+
+        configure_stage, _ = models.Stage.objects.get_or_create(name="configure",
+                                                                description="This is configure stage of HRMC smart connector",
+                                                                parent=hrmc_composite_stage,
+                                                                package=self.configure_package,
+                                                                order=0)
+        configure_stage.update_settings({})
+
+        create_stage, _ = models.Stage.objects.get_or_create(name="create",
+                                                                description="This is create stage of HRMC smart connector",
+                                                                #parent=hrmc_composite_stage,
+                                                                package=self.create_package,
+                                                                order=1)
+
+        create_stage.update_settings({})
+
+        setup_stage, _ = models.Stage.objects.get_or_create(name="setup",
+                                                             description="This is setup stage of HRMC smart connector",
+                                                             parent=hrmc_composite_stage,
+                                                             package=self.setup_package,
+                                                             order=1)
+
+        setup_stage.update_settings(
+            {
+            u'http://rmit.edu.au/schemas/stages/setup':
+                {
+                    u'PAYLOAD_SOURCE': 'file://127.0.0.1/local/testpayload',
+                    u'PAYLOAD_DESTINATION': 'nectar@celery_payload_2',
+                    u'SECURITY_GROUP': '["ssh"]',
+                    u'GROUP_ID_DIR': 'group_id',
+                    u'CUSTOM_PROMPT': '[smart-connector_prompt]$'
+                },
+            u'http://rmit.edu.au/schemas/stages/create':
+                {
+                    u'VM_SIZE': "m1.small",
+                    u'VM_IMAGE': "ami-0000000d",
+                    u'CLOUD_SLEEP_INTERVAL': 5
+                },
+            })
+
+        # Need to create Parmetersets for stages here and associate with these stages
+
         logger.debug("stages=%s" % models.Stage.objects.all())
+        local_filesys_rootpath = '/opt/cloudenabling/current/bdphpcprovider/smartconnectorscheduler/testing/remotesys'
+        models.Platform.objects.get_or_create(name='local', root_path=local_filesys_rootpath)
+        models.Platform.objects.get_or_create(name='nectar', root_path='/home/centos')
+        platform, _  = models.Platform.objects.get_or_create(name='nci', root_path=local_filesys_rootpath)
+
+
+
+
         # Make a new command that reliases composite_stage
         # TODO: add the command program to the model
         comm, _ = models.Command.objects.get_or_create(platform=platform, directive=copy_dir, stage=copy_stage)
         comm, _ = models.Command.objects.get_or_create(platform=platform, directive=program_dir, stage=program_stage)
         comm, _ = models.Command.objects.get_or_create(platform=platform, directive=smart_dir, stage=composite_stage)
+        comm, _ = models.Command.objects.get_or_create(platform=platform, directive=hrmc_smart_dir, stage=hrmc_composite_stage)
+
 
         # We could make one command with a composite containing three stages or
         # three commands each containing a single stage.
 
         # done setup
 
-        logger.debug("remote_fs_path=%s" % self.remote_fs_path)
+        logger.debug("local_filesys_rootpath=%s" % local_filesys_rootpath)
 
-        self.remote_fs.save("local/greet.txt",
+        # self.remote_fs_path = os.path.join(
+        #     'smartconnectorscheduler', 'testing', 'remotesys/').decode("utf8")
+        # logger.debug("self.remote_fs_path=%s" % self.remote_fs_path)
+        local_fs = FileSystemStorage(location=local_filesys_rootpath)
+
+        local_fs.save("local/greet.txt",
             ContentFile("{{salutation}} World"))
 
-        self.remote_fs.save("remote/greetaddon.txt",
+        local_fs.save("remote/greetaddon.txt",
             ContentFile("(remotely)"))
 
         # setup the required initial files
-        self.remote_fs.save("input/input.txt",
+        local_fs.save("input/input.txt",
          ContentFile("a={{a}} b={{b}} c={{c}}"))
 
-        self.remote_fs.save("input/file.txt",
+        local_fs.save("input/file.txt",
          ContentFile("foobar"))
         print "done"
 

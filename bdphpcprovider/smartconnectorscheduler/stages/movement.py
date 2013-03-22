@@ -22,7 +22,7 @@
 import logging
 import logging.config
 
-from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, UI
+from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, UI, get_url_with_pkey
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
 
 
@@ -43,7 +43,7 @@ class MovementStage(Stage):
         has been any other error
         """
         # FIXME: Need to verify that triggered is idempotent.
-        logger.debug("Movement Stage Triggered")
+        logger.debug("Movement Stage Triggered?")
         logger.debug("context=%s" % context)
 
         if self._exists(context, 'http://rmit.edu.au/schemas/stages/copy/testing', 'output'):
@@ -52,8 +52,10 @@ class MovementStage(Stage):
             self.val = 0
 
         dest_url = context['http://rmit.edu.au/schemas/copy/files']['file1']
+        logger.debug("dest_url=%s" % dest_url)
         try:
-            content = hrmcstages.get_file(dest_url, self.user_settings)
+            encoded_d_url = get_url_with_pkey(self.user_settings, dest_url)
+            content = hrmcstages.get_file(encoded_d_url)
         except IOError:
             # TODO: should check checksum of dest to make sure we have correct transfer
             logger.debug("dest file does not exist: %s" % dest_url)
@@ -70,11 +72,17 @@ class MovementStage(Stage):
 
         source_url = context['http://rmit.edu.au/schemas/copy/files']['file0']
         logger.debug("source_url=%s" % source_url)
-        content = hrmcstages.get_file(source_url, self.user_settings)
-        logger.debug("content=%s", content)
+
+        encoded_s_url = get_url_with_pkey(self.user_settings, source_url)
+
+        content = hrmcstages.get_file(encoded_s_url)  # we assume text files
+        logger.debug("content=%s" % content)
         dest_url = context['http://rmit.edu.au/schemas/copy/files']['file1']
         logger.debug("dest_url=%s" % dest_url)
-        hrmcstages.put_file(dest_url, content, self.user_settings)
+
+        encoded_d_url = get_url_with_pkey(self.user_settings, dest_url)
+
+        hrmcstages.put_file(encoded_d_url, content.encode('utf-8')) # we assume text files
 
     def output(self, context):
         """ produce the resulting datfiles and metadata

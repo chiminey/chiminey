@@ -214,15 +214,13 @@ CELERYBEAT_SCHEDULE = {
         "task": "smartconnectorscheduler.test",
         "schedule": timedelta(seconds=15),
     },
-    #"test2": {
-    #    "task": "smartconnectorscheduler.run_contexts",
-    #    "schedule": timedelta(seconds=30)
-    #  },
     "run_contexts": {
         "task": "smartconnectorscheduler.run_contexts",
         "schedule": timedelta(seconds=10)
-        },
+      },
     }
+
+#CELERYD_OPTS = "--time-limit=10"
 
 djcelery.setup_loader()
 

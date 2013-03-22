@@ -1,6 +1,10 @@
+from bdphpcprovider.smartconnectorscheduler import models
+from urlparse import urlparse
 import time
 import os
 import utility
+import logging
+logger = logging.getLogger(__name__)
 #Every stage may be thrown away after completion
 
 
@@ -17,6 +21,69 @@ class Error(Exception):
 
 class PackageFailedError(Error):
     pass
+
+
+
+def get_url_with_pkey(settings, url_or_relative_path,
+                      is_relative_path=False, ip_address='127.0.0.1'):
+    '''
+     This method appends private key, username, passowrd and/or rootpath
+     parameters at end of a url. If only relative path is passed,
+     a url is constructed based on the data @url_or_relative_path and
+     @settings.
+
+    Suppose
+        url_or_relative_path = 'nectar@new_payload'
+        ip_address = 127.0.0.1
+        root_path = /home/centos
+    the platform is nectar and the relative path is new_payload
+    The new url will be ssh://127.0.0.1/new_payload?root_path=/home/centos
+
+    :param settings:
+    :param url_or_relative_path:
+    :param is_destination:
+    :param ip_address:
+    :return:
+    '''
+    username = settings['USER_NAME']
+    password = settings['PASSWORD']
+    private_key = ''
+    scheme = 'file'
+
+    if is_relative_path:
+        url = 'http://' + url_or_relative_path
+    else:
+        url = url_or_relative_path
+    parsed_url = urlparse(url)
+    platform = parsed_url.username
+    if platform == 'nectar':
+        if 'PRIVATE_KEY_NECTAR' in settings:
+            private_key = settings['PRIVATE_KEY_NECTAR']
+        scheme = 'ssh'
+    elif platform == 'nci':
+        if 'PRIVATE_KEY_NCI' in settings:
+            private_key = settings['PRIVATE_KEY_NCI']
+        scheme = 'ssh'
+    else:
+        platform = 'local'
+
+    platform_object = models.Platform.objects.get(name=platform)
+    root_path = platform_object.root_path
+    if is_relative_path:
+        relative_path = parsed_url.hostname
+        url_with_pkey = '%s://%s/%s?key_filename=%s' \
+                        '&username=%s&password=%s' \
+                        '&root_path=%s' % (scheme, ip_address,
+                                           relative_path, private_key,
+                                           username, password, root_path)
+    else:
+        url_with_pkey = url_or_relative_path + \
+                        '?key_filename=%s&username=%s' \
+                        '&password=%s&root_path=%s' % (private_key,
+                                                       username, password,
+                                                       root_path)
+    logger.debug("Destination %s url_pkey %s" % (str(is_relative_path), url_with_pkey))
+    return url_with_pkey
 
 
 # This stage has no impact on other stages
@@ -51,6 +118,7 @@ class Stage(object):
                     logger.warn("%s not found in context" % p)
                     return False
             return True
+
 
 class UI(object):
     pass

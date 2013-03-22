@@ -45,13 +45,13 @@ class Fake_VM:
 '''
 
 def _create_cloud_connection(settings):
-    provider = settings['PROVIDER']
+    provider = settings['platform']
     if provider.lower() == "amazon" :
         return _create_amazon_connection(settings)
     elif provider.lower() == "nectar" :
         return _create_nectar_connection(settings)
     else:
-        print "Unknown provider: %s" %provider
+        logger.info("Unknown provider: %s" %provider)
         sys.exit()#FIXME: throw exception
 
 
@@ -86,8 +86,8 @@ def create_environ(number_vm_instances, settings):
         all_running_instances = _wait_for_instance_to_start_running(all_instances, settings)
         group_id = _store_md5_on_instances(all_running_instances, settings)
         _customize_prompt(all_running_instances, settings)
-        print "Group ID %s" % group_id
-        print 'Created VM instances:'
+        logger.info("Group ID %s" % group_id)
+        logger.info('Created VM instances:')
         print_all_information(settings, all_instances=all_running_instances)
         return group_id
 
@@ -102,11 +102,11 @@ def _create_VM_instances(number_vm_instances, settings):
     connection = _create_cloud_connection(settings)
     all_instances = []
     try:
-        print "Creating %d VM instance(s)" % number_vm_instances
+        logger.info("Creating %d VM instance(s)" % number_vm_instances)
         instance_count = 0
-        print instance_count
+        logger.debug("Instance Count %d total %d" % (instance_count, number_vm_instances))
         while instance_count < number_vm_instances:
-            print number_vm_instances
+            logger.debug(number_vm_instances)
             reservation = connection.run_instances(
                 image_id=settings['VM_IMAGE'],
                 min_count=1,
@@ -120,25 +120,26 @@ def _create_VM_instances(number_vm_instances, settings):
             all_instances.append(new_instance)
             instance_count += 1
     except EC2ResponseError, e:
+        logger.debug("Reservation not created")
         logger.debug(e)
 
     if len(all_instances) < number_vm_instances:
         excess_instances = number_vm_instances \
                             - len(all_instances)
         logger.debug("Quota Exceeded")
-        print "Quota Limit Reached: "
-        print "\t %s instances are created." % len(all_instances)
-        print "\t Additional %s instances will" \
-              " not be created" % excess_instances
+        logger.info("Quota Limit Reached: ")
+        logger.info("\t %s instances are created." % len(all_instances))
+        logger.info("\t Additional %s instances will" \
+              " not be created" % excess_instances)
         if len(all_instances) == 0:
-            print ' Running VM instances:'
+            logger.info('Running VM instances:')
             print_all_information(settings)
     return all_instances
 
 
 def _store_md5_on_instances(all_instances, settings):
     group_id = _generate_group_id(all_instances)
-    print "Creating group '%s' ..." % group_id
+    logger.info("Creating group '%s' ..." % group_id)
     for instance in all_instances:
         # login and store md5 file
         logger.debug("Instance ID  ...")
@@ -148,18 +149,18 @@ def _store_md5_on_instances(all_instances, settings):
         logger.debug("Instance IP %s" % ip_address)
         ssh_ready = is_ssh_ready(settings, ip_address)
         if ssh_ready:
-            print "Registering %s (%s) to group '%s'\
-            " % (instance_id, ip_address, group_id)
+            logger.info("Registering %s (%s) to group '%s'\
+            " % (instance_id, ip_address, group_id))
             ssh_client = open_connection(ip_address=ip_address, settings=settings)
             group_id_path = os.path.join(settings['GROUP_ID_DIR'], group_id)
 
             run_command(ssh_client, "mkdir %s" % settings['GROUP_ID_DIR'])
-            logger.debug("Group ID directory created")
+            logger.info("Group ID directory created")
             run_command(ssh_client, "touch %s" % group_id_path)
-            logger.debug("Group ID file created")
+            logger.info("Group ID file created")
         else:
-            print "VM instance %s will not be registered to group '%s'\
-            " % (instance_id, ip_address, group_id)
+            logger.info("VM instance %s will not be registered to group '%s'\
+            " % (instance_id, ip_address, group_id))
 
     return group_id
 
@@ -179,9 +180,9 @@ def _customize_prompt(all_instances, settings):
             run_command(ssh_client, command)
             logger.debug("Customized prompt")
         else:
-            print "Unable to customize command " \
+            logger.info("Unable to customize command " \
                   "prompt for VM instance %s" \
-            % (instance_id, ip_address)
+            % (instance_id, ip_address))
 
 
 def _generate_group_id(all_instances):
@@ -215,7 +216,7 @@ def get_ids_of_instances(instances):
 
 
 def confirm_teardown(settings, all_instances):
-    print "Instances to be deleted are "
+    logger.info("Instances to be deleted are ")
     print_all_information(settings, all_instances=all_instances)
     teardown_confirmation = None
     while not teardown_confirmation:
@@ -247,7 +248,7 @@ def destroy_environ(settings, all_instances, ids_of_all_instances=None):
             ids_of_all_instances.append(instance.id)
 
 
-    print "Terminating %d VM instance(s)" % len(ids_of_all_instances)
+    logger.info("Terminating %d VM instance(s)" % len(ids_of_all_instances))
     connection = _create_cloud_connection(settings)
     connection.terminate_instances(ids_of_all_instances)
 
@@ -310,7 +311,7 @@ def _wait_for_instance_to_terminate(all_instances, settings):
                 '''print 'Current status of Instance %s: %s\
                 ' % (instance_id, NODE_STATE[NodeState.TERMINATED])
                 '''
-            print  'Current status of Instance %s: %s' %(instance_id, instance.state)
+            #logger.info('Current status of Instance %s: %s' %(instance_id, instance.state))
 
         time.sleep(settings['CLOUD_SLEEP_INTERVAL'])
 
@@ -326,11 +327,11 @@ def print_all_information(settings, all_instances=None):
     if not all_instances:
         all_instances = get_running_instances(settings)
         if not all_instances:
-            print '\t No running instances'
+            logger.info('\t No running instances')
             sys.exit(1)
 
     counter = 1
-    print '\tNo.\tID\t\tIP\t\tPackage\t\tGroup'
+    logger.info('\tNo.\tID\t\tIP\t\tPackage\t\tGroup')
     for instance in all_instances:
         instance_id = instance.id
         ip = get_instance_ip(instance_id, settings)
@@ -348,8 +349,8 @@ def print_all_information(settings, all_instances=None):
             if not group_name:
                 group_name = '-'
 
-            print '\t%d:\t%s\t%s\t%s\t\t%s\
-            ' % (counter, instance_id, ip, vm_type, group_name)
+            logger.info('\t%d:\t%s\t%s\t%s\t\t%s\
+            ' % (counter, instance_id, ip, vm_type, group_name))
             counter += 1
         except AuthError:
             logger.debug("Trying to access VMs that "
