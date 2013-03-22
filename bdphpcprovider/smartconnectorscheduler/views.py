@@ -141,13 +141,13 @@ def test_directive(request, directive_id):
             logger.debug("%s" % directive_name)
             directive_args = []
             directive_args.append(
-                ['local://12.0.0.1/local/greet.txt',
+                ['file://127.0.0.1/local/greet.txt',
                     ['http://rmit.edu.au/schemas/greeting/salutation',
-                        ('salutation', 'Hello')]])
-            directive_args.append(['hpc://ncitest.org/remote/greet.txt', []])
+                        ('salutation', 'Hello Iman')]])
+            directive_args.append(['ssh://127.0.0.1/remote/greet.txt', []])
             directives.append((platform, directive_name, directive_args))
 
-        if directive_id == "2":
+        elif directive_id == "2":
             # concatenate that file and another file (already remote) to form result
             directive_args = []
             directive_name = "program"
@@ -156,48 +156,76 @@ def test_directive(request, directive_id):
                 ['http://rmit.edu.au/schemas/program/config', ('program', 'cat'),
                 ('remotehost', '127.0.0.1')]])
 
-            directive_args.append(['hpc://ncitest.org/remote/greet.txt',
+            directive_args.append(['ssh://nci@127.0.0.1/remote/greet.txt',
                 []])
-            directive_args.append(['hpc://ncitest.org/remote/greetaddon.txt',
+            directive_args.append(['ssh://nci@127.0.0.1/remote/greetaddon.txt',
                 []])
-            directive_args.append(['hpc://ncitest.org/remote/greetresult.txt',
+            directive_args.append(['ssh://nci@127.0.0.1/remote/greetresult.txt',
                 []])
 
             directives.append((platform, directive_name, directive_args))
 
-        if directive_id == "3":
+        elif directive_id == "3":
             # transfer result back locally.
             directive_name = "copy"
             logger.debug("%s" % directive_name)
             directive_args = []
-            directive_args.append(['hpc://ncitest.org/remote/greetresult.txt',
+            directive_args.append(['ssh://nci@127.0.0.1/remote/greetresult.txt',
                 []])
-            directive_args.append(['local://12.0.0.1/local/finalresult.txt',
+            directive_args.append(['file://local@127.0.0.1/local/finalresult.txt',
                 []])
 
             directives.append((platform, directive_name, directive_args))
 
-        if directive_id == "4":
+        elif directive_id == "4":
             directive_name = "smartconnector1"
             logger.debug("%s" % directive_name)
             directive_args = []
             # Template from mytardis with corresponding metdata brought across
             directive_args.append(['tardis://iant@tardis.edu.au/datafile/15', []])
             # Template on remote storage with corresponding multiple parameter sets
-            directive_args.append(['hpc://iant@nci.edu.au/input/input.txt',
+            directive_args.append(['ssh://nci@127.0.0.1/input/input.txt',
                 ['http://tardis.edu.au/schemas/hrmc/dfmeta', ('a', 3), ('b', 4)],
                 ['http://tardis.edu.au/schemas/hrmc/dfmeta', ('a', 1), ('b', 2)],
                 ['http://tardis.edu.au/schemas/hrmc/dfmeta2', ('c', 'hello')]])
             # A file (template with no variables)
-            directive_args.append(['hpc://iant@nci.edu.au/input/file.txt',
+            directive_args.append(['ssh://nci@127.0.0.1/input/file.txt',
                 []])
             # A set of commands
             directive_args.append(['', ['http://rmit.edu.au/schemas/smartconnector1/create',
-                ('num_nodes', 5), ('iseed', 42), ('null_number', 4), ('parallel_number', 2)]])
+                (u'num_nodes', 5), (u'iseed', 42)]])
             # An Example of how a nci script might work.
             directive_args.append(['',
                 ['http://nci.org.au/schemas/smartconnector1/custom', ('command', 'ls')]])
 
+            directives.append((platform, directive_name, directive_args))
+
+        elif directive_id == "5":
+            platform = 'nectar'
+            directive_name = "smartconnector_hrmc"
+            logger.debug("%s" % directive_name)
+            directive_args = []
+            #local_fs_path = os.path.join(
+            #    'bdphpcprovider', 'smartconnectorscheduler', 'testing', 'remotesys/').decode("utf8")
+
+            directive_args.append(['', ['http://rmit.edu.au/schemas/hrmc',
+                                        ('number_vm_instances', 1), (u'iseed', 42),
+                #('VM_IMAGE', 'ami-0000000d'),
+                #('VM_SIZE', 'm1.small'),
+                #('SECURITY_GROUP', u"['ssh']"),
+                #('USER_NAME', 'centos'),
+                #('PASSWORD', ''),
+                #('CUSTOM_PROMPT', '[smart-connector_prompt]$'),
+                #('GROUP_ID_DIR', 'group_id'),
+                #('group_id', 'c4573e9b0cc9ecf326c8729c7e928a9a'),
+                #('flag', 0), #FIXME: what is this used for?
+                #('CLOUD_SLEEP_INTERVAL', 5),
+                #('setup_finished', 0),
+                #('id', 0),
+                #('PAYLOAD_DESTINATION', 'celery_payload_2'),
+                #('PAYLOAD_SOURCE', 'file://127.0.0.1/local/testpayload'),
+                #('local_fs_path', local_fs_path)
+                ]])
             directives.append((platform, directive_name, directive_args))
 
         # make the system settings, available to initial stage and merged with run_settings
@@ -216,9 +244,7 @@ def test_directive(request, directive_id):
                 directive_args, system_settings, request.user.username)
             new_run_contexts.append(str(run_context))
 
-
     return HttpResponse("runs= %s" % pformat(new_run_contexts))
-
 
 
 def getoutput(request, group_id, file_id):

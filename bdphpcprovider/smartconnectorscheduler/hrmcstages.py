@@ -41,7 +41,7 @@ from django.contrib.auth.models import User
 
 logger = logging.getLogger(__name__)
 
-from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, UI, SmartConnector
+from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, UI, SmartConnector, get_url_with_pkey
 from bdphpcprovider.smartconnectorscheduler.filesystem import FileSystem, DataObject
 from bdphpcprovider.smartconnectorscheduler.botocloudconnector import create_environ, \
     collect_instances, destroy_environ
@@ -235,6 +235,7 @@ def safe_import(path, args, kw):
         Dynamically imports a package at path and executes it current namespace with given args
     """
 
+    logger.debug("path %s args %s kw %s  " % (path, args, kw))
     try:
         dot = path.rindex('.')
     except ValueError:
@@ -292,7 +293,7 @@ def _get_new_local_url(url):
     # intermediate directories
     dest_path = os.path.join(remote_base_path, relpath)
     logger.debug("dest_path=%s" % dest_path)
-    return u'local://%s' % dest_path.decode('utf8')
+    return u'file://%s' % dest_path.decode('utf8')
 
 
 def _get_command_actual_args(directive_args, user_settings):
@@ -351,7 +352,9 @@ def _get_command_actual_args(directive_args, user_settings):
             # THis could be an expensive operations if remote, so may need
             # caching or maybe remote resolution?
             if rendering_context:
-                content = get_file(file_url, user_settings)
+                source_url = get_url_with_pkey(user_settings, file_url)
+                content = get_file(source_url).decode('utf-8')  #  FIXME: assume template are unicode, not bytestrings
+                logger.debug("content=%s" % content)
                 # Parse file parameter and retrieve data
                 logger.debug("file_url %s" % file_url)
                 # TODO: don't use temp file, use remote file with
@@ -359,10 +362,13 @@ def _get_command_actual_args(directive_args, user_settings):
                 t = Template(content)
                 logger.debug("rendering_context = %s" % rendering_context)
                 con = Context(rendering_context)
+                logger.debug("prerending content = %s" % t)
                 local_url = _get_new_local_url(file_url)  # TODO: make remote
                 logger.debug("local_rul=%s" % local_url)
-                rendered_content = t.render(con)
-                put_file(local_url, rendered_content, user_settings)
+                rendered_content = t.render(con).encode('utf-8')
+                logger.debug("rendered_content=%s" % rendered_content)
+                dest_url = get_url_with_pkey(user_settings, local_url)
+                put_file(dest_url, rendered_content)
             else:
                 logger.debug("no render required")
                 local_url = file_url
@@ -386,21 +392,144 @@ class NCIStorage(SFTPStorage):
             super(NCIStorage, self).__dict__["_host"] = settings['host']
         print super(NCIStorage, self)
 
+    def get_available_name(self, name):
+        """
+        Returns a filename that's free on the target storage system, and
+        available for new content to be written to.
+        """
+        if self.exists(name):
+            self.delete(name)
+        return name
 
-def put_file(file_url, content, user_settings):
+
+class LocalStorage(FileSystemStorage):
+    def __init__(self, location=None, base_url=None):
+        super(LocalStorage, self).__init__(location, base_url)
+
+    def get_available_name(self, name):
+        """
+        Returns a filename that's free on the target storage system, and
+        available for new content to be written to.
+        """
+        if self.exists(name):
+            self.delete(name)
+        return name
+
+
+def get_value(key, dictionary):
+    try:
+        return dictionary[key]
+    except KeyError:
+        return u''
+
+
+def get_http_url(non_http_url):
+    curr_scheme = non_http_url.split(':')[0]
+    http_url = "http" + non_http_url[len(curr_scheme): ]
+    return http_url
+
+
+def copy_directories(source_url, destination_url):
+    """
+    Supports only file and ssh schemes
+    :param source_url:
+    :param destination_url:
+    :return:
+    """
+    from urlparse import urlparse, parse_qsl
+    source_scheme = urlparse(source_url).scheme
+    http_source_url = get_http_url(source_url)
+    source = urlparse(http_source_url)
+    source_location = source.netloc
+    source_path = source.path
+    query = parse_qsl(source.query)
+    query_settings = dict(x[0:] for x in query)
+
+    http_destination_url = get_http_url(destination_url)
+    destination_prefix = destination_url.split('?')[0]
+    destination_suffix = ""
+    destination = urlparse(http_destination_url)
+    destination_query = destination.query
+    if destination_query:
+        destination_suffix = "?" + destination_url.split('?')[1]
+
+    if source_path[0] == os.path.sep:
+        source_path = source_path[1:]
+
+    if source_scheme == "file":
+        root_path = get_value('root_path', query_settings)
+        logger.debug("self.root_path=%s" % root_path)
+        fs = LocalStorage(location=root_path + "/")
+    elif source_scheme == "ssh":
+        logger.debug("getting from ssh")
+        key_filename = get_value('key_filename', query_settings)
+        username = get_value('username', query_settings)
+        password = get_value('password', query_settings)
+        root_path = get_value('root_path', query_settings)
+        logger.debug("root_path=%s" % root_path)
+        ssh_settings = {'params': {'key_filename': key_filename,
+                                   'username': username,
+                                   'password': password},
+                        'host': source_location,
+                        'root': str(root_path) + "/"}
+        logger.debug("nci_settings=%s" % pformat(ssh_settings))
+        fs = NCIStorage(settings=ssh_settings)
+        logger.debug("fs=%s" % fs)
+    else:
+        logger.warn("scheme: %s not supported" % source_scheme)
+        return
+
+    current_content = fs.listdir(source_path)
+    current_path_pointer = source_path
+    file_path_holder = []
+    dir_path_holder = []
+    while len(current_content) > 0:
+        for i in current_content[1]:
+            file_path = str(os.path.join(current_path_pointer, i))
+            file_path_holder.append(file_path)
+            content = fs.open(file_path).read()  # Can't we just call get_file ?
+            updated_file_path = file_path[len(source_path)+1:]
+            curr_dest_url = os.path.join(destination_prefix, updated_file_path) \
+                            + destination_suffix
+            logger.debug("Current destination url %s" % curr_dest_url)
+            put_file(curr_dest_url, content)
+        for j in current_content[0]:
+            list = [os.path.join(current_path_pointer, j), True]
+            dir_path_holder.append(list)
+
+        current_content = []
+        for k in dir_path_holder:
+            if k[1]:
+                k[1] = False
+                current_path_pointer = k[0]
+                current_content = fs.listdir(current_path_pointer)
+                logger.debug("Current pointer %s " % current_path_pointer)
+                break
+    logger.debug("All files")
+    logger.debug(file_path_holder)
+    logger.debug(dir_path_holder)
+    logger.debug("end of copy_directories")
+
+
+def put_file(file_url, content):
     """
     Writes out the content to the file_url using config info from user_settings
     """
     logger.debug("file_url=%s" % file_url)
-
-    logger.debug("file_url=%s" % file_url)
-    from urlparse import urlparse
-    o = urlparse(file_url)
-    scheme = o.scheme
+    from urlparse import urlparse, parse_qsl
+    scheme = urlparse(file_url).scheme
+    http_file_url = get_http_url(file_url)
+    o = urlparse(http_file_url)
     mypath = o.path
+    location = o.netloc
     if mypath[0] == os.path.sep:
         mypath = mypath[1:]
     logger.debug("mypath=%s" % mypath)
+    query = parse_qsl(o.query)
+    query_settings = dict(x[0:] for x in query)
+
+    if '@' in location:
+        location = location.split('@')[1]
 
     if scheme == 'http':
         # TODO: test
@@ -414,68 +543,86 @@ def put_file(file_url, content, user_settings):
         response = urllib2.urlopen(req)
         res = response.read()
         logger.debug("response=%s" % res)
-    elif scheme == "hpc":
-        # FIXME: some of these parameters may come from url
-        remote_fs_path = os.path.join(
-            os.path.dirname(__file__), 'testing', 'remotesys')
-        nci_settings = {'params': {'username': user_settings['nci_user'],
-            'password': user_settings['nci_password']},
-            'host': user_settings['nci_host'],
-            'root': remote_fs_path + "/"}
-        logger.debug("nci_settings=%s" % nci_settings)
-        fs = NCIStorage(settings=nci_settings)
+    elif scheme == "ssh":
+        key_filename = get_value('key_filename', query_settings)
+        if not key_filename:
+            key_filename = None  # require None for ssh_settings to skip keys
+        username = get_value('username', query_settings)
+        password = get_value('password', query_settings)
+        root_path = get_value('root_path', query_settings)
+        logger.debug("key_filename=%s" % key_filename)
+        logger.debug("root_path=%s" % root_path)
+        ssh_settings = {'params': {'key_filename': key_filename,
+                                   'username': username,
+                                   'password': password},
+                        'host': location,
+                        'root': str(root_path) + "/"}
+        logger.debug("ssh_settings=%s" % ssh_settings)
+        fs = NCIStorage(settings=ssh_settings)
          # FIXME: does this overwrite?
-        fs.save(mypath, ContentFile(content.encode('utf-8')))  # NB: ContentFile only takes bytes
+        fs.save(mypath, ContentFile(content))  # NB: ContentFile only takes bytes
+        logger.debug("File to be written on %s" % location)
     elif scheme == "tardis":
         logger.warn("tardis put not implemented")
         #raise NotImplementedError()
-    elif scheme == "local":
-        remote_fs_path = user_settings['fsys']
-        logger.debug("remote_fs_path=%s" % remote_fs_path)
-        fs = FileSystemStorage(location=remote_fs_path)
-        dest_path = fs.save(mypath, ContentFile(content.encode('utf-8')))  # NB: ContentFile only takes bytes
+    elif scheme == "file":
+        root_path = get_value('root_path', query_settings)
+        logger.debug("remote_fs_path=%s" % root_path)
+        fs = LocalStorage(location=root_path)
+        dest_path = fs.save(mypath, ContentFile(content))  # NB: ContentFile only takes bytes
         logger.debug("dest_path=%s" % dest_path)
     return content
 
 
-def get_file(file_url, user_settings):
+def get_file(file_url):
     """
     Reads in content at file_url using config info from user_settings
+    Returns byte strings
     """
     logger.debug("file_url=%s" % file_url)
 
-    from urlparse import urlparse
-    o = urlparse(file_url)
-    scheme = o.scheme
-    mypath = o.path
+    from urlparse import urlparse, parse_qsl
+    scheme = urlparse(file_url).scheme
+    http_file_url = get_http_url(file_url)
+    o = urlparse(http_file_url)
+    mypath = str(o.path)
+    location = o.netloc
+
     # TODO: add error checking for urlparse
     logger.debug("scheme=%s" % scheme)
     logger.debug("mypath=%s" % mypath)
 
     if mypath[0] == os.path.sep:
-        mypath = mypath[1:]
+        mypath = str(mypath[1:])
     logger.debug("mypath=%s" % mypath)
+    query = parse_qsl(o.query)
+    query_settings = dict(x[0:] for x in query)
+
+    if '@' in location:
+        location = location.split('@')[1]
 
     if scheme == 'http':
         import urllib2
         req = urllib2.Request(o)
         response = urllib2.urlopen(req)
         content = response.read()
-    elif scheme == "hpc":
+    elif scheme == "ssh":
         logger.debug("getting from hpc")
-        # TODO: remote_fs_path should be from user settings
-        remote_fs_path = user_settings['fsys']
+        key_filename = get_value('key_filename', query_settings)
+        if not key_filename:
+            key_filename = None  # require None for ssh_settings to skip keys
 
-        #os.path.join(
-        #    os.path.dirname(__file__), 'testing', 'remotesys')
-        logger.debug("remote_fs_path=%s" % remote_fs_path)
-
-        nci_settings = {'params': {'username': str(user_settings['nci_user']),
-            'password': str(user_settings['nci_password'])},
-            'host': str(user_settings['nci_host']),
-            'root': remote_fs_path + "/"}
-        logger.debug("nci_settings=%s" % pformat(nci_settings))
-        fs = NCIStorage(settings=nci_settings)
+        username = get_value('username', query_settings)
+        password = get_value('password', query_settings)
+        root_path = get_value('root_path', query_settings)
+        logger.debug("root_path=%s" % root_path)
+        ssh_settings = {'params': {'key_filename': key_filename,
+                                   'username': username,
+                                   'password': password},
+                        'host': location,
+                        'root': root_path + "/"}
+        logger.debug("ssh_settings=%s" % ssh_settings)
+        fs = NCIStorage(settings=ssh_settings)
         logger.debug("fs=%s" % fs)
         logger.debug("mypath=%s" % mypath)
         fp = fs.open(mypath)
@@ -485,65 +632,31 @@ def get_file(file_url, user_settings):
     elif scheme == "tardis":
         return "a={{a}} b={{b}}"
         raise NotImplementedError("tardis scheme not implemented")
-    elif scheme == "local":
-        remote_fs_path = user_settings['fsys']
-        logger.debug("self.remote_fs_path=%s" % remote_fs_path)
-        fs = FileSystemStorage(location=remote_fs_path + "/")
+    elif scheme == "file":
+        root_path = get_value('root_path', query_settings)
+        logger.debug("self.root_path=%s" % root_path)
+        fs = LocalStorage(location=root_path + "/")
         content = fs.open(mypath).read()
+        logger.debug("content=%s" % content)
     logger.debug("content=%s" % content)
     return content
 
 
-def _get_remote_path(file_url, user_settings):
-    """
-    Find the path at the remote site corresponding to file_url, but don't fetch
-      # TODO: expand to return other parts of parsed url
-    """
-    logger.debug("file_url=%s" % file_url)
-
-    from urlparse import urlparse
-    o = urlparse(file_url)
-    scheme = o.scheme
-    mypath = o.path
-    logger.debug("scheme=%s" % scheme)
-    logger.debug("mypath=%s" % mypath)
-
-    if mypath[0] == os.path.sep:
-        mypath = mypath[1:]
-    logger.debug("mypath=%s" % mypath)
-
-    if scheme == 'http':
-        raise NotImplementedError("http scheme not implemented")
-    elif scheme == "hpc":
-        logger.debug("getting from hpc")
-        # TODO: remote_fs_path should be from user settings
-#        remote_fs_path = os.path.join(
-#            os.path.dirname(__file__), 'testing', 'remotesys')
-        remote_fs_path = user_settings['fsys']
-        logger.debug("remote_fs_path=%s" % remote_fs_path)
-        remote_path = os.path.join(remote_fs_path, mypath)
-
-    elif scheme == "tardis":
-        raise NotImplementedError("tardis scheme not implemented")
-    elif scheme == "local":
-        remote_fs_path = user_settings['fsys']
-        remote_path = os.path.join(remote_fs_path, "/", mypath)
-
-    logger.debug("remote_path=%s" % remote_path)
-    return remote_path
-
-
-def make_runcontext_for_directive(platform, directive_name,
+def make_runcontext_for_directive(platform_name, directive_name,
     directive_args, initial_settings, username):
     """
     Create a new runcontext with the commmand equivalent to the directive on the platform.
     """
+    logger.debug("Platform Name %s" % platform_name)
+
+
     user = User.objects.get(username=username)  # FIXME: pass in username
     profile = models.UserProfile.objects.get(user=user)
-    platform = models.Platform.objects.get(name=platform)
+    platform = models.Platform.objects.get(name=platform_name)
 
     run_settings = dict(initial_settings)  # we may share initial_settings
-    system = {u'platform': platform.id}
+
+    system = {u'platform': platform_name}
     run_settings[u'http://rmit.edu.au/schemas/system'] = system
 
     directive = models.Directive.objects.get(name=directive_name)
@@ -555,20 +668,14 @@ def make_runcontext_for_directive(platform, directive_name,
     command_args = _get_command_actual_args(
         directive_args, user_settings)
     logger.debug("command_args=%s" % command_args)
-    # prepare a context for the command to run for this user
-
     run_settings = _make_run_settings_for_command(command_for_directive,
         command_args, run_settings)
-
     logger.debug("updated run_settings=%s" % run_settings)
-    # TODO: each run_context contains one stage and the only way to get a sequence of
-    # is to use a composite.  run_context is built from only one directive so can't execute
-    # multiple directives and have to create a new run_context for each new directive that a
-    # user needs to run.  There is no "directive sequence" model.
     run_context = _make_new_run_context(command_for_directive.stage, profile, run_settings)
     logger.debug("run_context =%s" % run_context)
     run_context.current_stage = command_for_directive.stage
     run_context.save()
+
     logger.debug("command=%s new runcontext=%s" % (command_for_directive, run_context))
     # FIXME: only return command_args and context because they are needed for testcases
     return (run_settings, command_args, run_context)
@@ -593,6 +700,7 @@ def process_all_contexts():
     TODO: this loop will run continuously as celery task to take Directives into commands into contexts
     for execution.
     """
+    logger.warn("process_contexts_context is deprecated")
     test_info = []
     while (True):
         run_contexts = models.Context.objects.all()

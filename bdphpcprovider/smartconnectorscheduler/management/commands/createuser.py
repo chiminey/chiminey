@@ -161,7 +161,12 @@ class Command(BaseCommand):
             'nci_host': '127.0.0.1',
             'PASSWORD': 'changemepassword',   # NB: change this password
             'USER_NAME': 'root',
-            'PRIVATE_KEY': ''
+            'PRIVATE_KEY': '',
+            'PRIVATE_KEY_NAME': '',
+            'PRIVATE_KEY_NECTAR': '',
+            'PRIVATE_KEY_NCI': '',
+            'EC2_ACCESS_KEY': '',
+            'EC2_SECRET_KEY': ''
             }
 
         user_schema = models.Schema.objects.get(namespace=models.UserProfile.PROFILE_SCHEMA_NS)

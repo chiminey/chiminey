@@ -288,66 +288,6 @@ class TestCommandContextLoop(TestCase):
                       user=self.user)
         profile.save()
 
-        # # Create the schemas for template parameters or config info
-        # # specfied in directive arguments
-        # for ns, name, desc in [('http://www.rmit.edu.au/user/profile/1',
-        #     "userprofile1", "Information about user"),
-        #     ('http://tardis.edu.au/schemas/hrmc/dfmeta', "datafile1",
-        #         "datafile 1 schema"),
-        #     ('http://tardis.edu.au/schemas/hrmc/dfmeta2', "datafile2",
-        #         "datafile 2 schema"),
-        #     ('http://tardis.edu.au/schemas/hrmc/create', "create",
-        #         "create stage"),
-        #     ("http://nci.org.au/schemas/hrmc/custom_command", "custom",
-        #         "custom command")
-        #     ]:
-        #     sch = models.Schema.objects.create(namespace=ns, name=name, description=desc)
-        #     logger.debug("sch=%s" % sch)
-
-        # Create the schema for stages (currently only one) and all allowed
-        # values and their types for all stages.
-        # context_schema = models.Schema.objects.create(
-        #     namespace=models.Context.CONTEXT_SCHEMA_NS,
-        #     name="Context Schema", description="Schema for a context")
-        # We assume that a run_context has only one schema at the moment, as
-        # we have to load up this schema with all context values used in
-        # any of the stages (and any parameters required for the stage
-        # invocation)
-        # TODO: allow multiple ContextParameterSet each with different schema
-        # so each value will come from a namespace.  e.g., general/fsys
-        # nectar/num_of_nodes, setup/nodes_setup etc.
-        # for name, param_type in {
-        #     u'file0': models.ParameterName.STRING,
-        #     u'file1': models.ParameterName.STRING,
-        #     u'file2': models.ParameterName.STRING,
-        #     u'num_nodes': models.ParameterName.NUMERIC,
-        #     u'iseed': models.ParameterName.NUMERIC,
-        #     u'command': models.ParameterName.STRING,
-        #     u'transitions': models.ParameterName.STRING,  # TODO: use STRLIST
-        #     u'null_output': models.ParameterName.NUMERIC,
-        #     u'parallel_output': models.ParameterName.NUMERIC,
-        #     u'system': models.ParameterName.STRING,
-        #     u'platform': models.ParameterName.NUMERIC,
-        #     u'program_success': models.ParameterName.STRING,
-        #     u'null_output': models.ParameterName.NUMERIC,
-        #     u'parallel_output': models.ParameterName.NUMERIC,
-        #     u'null_number': models.ParameterName.NUMERIC,
-        #     u'parallel_number': models.ParameterName.NUMERIC,
-        #     u'null_index': models.ParameterName.NUMERIC,
-        #     u'parallel_index': models.ParameterName.NUMERIC,
-        #     }.items():
-        #     models.ParameterName.objects.create(schema=context_schema,
-        #         name=name,
-        #         type=param_type)
-
-
- # sorted([u'http://nci.org.au/schemas/smartconnector1/custom',
- #                u'http://rmit.edu.au/schemas/smartconnector1/create',
- #                u'http://rmit.edu.au/schemas/smartconnector1/files',
- #                u'http://rmit.edu.au/schemas/system',
- #                u'http://rmit.edu.au/schemas/system/misc']))
-
-
         schema_data = {
             u'http://rmit.edu.au/schemas//files':
                 [u'general input files for directive',
@@ -393,7 +333,6 @@ class TestCommandContextLoop(TestCase):
             u'http://rmit.edu.au/schemas/stages/parallel/testing':
                 [u'the parallel stage internal testing',
                 {
-
                 u'output': models.ParameterName.NUMERIC,
                 u'index': models.ParameterName.NUMERIC
                 }
@@ -414,7 +353,7 @@ class TestCommandContextLoop(TestCase):
             u'http://rmit.edu.au/schemas/system':
                 [u'Information about the deployment platform',
                 {
-                u'platform': models.ParameterName.NUMERIC,  # deprecated
+                u'platform': models.ParameterName.STRING,  # deprecated
                 }
                 ],
             u'http://tardis.edu.au/schemas/hrmc/dfmeta':
@@ -430,7 +369,7 @@ class TestCommandContextLoop(TestCase):
                 u'c': models.ParameterName.STRING,
                 }
                 ],
-            u'http://www.rmit.edu.au/user/profile/1':
+            models.UserProfile.PROFILE_SCHEMA_NS:
                 [u'user profile',
                 {
                     u'userinfo1': models.ParameterName.STRING,
@@ -441,10 +380,19 @@ class TestCommandContextLoop(TestCase):
                     u'nci_host': models.ParameterName.STRING,
                     u'PASSWORD': models.ParameterName.STRING,
                     u'USER_NAME': models.ParameterName.STRING,
-                    u'PRIVATE_KEY': models.ParameterName.STRING
+                    u'PRIVATE_KEY': models.ParameterName.STRING,
+                    u'flag': models.ParameterName.NUMERIC,
+                    u'CLOUD_SLEEP_INTERVAL': models.ParameterName.NUMERIC,
+                    u'local_fs_path': models.ParameterName.STRING,  # do we need this?
+                    u'PRIVATE_KEY_NAME': models.ParameterName.STRING,
+                    u'PRIVATE_KEY_NECTAR': models.ParameterName.STRING,
+                    u'PRIVATE_KEY_NCI': models.ParameterName.STRING,
+                    u'EC2_ACCESS_KEY': models.ParameterName.STRING,
+                    u'EC2_SECRET_KEY': models.ParameterName.STRING
                 }
                 ],
         }
+
 
         for ns in schema_data:
             l = schema_data[ns]
@@ -469,10 +417,16 @@ class TestCommandContextLoop(TestCase):
             'nci_user': 'root',
             'nci_password': 'dtofaam',
             'nci_host': '127.0.0.1',
+            'PASSWORD': 'dtofaam',
+            'USER_NAME': 'root',
+            'PRIVATE_KEY': '',
+
             }
 
+
+
         self.PARAMTYPE = {}
-        sch = models.Schema.objects.get(namespace="http://www.rmit.edu.au/user/profile/1")
+        sch = models.Schema.objects.get(namespace=models.UserProfile.PROFILE_SCHEMA_NS)
         #paramtype = schema_data['http://www.rmit.edu.au/user/profile/1'][1]
         param_set = models.UserProfileParameterSet.objects.create(user_profile=profile,
             schema=sch)
@@ -487,9 +441,15 @@ class TestCommandContextLoop(TestCase):
         system_dict = {u'system': u'settings'}
         system_settings = {u'http://rmit.edu.au/schemas/system/misc': system_dict}
 
-        # Make a platform for the commands
-        platform = models.Platform(name="nci")
-        platform.save()
+
+
+        local_filesys_rootpath = '/opt/cloudenabling/current/bdphpcprovider/smartconnectorscheduler/testing/remotesys'
+        models.Platform.objects.get_or_create(name='local', root_path=local_filesys_rootpath)
+        models.Platform.objects.get_or_create(name='nectar', root_path='/home/centos')
+        platform, _  = models.Platform.objects.get_or_create(name='nci', root_path=local_filesys_rootpath)
+
+
+
 
         # Name our smart connector directive
         directive = models.Directive(name="smartconnector1")
@@ -503,16 +463,36 @@ class TestCommandContextLoop(TestCase):
              description="encapsulates a workflow",
              package=self.parallel_package,
              order=100)
-        models.Stage.objects.create(name="setup",
+        setup_stage = models.Stage.objects.create(name="setup",
             parent=composite_stage,
             description="This is a setup stage of something",
             package=self.null_package,
             order=0)
+
+        # stage settings are usable from subsequent stages in a run so only
+        # need to define once for first null or parallel stage
+        setup_stage.update_settings(
+            {
+            u'http://rmit.edu.au/schemas/smartconnector1/create':
+                {
+                    u'null_number': 4,
+                }
+            })
+
         stage2 = models.Stage.objects.create(name="run",
             parent=composite_stage,
             description="This is the running connector",
             package=self.parallel_package,
             order=1)
+
+        stage2.update_settings(
+            {
+            u'http://rmit.edu.au/schemas/smartconnector1/create':
+                {
+                    u'parallel_number': 2
+                }
+            })
+
         models.Stage.objects.create(name="run1",
             parent=stage2,
             description="This is the running part 1",
@@ -555,16 +535,16 @@ class TestCommandContextLoop(TestCase):
         # Template from mytardis with corresponding metdata brought across
         directive_args.append(['tardis://iant@tardis.edu.au/datafile/15', []])
         # Template on remote storage with corresponding multiple parameter sets
-        directive_args.append(['hpc://iant@nci.edu.au/input/input.txt',
+        directive_args.append(['ssh://nci@127.0.0.1/input/input.txt',
             ['http://tardis.edu.au/schemas/hrmc/dfmeta', ('a', 3), ('b', 4)],
             ['http://tardis.edu.au/schemas/hrmc/dfmeta', ('a', 1), ('b', 2)],
             ['http://tardis.edu.au/schemas/hrmc/dfmeta2', ('c', 'hello')]])
         # A file (template with no variables)
-        directive_args.append(['hpc://iant@nci.edu.au/input/file.txt',
+        directive_args.append(['ssh://nci@127.0.0.1/input/file.txt',
             []])
         # A set of commands
         directive_args.append(['', ['http://rmit.edu.au/schemas/smartconnector1/create',
-            ('num_nodes', 5), ('iseed', 42), ('null_number', 4), ('parallel_number', 1)]])
+            (u'num_nodes', 5), (u'iseed', 42)]])
         # An Example of how a nci script might work.
         directive_args.append(['',
             ['http://nci.org.au/schemas/smartconnector1/custom', ('command', 'ls')]])
@@ -612,7 +592,7 @@ class TestCommandContextLoop(TestCase):
         logger.debug("test_final_run_settings[0][0] = %s" % pformat(test_final_run_settings[0][0].keys()))
 
         self.assertEquals(test_final_run_settings[0][0][u'http://rmit.edu.au/schemas/stages/null/testing']['output'], 4)
-        self.assertEquals(test_final_run_settings[0][0][u'http://rmit.edu.au/schemas/stages/parallel/testing']['output'], 1)
+        self.assertEquals(test_final_run_settings[0][0][u'http://rmit.edu.au/schemas/stages/parallel/testing']['output'], 2)
         logger.debug("context =  %s" % test_final_run_settings[0][0])
 
     def test_multi_remote_commands(self):
@@ -676,19 +656,41 @@ class TestCommandContextLoop(TestCase):
         #         type=param_type)
 
         schema_data = {
-            u'http://rmit.edu.au/schemas//files':
-                [u'general input files for directive',
+            u'http://rmit.edu.au/schemas/system/misc':
+                [u'system level misc values',
                 {
-                u'file0': models.ParameterName.STRING,
-                u'file1': models.ParameterName.STRING,
-                u'file2': models.ParameterName.STRING,
+                u'transitions': models.ParameterName.STRING,  # deprecated
+                u'system': models.ParameterName.STRING,
                 }
                 ],
-             # Note that file schema ns must match regex
-             # protocol://host/schemas/{directective.name}/files
-             # otherwise files will not be matched correctly.
-             # TODO: make fall back to directive files in case specfici
-             # version not defined here.
+            u'http://rmit.edu.au/schemas/system':
+                [u'Information about the deployment platform',
+                {
+                u'platform': models.ParameterName.STRING,  # deprecated
+                }
+                ],
+            models.UserProfile.PROFILE_SCHEMA_NS:
+                [u'user profile',
+                {
+                    u'userinfo1': models.ParameterName.STRING,
+                    u'userinfo2': models.ParameterName.NUMERIC,
+                    u'fsys': models.ParameterName.STRING,
+                    u'nci_user': models.ParameterName.STRING,
+                    u'nci_password': models.ParameterName.STRING,
+                    u'nci_host': models.ParameterName.STRING,
+                    u'PASSWORD': models.ParameterName.STRING,
+                    u'USER_NAME': models.ParameterName.STRING,
+                    u'PRIVATE_KEY': models.ParameterName.STRING,
+                    u'flag': models.ParameterName.NUMERIC,
+                    u'CLOUD_SLEEP_INTERVAL': models.ParameterName.NUMERIC,
+                    u'local_fs_path': models.ParameterName.STRING,
+                    u'PRIVATE_KEY_NAME': models.ParameterName.STRING,
+                    u'PRIVATE_KEY_NECTAR': models.ParameterName.STRING,
+                    u'PRIVATE_KEY_NCI': models.ParameterName.STRING,
+                    u'EC2_ACCESS_KEY': models.ParameterName.STRING,
+                    u'EC2_SECRET_KEY': models.ParameterName.STRING
+                }
+                ],
             u'http://rmit.edu.au/schemas/copy/files':
                  [u'the copy input files',
                  {
@@ -724,32 +726,6 @@ class TestCommandContextLoop(TestCase):
                 u'program_success': models.ParameterName.STRING
                 }
                 ],
-            u'http://rmit.edu.au/schemas/system/misc':
-                [u'system level misc values',
-                {
-                u'transitions': models.ParameterName.STRING,  # deprecated
-                u'system': models.ParameterName.STRING
-                }
-                ],
-            u'http://rmit.edu.au/schemas/system':
-                [u'Information about the deployment platform',
-                {
-                u'platform': models.ParameterName.NUMERIC,  # deprecated
-                }
-                ],
-            u'http://www.rmit.edu.au/user/profile/1':
-                [u'user profile',
-                {
-                    u'userinfo1': models.ParameterName.STRING,
-                    u'fsys': models.ParameterName.STRING,
-                    u'nci_user': models.ParameterName.STRING,
-                    u'nci_password': models.ParameterName.STRING,
-                    u'nci_host': models.ParameterName.STRING,
-                    u'PASSWORD': models.ParameterName.STRING,
-                    u'USER_NAME': models.ParameterName.STRING,
-                    u'PRIVATE_KEY': models.ParameterName.STRING
-                }
-                ],
             u'http://rmit.edu.au/schemas/greeting/salutation':
                 [u'salute',
                 {
@@ -774,18 +750,38 @@ class TestCommandContextLoop(TestCase):
                     name=k,
                     type=v)
 
-        # Setup the schema for user configuration information (kept in profile)
+        # # Setup the schema for user configuration information (kept in profile)
+        # self.PARAMS = {'userinfo1': 'param1val',
+        #     'fsys': self.remote_fs_path,
+        #     'nci_user': 'root',
+        #     'nci_password': 'dtofaam',
+        #     'nci_host': '127.0.0.1',
+        #     'PASSWORD': 'dtofaam',
+        #     'USER_NAME': 'root',
+        #     'PRIVATE_KEY': '',
+        #     }
+
         self.PARAMS = {'userinfo1': 'param1val',
+            'userinfo2': 42,
+            #TODO: this is remote and local path for the user, this value is now in Platform?
+            #see hrmcstages._get_remote_path
             'fsys': self.remote_fs_path,
+
             'nci_user': 'root',
-            'nci_password': 'dtofaam',
+            'nci_password': 'dtofaam',  # NB: change this password
             'nci_host': '127.0.0.1',
-            'PASSWORD': 'dtofaam',
+            'PASSWORD': 'dtofaam',   # NB: change this password
             'USER_NAME': 'root',
             'PRIVATE_KEY': '',
+            'PRIVATE_KEY_NAME': '',
+            'PRIVATE_KEY_NECTAR': '',
+            'PRIVATE_KEY_NCI': '',
+            'EC2_ACCESS_KEY': '',
+            'EC2_SECRET_KEY': ''
             }
+
         self.PARAMTYPE = {}
-        sch = models.Schema.objects.get(namespace="http://www.rmit.edu.au/user/profile/1")
+        sch = models.Schema.objects.get(namespace=models.UserProfile.PROFILE_SCHEMA_NS)
         #paramtype = schema_data['http://www.rmit.edu.au/user/profile/1'][1]
         param_set = models.UserProfileParameterSet.objects.create(user_profile=profile,
             schema=sch)
@@ -796,13 +792,14 @@ class TestCommandContextLoop(TestCase):
                 paramset=param_set,
                 value=v)
 
+        models.Platform.objects.get_or_create(name='local', root_path='/opt/cloudenabling/current/bdphpcprovider/smartconnectorscheduler/testing/remotesys')
+        models.Platform.objects.get_or_create(name='nectar', root_path='/opt/cloudenabling/current/bdphpcprovider/smartconnectorscheduler/testing/remotesys')
+        platform,_ = models.Platform.objects.get_or_create(name='nci', root_path='/opt/cloudenabling/current/bdphpcprovider/smartconnectorscheduler/testing/remotesys')
+
+
         # make the system settings, available to initial stage and merged with run_settings
         system_dict = {u'system': u'settings'}
         system_settings = {u'http://rmit.edu.au/schemas/system/misc': system_dict}
-
-        # Make a platform for the commands
-        platform = models.Platform(name="nci")
-        platform.save()
 
         copy_dir = models.Directive(name="copy")
         copy_dir.save()
@@ -817,10 +814,23 @@ class TestCommandContextLoop(TestCase):
              description="data movemement operation",
              package=self.movement_stage,
              order=100)
+
+        #copy_stage.update_settings({
+        #    u'http://rmit.edu.au/schemas/stages/copy/testing':
+        #        {
+        #        u'output':0
+        #        }})
+
         program_stage = models.Stage.objects.create(name="program",
             description="program execution stage",
             package=self.program_stage,
             order=0)
+
+        #program_stage.update_settings({u'http://rmit.edu.au/schemas/stages/program/testing':
+        #        {
+        #        u'output':0
+        #        }})
+
         logger.debug("stages=%s" % models.Stage.objects.all())
         # Make a new command that reliases composite_stage
         # TODO: add the command program to the model
@@ -850,10 +860,10 @@ class TestCommandContextLoop(TestCase):
         directive_name = "copy"
         directive_args = []
         directive_args.append(
-            ['local://12.0.0.1/local/greet.txt',
+            ['file://local@127.0.0.1/local/greet.txt',
                 ['http://rmit.edu.au/schemas/greeting/salutation',
                     ('salutation', 'Hello')]])
-        directive_args.append(['hpc://ncitest.org/remote/greet.txt', []])
+        directive_args.append(['ssh://nci@127.0.0.1/remote/greet.txt', []])
         directives.append((platform, directive_name, directive_args))
 
         # concatenate that file and another file (already remote) to form result
@@ -863,11 +873,11 @@ class TestCommandContextLoop(TestCase):
             ['http://rmit.edu.au/schemas/program/config', ('program', 'cat'),
             ('remotehost', '127.0.0.1')]])
 
-        directive_args.append(['hpc://ncitest.org/remote/greet.txt',
+        directive_args.append(['ssh://nci@127.0.0.1/remote/greet.txt',
             []])
-        directive_args.append(['hpc://ncitest.org/remote/greetaddon.txt',
+        directive_args.append(['ssh://nci@127.0.0.1/remote/greetaddon.txt',
             []])
-        directive_args.append(['hpc://ncitest.org/remote/greetresult.txt',
+        directive_args.append(['ssh://nci@127.0.0.1/remote/greetresult.txt',
             []])
 
         directives.append((platform, directive_name, directive_args))
@@ -875,9 +885,9 @@ class TestCommandContextLoop(TestCase):
         # transfer result back locally.
         directive_name = "copy"
         directive_args = []
-        directive_args.append(['hpc://ncitest.org/remote/greetresult.txt',
+        directive_args.append(['ssh://nci@127.0.0.1/remote/greetresult.txt',
             []])
-        directive_args.append(['local://12.0.0.1/local/finalresult.txt',
+        directive_args.append(['file://local@127.0.0.1/local/finalresult.txt',
             []])
 
         directives.append((platform, directive_name, directive_args))

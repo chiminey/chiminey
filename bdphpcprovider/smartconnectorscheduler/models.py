@@ -111,16 +111,30 @@ class ParameterName(models.Model):
                 return str
         return "UNKNOWN"
 
+    #TODO: Check MyTardis code base for consistency
     def get_value(self, val):
-        logger.debug("type=%s" % self.type)
-        logger.debug("val=%s" % val)
+        #logger.debug("type=%s" % self.type)
+        #logger.debug("val=%s" % val)
         res = val
-        if self.type == self.NUMERIC:
+        if self.type == self.STRING:
+            res = val
+        elif self.type == self.NUMERIC:
             try:
                 res = int(val)
             except ValueError:
                 logger.debug("invalid type")
                 raise
+        elif self.type == self.STRLIST:
+            try:
+                import ast
+                res = ast.literal_eval(val)
+                logger.debug('STRLIST %s length %d' % (res, len(res)))
+            except ValueError:
+                logger.debug("invalid type")
+                raise
+        else:
+            logger.debug("Unsupported Type")
+            raise ValueError
         return res
 
 
@@ -260,12 +274,83 @@ class Stage(models.Model):
             return None
         return next_stage
 
+    def get_settings(self):
+        """
+        Returns a readonly dict that holds all the information for the stage
+        """
+        schema_map = {}
+        for sps in StageParameterSet.objects.filter(stage=self):
+            schema = sps.schema.namespace
+            logger.debug("schema=%s" % schema)
+            sch_cont = {}
+            for param in StageParameter.objects.filter(paramset=sps):
+                sch_cont[param.name.name] = param.getValue()  # NB: Assume that key is unique to each schema
+            sch = schema_map[schema] if schema in schema_map else []
+            sch.append(sch_cont)
+            schema_map[schema] = sch[0]  # NB: assume only one instance of each schema per context
 
+        settings = schema_map
+        logger.debug("settings=%s" % settings)
+
+        return settings
+
+    def update_settings(self, stage_settings):
+        """
+            update the stage_settings associated with the context with new values from a map
+        """
+        logger.debug("stage_settings=%s" % stage_settings)
+        for schdata in stage_settings:
+            logger.debug("schdata=%s" % schdata)
+            try:
+                sch = Schema.objects.get(namespace=schdata)
+            except Schema.DoesNotExist:
+                logger.error("schema %s does not exist" % schdata)
+                raise
+            except MultipleObjectsReturned:
+                logger.error("multiple schemas found for %s" % schdata)
+                raise
+
+            logger.debug("sch=%s" % sch)
+
+            paramset, _ = StageParameterSet.objects.get_or_create(schema=sch, stage=self)
+
+            logger.debug("paramset=%s" % paramset)
+            #TODO: what if entries in original context have been deleted?
+            kvs = stage_settings[schdata]
+
+            for k in kvs:
+                v = kvs[k]
+                try:
+                    pn = ParameterName.objects.get(schema=sch,
+                        name=k)
+                except ParameterName.DoesNotExist:
+                    msg = "Unknown parameter '%s' for context '%s'" % (k, run_settings)
+                    logger.exception(msg)
+                    raise InvalidInputError(msg)
+                try:
+                    cp = StageParameter.objects.get(name__name=k, paramset=paramset)
+                except StageParameter.DoesNotExist:
+                    # TODO: need to check type
+                    logger.debug("new param =%s" % pn)
+                    cp = StageParameter.objects.create(name=pn,
+                        paramset=paramset, value=v)
+                except MultipleObjectsReturned:
+                    logger.exception("Found duplicate entry in StageParamterSet")
+                    raise
+                else:
+                    logger.debug("updating %s to %s" % (cp.name, v))
+                    # TODO: need to check type
+                    cp.value = v
+                    cp.save()
+
+
+#FIXME: We assume 1 private key per platform. Relax this assumption
 class Platform(models.Model):
     """
     The envioronment where directives will be executed.
     """
-    name = models.CharField(max_length=256)
+    name = models.CharField(max_length=256, default='nectar')
+    root_path = models.CharField(max_length=512, default='/home/centos')
 
     def __unicode__(self):
         return u"Platform:%s" % (self.name)
@@ -358,18 +443,10 @@ class Context(models.Model):
             except MultipleObjectsReturned:
                 logger.error("multiple schemas found for %s" % schdata)
                 raise
+
             logger.debug("sch=%s" % sch)
 
             paramset, _ = ContextParameterSet.objects.get_or_create(schema=sch, context=self)
-            # try:
-            #     paramset = ContextParameterSet.objects.get(
-            #         schema=sch, context=self)
-            # except ContextParameterSet.DoesNotExist:
-            #     logger.exception("Could not find parameterset %s for context" % sch.namespace)
-            #     raise
-            # except MultipleObjectsReturned:
-            #     logger.exception("Found duplicate entry in ContextParamterSet")
-            #     raise
 
             logger.debug("paramset=%s" % paramset)
             #TODO: what if entries in original context have been deleted?
@@ -405,9 +482,9 @@ class Context(models.Model):
             res = self.current_stage.name
         else:
             res = "None"
-        logger.debug("res=%s" % res)
+        #logger.debug("res=%s" % res)
         res2 = ContextParameterSet.objects.filter(context=self)
-        logger.debug("res2=%s" % res2)
+        #logger.debug("res2=%s" % res2)
 
         return u"RunCommand:owner=%s\nstage=%s\nparameters=%s\n" % (self.owner,
              res, [unicode(x) for x in res2]
@@ -440,7 +517,6 @@ class CommandArgument(models.Model):
     template_url = models.URLField()
 
 
-
 class ContextParameter(models.Model):
     name = models.ForeignKey(ParameterName, verbose_name="Parameter Name")
     paramset = models.ForeignKey(ContextParameterSet, verbose_name="Parameter Set")
@@ -462,3 +538,44 @@ class ContextParameter(models.Model):
         ordering = ("name",)
 
 
+class StageParameterSet(models.Model):
+    """
+    All the information required to run the stage in the context
+    """
+    stage = models.ForeignKey(Stage)
+    schema = models.ForeignKey(Schema, verbose_name="Schema")
+    ranking = models.IntegerField(default=0)
+
+    class Meta:
+        ordering = ["-ranking"]
+        app_label = "smartconnectorscheduler"
+
+    def __unicode__(self):
+        res = "schema=%s\n" % self.schema
+        res += ('\n'.join([str(cp) for cp in ContextParameter.objects.filter(paramset=self)]))
+        return res
+
+
+class StageParameter(models.Model):
+    name = models.ForeignKey(ParameterName, verbose_name="Parameter Name")
+    paramset = models.ForeignKey(StageParameterSet, verbose_name="Parameter Set")
+    value = models.TextField(null=True, blank=True, verbose_name="Parameter Value", help_text="The Value of this parameter")
+    #ranking = models.IntegerField(default=0,help_text="Describes the relative ordering of parameters when displaying: the larger the number, the more prominent the results")
+
+    def __unicode__(self):
+        return u'%s =  %s' % (self.name, self.value)
+
+    def getValue(self,):
+        try:
+            val = self.name.get_value(self.value)
+        except ValueError:
+            logger.error("got bad value")
+            raise
+        return val
+
+    class Meta:
+        ordering = ("name",)
+
+
+
+# StageParameterSet
