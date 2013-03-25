@@ -49,6 +49,7 @@ class Stage(object):
 
         Suppose
             url_or_relative_path = 'nectar@new_payload'
+            is_relative_path = True
             ip_address = 127.0.0.1
             root_path = /home/centos
         the platform is nectar and the relative path is new_payload
@@ -56,14 +57,13 @@ class Stage(object):
 
         :param settings:
         :param url_or_relative_path:
-        :param is_destination:
+        :param is_relative_path:
         :param ip_address:
         :return:
         '''
         username = settings['USER_NAME']
         password = settings['PASSWORD']
         private_key = ''
-        scheme = 'file'
 
         if is_relative_path:
             url = 'http://' + url_or_relative_path
@@ -78,11 +78,25 @@ class Stage(object):
             private_key = settings['PRIVATE_KEY_NCI']
             scheme = 'ssh'
         else:
-            platform = 'local'
+            scheme = urlparse(url).scheme
+            if scheme == 'file':
+                platform = 'local'
+            else:
+                logger.debug("scheme [%s] unknown \n"
+                             "Valid schemes [file, ssh]" % scheme)
+                #raise NotImplementedError()
+                return
         platform_object = models.Platform.objects.get(name=platform)
         root_path = platform_object.root_path
         if is_relative_path:
-            relative_path = parsed_url.hostname
+            partial_path = parsed_url.path
+            if partial_path:
+                if partial_path[0] == os.path.sep:
+                    partial_path = parsed_url.path[1:]
+            relative_path = os.path.join(parsed_url.hostname, partial_path)
+            logger.debug('host=%s path=%s relativepath=%s' % (parsed_url.hostname,
+                                                              partial_path,
+                                                              relative_path))
             url_with_pkey = '%s://%s/%s?key_filename=%s' \
                             '&username=%s&password=%s' \
                             '&root_path=%s' % (scheme, ip_address,
