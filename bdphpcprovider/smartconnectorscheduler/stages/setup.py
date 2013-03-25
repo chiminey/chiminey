@@ -2,6 +2,7 @@ from bdphpcprovider.smartconnectorscheduler import botocloudconnector
 from bdphpcprovider.smartconnectorscheduler.sshconnector import open_connection
 from bdphpcprovider.smartconnectorscheduler.sshconnector import run_sudo_command
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
+from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler.stages.errors import InsufficientResourceError
 from bdphpcprovider.smartconnectorscheduler.stages.errors import MissingConfigurationError
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
@@ -36,52 +37,51 @@ class Setup(Stage):
         # self.settings.update(run_settings)
 
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/create', u'group_id'):
-            self.group_id = self.settings['http://rmit.edu.au/schemas/stages/create'][u'group_id']
+            self.group_id = run_settings['http://rmit.edu.au/schemas/stages/create'][u'group_id']
         else:
             logger.warn("no group_id found when expected")
             return False
 
-
         logger.debug("group_id = %s" % self.group_id)
 
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/setup', u'setup_finished'):
-            logger.debug(self.settings['http://rmit.edu.au/schemas/stages/setup'][u'setup_finished'])
+            logger.debug(run_settings['http://rmit.edu.au/schemas/stages/setup'][u'setup_finished'])
             return False
+
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/stages/setup/PAYLOAD_SOURCE')
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/stages/setup/PAYLOAD_DESTINATION')
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/stages/setup/PAYLOAD_SOURCE')
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/system/platform')
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/stages/create/VM_IMAGE')
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/stages/create/VM_SIZE')
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/stages/create/SECURITY_GROUP')
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/stages/create/GROUP_ID_DIR')
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/stages/create/CUSTOM_PROMPT')
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/stages/create/CLOUD_SLEEP_INTERVAL')
 
         self.packaged_nodes = botocloudconnector.get_rego_nodes(self.group_id,
             self.boto_settings)
         logger.debug("packaged_nodes = %s" % self.packaged_nodes)
 
-        logger.debug("Setup on %s" % self.settings['http://rmit.edu.au/shemas/system']['platform'])
+        logger.debug("Setup on %s" % run_settings['http://rmit.edu.au/schemas/system']['platform'])
         return len(self.packaged_nodes)
 
-    def _copy_settings(self, dest_context, context, key):
-        dest_context[key] = context[os.path.dirname(key)][os.path.basename(key)]
 
     def process(self, run_settings):
         """
         Setup all the nodes
         """
-        self._copy_settings(self.boto_settings, self.run_settings,
-            'http://rmit.edu.au/schemas/stages/setup/PAYLOAD_SOURCE')
-        self._copy_settings(self.boto_settings, self.run_settings,
-            'http://rmit.edu.au/schemas/stages/setup/PAYLOAD_DESTINATION')
-        self._copy_settings(self.boto_settings, self.run_settings,
-            'http://rmit.edu.au/schemas/stages/setup/PAYLOAD_SOURCE')
-        self._copy_settings(self.boto_settings, self.run_settings,
-            'http://rmit.edu.au/schemas/system/platform')
-        self._copy_settings(self.boto_settings, self.run_settings,
-            'http://rmit.edu.au/schemas/stages/create/VM_IMAGE')
-        self._copy_settings(self.boto_settings, self.run_settings,
-            'http://rmit.edu.au/schemas/stages/create/VM_SIZE')
-        self._copy_settings(self.boto_settings, self.run_settings,
-            'http://rmit.edu.au/schemas/stages/create/SECURITY_GROUP')
-        self._copy_settings(self.boto_settings, self.run_settings,
-            'http://rmit.edu.au/schemas/stages/create/GROUP_ID_DIR')
-        self._copy_settings(self.boto_settings, self.run_settings,
-            'http://rmit.edu.au/schemas/stages/create/CUSTOM_PROMPT')
-        self._copy_settings(self.boto_settings, self.run_settings,
-            'http://rmit.edu.au/schemas/stages/create/CLOUD_SLEEP_INTERVAL')
+
 
         self.setup(self.boto_settings, self.group_id)
 
@@ -97,7 +97,7 @@ class Setup(Stage):
         if not self._exists(run_settings, 'http://rmit.edu.au/schemas/system/misc'):
             run_settings['http://rmit.edu.au/schemas/system/misc'] = {}
 
-        run_settings['http://rmit.edu.au/schemas/sysystem/misc']['id'] = 0
+        run_settings['http://rmit.edu.au/schemas/system/misc']['id'] = 0
         #update_key('setup_finished', len(self.packaged_nodes), context)
         # So initial input goes in input_0 directory
 
@@ -148,8 +148,8 @@ class Setup(Stage):
                 logger.debug("starting thread")
                 instance = available_nodes[0]
                 node_ip = botocloudconnector.get_instance_ip(instance.id, settings)
-                source = Stage.get_url_with_pkey(settings, settings['PAYLOAD_SOURCE'])
-                destination = Stage.get_url_with_pkey(settings, settings['PAYLOAD_DESTINATION'],
+                source = smartconnector.get_url_with_pkey(settings, settings['PAYLOAD_SOURCE'])
+                destination = smartconnector.get_url_with_pkey(settings, settings['PAYLOAD_DESTINATION'],
                                                      is_relative_path=True, ip_address=node_ip)
                 logger.debug("Source %s" % source)
                 logger.debug("Destination %s" % destination)

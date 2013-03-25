@@ -24,8 +24,10 @@ class ContextParameterInline(admin.TabularInline):
 
 class ContextParameterSetAdmin(admin.ModelAdmin):
     inlines = [ContextParameterInline]
-    list_display = ('context', 'schema')
+    list_display = ('context_name', 'schema')
 
+    def context_name(self, obj):
+        return obj.schema.name
 
 
 class UserProfileParameterInline(admin.TabularInline):

@@ -5,11 +5,25 @@ from django.db import DatabaseError
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
 
+from copy import deepcopy
+
 import logging
 import logging.config
 
 logger = logging.getLogger(__name__)
 
+
+def transfer(old, new):
+    """
+    Transfer new dict into new dict at two levels by items rather than wholesale
+    update (which would overwrite at the second level)
+    """
+    for k, v in new.items():
+        for k1, v1 in v.items():
+            if not k in old:
+                old[k] = {}
+            old[k][k1] = v1
+    return old
 
 @task(name="smartconnectorscheduler.test", ignore_result=True)
 def test():
@@ -68,22 +82,28 @@ def progress_context(context_id):
 
             # get the actual stage object
             stage = hrmcstages.safe_import(current_stage.package, [],
-                {'user_settings': user_settings.copy()})  # obviously need to cache this
+                {'user_settings': deepcopy(user_settings)})  # obviously need to cache this
             logger.debug("process stage=%s", stage)
 
-            task_run_settings = run_settings.copy()
+            task_run_settings = deepcopy(run_settings)
+            logger.debug("starting task settings = %s" % task_run_settings)
             stage_settings = current_stage.get_settings()
             logger.debug("stage_settings=%s" % stage_settings)
-            task_run_settings.update(stage_settings)
+
+            # This is nasty
+            task_run_settings = transfer(task_run_settings, stage_settings)
+            #task_run_settings.update(stage_settings)
             logger.debug("task run_settings=%s" % task_run_settings)
 
-            if stage.triggered(task_run_settings.copy()):
+            if stage.triggered(deepcopy(task_run_settings)):
                 logger.debug("triggered")
-                stage.process(task_run_settings.copy())
+                stage.process(deepcopy(task_run_settings))
                 task_run_settings = stage.output(task_run_settings)
                 logger.debug("updated task_run_settings=%s" % task_run_settings)
                 run_context.update_run_settings(task_run_settings)
                 logger.debug("task_run_settings=%s" % task_run_settings)
+                logger.debug("context run_settings=%s" % run_context)
+
                 triggered = True
                 break
             else:
