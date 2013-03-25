@@ -53,6 +53,8 @@ from django.core.files.storage import FileSystemStorage
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from storages.backends.sftpstorage import SFTPStorage
+from urlparse import urlparse, parse_qsl
+
 
 def get_filesys(context):
     """
@@ -421,6 +423,106 @@ def get_http_url(non_http_url):
     return http_url
 
 
+def delete_files(url, exceptions=None):
+    """
+    Supports only file and ssh schemes
+    :param url:
+    :param exceptions:
+    :return:
+    """
+    http_url = get_http_url(url)
+    path = urlparse(http_url).path
+    if path[0] == os.path.sep:
+        path = path[1:]
+    logger.debug('Path %s ' % path)
+    fsys = get_filesystem(url)
+
+    current_content = fsys.listdir(path)
+    current_path_pointer = path
+    file_path_holder = []
+    dir_path_holder = []
+    while len(current_content) > 0:
+        for i in current_content[1]:
+            if i in exceptions:
+                continue
+            file_path = str(os.path.join(current_path_pointer, i))
+            file_path_holder.append(file_path)
+            fsys.delete(file_path)
+            logger.debug('filepath=%s deleted' % file_path)
+            #content = fs.open(file_path).read()
+            #updated_file_path = file_path[len(source_path)+1:]
+            #curr_dest_url = os.path.join(destination_prefix, updated_file_path) \
+            #                + destination_suffix
+            #logger.debug("Current destination url %s" % curr_dest_url)
+            #put_file(curr_dest_url, content)
+        for j in current_content[0]:
+            list = [os.path.join(current_path_pointer, j), True]
+            dir_path_holder.append(list)
+
+        current_content = []
+        for k in dir_path_holder:
+            if k[1]:
+                k[1] = False
+                current_path_pointer = k[0]
+                current_content = fsys.listdir(current_path_pointer)
+                logger.debug("Current pointer %s " % current_path_pointer)
+                break
+
+
+
+
+
+
+
+def list_dirs(url, list_files=False):
+    http_url = get_http_url(url)
+    path = urlparse(http_url).path
+    if path[0] == os.path.sep:
+        path = path[1:]
+    logger.debug('Path %s ' % path)
+    fsys = get_filesystem(url)
+
+    if list_files:
+        list = fsys.listdir(path)[1]
+    else:
+        list = fsys.listdir(path)[0]
+
+    logger.debug("Directory (File) list %s" % list)
+    return list
+
+
+def get_filesystem(url):
+    scheme = urlparse(url).scheme
+    http_url = get_http_url(url)
+    parsed_url = urlparse(http_url)
+    query = parse_qsl(parsed_url.query)
+    query_settings = dict(x[0:] for x in query)
+    if scheme == "file":
+        root_path = get_value('root_path', query_settings)
+        logger.debug("self.root_path=%s" % root_path)
+        fs = LocalStorage(location=root_path + "/")
+    elif scheme == "ssh":
+        logger.debug("getting from ssh")
+        host = parsed_url.hostname
+        key_filename = get_value('key_filename', query_settings)
+        username = get_value('username', query_settings)
+        password = get_value('password', query_settings)
+        root_path = get_value('root_path', query_settings)
+        logger.debug("root_path=%s" % root_path)
+        ssh_settings = {'params': {'key_filename': key_filename,
+                                   'username': username,
+                                   'password': password},
+                        'host': host,
+                        'root': str(root_path) + "/"}
+        logger.debug("nci_settings=%s" % pformat(ssh_settings))
+        fs = NCIStorage(settings=ssh_settings)
+        logger.debug("fs=%s" % fs)
+    else:
+        logger.warn("scheme: %s not supported" % scheme)
+        return
+    return fs
+
+
 def copy_directories(source_url, destination_url):
     """
     Supports only file and ssh schemes
@@ -428,7 +530,6 @@ def copy_directories(source_url, destination_url):
     :param destination_url:
     :return:
     """
-    from urlparse import urlparse, parse_qsl
     source_scheme = urlparse(source_url).scheme
     http_source_url = get_http_url(source_url)
     source = urlparse(http_source_url)
@@ -508,7 +609,6 @@ def put_file(file_url, content):
     Writes out the content to the file_url using config info from user_settings
     """
     logger.debug("file_url=%s" % file_url)
-    from urlparse import urlparse, parse_qsl
     scheme = urlparse(file_url).scheme
     http_file_url = get_http_url(file_url)
     o = urlparse(http_file_url)
@@ -568,7 +668,6 @@ def get_file(file_url):
     """
     logger.debug("file_url=%s" % file_url)
 
-    from urlparse import urlparse, parse_qsl
     scheme = urlparse(file_url).scheme
     http_file_url = get_http_url(file_url)
     o = urlparse(http_file_url)
