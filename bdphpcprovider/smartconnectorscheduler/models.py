@@ -415,7 +415,7 @@ class Context(models.Model):
         schema_map = {}
         for cps in ContextParameterSet.objects.filter(context=self):
             schema = cps.schema.namespace
-            logger.debug("schema=%s" % schema)
+            #logger.debug("schema=%s" % schema)
             sch_cont = {}
             for param in ContextParameter.objects.filter(paramset=cps):
                 sch_cont[param.name.name] = param.getValue()  # NB: Assume that key is unique to each schema
@@ -424,7 +424,7 @@ class Context(models.Model):
             schema_map[schema] = sch[0]  # NB: assume only one instance of each schema per context
 
         context = schema_map
-        logger.debug("context=%s" % context)
+        #logger.debug("context=%s" % context)
 
         return context
 

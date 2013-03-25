@@ -17,10 +17,17 @@ class Configure(Stage, UI):
         self.user_settings = user_settings
 
     def triggered(self, run_settings):
+        if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/configure', 'configure_done'):
+            return False
         return True
 
     def process(self, run_settings):
         pass
 
     def output(self, run_settings):
+
+        if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/configure'):
+            run_settings['http://rmit.edu.au/schemas/stages/configure'] = {}
+        run_settings['http://rmit.edu.au/schemas/stages/configure'][u'configure_done'] = True
+
         return run_settings

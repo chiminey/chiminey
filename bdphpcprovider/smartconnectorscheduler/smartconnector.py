@@ -24,6 +24,13 @@ class PackageFailedError(Error):
 
 
 
+def copy_settings(dest_context, context, key):
+    """
+    """
+    # Note that all run_settings and user_settings are flattened
+    dest_context[os.path.basename(key)] = context[os.path.dirname(key)][os.path.basename(key)]
+
+
 def get_url_with_pkey(settings, url_or_relative_path,
                       is_relative_path=False, ip_address='127.0.0.1'):
     '''

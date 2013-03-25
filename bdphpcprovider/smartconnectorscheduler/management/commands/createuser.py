@@ -169,6 +169,8 @@ class Command(BaseCommand):
             'EC2_SECRET_KEY': ''
             }
 
+        #TODO: prompt user to enter private key paths and names and other credentials
+
         user_schema = models.Schema.objects.get(namespace=models.UserProfile.PROFILE_SCHEMA_NS)
 
         param_set, _ = models.UserProfileParameterSet.objects.get_or_create(user_profile=userProfile,

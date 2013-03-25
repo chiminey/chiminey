@@ -209,7 +209,7 @@ def test_directive(request, directive_id):
             #    'bdphpcprovider', 'smartconnectorscheduler', 'testing', 'remotesys/').decode("utf8")
 
             directive_args.append(['', ['http://rmit.edu.au/schemas/hrmc',
-                                        ('number_vm_instances', 1), (u'iseed', 42),
+                                        ('number_vm_instances', 2), (u'iseed', 42),
                 #('VM_IMAGE', 'ami-0000000d'),
                 #('VM_SIZE', 'm1.small'),
                 #('SECURITY_GROUP', u"['ssh']"),
