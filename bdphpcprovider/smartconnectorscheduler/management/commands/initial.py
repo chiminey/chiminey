@@ -126,7 +126,15 @@ class Command(BaseCommand):
             u'id': models.ParameterName.NUMERIC,
             u'PAYLOAD_SOURCE': models.ParameterName.STRING,
             u'PAYLOAD_DESTINATION': models.ParameterName.STRING,
-            u'local_fs_path': models.ParameterName.STRING
+            u'local_fs_path': models.ParameterName.STRING,
+            u'runs_left': models.ParameterName.NUMERIC,
+            u'INPUT_LOCATION': models.ParameterName.STRING,
+            u'number_dimensions': models.ParameterName.NUMERIC,
+            u'threshold': models.ParameterName.STRLIST,
+            u'MAX_SEED_INT': models.ParameterName.NUMERIC,
+            u'PAYLOAD_CLOUD_DIRNAME': models.ParameterName.STRING,
+            u'COMPILE_FILE': models.ParameterName.STRING,
+            u'RETRY_ATTEMPTS': models.ParameterName.NUMERIC
             }.items():
             _, created = models.ParameterName.objects.get_or_create(schema=context_schema,
                 name=name,
@@ -215,6 +223,7 @@ class Command(BaseCommand):
         self.configure_package = "bdphpcprovider.smartconnectorscheduler.stages.configure.Configure"
         self.create_package = "bdphpcprovider.smartconnectorscheduler.stages.create.Create"
         self.setup_package = "bdphpcprovider.smartconnectorscheduler.stages.setup.Setup"
+        self.run_package = "bdphpcprovider.smartconnectorscheduler.stages.run.Run"
 
         hrmc_composite_stage, _ = models.Stage.objects.get_or_create(name="hrmc_connector",
                                                                 description="Encapsultes HRMC smart connector workflow",
@@ -229,7 +238,7 @@ class Command(BaseCommand):
 
         create_stage, _ = models.Stage.objects.get_or_create(name="create",
                                                                 description="This is create stage of HRMC smart connector",
-                                                                #parent=hrmc_composite_stage,
+                                                                parent=hrmc_composite_stage,
                                                                 package=self.create_package,
                                                                 order=1)
 
@@ -237,7 +246,14 @@ class Command(BaseCommand):
                                                              description="This is setup stage of HRMC smart connector",
                                                              parent=hrmc_composite_stage,
                                                              package=self.setup_package,
-                                                             order=1)
+                                                             order=2)
+
+        run_stage, _ = models.Stage.objects.get_or_create(name="run",
+                                                            description="This is run stage of HRMC smart connector",
+                                                            parent=hrmc_composite_stage,
+                                                            package=self.run_package,
+                                                            order=3)
+
 
         logger.debug("stages=%s" % models.Stage.objects.all())
         # Make a new command that reliases composite_stage
