@@ -112,8 +112,8 @@ class ParameterName(models.Model):
 
     #TODO: Check MyTardis code base for consistency
     def get_value(self, val):
-        logger.debug("type=%s" % self.type)
-        logger.debug("val=%s" % val)
+        #logger.debug("type=%s" % self.type)
+        #logger.debug("val=%s" % val)
         res = val
         if self.type == self.STRING:
             res = val
