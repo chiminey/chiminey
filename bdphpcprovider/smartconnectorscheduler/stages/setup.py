@@ -20,6 +20,7 @@ class Setup(Stage):
         self.settings = dict(self.user_settings)
         self.group_id = ''
         self.platform = None
+        logger.debug('Setup initialised')
 
     def triggered(self, run_settings):
         """
@@ -54,6 +55,7 @@ class Setup(Stage):
         """
         #setup_multi_task(self.group_id, self.settings)
         self.setup(self.settings, self.group_id)
+        logger.debug('Setup finished')
 
     def output(self, run_settings):
         """
@@ -66,6 +68,7 @@ class Setup(Stage):
 
         # FIXME: probably should be set at beginning of run or connector?
         #update_key('id', 0, context)
+        logger.debug('Setup output returned')
 
         return run_settings
 
@@ -112,10 +115,13 @@ class Setup(Stage):
                 instance = available_nodes[0]
                 node_ip = botocloudconnector.get_instance_ip(instance.id, settings)
                 source = self.get_url_with_pkey(settings, settings['PAYLOAD_SOURCE'])
-                destination = self.get_url_with_pkey(settings, settings['PAYLOAD_DESTINATION'],
-                                                     is_relative_path=True, ip_address=node_ip)
+                relative_path = settings['platform'] + '@' + settings['PAYLOAD_DESTINATION']
+                destination = self.get_url_with_pkey(settings, relative_path,
+                                                     is_relative_path=True,
+                                                     ip_address=node_ip)
                 logger.debug("Source %s" % source)
                 logger.debug("Destination %s" % destination)
+                logger.debug("Relative path %s" % relative_path)
                 t = threading.Thread(target=setup_worker,
                     args=(node_ip, make_target, source, destination))
                 threads_running.append(t)
@@ -132,7 +138,6 @@ class Setup(Stage):
         Transfer the task package to the node and install
         """
         hrmcstages.copy_directories(source, destination)
-
         makefile_path = self.get_make_path(destination)
         # Check whether make is installed. If not install
         check_make_installation = '`command -v make  > /dev/null 2>&1 || echo sudo yum install -y make`; '
