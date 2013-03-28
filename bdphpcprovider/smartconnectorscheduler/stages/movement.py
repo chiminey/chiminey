@@ -24,6 +24,7 @@ import logging.config
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, UI, get_url_with_pkey
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
+from bdphpcprovider.smartconnectorscheduler import smartconnector
 
 
 logger = logging.getLogger(__name__)
@@ -34,27 +35,32 @@ class MovementStage(Stage):
     Moves files from one location to another
     """
     def __init__(self, user_settings=None):
-        self.user_settings = user_settings
+        self.user_settings = user_settings.copy()
+        self.boto_settings = user_settings.copy()
         pass
 
-    def triggered(self, context):
+    def triggered(self, run_settings):
         """
         Return true if the directory pattern triggers this stage, or there
         has been any other error
         """
         # FIXME: Need to verify that triggered is idempotent.
         logger.debug("Movement Stage Triggered?")
-        logger.debug("context=%s" % context)
+        logger.debug("run_settings=%s" % run_settings)
 
-        if self._exists(context, 'http://rmit.edu.au/schemas/stages/copy/testing', 'output'):
-            self.val = context['http://rmit.edu.au/schemas/stages/copy/testing']['output']
+        if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/copy/testing', 'output'):
+            self.val = run_settings['http://rmit.edu.au/schemas/stages/copy/testing']['output']
         else:
             self.val = 0
 
-        dest_url = context['http://rmit.edu.au/schemas/copy/files']['file1']
+        dest_url = run_settings['http://rmit.edu.au/schemas/copy/files']['file1']
         logger.debug("dest_url=%s" % dest_url)
+
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/system/platform')
+
         try:
-            encoded_d_url = get_url_with_pkey(self.user_settings, dest_url)
+            encoded_d_url = get_url_with_pkey(self.boto_settings, dest_url)
             content = hrmcstages.get_file(encoded_d_url)
         except IOError:
             # TODO: should check checksum of dest to make sure we have correct transfer
@@ -63,37 +69,37 @@ class MovementStage(Stage):
 
         return False
 
-    def process(self, context):
+    def process(self, run_settings):
         """ perfrom the stage operation
         """
         logger.debug("Movement Stage Processing")
-        logger.debug("context=%s" % context)
-        logger.debug("user_settings=%s", self.user_settings)
+        logger.debug("run_settings=%s" % run_settings)
+        logger.debug("boto_settings=%s", self.boto_settings)
 
-        source_url = context['http://rmit.edu.au/schemas/copy/files']['file0']
+        source_url = run_settings['http://rmit.edu.au/schemas/copy/files']['file0']
         logger.debug("source_url=%s" % source_url)
 
-        encoded_s_url = get_url_with_pkey(self.user_settings, source_url)
+        encoded_s_url = get_url_with_pkey(self.boto_settings, source_url)
 
         content = hrmcstages.get_file(encoded_s_url)  # we assume text files
         logger.debug("content=%s" % content)
-        dest_url = context['http://rmit.edu.au/schemas/copy/files']['file1']
+        dest_url = run_settings['http://rmit.edu.au/schemas/copy/files']['file1']
         logger.debug("dest_url=%s" % dest_url)
 
-        encoded_d_url = get_url_with_pkey(self.user_settings, dest_url)
+        encoded_d_url = get_url_with_pkey(self.boto_settings, dest_url)
 
-        hrmcstages.put_file(encoded_d_url, content.encode('utf-8')) # we assume text files
+        hrmcstages.put_file(encoded_d_url, content.encode('utf-8'))  # we assume text files
 
-    def output(self, context):
+    def output(self, run_settings):
         """ produce the resulting datfiles and metadata
         """
         logger.debug("Movement Stage Output")
-        logger.debug("context=%s" % context)
+        logger.debug("run_settings=%s" % run_settings)
 
-        if not self._exists(context, 'http://rmit.edu.au/schemas/stages/copy/testing'):
-            context['http://rmit.edu.au/schemas/stages/copy/testing'] = {}
+        if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/copy/testing'):
+            run_settings['http://rmit.edu.au/schemas/stages/copy/testing'] = {}
 
         self.val += 1
-        context['http://rmit.edu.au/schemas/stages/copy/testing']['output'] = self.val
+        run_settings['http://rmit.edu.au/schemas/stages/copy/testing']['output'] = self.val
 
-        return context
+        return run_settings

@@ -287,14 +287,13 @@ class TestCommandContextLoop(TestCase):
         profile = models.UserProfile(
                       user=self.user)
         profile.save()
-
         schema_data = {
             u'http://rmit.edu.au/schemas//files':
                 [u'general input files for directive',
                 {
-                u'file0': models.ParameterName.STRING,
-                u'file1': models.ParameterName.STRING,
-                u'file2': models.ParameterName.STRING,
+                u'file0': (models.ParameterName.STRING,''),
+                u'file1': (models.ParameterName.STRING,''),
+                u'file2': (models.ParameterName.STRING,''),
                 }
                 ],
              # Note that file schema ns must match regex
@@ -302,21 +301,26 @@ class TestCommandContextLoop(TestCase):
              # otherwise files will not be matched correctly.
              # TODO: make fall back to directive files in case specfici
              # version not defined here.
-             u'http://rmit.edu.au/schemas/smartconnector1/files':
+            u'http://rmit.edu.au/schemas/smartconnector1/files':
                  [u'the smartconnector1 input files',
                  {
-                 u'file0': models.ParameterName.STRING,
-                 u'file1': models.ParameterName.STRING,
-                 u'file2': models.ParameterName.STRING,
+                 u'file0': (models.ParameterName.STRING,''),
+                 u'file1': (models.ParameterName.STRING,''),
+                 u'file2': (models.ParameterName.STRING,''),
+                 }
+                 ],
+            u'http://rmit.edu.au/schemas/smartconnector_hrmc/files':
+                 [u'the smartconnector hrmc input files',
+                 {
                  }
                  ],
             u'http://rmit.edu.au/schemas/smartconnector1/create':
                 [u'the smartconnector1 create stage config',
                 {
-                u'iseed': models.ParameterName.NUMERIC,
-                u'num_nodes': models.ParameterName.NUMERIC,
-                u'null_number': models.ParameterName.NUMERIC,
-                u'parallel_number': models.ParameterName.NUMERIC,
+                u'iseed': (models.ParameterName.NUMERIC,''),
+                u'num_nodes': (models.ParameterName.NUMERIC,''),
+                u'null_number': (models.ParameterName.NUMERIC,''),
+                u'parallel_number': (models.ParameterName.NUMERIC,''),
                 }
                 ],
             # we might want to reuse schemas in muliple contextsets
@@ -326,73 +330,159 @@ class TestCommandContextLoop(TestCase):
             u'http://rmit.edu.au/schemas/stages/null/testing':
                 [u'the null stage internal testing',
                 {
-                u'output': models.ParameterName.NUMERIC,
-                u'index': models.ParameterName.NUMERIC,
+                u'output': (models.ParameterName.NUMERIC,''),
+                u'index': (models.ParameterName.NUMERIC,''),
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/parallel/testing':
                 [u'the parallel stage internal testing',
                 {
-                u'output': models.ParameterName.NUMERIC,
-                u'index': models.ParameterName.NUMERIC
+
+                u'output': (models.ParameterName.NUMERIC,''),
+                u'index': (models.ParameterName.NUMERIC,''),
                 }
                 ],
             u'http://nci.org.au/schemas/smartconnector1/custom':
                 [u'the smartconnector1 custom command',
                 {
-                u'command': models.ParameterName.STRING
+                u'command': (models.ParameterName.STRING,''),
                 }
                 ],
             u'http://rmit.edu.au/schemas/system/misc':
                 [u'system level misc values',
                 {
-                u'transitions': models.ParameterName.STRING,  # deprecated
-                u'system': models.ParameterName.STRING
+                u'transitions': (models.ParameterName.STRING,''),  # deprecated
+                u'system': (models.ParameterName.STRING,''),
+                u'id': (models.ParameterName.NUMERIC,''),
                 }
                 ],
             u'http://rmit.edu.au/schemas/system':
                 [u'Information about the deployment platform',
                 {
-                u'platform': models.ParameterName.STRING,  # deprecated
+                u'platform': (models.ParameterName.STRING,''),
                 }
                 ],
             u'http://tardis.edu.au/schemas/hrmc/dfmeta':
                 ["datafile",
                 {
-                u"a": models.ParameterName.NUMERIC,
-                u'b': models.ParameterName.NUMERIC,
+                u"a": (models.ParameterName.NUMERIC,''),
+                u'b': (models.ParameterName.NUMERIC,''),
                 }
                 ],
             u'http://tardis.edu.au/schemas/hrmc/dfmeta2':
                 ["datafile2",
                 {
-                u'c': models.ParameterName.STRING,
+                u'c': (models.ParameterName.STRING,''),
                 }
                 ],
             models.UserProfile.PROFILE_SCHEMA_NS:
                 [u'user profile',
                 {
-                    u'userinfo1': models.ParameterName.STRING,
-                    u'userinfo2': models.ParameterName.NUMERIC,
-                    u'fsys': models.ParameterName.STRING,
-                    u'nci_user': models.ParameterName.STRING,
-                    u'nci_password': models.ParameterName.STRING,
-                    u'nci_host': models.ParameterName.STRING,
-                    u'PASSWORD': models.ParameterName.STRING,
-                    u'USER_NAME': models.ParameterName.STRING,
-                    u'PRIVATE_KEY': models.ParameterName.STRING,
-                    u'flag': models.ParameterName.NUMERIC,
-                    u'CLOUD_SLEEP_INTERVAL': models.ParameterName.NUMERIC,
-                    u'local_fs_path': models.ParameterName.STRING,  # do we need this?
-                    u'PRIVATE_KEY_NAME': models.ParameterName.STRING,
-                    u'PRIVATE_KEY_NECTAR': models.ParameterName.STRING,
-                    u'PRIVATE_KEY_NCI': models.ParameterName.STRING,
-                    u'EC2_ACCESS_KEY': models.ParameterName.STRING,
-                    u'EC2_SECRET_KEY': models.ParameterName.STRING
+                    u'userinfo1': (models.ParameterName.STRING,'test parameter1'),
+                    u'userinfo2': (models.ParameterName.NUMERIC,'test parameter2'),
+                    u'nci_private_key': (models.ParameterName.STRING,'location of NCI private key'),
+                    u'nci_user': (models.ParameterName.STRING,'username for NCI access'),
+                    u'nci_password': (models.ParameterName.STRING,'password for NCI access'),
+                    u'nci_host': (models.ParameterName.STRING,'hostname for NCI'),
+                    u'flag': (models.ParameterName.NUMERIC,'not used?'),
+                    u'nectar_private_key_name': (models.ParameterName.STRING,'name of the key for nectar'),
+                    u'nectar_private_key': (models.ParameterName.STRING,'location of NeCTAR private key'),
+                    u'nectar_ec2_access_key': (models.ParameterName.STRING,'NeCTAR EC2 Access Key'),
+                    u'nectar_ec2_secret_key': (models.ParameterName.STRING,'NeCTAR EC2 Secret Key'),
+                }
+                ],
+            u'http://rmit.edu.au/schemas/copy/files':
+                 [u'the copy input files',
+                 {
+                 u'file0': (models.ParameterName.STRING,''),
+                 u'file1': (models.ParameterName.STRING,''),
+                 }
+                 ],
+            u'http://rmit.edu.au/schemas/program/files':
+                 [u'the copy input files',
+                 {
+                 u'file0': (models.ParameterName.STRING,''),
+                 u'file1': (models.ParameterName.STRING,''),
+                 u'file2': (models.ParameterName.STRING,''),
+                 }
+                 ],
+            u'http://rmit.edu.au/schemas/stages/copy/testing':
+                [u'the copy stage internal testing',
+                {
+                u'output': (models.ParameterName.NUMERIC,''),
+                }
+                ],
+            u'http://rmit.edu.au/schemas/stages/program/testing':
+                [u'the program stage internal testing',
+                {
+                u'output': (models.ParameterName.NUMERIC,''),
+                }
+                ],
+            u'http://rmit.edu.au/schemas/program/config':
+                [u'the program command internal config',
+                {
+                u'program': (models.ParameterName.STRING,''),
+                u'remotehost': (models.ParameterName.STRING,''),
+                u'program_success': (models.ParameterName.STRING,''),
+                }
+                ],
+            u'http://rmit.edu.au/schemas/greeting/salutation':
+                [u'salute',
+                {
+                u'salutation': (models.ParameterName.STRING,''),
+                }
+                ],
+            u'http://rmit.edu.au/schemas/hrmc':
+                [u'the hrmc smart connector input values',
+                {
+                u'number_vm_instances': (models.ParameterName.NUMERIC,''),
+                u'iseed': (models.ParameterName.NUMERIC,''),
+                u'input_location': (models.ParameterName.STRING,''),
+                u'number_dimensions': (models.ParameterName.NUMERIC,''),
+                u'threshold': (models.ParameterName.NUMERIC,''),
+                }
+                ],
+            u'http://rmit.edu.au/schemas/stages/configure':
+                [u'the configure state of the hrmc smart connector',
+                {
+                u'configure_done': (models.ParameterName.STRING,''),
+                }
+                ],
+            u'http://rmit.edu.au/schemas/stages/create':
+                [u'the create state of the smartconnector1',
+                {
+                u'group_id': (models.ParameterName.STRING,''),
+                u'vm_size': (models.ParameterName.STRING,''),
+                u'vm_image': (models.ParameterName.STRING,''),
+                u'security_group': (models.ParameterName.STRLIST,''),
+                u'group_id_dir': (models.ParameterName.STRING,''),
+                u'cloud_sleep_interval': (models.ParameterName.NUMERIC,''),
+                u'custom_prompt': (models.ParameterName.STRING,''),
+                u'nectar_username': (models.ParameterName.STRING, 'name of username for accessing nectar'),
+                u'nectar_password': (models.ParameterName.STRING, 'password of username for accessing nectar'),
+                }
+                ],
+            u'http://rmit.edu.au/schemas/stages/setup':
+                [u'the create stage of the smartconnector1',
+                {
+                u'setup_finished': (models.ParameterName.NUMERIC,''),
+                u'payload_source': (models.ParameterName.STRING,''),
+                u'payload_destination': (models.ParameterName.STRING,''),
+                }
+                ],
+            u'http://rmit.edu.au/schemas/stages/run':
+                [u'the create stage of the smartconnector1',
+                {
+                u'runs_left': (models.ParameterName.NUMERIC,''),
+                u'max_seed_int': (models.ParameterName.NUMERIC,''),
+                u'payload_cloud_dirname': (models.ParameterName.STRING,''),
+                u'compile_file': (models.ParameterName.STRING,''),
+                u'retry_attempts': (models.ParameterName.NUMERIC,''),
                 }
                 ],
         }
-
+        from urlparse import urlparse
+        from django.template.defaultfilters import slugify
 
         for ns in schema_data:
             l = schema_data[ns]
@@ -401,27 +491,30 @@ class TestCommandContextLoop(TestCase):
             logger.debug("desc=%s" % desc)
             kv = l[1:][0]
             logger.debug("kv=%s", kv)
-            context_schema = models.Schema.objects.create(
-                namespace=ns,
-                name="Context Schema", description=desc)
+
+            url = urlparse(ns)
+
+            context_schema, _ = models.Schema.objects.get_or_create(
+                namespace=ns, defaults={'name': slugify(url.path), 'description': desc})
 
             for k, v in kv.items():
-                models.ParameterName.objects.create(schema=context_schema,
-                    name=k,
-                    type=v)
+                val, help_text = (v[0], v[1])
+                models.ParameterName.objects.get_or_create(schema=context_schema,
+                    name=k, defaults={'type': val, 'help_text': help_text})
 
-        # Setup the schema for user configuration information (kept in profile)
-        self.PARAMS = {'userinfo1': 'param1val',
-            'userinfo2': 42,
-            'fsys': self.remote_fs_path,
-            'nci_user': 'root',
-            'nci_password': 'dtofaam',
-            'nci_host': '127.0.0.1',
-            'PASSWORD': 'dtofaam',
-            'USER_NAME': 'root',
-            'PRIVATE_KEY': '',
 
-            }
+        self.PARAMS = {
+                'userinfo1': 'param1val',
+                'userinfo2': 42,
+                'nci_user': 'root',
+                'nci_password': 'dtofaam',  # NB: change this password
+                'nci_host': '127.0.0.1',
+                'nci_private_key': '',
+                'nectar_private_key_name': '',
+                'nectar_private_key': '',
+                'nectar_ec2_access_key': '',
+                'nectar_ec2_secret_key': '',
+                }
 
 
 
@@ -654,85 +747,203 @@ class TestCommandContextLoop(TestCase):
         #     models.ParameterName.objects.create(schema=context_schema,
         #         name=name,
         #         type=param_type)
-
         schema_data = {
+            u'http://rmit.edu.au/schemas//files':
+                [u'general input files for directive',
+                {
+                u'file0': (models.ParameterName.STRING,''),
+                u'file1': (models.ParameterName.STRING,''),
+                u'file2': (models.ParameterName.STRING,''),
+                }
+                ],
+             # Note that file schema ns must match regex
+             # protocol://host/schemas/{directective.name}/files
+             # otherwise files will not be matched correctly.
+             # TODO: make fall back to directive files in case specfici
+             # version not defined here.
+            u'http://rmit.edu.au/schemas/smartconnector1/files':
+                 [u'the smartconnector1 input files',
+                 {
+                 u'file0': (models.ParameterName.STRING,''),
+                 u'file1': (models.ParameterName.STRING,''),
+                 u'file2': (models.ParameterName.STRING,''),
+                 }
+                 ],
+            u'http://rmit.edu.au/schemas/smartconnector_hrmc/files':
+                 [u'the smartconnector hrmc input files',
+                 {
+                 }
+                 ],
+            u'http://rmit.edu.au/schemas/smartconnector1/create':
+                [u'the smartconnector1 create stage config',
+                {
+                u'iseed': (models.ParameterName.NUMERIC,''),
+                u'num_nodes': (models.ParameterName.NUMERIC,''),
+                u'null_number': (models.ParameterName.NUMERIC,''),
+                u'parallel_number': (models.ParameterName.NUMERIC,''),
+                }
+                ],
+            # we might want to reuse schemas in muliple contextsets
+            # hence we could merge next too stages, for example.
+            # However, current ContextParameterSets are unamed in the
+            # URI so we can't identify which one to use.
+            u'http://rmit.edu.au/schemas/stages/null/testing':
+                [u'the null stage internal testing',
+                {
+                u'output': (models.ParameterName.NUMERIC,''),
+                u'index': (models.ParameterName.NUMERIC,''),
+                }
+                ],
+            u'http://rmit.edu.au/schemas/stages/parallel/testing':
+                [u'the parallel stage internal testing',
+                {
+
+                u'output': (models.ParameterName.NUMERIC,''),
+                u'index': (models.ParameterName.NUMERIC,''),
+                }
+                ],
+            u'http://nci.org.au/schemas/smartconnector1/custom':
+                [u'the smartconnector1 custom command',
+                {
+                u'command': (models.ParameterName.STRING,''),
+                }
+                ],
             u'http://rmit.edu.au/schemas/system/misc':
                 [u'system level misc values',
                 {
-                u'transitions': models.ParameterName.STRING,  # deprecated
-                u'system': models.ParameterName.STRING,
+                u'transitions': (models.ParameterName.STRING,''),  # deprecated
+                u'system': (models.ParameterName.STRING,''),
+                u'id': (models.ParameterName.NUMERIC,''),
                 }
                 ],
             u'http://rmit.edu.au/schemas/system':
                 [u'Information about the deployment platform',
                 {
-                u'platform': models.ParameterName.STRING,  # deprecated
+                u'platform': (models.ParameterName.STRING,''),
+                }
+                ],
+            u'http://tardis.edu.au/schemas/hrmc/dfmeta':
+                ["datafile",
+                {
+                u"a": (models.ParameterName.NUMERIC,''),
+                u'b': (models.ParameterName.NUMERIC,''),
+                }
+                ],
+            u'http://tardis.edu.au/schemas/hrmc/dfmeta2':
+                ["datafile2",
+                {
+                u'c': (models.ParameterName.STRING,''),
                 }
                 ],
             models.UserProfile.PROFILE_SCHEMA_NS:
                 [u'user profile',
                 {
-                    u'userinfo1': models.ParameterName.STRING,
-                    u'userinfo2': models.ParameterName.NUMERIC,
-                    u'fsys': models.ParameterName.STRING,
-                    u'nci_user': models.ParameterName.STRING,
-                    u'nci_password': models.ParameterName.STRING,
-                    u'nci_host': models.ParameterName.STRING,
-                    u'PASSWORD': models.ParameterName.STRING,
-                    u'USER_NAME': models.ParameterName.STRING,
-                    u'PRIVATE_KEY': models.ParameterName.STRING,
-                    u'flag': models.ParameterName.NUMERIC,
-                    u'CLOUD_SLEEP_INTERVAL': models.ParameterName.NUMERIC,
-                    u'local_fs_path': models.ParameterName.STRING,
-                    u'PRIVATE_KEY_NAME': models.ParameterName.STRING,
-                    u'PRIVATE_KEY_NECTAR': models.ParameterName.STRING,
-                    u'PRIVATE_KEY_NCI': models.ParameterName.STRING,
-                    u'EC2_ACCESS_KEY': models.ParameterName.STRING,
-                    u'EC2_SECRET_KEY': models.ParameterName.STRING
+                    u'userinfo1': (models.ParameterName.STRING,'test parameter1'),
+                    u'userinfo2': (models.ParameterName.NUMERIC,'test parameter2'),
+                    u'nci_private_key': (models.ParameterName.STRING,'location of NCI private key'),
+                    u'nci_user': (models.ParameterName.STRING,'username for NCI access'),
+                    u'nci_password': (models.ParameterName.STRING,'password for NCI access'),
+                    u'nci_host': (models.ParameterName.STRING,'hostname for NCI'),
+                    u'flag': (models.ParameterName.NUMERIC,'not used?'),
+                    u'nectar_private_key_name': (models.ParameterName.STRING,'name of the key for nectar'),
+                    u'nectar_private_key': (models.ParameterName.STRING,'location of NeCTAR private key'),
+                    u'nectar_ec2_access_key': (models.ParameterName.STRING,'NeCTAR EC2 Access Key'),
+                    u'nectar_ec2_secret_key': (models.ParameterName.STRING,'NeCTAR EC2 Secret Key'),
                 }
                 ],
             u'http://rmit.edu.au/schemas/copy/files':
                  [u'the copy input files',
                  {
-                 u'file0': models.ParameterName.STRING,
-                 u'file1': models.ParameterName.STRING,
+                 u'file0': (models.ParameterName.STRING,''),
+                 u'file1': (models.ParameterName.STRING,''),
                  }
                  ],
             u'http://rmit.edu.au/schemas/program/files':
                  [u'the copy input files',
                  {
-                 u'file0': models.ParameterName.STRING,
-                 u'file1': models.ParameterName.STRING,
-                 u'file2': models.ParameterName.STRING,
+                 u'file0': (models.ParameterName.STRING,''),
+                 u'file1': (models.ParameterName.STRING,''),
+                 u'file2': (models.ParameterName.STRING,''),
                  }
                  ],
             u'http://rmit.edu.au/schemas/stages/copy/testing':
                 [u'the copy stage internal testing',
                 {
-                u'output': models.ParameterName.NUMERIC,
+                u'output': (models.ParameterName.NUMERIC,''),
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/program/testing':
                 [u'the program stage internal testing',
                 {
-                u'output': models.ParameterName.NUMERIC,
+                u'output': (models.ParameterName.NUMERIC,''),
                 }
                 ],
             u'http://rmit.edu.au/schemas/program/config':
                 [u'the program command internal config',
                 {
-                u'program': models.ParameterName.STRING,
-                u'remotehost': models.ParameterName.STRING,
-                u'program_success': models.ParameterName.STRING
+                u'program': (models.ParameterName.STRING,''),
+                u'remotehost': (models.ParameterName.STRING,''),
+                u'program_success': (models.ParameterName.STRING,''),
                 }
                 ],
             u'http://rmit.edu.au/schemas/greeting/salutation':
                 [u'salute',
                 {
-                    u'salutation': models.ParameterName.STRING
+                u'salutation': (models.ParameterName.STRING,''),
+                }
+                ],
+            u'http://rmit.edu.au/schemas/hrmc':
+                [u'the hrmc smart connector input values',
+                {
+                u'number_vm_instances': (models.ParameterName.NUMERIC,''),
+                u'iseed': (models.ParameterName.NUMERIC,''),
+                u'input_location': (models.ParameterName.STRING,''),
+                u'number_dimensions': (models.ParameterName.NUMERIC,''),
+                u'threshold': (models.ParameterName.NUMERIC,''),
+                }
+                ],
+            u'http://rmit.edu.au/schemas/stages/configure':
+                [u'the configure state of the hrmc smart connector',
+                {
+                u'configure_done': (models.ParameterName.STRING,''),
+                }
+                ],
+            u'http://rmit.edu.au/schemas/stages/create':
+                [u'the create state of the smartconnector1',
+                {
+                u'group_id': (models.ParameterName.STRING,''),
+                u'vm_size': (models.ParameterName.STRING,''),
+                u'vm_image': (models.ParameterName.STRING,''),
+                u'security_group': (models.ParameterName.STRLIST,''),
+                u'group_id_dir': (models.ParameterName.STRING,''),
+                u'cloud_sleep_interval': (models.ParameterName.NUMERIC,''),
+                u'custom_prompt': (models.ParameterName.STRING,''),
+                u'nectar_username': (models.ParameterName.STRING, 'name of username for accessing nectar'),
+                u'nectar_password': (models.ParameterName.STRING, 'password of username for accessing nectar'),
+                }
+                ],
+            u'http://rmit.edu.au/schemas/stages/setup':
+                [u'the create stage of the smartconnector1',
+                {
+                u'setup_finished': (models.ParameterName.NUMERIC,''),
+                u'payload_source': (models.ParameterName.STRING,''),
+                u'payload_destination': (models.ParameterName.STRING,''),
+                }
+                ],
+            u'http://rmit.edu.au/schemas/stages/run':
+                [u'the create stage of the smartconnector1',
+                {
+                u'runs_left': (models.ParameterName.NUMERIC,''),
+                u'max_seed_int': (models.ParameterName.NUMERIC,''),
+                u'payload_cloud_dirname': (models.ParameterName.STRING,''),
+                u'compile_file': (models.ParameterName.STRING,''),
+                u'retry_attempts': (models.ParameterName.NUMERIC,''),
                 }
                 ],
         }
+
+        from urlparse import urlparse
+        from django.template.defaultfilters import slugify
 
         for ns in schema_data:
             l = schema_data[ns]
@@ -741,14 +952,18 @@ class TestCommandContextLoop(TestCase):
             logger.debug("desc=%s" % desc)
             kv = l[1:][0]
             logger.debug("kv=%s", kv)
-            context_schema = models.Schema.objects.create(
-                namespace=ns,
-                name="Context Schema", description=desc)
+
+            url = urlparse(ns)
+
+            context_schema, _ = models.Schema.objects.get_or_create(
+                namespace=ns, defaults={'name': slugify(url.path), 'description': desc})
 
             for k, v in kv.items():
-                models.ParameterName.objects.create(schema=context_schema,
-                    name=k,
-                    type=v)
+                val, help_text = (v[0], v[1])
+                models.ParameterName.objects.get_or_create(schema=context_schema,
+                    name=k, defaults={'type': val, 'help_text': help_text})
+
+
 
         # # Setup the schema for user configuration information (kept in profile)
         # self.PARAMS = {'userinfo1': 'param1val',
@@ -761,24 +976,43 @@ class TestCommandContextLoop(TestCase):
         #     'PRIVATE_KEY': '',
         #     }
 
-        self.PARAMS = {'userinfo1': 'param1val',
-            'userinfo2': 42,
-            #TODO: this is remote and local path for the user, this value is now in Platform?
-            #see hrmcstages._get_remote_path
-            'fsys': self.remote_fs_path,
 
-            'nci_user': 'root',
-            'nci_password': 'dtofaam',  # NB: change this password
-            'nci_host': '127.0.0.1',
-            'PASSWORD': 'dtofaam',   # NB: change this password
-            'USER_NAME': 'root',
-            'PRIVATE_KEY': '',
-            'PRIVATE_KEY_NAME': '',
-            'PRIVATE_KEY_NECTAR': '',
-            'PRIVATE_KEY_NCI': '',
-            'EC2_ACCESS_KEY': '',
-            'EC2_SECRET_KEY': ''
-            }
+
+
+        self.PARAMS = {
+                'userinfo1': 'param1val',
+                'userinfo2': 42,
+                'nci_user': 'root',
+                'nci_password': 'dtofaam',  # NB: change this password
+                'nci_host': '127.0.0.1',
+                'nci_private_key': '',
+                'nectar_private_key_name': '',
+                'nectar_private_key': '',
+                'nectar_ec2_access_key': '',
+                'nectar_ec2_secret_key': '',
+                }
+
+
+
+
+        # self.PARAMS = {'userinfo1': 'param1val',
+        #     'userinfo2': 42,
+        #     #TODO: this is remote and local path for the user, this value is now in Platform?
+        #     #see hrmcstages._get_remote_path
+        #     'fsys': self.remote_fs_path,
+
+            #     'nci_user': 'root',
+        #     'nci_password': 'dtofaam',  # NB: change this password
+        #     'nci_host': '127.0.0.1',
+        #     'PASSWORD': 'dtofaam',   # NB: change this password
+        #     'USER_NAME': 'root',
+        #     'PRIVATE_KEY': '',
+        #     'PRIVATE_KEY_NAME': '',
+        #     'PRIVATE_KEY_NECTAR': '',
+        #     'PRIVATE_KEY_NCI': '',
+        #     'EC2_ACCESS_KEY': '',
+        #     'EC2_SECRET_KEY': ''
+        #     }
 
         self.PARAMTYPE = {}
         sch = models.Schema.objects.get(namespace=models.UserProfile.PROFILE_SCHEMA_NS)
@@ -807,7 +1041,7 @@ class TestCommandContextLoop(TestCase):
         program_dir.save()
 
         self.movement_stage = "bdphpcprovider.smartconnectorscheduler.stages.movement.MovementStage"
-        self.program_stage = "bdphpcprovider.smartconnectorscheduler.stages.program.ProgramStage"
+        self.program_stage = "bdphpcprovider.smartconnectorscheduler.stages.program.LocalProgramStage"
         # Define all the stages that will make up the command.  This structure
         # has two layers of composition
         copy_stage = models.Stage.objects.create(name="copy",
@@ -987,9 +1221,9 @@ class TestCommandContextLoop(TestCase):
             u'http://rmit.edu.au/schemas//files':
                 [u'general input files for directive',
                 {
-                u'file0': models.ParameterName.STRING,
-                u'file1': models.ParameterName.STRING,
-                u'file2': models.ParameterName.STRING,
+                u'file0': (models.ParameterName.STRING,''),
+                u'file1': (models.ParameterName.STRING,''),
+                u'file2': (models.ParameterName.STRING,''),
                 }
                 ],
              # Note that file schema ns must match regex
@@ -997,21 +1231,26 @@ class TestCommandContextLoop(TestCase):
              # otherwise files will not be matched correctly.
              # TODO: make fall back to directive files in case specfici
              # version not defined here.
-             u'http://rmit.edu.au/schemas/smartconnector1/files':
+            u'http://rmit.edu.au/schemas/smartconnector1/files':
                  [u'the smartconnector1 input files',
                  {
-                 u'file0': models.ParameterName.STRING,
-                 u'file1': models.ParameterName.STRING,
-                 u'file2': models.ParameterName.STRING,
+                 u'file0': (models.ParameterName.STRING,''),
+                 u'file1': (models.ParameterName.STRING,''),
+                 u'file2': (models.ParameterName.STRING,''),
+                 }
+                 ],
+            u'http://rmit.edu.au/schemas/smartconnector_hrmc/files':
+                 [u'the smartconnector hrmc input files',
+                 {
                  }
                  ],
             u'http://rmit.edu.au/schemas/smartconnector1/create':
                 [u'the smartconnector1 create stage config',
                 {
-                u'iseed': models.ParameterName.NUMERIC,
-                u'num_nodes': models.ParameterName.NUMERIC,
-                u'null_number': models.ParameterName.NUMERIC,
-                u'parallel_number': models.ParameterName.NUMERIC,
+                u'iseed': (models.ParameterName.NUMERIC,''),
+                u'num_nodes': (models.ParameterName.NUMERIC,''),
+                u'null_number': (models.ParameterName.NUMERIC,''),
+                u'parallel_number': (models.ParameterName.NUMERIC,''),
                 }
                 ],
             # we might want to reuse schemas in muliple contextsets
@@ -1021,73 +1260,161 @@ class TestCommandContextLoop(TestCase):
             u'http://rmit.edu.au/schemas/stages/null/testing':
                 [u'the null stage internal testing',
                 {
-                u'output': models.ParameterName.NUMERIC,
-                u'index': models.ParameterName.NUMERIC,
+                u'output': (models.ParameterName.NUMERIC,''),
+                u'index': (models.ParameterName.NUMERIC,''),
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/parallel/testing':
                 [u'the parallel stage internal testing',
                 {
-                u'output': models.ParameterName.NUMERIC,
-                u'index': models.ParameterName.NUMERIC
+
+                u'output': (models.ParameterName.NUMERIC,''),
+                u'index': (models.ParameterName.NUMERIC,''),
                 }
                 ],
             u'http://nci.org.au/schemas/smartconnector1/custom':
                 [u'the smartconnector1 custom command',
                 {
-                u'command': models.ParameterName.STRING
+                u'command': (models.ParameterName.STRING,''),
                 }
                 ],
             u'http://rmit.edu.au/schemas/system/misc':
                 [u'system level misc values',
                 {
-                u'transitions': models.ParameterName.STRING,  # deprecated
-                u'system': models.ParameterName.STRING
+                u'transitions': (models.ParameterName.STRING,''),  # deprecated
+                u'system': (models.ParameterName.STRING,''),
+                u'id': (models.ParameterName.NUMERIC,''),
                 }
                 ],
             u'http://rmit.edu.au/schemas/system':
                 [u'Information about the deployment platform',
                 {
-                u'platform': models.ParameterName.STRING,  # deprecated
+                u'platform': (models.ParameterName.STRING,''),
                 }
                 ],
             u'http://tardis.edu.au/schemas/hrmc/dfmeta':
                 ["datafile",
                 {
-                u"a": models.ParameterName.NUMERIC,
-                u'b': models.ParameterName.NUMERIC,
+                u"a": (models.ParameterName.NUMERIC,''),
+                u'b': (models.ParameterName.NUMERIC,''),
                 }
                 ],
             u'http://tardis.edu.au/schemas/hrmc/dfmeta2':
                 ["datafile2",
                 {
-                u'c': models.ParameterName.STRING,
+                u'c': (models.ParameterName.STRING,''),
                 }
                 ],
             models.UserProfile.PROFILE_SCHEMA_NS:
                 [u'user profile',
                 {
-                    u'userinfo1': models.ParameterName.STRING,
-                    u'userinfo2': models.ParameterName.NUMERIC,
-                    u'fsys': models.ParameterName.STRING,
-                    u'nci_user': models.ParameterName.STRING,
-                    u'nci_password': models.ParameterName.STRING,
-                    u'nci_host': models.ParameterName.STRING,
-                    u'PASSWORD': models.ParameterName.STRING,
-                    u'USER_NAME': models.ParameterName.STRING,
-                    u'PRIVATE_KEY': models.ParameterName.STRING,
-                    u'flag': models.ParameterName.NUMERIC,
-                    u'CLOUD_SLEEP_INTERVAL': models.ParameterName.NUMERIC,
-                    u'local_fs_path': models.ParameterName.STRING,  # do we need this?
-                    u'PRIVATE_KEY_NAME': models.ParameterName.STRING,
-                    u'PRIVATE_KEY_NECTAR': models.ParameterName.STRING,
-                    u'PRIVATE_KEY_NCI': models.ParameterName.STRING,
-                    u'EC2_ACCESS_KEY': models.ParameterName.STRING,
-                    u'EC2_SECRET_KEY': models.ParameterName.STRING
+                    u'userinfo1': (models.ParameterName.STRING,'test parameter1'),
+                    u'userinfo2': (models.ParameterName.NUMERIC,'test parameter2'),
+                    u'nci_private_key': (models.ParameterName.STRING,'location of NCI private key'),
+                    u'nci_user': (models.ParameterName.STRING,'username for NCI access'),
+                    u'nci_password': (models.ParameterName.STRING,'password for NCI access'),
+                    u'nci_host': (models.ParameterName.STRING,'hostname for NCI'),
+                    u'flag': (models.ParameterName.NUMERIC,'not used?'),
+                    u'nectar_private_key_name': (models.ParameterName.STRING,'name of the key for nectar'),
+                    u'nectar_private_key': (models.ParameterName.STRING,'location of NeCTAR private key'),
+                    u'nectar_ec2_access_key': (models.ParameterName.STRING,'NeCTAR EC2 Access Key'),
+                    u'nectar_ec2_secret_key': (models.ParameterName.STRING,'NeCTAR EC2 Secret Key'),
+                }
+                ],
+            u'http://rmit.edu.au/schemas/copy/files':
+                 [u'the copy input files',
+                 {
+                 u'file0': (models.ParameterName.STRING,''),
+                 u'file1': (models.ParameterName.STRING,''),
+                 }
+                 ],
+            u'http://rmit.edu.au/schemas/program/files':
+                 [u'the copy input files',
+                 {
+                 u'file0': (models.ParameterName.STRING,''),
+                 u'file1': (models.ParameterName.STRING,''),
+                 u'file2': (models.ParameterName.STRING,''),
+                 }
+                 ],
+            u'http://rmit.edu.au/schemas/stages/copy/testing':
+                [u'the copy stage internal testing',
+                {
+                u'output': (models.ParameterName.NUMERIC,''),
+                }
+                ],
+            u'http://rmit.edu.au/schemas/stages/program/testing':
+                [u'the program stage internal testing',
+                {
+                u'output': (models.ParameterName.NUMERIC,''),
+                }
+                ],
+            u'http://rmit.edu.au/schemas/program/config':
+                [u'the program command internal config',
+                {
+                u'program': (models.ParameterName.STRING,''),
+                u'remotehost': (models.ParameterName.STRING,''),
+                u'program_success': (models.ParameterName.STRING,''),
+                }
+                ],
+            u'http://rmit.edu.au/schemas/greeting/salutation':
+                [u'salute',
+                {
+                u'salutation': (models.ParameterName.STRING,''),
+                }
+                ],
+            u'http://rmit.edu.au/schemas/hrmc':
+                [u'the hrmc smart connector input values',
+                {
+                u'number_vm_instances': (models.ParameterName.NUMERIC,''),
+                u'iseed': (models.ParameterName.NUMERIC,''),
+                u'input_location': (models.ParameterName.STRING,''),
+                u'number_dimensions': (models.ParameterName.NUMERIC,''),
+                u'threshold': (models.ParameterName.NUMERIC,''),
+                }
+                ],
+            u'http://rmit.edu.au/schemas/stages/configure':
+                [u'the configure state of the hrmc smart connector',
+                {
+                u'configure_done': (models.ParameterName.STRING,''),
+                }
+                ],
+            u'http://rmit.edu.au/schemas/stages/create':
+                [u'the create state of the smartconnector1',
+                {
+                u'group_id': (models.ParameterName.STRING,''),
+                u'vm_size': (models.ParameterName.STRING,''),
+                u'vm_image': (models.ParameterName.STRING,''),
+                u'security_group': (models.ParameterName.STRLIST,''),
+                u'group_id_dir': (models.ParameterName.STRING,''),
+                u'cloud_sleep_interval': (models.ParameterName.NUMERIC,''),
+                u'custom_prompt': (models.ParameterName.STRING,''),
+                u'nectar_username': (models.ParameterName.STRING, 'name of username for accessing nectar'),
+                u'nectar_password': (models.ParameterName.STRING, 'password of username for accessing nectar'),
+                }
+                ],
+            u'http://rmit.edu.au/schemas/stages/setup':
+                [u'the create stage of the smartconnector1',
+                {
+                u'setup_finished': (models.ParameterName.NUMERIC,''),
+                u'payload_source': (models.ParameterName.STRING,''),
+                u'payload_destination': (models.ParameterName.STRING,''),
+                }
+                ],
+            u'http://rmit.edu.au/schemas/stages/run':
+                [u'the create stage of the smartconnector1',
+                {
+                u'runs_left': (models.ParameterName.NUMERIC,''),
+                u'max_seed_int': (models.ParameterName.NUMERIC,''),
+                u'payload_cloud_dirname': (models.ParameterName.STRING,''),
+                u'compile_file': (models.ParameterName.STRING,''),
+                u'retry_attempts': (models.ParameterName.NUMERIC,''),
                 }
                 ],
         }
 
+
+        from urlparse import urlparse
+        from django.template.defaultfilters import slugify
 
         for ns in schema_data:
             l = schema_data[ns]
@@ -1096,29 +1423,31 @@ class TestCommandContextLoop(TestCase):
             logger.debug("desc=%s" % desc)
             kv = l[1:][0]
             logger.debug("kv=%s", kv)
-            context_schema = models.Schema.objects.create(
-                namespace=ns,
-                name="Context Schema", description=desc)
+
+            url = urlparse(ns)
+
+            context_schema, _ = models.Schema.objects.get_or_create(
+                namespace=ns, defaults={'name': slugify(url.path), 'description': desc})
 
             for k, v in kv.items():
-                models.ParameterName.objects.create(schema=context_schema,
-                    name=k,
-                    type=v)
+                val, help_text = (v[0], v[1])
+                models.ParameterName.objects.get_or_create(schema=context_schema,
+                    name=k, defaults={'type': val, 'help_text': help_text})
 
-        # Setup the schema for user configuration information (kept in profile)
-        self.PARAMS = {'userinfo1': 'param1val',
+
+
+        self.PARAMS = {
+            'userinfo1': 'param1val',
             'userinfo2': 42,
-            'fsys': self.remote_fs_path,
             'nci_user': 'root',
-            'nci_password': 'dtofaam',
+            'nci_password': 'dtofaam',  # NB: change this password
             'nci_host': '127.0.0.1',
-            'PASSWORD': 'dtofaam',
-            'USER_NAME': 'root',
-            'PRIVATE_KEY': '',
-
+            'nci_private_key': '',
+            'nectar_private_key_name': '',
+            'nectar_private_key': '',
+            'nectar_ec2_access_key': '',
+            'nectar_ec2_secret_key': '',
             }
-
-
 
         self.PARAMTYPE = {}
         sch = models.Schema.objects.get(namespace=models.UserProfile.PROFILE_SCHEMA_NS)

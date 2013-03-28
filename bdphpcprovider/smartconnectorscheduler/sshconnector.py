@@ -42,11 +42,13 @@ def is_ssh_ready(settings, ip_address):
             ssh_client = open_connection(ip_address, settings)
             ssh_ready = True
         except Exception, e:
-            sleep(settings['CLOUD_SLEEP_INTERVAL'])
+            sleep(settings['cloud_sleep_interval'])
             print ("Connecting to %s in progress ..." % ip_address)
+            logger.debug("exception is %s" % e)
             #import traceback, sys
 
             #traceback.print_exc(file=sys.stdout)
+    # TODO: need way of exiting polling loop if vm connection is borked.
     return ssh_ready
 
 
@@ -54,6 +56,10 @@ def open_connection(ip_address, settings):
     # open up the connection
     ssh_client = paramiko.SSHClient()
     # autoaccess new keys
+    # Cloud instances are continually reused so ip address likely
+    # be reused
+
+    #TODO: check for existence of all settings values before going further.
     known_hosts_file = os.path.join("~", ".ssh", "known_hosts")
     ssh_client.load_system_host_keys(os.path.expanduser(known_hosts_file))
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -61,20 +67,22 @@ def open_connection(ip_address, settings):
     #TODO: handle exceptions if connection does not work.
     # use private key if exists
     try:
-        if os.path.exists(settings['PRIVATE_KEY']):
-            privatekeyfile = os.path.expanduser(settings['PRIVATE_KEY'])
+        if os.path.exists(settings['private_key']):
+            print "%s %s" % (settings['username'], settings['private_key'])
+            privatekeyfile = os.path.expanduser(settings['private_key'])
             mykey = paramiko.RSAKey.from_private_key_file(privatekeyfile)
-            ssh_client.connect(ip_address, username=settings['USER_NAME'],
-                               timeout=60, pkey=mykey)
+            ssh_client.connect(ip_address, username=settings['username'],
+                               timeout=60.0, pkey=mykey)
         else:
             print("%s %s %s" % (ip_address,
-                                settings['USER_NAME'],
-                                settings['PASSWORD']))
+                                settings['username'],
+                                settings['password']))
             print(ssh_client)
-            ssh_client.connect(ip_address, username=settings['USER_NAME'],
-                               password=settings['PASSWORD'], timeout=60)
+            ssh_client.connect(ip_address, username=settings['username'],
+                               password=settings['password'], timeout=60.0)
     except paramiko.AuthenticationException:
         raise AuthError
+    logger.debug("made connection")
     #channel = ssh.invoke_shell().open_session()
     return ssh_client
 
@@ -117,7 +125,7 @@ def run_sudo_command_with_status(ssh_client, command, settings, instance_id):
     logger.debug("Sending through channel %s" % chan)
     full_buff = ''
     buff = ''
-    command_prompt = settings['CUSTOM_PROMPT']
+    command_prompt = settings['custom_prompt']
 
     while not command_prompt in buff:
         resp = chan.recv(9999)
@@ -172,7 +180,7 @@ def run_sudo_command(ssh_client, command, settings, instance_id):
     logger.debug("Sending through channel %s" % chan)
     full_buff = ''
     buff = ''
-    command_prompt = settings['CUSTOM_PROMPT']
+    command_prompt = settings['custom_prompt']
 
     while not command_prompt in buff:
         resp = chan.recv(9999)
@@ -275,27 +283,27 @@ def put_file(ssh_client, source_path, package_file, environ_dir):
     print "sftp connection opened"
     logger.debug("%s %s" % (source_path, environ_dir))
     source_file = os.path.join(source_path, package_file).replace('\\', '/')
-    print "source %s" %source_file
+    print "source %s" % source_file
     dest_file = os.path.join(environ_dir, package_file).replace('\\', '/')
-    print "destination %s" %dest_file
+    print "destination %s" % dest_file
 
     logger.debug("%s %s" % (source_file, dest_file))
-    logger.debug("Source file %s, destination %s" %(source_file, dest_file))
-    print ("Source file %s, destination %s" %(source_file, dest_file))
+    logger.debug("Source file %s, destination %s" % (source_file, dest_file))
+    print ("Source file %s, destination %s" % (source_file, dest_file))
     ftp.put(source_file, dest_file)
 
 
 # see /bdphpcprovider/smartconnectorscheduler/hrmcstages.py:439 - done
 def put_payload(ssh_client, source, destination):
     ftp = ssh_client.open_sftp()
-    logger.debug("Transferring payload from %s to %s" %(source, destination))
+    logger.debug("Transferring payload from %s to %s" % (source, destination))
 
     for root, dirs, files in os.walk(source):
         prefix = root
         break
 
     for root, dirs, files in os.walk(source):
-        relative_root = root[len(prefix)+1:]
+        relative_root = root[len(prefix) + 1:]
         if dirs:
             for dir in dirs:
                 mkdir(ssh_client, os.path.join(destination,

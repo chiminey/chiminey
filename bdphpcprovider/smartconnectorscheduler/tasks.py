@@ -30,7 +30,7 @@ def test():
     print "Hello World"
 
 
-@task(name="smartconnectorscheduler.run_contexts", ignore_result=True)
+@task(name="smartconnectorscheduler.run_contexts", time_limit=6000, ignore_result=True)
 def run_contexts():
     try:
         for context in models.Context.objects.all():
@@ -39,7 +39,7 @@ def run_contexts():
         logger.warn("Context removed from other thread")
 
 
-@task(name="smartconnectorscheduler.progress_context", ignore_result=True)
+@task(name="smartconnectorscheduler.progress_context",time_limit=3000, ignore_result=True)
 def progress_context(context_id):
     try:
         run_context = models.Context.objects.get(id=context_id)

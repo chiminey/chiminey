@@ -32,7 +32,7 @@ class NullStage(Stage):
     def __init__(self, user_settings=None):
         pass
 
-    def triggered(self, context):
+    def triggered(self, run_settings):
         """
         Return true if the directory pattern triggers this stage, or there
         has been any other error
@@ -41,48 +41,43 @@ class NullStage(Stage):
         #FIXME: triggered should make deep copy of context to ensure that it is not modified.
         # FIXME: Need to verify that triggered is idempotent.
         logger.debug("Null Stage Triggered?")
-        logger.debug("context=%s" % context)
+        logger.debug("run_settings=%s" % run_settings)
 
-        if self._exists(context, 'http://rmit.edu.au/schemas/stages/null/testing', 'output'):
-            self.val = context['http://rmit.edu.au/schemas/stages/null/testing']['output']
+        if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/null/testing', 'output'):
+            self.val = run_settings['http://rmit.edu.au/schemas/stages/null/testing']['output']
         else:
             self.val = 0
 
-        # null_number indicates which of a set of identical nullstages in
-        # a composite have been triggered.  It is must be set via passed
-        # directive argument.  FIXME: this should be a smart connector specific
-        # parameter set during directive definition.
-
-        if self._exists(context, 'http://rmit.edu.au/schemas/stages/null/testing', 'index'):
-            self.null_index = context['http://rmit.edu.au/schemas/stages/null/testing']['index']
+        if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/null/testing', 'index'):
+            self.null_index = run_settings['http://rmit.edu.au/schemas/stages/null/testing']['index']
         else:
-            self.null_index = context['http://rmit.edu.au/schemas/smartconnector1/create']['null_number']
+            self.null_index = run_settings['http://rmit.edu.au/schemas/smartconnector1/create']['null_number']
             logger.debug("found null_number=%s" % self.null_index)
         if self.null_index:
             return True
 
         return False
 
-    def process(self, context):
+    def process(self, run_settings):
         """ perfrom the stage operation
         """
         #logger.debug("context=%s" % context)
         logger.debug("Null Stage Processing")
 
-    def output(self, context):
+    def output(self, run_settings):
         """ produce the resulting datfiles and metadata
         """
         logger.debug("Null Stage Output")
 
-        if not self._exists(context, 'http://rmit.edu.au/schemas/stages/null/testing'):
-            context['http://rmit.edu.au/schemas/stages/null/testing'] = {}
+        if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/null/testing'):
+            run_settings['http://rmit.edu.au/schemas/stages/null/testing'] = {}
 
         self.val += 1
-        context['http://rmit.edu.au/schemas/stages/null/testing']['output'] = self.val
+        run_settings['http://rmit.edu.au/schemas/stages/null/testing']['output'] = self.val
 
         self.null_index -= 1
-        context['http://rmit.edu.au/schemas/stages/null/testing']['index'] = self.null_index
+        run_settings['http://rmit.edu.au/schemas/stages/null/testing']['index'] = self.null_index
 
-        logger.debug("context=%s" % context)
+        logger.debug("run_settings=%s" % run_settings)
 
-        return context
+        return run_settings

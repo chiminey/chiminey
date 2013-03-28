@@ -1,3 +1,23 @@
+# Copyright (C) 2013, RMIT University
+
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to
+# deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+# sell copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+# IN THE SOFTWARE.
+
 # Create your views here.
 import os
 import fs
@@ -144,7 +164,7 @@ def test_directive(request, directive_id):
                 ['file://127.0.0.1/local/greet.txt',
                     ['http://rmit.edu.au/schemas/greeting/salutation',
                         ('salutation', 'Hello Iman')]])
-            directive_args.append(['ssh://127.0.0.1/remote/greet.txt', []])
+            directive_args.append(['ssh://nci@127.0.0.1/remote/greet.txt', []])
             directives.append((platform, directive_name, directive_args))
 
         elif directive_id == "2":
@@ -208,24 +228,16 @@ def test_directive(request, directive_id):
             #local_fs_path = os.path.join(
             #    'bdphpcprovider', 'smartconnectorscheduler', 'testing', 'remotesys/').decode("utf8")
 
-            directive_args.append(['', ['http://rmit.edu.au/schemas/hrmc',
-                                        ('number_vm_instances', 2), (u'iseed', 42),
-                #('VM_IMAGE', 'ami-0000000d'),
-                #('VM_SIZE', 'm1.small'),
-                #('SECURITY_GROUP', u"['ssh']"),
-                #('USER_NAME', 'centos'),
-                #('PASSWORD', ''),
-                #('CUSTOM_PROMPT', '[smart-connector_prompt]$'),
-                #('GROUP_ID_DIR', 'group_id'),
-                #('group_id', 'c4573e9b0cc9ecf326c8729c7e928a9a'),
-                #('flag', 0), #FIXME: what is this used for?
-                #('CLOUD_SLEEP_INTERVAL', 5),
-                #('setup_finished', 0),
-                #('id', 0),
-                #('PAYLOAD_DESTINATION', 'celery_payload_2'),
-                #('PAYLOAD_SOURCE', 'file://127.0.0.1/local/testpayload'),
-                #('local_fs_path', local_fs_path)
-                ]])
+            directive_args.append(
+                ['',
+                    ['http://rmit.edu.au/schemas/hrmc',
+                        ('number_vm_instances', 2), (u'iseed', 42),
+                        ('input_location',  'file://127.0.0.1/local/testinput'),
+                        ('number_dimensions', 1),
+                        ('threshold', 1)
+                    ]
+                ])
+
             directives.append((platform, directive_name, directive_args))
 
         # make the system settings, available to initial stage and merged with run_settings

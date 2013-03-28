@@ -1,3 +1,22 @@
+# Copyright (C) 2013, RMIT University
+
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to
+# deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+# sell copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+# IN THE SOFTWARE.
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.exceptions import MultipleObjectsReturned
@@ -39,7 +58,7 @@ class Schema(models.Model):
         unique_together = (('namespace', 'name'),)
 
     def __unicode__(self):
-        return "%s (%s)" % (self.name, self.namespace)
+        return "%s" % self.name
 
 
 class ParameterName(models.Model):
@@ -298,9 +317,9 @@ class Stage(models.Model):
         """
             update the stage_settings associated with the context with new values from a map
         """
-        logger.debug("stage_settings=%s" % stage_settings)
+        #logger.debug("stage_settings=%s" % stage_settings)
         for schdata in stage_settings:
-            logger.debug("schdata=%s" % schdata)
+            #logger.debug("schdata=%s" % schdata)
             try:
                 sch = Schema.objects.get(namespace=schdata)
             except Schema.DoesNotExist:
@@ -310,11 +329,11 @@ class Stage(models.Model):
                 logger.error("multiple schemas found for %s" % schdata)
                 raise
 
-            logger.debug("sch=%s" % sch)
+            #logger.debug("sch=%s" % sch)
 
             paramset, _ = StageParameterSet.objects.get_or_create(schema=sch, stage=self)
 
-            logger.debug("paramset=%s" % paramset)
+            #logger.debug("paramset=%s" % paramset)
             #TODO: what if entries in original context have been deleted?
             kvs = stage_settings[schdata]
 
@@ -331,14 +350,14 @@ class Stage(models.Model):
                     cp = StageParameter.objects.get(name__name=k, paramset=paramset)
                 except StageParameter.DoesNotExist:
                     # TODO: need to check type
-                    logger.debug("new param =%s" % pn)
+                    #logger.debug("new param =%s" % pn)
                     cp = StageParameter.objects.create(name=pn,
                         paramset=paramset, value=v)
                 except MultipleObjectsReturned:
                     logger.exception("Found duplicate entry in StageParamterSet")
                     raise
                 else:
-                    logger.debug("updating %s to %s" % (cp.name, v))
+                    #logger.debug("updating %s to %s" % (cp.name, v))
                     # TODO: need to check type
                     cp.value = v
                     cp.save()
@@ -524,7 +543,7 @@ class ContextParameter(models.Model):
     #ranking = models.IntegerField(default=0,help_text="Describes the relative ordering of parameters when displaying: the larger the number, the more prominent the results")
 
     def __unicode__(self):
-        return u'%s =  %s' % (self.name, self.value)
+        return u'%s = %s' % (self.name, self.value)
 
     def getValue(self,):
         try:
