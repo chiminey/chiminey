@@ -34,24 +34,26 @@ class ParallelStage(Stage):
         pass
 
     def __unicode__(self):
-        return "ParallelStage"
+        return u"ParallelStage"
 
-    def triggered(self, context):
+    def triggered(self, run_settings):
         logger.debug("Parallel Stage Triggered")
-        logger.debug("context=%s" % context)
+        logger.debug("run_settings=%s" % run_settings)
 
-        if self._exists(context, u'http://rmit.edu.au/schemas/stages/parallel/testing', u'output'):
-            self.val = context[u'http://rmit.edu.au/schemas/stages/parallel/testing'][u'output']
+        if self._exists(run_settings, u'http://rmit.edu.au/schemas/stages/parallel/testing',
+            u'output'):
+            self.val = run_settings[u'http://rmit.edu.au/schemas/stages/parallel/testing'][u'output']
         else:
             self.val = 0
 
-        if self._exists(context, u'http://rmit.edu.au/schemas/stages/parallel/testing', u'index'):
-            self.parallel_index = context[u'http://rmit.edu.au/schemas/stages/parallel/testing'][u'index']
+        if self._exists(run_settings, u'http://rmit.edu.au/schemas/stages/parallel/testing',
+            u'index'):
+            self.parallel_index = run_settings[u'http://rmit.edu.au/schemas/stages/parallel/testing'][u'index']
         else:
             try:
-                self.parallel_index = context[u'http://rmit.edu.au/schemas/smartconnector1/create'][u'parallel_number']
+                self.parallel_index = run_settings[u'http://rmit.edu.au/schemas/smartconnector1/create'][u'parallel_number']
             except KeyError:
-                logger.error("context%s" % context)
+                logger.error("run_settings=%s" % run_settings)
                 raise
 
         if self.parallel_index:
@@ -59,19 +61,19 @@ class ParallelStage(Stage):
 
         return False
 
-    def process(self, context):
+    def process(self, run_settings):
         logger.debug("Parallel Stage Processing")
         pass
 
-    def output(self, context):
+    def output(self, run_settings):
         logger.debug("Parallel Stage Output")
 
-        if not self._exists(context, u'http://rmit.edu.au/schemas/stages/parallel/testing'):
-            context[u'http://rmit.edu.au/schemas/stages/parallel/testing'] = {}
+        if not self._exists(run_settings, u'http://rmit.edu.au/schemas/stages/parallel/testing'):
+            run_settings[u'http://rmit.edu.au/schemas/stages/parallel/testing'] = {}
 
         self.val += 1
-        context[u'http://rmit.edu.au/schemas/stages/parallel/testing'][u'output'] = self.val
+        run_settings[u'http://rmit.edu.au/schemas/stages/parallel/testing'][u'output'] = self.val
 
         self.parallel_index -= 1
-        context[u'http://rmit.edu.au/schemas/stages/parallel/testing'][u'index'] = self.parallel_index
-        return context
+        run_settings[u'http://rmit.edu.au/schemas/stages/parallel/testing'][u'index'] = self.parallel_index
+        return run_settings

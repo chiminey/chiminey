@@ -167,29 +167,40 @@ LOGGING = {
     'disable_existing_loggers': False,
     'formatters': {
         'simple': {
-            'format': '%(levelname)s %(message)s'
+            'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
+            #'format': '%(levelname)s %(message)s'
         },
     },
 
     'handlers': {
-        'console':{
-            'level':'DEBUG',
-            'class':'logging.StreamHandler',
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
             'formatter': 'simple'
         },
-        'file': {
-            'level':'DEBUG',
+        'file1': {
+            'level': 'DEBUG',
             'class': 'logging.FileHandler',
             'filename': './bdphpcprovider.log',
+            'formatter': 'simple'
+        },
+        'file2': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': '/var/log/cloudenabling/celery/celeryd.log',
             'formatter': 'simple'
         },
     },
 
     'loggers': {
         'bdphpcprovider.smartconnectorscheduler': {
-            'handlers': ['console', 'file'],
+            'handlers': ['console', 'file1'],
             'level': 'DEBUG',
             },
+         'celery': {
+             'handlers': ['console', 'file2'],
+             'level': 'DEBUG',
+             },
         },
 }
 

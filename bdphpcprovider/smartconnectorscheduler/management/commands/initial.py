@@ -45,94 +45,6 @@ class Command(BaseCommand):
             self.group.permissions.add(change_model)
             #self.group.permissions.add(delete_model)
 
-        self.group.save()
-
-        # # Create a user and profile
-        # self.user, _ = User.objects.get_or_create(username="username1",
-        #     defaults={"password": "password"})
-        # self.user.groups.add(self.group)
-        # self.user.save()
-
-        # logger.debug("user=%s" % self.user)
-        # profile, _ = models.UserProfile.objects.get_or_create(
-        #               user=self.user)
-
-        # Create the schemas for template parameters or config info
-        # specfied in directive arguments
-        # for ns, name, desc in [(models.UserProfile.PROFILE_SCHEMA_NS,
-        #     "userprofile1", "Information about user"),
-        #     ('http://rmit.edu.au/schemas/greeting/salutation', "salutation",
-        #         "The form of salutation"),
-        #     ("http://rmit.edu.au/schemas/program", "program",
-        #         "A remote executing program"),
-        #      ('http://tardis.edu.au/schemas/hrmc/dfmeta/', "datafile1",
-        #         "datafile 1 schema"),
-        #     ('http://tardis.edu.au/schemas/hrmc/dfmeta2/', "datafile2",
-        #         "datafile 2 schema"),
-        #     ('http://tardis.edu.au/schemas/hrmc/create', "create",
-        #         "create stage"),
-        #     ("http://nci.org.au/schemas/hrmc/custom_command/", "custom",
-        #         "custom command")
-        #     ]:
-        #     sch, _ = models.Schema.objects.get_or_create(namespace=ns, name=name, description=desc)
-        #     logger.debug("sch=%s" % sch)
-
-
-
-        # user_schema = models.Schema.objects.get(namespace=models.UserProfile.PROFILE_SCHEMA_NS)
-        # # Create the schema for stages (currently only one) and all allowed
-        # # values and their types for all stages.
-        # context_schema, _ = models.Schema.objects.get_or_create(
-        #     namespace=models.Context.CONTEXT_SCHEMA_NS,
-        #     name="Context Schema", description="Schema for run settings")
-        # # We assume that a run_context has only one schema at the moment, as
-        # # we have to load up this schema with all run settings values used in
-        # # any of the stages (and any parameters required for the stage
-        # # invocation)
-        # # TODO: allow multiple ContextParameterSet each with different schema
-        # # so each value will come from a namespace.  e.g., general/fsys
-        # # nectar/num_of_nodes, setup/nodes_setup etc.
-        # for name, param_type in {
-        #     u'file0': models.ParameterName.STRING,
-        #     u'file1': models.ParameterName.STRING,
-        #     u'file2': models.ParameterName.STRING,
-        #     u'program': models.ParameterName.STRING,
-        #     u'remotehost': models.ParameterName.STRING,
-        #     u'salutation': models.ParameterName.NUMERIC,
-        #     u'transitions': models.ParameterName.STRING,  # TODO: use STRLIST
-        #     u'program_output': models.ParameterName.NUMERIC,
-        #     u'movement_output': models.ParameterName.NUMERIC,
-        #     u'platform': models.ParameterName.NUMERIC,
-        #     u'system': models.ParameterName.STRING,
-        #     u'num_nodes': models.ParameterName.NUMERIC,
-        #     u'program_success': models.ParameterName.STRING,
-        #     u'iseed': models.ParameterName.NUMERIC,
-        #     u'command': models.ParameterName.STRING,
-        #     u'null_output': models.ParameterName.NUMERIC,
-        #     u'parallel_output': models.ParameterName.NUMERIC,
-        #     u'null_number': models.ParameterName.NUMERIC,
-        #     u'parallel_number': models.ParameterName.NUMERIC,
-        #     u'null_index': models.ParameterName.NUMERIC,
-        #     u'parallel_index': models.ParameterName.NUMERIC,
-        #     }.items():
-        #     models.ParameterName.objects.get_or_create(schema=context_schema,
-        #         name=name,
-        #         type=param_type)
-
-        # self.PARAMTYPE = {'userinfo1': models.ParameterName.STRING,
-        #     'userinfo2': models.ParameterName.NUMERIC,
-        #     'fsys': models.ParameterName.STRING,
-        #     'nci_user': models.ParameterName.STRING,
-        #     'nci_password': models.ParameterName.STRING,
-        #     'nci_host': models.ParameterName.STRING,
-        #     'PASSWORD': models.ParameterName.STRING,
-        #     'USER_NAME': models.ParameterName.STRING,
-        #     'PRIVATE_KEY': models.ParameterName.STRING}
-        # for k, v in self.PARAMTYPE.items():
-        #     param_name, _ = models.ParameterName.objects.get_or_create(schema=user_schema,
-        #         name=k,
-        #         type=self.PARAMTYPE[k])
-
         schema_data = {
             u'http://rmit.edu.au/schemas//files':
                 [u'general input files for directive',
@@ -205,7 +117,7 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/system':
                 [u'Information about the deployment platform',
                 {
-                u'platform': (models.ParameterName.STRING,''),  # deprecated
+                u'platform': (models.ParameterName.STRING,''),
                 }
                 ],
             u'http://tardis.edu.au/schemas/hrmc/dfmeta':
@@ -224,25 +136,17 @@ class Command(BaseCommand):
             models.UserProfile.PROFILE_SCHEMA_NS:
                 [u'user profile',
                 {
-                    u'userinfo1': (models.ParameterName.STRING,'test parameter'),
-                    u'userinfo2': (models.ParameterName.NUMERIC,'test parameter'),
-                    u'fsys': (models.ParameterName.STRING,'filesystem (not used?)'),
+                    u'userinfo1': (models.ParameterName.STRING,'test parameter1'),
+                    u'userinfo2': (models.ParameterName.NUMERIC,'test parameter2'),
+                    u'nci_private_key': (models.ParameterName.STRING,'location of NCI private key'),
                     u'nci_user': (models.ParameterName.STRING,'username for NCI access'),
                     u'nci_password': (models.ParameterName.STRING,'password for NCI access'),
                     u'nci_host': (models.ParameterName.STRING,'hostname for NCI'),
-                    u'PASSWORD': (models.ParameterName.STRING,'NeCTAR access password'),
-                    u'USER_NAME': (models.ParameterName.STRING,'NeCTAR access username'),
-                    u'PRIVATE_KEY': (models.ParameterName.STRING,'NeCTAR PRIVATE Key'),
                     u'flag': (models.ParameterName.NUMERIC,'not used?'),
-                    u'CLOUD_SLEEP_INTERVAL': (models.ParameterName.NUMERIC,'timeout for NeCTAR cloud'),
-                    u'local_fs_path': (models.ParameterName.STRING,'?'),
-                    u'PRIVATE_KEY_NAME': (models.ParameterName.STRING,'name of the key for nectar'),
-                    # TODO: currently KEY paths are real fsys.  Should be our new API to allow
-                    # automagical loading of remote keys
-                    u'PRIVATE_KEY_NECTAR': (models.ParameterName.STRING,'location of NeCTAR private key'),
-                    u'PRIVATE_KEY_NCI': (models.ParameterName.STRING,'location of NCI private key'),
-                    u'EC2_ACCESS_KEY': (models.ParameterName.STRING,'NeCTAR EC2 Access Key'),
-                    u'EC2_SECRET_KEY': (models.ParameterName.STRING,'NeCTAR EC2 Secret Key'),
+                    u'nectar_private_key_name': (models.ParameterName.STRING,'name of the key for nectar'),
+                    u'nectar_private_key': (models.ParameterName.STRING,'location of NeCTAR private key'),
+                    u'nectar_ec2_access_key': (models.ParameterName.STRING,'NeCTAR EC2 Access Key'),
+                    u'nectar_ec2_secret_key': (models.ParameterName.STRING,'NeCTAR EC2 Secret Key'),
                 }
                 ],
             u'http://rmit.edu.au/schemas/copy/files':
@@ -283,26 +187,17 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/greeting/salutation':
                 [u'salute',
                 {
-                    u'salutation': (models.ParameterName.STRING,''),
+                u'salutation': (models.ParameterName.STRING,''),
                 }
                 ],
             u'http://rmit.edu.au/schemas/hrmc':
                 [u'the hrmc smart connector input values',
                 {
-                    u'number_vm_instances': (models.ParameterName.NUMERIC,''),
-                    u'iseed': (models.ParameterName.NUMERIC,''),
-                }
-                ],
-            u'http://rmit.edu.au/schemas/stages/create':
-                [u'the create state of the smartconnector1',
-                {
-                u'group_id': (models.ParameterName.STRING,''),
-                u'VM_SIZE': (models.ParameterName.STRING,''),
-                u'VM_IMAGE': (models.ParameterName.STRING,''),
-                u'SECURITY_GROUP': (models.ParameterName.STRLIST,''),
-                u'GROUP_ID_DIR': (models.ParameterName.STRING,''),
-                u'CLOUD_SLEEP_INTERVAL': (models.ParameterName.NUMERIC,''),
-                u'CUSTOM_PROMPT': (models.ParameterName.STRING,''),
+                u'number_vm_instances': (models.ParameterName.NUMERIC,''),
+                u'iseed': (models.ParameterName.NUMERIC,''),
+                u'input_location': (models.ParameterName.STRING,''),
+                u'number_dimensions': (models.ParameterName.NUMERIC,''),
+                u'threshold': (models.ParameterName.NUMERIC,''),
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/configure':
@@ -311,16 +206,39 @@ class Command(BaseCommand):
                 u'configure_done': (models.ParameterName.STRING,''),
                 }
                 ],
+            u'http://rmit.edu.au/schemas/stages/create':
+                [u'the create state of the smartconnector1',
+                {
+                u'group_id': (models.ParameterName.STRING,''),
+                u'vm_size': (models.ParameterName.STRING,''),
+                u'vm_image': (models.ParameterName.STRING,''),
+                u'security_group': (models.ParameterName.STRLIST,''),
+                u'group_id_dir': (models.ParameterName.STRING,''),
+                u'cloud_sleep_interval': (models.ParameterName.NUMERIC,''),
+                u'custom_prompt': (models.ParameterName.STRING,''),
+                u'nectar_username': (models.ParameterName.STRING, 'name of username for accessing nectar'),
+                u'nectar_password': (models.ParameterName.STRING, 'password of username for accessing nectar'),
+                }
+                ],
             u'http://rmit.edu.au/schemas/stages/setup':
                 [u'the create stage of the smartconnector1',
                 {
                 u'setup_finished': (models.ParameterName.NUMERIC,''),
-                u'PAYLOAD_SOURCE': (models.ParameterName.STRING,''),
-                u'PAYLOAD_DESTINATION': (models.ParameterName.STRING,''),
+                u'payload_source': (models.ParameterName.STRING,''),
+                u'payload_destination': (models.ParameterName.STRING,''),
+                }
+                ],
+            u'http://rmit.edu.au/schemas/stages/run':
+                [u'the create stage of the smartconnector1',
+                {
+                u'runs_left': (models.ParameterName.NUMERIC,''),
+                u'max_seed_int': (models.ParameterName.NUMERIC,''),
+                u'payload_cloud_dirname': (models.ParameterName.STRING,''),
+                u'compile_file': (models.ParameterName.STRING,''),
+                u'retry_attempts': (models.ParameterName.NUMERIC,''),
                 }
                 ],
         }
-
 
         from urlparse import urlparse
         from django.template.defaultfilters import slugify
@@ -343,53 +261,19 @@ class Command(BaseCommand):
                 models.ParameterName.objects.get_or_create(schema=context_schema,
                     name=k, defaults={'type': val, 'help_text': help_text})
 
-        # for name, param_type in {
-        #     u'file0': models.ParameterName.STRING,
-        #     u'file1': models.ParameterName.STRING,
-        #     u'file2': models.ParameterName.STRING,
-        #     u'program': models.ParameterName.STRING,
-        #     u'remotehost': models.ParameterName.STRING,
-        #     u'salutation': models.ParameterName.NUMERIC,
-        #     u'transitions': models.ParameterName.STRING,  # TODO: use STRLIST
-        #     u'program_output': models.ParameterName.NUMERIC,
-        #     u'movement_output': models.ParameterName.NUMERIC,
-        #     u'platform': models.ParameterName.STRING,
-        #     u'system': models.ParameterName.STRING,
-        #     u'num_nodes': models.ParameterName.NUMERIC,
-        #     u'iseed': models.ParameterName.NUMERIC,
-        #     u'number_vm_instances': models.ParameterName.NUMERIC,
-        #     u'command': models.ParameterName.STRING,
-        #     u'null_output': models.ParameterName.NUMERIC,
-        #     u'parallel_output': models.ParameterName.NUMERIC,
-        #     u'USER_NAME': models.ParameterName.STRING,
-        #     u'PASSWORD':models.ParameterName.STRING,
-        #     u'SECURITY_GROUP': models.ParameterName.STRLIST,
-        #     u'VM_SIZE': models.ParameterName.STRING,
-        #     u'VM_IMAGE': models.ParameterName.STRING,
-        #     u'GROUP_ID_DIR': models.ParameterName.STRING,
-        #     u'CUSTOM_PROMPT': models.ParameterName.STRING,
-        #     u'group_id': models.ParameterName.STRING,
-        #     u'flag': models.ParameterName.NUMERIC,
-        #     u'CLOUD_SLEEP_INTERVAL': models.ParameterName.NUMERIC,
-        #     u'setup_finished': models.ParameterName.NUMERIC,
-        #     u'id': models.ParameterName.NUMERIC,
-        #     u'PAYLOAD_SOURCE': models.ParameterName.STRING,
-        #     u'PAYLOAD_DESTINATION': models.ParameterName.STRING,
-        #     u'local_fs_path': models.ParameterName.STRING
-        #     }.items():
+        logger.debug("stages=%s" % models.Stage.objects.all())
+        local_filesys_rootpath = '/var/cloudenabling/remotesys'
+        models.Platform.objects.get_or_create(name='local', root_path=local_filesys_rootpath)
+        nectar_platform, _ = models.Platform.objects.get_or_create(name='nectar', root_path='/home/centos')
+        platform, _ = models.Platform.objects.get_or_create(name='nci', root_path=local_filesys_rootpath)
 
-
-        # # Make a platform for the commands
-        # platform, _ = models.Platform.objects.get_or_create(name="nectar")
+        logger.debug("local_filesys_rootpath=%s" % local_filesys_rootpath)
+        local_fs = FileSystemStorage(location=local_filesys_rootpath)
 
         copy_dir, _ = models.Directive.objects.get_or_create(name="copy")
         program_dir, _ = models.Directive.objects.get_or_create(name="program")
-        smart_dir, _ = models.Directive.objects.get_or_create(name="smartconnector1")
-
-        hrmc_smart_dir, _ = models.Directive.objects.get_or_create(name="smartconnector_hrmc")
-
         self.movement_stage = "bdphpcprovider.smartconnectorscheduler.stages.movement.MovementStage"
-        self.program_stage = "bdphpcprovider.smartconnectorscheduler.stages.program.ProgramStage"
+        self.program_stage = "bdphpcprovider.smartconnectorscheduler.stages.program.LocalProgramStage"
         # Define all the stages that will make up the command.  This structure
         # has two layers of composition
         copy_stage, _ = models.Stage.objects.get_or_create(name="copy",
@@ -397,13 +281,19 @@ class Command(BaseCommand):
              package=self.movement_stage,
              order=100)
         copy_stage.update_settings({})
-
         program_stage, _ = models.Stage.objects.get_or_create(name="program",
             description="program execution stage",
             package=self.program_stage,
             order=0)
         program_stage.update_settings({})
+        comm, _ = models.Command.objects.get_or_create(platform=platform, directive=copy_dir, stage=copy_stage)
+        comm, _ = models.Command.objects.get_or_create(platform=platform, directive=program_dir, stage=program_stage)
+        local_fs.save("local/greet.txt",
+            ContentFile("{{salutation}} World"))
+        local_fs.save("remote/greetaddon.txt",
+            ContentFile("(remotely)"))
 
+        smart_dir, _ = models.Directive.objects.get_or_create(name="smartconnector1")
         self.null_package = "bdphpcprovider.smartconnectorscheduler.stages.nullstage.NullStage"
         self.parallel_package = "bdphpcprovider.smartconnectorscheduler.stages.composite.ParallelStage"
         # Define all the stages that will make up the command.  This structure
@@ -412,13 +302,11 @@ class Command(BaseCommand):
              description="encapsulates a workflow",
              package=self.parallel_package,
              order=100)
-
-        setup_stage,_ = models.Stage.objects.get_or_create(name="setup",
+        setup_stage, _ = models.Stage.objects.get_or_create(name="setup",
             parent=composite_stage,
             description="This is a setup stage of something",
             package=self.null_package,
             order=0)
-
         # stage settings are usable from subsequent stages in a run so only
         # need to define once for first null or parallel stage
         setup_stage.update_settings(
@@ -428,13 +316,11 @@ class Command(BaseCommand):
                     u'null_number': 4,
                 }
             })
-
         stage2, _ = models.Stage.objects.get_or_create(name="run",
             parent=composite_stage,
             description="This is the running connector",
             package=self.parallel_package,
             order=1)
-
         stage2.update_settings(
             {
             u'http://rmit.edu.au/schemas/smartconnector1/create':
@@ -442,34 +328,36 @@ class Command(BaseCommand):
                     u'parallel_number': 2
                 }
             })
-
         models.Stage.objects.get_or_create(name="run1",
             parent=stage2,
             description="This is the running part 1",
             package=self.null_package,
             order=1)
-
         models.Stage.objects.get_or_create(name="run2",
             parent=stage2,
             description="This is the running part 2",
             package=self.null_package,
             order=2)
-
         models.Stage.objects.get_or_create(name="finished",
             parent=composite_stage,
             description="And here we finish everything off",
             package=self.null_package,
             order=3)
+        comm, _ = models.Command.objects.get_or_create(platform=platform, directive=smart_dir, stage=composite_stage)
+        local_fs.save("input/input.txt",
+            ContentFile("a={{a}} b={{b}} c={{c}}"))
+        local_fs.save("input/file.txt",
+            ContentFile("foobar"))
 
+        hrmc_smart_dir, _ = models.Directive.objects.get_or_create(name="smartconnector_hrmc")
         self.configure_package = "bdphpcprovider.smartconnectorscheduler.stages.configure.Configure"
         self.create_package = "bdphpcprovider.smartconnectorscheduler.stages.create.Create"
         self.setup_package = "bdphpcprovider.smartconnectorscheduler.stages.setup.Setup"
-
+        self.run_package = "bdphpcprovider.smartconnectorscheduler.stages.run.Run"
         hrmc_composite_stage, _ = models.Stage.objects.get_or_create(name="hrmc_connector",
                                                                 description="Encapsultes HRMC smart connector workflow",
                                                                 package=self.parallel_package,
                                                                 order=100)
-
         # FIXME: tasks.progress_context does not load up composite stage settings
         hrmc_composite_stage.update_settings({})
 
@@ -479,82 +367,54 @@ class Command(BaseCommand):
                                                                 package=self.configure_package,
                                                                 order=0)
         configure_stage.update_settings({})
-
         create_stage, _ = models.Stage.objects.get_or_create(name="create",
                                                                 description="This is create stage of HRMC smart connector",
                                                                 parent=hrmc_composite_stage,
                                                                 package=self.create_package,
                                                                 order=1)
-
         create_stage.update_settings({u'http://rmit.edu.au/schemas/stages/create':
                 {
-                    u'VM_SIZE': "m1.small",
-                    u'VM_IMAGE': "ami-0000000d",
-                    u'CLOUD_SLEEP_INTERVAL': 5,
-                    u'SECURITY_GROUP': '["ssh"]',
-                    u'GROUP_ID_DIR': 'group_id',
-                    u'CUSTOM_PROMPT': '[smart-connector_prompt]$'
-
-
+                    u'vm_size': "m1.small",
+                    u'vm_image': "ami-0000000d",
+                    u'cloud_sleep_interval': 5,
+                    u'security_group': '["ssh"]',
+                    u'group_id_dir': 'group_id',
+                    u'custom_prompt': '[smart-connector_prompt]$',
+                    u'nectar_username': 'centos',
+                    u'nectar_password': ''
                 }})
-
         setup_stage, _ = models.Stage.objects.get_or_create(name="setup",
                                                              description="This is setup stage of HRMC smart connector",
                                                              parent=hrmc_composite_stage,
                                                              package=self.setup_package,
-                                                             order=1)
+                                                             order=2)
         setup_stage.update_settings(
             {
             u'http://rmit.edu.au/schemas/stages/setup':
                 {
-                    u'PAYLOAD_SOURCE': 'file://127.0.0.1/local/testpayload',
-                    u'PAYLOAD_DESTINATION': 'nectar@celery_payload_2',
+                    u'payload_source': 'file://127.0.0.1/local/testpayload',
+                    u'payload_destination': 'celery_payload_2',
                 },
             })
-
-        # Need to create Parmetersets for stages here and associate with these stages
-
-        logger.debug("stages=%s" % models.Stage.objects.all())
-        local_filesys_rootpath = '/opt/cloudenabling/current/bdphpcprovider/smartconnectorscheduler/testing/remotesys'
-        models.Platform.objects.get_or_create(name='local', root_path=local_filesys_rootpath)
-        nectar_platform, _ = models.Platform.objects.get_or_create(name='nectar', root_path='/home/centos')
-        platform, _  = models.Platform.objects.get_or_create(name='nci', root_path=local_filesys_rootpath)
-
-
-
-
-        # Make a new command that reliases composite_stage
-        # TODO: add the command program to the model
-        comm, _ = models.Command.objects.get_or_create(platform=platform, directive=copy_dir, stage=copy_stage)
-        comm, _ = models.Command.objects.get_or_create(platform=platform, directive=program_dir, stage=program_stage)
-        comm, _ = models.Command.objects.get_or_create(platform=platform, directive=smart_dir, stage=composite_stage)
+        run_stage, _ = models.Stage.objects.get_or_create(name="run",
+                                                            description="This is run stage of HRMC smart connector",
+                                                            parent=hrmc_composite_stage,
+                                                            package=self.run_package,
+                                                            order=3)
+        run_stage.update_settings(
+            {
+            u'http://rmit.edu.au/schemas/stages/run':
+                {
+                    u'payload_cloud_dirname': 'AEAO_v1_1',
+                    u'compile_file': 'HRMC',
+                    u'retry_attempts': 3,
+                    u'max_seed_int': 1000,  # FIXME: should we use maxint here?
+                },
+            })
         comm, _ = models.Command.objects.get_or_create(platform=nectar_platform, directive=hrmc_smart_dir, stage=hrmc_composite_stage)
 
 
-        # We could make one command with a composite containing three stages or
-        # three commands each containing a single stage.
 
-        # done setup
-
-        logger.debug("local_filesys_rootpath=%s" % local_filesys_rootpath)
-
-        # self.remote_fs_path = os.path.join(
-        #     'smartconnectorscheduler', 'testing', 'remotesys/').decode("utf8")
-        # logger.debug("self.remote_fs_path=%s" % self.remote_fs_path)
-        local_fs = FileSystemStorage(location=local_filesys_rootpath)
-
-        local_fs.save("local/greet.txt",
-            ContentFile("{{salutation}} World"))
-
-        local_fs.save("remote/greetaddon.txt",
-            ContentFile("(remotely)"))
-
-        # setup the required initial files
-        local_fs.save("input/input.txt",
-         ContentFile("a={{a}} b={{b}} c={{c}}"))
-
-        local_fs.save("input/file.txt",
-         ContentFile("foobar"))
         print "done"
 
     def handle(self, *args, **options):

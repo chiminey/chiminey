@@ -44,22 +44,23 @@ class Fake_VM:
         pass
 '''
 
+
 def _create_cloud_connection(settings):
     provider = settings['platform']
-    if provider.lower() == "amazon" :
+    if provider.lower() == "amazon":
         return _create_amazon_connection(settings)
-    elif provider.lower() == "nectar" :
+    elif provider.lower() == "nectar":
         return _create_nectar_connection(settings)
     else:
-        logger.info("Unknown provider: %s" %provider)
-        sys.exit()#FIXME: throw exception
+        logger.info("Unknown provider: %s" % provider)
+        sys.exit()  # FIXME: throw exception
 
 
 def _create_nectar_connection(settings):
     region = RegionInfo(name="NeCTAR", endpoint="nova.rc.nectar.org.au")
     connection = boto.connect_ec2(
-        aws_access_key_id=settings['EC2_ACCESS_KEY'],
-        aws_secret_access_key=settings['EC2_SECRET_KEY'],
+        aws_access_key_id=settings['nectar_ec2_access_key'],
+        aws_secret_access_key=settings['nectar_ec2_secret_key'],
         is_secure=True,
         region=region,
         port=8773,
@@ -78,7 +79,7 @@ def create_environ(number_vm_instances, settings):
         Create the Nectar VM instance and return id
     """
     logger.info("create_environ")
-    all_instances =_create_VM_instances(number_vm_instances, settings)
+    all_instances = create_VM_instances(number_vm_instances, settings)
     logger.debug("Printing ---- %s " % all_instances)
 
 
@@ -95,7 +96,7 @@ def create_environ(number_vm_instances, settings):
     return None
 
 
-def _create_VM_instances(number_vm_instances, settings):
+def create_VM_instances(number_vm_instances, settings):
     """
         Create the Nectar VM instance and return ip_address
     """
@@ -108,12 +109,12 @@ def _create_VM_instances(number_vm_instances, settings):
         while instance_count < number_vm_instances:
             logger.debug(number_vm_instances)
             reservation = connection.run_instances(
-                image_id=settings['VM_IMAGE'],
+                image_id=settings['vm_image'],
                 min_count=1,
                 max_count=1,
-                key_name=settings['PRIVATE_KEY_NAME'],
-                security_groups=settings['SECURITY_GROUP'],
-                instance_type=settings['VM_SIZE'])
+                key_name=settings['nectar_private_key_name'],
+                security_groups=settings['security_group'],
+                instance_type=settings['vm_size'])
             logger.debug("Created Reservation %s" % reservation)
             new_instance = reservation.instances[0]
             logger.debug("Created Instance %s" % new_instance)
@@ -151,10 +152,11 @@ def _store_md5_on_instances(all_instances, settings):
         if ssh_ready:
             logger.info("Registering %s (%s) to group '%s'\
             " % (instance_id, ip_address, group_id))
-            ssh_client = open_connection(ip_address=ip_address, settings=settings)
-            group_id_path = os.path.join(settings['GROUP_ID_DIR'], group_id)
 
-            run_command(ssh_client, "mkdir %s" % settings['GROUP_ID_DIR'])
+            ssh_client = open_connection(ip_address=ip_address, settings=settings)
+            group_id_path = os.path.join(settings['group_id_dir'], group_id)
+
+            run_command(ssh_client, "mkdir %s" % settings['group_id_dir'])
             logger.info("Group ID directory created")
             run_command(ssh_client, "touch %s" % group_id_path)
             logger.info("Group ID file created")
@@ -173,8 +175,8 @@ def _customize_prompt(all_instances, settings):
         ssh_ready = is_ssh_ready(settings, ip_address)
         if ssh_ready:
             ssh_client = open_connection(ip_address=ip_address, settings=settings)
-            command_bash = 'echo \'export PS1="%s"\' >> .bash_profile' % settings['CUSTOM_PROMPT']
-            command_csh = 'echo \'setenv PS1 "%s"\' >> .cshrc' % settings['CUSTOM_PROMPT']
+            command_bash = 'echo \'export PS1="%s"\' >> .bash_profile' % settings['custom_prompt']
+            command_csh = 'echo \'setenv PS1 "%s"\' >> .cshrc' % settings['custom_prompt']
             command = 'cd ~; %s; %s' % (command_bash, command_csh)
             logger.debug("Command Prompt %s" % command)
             run_command(ssh_client, command)
@@ -247,7 +249,6 @@ def destroy_environ(settings, all_instances, ids_of_all_instances=None):
         for instance in all_instances:
             ids_of_all_instances.append(instance.id)
 
-
     logger.info("Terminating %d VM instance(s)" % len(ids_of_all_instances))
     connection = _create_cloud_connection(settings)
     connection.terminate_instances(ids_of_all_instances)
@@ -269,21 +270,24 @@ def is_instance_running(instance_id, settings):
         is running or not
     """
     instance_running = False
-    all_instances =  get_all_instances(settings)
+    all_instances = get_all_instances(settings)
     for instance in all_instances:
         if instance.id == instance_id:
-            logger.debug("Instance Found")
+            #logger.debug("Instance Found")
             if instance.state == "running":
                 instance_running = True
                 break
         else:
-            logger.debug("Instance not found")
+            pass
+            #logger.debug("Instance not found")
     return instance_running
 
 
 def _wait_for_instance_to_start_running(all_instances, settings):
     all_running_instances = []
     # FIXME: add final timeout for when VMs fail to initialise properly
+    # TODO: spamming all nodes in tenancy continually is impolite, so should
+    # store nodes we know to be part of this run (in context?)
     logger.debug("Started waiting")
     while all_instances:
         for instance in all_instances:
@@ -297,7 +301,7 @@ def _wait_for_instance_to_start_running(all_instances, settings):
 
             #print  'Current status of Instance %s: %s' %(instance_id, instance.state)
 
-        time.sleep(settings['CLOUD_SLEEP_INTERVAL'])
+        time.sleep(settings['cloud_sleep_interval'])
 
     return all_running_instances
 
@@ -313,7 +317,7 @@ def _wait_for_instance_to_terminate(all_instances, settings):
                 '''
             #logger.info('Current status of Instance %s: %s' %(instance_id, instance.state))
 
-        time.sleep(settings['CLOUD_SLEEP_INTERVAL'])
+        time.sleep(settings['cloud_sleep_interval'])
 
 
 def print_all_information(settings, all_instances=None):
@@ -338,10 +342,10 @@ def print_all_information(settings, all_instances=None):
         #if is_ssh_ready(settings, ip):
         try:
             ssh = open_connection(ip, settings)
-            group_name = run_command(ssh, "ls %s " % settings['GROUP_ID_DIR'])
+            group_name = run_command(ssh, "ls %s " % settings['group_id_dir'])
             vm_type = 'Other'
             res = run_command(ssh, "[ -d %s ] && echo 1\
-            " % settings['GROUP_ID_DIR'])
+            " % settings['group_id_dir'])
 
             if '1\n' in res:
                 vm_type = 'RMIT'
@@ -378,9 +382,9 @@ def get_all_instances(settings):
     all_instances = []
     for reservation in reservations:
         nodes = reservation.instances
-        logger.debug("Nodes %s" % nodes)
         for i in nodes:
             all_instances.append(i)
+    logger.debug("Nodes=%s" % all_instances)
     return all_instances
 
 
@@ -430,7 +434,7 @@ def get_rego_nodes(group_id, settings):
             continue
         logger.debug("ssh client created %s" % ssh_client)
         # NOTE: assumes use of bash shell
-        group_id_path = os.path.join(settings['GROUP_ID_DIR'], group_id)
+        group_id_path = os.path.join(settings['group_id_dir'], group_id)
         res = run_command(ssh_client, "[ -f %s ] && echo 1" % group_id_path)
         logger.debug("res=%s" % res)
         if '1\n' in res:

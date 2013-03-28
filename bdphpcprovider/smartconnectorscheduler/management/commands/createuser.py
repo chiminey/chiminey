@@ -1,7 +1,22 @@
-"""
-Management utility to create users.
-"""
+# Copyright (C) 2013, RMIT University
 
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to
+# deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+# sell copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+# IN THE SOFTWARE.
 import getpass
 import re
 import sys
@@ -153,20 +168,17 @@ class Command(BaseCommand):
         print "remotefsys=%s" % remotefsys
 
         # Setup the schema for user configuration information (kept in profile)
-        self.PARAMS = {'userinfo1': 'param1val',
+        self.PARAMS = {
+            'userinfo1': 'param1val',
             'userinfo2': 42,
-            'fsys': remotefsys,
             'nci_user': 'root',
             'nci_password': 'changemepassword',  # NB: change this password
             'nci_host': '127.0.0.1',
-            'PASSWORD': 'changemepassword',   # NB: change this password
-            'USER_NAME': 'root',
-            'PRIVATE_KEY': '',
-            'PRIVATE_KEY_NAME': '',
-            'PRIVATE_KEY_NECTAR': '',
-            'PRIVATE_KEY_NCI': '',
-            'EC2_ACCESS_KEY': '',
-            'EC2_SECRET_KEY': ''
+            'nci_private_key': '',
+            'nectar_private_key_name': '',
+            'nectar_private_key': '',
+            'nectar_ec2_access_key': '',
+            'nectar_ec2_secret_key': '',
             }
 
         #TODO: prompt user to enter private key paths and names and other credentials
@@ -182,31 +194,6 @@ class Command(BaseCommand):
             models.UserProfileParameter.objects.get_or_create(name=param_name,
                 paramset=param_set,
                 value=v)
-
-
-
-         # # Setup the schema for user configuration information (kept in profile)
-         # self.PARAMS = {'userinfo1': 'param1val',
-         #     'userinfo2': 42,
-         #     'fsys': self.remote_fs_path,
-         #     'nci_user': 'root',
-         #     'nci_password': 'dtofaam',
-         #     'nci_host': '127.0.0.1',
-         #     }
-
-        # self.PARAMTYPE = {}
-        # sch = models.Schema.objects.get(namespace="http://www.rmit.edu.au/user/profile/1")
-        # #paramtype = schema_data['http://www.rmit.edu.au/user/profile/1'][1]
-        # param_set = models.UserProfileParameterSet.objects.create(user_profile=profile,
-        #     schema=sch)
-        # for k, v in self.PARAMS.items():
-        #     param_name = models.ParameterName.objects.get(schema=sch,
-        #         name=k)
-        #     models.UserProfileParameter.objects.create(name=param_name,
-        #         paramset=param_set,
-        #         value=v)
-
-
 
         if verbosity >= 1:
           self.stdout.write("BDPHPCProvider user created successfully.\n")

@@ -1,3 +1,23 @@
+# Copyright (C) 2013, RMIT University
+
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to
+# deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+# sell copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+# IN THE SOFTWARE.
+
 from bdphpcprovider.smartconnectorscheduler import models
 from urlparse import urlparse
 import time
@@ -14,14 +34,12 @@ import logging.config
 logger = logging.getLogger(__name__)
 
 
-
 class Error(Exception):
     pass
 
 
 class PackageFailedError(Error):
     pass
-
 
 
 def copy_settings(dest_context, context, key):
@@ -41,6 +59,7 @@ def get_url_with_pkey(settings, url_or_relative_path,
 
     Suppose
         url_or_relative_path = 'nectar@new_payload'
+        is_relative_path = True
         ip_address = 127.0.0.1
         root_path = /home/centos
     the platform is nectar and the relative path is new_payload
@@ -48,14 +67,13 @@ def get_url_with_pkey(settings, url_or_relative_path,
 
     :param settings:
     :param url_or_relative_path:
-    :param is_destination:
+    :param is_relative_path:
     :param ip_address:
     :return:
     '''
-    username = settings['USER_NAME']
-    password = settings['PASSWORD']
+    username = ''
+    password = ''
     private_key = ''
-    scheme = 'file'
 
     if is_relative_path:
         url = 'http://' + url_or_relative_path
@@ -64,20 +82,39 @@ def get_url_with_pkey(settings, url_or_relative_path,
     parsed_url = urlparse(url)
     platform = parsed_url.username
     if platform == 'nectar':
-        if 'PRIVATE_KEY_NECTAR' in settings:
-            private_key = settings['PRIVATE_KEY_NECTAR']
+        private_key = settings['nectar_private_key']
+        username = settings['nectar_username']
+        password = settings['nectar_password']
         scheme = 'ssh'
     elif platform == 'nci':
-        if 'PRIVATE_KEY_NCI' in settings:
-            private_key = settings['PRIVATE_KEY_NCI']
+        private_key = settings['nci_private_key']
+        username = settings['nci_user']
+        password = settings['nci_password']
         scheme = 'ssh'
     else:
-        platform = 'local'
-
+        scheme = urlparse(url).scheme
+        if scheme == 'file':
+            platform = 'local'
+        else:
+            logger.debug("scheme [%s] unknown \n"
+                         "Valid schemes [file, ssh]" % scheme)
+            #raise NotImplementedError()
+            return
     platform_object = models.Platform.objects.get(name=platform)
+    # FIXME: suffix root_path with username
     root_path = platform_object.root_path
+    # FIXME: URIs cannot contain unicode data, but IRI can. So need to convert IRI to URL
+    # if parameters can be non-ascii
+    # https://docs.djangoproject.com/en/dev/ref/unicode/#uri-and-iri-handling
     if is_relative_path:
-        relative_path = parsed_url.hostname
+        partial_path = parsed_url.path
+        if partial_path:
+            if partial_path[0] == os.path.sep:
+                partial_path = parsed_url.path[1:]
+        relative_path = os.path.join(parsed_url.hostname, partial_path)
+        logger.debug('host=%s path=%s relativepath=%s' % (parsed_url.hostname,
+                                                          partial_path,
+                                                          relative_path))
         url_with_pkey = '%s://%s/%s?key_filename=%s' \
                         '&username=%s&password=%s' \
                         '&root_path=%s' % (scheme, ip_address,
@@ -91,6 +128,113 @@ def get_url_with_pkey(settings, url_or_relative_path,
                                                        root_path)
     logger.debug("Destination %s url_pkey %s" % (str(is_relative_path), url_with_pkey))
     return url_with_pkey
+
+
+def get_remote_path(file_url):
+    """
+    Get the actual path for the file_url
+    """
+    logger.debug("file_url=%s" % file_url)
+
+    # TODO: the path should be constructed from the Platform model, not from the user setttings.
+
+    from urlparse import urlparse
+    o = urlparse(file_url)
+    scheme = o.scheme
+    mypath = o.path
+    logger.debug("scheme=%s" % scheme)
+    logger.debug("mypath=%s" % mypath)
+
+    if mypath[0] == os.path.sep:
+        mypath = mypath[1:]
+    logger.debug("mypath=%s" % mypath)
+
+    platform = o.username
+    platform_object = models.Platform.objects.get(name=platform)
+    root_path = platform_object.root_path
+
+    remote_path = os.path.join(root_path, mypath)
+
+    logger.debug("remote_path=%s" % remote_path)
+    return remote_path
+
+# def get_url_with_pkey(settings, url_or_relative_path,
+#                       is_relative_path=False, ip_address='127.0.0.1'):
+#     '''
+#      This method appends private key, username, passowrd and/or rootpath
+#      parameters at end of a url. If only relative path is passed,
+#      a url is constructed based on the data @url_or_relative_path and
+#      @settings.
+
+#     Suppose
+#         url_or_relative_path = 'nectar@new_payload'
+#         ip_address = 127.0.0.1
+#         root_path = /home/centos
+#     the platform is nectar and the relative path is new_payload
+#     The new url will be ssh://127.0.0.1/new_payload?root_path=/home/centos
+
+#     :param settings:
+#     :param url_or_relative_path:
+#     :param is_destination:
+#     :param ip_address:
+#     :return:
+#     '''
+#     username = settings['USER_NAME']
+#     password = settings['PASSWORD']
+#     private_key = ''
+#     scheme = 'file'
+
+#     if is_relative_path:
+#         url = 'http://' + url_or_relative_path
+#     else:
+#         url = url_or_relative_path
+#     parsed_url = urlparse(url)
+#     platform = parsed_url.username
+#     if platform == 'nectar':
+#         if 'PRIVATE_KEY_NECTAR' in settings:
+#             private_key = settings['PRIVATE_KEY_NECTAR']
+#         scheme = 'ssh'
+#     elif platform == 'nci':
+#         if 'PRIVATE_KEY_NCI' in settings:
+#             private_key = settings['PRIVATE_KEY_NCI']
+#         scheme = 'ssh'
+#     else:
+#         platform = 'local'
+
+#     platform_object = models.Platform.objects.get(name=platform)
+#     root_path = platform_object.root_path
+#     if is_relative_path:
+#         relative_path = parsed_url.hostname
+#         url_with_pkey = '%s://%s/%s?key_filename=%s' \
+#                         '&username=%s&password=%s' \
+#                         '&root_path=%s' % (scheme, ip_address,
+#                                            relative_path, private_key,
+#                                            username, password, root_path)
+#     else:
+#         url_with_pkey = url_or_relative_path + \
+#                         '?key_filename=%s&username=%s' \
+#                         '&password=%s&root_path=%s' % (private_key,
+#                                                        username, password,
+#                                                        root_path)
+#     logger.debug("Destination %s url_pkey %s" % (str(is_relative_path), url_with_pkey))
+#     return url_with_pkey
+
+
+def exists(context, *parts):
+    c = dict(context)
+    for p in parts:
+        if p in c:
+            c = c[p]
+        else:
+            logger.warn("%s not found in context" % p)
+            return False
+    return True
+
+
+def set_val(settings, k, v):
+    if not Stage.exists(settings, os.path.dirname(k)):
+            settings[os.path.dirname(k)] = {}
+    settings[os.path.dirname(k)][os.path.basename(k)] = v
 
 
 # This stage has no impact on other stages
@@ -169,7 +313,7 @@ class Create(Stage):
         #self.metadata = self._load_metadata_file()
 
         if True:
-            self.settings = utility.load_generic_settings()
+            self.boto_settings = utility.load_generic_settings()
             return True
 
     def _transform_the_filesystem(filesystem, settings):
@@ -196,7 +340,7 @@ class Create(Stage):
         #f = codecs.open('metadata.json', encoding='utf-8')
         #import json
         #metadata = json.loads(f.read())
-        print "Security Group ", self.settings.SECURITY_GROUP
+        print "Security Group ", self.boto_settings.SECURITY_GROUP
         pass
 
     def output(self, context):
