@@ -107,7 +107,7 @@ def create_VM_instances(number_vm_instances, settings):
         instance_count = 0
         logger.debug("Instance Count %d total %d" % (instance_count, number_vm_instances))
         while instance_count < number_vm_instances:
-            logger.debug(number_vm_instances)
+            #logger.debug(number_vm_instances)
             reservation = connection.run_instances(
                 image_id=settings['vm_image'],
                 min_count=1,
@@ -378,13 +378,15 @@ def _get_this_instance(instance_id, settings):
 def get_all_instances(settings):
     connection = _create_cloud_connection(settings)
     reservations = connection.get_all_instances()
-    logger.debug("Reservation %s" % reservations)
+    res = {}
+    #logger.debug("Reservation instances %s" % reservations)
     all_instances = []
     for reservation in reservations:
         nodes = reservation.instances
+        res[reservation] = nodes
         for i in nodes:
             all_instances.append(i)
-    logger.debug("Nodes=%s" % all_instances)
+    logger.debug("Nodes=%s" % res)
     return all_instances
 
 
@@ -407,7 +409,7 @@ def get_running_instances(settings):
     all_instances = get_all_instances(settings)
     running_instances = []
     for instance in all_instances:
-        logger.debug(len(all_instances))
+        #logger.debug(len(all_instances))
         if is_instance_running(instance.id, settings):
             running_instances.append(instance)
     return running_instances

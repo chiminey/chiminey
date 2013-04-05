@@ -33,7 +33,6 @@ class Command(BaseCommand):
             print "action aborted by user"
             return
 
-
         self.group, _ = Group.objects.get_or_create(name="standarduser")
         self.group.save()
 
@@ -49,9 +48,9 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas//files':
                 [u'general input files for directive',
                 {
-                u'file0': (models.ParameterName.STRING,''),
-                u'file1': (models.ParameterName.STRING,''),
-                u'file2': (models.ParameterName.STRING,''),
+                u'file0': (models.ParameterName.STRING, ''),
+                u'file1': (models.ParameterName.STRING, ''),
+                u'file2': (models.ParameterName.STRING, ''),
                 }
                 ],
              # Note that file schema ns must match regex
@@ -62,9 +61,9 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/smartconnector1/files':
                  [u'the smartconnector1 input files',
                  {
-                 u'file0': (models.ParameterName.STRING,''),
-                 u'file1': (models.ParameterName.STRING,''),
-                 u'file2': (models.ParameterName.STRING,''),
+                 u'file0': (models.ParameterName.STRING, ''),
+                 u'file1': (models.ParameterName.STRING, ''),
+                 u'file2': (models.ParameterName.STRING, ''),
                  }
                  ],
             u'http://rmit.edu.au/schemas/smartconnector_hrmc/files':
@@ -75,10 +74,10 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/smartconnector1/create':
                 [u'the smartconnector1 create stage config',
                 {
-                u'iseed': (models.ParameterName.NUMERIC,''),
-                u'num_nodes': (models.ParameterName.NUMERIC,''),
-                u'null_number': (models.ParameterName.NUMERIC,''),
-                u'parallel_number': (models.ParameterName.NUMERIC,''),
+                u'iseed': (models.ParameterName.NUMERIC, ''),
+                u'num_nodes': (models.ParameterName.NUMERIC, ''),
+                u'null_number': (models.ParameterName.NUMERIC, ''),
+                u'parallel_number': (models.ParameterName.NUMERIC, ''),
                 }
                 ],
             # we might want to reuse schemas in muliple contextsets
@@ -197,7 +196,9 @@ class Command(BaseCommand):
                 u'iseed': (models.ParameterName.NUMERIC,''),
                 u'input_location': (models.ParameterName.STRING,''),
                 u'number_dimensions': (models.ParameterName.NUMERIC,''),
-                u'threshold': (models.ParameterName.NUMERIC,''),
+                u'threshold': (models.ParameterName.STRING,''),  # FIXME: should be list of ints
+                u'error_threshold': (models.ParameterName.STRING,''),  # FIXME: should use float here
+                u'max_iteration': (models.ParameterName.NUMERIC,'')
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/configure':
@@ -236,6 +237,23 @@ class Command(BaseCommand):
                 u'payload_cloud_dirname': (models.ParameterName.STRING,''),
                 u'compile_file': (models.ParameterName.STRING,''),
                 u'retry_attempts': (models.ParameterName.NUMERIC,''),
+                u'error_nodes': (models.ParameterName.NUMERIC,''),
+                u'initial_numbfile': (models.ParameterName.NUMERIC,''),
+                u'random_numbers': (models.ParameterName.STRING, ''),
+                u'rand_index': (models.ParameterName.NUMERIC, '')
+                }
+                ],
+            u'http://rmit.edu.au/schemas/stages/transform':
+                [u'the transform stage of the smartconnector1',
+                {
+                u'transformed': (models.ParameterName.STRING,''),
+                }
+                ],
+            u'http://rmit.edu.au/schemas/stages/converge':
+                [u'the converge stage of the smartconnector1',
+                {
+                u'converged': (models.ParameterName.STRING,''),  # FIXME: use NUMERIC for booleans (with 0,1)
+                u'criterion': (models.ParameterName.STRING,''),  # Use STRING as float not implemented
                 }
                 ],
         }
@@ -254,7 +272,7 @@ class Command(BaseCommand):
             url = urlparse(ns)
 
             context_schema, _ = models.Schema.objects.get_or_create(
-                namespace=ns, defaults={'name': slugify(url.path), 'description': desc})
+                namespace=ns, defaults={'name': slugify(url.path.replace('/', ' ')), 'description': desc})
 
             for k, v in kv.items():
                 val, help_text = (v[0], v[1])
@@ -354,6 +372,10 @@ class Command(BaseCommand):
         self.create_package = "bdphpcprovider.smartconnectorscheduler.stages.create.Create"
         self.setup_package = "bdphpcprovider.smartconnectorscheduler.stages.setup.Setup"
         self.run_package = "bdphpcprovider.smartconnectorscheduler.stages.run.Run"
+        self.finished_package = "bdphpcprovider.smartconnectorscheduler.stages.finished.Finished"
+        self.transform_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc.transform.Transform"
+        self.converge_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc.converge.Converge"
+
         hrmc_composite_stage, _ = models.Stage.objects.get_or_create(name="hrmc_connector",
                                                                 description="Encapsultes HRMC smart connector workflow",
                                                                 package=self.parallel_package,
@@ -376,7 +398,7 @@ class Command(BaseCommand):
                 {
                     u'vm_size': "m1.small",
                     u'vm_image': "ami-0000000d",
-                    u'cloud_sleep_interval': 5,
+                    u'cloud_sleep_interval': 20,
                     u'security_group': '["ssh"]',
                     u'group_id_dir': 'group_id',
                     u'custom_prompt': '[smart-connector_prompt]$',
@@ -409,11 +431,32 @@ class Command(BaseCommand):
                     u'compile_file': 'HRMC',
                     u'retry_attempts': 3,
                     u'max_seed_int': 1000,  # FIXME: should we use maxint here?
+                    u'random_numbers': 'file://127.0.0.1/randomnums.txt'
                 },
             })
+
+        finished_stage, _ = models.Stage.objects.get_or_create(name="finished",
+                                                            description="This is finished stage of HRMC smart connector",
+                                                            parent=hrmc_composite_stage,
+                                                            package=self.finished_package,
+                                                            order=4)
+        finished_stage.update_settings({})
+
+        transform_stage, _ = models.Stage.objects.get_or_create(name="transform",
+                                                            description="This is transform stage of HRMC smart connector",
+                                                            parent=hrmc_composite_stage,
+                                                            package=self.transform_package,
+                                                            order=5)
+        transform_stage.update_settings({})
+
+        converge_stage, _ = models.Stage.objects.get_or_create(name="converge",
+                                                            description="This is converge stage of HRMC smart connector",
+                                                            parent=hrmc_composite_stage,
+                                                            package=self.converge_package,
+                                                            order=6)
+        converge_stage.update_settings({})
+
         comm, _ = models.Command.objects.get_or_create(platform=nectar_platform, directive=hrmc_smart_dir, stage=hrmc_composite_stage)
-
-
 
         print "done"
 

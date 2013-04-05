@@ -7,6 +7,7 @@ from bdphpcprovider.smartconnectorscheduler.sshconnector import open_connection
 from bdphpcprovider.smartconnectorscheduler.sshconnector import run_sudo_command
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import smartconnector
+from bdphpcprovider.smartconnectorscheduler import sshconnector
 from bdphpcprovider.smartconnectorscheduler.stages.errors import InsufficientResourceError
 from bdphpcprovider.smartconnectorscheduler.stages.errors import MissingConfigurationError
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
@@ -164,6 +165,8 @@ class Setup(Stage):
 
         for thread in threads_running:
             logger.debug("waiting on thread")
+            # TODO FIXME: need to look carefully at hanging where single task does not finish.  Need a
+            # timeout to restart the process.
             t.join()
         logger.debug("all threads are done")
 
@@ -181,7 +184,8 @@ class Setup(Stage):
         logger.debug("Setting up environment using makefile with target %s" % make_target)
         logger.info("Setup node with IP %s" % node_ip)
         ssh = open_connection(ip_address=node_ip, settings=settings)
-        run_sudo_command(ssh, command, settings, "")
+        #run_sudo_command(ssh, command, settings, "")
+        sshconnector.run_command_with_tty(ssh, command, settings)
 
     def get_make_path(self, destination):
         """

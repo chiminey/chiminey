@@ -17,15 +17,19 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
-from django.db import models
-from django.contrib.auth.models import User
-from django.core.exceptions import MultipleObjectsReturned
 import logging
 import os
 import json
 import logging.config
+from pprint import pformat
+
+from django.db import models
+from django.contrib.auth.models import User
+from django.core.exceptions import MultipleObjectsReturned
 
 from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
+from bdphpcprovider.smartconnectorscheduler.errors import deprecated
+
 
 logger = logging.getLogger(__name__)
 
@@ -253,7 +257,7 @@ class Stage(models.Model):
     The units of execution.
     """
     name = models.CharField(max_length=256,)
-    impl = models.CharField(max_length=256, null=True)
+    impl = models.CharField(max_length=256, null=True, blank=True)
     description = models.TextField(default="")
     order = models.IntegerField(default=0)
     parent = models.ForeignKey('self', null=True, blank=True)
@@ -425,6 +429,7 @@ class Context(models.Model):
     """
     owner = models.ForeignKey(UserProfile)
     current_stage = models.ForeignKey(Stage)
+    #deleted = models.BooleanField(default=False)
     CONTEXT_SCHEMA_NS = "http://rmit.edu.au/schemas/context1"
 
     def get_context(self):
@@ -447,7 +452,8 @@ class Context(models.Model):
 
         return context
 
-    def update_run_settings(self, run_settings):
+    @deprecated
+    def update_run_settings_old(self, run_settings):
         """
             update the run_settings associated with the context with new values from a map
         """
@@ -495,6 +501,66 @@ class Context(models.Model):
                     # TODO: need to check type
                     cp.value = v
                     cp.save()
+
+    def update_run_settings(self, run_settings):
+        """
+            update the run_settings associated with the context with new values from a map
+        """
+        logger.debug("run_settings=%s" % run_settings)
+        for schdata in run_settings:
+            logger.debug("schdata=%s" % schdata)
+            try:
+                sch = Schema.objects.get(namespace=schdata)
+            except Schema.DoesNotExist:
+                logger.error("schema %s does not exist" % schdata)
+                raise
+            except MultipleObjectsReturned:
+                logger.error("multiple schemas found for %s" % schdata)
+                raise
+
+            logger.debug("sch=%s" % sch)
+
+            paramset, _ = ContextParameterSet.objects.get_or_create(schema=sch, context=self)
+
+            logger.debug("paramset=%s" % paramset)
+            kvs = run_settings[schdata]
+
+            cp_to_delete = []
+            for pn in ContextParameter.objects.filter(paramset=paramset):
+                if not pn.name.name in kvs:
+                    cp_to_delete.append(pn.id)
+
+            logger.debug("cp_to_delete=%s" % pformat(cp_to_delete))
+            for pnid in cp_to_delete:
+                pn = ContextParameter.objects.get(id=pnid)
+                pn.delete()
+
+            for k in kvs:
+                v = kvs[k]
+
+                try:
+                    pn = ParameterName.objects.get(schema=sch,
+                        name=k)
+                except ParameterName.DoesNotExist:
+                    msg = "Unknown parameter '%s' for context '%s'" % (k, run_settings)
+                    logger.exception(msg)
+                    raise InvalidInputError(msg)
+                try:
+                    cp = ContextParameter.objects.get(name__name=k, paramset=paramset)
+                except ContextParameter.DoesNotExist:
+                    # TODO: need to check type
+                    logger.debug("new param =%s" % pn)
+                    cp = ContextParameter.objects.create(name=pn,
+                        paramset=paramset, value=v)
+                except MultipleObjectsReturned:
+                    logger.exception("Found duplicate entry in ContextParamterSet")
+                    raise
+                else:
+                    logger.debug("updating %s to %s" % (cp.name, v))
+                    # TODO: need to check type
+                    cp.value = v
+                    cp.save()
+
 
     def __unicode__(self):
         if self.current_stage:

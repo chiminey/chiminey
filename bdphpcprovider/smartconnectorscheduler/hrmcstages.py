@@ -31,15 +31,17 @@ import sys
 import re
 import collections
 from pprint import pformat
+from urlparse import urlparse, parse_qsl
 
 from django.utils.importlib import import_module
 from django.core.exceptions import ImproperlyConfigured
 from django.template import Context, Template
 from django.core.files.base import ContentFile
-
 from django.contrib.auth.models import User
-
-logger = logging.getLogger(__name__)
+from django.core.files.storage import FileSystemStorage
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+from storages.backends.sftpstorage import SFTPStorage
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, UI, SmartConnector, get_url_with_pkey
 from bdphpcprovider.smartconnectorscheduler.filesystem import FileSystem, DataObject
@@ -48,17 +50,12 @@ from bdphpcprovider.smartconnectorscheduler.botocloudconnector import create_env
 from bdphpcprovider.smartconnectorscheduler.errors import ContextKeyMissing, InvalidInputError
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
 from bdphpcprovider.smartconnectorscheduler import models
-
-from django.core.files.storage import FileSystemStorage
-
-from django.core.files.storage import default_storage
-from django.core.files.base import ContentFile
-from storages.backends.sftpstorage import SFTPStorage
-from urlparse import urlparse, parse_qsl
-
 from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 
+logger = logging.getLogger(__name__)
 
+
+@deprecated
 def get_filesys(context):
     """
     Return the filesys in the context
@@ -95,7 +92,7 @@ def retrieve_settings(profile):
         try:
             settings[param.name.name] = param.getValue()
         except Exception:
-            logger.error("Invalid settings values found for %s"% param)
+            logger.error("Invalid settings values found for %s" % param)
             raise BadInputException()
         logger.debug("%s %s %s" % (param.paramset.schema, param.name,
             param.getValue()))
@@ -113,6 +110,7 @@ def get_file_from_context(context, fname):
     content = remote_fs.open(f).read()
     return content
 
+
 def get_settings(context):
     """
     Return contents of config.sys file as a dictionary
@@ -127,7 +125,7 @@ def get_settings(context):
         #logger.debug("settings_text= %s" % settings_text)
         settings = dict(json.loads(settings_text))
         return settings
-    except ContextKeyMissing, e:
+    except ContextKeyMissing:
         logger.debug('ContextKeyMissing exception')
         raise
 
@@ -143,12 +141,13 @@ def _get_run_info_file(context):
     return config
 
 
+@deprecated
 def get_run_info(context):
     """
     Returns the content of the run info as file a dict. If problem, return {}
     """
     try:
-        fsys = get_filesys(context)
+        get_filesys(context)
     except ContextKeyMissing:
         return {}
     #logger.debug("fsys= %s" % fsys)
@@ -163,6 +162,7 @@ def get_run_info(context):
     return {}
 
 
+@deprecated
 def get_all_settings(context):
     """
     Returns a single dict containing content of config.sys and runinfo.sys
@@ -174,6 +174,7 @@ def get_all_settings(context):
     return settings
 
 
+@deprecated
 def update_key(key, value, context):
     """
     Updates key from the filesystem runinfo.sys file to a new values
@@ -323,7 +324,7 @@ def _get_command_actual_args(directive_args, user_settings):
                         metadata_schema = models.Schema.objects.get(namespace=sch)
                     except models.Schema.DoesNotExist:
                         msg = "schema %s does not exist choices are " % sch
-                        msg += ",".join([ x.namespace for x in models.Schema.objects.all()])
+                        msg += ",".join([x.namespace for x in models.Schema.objects.all()])
                         logger.exception(msg)
                         raise
                     variables = metadata[1:]
@@ -357,7 +358,7 @@ def _get_command_actual_args(directive_args, user_settings):
             # caching or maybe remote resolution?
             if rendering_context:
                 source_url = get_url_with_pkey(user_settings, file_url)
-                content = get_file(source_url).decode('utf-8')  #  FIXME: assume template are unicode, not bytestrings
+                content = get_file(source_url).decode('utf-8')  # FIXME: assume template are unicode, not bytestrings
                 logger.debug("content=%s" % content)
                 # Parse file parameter and retrieve data
                 logger.debug("file_url %s" % file_url)
@@ -429,7 +430,7 @@ def get_value(key, dictionary):
 
 def get_http_url(non_http_url):
     curr_scheme = non_http_url.split(':')[0]
-    http_url = "http" + non_http_url[len(curr_scheme): ]
+    http_url = "http" + non_http_url[len(curr_scheme):]
     return http_url
 
 
@@ -449,17 +450,25 @@ def delete_files(url, exceptions=None):
     fsys = get_filesystem(url)
     logger.debug("fsys=%s" % pformat(fsys))
 
-    current_content = fsys.listdir(path)
+    try:
+        current_content = fsys.listdir(path)
+    except OSError:
+        current_content = []
     logger.debug("current_content=%s" % pformat(current_content))
     current_path_pointer = path
     file_path_holder = []
     dir_path_holder = []
     while len(current_content) > 0:
-        for i in current_content[1]:
-            if i in exceptions:
+        logger.debug("Current Content %s " % pformat(current_content))
+        for fname in current_content[1]:
+            logger.debug("fname=%s" % fname)
+            if fname in exceptions:
+                logger.debug("not deleting %s" % fname)
                 continue
-            file_path = str(os.path.join(current_path_pointer, i))
+            file_path = str(os.path.join(current_path_pointer, fname))
+            logger.debug("file_path=%s" % file_path)
             file_path_holder.append(file_path)
+            # FIXME: detect permission/existnce of file_path
             fsys.delete(file_path)
             logger.debug('filepath=%s deleted' % file_path)
             #content = fs.open(file_path).read()
@@ -468,9 +477,9 @@ def delete_files(url, exceptions=None):
             #                + destination_suffix
             #logger.debug("Current destination url %s" % curr_dest_url)
             #put_file(curr_dest_url, content)
-        for j in current_content[0]:
-            list = [os.path.join(current_path_pointer, j), True]
-            dir_path_holder.append(list)
+        for dirname in current_content[0]:
+            abs_dirname = [os.path.join(current_path_pointer, dirname), True]
+            dir_path_holder.append(abs_dirname)
 
         current_content = []
         for k in dir_path_holder:
@@ -503,6 +512,8 @@ def list_dirs(url, list_files=False):
 
 
 def get_filesystem(url):
+    """
+    """
     scheme = urlparse(url).scheme
     http_url = get_http_url(url)
     parsed_url = urlparse(http_url)
@@ -594,7 +605,7 @@ def copy_directories(source_url, destination_url):
             file_path_holder.append(file_path)
             content = fs.open(file_path).read()  # Can't we just call get_file ?
             logger.debug("content loaded")
-            updated_file_path = file_path[len(source_path)+1:]
+            updated_file_path = file_path[len(source_path) + 1:]
             curr_dest_url = os.path.join(destination_prefix, updated_file_path) \
                             + destination_suffix
             logger.debug("Current destination url %s" % curr_dest_url)
@@ -616,10 +627,31 @@ def copy_directories(source_url, destination_url):
     logger.debug(dir_path_holder)
     logger.debug("end of copy_directories")
 
+# def copy_files_with_pattern(self, local_filesystem, source_dir,
+#                              dest_dir, pattern, overwrite=True):
+#     import fnmatch, fs
+#     pattern_source_dir = path.join(
+#         local_filesystem, source_dir)
+#     for file in self.connector_fs.listdir(pattern_source_dir):
+#         if fnmatch.fnmatch(file, pattern):
+#             try:
+#                 logger.debug("To be copied %s " % os.path.join(pattern_source_dir,
+#                     file))
+#                 logger.debug("Dest %s " % os.path.join(dest_dir, file))
+#                 self.connector_fs.copy(path.join(pattern_source_dir,
+#                     file),
+#                     path.join(dest_dir, file),
+#                     overwrite)
+#             except ResourceNotFoundError, e:
+#                 import sys, traceback
+#                 traceback.print_exc(file=sys.stdout)
+
+#                 raise IOError(e)  # FIXME: make filesystem specfic exceptions
+
 
 def put_file(file_url, content):
     """
-    Writes out the content to the file_url using config info from user_settings
+    Writes out the content to the file_url using config info from user_settings. Note that content is bytecodes
     """
     logger.debug("file_url=%s" % file_url)
     scheme = urlparse(file_url).scheme
@@ -684,6 +716,20 @@ def get_file(file_url):
     Reads in content at file_url using config info from user_settings
     Returns byte strings
     """
+    fp = get_filep(file_url)
+    content = fp.read()
+
+    if content and (len(content) > 100):
+        logger.debug("content(abbrev)=\n%s\n ... \n%s\nEOF\n" % (content[:100], content[-100:]))
+    else:
+        logger.debug("content=%s" % content)
+    return content
+
+
+def get_filep(file_url):
+    """
+    opens a django file pointer to file_url
+    """
     logger.debug("file_url=%s" % file_url)
 
     scheme = urlparse(file_url).scheme
@@ -708,8 +754,9 @@ def get_file(file_url):
     if scheme == 'http':
         import urllib2
         req = urllib2.Request(o)
-        response = urllib2.urlopen(req)
-        content = response.read()
+        fp = urllib2.urlopen(req)
+
+        #content = response.read()
     elif scheme == "ssh":
         logger.debug("getting from hpc")
         key_filename = get_value('key_filename', query_settings)
@@ -731,8 +778,8 @@ def get_file(file_url):
         logger.debug("mypath=%s" % mypath)
         fp = fs.open(mypath)
         logger.debug("fp opened")
-        content = fp.read()
-        logger.debug("content=%s" % content)
+        #content = fp.read()
+        #logger.debug("content=%s" % content)
     elif scheme == "tardis":
         return "a={{a}} b={{b}}"
         raise NotImplementedError("tardis scheme not implemented")
@@ -740,10 +787,10 @@ def get_file(file_url):
         root_path = get_value('root_path', query_settings)
         logger.debug("self.root_path=%s" % root_path)
         fs = LocalStorage(location=root_path + "/")
-        content = fs.open(mypath).read()
-        logger.debug("content=%s" % content)
-    logger.debug("content=%s" % content)
-    return content
+        fp = fs.open(mypath)
+        #content = fs.open(mypath).read()
+        #logger.debug("content=%s" % content)
+    return fp
 
 
 def make_runcontext_for_directive(platform_name, directive_name,
@@ -752,8 +799,6 @@ def make_runcontext_for_directive(platform_name, directive_name,
     Create a new runcontext with the commmand equivalent to the directive on the platform.
     """
     logger.debug("Platform Name %s" % platform_name)
-
-
     user = User.objects.get(username=username)  # FIXME: pass in username
     profile = models.UserProfile.objects.get(user=user)
     platform = models.Platform.objects.get(name=platform_name)
