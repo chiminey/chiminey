@@ -161,64 +161,6 @@ def _get_paths(sftp, dir):
     return dirs
 
 
-def get_output(fs, instance_id, output_dir, settings):
-    """
-        Retrieve the output from the task on the node
-    """
-    logger.info("get_output %s" % instance_id)
-    output_dir = os.path.join(fs, fs.get_global_filesystem(),
-                                   output_dir,
-                                   instance_id)
-    logger.debug("new output_dir = %s" % output_dir)
-    directory_created = False
-    while not directory_created:
-        try:
-            os.makedirs(output_dir)  # NOTE: makes intermediate directories
-            directory_created = True
-        except OSError, e:
-            logger.debug("output directory %s already exists: %s Deleting the existing directory ...\
-                         " % (output_dir, output_dir))
-            import shutil
-            shutil.rmtree(output_dir)
-            logger.debug("Existing directory %s along with its previous content deleted" % output_dir)
-            logger.debug("Empty directory %s created" % output_dir)
-            #sys.exit(1)
-    logger.info("output directory is %s" % output_dir)
-
-    cloud_path = os.path.join(settings['PAYLOAD_DESTINATION'],
-                              settings['PAYLOAD_CLOUD_DIRNAME'])
-    logger.debug("cloud_path=%s" % cloud_path)
-    logger.debug("Transferring output from %s to %s" % (cloud_path, output_dir))
-    ip = botocloudconnector.get_instance_ip(instance_id, settings)
-    ssh = open_connection(ip_address=ip, settings=settings)
-    ftp = ssh.open_sftp()
-
-    paths = _get_paths(ftp, cloud_path)
-    logger.debug("paths = %s" % paths)
-
-    relative_paths = []
-    for p in paths:
-        relative_paths.append(p[len(cloud_path) + 1:])
-    logger.debug("relative_paths = %s" % relative_paths)
-    for p in relative_paths:
-        source = os.path.join(cloud_path, p)
-        dest = os.path.join(output_dir, p)
-        logger.debug("%s to %s" % (source, dest))
-        if isdir(ftp, source):
-            try:
-                os.makedirs(dest)
-            except os.error:
-                pass
-
-    for p in relative_paths:
-        source = os.path.join(cloud_path, p)
-        dest = os.path.join(output_dir, p)
-        logger.debug("%s to %s" % (source, dest))
-        if not isdir(ftp, source):
-            ftp.get(source, dest)
-
-    ftp.close()
-    ssh.close()
 
 
 def get_post_output(instance_id, output_dir, settings):

@@ -46,9 +46,7 @@ class Create(Stage):
         if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/create', 'group_id'):
             if self._exists(run_settings, 'http://rmit.edu.au/schemas/system', 'platform'):
                 self.platform = run_settings['http://rmit.edu.au/schemas/system'][u'platform']
-            logger.debug("Create Stage: Triggered")
             return True
-        logger.debug("Create Stage: Not Triggered")
         return False
 
     def process(self, run_settings):

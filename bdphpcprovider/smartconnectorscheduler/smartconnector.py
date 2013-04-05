@@ -65,6 +65,7 @@ def get_url_with_pkey(settings, url_or_relative_path,
     the platform is nectar and the relative path is new_payload
     The new url will be ssh://127.0.0.1/new_payload?root_path=/home/centos
 
+    #TODO: make testcase for above example
     :param settings:
     :param url_or_relative_path:
     :param is_relative_path:
@@ -79,6 +80,7 @@ def get_url_with_pkey(settings, url_or_relative_path,
         url = 'http://' + url_or_relative_path
     else:
         url = url_or_relative_path
+    logger.debug("url_or_relative_path=%s" % url_or_relative_path)
     parsed_url = urlparse(url)
     platform = parsed_url.username
     if platform == 'nectar':
@@ -91,6 +93,9 @@ def get_url_with_pkey(settings, url_or_relative_path,
         username = settings['nci_user']
         password = settings['nci_password']
         scheme = 'ssh'
+    elif not platform:
+        platform = 'local'
+        scheme = 'file'
     else:
         scheme = urlparse(url).scheme
         if scheme == 'file':
@@ -121,9 +126,8 @@ def get_url_with_pkey(settings, url_or_relative_path,
                                            relative_path, private_key,
                                            username, password, root_path)
     else:
-        url_with_pkey = url_or_relative_path + \
-                        '?key_filename=%s&username=%s' \
-                        '&password=%s&root_path=%s' % (private_key,
+        url_with_pkey = '%s?key_filename=%s&username=%s' \
+                        '&password=%s&root_path=%s' % (url_or_relative_path, private_key,
                                                        username, password,
                                                        root_path)
     logger.debug("Destination %s url_pkey %s" % (str(is_relative_path), url_with_pkey))

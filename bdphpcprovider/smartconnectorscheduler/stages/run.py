@@ -27,7 +27,8 @@ import json
 import re
 import tempfile
 from itertools import product
-from random import randrange
+from pprint import pformat
+
 
 from django.template import Context, Template
 
@@ -50,7 +51,7 @@ class Run(Stage):
     def __init__(self, user_settings=None):
         self.user_settings = user_settings.copy()
         self.numbfile = 0
-        self.initial_numbfile = 1
+        self.job_dir = "hrmcrun"  # TODO: make a stageparameter + suffix on real job number
         self.boto_settings = user_settings.copy()
         logger.debug("Run stage initialized")
 
@@ -60,14 +61,15 @@ class Run(Stage):
          input_dir is assumed to be populated.
         """
 
-        logger.debug('Trigger run stage?')
-
+        # TODO: we assume initial input is in "%s/input_0" % self.job_dir
+        # in configure stage we could copy initial data in 'input_location' into this location
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/system/misc', u'id'):
             self.id = run_settings['http://rmit.edu.au/schemas/system/misc'][u'id']
-            self.iter_inputdir = run_settings['http://rmit.edu.au/schemas/hrmc']['input_location'] + "_%s" % self.id
+            self.iter_inputdir = os.path.join(self.job_dir, "input_%s" % self.id)
         else:
+            # FIXME: not fully tested
             self.id = 0
-            self.iter_inputdir = run_settings['http://rmit.edu.au/schemas/hrmc']['input_location']
+            self.iter_inputdir = os.path.join(self.job_dir, "input_location")
 
         # if 'id' in self.boto_settings:
         #     self.id = self.boto_settings['id']
@@ -91,6 +93,20 @@ class Run(Stage):
         #     logger.warn("no group_id found when expected")
         #     return False
         logger.debug("group_id = %s" % self.group_id)
+
+        if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run', u'initial_numbfile'):
+            self.initial_numbfile = run_settings['http://rmit.edu.au/schemas/stages/run'][u'initial_numbfile']
+        else:
+            logger.warn("setting initial_numbfile for first iteration")
+            self.initial_numbfile = 1
+
+        if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run', u'rand_index'):
+            self.rand_index = run_settings['http://rmit.edu.au/schemas/stages/run'][u'rand_index']
+        else:
+            logger.warn("setting rand_index for first iteration")
+            self.rand_index = run_settings['http://rmit.edu.au/schemas/hrmc']['iseed']
+
+        logger.debug("rand_index=%s" % self.rand_index)
 
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/setup', u'setup_finished'):
             if run_settings['http://rmit.edu.au/schemas/stages/setup'][u'setup_finished']:
@@ -127,27 +143,31 @@ class Run(Stage):
                     'http://rmit.edu.au/schemas/stages/create/nectar_username')
                 smartconnector.copy_settings(self.boto_settings, run_settings,
                     'http://rmit.edu.au/schemas/stages/create/nectar_password')
+                smartconnector.copy_settings(self.boto_settings, run_settings,
+                    'http://rmit.edu.au/schemas/stages/run/random_numbers')
                 self.boto_settings['private_key'] = self.user_settings['nectar_private_key']
                 self.boto_settings['username'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_username']
                 self.boto_settings['password'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
 
                 logger.debug("setup_nodes = %s" % setup_nodes)
-                packaged_nodes = len(botocloudconnector.get_rego_nodes(self.group_id,
-                    self.boto_settings))
-                logger.debug("packaged_nodes = %s" % packaged_nodes)
+                # TODO: remove need to call cloud during triggered() because this is an expensive operation
+                #packaged_nodes = len(botocloudconnector.get_rego_nodes(self.group_id,
+                #    self.boto_settings))
+                #logger.debug("packaged_nodes = %s" % packaged_nodes)
 
                 if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run'):
                     run_settings['http://rmit.edu.au/schemas/stages/run'] = {}
                 if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run', u'runs_left'):
                     logger.debug("found runs_left")
                     return False
-                if packaged_nodes == setup_nodes:
-                    logger.debug("Run triggered")
-                    return True
-                else:
-                    logger.error("Indicated number of setup nodes does not match allocated number")
-                    logger.error("%s != %s" % (packaged_nodes, setup_nodes))
-                    return False
+                return True
+                # The process tages will recheck this anyway
+                # if packaged_nodes == setup_nodes:
+                #     return True
+                # else:
+                #     logger.error("Indicated number of setup nodes does not match allocated number")
+                #     logger.error("%s != %s" % (packaged_nodes, setup_nodes))
+                #     return False
 
         logger.info("setup was not finished")
         return False
@@ -185,7 +205,9 @@ class Run(Stage):
         makefile_path = settings['payload_destination']
         command = "cd %s; make %s" % (makefile_path, 'startrun')
         logger.debug("command=%s" % command)
-        sshconnector.run_sudo_command_with_status(ssh, command, settings, instance_id)
+        #sshconnector.run_sudo_command_with_status(ssh, command, settings, instance_id)
+
+        command_out, _ = sshconnector.run_command_with_status(ssh, command)
 
         # run_command(ssh, "cd %s; ./%s >& %s &\
         # " % (os.path.join(settings['PAYLOAD_DESTINATION'],
@@ -321,38 +343,52 @@ class Run(Stage):
                 hrmcstages.delete_files(dest_files_url, exceptions=exceptions)
                 source_files_url = smartconnector.get_url_with_pkey(self.boto_settings,
                                                           os.path.join(self.iter_inputdir,
-                                                                       input_dir))
+                                                                       input_dir), is_relative_path=True)
                 logger.debug('source_files_url=%s' % source_files_url)
                 hrmcstages.copy_directories(source_files_url, dest_files_url)
 
-                # then create template variated file
-                from bdphpcprovider.smartconnectorscheduler import models
-                platform_object = models.Platform.objects.get(name='local')
-                root_path = platform_object.root_path
+                # # then create template variated file
+                # from bdphpcprovider.smartconnectorscheduler import models
+                # platform_object = models.Platform.objects.get(name='local')
+                # root_path = platform_object.root_path
 
-                sysTemp = tempfile.gettempdir()
-                myTemp = os.path.join(sysTemp, root_path)
-                varied_fdir = tempfile.mkdtemp(suffix='foo', prefix='bar', dir=myTemp)
+                # sysTemp = tempfile.gettempdir()
+                # myTemp = os.path.join(sysTemp, root_path, self.job_dir)
+                # varied_fdir = tempfile.mkdtemp(suffix='foo', prefix='bar', dir=myTemp)
 
-                #varied_fdir = tempfile.mkdtemp()
-                logger.debug("varied_fdir=%s" % varied_fdir)
-                fpath = os.path.join(varied_fdir, var_fname)
-                f = open(fpath, "w")
-                f.write(var_content)
-                f.close()
+                # Why do we need to create a tempory file to make this copy?
+                import uuid
+                randsuffix = unicode(uuid.uuid4())  # should use some job id here
 
-                # plus store used val in substitution incase next iter needs them.
-                values_fname = "%s_values" % var_fname
-                vpath = os.path.join(varied_fdir, values_fname)
-                v = open(vpath, "w")
-                v.write(json.dumps(values))
-                v.close()
+                var_url = smartconnector.get_url_with_pkey(self.boto_settings, os.path.join("tmp%s" % randsuffix, "var"),
+                    is_relative_path=True)
+                logger.debug("var_url=%s" % var_url)
+                hrmcstages.put_file(var_url, var_content.encode('utf-8'))
 
-                tmp_dir_basename = os.path.basename(varied_fdir)
-                var_url = 'file://localhost/%s/%s?root_path=%s' % (tmp_dir_basename, var_fname, root_path)
-                var_content = hrmcstages.get_file(var_url)
-                values_url = 'file://localhost/%s/%s?root_path=%s' % (tmp_dir_basename, values_fname, root_path)
-                values_content = hrmcstages.get_file(values_url)
+                value_url = smartconnector.get_url_with_pkey(self.boto_settings, os.path.join("tmp%s" % randsuffix, "value"),
+                    is_relative_path=True)
+                logger.debug("value_url=%s" % value_url)
+                hrmcstages.put_file(value_url, json.dumps(values))
+
+                # #varied_fdir = tempfile.mkdtemp()
+                # logger.debug("varied_fdir=%s" % varied_fdir)
+                # fpath = os.path.join(varied_fdir, var_fname)
+                # f = open(fpath, "w")
+                # f.write(var_content)
+                # f.close()
+
+                # # plus store used val in substitution incase next iter needs them.
+                #values_fname = "%s_values" % var_fname
+                # vpath = os.path.join(varied_fdir, values_fname)
+                # v = open(vpath, "w")
+                # v.write(json.dumps(values))
+                # v.close()
+
+                # tmp_dir_basename = os.path.basename(varied_fdir)
+                # var_url = 'file://localhost/%s/%s?root_path=%s' % (tmp_dir_basename, var_fname, root_path)
+                # var_content = hrmcstages.get_file(var_url)
+                # values_url = 'file://localhost/%s/%s?root_path=%s' % (tmp_dir_basename, values_fname, root_path)
+                # values_content = hrmcstages.get_file(values_url)
 
                 # and overwrite on the remote
                 var_fname_remote = self.boto_settings['platform']\
@@ -361,20 +397,22 @@ class Run(Stage):
                                          var_fname)
                 var_fname_pkey = smartconnector.get_url_with_pkey(self.boto_settings, var_fname_remote,
                                                         is_relative_path=True, ip_address=ip)
+                var_content = hrmcstages.get_file(var_url)
                 hrmcstages.put_file(var_fname_pkey, var_content)
-
                 logger.debug("var_fname_pkey=%s" % var_fname_pkey)
-                logger.debug("var_content=%s" % var_content)
-                logger.debug("json values=%s" % json.dumps(values))
                 values_fname_pkey = smartconnector.get_url_with_pkey(self.boto_settings,
                                                            os.path.join(dest_files_location,
-                                                                        values_fname),
+                                                                        "%s_values" % var_fname),
                                                            is_relative_path=True, ip_address=ip)
+                values_content = hrmcstages.get_file(value_url)
                 hrmcstages.put_file(values_fname_pkey, values_content)
                 logger.debug("values_fname_pkey=%s" % values_fname_pkey)
                 # cleanup
-                import shutil
-                shutil.rmtree(varied_fdir)
+
+                tmp_url = smartconnector.get_url_with_pkey(self.boto_settings, os.path.join("tmp%s" % randsuffix),
+                    is_relative_path=True)
+                logger.debug("deleting %s" % tmp_url)
+                #hrmcstages.delete_files(url)
 
     def _generate_variations(self, input_dir, run_settings):
         """
@@ -384,7 +422,7 @@ class Run(Stage):
 
         fname_url_with_pkey = smartconnector.get_url_with_pkey(self.boto_settings,
                                                os.path.join(self.iter_inputdir,
-                                                            input_dir))
+                                                            input_dir), is_relative_path=True)
         input_files = hrmcstages.list_dirs(fname_url_with_pkey, list_files=True)
 
         variations = {}
@@ -397,9 +435,8 @@ class Run(Stage):
                 # get the template
                 basename_url_with_pkey = smartconnector.get_url_with_pkey(self.boto_settings,
                                                        os.path.join(self.iter_inputdir,
-                                                                    input_dir, fname))
+                                                                    input_dir, fname), is_relative_path=True)
                 template = hrmcstages.get_file(basename_url_with_pkey)
-
 
                 base_fname = template_mat.group(1)
                 logger.debug("base_fname=%s" % base_fname)
@@ -409,7 +446,7 @@ class Run(Stage):
                 try:
                     values_url_with_pkey = smartconnector.get_url_with_pkey(self.boto_settings,
                                                            os.path.join(self.iter_inputdir,
-                                                                        input_dir, '%s_values' % base_fname))
+                                                                        input_dir, '%s_values' % base_fname), is_relative_path=True)
 
                     logger.debug("values_file=%s" % values_url_with_pkey)
                     values_content = hrmcstages.get_file(values_url_with_pkey)
@@ -430,28 +467,35 @@ class Run(Stage):
                 num_dim = run_settings['number_dimensions']
                 # variations map spectification
                 if num_dim == 1:
+
                     N = run_settings['number_vm_instances']
+                    rand_nums = self._generate_rands(
+                        0, self.boto_settings['max_seed_int'],
+                        N)
                     map = {
                         'temp': [300],
-                        'iseed': [randrange(0, self.boto_settings['max_seed_int'])
-                                  for x in xrange(0, N)],
+                        'iseed': rand_nums,
                         'istart': [1 if self.id > 0 else 2]
                     }
                 elif num_dim == 2:
                     self.threshold = run_settings['threshold']
                     N = int(self.threshold[0])
-                    map = {
-                        'temp': [300],
-                        'iseed': [randrange(0, self.boto_settings['max_seed_int'])
-                                  for x in xrange(0, 4 * N)],
-                        'istart': [2]
-
-                    }
-                    if self.id > 0:
+                    if not self.id:
+                        rand_nums = self._generate_rands(
+                            0, self.boto_settings['max_seed_int'],
+                            4 * N)
+                        map = {
+                            'temp': [300],
+                            'iseed': rand_nums,
+                            'istart': [2]
+                        }
+                    else:
+                        rand_nums = self._generate_rands(
+                            0, self.boto_settings['max_seed_int'],
+                            1)
                         map = {
                             'temp': [i for i in [300, 700, 1100, 1500]],
-                            'iseed': [randrange(0,
-                                                self.boto_settings['max_seed_int'])],
+                            'iseed': rand_nums,
                             'istart': [1]
 
                         }
@@ -476,21 +520,29 @@ class Run(Stage):
         logger.debug('Variations %s' % variations)
         return variations
 
+    def _generate_rands(self, start_range,  end_range, num_required):
+        rand_nums = []
+        num_url = smartconnector.get_url_with_pkey(self.boto_settings, self.boto_settings['random_numbers'],
+            is_relative_path=False)
+        random_content = hrmcstages.get_file(num_url)
+        # FIXME: this loads the entire file, which could be very large.
+        for i, line in enumerate(random_content.split('\n')):
+            if self.rand_index <= i < (self.rand_index + num_required):
+                raw_num = float(line)
+                num = int((raw_num * float(end_range - start_range)) + start_range)
+                logger.debug("[0,1) %s -> [%s,%s) %s" % (raw_num, start_range, end_range, num))
+                rand_nums.append(num)
+        self.rand_index += num_required
+        logger.debug("Generated %s random numbers from %s in range [%s, %s): %s "
+            % (num_required, num_url, start_range, end_range, pformat(rand_nums)))
+        return rand_nums
+
     def _prepare_inputs(self):
         """
         Upload all input files for this run
         """
         logger.debug("preparing inputs")
 
-        # FIXME: this is domain specific code
-        if 'iseed' in self.boto_settings:
-            seed = self.boto_settings['iseed']
-        else:
-            seed = 42
-            logger.warn("No seed specified. Using default value")
-
-        import random
-        random.seed(seed)
 
         # TODO: to ensure reproducability, may want to precalculate all random numbers and
         # store rather than rely on canonical execution of rest of this funciton.
@@ -509,7 +561,7 @@ class Run(Stage):
         nodes = sorted(botocloudconnector.get_rego_nodes(self.group_id, self.boto_settings))
         self.node_ind = 0
         logger.debug("Iteration Input dir %s" % self.iter_inputdir)
-        url_with_pkey = smartconnector.get_url_with_pkey(self.boto_settings, self.iter_inputdir)
+        url_with_pkey = smartconnector.get_url_with_pkey(self.boto_settings, self.iter_inputdir, is_relative_path=True)
         logger.debug("url_with_pkey=%s" % url_with_pkey)
         input_dirs = hrmcstages.list_dirs(url_with_pkey)
         if not input_dirs:
@@ -543,5 +595,8 @@ class Run(Stage):
 
         if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run'):
             run_settings['http://rmit.edu.au/schemas/stages/run'] = {}
-        run_settings['http://rmit.edu.au/schemas/stages/run']['runs_left'] = len(nodes)
+        run_settings['http://rmit.edu.au/schemas/stages/run'][u'runs_left'] = len(nodes)
+        run_settings['http://rmit.edu.au/schemas/stages/run'][u'initial_numbfile'] = self.initial_numbfile
+        run_settings['http://rmit.edu.au/schemas/stages/run'][u'rand_index'] = self.rand_index
+
         return run_settings

@@ -39,6 +39,8 @@ import logging.config
 from bdphpcprovider.smartconnectorscheduler.botocloudconnector import get_instance_ip
 from bdphpcprovider.smartconnectorscheduler.sshconnector import put_file, open_connection, find_remote_files, get_file
 
+from bdphpcprovider.smartconnectorscheduler.errors import deprecated
+
 
 logger = logging.getLogger(__name__)
 
@@ -281,6 +283,7 @@ class FileSystem(object):
         except ResourceNotFoundError as e:
             raise IOError(e)  # FIXME: make filesystem specfic exceptions
 
+    @deprecated
     def copy_files_with_pattern(self, local_filesystem, source_dir,
                                  dest_dir, pattern, overwrite=True):
         import fnmatch, fs

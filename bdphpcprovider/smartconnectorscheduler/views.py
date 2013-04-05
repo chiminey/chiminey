@@ -232,9 +232,12 @@ def test_directive(request, directive_id):
                 ['',
                     ['http://rmit.edu.au/schemas/hrmc',
                         ('number_vm_instances', 2), (u'iseed', 42),
-                        ('input_location',  'file://127.0.0.1/local/testinput'),
+                        # TODO: in configure stage could copy this information from somewhere to this required location
+                        ('input_location',  'file://127.0.0.1/hrmcrun/input_0'),
                         ('number_dimensions', 1),
-                        ('threshold', 1)
+                        ('threshold', "[1]"),
+                        ('error_threshold', "0.03"),
+                        ('max_iteration', 20)
                     ]
                 ])
 
@@ -250,6 +253,7 @@ def test_directive(request, directive_id):
             logger.debug("directive_name=%s" % directive_name)
             logger.debug("directive_args=%s" % directive_args)
 
+            # TODO: each user should only be have one outstanding task at a time (though system would work with more!)
             (run_settings, command_args, run_context) = hrmcstages.make_runcontext_for_directive(
                 platform,
                 directive_name,

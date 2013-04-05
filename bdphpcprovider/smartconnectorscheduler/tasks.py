@@ -1,5 +1,7 @@
 from celery.task import task
 import celery
+from pprint import pformat
+
 from django.db import transaction
 from django.db import DatabaseError
 from bdphpcprovider.smartconnectorscheduler import models
@@ -10,7 +12,25 @@ from copy import deepcopy
 import logging
 import logging.config
 
+# for celery 3.0
+#from celery.utils.log import get_task_logger
+#logger = get_task_logger(__name__)
+
 logger = logging.getLogger(__name__)
+
+# from celery.signals import after_setup_task_logger
+
+# def foo_tasks_setup_logging(**kw):
+#     logger = logging.getLogger('foo.tasks')
+#     if not logger.handlers:
+#         handler = logging.FileHandler('tasks.log')
+#         formatter = logging.Formatter(logging.BASIC_FORMAT) # you may want to customize this.
+#         handler.setFormatter(formatter)
+#         logger.addHandler(handler)
+#         logger.propagate = False
+
+# after_setup_task_logger.connect(foo_tasks_setup_logging)
+
 
 
 def transfer(old, new):
@@ -30,7 +50,7 @@ def test():
     print "Hello World"
 
 
-@task(name="smartconnectorscheduler.run_contexts", time_limit=6000, ignore_result=True)
+@task(name="smartconnectorscheduler.run_contexts", time_limit=10000, ignore_result=True)
 def run_contexts():
     try:
         for context in models.Context.objects.all():
@@ -39,7 +59,7 @@ def run_contexts():
         logger.warn("Context removed from other thread")
 
 
-@task(name="smartconnectorscheduler.progress_context",time_limit=3000, ignore_result=True)
+@task(name="smartconnectorscheduler.progress_context",time_limit=10000, ignore_result=True)
 def progress_context(context_id):
     try:
         run_context = models.Context.objects.get(id=context_id)
@@ -95,26 +115,28 @@ def progress_context(context_id):
             #task_run_settings.update(stage_settings)
             logger.debug("task run_settings=%s" % task_run_settings)
 
+            logger.debug("Stage '%s' testing for triggering" % current_stage.name)
             if stage.triggered(deepcopy(task_run_settings)):
-                logger.debug("triggered")
+                logger.debug("Stage '%s' TRIGGERED" % current_stage.name)
                 stage.process(deepcopy(task_run_settings))
                 task_run_settings = stage.output(task_run_settings)
-                logger.debug("updated task_run_settings=%s" % task_run_settings)
+                logger.debug("updated task_run_settings=%s" % pformat(task_run_settings))
                 run_context.update_run_settings(task_run_settings)
-                logger.debug("task_run_settings=%s" % task_run_settings)
+                logger.debug("task_run_settings=%s" % pformat(task_run_settings))
                 logger.debug("context run_settings=%s" % run_context)
 
                 triggered = True
                 break
             else:
-                logger.debug("not triggered")
+                logger.debug("Stage '%s' NOT TRIGGERED" % current_stage.name)
 
         if not triggered:
-            logger.debug("none triggered")
+            logger.debug("No stages triggered")
             test_info = task_run_settings
+            # FIXME: Rather than deleting, mark as deleted in model.
             run_context.delete()
 
-        logger.info("context task %s complete" % context_id)
+        logger.info("context task %s complete" % (context_id))
         return test_info
 
 
