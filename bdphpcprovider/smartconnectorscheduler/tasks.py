@@ -66,7 +66,7 @@ def progress_context(context_id):
     except models.Context.DoesNotExist:
         logger.warn("Context removed from other thread")
         return
-    logger.debug("process context %s" % run_context)
+    #logger.debug("process context %s" % run_context)
 
     test_info = []
     with transaction.commit_on_success():
