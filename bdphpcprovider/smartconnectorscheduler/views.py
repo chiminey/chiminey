@@ -161,7 +161,7 @@ def test_directive(request, directive_id):
             logger.debug("%s" % directive_name)
             directive_args = []
             directive_args.append(
-                ['file://127.0.0.1/local/greet.txt',
+                ['file://local@127.0.0.1/local/greet.txt',
                     ['http://rmit.edu.au/schemas/greeting/salutation',
                         ('salutation', 'Hello Iman')]])
             directive_args.append(['ssh://nci@127.0.0.1/remote/greet.txt', []])

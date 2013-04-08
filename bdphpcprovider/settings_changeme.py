@@ -221,13 +221,13 @@ SFTP_STORAGE_PARAMS = {}
 #CELERYBEAT_SCHEDULER="djcelery.schedulers.DatabaseScheduler"
 # Warning: celeryd is not safe for muliple workers when backed by sqlite
 CELERYBEAT_SCHEDULE = {
-    "test": {
-        "task": "smartconnectorscheduler.test",
-        "schedule": timedelta(seconds=15),
-    },
+    #"test": {
+    #    "task": "smartconnectorscheduler.test",
+    #    "schedule": timedelta(seconds=15),
+    #},
     "run_contexts": {
         "task": "smartconnectorscheduler.run_contexts",
-        "schedule": timedelta(seconds=10)
+        "schedule": timedelta(seconds=15)
       },
     }
 
