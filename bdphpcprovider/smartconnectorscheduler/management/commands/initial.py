@@ -28,7 +28,8 @@ class Command(BaseCommand):
     help = 'Setup an initial task structure.'
 
     def setup(self):
-        confirm = raw_input("This will ERASE and reset the database.  Are you sure [Yes|No]")
+        confirm = raw_input("This will ERASE and reset the database. "
+            " Are you sure [Yes|No]")
         if confirm != "Yes":
             print "action aborted by user"
             return
@@ -38,7 +39,8 @@ class Command(BaseCommand):
 
         for model_name in ('userprofileparameter', 'userprofileparameterset'):
             #add_model = Permission.objects.get(codename="add_%s" % model_name)
-            change_model = Permission.objects.get(codename="change_%s" % model_name)
+            change_model = Permission.objects.get(
+                codename="change_%s" % model_name)
             #delete_model = Permission.objects.get(codename="delete_%s" % model_name)
             #self.group.permissions.add(add_model)
             self.group.permissions.add(change_model)
@@ -48,9 +50,9 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas//files':
                 [u'general input files for directive',
                 {
-                u'file0': (models.ParameterName.STRING, ''),
-                u'file1': (models.ParameterName.STRING, ''),
-                u'file2': (models.ParameterName.STRING, ''),
+                u'file0': (models.ParameterName.STRING, '', 3),
+                u'file1': (models.ParameterName.STRING, '', 2),
+                u'file2': (models.ParameterName.STRING, '', 1),
                 }
                 ],
              # Note that file schema ns must match regex
@@ -61,9 +63,9 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/smartconnector1/files':
                  [u'the smartconnector1 input files',
                  {
-                 u'file0': (models.ParameterName.STRING, ''),
-                 u'file1': (models.ParameterName.STRING, ''),
-                 u'file2': (models.ParameterName.STRING, ''),
+                 u'file0': (models.ParameterName.STRING, '', 3),
+                 u'file1': (models.ParameterName.STRING, '', 2),
+                 u'file2': (models.ParameterName.STRING, '', 1),
                  }
                  ],
             u'http://rmit.edu.au/schemas/smartconnector_hrmc/files':
@@ -74,10 +76,10 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/smartconnector1/create':
                 [u'the smartconnector1 create stage config',
                 {
-                u'iseed': (models.ParameterName.NUMERIC, ''),
-                u'num_nodes': (models.ParameterName.NUMERIC, ''),
-                u'null_number': (models.ParameterName.NUMERIC, ''),
-                u'parallel_number': (models.ParameterName.NUMERIC, ''),
+                u'iseed': (models.ParameterName.NUMERIC, '', 4),
+                u'num_nodes': (models.ParameterName.NUMERIC, '', 3),
+                u'null_number': (models.ParameterName.NUMERIC, '', 2),
+                u'parallel_number': (models.ParameterName.NUMERIC, '', 1),
                 }
                 ],
             # we might want to reuse schemas in muliple contextsets
@@ -87,175 +89,195 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/stages/null/testing':
                 [u'the null stage internal testing',
                 {
-                u'output': (models.ParameterName.NUMERIC,''),
-                u'index': (models.ParameterName.NUMERIC,''),
+                u'output': (models.ParameterName.NUMERIC, '', 2),
+                u'index': (models.ParameterName.NUMERIC, '', 1),
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/parallel/testing':
                 [u'the parallel stage internal testing',
                 {
 
-                u'output': (models.ParameterName.NUMERIC,''),
-                u'index': (models.ParameterName.NUMERIC,''),
+                u'output': (models.ParameterName.NUMERIC, '', 2),
+                u'index': (models.ParameterName.NUMERIC, '', 1),
                 }
                 ],
             u'http://nci.org.au/schemas/smartconnector1/custom':
                 [u'the smartconnector1 custom command',
                 {
-                u'command': (models.ParameterName.STRING,''),
+                u'command': (models.ParameterName.STRING, '', 2),
                 }
                 ],
             u'http://rmit.edu.au/schemas/system/misc':
                 [u'system level misc values',
                 {
-                u'transitions': (models.ParameterName.STRING,''),  # deprecated
-                u'system': (models.ParameterName.STRING,''),
-                u'id': (models.ParameterName.NUMERIC,''),
+                u'transitions': (models.ParameterName.STRING, '', 3),  # deprecated
+                u'system': (models.ParameterName.STRING, '', 2),
+                u'id': (models.ParameterName.NUMERIC, '', 1),
                 }
                 ],
             u'http://rmit.edu.au/schemas/system':
                 [u'Information about the deployment platform',
                 {
-                u'platform': (models.ParameterName.STRING,''),
+                u'platform': (models.ParameterName.STRING, '', 1),
                 }
                 ],
             u'http://tardis.edu.au/schemas/hrmc/dfmeta':
                 ["datafile",
                 {
-                u"a": (models.ParameterName.NUMERIC,''),
-                u'b': (models.ParameterName.NUMERIC,''),
+                u"a": (models.ParameterName.NUMERIC, '', 2),
+                u'b': (models.ParameterName.NUMERIC, '', 1),
                 }
                 ],
             u'http://tardis.edu.au/schemas/hrmc/dfmeta2':
                 ["datafile2",
                 {
-                u'c': (models.ParameterName.STRING,''),
+                u'c': (models.ParameterName.STRING, '', 1),
                 }
                 ],
             models.UserProfile.PROFILE_SCHEMA_NS:
                 [u'user profile',
                 {
-                    u'userinfo1': (models.ParameterName.STRING,'test parameter1'),
-                    u'userinfo2': (models.ParameterName.NUMERIC,'test parameter2'),
-                    u'nci_private_key': (models.ParameterName.STRING,'location of NCI private key'),
-                    u'nci_user': (models.ParameterName.STRING,'username for NCI access'),
-                    u'nci_password': (models.ParameterName.STRING,'password for NCI access'),
-                    u'nci_host': (models.ParameterName.STRING,'hostname for NCI'),
-                    u'flag': (models.ParameterName.NUMERIC,'not used?'),
-                    u'nectar_private_key_name': (models.ParameterName.STRING,'name of the key for nectar'),
-                    u'nectar_private_key': (models.ParameterName.STRING,'location of NeCTAR private key'),
-                    u'nectar_ec2_access_key': (models.ParameterName.STRING,'NeCTAR EC2 Access Key'),
-                    u'nectar_ec2_secret_key': (models.ParameterName.STRING,'NeCTAR EC2 Secret Key'),
+                    u'userinfo1': (models.ParameterName.STRING,
+                        'test parameter1', 11),
+                    u'userinfo2': (models.ParameterName.NUMERIC,
+                        'test parameter2', 10),
+                    u'nci_private_key': (models.ParameterName.STRING,
+                        'location of NCI private key', 9),
+                    u'nci_user': (models.ParameterName.STRING,
+                        'username for NCI access', 8),
+                    u'nci_password': (models.ParameterName.STRING,
+                        'password for NCI access', 7),
+                    u'nci_host': (models.ParameterName.STRING,
+                        'hostname for NCI', 6),
+                    u'flag': (models.ParameterName.NUMERIC,
+                        'not used?', 5),
+                    u'nectar_private_key_name': (models.ParameterName.STRING,
+                        'name of the key for nectar', 4),
+                    u'nectar_private_key': (models.ParameterName.STRING,
+                        'location of NeCTAR private key', 3),
+                    u'nectar_ec2_access_key': (models.ParameterName.STRING,
+                        'NeCTAR EC2 Access Key', 2),
+                    u'nectar_ec2_secret_key': (models.ParameterName.STRING,
+                        'NeCTAR EC2 Secret Key', 1),
                 }
                 ],
             u'http://rmit.edu.au/schemas/copy/files':
                  [u'the copy input files',
                  {
-                 u'file0': (models.ParameterName.STRING,''),
-                 u'file1': (models.ParameterName.STRING,''),
+                 u'file0': (models.ParameterName.STRING, '', 2),
+                 u'file1': (models.ParameterName.STRING, '', 1),
                  }
                  ],
             u'http://rmit.edu.au/schemas/program/files':
                  [u'the copy input files',
                  {
-                 u'file0': (models.ParameterName.STRING,''),
-                 u'file1': (models.ParameterName.STRING,''),
-                 u'file2': (models.ParameterName.STRING,''),
+                 u'file0': (models.ParameterName.STRING, '', 3),
+                 u'file1': (models.ParameterName.STRING, '', 2),
+                 u'file2': (models.ParameterName.STRING, '', 1),
                  }
                  ],
             u'http://rmit.edu.au/schemas/stages/copy/testing':
                 [u'the copy stage internal testing',
                 {
-                u'output': (models.ParameterName.NUMERIC,''),
+                u'output': (models.ParameterName.NUMERIC, '', 1),
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/program/testing':
                 [u'the program stage internal testing',
                 {
-                u'output': (models.ParameterName.NUMERIC,''),
+                u'output': (models.ParameterName.NUMERIC, '', 1),
                 }
                 ],
             u'http://rmit.edu.au/schemas/program/config':
                 [u'the program command internal config',
                 {
-                u'program': (models.ParameterName.STRING,''),
-                u'remotehost': (models.ParameterName.STRING,''),
-                u'program_success': (models.ParameterName.STRING,''),
+                u'program': (models.ParameterName.STRING, '', 3),
+                u'remotehost': (models.ParameterName.STRING, '', 2),
+                u'program_success': (models.ParameterName.STRING, '', 1),
                 }
                 ],
             u'http://rmit.edu.au/schemas/greeting/salutation':
                 [u'salute',
                 {
-                u'salutation': (models.ParameterName.STRING,''),
+                u'salutation': (models.ParameterName.STRING, '', 1),
                 }
                 ],
             u'http://rmit.edu.au/schemas/hrmc':
                 [u'the hrmc smart connector input values',
                 {
-                u'number_vm_instances': (models.ParameterName.NUMERIC,''),
-                u'iseed': (models.ParameterName.NUMERIC,''),
-                u'input_location': (models.ParameterName.STRING,''),
-                u'number_dimensions': (models.ParameterName.NUMERIC,''),
-                u'threshold': (models.ParameterName.STRING,''),  # FIXME: should be list of ints
-                u'error_threshold': (models.ParameterName.STRING,''),  # FIXME: should use float here
-                u'max_iteration': (models.ParameterName.NUMERIC,'')
+                u'number_vm_instances': (models.ParameterName.NUMERIC, '', 7),
+                u'iseed': (models.ParameterName.NUMERIC, '', 6),
+                u'input_location': (models.ParameterName.STRING, '', 5),
+                u'number_dimensions': (models.ParameterName.NUMERIC, '', 4),
+                u'threshold': (models.ParameterName.STRING, '', 3),  # FIXME: should be list of ints
+                u'error_threshold': (models.ParameterName.STRING, '', 2),  # FIXME: should use float here
+                u'max_iteration': (models.ParameterName.NUMERIC, '', 1)
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/configure':
                 [u'the configure state of the hrmc smart connector',
                 {
-                u'configure_done': (models.ParameterName.STRING,''),
+                u'configure_done': (models.ParameterName.STRING, '', 1),
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/create':
                 [u'the create state of the smartconnector1',
                 {
-                u'group_id': (models.ParameterName.STRING,''),
-                u'vm_size': (models.ParameterName.STRING,''),
-                u'vm_image': (models.ParameterName.STRING,''),
-                u'security_group': (models.ParameterName.STRLIST,''),
-                u'group_id_dir': (models.ParameterName.STRING,''),
-                u'cloud_sleep_interval': (models.ParameterName.NUMERIC,''),
-                u'custom_prompt': (models.ParameterName.STRING,''),
-                u'nectar_username': (models.ParameterName.STRING, 'name of username for accessing nectar'),
-                u'nectar_password': (models.ParameterName.STRING, 'password of username for accessing nectar'),
+                u'group_id': (models.ParameterName.STRING, '', 9),
+                u'vm_size': (models.ParameterName.STRING, '', 8),
+                u'vm_image': (models.ParameterName.STRING, '', 7),
+                u'security_group': (models.ParameterName.STRLIST, '', 6),
+                u'group_id_dir': (models.ParameterName.STRING, '', 5),
+                u'cloud_sleep_interval': (models.ParameterName.NUMERIC, '', 4),
+                u'custom_prompt': (models.ParameterName.STRING, '', 3),
+                u'nectar_username': (models.ParameterName.STRING,
+                    'name of username for accessing nectar', 2),
+                u'nectar_password': (models.ParameterName.STRING,
+                    'password of username for accessing nectar', 1),
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/setup':
                 [u'the create stage of the smartconnector1',
                 {
-                u'setup_finished': (models.ParameterName.NUMERIC,''),
-                u'payload_source': (models.ParameterName.STRING,''),
-                u'payload_destination': (models.ParameterName.STRING,''),
+                u'setup_finished': (models.ParameterName.NUMERIC, '', 3),
+                u'payload_source': (models.ParameterName.STRING, '', 2),
+                u'payload_destination': (models.ParameterName.STRING, '', 1),
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/run':
                 [u'the create stage of the smartconnector1',
                 {
-                u'runs_left': (models.ParameterName.NUMERIC,''),
-                u'max_seed_int': (models.ParameterName.NUMERIC,''),
-                u'payload_cloud_dirname': (models.ParameterName.STRING,''),
-                u'compile_file': (models.ParameterName.STRING,''),
-                u'retry_attempts': (models.ParameterName.NUMERIC,''),
-                u'error_nodes': (models.ParameterName.NUMERIC,''),
-                u'initial_numbfile': (models.ParameterName.NUMERIC,''),
-                u'random_numbers': (models.ParameterName.STRING, ''),
-                u'rand_index': (models.ParameterName.NUMERIC, '')
+                u'runs_left': (models.ParameterName.NUMERIC, '', 9),
+                u'max_seed_int': (models.ParameterName.NUMERIC, '', 8),
+                u'payload_cloud_dirname': (models.ParameterName.STRING, '', 7),
+                u'compile_file': (models.ParameterName.STRING, '', 6),
+                u'retry_attempts': (models.ParameterName.NUMERIC, '', 5),
+                u'error_nodes': (models.ParameterName.NUMERIC, '', 4),
+                u'initial_numbfile': (models.ParameterName.NUMERIC, '', 3),
+                u'random_numbers': (models.ParameterName.STRING, '', 2),
+                u'rand_index': (models.ParameterName.NUMERIC, '', 1)
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/transform':
                 [u'the transform stage of the smartconnector1',
                 {
-                u'transformed': (models.ParameterName.STRING,''),
+                u'transformed': (models.ParameterName.STRING, '', 1),
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/converge':
                 [u'the converge stage of the smartconnector1',
                 {
-                u'converged': (models.ParameterName.STRING,''),  # FIXME: use NUMERIC for booleans (with 0,1)
-                u'criterion': (models.ParameterName.STRING,''),  # Use STRING as float not implemented
+                u'converged': (models.ParameterName.STRING, '', 2),  # FIXME: use NUMERIC for booleans (with 0,1)
+                u'criterion': (models.ParameterName.STRING, '', 1),  # Use STRING as float not implemented
                 }
                 ],
+            u'http://rmit.edu.au/schemas/stages/teardown':
+                [u'the teardown stage of the smartconnector1',
+                {
+                u'run_finished': (models.ParameterName.STRING, '', 1),  # FIXME: use NUMERIC for booleans (with 0,1)
+                }
+                ],
+
         }
 
         from urlparse import urlparse
@@ -272,18 +294,27 @@ class Command(BaseCommand):
             url = urlparse(ns)
 
             context_schema, _ = models.Schema.objects.get_or_create(
-                namespace=ns, defaults={'name': slugify(url.path.replace('/', ' ')), 'description': desc})
+                namespace=ns,
+                defaults={'name': slugify(url.path.replace('/', ' ')),
+                    'description': desc})
 
             for k, v in kv.items():
-                val, help_text = (v[0], v[1])
-                models.ParameterName.objects.get_or_create(schema=context_schema,
-                    name=k, defaults={'type': val, 'help_text': help_text})
+                val, help_text, ranking = (v[0], v[1])
+                models.ParameterName.objects.get_or_create(
+                    schema=context_schema,
+                    name=k,
+                    defaults={
+                        'type': val, 'help_text': help_text,
+                        'ranking': ranking})
 
         logger.debug("stages=%s" % models.Stage.objects.all())
         local_filesys_rootpath = '/var/cloudenabling/remotesys'
-        models.Platform.objects.get_or_create(name='local', root_path=local_filesys_rootpath)
-        nectar_platform, _ = models.Platform.objects.get_or_create(name='nectar', root_path='/home/centos')
-        platform, _ = models.Platform.objects.get_or_create(name='nci', root_path=local_filesys_rootpath)
+        models.Platform.objects.get_or_create(name='local',
+            root_path=local_filesys_rootpath)
+        nectar_platform, _ = models.Platform.objects.get_or_create(
+            name='nectar', root_path='/home/centos')
+        platform, _ = models.Platform.objects.get_or_create(
+            name='nci', root_path=local_filesys_rootpath)
 
         logger.debug("local_filesys_rootpath=%s" % local_filesys_rootpath)
         local_fs = FileSystemStorage(location=local_filesys_rootpath)
@@ -377,23 +408,23 @@ class Command(BaseCommand):
         self.converge_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc.converge.Converge"
 
         hrmc_composite_stage, _ = models.Stage.objects.get_or_create(name="hrmc_connector",
-                                                                description="Encapsultes HRMC smart connector workflow",
-                                                                package=self.parallel_package,
-                                                                order=100)
+            description="Encapsultes HRMC smart connector workflow",
+            package=self.parallel_package,
+            order=100)
         # FIXME: tasks.progress_context does not load up composite stage settings
         hrmc_composite_stage.update_settings({})
 
         configure_stage, _ = models.Stage.objects.get_or_create(name="configure",
-                                                                description="This is configure stage of HRMC smart connector",
-                                                                parent=hrmc_composite_stage,
-                                                                package=self.configure_package,
-                                                                order=0)
+            description="This is configure stage of HRMC smart connector",
+            parent=hrmc_composite_stage,
+            package=self.configure_package,
+            order=0)
         configure_stage.update_settings({})
         create_stage, _ = models.Stage.objects.get_or_create(name="create",
-                                                                description="This is create stage of HRMC smart connector",
-                                                                parent=hrmc_composite_stage,
-                                                                package=self.create_package,
-                                                                order=1)
+            description="This is create stage of HRMC smart connector",
+            parent=hrmc_composite_stage,
+            package=self.create_package,
+            order=1)
         create_stage.update_settings({u'http://rmit.edu.au/schemas/stages/create':
                 {
                     u'vm_size': "m1.small",
@@ -406,10 +437,10 @@ class Command(BaseCommand):
                     u'nectar_password': ''
                 }})
         setup_stage, _ = models.Stage.objects.get_or_create(name="setup",
-                                                             description="This is setup stage of HRMC smart connector",
-                                                             parent=hrmc_composite_stage,
-                                                             package=self.setup_package,
-                                                             order=2)
+            description="This is setup stage of HRMC smart connector",
+            parent=hrmc_composite_stage,
+            package=self.setup_package,
+            order=2)
         setup_stage.update_settings(
             {
             u'http://rmit.edu.au/schemas/stages/setup':
@@ -419,10 +450,10 @@ class Command(BaseCommand):
                 },
             })
         run_stage, _ = models.Stage.objects.get_or_create(name="run",
-                                                            description="This is run stage of HRMC smart connector",
-                                                            parent=hrmc_composite_stage,
-                                                            package=self.run_package,
-                                                            order=3)
+            description="This is run stage of HRMC smart connector",
+            parent=hrmc_composite_stage,
+            package=self.run_package,
+            order=3)
         run_stage.update_settings(
             {
             u'http://rmit.edu.au/schemas/stages/run':
@@ -434,30 +465,32 @@ class Command(BaseCommand):
                     u'random_numbers': 'file://127.0.0.1/randomnums.txt'
                 },
             })
-
         finished_stage, _ = models.Stage.objects.get_or_create(name="finished",
-                                                            description="This is finished stage of HRMC smart connector",
-                                                            parent=hrmc_composite_stage,
-                                                            package=self.finished_package,
-                                                            order=4)
+            description="This is finished stage of HRMC smart connector",
+            parent=hrmc_composite_stage,
+            package=self.finished_package,
+            order=4)
         finished_stage.update_settings({})
-
         transform_stage, _ = models.Stage.objects.get_or_create(name="transform",
-                                                            description="This is transform stage of HRMC smart connector",
-                                                            parent=hrmc_composite_stage,
-                                                            package=self.transform_package,
-                                                            order=5)
+            description="This is transform stage of HRMC smart connector",
+            parent=hrmc_composite_stage,
+            package=self.transform_package,
+            order=5)
         transform_stage.update_settings({})
-
         converge_stage, _ = models.Stage.objects.get_or_create(name="converge",
-                                                            description="This is converge stage of HRMC smart connector",
-                                                            parent=hrmc_composite_stage,
-                                                            package=self.converge_package,
-                                                            order=6)
+            description="This is converge stage of HRMC smart connector",
+            parent=hrmc_composite_stage,
+            package=self.converge_package,
+            order=6)
         converge_stage.update_settings({})
-
-        comm, _ = models.Command.objects.get_or_create(platform=nectar_platform, directive=hrmc_smart_dir, stage=hrmc_composite_stage)
-
+        teardown_stage, _ = models.Stage.objects.get_or_create(name="teardown",
+            description="This is teardown stage of HRMC smart connector",
+            parent=hrmc_composite_stage,
+            package=self.teardown_package,
+            order=7)
+        teardown_stage.update_settings({})
+        comm, _ = models.Command.objects.get_or_create(platform=nectar_platform,
+            directive=hrmc_smart_dir, stage=hrmc_composite_stage)
         print "done"
 
     def handle(self, *args, **options):

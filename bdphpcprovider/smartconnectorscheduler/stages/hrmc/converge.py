@@ -205,9 +205,11 @@ class Converge(Stage):
             'http://rmit.edu.au/schemas/stages/create/nectar_username')
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/create/nectar_password')
-        self.boto_settings['private_key'] = self.user_settings['nectar_private_key']
         self.boto_settings['username'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_username']
         self.boto_settings['password'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
+        key_file = hrmcstages.retrieve_private_key(self.boto_settings, self.user_settings['nectar_private_key'])
+        self.boto_settings['private_key'] = key_file
+        self.boto_settings['nectar_private_key'] = key_file
 
         inputdir_url = smartconnector.get_url_with_pkey(self.boto_settings,
             self.iter_inputdir, is_relative_path=True)
@@ -304,7 +306,7 @@ class Converge(Stage):
             raise BadInputException("unknown max_iteration")
         logger.debug("max_iteration=%s" % max_iteration)
 
-        if self.id >= max_iteration:
+        if self.id >= (max_iteration - 1):
             logger.debug("Max Iteration Reached %d " % self.id)
             self.done_iterating = True
 

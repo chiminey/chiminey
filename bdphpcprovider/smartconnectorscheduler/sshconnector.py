@@ -24,6 +24,9 @@ import os
 import logging
 
 
+from bdphpcprovider.smartconnectorscheduler import smartconnector
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -39,7 +42,7 @@ def is_ssh_ready(settings, ip_address):
     ssh_ready = False
     while not ssh_ready:
         try:
-            ssh_client = open_connection(ip_address, settings)
+            open_connection(ip_address, settings)
             ssh_ready = True
         except Exception, e:
             sleep(settings['cloud_sleep_interval'])
@@ -53,6 +56,10 @@ def is_ssh_ready(settings, ip_address):
 
 
 def open_connection(ip_address, settings):
+    """
+    Creates a ssh_client connection to the SSH at ip_address using
+    credentials in settings
+    """
     # open up the connection
     ssh_client = paramiko.SSHClient()
     # autoaccess new keys
@@ -68,26 +75,33 @@ def open_connection(ip_address, settings):
     # use private key if exists
     try:
         if os.path.exists(settings['private_key']):
-            print "%s %s" % (settings['username'], settings['private_key'])
-            privatekeyfile = os.path.expanduser(settings['private_key'])
-            mykey = paramiko.RSAKey.from_private_key_file(privatekeyfile)
+            logger.debug("Connecting as %s with key %s" % (settings['username'], settings['private_key']))
+            private_key_file = settings['private_key']
+            #privatekeyfile = os.path.expanduser(settings['private_key'])
+            #logger.debug("privatekeyfile=%s" % private_key_file)
+            mykey = paramiko.RSAKey.from_private_key_file(private_key_file)
             ssh_client.connect(ip_address, username=settings['username'],
                                timeout=60.0, pkey=mykey)
         else:
-            print("%s %s %s" % (ip_address,
-                                settings['username'],
-                                settings['password']))
+            logger.debug("Connecting to %s as %s" % (ip_address,
+                                settings['username']))
             print(ssh_client)
             ssh_client.connect(ip_address, username=settings['username'],
                                password=settings['password'], timeout=60.0)
     except paramiko.AuthenticationException, e:
         raise AuthError(e)
-    logger.debug("made connection")
-    #channel = ssh.invoke_shell().open_session()
+    except Exception, e:
+        logger.error("Exception: %s" % e)
+        raise
+    logger.debug("Made connection")
     return ssh_client
 
 
 def run_command(ssh_client, command, current_dir=None):
+    """
+    Given a ssh_client, execute command from the current_dir
+    on the remote host and return stdout
+    """
     # TODO: need a proper timeout for this command
 
     logger.debug("run_command %s; %s " % (current_dir, command))
@@ -98,11 +112,15 @@ def run_command(ssh_client, command, current_dir=None):
     res = stdout.readlines()
     logger.debug("run_command_stdout=%s" % res)
     if stderr:
-        logger.debug("run_command_stderr=%s" % stderr.readlines())
+        logger.error("run_command_stderr=%s" % stderr.readlines())
     return res
 
 
 def run_command_with_status(ssh_client, command, current_dir=None):
+    """
+    Given a ssh_client, execute command from the current_dir
+    on the remote host and return stdout and stderr
+    """
     # TODO: need a proper timeout for this command
 
     logger.debug("run_command %s; %s " % (current_dir, command))
@@ -152,7 +170,7 @@ def run_command_with_tty(ssh_client, command, settings, current_dir=None):
     logger.debug("buff = %s" % buff)
     full_buff += buff
 
-    chan.send("echo $!\n") # NOTE: we assume bash
+    chan.send("echo $!\n")  # NOTE: we assume bash
     logger.debug("Command %s" % command)
     buff = ''
 

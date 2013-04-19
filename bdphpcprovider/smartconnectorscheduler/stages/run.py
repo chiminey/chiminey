@@ -145,9 +145,12 @@ class Run(Stage):
                     'http://rmit.edu.au/schemas/stages/create/nectar_password')
                 smartconnector.copy_settings(self.boto_settings, run_settings,
                     'http://rmit.edu.au/schemas/stages/run/random_numbers')
-                self.boto_settings['private_key'] = self.user_settings['nectar_private_key']
                 self.boto_settings['username'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_username']
                 self.boto_settings['password'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
+                key_file = hrmcstages.retrieve_private_key(self.boto_settings, self.user_settings['nectar_private_key'])
+                self.boto_settings['private_key'] = key_file
+                self.boto_settings['nectar_private_key'] = key_file
+
 
                 logger.debug("setup_nodes = %s" % setup_nodes)
                 # TODO: remove need to call cloud during triggered() because this is an expensive operation

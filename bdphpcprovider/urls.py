@@ -10,7 +10,7 @@ from bdphpcprovider.smartconnectorscheduler import views
 urlpatterns = patterns('bdphpcprovider.smartconnectorscheduler',
     (r'^index/$', 'views.index'),
     url(r'^admin/', include(admin.site.urls)),
-    (r'^hello/$', views.hello),
+    url(r'^$', views.hello),
     url(r'^admin/', include(admin.site.urls)),
     url(r'^output/(?P<group_id>\w+)/(?P<file_id>[\w.]+)/$', views.getoutput, name="getoutput"),
     url(r'^directive/(?P<directive_id>\d+)/$', 'views.test_directive')

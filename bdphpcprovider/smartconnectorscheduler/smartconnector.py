@@ -18,21 +18,19 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from bdphpcprovider.smartconnectorscheduler import models
-from urlparse import urlparse
 import time
 import os
 import utility
 import logging
-logger = logging.getLogger(__name__)
-#Every stage may be thrown away after completion
-
-
-import logging
 import logging.config
+from abc import ABCMeta, abstractmethod
+
+from urlparse import urlparse
+from bdphpcprovider.smartconnectorscheduler import models
+from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
+from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 
 logger = logging.getLogger(__name__)
-
 
 class Error(Exception):
     pass
@@ -65,7 +63,8 @@ def get_url_with_pkey(settings, url_or_relative_path,
     the platform is nectar and the relative path is new_payload
     The new url will be ssh://127.0.0.1/new_payload?root_path=/home/centos
 
-    #TODO: make testcase for above example
+    #TODO: make testcase for above example.  This function has complicated
+    #parameter values.
     :param settings:
     :param url_or_relative_path:
     :param is_relative_path:
@@ -74,7 +73,11 @@ def get_url_with_pkey(settings, url_or_relative_path,
     '''
     username = ''
     password = ''
-    private_key = ''
+    key_file = ''
+
+    if '..' in url_or_relative_path:
+        # .. allow url to potentially leave the user filesys. This would be bad.
+        raise InvalidInputError(".. not allowed in urls")
 
     if is_relative_path:
         url = 'http://' + url_or_relative_path
@@ -84,12 +87,13 @@ def get_url_with_pkey(settings, url_or_relative_path,
     parsed_url = urlparse(url)
     platform = parsed_url.username
     if platform == 'nectar':
-        private_key = settings['nectar_private_key']
+        key_file = settings['nectar_private_key']
+
         username = settings['nectar_username']
         password = settings['nectar_password']
         scheme = 'ssh'
     elif platform == 'nci':
-        private_key = settings['nci_private_key']
+        key_file = settings['nci_private_key']
         username = settings['nci_user']
         password = settings['nci_password']
         scheme = 'ssh'
@@ -105,7 +109,11 @@ def get_url_with_pkey(settings, url_or_relative_path,
                          "Valid schemes [file, ssh]" % scheme)
             #raise NotImplementedError()
             return
-    platform_object = models.Platform.objects.get(name=platform)
+    try:
+        platform_object = models.Platform.objects.get(name=platform)
+    except models.Platform.DoesNotExist:
+        logger.error('compatible platform for %s not found' % platform)
+
     # FIXME: suffix root_path with username
     root_path = platform_object.root_path
     # FIXME: URIs cannot contain unicode data, but IRI can. So need to convert IRI to URL
@@ -120,47 +128,19 @@ def get_url_with_pkey(settings, url_or_relative_path,
         logger.debug('host=%s path=%s relativepath=%s' % (parsed_url.hostname,
                                                           partial_path,
                                                           relative_path))
-        url_with_pkey = '%s://%s/%s?key_filename=%s' \
+        url_with_pkey = '%s://%s/%s?key_file=%s' \
                         '&username=%s&password=%s' \
                         '&root_path=%s' % (scheme, ip_address,
-                                           relative_path, private_key,
+                                           relative_path, key_file,
                                            username, password, root_path)
     else:
         url_with_pkey = '%s?key_filename=%s&username=%s' \
-                        '&password=%s&root_path=%s' % (url_or_relative_path, private_key,
+                        '&password=%s&root_path=%s' % (url_or_relative_path, key_file,
                                                        username, password,
                                                        root_path)
     logger.debug("Destination %s url_pkey %s" % (str(is_relative_path), url_with_pkey))
     return url_with_pkey
 
-
-def get_remote_path(file_url):
-    """
-    Get the actual path for the file_url
-    """
-    logger.debug("file_url=%s" % file_url)
-
-    # TODO: the path should be constructed from the Platform model, not from the user setttings.
-
-    from urlparse import urlparse
-    o = urlparse(file_url)
-    scheme = o.scheme
-    mypath = o.path
-    logger.debug("scheme=%s" % scheme)
-    logger.debug("mypath=%s" % mypath)
-
-    if mypath[0] == os.path.sep:
-        mypath = mypath[1:]
-    logger.debug("mypath=%s" % mypath)
-
-    platform = o.username
-    platform_object = models.Platform.objects.get(name=platform)
-    root_path = platform_object.root_path
-
-    remote_path = os.path.join(root_path, mypath)
-
-    logger.debug("remote_path=%s" % remote_path)
-    return remote_path
 
 # def get_url_with_pkey(settings, url_or_relative_path,
 #                       is_relative_path=False, ip_address='127.0.0.1'):
@@ -224,7 +204,11 @@ def get_remote_path(file_url):
 #     return url_with_pkey
 
 
-def exists(context, *parts):
+def multilevel_key_exists(context, *parts):
+    """
+    Returns true if context contains all parts of the key, else warn
+    and false
+    """
     c = dict(context)
     for p in parts:
         if p in c:
@@ -234,15 +218,26 @@ def exists(context, *parts):
             return False
     return True
 
+def get_existing_key(context, schema):
+    """
+    Extract the schema field from the context, but if not present throw KeyError.
+    """
+    if multilevel_key_exists(context, os.path.dirname(schema), os.path.basename(schema)):
+        res = context[os.path.dirname(schema)][os.path.basename(schema)]
+    else:
+        raise KeyError()
+    return res
 
+
+@deprecated
 def set_val(settings, k, v):
     if not Stage.exists(settings, os.path.dirname(k)):
             settings[os.path.dirname(k)] = {}
     settings[os.path.dirname(k)][os.path.basename(k)] = v
 
 
-# This stage has no impact on other stages
 class Stage(object):
+
     def __init__(self):
         pass
 
@@ -264,6 +259,7 @@ class Stage(object):
         """
         pass
 
+    @deprecated
     def _exists(self, context, *parts):
             c = dict(context)
             for p in parts:
@@ -279,124 +275,124 @@ class UI(object):
     pass
 
 
-class Configure(Stage, UI):
-    """
-        - Load config.sys file into the filesystem
-        - Nothing beyond specifying the path to config.sys
-        - Later could be dialogue box,...
+# class Configure(Stage, UI):
+#     """
+#         - Load config.sys file into the filesystem
+#         - Nothing beyond specifying the path to config.sys
+#         - Later could be dialogue box,...
 
-    """
-    def triggered(self, context):
-        #check for filesystem in context
-        return True
+#     """
+#     def triggered(self, context):
+#         #check for filesystem in context
+#         return True
 
-        #logger.debug("%s" % field_val)
-    def process(self, context):
-        # - Load config.sys file into the filesystem
-        # - Nothing beyond specifying the path to config.sys
-        # - Later could be dialogue box,...
-        # 1. creates instance of file system
-        # 2. pass the file system as entry in the Context
-        # create status  file in file system
-        #print " Security Group", filesystem.settings.SECURITY_GROUP
+#         #logger.debug("%s" % field_val)
+#     def process(self, context):
+#         # - Load config.sys file into the filesystem
+#         # - Nothing beyond specifying the path to config.sys
+#         # - Later could be dialogue box,...
+#         # 1. creates instance of file system
+#         # 2. pass the file system as entry in the Context
+#         # create status  file in file system
+#         #print " Security Group", filesystem.settings.SECURITY_GROUP
 
-        pass
+#         pass
 
-    # indicate the process() is completed
-    def output(self, context):
-        # store in filesystem
-        pass
-
-
-class Create(Stage):
-    def triggered(self, context):
-        """ return true if the directory pattern triggers this stage
-        """
-        #check the context for existence of a file system or other
-        # key words, then if true, trigger
-        #self.metadata = self._load_metadata_file()
-
-        if True:
-            self.boto_settings = utility.load_generic_settings()
-            return True
-
-    def _transform_the_filesystem(filesystem, settings):
-        key = settings['ec2_access_key']
-        print key
-
-    def process(self, context):
-
-        # get the input from the user to override config settings
-        # load up the metadata
-
-        #settings = {}
-        #settings['number_vm_instances'] = self.metadata.number
-
-        #settings['ec2_access_key'] = self.metadata.ec2_access_key
-        #settings['ec2_secret_key'] = self.metadata.ec2_secret_key
-        # ...
-
-        #self.temp_sys = FileSystem(filesystem)
-
-        #self._transform_the_filesystem(self.temp_sys, settings)
-
-        #import codecs
-        #f = codecs.open('metadata.json', encoding='utf-8')
-        #import json
-        #metadata = json.loads(f.read())
-        print "Security Group ", self.boto_settings.SECURITY_GROUP
-        pass
-
-    def output(self, context):
-        # store in filesystem
-        #self._store(self.temp_sys, filesystem)
-        pass
+#     # indicate the process() is completed
+#     def output(self, context):
+#         # store in filesystem
+#         pass
 
 
-class Setup(Stage):
+# class Create(Stage):
+#     def triggered(self, context):
+#         """ return true if the directory pattern triggers this stage
+#         """
+#         #check the context for existence of a file system or other
+#         # key words, then if true, trigger
+#         #self.metadata = self._load_metadata_file()
 
-    def triggered(self, context):
-        pass
+#         if True:
+#             self.boto_settings = utility.load_generic_settings()
+#             return True
 
-    def process(self, context):
-        pass
+#     def _transform_the_filesystem(filesystem, settings):
+#         key = settings['ec2_access_key']
+#         print key
 
-    def output(self, context):
-        pass
+#     def process(self, context):
+
+#         # get the input from the user to override config settings
+#         # load up the metadata
+
+#         #settings = {}
+#         #settings['number_vm_instances'] = self.metadata.number
+
+#         #settings['ec2_access_key'] = self.metadata.ec2_access_key
+#         #settings['ec2_secret_key'] = self.metadata.ec2_secret_key
+#         # ...
+
+#         #self.temp_sys = FileSystem(filesystem)
+
+#         #self._transform_the_filesystem(self.temp_sys, settings)
+
+#         #import codecs
+#         #f = codecs.open('metadata.json', encoding='utf-8')
+#         #import json
+#         #metadata = json.loads(f.read())
+#         print "Security Group ", self.boto_settings.SECURITY_GROUP
+#         pass
+
+#     def output(self, context):
+#         # store in filesystem
+#         #self._store(self.temp_sys, filesystem)
+#         pass
 
 
-class Run(Stage):
-    #json output
-    def triggered(self, context):
-        pass
+# class Setup(Stage):
 
-    def process(self, context):
-        pass
+#     def triggered(self, context):
+#         pass
 
-    def output(self, context):
-        pass
+#     def process(self, context):
+#         pass
 
-
-class Check(Stage):
-    def triggered(self, context):
-        pass
-
-    def process(self, context):
-        pass
-
-    def output(self, context):
-        pass
+#     def output(self, context):
+#         pass
 
 
-class Teardown(Stage):
-    def triggered(self, context):
-        pass
+# class Run(Stage):
+#     #json output
+#     def triggered(self, context):
+#         pass
 
-    def process(self, context):
-        pass
+#     def process(self, context):
+#         pass
 
-    def output(self, context):
-        pass
+#     def output(self, context):
+#         pass
+
+
+# class Check(Stage):
+#     def triggered(self, context):
+#         pass
+
+#     def process(self, context):
+#         pass
+
+#     def output(self, context):
+#         pass
+
+
+# class Teardown(Stage):
+#     def triggered(self, context):
+#         pass
+
+#     def process(self, context):
+#         pass
+
+#     def output(self, context):
+#         pass
 
 
 class ParallelStage(Stage):
@@ -469,73 +465,73 @@ class SmartConnector(object):
             raise PackageFailedError()
 
 
-def mainloop():
-# load system wide settings, e.g Security_Group
-#communicating between stages: crud context or filesystem
-#build context with file system as its only entry
-    context = {}
-    context['version'] = "1.0.0"
+# def mainloop():
+# # load system wide settings, e.g Security_Group
+# #communicating between stages: crud context or filesystem
+# #build context with file system as its only entry
+#     context = {}
+#     context['version'] = "1.0.0"
 
-    #smart_con = SmartConnector()
-    filesys = FileSystem()
-    path_fs = '/home/iyusuf/connectorFS'
-    filesys.create_initial_filesystem(path_fs)
-   # filesys.create_file(path_fs, 'Iman')
-    filesys.create_filesystem("newFS")
+#     #smart_con = SmartConnector()
+#     filesys = FileSystem()
+#     path_fs = '/home/iyusuf/connectorFS'
+#     filesys.create_initial_filesystem(path_fs)
+#    # filesys.create_file(path_fs, 'Iman')
+#     filesys.create_filesystem("newFS")
 
-    filesys.delete_filesystem("newFS")
-    filesys.delete_file("Iman")
-    filesys.create_file('/home/iyusuf/Butini',
-                        dest_filesystem='/home/iyusuf/connectorFS/Seid')
+#     filesys.delete_filesystem("newFS")
+#     filesys.delete_file("Iman")
+#     filesys.create_file('/home/iyusuf/Butini',
+#                         dest_filesystem='/home/iyusuf/connectorFS/Seid')
 
-    file_name = 'tobeupdated'
-    absolute_path = os.path.join(filesys.toplevel_filesystem,
-                                 file_name)
+#     file_name = 'tobeupdated'
+#     absolute_path = os.path.join(filesys.toplevel_filesystem,
+#                                  file_name)
 
-    f = open(absolute_path, 'w')
-    f.write("Line 1")
-    f.write("line 2")
-    f.close()
-
-
-    #filesys.update_file('Butini')
-    #filesys.delete_file(path_fs, 'Iman')
-
-    #filesys.create_initial_filesystem()
-    #filesys.load_generic_settings()
-
-    #for stage in (Configure(), Create(), Setup(), Run(), Check(), Teardown()):
-     #   smart_con.register(stage)
+#     f = open(absolute_path, 'w')
+#     f.write("Line 1")
+#     f.write("line 2")
+#     f.close()
 
 
-    #print smart_con.stages
+#     #filesys.update_file('Butini')
+#     #filesys.delete_file(path_fs, 'Iman')
 
-    #while loop is infinite:
-    # check the semantics for 'dropping data' into
-    # designated location.
-    #What happens if data is dropped while
-    #another is in progress?
+#     #filesys.create_initial_filesystem()
+#     #filesys.load_generic_settings()
+
+#     #for stage in (Configure(), Create(), Setup(), Run(), Check(), Teardown()):
+#      #   smart_con.register(stage)
 
 
-    #while(True):
+#     #print smart_con.stages
 
-    #while (True):
-     #   done = 0
-      #  for stage in smart_con.stages:
-       #     print "Working in stage",stage
-        #    if stage.triggered(context):
-         #       stage.process(context)
-          #      stage.output(context)
-           #     done += 1
-                #smart_con.unregister(stage)
-                #print "Deleting stage",stage
-            #    print done
+#     #while loop is infinite:
+#     # check the semantics for 'dropping data' into
+#     # designated location.
+#     #What happens if data is dropped while
+#     #another is in progress?
 
-        #if done == len(smart_con.stages):
-         #   break
 
-if __name__ == '__main__':
-    begins = time.time()
-    mainloop()
-    ends = time.time()
-    print "Total execution time: %d seconds" % (ends - begins)
+#     #while(True):
+
+#     #while (True):
+#      #   done = 0
+#       #  for stage in smart_con.stages:
+#        #     print "Working in stage",stage
+#         #    if stage.triggered(context):
+#          #       stage.process(context)
+#           #      stage.output(context)
+#            #     done += 1
+#                 #smart_con.unregister(stage)
+#                 #print "Deleting stage",stage
+#             #    print done
+
+#         #if done == len(smart_con.stages):
+#          #   break
+
+# if __name__ == '__main__':
+#     begins = time.time()
+#     mainloop()
+#     ends = time.time()
+#     print "Total execution time: %d seconds" % (ends - begins)
