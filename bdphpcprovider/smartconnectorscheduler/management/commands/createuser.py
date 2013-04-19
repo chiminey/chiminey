@@ -50,7 +50,8 @@ class Command(BaseCommand):
             help='Specifies the username for the user.'),
         make_option('--email', dest='email', default=None,
             help='Specifies the email address for the user.'),
-        make_option('--remotefsys', dest='remotefsys', default="/opt/cloudenabling/current/bdphpcprovider/smartconnectorscheduler/testing/remotesys/",
+        make_option('--remotefsys', dest='remotefsys',
+            default="/opt/cloudenabling/current/bdphpcprovider/smartconnectorscheduler/testing/remotesys/",
             help='Specifies the email address for the user.'),
         make_option('--noinput', action='store_false', dest='interactive', default=True,
             help=('Tells Django to NOT prompt the user for input of any kind. '
@@ -175,7 +176,7 @@ class Command(BaseCommand):
             'nci_password': 'changemepassword',  # NB: change this password
             'nci_host': '127.0.0.1',
             'nci_private_key': '',
-            'nectar_private_key_name': '',
+            'nectar_private_key_name': 'file://local@127.0.0.1/mynectarkey.pem',
             'nectar_private_key': '',
             'nectar_ec2_access_key': '',
             'nectar_ec2_secret_key': '',

@@ -105,7 +105,8 @@ def create_VM_instances(number_vm_instances, settings):
     try:
         logger.info("Creating %d VM instance(s)" % number_vm_instances)
         instance_count = 0
-        logger.debug("Instance Count %d total %d" % (instance_count, number_vm_instances))
+        logger.debug("Instance Count %d total %d" % (instance_count,
+            number_vm_instances))
         while instance_count < number_vm_instances:
             #logger.debug(number_vm_instances)
             reservation = connection.run_instances(
@@ -206,7 +207,6 @@ def collect_instances(settings, group_id=None, instance_id=None, all_VM=False):
     elif instance_id:
         if is_instance_running(instance_id, settings):
             all_instances.append(_get_this_instance(instance_id, settings))
-
     return all_instances
 
 
@@ -433,6 +433,12 @@ def get_rego_nodes(group_id, settings):
                               settings=settings)
         except AuthError:
             logger.warn("node skipped as cannot access")
+            continue
+        except Exception, e:
+            # TODO: we assume crashed nodes not in group, we
+            # need to store the assigned IPs in the context
+            # to avoid having to recheck all nodes.
+            logger.error("get_rego_nodes exception %s" % e)
             continue
         logger.debug("ssh client created %s" % ssh_client)
         # NOTE: assumes use of bash shell

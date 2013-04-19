@@ -25,6 +25,8 @@ from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import sshconnector
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler import models
+from bdphpcprovider.smartconnectorscheduler import hrmcstages
+
 
 
 logger = logging.getLogger(__name__)
@@ -79,7 +81,9 @@ class LocalProgramStage(Stage):
         # condition should always be True, though we might reuse the same Stage for different
         # platforms
         if platform.name == 'nci':
-            param_paths = [smartconnector.get_remote_path(x) for x in param_urls]
+            bdp_urls = [smartconnector.get_url_with_pkey(self.user_settings, x) for x in param_urls]
+            logger.debug("bdp_urls=%s" % bdp_urls)
+            param_paths = [hrmcstages.get_remote_path(x) for x in bdp_urls]
             # FIXME: check that these param_paths are actually local to NCI and not elsewhere
             logger.debug("remote paths=%s" % param_paths)
             # TODO: implement handling of config arguments

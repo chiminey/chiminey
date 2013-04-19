@@ -25,6 +25,7 @@ from bdphpcprovider.smartconnectorscheduler.hrmcstages import clear_temp_files, 
     get_filesys, get_settings, get_run_info
 from bdphpcprovider.smartconnectorscheduler.botocloudconnector import create_environ
 from bdphpcprovider.smartconnectorscheduler import smartconnector
+from bdphpcprovider.smartconnectorscheduler import hrmcstages
 
 logger = logging.getLogger(__name__)
 
@@ -43,8 +44,10 @@ class Create(Stage):
             but not group_id
         """
         #logger.debug("User_settings %s \n Run_settings %s" % (self.user_settings, run_settings))
-        if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/create', 'group_id'):
-            if self._exists(run_settings, 'http://rmit.edu.au/schemas/system', 'platform'):
+        if not self._exists(run_settings,
+            'http://rmit.edu.au/schemas/stages/create', 'group_id'):
+            if self._exists(run_settings,
+                'http://rmit.edu.au/schemas/system', 'platform'):
                 self.platform = run_settings['http://rmit.edu.au/schemas/system'][u'platform']
             return True
         return False
@@ -76,9 +79,11 @@ class Create(Stage):
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/create/nectar_password')
 
-        self.boto_settings['private_key'] = self.user_settings['nectar_private_key']
         self.boto_settings['username'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_username']
         self.boto_settings['password'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
+        key_file = hrmcstages.retrieve_private_key(self.boto_settings, self.user_settings['nectar_private_key'])
+        self.boto_settings['private_key'] = key_file
+        self.boto_settings['nectar_private_key'] = key_file
 
         logger.debug("botosettings=%s" % self.boto_settings)
         self.group_id = create_environ(number_vm_instances, self.boto_settings)
@@ -92,9 +97,9 @@ class Create(Stage):
         """
         Inserting a new group if into run settings.
         """
-        if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/create'):
-            run_settings['http://rmit.edu.au/schemas/stages/create'] = {}
-        run_settings['http://rmit.edu.au/schemas/stages/create'][u'group_id'] = self.group_id
+
+        run_settings.setdefault(
+            'http://rmit.edu.au/schemas/stages/create', {})[u'group_id'] \
+            = self.group_id
         logger.debug("Updated run settings %s" % run_settings)
         return run_settings
-

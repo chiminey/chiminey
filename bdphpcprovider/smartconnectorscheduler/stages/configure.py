@@ -19,9 +19,6 @@
 # IN THE SOFTWARE.
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, UI
-from bdphpcprovider.smartconnectorscheduler.filesystem import FileSystem, DataObject
-from bdphpcprovider.smartconnectorscheduler.hrmcstages import get_settings
-from bdphpcprovider.smartconnectorscheduler.errors import ContextKeyMissing
 
 import logging
 logger = logging.getLogger(__name__)
@@ -37,7 +34,9 @@ class Configure(Stage, UI):
         self.user_settings = user_settings
 
     def triggered(self, run_settings):
-        if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/configure', 'configure_done'):
+        if self._exists(run_settings,
+            'http://rmit.edu.au/schemas/stages/configure',
+            'configure_done'):
             return False
         return True
 
@@ -46,8 +45,13 @@ class Configure(Stage, UI):
 
     def output(self, run_settings):
 
-        if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/configure'):
-            run_settings['http://rmit.edu.au/schemas/stages/configure'] = {}
-        run_settings['http://rmit.edu.au/schemas/stages/configure'][u'configure_done'] = True
+        run_settings.setdefault(
+            'http://rmit.edu.au/schemas/stages/configure',
+            {})[u'configure_done'] = True
+        # if not self._exists(run_settings,
+        #         'http://rmit.edu.au/schemas/stages/configure'):
+        #     run_settings['http://rmit.edu.au/schemas/stages/configure'] = {}
+        # run_settings['http://rmit.edu.au/schemas/stages/configure']
+        # [u'configure_done'] = True
 
         return run_settings

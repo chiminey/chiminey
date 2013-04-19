@@ -35,11 +35,18 @@ class Setup(Stage):
         Triggered if appropriate vms exist and we have not finished setup
         """
 
-        if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/create', u'group_id'):
-            self.group_id = run_settings['http://rmit.edu.au/schemas/stages/create'][u'group_id']
-        else:
-            logger.warn("no group_id found when expected")
+        try:
+            self.group_id = smartconnector.get_existing_key(run_settings,
+                'http://rmit.edu.au/schemas/stages/create/group_id')
+        except KeyError:
+            logger.warn("no group_id found in context")
             return False
+
+        # if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/create', u'group_id'):
+        #     self.group_id = run_settings['http://rmit.edu.au/schemas/stages/create'][u'group_id']
+        # else:
+        #     logger.warn("no group_id found when expected")
+        #     return False
 
         logger.debug("group_id = %s" % self.group_id)
 
@@ -71,9 +78,14 @@ class Setup(Stage):
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/create/nectar_password')
 
-        self.boto_settings['private_key'] = self.user_settings['nectar_private_key']
-        self.boto_settings['username'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_username']
-        self.boto_settings['password'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
+        self.boto_settings['username'] = \
+            run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_username']
+        self.boto_settings['password'] = \
+            run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
+        key_file = hrmcstages.retrieve_private_key(self.boto_settings, self.user_settings['nectar_private_key'])
+        self.boto_settings['private_key'] = key_file
+        self.boto_settings['nectar_private_key'] = key_file
+
 
         self.packaged_nodes = botocloudconnector.get_rego_nodes(self.group_id,
             self.boto_settings)
@@ -93,14 +105,18 @@ class Setup(Stage):
         """
         Store number of packages nodes as setup_finished in runinfo.sys
         """
-        if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/setup'):
-            run_settings['http://rmit.edu.au/schemas/stages/setup'] = {}
-        run_settings['http://rmit.edu.au/schemas/stages/setup']['setup_finished'] = len(self.packaged_nodes)
-
-        if not self._exists(run_settings, 'http://rmit.edu.au/schemas/system/misc'):
-            run_settings['http://rmit.edu.au/schemas/system/misc'] = {}
-        run_settings['http://rmit.edu.au/schemas/system/misc']['id'] = 0
-
+        run_settings.setdefault(
+            'http://rmit.edu.au/schemas/stages/setup',
+            {})[u'setup_finished'] = len(self.packaged_nodes)
+        # if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/setup'):
+        #     run_settings['http://rmit.edu.au/schemas/stages/setup'] = {}
+        # run_settings['http://rmit.edu.au/schemas/stages/setup']['setup_finished'] = len(self.packaged_nodes)
+        run_settings.setdefault(
+            'http://rmit.edu.au/schemas/system/misc',
+            {})[u'id'] = 0
+        # if not self._exists(run_settings, 'http://rmit.edu.au/schemas/system/misc'):
+        #     run_settings['http://rmit.edu.au/schemas/system/misc'] = {}
+        # run_settings['http://rmit.edu.au/schemas/system/misc']['id'] = 0
         # FIXME: probably should be set at beginning of run or connector?
         #update_key('id', 0, context)
         logger.debug('Setup output returned')

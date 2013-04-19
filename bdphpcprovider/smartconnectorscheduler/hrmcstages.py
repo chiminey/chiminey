@@ -20,15 +20,10 @@
 
 # Contains the specific connectors and stages for HRMC
 
-import sys
 import os
-import time
 import logging
 import logging.config
 import json
-import os
-import sys
-import re
 import collections
 from pprint import pformat
 from urlparse import urlparse, parse_qsl
@@ -39,8 +34,6 @@ from django.template import Context, Template
 from django.core.files.base import ContentFile
 from django.contrib.auth.models import User
 from django.core.files.storage import FileSystemStorage
-from django.core.files.storage import default_storage
-from django.core.files.base import ContentFile
 from storages.backends.sftpstorage import SFTPStorage
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, UI, SmartConnector, get_url_with_pkey
@@ -50,6 +43,7 @@ from bdphpcprovider.smartconnectorscheduler.botocloudconnector import create_env
 from bdphpcprovider.smartconnectorscheduler.errors import ContextKeyMissing, InvalidInputError
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
 from bdphpcprovider.smartconnectorscheduler import models
+from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 
 logger = logging.getLogger(__name__)
@@ -99,7 +93,7 @@ def retrieve_settings(profile):
 
     return settings
 
-
+@deprecated
 def get_file_from_context(context, fname):
     """
     Retrieve the content of a remote file with fname
@@ -110,7 +104,7 @@ def get_file_from_context(context, fname):
     content = remote_fs.open(f).read()
     return content
 
-
+@deprecated
 def get_settings(context):
     """
     Return contents of config.sys file as a dictionary
@@ -129,7 +123,7 @@ def get_settings(context):
         logger.debug('ContextKeyMissing exception')
         raise
 
-
+@deprecated
 def _get_run_info_file(context):
     """
     Returns the actual runinfo data object. If problem, return blank data object
@@ -197,7 +191,7 @@ def update_key(key, value, context):
     run_info_file.setContent(run_info_content_blob)
     filesystem.update("default", run_info_file)
 
-
+@deprecated
 def delete_key(key, context):
     """
     Removes key from the filesystem runinfo.sys file
@@ -271,7 +265,7 @@ def values_match_schema(schema, values):
     return True
 
 
-def _get_new_local_url(url):
+def get_new_local_url(url):
     """
     Create local resource to hold instantiated template for command execution.
 
@@ -368,7 +362,7 @@ def _get_command_actual_args(directive_args, user_settings):
                 logger.debug("rendering_context = %s" % rendering_context)
                 con = Context(rendering_context)
                 logger.debug("prerending content = %s" % t)
-                local_url = _get_new_local_url(file_url)  # TODO: make remote
+                local_url = get_new_local_url(file_url)  # TODO: make remote
                 logger.debug("local_rul=%s" % local_url)
                 rendered_content = t.render(con).encode('utf-8')
                 logger.debug("rendered_content=%s" % rendered_content)
@@ -434,6 +428,36 @@ def get_http_url(non_http_url):
     return http_url
 
 
+def parse_bdpurl(bdp_url):
+    """
+    Break down a BDP url into component parts via http protocol and urlparse
+    """
+    scheme = urlparse(bdp_url).scheme
+    http_file_url = get_http_url(bdp_url)
+    o = urlparse(http_file_url)
+    mypath = o.path
+    location = o.netloc
+    host = o.hostname
+    if mypath[0] == os.path.sep:
+        mypath = mypath[1:]
+    logger.debug("mypath=%s" % mypath)
+    query = parse_qsl(o.query)
+    query_settings = dict(x[0:] for x in query)
+    return (scheme, host, mypath, location, query_settings)
+
+
+def get_remote_path(bdp_url):
+    """
+    Get the actual path for the bdp_url
+    """
+    logger.debug("bdp_url=%s" % bdp_url)
+    (scheme, host, mypath, location, query_setting) = parse_bdpurl(bdp_url)
+    root_path = query_setting['root_path']
+    remote_path = os.path.join(root_path, mypath)
+    logger.debug("remote_path=%s" % remote_path)
+    return remote_path
+
+
 def delete_files(url, exceptions=None):
     """
     Supports only file and ssh schemes
@@ -442,14 +466,15 @@ def delete_files(url, exceptions=None):
     :return:
     """
     logger.debug("delete_files")
-    http_url = get_http_url(url)
-    path = urlparse(http_url).path
-    if path[0] == os.path.sep:
-        path = path[1:]
+    # http_url = get_http_url(url)
+    # path = urlparse(http_url).path
+    # if path[0] == os.path.sep:
+    #     path = path[1:]
+    (scheme, host, path, location, query_settings) = parse_bdpurl(url)
     logger.debug('Path %s ' % path)
+
     fsys = get_filesystem(url)
     logger.debug("fsys=%s" % pformat(fsys))
-
     try:
         current_content = fsys.listdir(path)
     except OSError:
@@ -511,27 +536,27 @@ def list_dirs(url, list_files=False):
     return l
 
 
-def get_filesystem(url):
+def get_filesystem(bdp_url):
     """
     """
-    scheme = urlparse(url).scheme
-    http_url = get_http_url(url)
-    parsed_url = urlparse(http_url)
-    query = parse_qsl(parsed_url.query)
-    query_settings = dict(x[0:] for x in query)
+    # scheme = urlparse(url).scheme
+    # http_url = get_http_url(url)
+    # parsed_url = urlparse(http_url)
+    # query = parse_qsl(parsed_url.query)
+    # query_settings = dict(x[0:] for x in query)
+    (scheme, host, mpath, location, query_settings) = parse_bdpurl(bdp_url)
     if scheme == "file":
         root_path = get_value('root_path', query_settings)
         logger.debug("self.root_path=%s" % root_path)
         fs = LocalStorage(location=root_path + "/")
     elif scheme == "ssh":
         logger.debug("getting from ssh")
-        host = parsed_url.hostname
-        key_filename = get_value('key_filename', query_settings)
+        key_file = get_value('key_file', query_settings)
         username = get_value('username', query_settings)
         password = get_value('password', query_settings)
         root_path = get_value('root_path', query_settings)
         logger.debug("root_path=%s" % root_path)
-        ssh_settings = {'params': {'key_filename': key_filename,
+        ssh_settings = {'params': {'key_filename': key_file,
                                    'username': username,
                                    'password': password},
                         'host': host,
@@ -578,12 +603,12 @@ def copy_directories(source_url, destination_url):
         fs = LocalStorage(location=root_path + "/")
     elif source_scheme == "ssh":
         logger.debug("getting from ssh")
-        key_filename = get_value('key_filename', query_settings)
+        key_file = get_value('key_file', query_settings)
         username = get_value('username', query_settings)
         password = get_value('password', query_settings)
         root_path = get_value('root_path', query_settings)
         logger.debug("root_path=%s" % root_path)
-        ssh_settings = {'params': {'key_filename': key_filename,
+        ssh_settings = {'params': {'key_filename': key_file,
                                    'username': username,
                                    'password': password},
                         'host': source_location,
@@ -654,6 +679,9 @@ def put_file(file_url, content):
     Writes out the content to the file_url using config info from user_settings. Note that content is bytecodes
     """
     logger.debug("file_url=%s" % file_url)
+    if '..' in file_url:
+        # .. allow url to potentially leave the user filesys. This would be bad.
+        raise InvalidInputError(".. not allowed in urls")
     scheme = urlparse(file_url).scheme
     http_file_url = get_http_url(file_url)
     o = urlparse(http_file_url)
@@ -664,6 +692,7 @@ def put_file(file_url, content):
     logger.debug("mypath=%s" % mypath)
     query = parse_qsl(o.query)
     query_settings = dict(x[0:] for x in query)
+
 
     if '@' in location:
         location = location.split('@')[1]
@@ -681,15 +710,15 @@ def put_file(file_url, content):
         res = response.read()
         logger.debug("response=%s" % res)
     elif scheme == "ssh":
-        key_filename = get_value('key_filename', query_settings)
-        if not key_filename:
-            key_filename = None  # require None for ssh_settings to skip keys
+        key_file = get_value('key_file', query_settings)
+        if not key_file:
+            key_file = None  # require None for ssh_settings to skip keys
         username = get_value('username', query_settings)
         password = get_value('password', query_settings)
         root_path = get_value('root_path', query_settings)
-        logger.debug("key_filename=%s" % key_filename)
+        logger.debug("key_file=%s" % key_file)
         logger.debug("root_path=%s" % root_path)
-        ssh_settings = {'params': {'key_filename': key_filename,
+        ssh_settings = {'params': {'key_filename': key_file,
                                    'username': username,
                                    'password': password},
                         'host': location,
@@ -731,7 +760,9 @@ def get_filep(file_url):
     opens a django file pointer to file_url
     """
     logger.debug("file_url=%s" % file_url)
-
+    if '..' in file_url:
+        # .. allow url to potentially leave the user filesys. This would be bad.
+        raise InvalidInputError(".. not allowed in urls")
     scheme = urlparse(file_url).scheme
     http_file_url = get_http_url(file_url)
     o = urlparse(http_file_url)
@@ -759,15 +790,15 @@ def get_filep(file_url):
         #content = response.read()
     elif scheme == "ssh":
         logger.debug("getting from hpc")
-        key_filename = get_value('key_filename', query_settings)
-        if not key_filename:
-            key_filename = None  # require None for ssh_settings to skip keys
+        key_file = get_value('key_file', query_settings)
+        if not key_file:
+            key_file = None  # require None for ssh_settings to skip keys
 
         username = get_value('username', query_settings)
         password = get_value('password', query_settings)
         root_path = get_value('root_path', query_settings)
         logger.debug("root_path=%s" % root_path)
-        ssh_settings = {'params': {'key_filename': key_filename,
+        ssh_settings = {'params': {'key_filename': key_file,
                                    'username': username,
                                    'password': password},
                         'host': location,
@@ -840,7 +871,7 @@ def _make_new_run_context(stage, profile, run_settings):
     run_context.update_run_settings(run_settings)
     return run_context
 
-
+@deprecated
 def process_all_contexts():
     """
     The main processing loop.  For each context owned by a user, find the next stage to execute,
@@ -951,6 +982,26 @@ def _make_run_settings_for_command(command, command_args, run_settings):
     return run_settings
 
 
+def retrieve_private_key(settings, private_key_url):
+    """
+    Gets the private key from url and stores in local file
+    """
+    # TODO: cache this result, because function used often
+    # TODO/FIXME: need ability to delete this key, because
+    # is senstive.  For example, delete at end of each stage execution.
+    url = smartconnector.get_url_with_pkey(settings,
+        private_key_url)
+    logger.debug("url=%s" % url)
+    key_contents = get_file(url)
+    local_url = smartconnector.get_url_with_pkey(settings,
+        os.path.join("centos", 'key'), is_relative_path=True)
+    logger.debug("local_url=%s" % local_url)
+    put_file(local_url, key_contents)
+    private_key_file = get_remote_path(local_url)
+    logger.debug("private_key_file=%s" % private_key_file)
+    return private_key_file
+
+@deprecated
 def clear_temp_files(context):
     """
     Deletes "default" files from filesystem
@@ -959,6 +1010,7 @@ def clear_temp_files(context):
     print "Deleting temporary files ..."
     filesystem.delete_local_filesystem('default')
     print "done."
+
 
 def test_task():
     print "Hello World"
