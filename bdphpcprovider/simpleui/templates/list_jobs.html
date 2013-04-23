@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Jobs</h1>
+<ul>
+{% for job in object_list %}
+<li>
+JobID= {{ job.id }} Owner={{job.owner.user.username}} CurrentState={{job.current_stage.name}} Deleted={{job.deleted}} <a href="{{ job.get_absolute_url }}">INFO</a>
+</li>
+{% endfor %}
+</ul>
+{% endblock %}
+

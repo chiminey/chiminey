@@ -18,9 +18,11 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, UI
-
+import os
 import logging
+from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, UI
+from bdphpcprovider.smartconnectorscheduler import hrmcstages
+from bdphpcprovider.smartconnectorscheduler import smartconnector
 logger = logging.getLogger(__name__)
 
 
@@ -31,17 +33,35 @@ class Configure(Stage, UI):
     """
 
     def __init__(self, user_settings=None):
-        self.user_settings = user_settings
+        self.user_settings = user_settings.copy()
+        self.job_dir = "hrmcrun"  # TODO: make a stageparameter + suffix on real job number
+        self.boto_settings = user_settings.copy()
 
     def triggered(self, run_settings):
         if self._exists(run_settings,
             'http://rmit.edu.au/schemas/stages/configure',
             'configure_done'):
             return False
+        self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
         return True
 
     def process(self, run_settings):
-        pass
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/system/platform')
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/hrmc/number_dimensions')
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/hrmc/threshold')
+
+        input_location = run_settings['http://rmit.edu.au/schemas/hrmc']['input_location']
+        iter_inputdir = os.path.join("%s%s" % (self.job_dir, self.contextid), "input_0", "initial")
+        source_url = smartconnector.get_url_with_pkey(self.boto_settings,
+            input_location)
+        logger.debug("source_url=%s" % source_url)
+        destination_url = smartconnector.get_url_with_pkey(self.boto_settings,
+            iter_inputdir, is_relative_path=True)
+        logger.debug("destination_url=%s" % destination_url)
+        hrmcstages.copy_directories(source_url, destination_url)
 
     def output(self, run_settings):
 
@@ -53,5 +73,6 @@ class Configure(Stage, UI):
         #     run_settings['http://rmit.edu.au/schemas/stages/configure'] = {}
         # run_settings['http://rmit.edu.au/schemas/stages/configure']
         # [u'configure_done'] = True
+
 
         return run_settings
