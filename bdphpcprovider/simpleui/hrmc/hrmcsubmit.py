@@ -9,7 +9,7 @@ class HRMCSubmitForm(forms.Form):
         widget=forms.TextInput,
     )
     number_of_dimensions = forms.IntegerField(min_value=0)
-    threshold = forms.CharField(label=_("Input Location"),
+    threshold = forms.CharField(label=_("Threshold"),
             max_length=255,
             widget=forms.TextInput,
         )
