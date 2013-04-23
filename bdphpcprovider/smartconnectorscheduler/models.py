@@ -30,6 +30,8 @@ from django.core.exceptions import MultipleObjectsReturned
 from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
 from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 
+from django.core.urlresolvers import reverse
+
 
 logger = logging.getLogger(__name__)
 
@@ -429,8 +431,11 @@ class Context(models.Model):
     """
     owner = models.ForeignKey(UserProfile)
     current_stage = models.ForeignKey(Stage)
-    #deleted = models.BooleanField(default=False)
+    deleted = models.BooleanField(default=False)
     CONTEXT_SCHEMA_NS = "http://rmit.edu.au/schemas/context1"
+
+    def get_absolute_url(self):
+        return reverse('contextview', kwargs={'pk': self.id})
 
     def get_context(self):
         """

@@ -1,0 +1,9 @@
+
+{% extends "base.html" %}
+{% block content %}
+<h1>User Profile</h1>
+<ul>
+{% for profileparameter in object_list %}
+    <li>{{ profileparameter }} </li>
+{% endfor %}
+</ul>

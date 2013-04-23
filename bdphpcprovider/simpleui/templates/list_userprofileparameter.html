@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>User Settings for {{ user }} </h1>
+<ul>
+{% for profileparameter in object_list %} <li>
+{{ profileparameter.name.name }} = {{ profileparameter.value }}
+(<a href="{% url userprofileparameter-edit pk=profileparameter.id %}">edit</a>) </li>
+{% endfor %}
+<p>
+<a href="{% url userprofileparameter-new %}">add user parameter</a>
+</ul>
+{% endblock %}
+

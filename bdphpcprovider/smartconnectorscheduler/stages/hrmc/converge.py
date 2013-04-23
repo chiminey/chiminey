@@ -128,14 +128,16 @@ class Converge(Stage):
         """
         """
 
+        self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
+
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/system/misc', u'id'):
             self.id = run_settings['http://rmit.edu.au/schemas/system/misc'][u'id']
-            self.output_dir = os.path.join(self.job_dir, "output_%d" % self.id)
-            self.iter_inputdir = os.path.join(self.job_dir, "input_%d" % (self.id + 1))
+            self.output_dir = os.path.join("%s%s" % (self.job_dir, self.contextid), "output_%d" % self.id)
+            self.iter_inputdir = os.path.join("%s%s" % (self.job_dir, self.contextid), "input_%d" % (self.id + 1))
             #self.new_iter_inputdir = "input_%d" % (self.id + 1)
         else:
-            self.output_dir = os.path.join(self.job_dir, "output")
-            self.iter_inputdir = os.path.join(self.job_dir, "input")
+            self.output_dir = os.path.join("%s%s" % (self.job_dir, self.contextid), "output")
+            self.iter_inputdir = os.path.join("%s%s" % (self.job_dir, self.contextid), "input")
             self.id = 0
 
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/hrmc', u'error_threshold'):
@@ -341,7 +343,7 @@ class Converge(Stage):
 
     def _ready_final_output(self, crit_node, crit_index):
 
-        new_output_dir = os.path.join(self.job_dir,  'output')
+        new_output_dir = os.path.join("%s%s" % (self.job_dir, self.contextid),  'output')
         # FIXME: check new_output_dir does not already exist
         #fs.create_local_filesystem(new_output_dir)
 

@@ -35,6 +35,8 @@ from bdphpcprovider.smartconnectorscheduler import models
 from getresults import get_results
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
 
+from bdphpcprovider.smartconnectorscheduler.errors import ContextKeyMissing, InvalidInputError
+
 logger = logging.getLogger(__name__)
 
 
@@ -253,14 +255,20 @@ def test_directive(request, directive_id):
             logger.debug("directive_name=%s" % directive_name)
             logger.debug("directive_args=%s" % directive_args)
 
+            try:
             # TODO: each user should only be have one outstanding task at a time (though system would work with more!)
-            (run_settings, command_args, run_context) = hrmcstages.make_runcontext_for_directive(
-                platform,
-                directive_name,
-                directive_args, system_settings, request.user.username)
-            new_run_contexts.append(str(run_context))
+                (run_settings, command_args, run_context) \
+                    = hrmcstages.make_runcontext_for_directive(
+                    platform,
+                    directive_name,
+                    directive_args, system_settings, request.user.username)
+                new_run_contexts.append(str(run_context))
+
+            except InvalidInputError, e:
+                return HttpResponse(str(e))
 
     return HttpResponse("runs= %s" % pformat(new_run_contexts))
+
 
 
 def getoutput(request, group_id, file_id):
