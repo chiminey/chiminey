@@ -299,7 +299,7 @@ class Command(BaseCommand):
                     'description': desc})
 
             for k, v in kv.items():
-                val, help_text, ranking = (v[0], v[1])
+                val, help_text, ranking = (v[0], v[1], v[2])
                 models.ParameterName.objects.get_or_create(
                     schema=context_schema,
                     name=k,
@@ -406,6 +406,7 @@ class Command(BaseCommand):
         self.finished_package = "bdphpcprovider.smartconnectorscheduler.stages.finished.Finished"
         self.transform_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc.transform.Transform"
         self.converge_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc.converge.Converge"
+	self.teardown_package = "bdphpcprovider.smartconnectorscheduler.stages.teardown.Teardown"
 
         hrmc_composite_stage, _ = models.Stage.objects.get_or_create(name="hrmc_connector",
             description="Encapsultes HRMC smart connector workflow",
