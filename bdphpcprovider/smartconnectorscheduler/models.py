@@ -59,6 +59,7 @@ class Schema(models.Model):
     namespace = models.URLField(verify_exists=False, max_length=400, help_text="A URI that uniquely ids the schema")
     description = models.CharField(max_length=80, default="", help_text="The description of this schema")
     name = models.SlugField(default="", help_text="A unique identifier for the schema")
+    hidden = models.BooleanField(default=False)
 
     class Meta:
         unique_together = (('namespace', 'name'),)
