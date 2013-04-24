@@ -39,6 +39,10 @@ class MovementStage(Stage):
         self.boto_settings = user_settings.copy()
         pass
 
+    def input_valid(self, settings_to_test):
+        return (True, "ok")
+
+
     def triggered(self, run_settings):
         """
         Return true if the directory pattern triggers this stage, or there
@@ -59,15 +63,16 @@ class MovementStage(Stage):
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/system/platform')
 
+        dir_exists = False
         try:
             encoded_d_url = get_url_with_pkey(self.boto_settings, dest_url)
-            content = hrmcstages.get_file(encoded_d_url)
+            dir_exists  = hrmcstages.dir_exists(encoded_d_url)
         except IOError:
             # TODO: should check checksum of dest to make sure we have correct transfer
             logger.debug("dest file does not exist: %s" % dest_url)
             return True
 
-        return False
+        return not dir_exists
 
     def process(self, run_settings):
         """ perfrom the stage operation
@@ -78,17 +83,17 @@ class MovementStage(Stage):
 
         source_url = run_settings['http://rmit.edu.au/schemas/copy/files']['file0']
         logger.debug("source_url=%s" % source_url)
-
         encoded_s_url = get_url_with_pkey(self.boto_settings, source_url)
 
-        content = hrmcstages.get_file(encoded_s_url)  # we assume text files
-        logger.debug("content=%s" % content)
         dest_url = run_settings['http://rmit.edu.au/schemas/copy/files']['file1']
         logger.debug("dest_url=%s" % dest_url)
-
         encoded_d_url = get_url_with_pkey(self.boto_settings, dest_url)
 
-        hrmcstages.put_file(encoded_d_url, content.encode('utf-8'))  # we assume text files
+        hrmcstages.copy_directories(encoded_s_url, encoded_d_url)
+
+        # content = hrmcstages.get_file(encoded_s_url)  # we assume text files
+        # logger.debug("content=%s" % content)
+        # hrmcstages.put_file(encoded_d_url, content.encode('utf-8'))  # we assume text files
 
     def output(self, run_settings):
         """ produce the resulting datfiles and metadata

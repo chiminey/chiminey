@@ -27,8 +27,6 @@ from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
 
-
-
 logger = logging.getLogger(__name__)
 
 
