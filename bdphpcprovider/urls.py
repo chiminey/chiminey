@@ -40,6 +40,10 @@ urlpatterns = patterns('',
     url(r'^jobs/$', login_required(uiviews.ContextList.as_view()),
         name='hrmcjob-list',),
 
+    url(r'^list/$', login_required(uiviews.ListDirList.as_view()),
+        name='listdir-list',),
+
+
     url(r'^job/(?P<pk>\d+)/$', login_required(uiviews.ContextView.as_view()),
         name='contextview',),
 
