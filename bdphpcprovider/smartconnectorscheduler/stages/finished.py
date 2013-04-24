@@ -117,6 +117,8 @@ class Finished(Stage):
             return False
         logger.debug("group_id = %s" % self.group_id)
 
+        self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
+
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/system/misc', u'id'):
             self.id = run_settings['http://rmit.edu.au/schemas/system/misc'][u'id']
             self.output_dir = "output_%s" % self.id
@@ -177,8 +179,9 @@ class Finished(Stage):
         source_files_url = smartconnector.get_url_with_pkey(self.boto_settings, source_files_location,
             is_relative_path=True, ip_address=ip)
         logger.debug('source_files_url=%s' % source_files_url)
+
         dest_files_url = smartconnector.get_url_with_pkey(self.boto_settings,
-                                                          os.path.join(self.job_dir, self.output_dir,
+                                                          os.path.join("%s%s" % (self.job_dir, self.contextid), self.output_dir,
                                                                        instance_id), is_relative_path=True)
         logger.debug('dest_files_url=%s' % dest_files_url)
         hrmcstages.delete_files(dest_files_url, exceptions=[])

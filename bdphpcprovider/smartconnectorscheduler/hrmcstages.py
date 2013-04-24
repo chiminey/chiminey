@@ -570,6 +570,73 @@ def get_filesystem(bdp_url):
     return fs
 
 
+
+
+def list_all_files(source_url):
+    """
+    Supports only file and ssh schemes
+    :param source_url:
+    :return:
+    """
+    # Will this method copy individual files too?
+    source_scheme = urlparse(source_url).scheme
+    http_source_url = get_http_url(source_url)
+    source = urlparse(http_source_url)
+    source_location = source.netloc
+    source_path = source.path
+    query = parse_qsl(source.query)
+    query_settings = dict(x[0:] for x in query)
+
+    if source_path[0] == os.path.sep:
+        source_path = source_path[1:]
+
+    if source_scheme == "file":
+        root_path = get_value('root_path', query_settings)
+        logger.debug("self.root_path=%s" % root_path)
+        fs = LocalStorage(location=root_path + "/")
+    elif source_scheme == "ssh":
+        logger.debug("getting from ssh")
+        key_file = get_value('key_file', query_settings)
+        username = get_value('username', query_settings)
+        password = get_value('password', query_settings)
+        root_path = get_value('root_path', query_settings)
+        logger.debug("root_path=%s" % root_path)
+        ssh_settings = {'params': {'key_filename': key_file,
+                                   'username': username,
+                                   'password': password},
+                        'host': source_location,
+                        'root': str(root_path) + "/"}
+        logger.debug("nci_settings=%s" % pformat(ssh_settings))
+        fs = NCIStorage(settings=ssh_settings)
+        logger.debug("fs=%s" % fs)
+    else:
+        logger.warn("scheme: %s not supported" % source_scheme)
+        return
+
+    current_content = fs.listdir(source_path)
+    current_path_pointer = source_path
+    dir_path_holder = []
+    file_paths = []
+    while len(current_content) > 0:
+        for i in current_content[1]:
+            file_path = str(os.path.join(current_path_pointer, i))
+            file_paths.append(file_path)
+        for j in current_content[0]:
+            list = [os.path.join(current_path_pointer, j), True]
+            dir_path_holder.append(list)
+        current_content = []
+        for k in dir_path_holder:
+            if k[1]:
+                k[1] = False
+                current_path_pointer = k[0]
+                current_content = fs.listdir(current_path_pointer)
+                logger.debug("Current pointer %s " % current_path_pointer)
+                break
+
+    return sorted(file_paths)
+
+
+
 def copy_directories(source_url, destination_url):
     """
     Supports only file and ssh schemes
@@ -577,6 +644,7 @@ def copy_directories(source_url, destination_url):
     :param destination_url:
     :return:
     """
+    # FIXME: Will not work with individual files, not directories
     logger.debug("copy_directories %s -> %s" % (source_url, destination_url))
     source_scheme = urlparse(source_url).scheme
     http_source_url = get_http_url(source_url)
@@ -740,6 +808,17 @@ def put_file(file_url, content):
     return content
 
 
+def dir_exists(dir_url):
+    # Can't use exists here because directories cannot be accessed directly
+    # FIXME: this can be slow
+    try:
+        file_paths = list_all_files(dir_url)
+    except OSError:
+        return False
+    logger.debug("file_paths=%s" % pformat(file_paths))
+    return len(file_paths) > 0
+
+
 def get_file(file_url):
     """
     Reads in content at file_url using config info from user_settings
@@ -824,10 +903,52 @@ def get_filep(file_url):
     return fp
 
 
+
+def transfer(old, new):
+    """
+    Transfer new dict into new dict at two levels by items rather than wholesale
+    update (which would overwrite at the second level)
+    """
+    for k, v in new.items():
+        for k1, v1 in v.items():
+            if not k in old:
+                old[k] = {}
+            old[k][k1] = v1
+    return old
+
+def check_settings_valid(settings_to_test, user_settings, command):
+    """
+    Check that the run_settings and stage_settings for a stage are
+    valid before scheduling to detect major errors before runtime
+    """
+
+    children = models.Stage.objects.filter(parent=command.stage)
+    if children:
+        stageset = children
+    else:
+        stageset = [command.stage]
+    for current_stage in stageset:
+        stage_settings = current_stage.get_settings()
+        settings_to_test = transfer(stage_settings, settings_to_test)
+        try:
+            stage = safe_import(current_stage.package, [],
+                {'user_settings': user_settings})
+        except ImproperlyConfigured:
+            return (False, "Except in import of stage: %s: %s"
+                % (current_stage.name, e))
+        logger.debug("stage=%s", stage)
+        is_valid, problem = stage.input_valid(settings_to_test)
+        if not is_valid:
+            return (False, "precondition error in stage: %s: %s"
+                % (current_stage.name, problem))
+    return (True, "ok")
+
+
 def make_runcontext_for_directive(platform_name, directive_name,
     directive_args, initial_settings, username):
     """
-    Create a new runcontext with the commmand equivalent to the directive on the platform.
+    Create a new runcontext with the commmand equivalent to the directive
+    on the platform.
     """
     logger.debug("Platform Name %s" % platform_name)
     user = User.objects.get(username=username)  # FIXME: pass in username
@@ -836,25 +957,39 @@ def make_runcontext_for_directive(platform_name, directive_name,
 
     run_settings = dict(initial_settings)  # we may share initial_settings
 
-    system = {u'platform': platform_name}
-    run_settings[u'http://rmit.edu.au/schemas/system'] = system
-
     directive = models.Directive.objects.get(name=directive_name)
-    command_for_directive = models.Command.objects.get(directive=directive, platform=platform)
+    command_for_directive = models.Command.objects.get(directive=directive,
+        platform=platform)
     logger.debug("command_for_directive=%s" % command_for_directive)
     user_settings = retrieve_settings(profile)
     logger.debug("user_settings=%s" % pformat(user_settings))
     # turn the user's arguments into real command arguments.
+
     command_args = _get_command_actual_args(
         directive_args, user_settings)
     logger.debug("command_args=%s" % command_args)
+
     run_settings = _make_run_settings_for_command(command_for_directive,
         command_args, run_settings)
     logger.debug("updated run_settings=%s" % run_settings)
-    run_context = _make_new_run_context(command_for_directive.stage, profile, run_settings)
+
+    settings_valid, problem = check_settings_valid(run_settings,
+        user_settings,
+        command_for_directive)
+    if not settings_valid:
+        raise InvalidInputError(problem)
+
+    system = {u'platform': platform_name, u'contextid': 0}
+    run_settings[u'http://rmit.edu.au/schemas/system'] = system
+
+    run_context = _make_new_run_context(command_for_directive.stage,
+        profile, run_settings)
     logger.debug("run_context =%s" % run_context)
     run_context.current_stage = command_for_directive.stage
     run_context.save()
+
+    run_settings[u'http://rmit.edu.au/schemas/system'][u'contextid'] = run_context.id
+    run_context.update_run_settings(run_settings)
 
     logger.debug("command=%s new runcontext=%s" % (command_for_directive, run_context))
     # FIXME: only return command_args and context because they are needed for testcases

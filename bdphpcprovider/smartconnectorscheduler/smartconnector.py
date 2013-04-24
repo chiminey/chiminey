@@ -241,6 +241,15 @@ class Stage(object):
     def __init__(self):
         pass
 
+    def input_valid(self, settings_to_test):
+        """ Return a tuple, where the first element is True settings_to_test
+        are syntactically and semantically valid for this stage.  Otherwise,
+        return False with the second element in the tuple describing the
+        problem
+        """
+        return (True, "ok")
+        #return (False, "All arguments are assumed invalid until verified")
+
     def triggered(self, context):
         """
         Return true if the directory pattern triggers this stage, or there

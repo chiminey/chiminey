@@ -33,18 +33,6 @@ logger = logging.getLogger(__name__)
 
 
 
-def transfer(old, new):
-    """
-    Transfer new dict into new dict at two levels by items rather than wholesale
-    update (which would overwrite at the second level)
-    """
-    for k, v in new.items():
-        for k1, v1 in v.items():
-            if not k in old:
-                old[k] = {}
-            old[k][k1] = v1
-    return old
-
 @task(name="smartconnectorscheduler.test", ignore_result=True)
 def test():
     print "Hello World"
@@ -53,7 +41,7 @@ def test():
 @task(name="smartconnectorscheduler.run_contexts", time_limit=10000, ignore_result=True)
 def run_contexts():
     try:
-        for context in models.Context.objects.all():
+        for context in models.Context.objects.filter(deleted=False):
             progress_context.delay(context.id)
     except models.Context.DoesNotExist:
         logger.warn("Context removed from other thread")
@@ -62,7 +50,7 @@ def run_contexts():
 @task(name="smartconnectorscheduler.progress_context",time_limit=10000, ignore_result=True)
 def progress_context(context_id):
     try:
-        run_context = models.Context.objects.get(id=context_id)
+        run_context = models.Context.objects.get(id=context_id, deleted=False)
     except models.Context.DoesNotExist:
         logger.warn("Context removed from other thread")
         return
@@ -71,7 +59,7 @@ def progress_context(context_id):
     test_info = []
     with transaction.commit_on_success():
         try:
-            run_context = models.Context.objects.select_for_update(nowait=True).get(id=run_context.id)
+            run_context = models.Context.objects.select_for_update(nowait=True).get(id=run_context.id, deleted=False)
         except DatabaseError:
             logger.info("progress context for %s is already running.  exiting" % context_id)
             return
@@ -94,6 +82,9 @@ def progress_context(context_id):
         run_settings = run_context.get_context()
         logger.debug("retrieved run_settings=%s" % run_settings)
 
+        # FIXME: if we retrieve user_settings now, then cannot
+        # run multiple jobs with different settings.  Better
+        # to freeze current values at start of first stage.
         user_settings = hrmcstages.retrieve_settings(profile)
         logger.debug("user_settings=%s" % user_settings)
 
@@ -111,7 +102,7 @@ def progress_context(context_id):
             logger.debug("stage_settings=%s" % stage_settings)
 
             # This is nasty
-            task_run_settings = transfer(task_run_settings, stage_settings)
+            task_run_settings = hrmcstages.transfer(task_run_settings, stage_settings)
             #task_run_settings.update(stage_settings)
             logger.debug("task run_settings=%s" % task_run_settings)
 
@@ -133,8 +124,9 @@ def progress_context(context_id):
         if not triggered:
             logger.debug("No stages triggered")
             test_info = task_run_settings
-            # FIXME: Rather than deleting, mark as deleted in model.
-            run_context.delete()
+            run_context.deleted = True
+            run_context.save()
+            #run_context.delete()
 
         logger.info("context task %s complete" % (context_id))
         return test_info

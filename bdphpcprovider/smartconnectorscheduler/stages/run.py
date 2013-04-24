@@ -51,6 +51,7 @@ class Run(Stage):
     def __init__(self, user_settings=None):
         self.user_settings = user_settings.copy()
         self.numbfile = 0
+
         self.job_dir = "hrmcrun"  # TODO: make a stageparameter + suffix on real job number
         self.boto_settings = user_settings.copy()
         logger.debug("Run stage initialized")
@@ -61,15 +62,17 @@ class Run(Stage):
          input_dir is assumed to be populated.
         """
 
+        self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
+
         # TODO: we assume initial input is in "%s/input_0" % self.job_dir
         # in configure stage we could copy initial data in 'input_location' into this location
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/system/misc', u'id'):
             self.id = run_settings['http://rmit.edu.au/schemas/system/misc'][u'id']
-            self.iter_inputdir = os.path.join(self.job_dir, "input_%s" % self.id)
+            self.iter_inputdir = os.path.join("%s%s" % (self.job_dir, self.contextid), "input_%s" % self.id)
         else:
             # FIXME: not fully tested
             self.id = 0
-            self.iter_inputdir = os.path.join(self.job_dir, "input_location")
+            self.iter_inputdir = os.path.join("%s%s" % (self.job_dir, self.contextid), "input_location")
 
         # if 'id' in self.boto_settings:
         #     self.id = self.boto_settings['id']
@@ -321,6 +324,9 @@ class Run(Stage):
         '''
         #logger.debug("variations = %s" % variations)
         # generate variations for the input_dir
+        # FIXME: need to make sure we len(nodes) == len(variations)
+        # which happens
+        # If previous stage didn't allocate enough nodes
         for var_fname in variations.keys():
             logger.debug("var_fname=%s" % var_fname)
             for var_content, values in variations[var_fname]:

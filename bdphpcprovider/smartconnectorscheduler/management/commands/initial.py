@@ -110,15 +110,16 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/system/misc':
                 [u'system level misc values',
                 {
-                u'transitions': (models.ParameterName.STRING, '', 3),  # deprecated
-                u'system': (models.ParameterName.STRING, '', 2),
-                u'id': (models.ParameterName.NUMERIC, '', 1),
+                u'transitions': (models.ParameterName.STRING, '', 4),  # deprecated
+                u'system': (models.ParameterName.STRING, '', 3),
+                u'id': (models.ParameterName.NUMERIC, '', 2),
                 }
                 ],
             u'http://rmit.edu.au/schemas/system':
                 [u'Information about the deployment platform',
                 {
-                u'platform': (models.ParameterName.STRING, '', 1),
+                u'platform': (models.ParameterName.STRING, '', 2),
+                u'contextid': (models.ParameterName.NUMERIC, '', 1)
                 }
                 ],
             u'http://tardis.edu.au/schemas/hrmc/dfmeta':
@@ -406,7 +407,7 @@ class Command(BaseCommand):
         self.finished_package = "bdphpcprovider.smartconnectorscheduler.stages.finished.Finished"
         self.transform_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc.transform.Transform"
         self.converge_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc.converge.Converge"
-	self.teardown_package = "bdphpcprovider.smartconnectorscheduler.stages.teardown.Teardown"
+        self.teardown_package = "bdphpcprovider.smartconnectorscheduler.stages.teardown.Teardown"
 
         hrmc_composite_stage, _ = models.Stage.objects.get_or_create(name="hrmc_connector",
             description="Encapsultes HRMC smart connector workflow",

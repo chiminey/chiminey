@@ -30,6 +30,8 @@ from django.core.exceptions import MultipleObjectsReturned
 from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
 from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 
+from django.core.urlresolvers import reverse
+
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +59,7 @@ class Schema(models.Model):
     namespace = models.URLField(verify_exists=False, max_length=400, help_text="A URI that uniquely ids the schema")
     description = models.CharField(max_length=80, default="", help_text="The description of this schema")
     name = models.SlugField(default="", help_text="A unique identifier for the schema")
+    hidden = models.BooleanField(default=False)
 
     class Meta:
         unique_together = (('namespace', 'name'),)
@@ -429,8 +432,11 @@ class Context(models.Model):
     """
     owner = models.ForeignKey(UserProfile)
     current_stage = models.ForeignKey(Stage)
-    #deleted = models.BooleanField(default=False)
+    deleted = models.BooleanField(default=False)
     CONTEXT_SCHEMA_NS = "http://rmit.edu.au/schemas/context1"
+
+    def get_absolute_url(self):
+        return reverse('contextview', kwargs={'pk': self.id})
 
     def get_context(self):
         """

@@ -176,8 +176,8 @@ class Command(BaseCommand):
             'nci_password': 'changemepassword',  # NB: change this password
             'nci_host': '127.0.0.1',
             'nci_private_key': '',
-            'nectar_private_key_name': 'file://local@127.0.0.1/mynectarkey.pem',
-            'nectar_private_key': '',
+            'nectar_private_key': 'file://local@127.0.0.1/mynectarkey.pem',
+            'nectar_private_key_name': '',
             'nectar_ec2_access_key': '',
             'nectar_ec2_secret_key': '',
             }

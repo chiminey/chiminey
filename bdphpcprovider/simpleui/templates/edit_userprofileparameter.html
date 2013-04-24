@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content  %}
+{% if userprofileparameter.id %}
+<h1>Edit User Profile Parameter</h1>
+{% else %}
+<h1>Add User Profile Parameter</h1>
+{% endif %}
+<form action="{{ action }}" method="POST">{% csrf_token %} <ul>
+{{ form.as_ul }}
+</ul>
+<p>
+{% if userprofileparameter.id %}
+<a href="{% url userprofileparameter-delete pk=userprofileparameter.id %}">Delete</a>
+{% endif %}
+<p>
+<input type="submit" value="Save" /> </form>
+
+
+<a href="{% url userprofileparameter-list %}">back to list</a>
+
+{% endblock %}

@@ -106,7 +106,9 @@ TEMPLATE_DIRS = (
     path.join(path.dirname(__file__),
     'smartconnectorscheduler/templates/').replace('\\','/'),
     path.join(path.dirname(__file__),
-    'smartconnectorscheduler/publish/').replace('\\','/')
+    'smartconnectorscheduler/publish/').replace('\\','/'),
+    path.join(path.dirname(__file__),
+    'simpleui/templates/').replace('\\','/'),
 )
 
 TEMPLATE_CONTEXT_PROCESSORS = ("django.contrib.auth.context_processors.auth",
@@ -114,7 +116,8 @@ TEMPLATE_CONTEXT_PROCESSORS = ("django.contrib.auth.context_processors.auth",
      "django.core.context_processors.i18n",
      "django.contrib.messages.context_processors.messages")
 
-OUR_APPS = ('bdphpcprovider.smartconnectorscheduler',)
+OUR_APPS = ('bdphpcprovider.smartconnectorscheduler',
+    'bdphpcprovider.simpleui')
 
 def get_admin_media_path():
     import pkgutil
@@ -212,7 +215,7 @@ FIXTURE_DIRS = (
 
 AUTH_PROFILE_MODULE = "smartconnectorscheduler.UserProfile"
 
-
+#LOGIN_URL = '/login/'
 
 SFTP_STORAGE_HOST = ""
 SFTP_STORAGE_ROOT = ""
