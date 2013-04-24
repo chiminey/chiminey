@@ -324,6 +324,9 @@ class Run(Stage):
         '''
         #logger.debug("variations = %s" % variations)
         # generate variations for the input_dir
+        # FIXME: need to make sure we len(nodes) == len(variations)
+        # which happens
+        # If previous stage didn't allocate enough nodes
         for var_fname in variations.keys():
             logger.debug("var_fname=%s" % var_fname)
             for var_content, values in variations[var_fname]:
