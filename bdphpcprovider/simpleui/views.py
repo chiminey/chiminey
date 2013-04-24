@@ -15,11 +15,17 @@ from django.http import HttpResponseRedirect
 from bdphpcprovider.simpleui.hrmc.hrmcsubmit import HRMCSubmitForm
 from bdphpcprovider.simpleui.hrmc.copy import CopyForm
 from bdphpcprovider.smartconnectorscheduler import models
+
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
+from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler.errors import ContextKeyMissing, \
     InvalidInputError
 
+
+from django.views.generic import View
 from django.views.generic.edit import FormView
+
+from django.views.generic import DetailView
 
 
 class UserProfileParameterListView(ListView):
@@ -79,8 +85,20 @@ class ContextList(ListView):
     def get_queryset(self):
         return models.Context.objects.filter(owner__user=self.request.user)
 
+from django.views.generic.base import TemplateView
 
-from django.views.generic import DetailView
+
+class ListDirList(TemplateView):
+
+    template_name = "listdir.html"
+
+    def get_context_data(self, **kwargs):
+        context = super(ListDirList, self).get_context_data(**kwargs)
+
+        url = smartconnector.get_url_with_pkey({}, ".", is_relative_path=True)
+        file_paths = hrmcstages.list_all_files(url)
+        context['paths'] = file_paths
+        return context
 
 
 class ContextView(DetailView):
@@ -153,7 +171,6 @@ class HRMCSubmitFormView(FormView):
         except InvalidInputError, e:
             return HttpResponse(str(e))
 
-
         return super(HRMCSubmitFormView, self).form_valid(form)
 
 
@@ -162,31 +179,19 @@ class CopyFormView(FormView):
     form_class = CopyForm
     success_url = '/jobs'
 
-    initial = {'source_bdp_url': 'file://127.0.0.1/myotherfiles/input',
-        'destination_bdp_url': 'file://127.0.0.1/myfiles/input_0',
+    initial = {'source_bdp_url': 'file://local@127.0.0.1/myfiles/souredir',
+        'destination_bdp_url': 'file://local@127.0.0.1/myfiles/destdir',
         }
 
     def form_valid(self, form):
         # This method is called when valid form data has been POSTed.
         # It should return an HttpResponse.
-        platform = 'nectar'
-        directive_name = "smartconnector_hrmc"
+        platform = 'nci' #FIXME: should be local
+        directive_name = "copy"
         logger.debug("%s" % directive_name)
         directive_args = []
-
-        directive_args.append(
-            ['',
-                ['http://rmit.edu.au/schemas/hrmc',
-                    ('number_vm_instances',
-                        form.cleaned_data['number_vm_instances']),
-                    (u'iseed', form.cleaned_data['iseed']),
-                    ('input_location',  form.cleaned_data['input_location']),
-                    ('number_dimensions', form.cleaned_data['number_of_dimensions']),
-                    ('threshold', str(form.cleaned_data['threshold'])),
-                    ('error_threshold', str(form.cleaned_data['error_threshold'])),
-                    ('max_iteration', form.cleaned_data['max_iteration'])
-                ]
-            ])
+        directive_args.append([form.cleaned_data['source_bdp_url'], []])
+        directive_args.append([form.cleaned_data['destination_bdp_url'], []])
 
         # make the system settings, available to initial stage and merged with run_settings
         system_dict = {u'system': u'settings'}
@@ -205,6 +210,4 @@ class CopyFormView(FormView):
         except InvalidInputError, e:
             return HttpResponse(str(e))
 
-
-        return super(HRMCSubmitFormView, self).form_valid(form)
-
+        return super(CopyFormView, self).form_valid(form)

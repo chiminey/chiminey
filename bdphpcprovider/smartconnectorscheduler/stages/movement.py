@@ -63,15 +63,16 @@ class MovementStage(Stage):
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/system/platform')
 
+        dir_exists = False
         try:
             encoded_d_url = get_url_with_pkey(self.boto_settings, dest_url)
-            content = hrmcstages.get_file(encoded_d_url)
+            dir_exists  = hrmcstages.dir_exists(encoded_d_url)
         except IOError:
             # TODO: should check checksum of dest to make sure we have correct transfer
             logger.debug("dest file does not exist: %s" % dest_url)
             return True
 
-        return False
+        return not dir_exists
 
     def process(self, run_settings):
         """ perfrom the stage operation

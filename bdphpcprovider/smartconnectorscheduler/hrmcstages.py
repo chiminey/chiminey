@@ -570,6 +570,73 @@ def get_filesystem(bdp_url):
     return fs
 
 
+
+
+def list_all_files(source_url):
+    """
+    Supports only file and ssh schemes
+    :param source_url:
+    :return:
+    """
+    # Will this method copy individual files too?
+    source_scheme = urlparse(source_url).scheme
+    http_source_url = get_http_url(source_url)
+    source = urlparse(http_source_url)
+    source_location = source.netloc
+    source_path = source.path
+    query = parse_qsl(source.query)
+    query_settings = dict(x[0:] for x in query)
+
+    if source_path[0] == os.path.sep:
+        source_path = source_path[1:]
+
+    if source_scheme == "file":
+        root_path = get_value('root_path', query_settings)
+        logger.debug("self.root_path=%s" % root_path)
+        fs = LocalStorage(location=root_path + "/")
+    elif source_scheme == "ssh":
+        logger.debug("getting from ssh")
+        key_file = get_value('key_file', query_settings)
+        username = get_value('username', query_settings)
+        password = get_value('password', query_settings)
+        root_path = get_value('root_path', query_settings)
+        logger.debug("root_path=%s" % root_path)
+        ssh_settings = {'params': {'key_filename': key_file,
+                                   'username': username,
+                                   'password': password},
+                        'host': source_location,
+                        'root': str(root_path) + "/"}
+        logger.debug("nci_settings=%s" % pformat(ssh_settings))
+        fs = NCIStorage(settings=ssh_settings)
+        logger.debug("fs=%s" % fs)
+    else:
+        logger.warn("scheme: %s not supported" % source_scheme)
+        return
+
+    current_content = fs.listdir(source_path)
+    current_path_pointer = source_path
+    dir_path_holder = []
+    file_paths = []
+    while len(current_content) > 0:
+        for i in current_content[1]:
+            file_path = str(os.path.join(current_path_pointer, i))
+            file_paths.append(file_path)
+        for j in current_content[0]:
+            list = [os.path.join(current_path_pointer, j), True]
+            dir_path_holder.append(list)
+        current_content = []
+        for k in dir_path_holder:
+            if k[1]:
+                k[1] = False
+                current_path_pointer = k[0]
+                current_content = fs.listdir(current_path_pointer)
+                logger.debug("Current pointer %s " % current_path_pointer)
+                break
+
+    return sorted(file_paths)
+
+
+
 def copy_directories(source_url, destination_url):
     """
     Supports only file and ssh schemes
@@ -577,7 +644,7 @@ def copy_directories(source_url, destination_url):
     :param destination_url:
     :return:
     """
-    # Will this method copy individual files too?
+    # FIXME: Will not work with individual files, not directories
     logger.debug("copy_directories %s -> %s" % (source_url, destination_url))
     source_scheme = urlparse(source_url).scheme
     http_source_url = get_http_url(source_url)
@@ -739,6 +806,17 @@ def put_file(file_url, content):
         dest_path = fs.save(mypath, ContentFile(content))  # NB: ContentFile only takes bytes
         logger.debug("dest_path=%s" % dest_path)
     return content
+
+
+def dir_exists(dir_url):
+    # Can't use exists here because directories cannot be accessed directly
+    # FIXME: this can be slow
+    try:
+        file_paths = list_all_files(dir_url)
+    except OSError:
+        return False
+    logger.debug("file_paths=%s" % pformat(file_paths))
+    return len(file_paths) > 0
 
 
 def get_file(file_url):

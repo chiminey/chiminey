@@ -25,7 +25,7 @@ class Teardown(smartconnector.Stage):
         if self._exists(run_settings,
             'http://rmit.edu.au/schemas/stages/converge',
             u'converged'):
-            converged = self.settings['http://rmit.edu.au/schemas/stages/converge'][u'converged']
+            converged = self.run_settings['http://rmit.edu.au/schemas/stages/converge'][u'converged']
             if converged:
                 if not self._exists(run_settings,
                     'http://rmit.edu.au/schemas/stages/teardown',
@@ -79,9 +79,9 @@ class Teardown(smartconnector.Stage):
         self.boto_settings['private_key'] = key_file
         self.boto_settings['nectar_private_key'] = key_file
 
-        all_instances = collect_instances(self.settings,
+        all_instances = collect_instances(self.boto_settings,
             group_id=self.group_id)
-        destroy_environ(self.settings, all_instances)
+        destroy_environ(self.boto_settings, all_instances)
 
     def output(self, run_settings):
         run_settings.setdefault(
