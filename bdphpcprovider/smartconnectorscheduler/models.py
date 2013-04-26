@@ -38,8 +38,8 @@ logger = logging.getLogger(__name__)
 
 class UserProfile(models.Model):
     user = models.ForeignKey(User, unique=True, help_text="Information about the user")
-    company = models.CharField(max_length=255, blank=True, null=True, help_text="Company of the user")
-    nickname = models.CharField(max_length=255, blank=True, null=True, help_text="User's nickname")
+    company = models.CharField(max_length=255, blank=True, help_text="Company of the user")
+    nickname = models.CharField(max_length=255, blank=True, help_text="User's nickname")
 
     PROFILE_SCHEMA_NS = "http://rmit.edu.au/schemas/userprofile1"
 
@@ -192,7 +192,7 @@ class UserProfileParameter(models.Model):
     """
     name = models.ForeignKey(ParameterName, verbose_name="Parameter Name")
     paramset = models.ForeignKey(UserProfileParameterSet, verbose_name="Parameter Set")
-    value = models.TextField(null=True, blank=True, verbose_name="Parameter Value", help_text="The Value of this parameter")
+    value = models.TextField(blank=True, verbose_name="Parameter Value", help_text="The Value of this parameter")
     #ranking = models.IntegerField(default=0,help_text="Describes the relative ordering of parameters when displaying: the larger the number, the more prominent the results")
 
     def __unicode__(self):
@@ -260,7 +260,7 @@ class Stage(models.Model):
     The units of execution.
     """
     name = models.CharField(max_length=256,)
-    impl = models.CharField(max_length=256, null=True, blank=True)
+    impl = models.CharField(max_length=256, blank=True)
     description = models.TextField(default="")
     order = models.IntegerField(default=0)
     parent = models.ForeignKey('self', null=True, blank=True)
@@ -611,7 +611,7 @@ class CommandArgument(models.Model):
 class ContextParameter(models.Model):
     name = models.ForeignKey(ParameterName, verbose_name="Parameter Name")
     paramset = models.ForeignKey(ContextParameterSet, verbose_name="Parameter Set")
-    value = models.TextField(null=True, blank=True, verbose_name="Parameter Value", help_text="The Value of this parameter")
+    value = models.TextField(blank=True, verbose_name="Parameter Value", help_text="The Value of this parameter")
     #ranking = models.IntegerField(default=0,help_text="Describes the relative ordering of parameters when displaying: the larger the number, the more prominent the results")
 
     def __unicode__(self):
@@ -650,7 +650,7 @@ class StageParameterSet(models.Model):
 class StageParameter(models.Model):
     name = models.ForeignKey(ParameterName, verbose_name="Parameter Name")
     paramset = models.ForeignKey(StageParameterSet, verbose_name="Parameter Set")
-    value = models.TextField(null=True, blank=True, verbose_name="Parameter Value", help_text="The Value of this parameter")
+    value = models.TextField(blank=True, verbose_name="Parameter Value", help_text="The Value of this parameter")
     #ranking = models.IntegerField(default=0,help_text="Describes the relative ordering of parameters when displaying: the larger the number, the more prominent the results")
 
     def __unicode__(self):
