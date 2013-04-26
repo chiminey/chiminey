@@ -22,6 +22,7 @@ from bdphpcprovider.smartconnectorscheduler.errors import ContextKeyMissing, \
     InvalidInputError
 
 
+from django.http import Http404
 from django.views.generic import View
 from django.views.generic.edit import FormView
 
@@ -61,6 +62,12 @@ class UpdateUserProfileParameterView(UpdateView):
         context['action'] = reverse('userprofileparameter-edit', kwargs={'pk': self.get_object().id})
         return context
 
+    def get_object(self):
+        object = super(UpdateUserProfileParameterView, self).get_object()
+        if object.paramset.user_profile.user == self.request.user:
+            return object
+        else:
+            raise Http404
 
 class DeleteUserProfileParameterView(DeleteView):
     model = models.UserProfileParameter
@@ -69,6 +76,12 @@ class DeleteUserProfileParameterView(DeleteView):
     def get_success_url(self):
         return reverse('userprofileparameter-list')
 
+    def get_object(self):
+        object = super(DeleteUserProfileParameterView, self).get_object()
+        if object.paramset.user_profile.user == self.request.user:
+            return object
+        else:
+            raise Http404
 
 def logout_page(request):
     """
@@ -117,6 +130,12 @@ class ContextView(DetailView):
         context['settings'] = '<br>'.join(res)
         return context
 
+    def get_object(self):
+            object = super(ContextView, self).get_object()
+            if object.owner.user == self.request.user:
+                return object
+            else:
+                raise Http404
 
 class HRMCSubmitFormView(FormView):
     template_name = 'hrmc.html'
