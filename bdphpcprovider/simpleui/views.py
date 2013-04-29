@@ -87,8 +87,8 @@ def logout_page(request):
     """
     Log users out and re-direct them to the main page.
     """
-    logout(request)
-    return HttpResponseRedirect('/accounts/login')
+    logout(request, next_page="/")
+    return HttpResponseRedirect('/')
 
 
 class ContextList(ListView):

@@ -488,6 +488,7 @@ class Run(Stage):
                     }
                 elif num_dim == 2:
                     self.threshold = run_settings['threshold']
+                    logger.debug("self.threshold=%s" % self.threshold)
                     N = int(self.threshold[0])
                     if not self.id:
                         rand_nums = self._generate_rands(

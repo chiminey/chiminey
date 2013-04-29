@@ -100,6 +100,8 @@ def create_VM_instances(number_vm_instances, settings):
     """
         Create the Nectar VM instance and return ip_address
     """
+    # TODO: create the required security group settings (e.g., ssh) at
+    # nectar automagically, so we can control allowed ports etc.
     connection = _create_cloud_connection(settings)
     all_instances = []
     try:
@@ -298,9 +300,7 @@ def _wait_for_instance_to_start_running(all_instances, settings):
                 all_instances.remove(instance)
             else:
                 logger.debug("Instance not running %s" % instance)
-
-            #print  'Current status of Instance %s: %s' %(instance_id, instance.state)
-
+            logger.debug('Current status of Instance %s: %s' % (instance, instance.state))
         time.sleep(settings['cloud_sleep_interval'])
 
     return all_running_instances
