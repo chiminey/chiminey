@@ -12,11 +12,13 @@ from bdphpcprovider.simpleui import views as uiviews
 
 urlpatterns = patterns('',
 
-    url(r'^accounts/login/$',  login, name="login"),
-    url(r'^accounts/logout/$', logout, name="logout"),
-    url(r'^$', 'django.views.generic.simple.redirect_to', {'url':  '/accounts/profile'}, name='home'),
+    url(r'^admin/', include(admin.site.urls)),
 
-    #url(r'^$', scsviews.hello),
+    ('^accounts/', include('django.contrib.auth.urls')),
+    #url(r'^login/$',  'django.contrib.auth.views.login', name="mylogin"),
+    #url(r'^logout/$', 'django.contrib.auth.views.logout', name="mylogout"),
+    url(r'^$', 'django.views.generic.simple.redirect_to', {'url':  '/accounts/login'}, name='home'),
+
     url(r'^accounts/profile/$', login_required(uiviews.UserProfileParameterListView.as_view()),
         name='userprofileparameter-list',),
     url(r'^accounts/profile/new/$', login_required(uiviews.CreateUserProfileParameterView.as_view()),
@@ -26,26 +28,20 @@ urlpatterns = patterns('',
     url(r'^accounts/profile/delete/(?P<pk>\d+)/$', login_required(uiviews.DeleteUserProfileParameterView.as_view()),
         name='userprofileparameter-delete',),
 
-    url(r'^admin/', include(admin.site.urls)),
-
-    url(r'^output/(?P<group_id>\w+)/(?P<file_id>[\w.]+)/$', scsviews.getoutput, name="getoutput"),
-    url(r'^directive/(?P<directive_id>\d+)/$', scsviews.test_directive),
-
+    url(r'^jobs/$', login_required(uiviews.ContextList.as_view()),
+        name='hrmcjob-list',),
+    url(r'^job/(?P<pk>\d+)/$', login_required(uiviews.ContextView.as_view()),
+        name='contextview',),
     url(r'^jobs/hrmc/new/$', login_required(uiviews.HRMCSubmitFormView.as_view()),
         name='hrmcjob-new',),
     url(r'^jobs/copy/new/$', login_required(uiviews.CopyFormView.as_view()),
         name='copyjob-new',),
 
-
-    url(r'^jobs/$', login_required(uiviews.ContextList.as_view()),
-        name='hrmcjob-list',),
-
     url(r'^list/$', login_required(uiviews.ListDirList.as_view()),
         name='listdir-list',),
 
-
-    url(r'^job/(?P<pk>\d+)/$', login_required(uiviews.ContextView.as_view()),
-        name='contextview',),
+    url(r'^output/(?P<group_id>\w+)/(?P<file_id>[\w.]+)/$', scsviews.getoutput, name="getoutput"),
+    url(r'^directive/(?P<directive_id>\d+)/$', scsviews.test_directive),
 
 )
 urlpatterns += staticfiles_urlpatterns()

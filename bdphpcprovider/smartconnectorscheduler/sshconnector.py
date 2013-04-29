@@ -69,7 +69,8 @@ def open_connection(ip_address, settings):
     #TODO: check for existence of all settings values before going further.
     known_hosts_file = os.path.join("~", ".ssh", "known_hosts")
     ssh_client.load_system_host_keys(os.path.expanduser(known_hosts_file))
-    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    #ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh_client.set_missing_host_key_policy(paramiko.WarningPolicy())
 
     #TODO: handle exceptions if connection does not work.
     # use private key if exists

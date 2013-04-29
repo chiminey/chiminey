@@ -30,7 +30,7 @@ class SchemaAdmin(admin.ModelAdmin):
     search_fields = ['name', 'namespace']
     list_display = ['namespace', 'name', 'description']
     inlines = [ParameterNameInline]
-    ordering = ('namespace','name')
+    ordering = ('namespace', 'name')
 
 
 class ContextParameterInline(admin.TabularInline):
@@ -43,10 +43,13 @@ class ContextParameterInline(admin.TabularInline):
 
 class ContextParameterSetAdmin(admin.ModelAdmin):
     inlines = [ContextParameterInline]
-    list_display = ('context_name', 'schema')
+    list_display = ('context_owner', 'context_name', 'schema', )
 
     def context_name(self, obj):
         return obj.schema.name
+
+    def context_owner(self, obj):
+        return obj.context.owner
 
 
 class UserProfileParameterInline(admin.TabularInline):
@@ -60,9 +63,6 @@ class UserProfileParameterInline(admin.TabularInline):
 class UserProfileParameterSetAdmin(admin.ModelAdmin):
     inlines = [UserProfileParameterInline]
     list_display = ('user_profile', 'schema')
-
-
-
 
 
 class StageParameterInline(admin.TabularInline):
