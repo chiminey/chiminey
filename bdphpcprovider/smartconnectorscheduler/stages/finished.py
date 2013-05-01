@@ -19,6 +19,7 @@
 # IN THE SOFTWARE.
 
 import logging
+import ast
 import os
 
 from bdphpcprovider.smartconnectorscheduler.sshconnector import open_connection
@@ -125,6 +126,11 @@ class Finished(Stage):
         else:
             self.id = 0
             self.output_dir = "output"
+
+        if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run', u'finished_nodes'):
+            self.finished_nodes = str(run_settings['http://rmit.edu.au/schemas/stages/run'][u'finished_nodes'])
+        else:
+            self.finished_nodes = '[]'
 
         logger.debug("output_dir=%s" % self.output_dir)
 
@@ -238,6 +244,9 @@ class Finished(Stage):
 
         self.error_nodes = []
         self.finished_nodes = []
+        # TODO: parse finished_nodes input
+        self.finished_nodes = ast.literal_eval(self.finished_nodes)
+
         for node in self.nodes:
             instance_id = node.id
             #ip = botocloudconnector.get_instance_ip(instance_id, self.boto_settings)
@@ -261,7 +270,7 @@ class Finished(Stage):
                 #we cannot tell whether we have prevous retrieved this output before and finished_nodes
                 # is not maintained between triggerings...
 
-                if not (node.id in [x.id for x in self.finished_nodes]):
+                if not (node.id in [x for x in self.finished_nodes]):
                     self.get_output(instance_id, self.output_dir, self.boto_settings)
 
                     audit_url = smartconnector.get_url_with_pkey(self.boto_settings,
@@ -272,10 +281,10 @@ class Finished(Stage):
                     logger.debug("Audit file url %s" % audit_url)
                     if fsys.exists(audit_url):
                         fsys.delete(audit_url)
+                    self.finished_nodes.append(node.id)
                 else:
                     logger.info("We have already "
                         + "processed output from node %s" % node.id)
-                self.finished_nodes.append(node)
             else:
                 print "job still running on %s: %s\
                 " % (instance_id,
@@ -287,12 +296,19 @@ class Finished(Stage):
         """
         logger.debug("finished stage output")
         nodes_working = len(self.nodes) - len(self.finished_nodes)
+        logger.debug("self.nodes=%s"  % self.nodes)
+        logger.debug("self.finished_nodes=%s"  % self.finished_nodes)
+
+        #FIXME: nodes_working can be negative
 
         # FIXME: possible race condition?
         if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run'):
             run_settings['http://rmit.edu.au/schemas/stages/run'] = {}
         run_settings['http://rmit.edu.au/schemas/stages/run']['runs_left'] = nodes_working
         run_settings['http://rmit.edu.au/schemas/stages/run']['error_nodes'] = nodes_working
+        if not nodes_working:
+            self.finished_nodes = []
+        run_settings['http://rmit.edu.au/schemas/stages/run']['finished_nodes'] = str(self.finished_nodes)
 
         #update_key('error_nodes', len(self.error_nodes), context)
         #update_key('runs_left', nodes_working, context)
