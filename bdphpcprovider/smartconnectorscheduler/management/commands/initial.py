@@ -248,15 +248,16 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/stages/run':
                 [u'the create stage of the smartconnector1',
                 {
-                u'runs_left': (models.ParameterName.NUMERIC, '', 9),
-                u'max_seed_int': (models.ParameterName.NUMERIC, '', 8),
-                u'payload_cloud_dirname': (models.ParameterName.STRING, '', 7),
-                u'compile_file': (models.ParameterName.STRING, '', 6),
-                u'retry_attempts': (models.ParameterName.NUMERIC, '', 5),
-                u'error_nodes': (models.ParameterName.NUMERIC, '', 4),
-                u'initial_numbfile': (models.ParameterName.NUMERIC, '', 3),
-                u'random_numbers': (models.ParameterName.STRING, '', 2),
-                u'rand_index': (models.ParameterName.NUMERIC, '', 1)
+                u'runs_left': (models.ParameterName.NUMERIC, '', 10),
+                u'max_seed_int': (models.ParameterName.NUMERIC, '', 9),
+                u'payload_cloud_dirname': (models.ParameterName.STRING, '', 8),
+                u'compile_file': (models.ParameterName.STRING, '', 7),
+                u'retry_attempts': (models.ParameterName.NUMERIC, '', 6),
+                u'error_nodes': (models.ParameterName.NUMERIC, '', 5),
+                u'initial_numbfile': (models.ParameterName.NUMERIC, '', 4),
+                u'random_numbers': (models.ParameterName.STRING, '', 3),
+                u'rand_index': (models.ParameterName.NUMERIC, '', 2),
+                u'finished_nodes': (models.ParameterName.STRING, '', 1)
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/transform':
