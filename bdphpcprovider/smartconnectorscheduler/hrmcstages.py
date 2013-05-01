@@ -26,6 +26,8 @@ import logging.config
 import json
 import collections
 from pprint import pformat
+import paramiko
+import getpass
 from urlparse import urlparse, parse_qsl
 
 from django.utils.importlib import import_module
@@ -382,6 +384,11 @@ def _get_command_actual_args(directive_args, user_settings):
 class NCIStorage(SFTPStorage):
 
     def __init__(self, settings=None):
+        import pkg_resources
+        version = pkg_resources.get_distribution("django_storages").version
+        if not version is "1.1.6":
+            logger.warn("NCIStorage overrides version 1.1.6 of django_storages. found version %s")
+
         super(NCIStorage, self).__init__()
         if 'params' in settings:
             super(NCIStorage, self).__dict__["_params"] = settings['params']
@@ -389,7 +396,45 @@ class NCIStorage(SFTPStorage):
             super(NCIStorage, self).__dict__["_root_path"] = settings['root']
         if 'host' in settings:
             super(NCIStorage, self).__dict__["_host"] = settings['host']
+        super(NCIStorage, self).__dict__["_dir_mode"] = 0700
         print super(NCIStorage, self)
+
+
+    def _connect(self):
+        """ Overrides internal behaviour to not store host keys
+            Warning: may stop working for later version of SFTPStorage
+            FIXME: this approach is brittle for later version of SFTPStorage
+        """
+        self._ssh = paramiko.SSHClient()
+
+        if self._known_host_file is not None:
+            self._ssh.load_host_keys(self._known_host_file)
+        else:
+            # warn BUT DONT ADD host keys from current user.
+            self._ssh.load_host_keys(os.path.expanduser(os.path.join("~", ".ssh", "known_hosts")))
+
+        # and automatically add new host keys for hosts we haven't seen before.
+        self._ssh.set_missing_host_key_policy(paramiko.WarnPolicy())
+
+        try:
+            self._ssh.connect(self._host, **self._params)
+        except paramiko.AuthenticationException, e:
+            if self._interactive and 'password' not in self._params:
+                # If authentication has failed, and we haven't already tried
+                # username/password, and configuration allows it, then try
+                # again with username/password.
+                if 'username' not in self._params:
+                    self._params['username'] = getpass.getuser()
+                self._params['password'] = getpass.getpass()
+                self._connect()
+            else:
+                raise paramiko.AuthenticationException, e
+        except Exception, e:
+            print e
+
+        if not hasattr(self, '_sftp'):
+            self._sftp = self._ssh.open_sftp()
+
 
     def get_available_name(self, name):
         """
@@ -416,6 +461,10 @@ class LocalStorage(FileSystemStorage):
 
 
 def get_value(key, dictionary):
+    """
+    Return the value for the key in the dictionary, or a blank
+    string
+    """
     try:
         return dictionary[key]
     except KeyError:
