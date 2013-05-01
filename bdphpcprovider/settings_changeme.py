@@ -239,6 +239,8 @@ CELERYBEAT_SCHEDULE = {
 
 #CELERYD_OPTS = "--time-limit=10"
 
+FILE_UPLOAD_PERMISSIONS = 0700
+
 djcelery.setup_loader()
 
 
