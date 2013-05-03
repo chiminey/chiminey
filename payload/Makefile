@@ -1,22 +1,12 @@
 PSD_PACKAGE=PSDCode
 
-setup: setup_hrmc setup_psd print
+setupstart: setup_hrmc
+
+setupdone:
+	@sh ./setupdone.sh 
 
 setup_hrmc:
-	@sudo yum -y install dos2unix
-	@sudo yum -y install gcc-gfortran
-	@sudo yum -y install compat-gcc-34-g77.x86_64
-	@tar --extract --gunzip --verbose --file=aeao_v1_1_package.tar.gz
-	@g77 AEAO_v1_1/HRMC.f -o AEAO_v1_1/HRMC
-
-setup_psd:
-	@sudo yum -y install unzip;
-	@rm -rf $(PSD_PACKAGE)
-	@unzip -o PSDCode.zip
-	@cd $(PSD_PACKAGE); g77 PSD.f -o PSD
-
-print:
-	@echo Setup completed
+	@sh ./setuphrmc.sh >& setup.output &
 
 startrun: psd_run_setup run_hrmc
 
