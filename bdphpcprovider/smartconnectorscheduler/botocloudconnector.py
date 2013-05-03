@@ -82,7 +82,6 @@ def create_environ(number_vm_instances, settings):
     all_instances = create_VM_instances(number_vm_instances, settings)
     logger.debug("Printing ---- %s " % all_instances)
 
-
     if all_instances:
         all_running_instances = _wait_for_instance_to_start_running(all_instances, settings)
         group_id = _store_md5_on_instances(all_running_instances, settings)
@@ -92,6 +91,8 @@ def create_environ(number_vm_instances, settings):
         print_all_information(settings, all_instances=all_running_instances)
         return group_id
 
+        # FIXME: if host keys check fail, then need to remove offending
+        # key from known_hosts and try again.
 
     return None
 

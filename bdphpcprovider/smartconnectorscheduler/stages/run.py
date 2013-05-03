@@ -20,6 +20,7 @@
 
 import sys
 import os
+import ast
 import time
 import logging
 import logging.config
@@ -89,12 +90,6 @@ class Run(Stage):
         else:
             logger.warn("no group_id found when expected")
             return False
-
-        # if self.boto_settings['group_id']:
-        #     self.group_id = self.boto_settings['group_id']
-        # else:
-        #     logger.warn("no group_id found when expected")
-        #     return False
         logger.debug("group_id = %s" % self.group_id)
 
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run', u'initial_numbfile'):
@@ -108,72 +103,83 @@ class Run(Stage):
         else:
             logger.warn("setting rand_index for first iteration")
             self.rand_index = run_settings['http://rmit.edu.au/schemas/hrmc']['iseed']
-
         logger.debug("rand_index=%s" % self.rand_index)
 
-        if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/setup', u'setup_finished'):
-            if run_settings['http://rmit.edu.au/schemas/stages/setup'][u'setup_finished']:
-                setup_nodes = run_settings['http://rmit.edu.au/schemas/stages/setup'][u'setup_finished']
-                smartconnector.copy_settings(self.boto_settings, run_settings,
-                    'http://rmit.edu.au/schemas/stages/setup/payload_source')
-                smartconnector.copy_settings(self.boto_settings, run_settings,
-                    'http://rmit.edu.au/schemas/stages/setup/payload_destination')
-                smartconnector.copy_settings(self.boto_settings, run_settings,
-                    'http://rmit.edu.au/schemas/system/platform')
-                smartconnector.copy_settings(self.boto_settings, run_settings,
-                    'http://rmit.edu.au/schemas/stages/create/group_id_dir')
-                smartconnector.copy_settings(self.boto_settings, run_settings,
-                    'http://rmit.edu.au/schemas/stages/create/custom_prompt')
-                smartconnector.copy_settings(self.boto_settings, run_settings,
-                    'http://rmit.edu.au/schemas/stages/create/cloud_sleep_interval')
-                smartconnector.copy_settings(self.boto_settings, run_settings,
-                    'http://rmit.edu.au/schemas/stages/run/payload_cloud_dirname')
-                smartconnector.copy_settings(self.boto_settings, run_settings,
-                    'http://rmit.edu.au/schemas/stages/run/max_seed_int')
-                smartconnector.copy_settings(self.boto_settings, run_settings,
-                    'http://rmit.edu.au/schemas/stages/run/compile_file')
-                smartconnector.copy_settings(self.boto_settings, run_settings,
-                    'http://rmit.edu.au/schemas/stages/run/retry_attempts')
-                smartconnector.copy_settings(self.boto_settings, run_settings,
-                    'http://rmit.edu.au/schemas/hrmc/number_vm_instances')
-                smartconnector.copy_settings(self.boto_settings, run_settings,
-                    'http://rmit.edu.au/schemas/hrmc/iseed')
-                smartconnector.copy_settings(self.boto_settings, run_settings,
-                    'http://rmit.edu.au/schemas/hrmc/number_dimensions')
-                smartconnector.copy_settings(self.boto_settings, run_settings,
-                    'http://rmit.edu.au/schemas/hrmc/threshold')
-                smartconnector.copy_settings(self.boto_settings, run_settings,
-                    'http://rmit.edu.au/schemas/stages/create/nectar_username')
-                smartconnector.copy_settings(self.boto_settings, run_settings,
-                    'http://rmit.edu.au/schemas/stages/create/nectar_password')
-                smartconnector.copy_settings(self.boto_settings, run_settings,
-                    'http://rmit.edu.au/schemas/stages/run/random_numbers')
-                self.boto_settings['username'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_username']
-                self.boto_settings['password'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
-                key_file = hrmcstages.retrieve_private_key(self.boto_settings, self.user_settings['nectar_private_key'])
-                self.boto_settings['private_key'] = key_file
-                self.boto_settings['nectar_private_key'] = key_file
+        if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/deploy', u'deployed_nodes'):
+            setup_nodes = run_settings['http://rmit.edu.au/schemas/stages/deploy'][u'deployed_nodes']
+        else:
+            return False
+        logger.debug("setup_nodes=%s" % setup_nodes)
 
+        try:
+            number_vm_instances = smartconnector.get_existing_key(run_settings,
+                'http://rmit.edu.au/schemas/hrmc/number_vm_instances')
+        except KeyError:
+            logger.error("no number_vm_instances found in context")
+            return False
 
-                logger.debug("setup_nodes = %s" % setup_nodes)
-                # TODO: remove need to call cloud during triggered() because this is an expensive operation
-                #packaged_nodes = len(botocloudconnector.get_rego_nodes(self.group_id,
-                #    self.boto_settings))
-                #logger.debug("packaged_nodes = %s" % packaged_nodes)
+        logger.debug("number_vm_instances=%s" % number_vm_instances)
 
-                if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run'):
-                    run_settings['http://rmit.edu.au/schemas/stages/run'] = {}
-                if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run', u'runs_left'):
-                    logger.debug("found runs_left")
-                    return False
-                return True
-                # The process tages will recheck this anyway
-                # if packaged_nodes == setup_nodes:
-                #     return True
-                # else:
-                #     logger.error("Indicated number of setup nodes does not match allocated number")
-                #     logger.error("%s != %s" % (packaged_nodes, setup_nodes))
-                #     return False
+        if len(setup_nodes) == number_vm_instances:
+            smartconnector.copy_settings(self.boto_settings, run_settings,
+                'http://rmit.edu.au/schemas/stages/setup/payload_source')
+            smartconnector.copy_settings(self.boto_settings, run_settings,
+                'http://rmit.edu.au/schemas/stages/setup/payload_destination')
+            smartconnector.copy_settings(self.boto_settings, run_settings,
+                'http://rmit.edu.au/schemas/system/platform')
+            smartconnector.copy_settings(self.boto_settings, run_settings,
+                'http://rmit.edu.au/schemas/stages/create/group_id_dir')
+            smartconnector.copy_settings(self.boto_settings, run_settings,
+                'http://rmit.edu.au/schemas/stages/create/custom_prompt')
+            smartconnector.copy_settings(self.boto_settings, run_settings,
+                'http://rmit.edu.au/schemas/stages/create/cloud_sleep_interval')
+            smartconnector.copy_settings(self.boto_settings, run_settings,
+                'http://rmit.edu.au/schemas/stages/run/payload_cloud_dirname')
+            smartconnector.copy_settings(self.boto_settings, run_settings,
+                'http://rmit.edu.au/schemas/stages/run/max_seed_int')
+            smartconnector.copy_settings(self.boto_settings, run_settings,
+                'http://rmit.edu.au/schemas/stages/run/compile_file')
+            smartconnector.copy_settings(self.boto_settings, run_settings,
+                'http://rmit.edu.au/schemas/stages/run/retry_attempts')
+            smartconnector.copy_settings(self.boto_settings, run_settings,
+                'http://rmit.edu.au/schemas/hrmc/number_vm_instances')
+            smartconnector.copy_settings(self.boto_settings, run_settings,
+                'http://rmit.edu.au/schemas/hrmc/iseed')
+            smartconnector.copy_settings(self.boto_settings, run_settings,
+                'http://rmit.edu.au/schemas/hrmc/number_dimensions')
+            smartconnector.copy_settings(self.boto_settings, run_settings,
+                'http://rmit.edu.au/schemas/hrmc/threshold')
+            smartconnector.copy_settings(self.boto_settings, run_settings,
+                'http://rmit.edu.au/schemas/stages/create/nectar_username')
+            smartconnector.copy_settings(self.boto_settings, run_settings,
+                'http://rmit.edu.au/schemas/stages/create/nectar_password')
+            smartconnector.copy_settings(self.boto_settings, run_settings,
+                'http://rmit.edu.au/schemas/stages/run/random_numbers')
+            self.boto_settings['username'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_username']
+            self.boto_settings['password'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
+            key_file = hrmcstages.retrieve_private_key(self.boto_settings, self.user_settings['nectar_private_key'])
+            self.boto_settings['private_key'] = key_file
+            self.boto_settings['nectar_private_key'] = key_file
+
+            logger.debug("setup_nodes = %s" % setup_nodes)
+            # TODO: remove need to call cloud during triggered() because this is an expensive operation
+            #packaged_nodes = len(botocloudconnector.get_rego_nodes(self.group_id,
+            #    self.boto_settings))
+            #logger.debug("packaged_nodes = %s" % packaged_nodes)
+
+            if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run'):
+                run_settings['http://rmit.edu.au/schemas/stages/run'] = {}
+            if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run', u'runs_left'):
+                logger.debug("found runs_left")
+                return False
+            return True
+            # The process tages will recheck this anyway
+            # if packaged_nodes == setup_nodes:
+            #     return True
+            # else:
+            #     logger.error("Indicated number of setup nodes does not match allocated number")
+            #     logger.error("%s != %s" % (packaged_nodes, setup_nodes))
+            #     return False
 
         logger.info("setup was not finished")
         return False
@@ -206,8 +212,11 @@ class Run(Stage):
         """
         logger.info("run_task %s" % instance_id)
         ip = botocloudconnector.get_instance_ip(instance_id, settings)
+        curr_username = settings['username']
+        settings['username'] = 'root'
         ssh = sshconnector.open_connection(ip_address=ip,
                                            settings=settings)
+        settings['username'] = curr_username
         makefile_path = settings['payload_destination']
         command = "cd %s; make %s" % (makefile_path, 'startrun')
         logger.debug("command=%s" % command)
@@ -324,9 +333,6 @@ class Run(Stage):
         '''
         #logger.debug("variations = %s" % variations)
         # generate variations for the input_dir
-        # FIXME: need to make sure we len(nodes) == len(variations)
-        # which happens
-        # If previous stage didn't allocate enough nodes
         for var_fname in variations.keys():
             logger.debug("var_fname=%s" % var_fname)
             for var_content, values in variations[var_fname]:
@@ -488,8 +494,9 @@ class Run(Stage):
                     }
                 elif num_dim == 2:
                     self.threshold = run_settings['threshold']
-                    logger.debug("self.threshold=%s" % self.threshold)
-                    N = int(self.threshold[0])
+                    logger.debug("threshold=%s" % self.threshold)
+                    N = int(ast.literal_eval(self.threshold)[0])
+                    logger.debug("N=%s" % N)
                     if not self.id:
                         rand_nums = self._generate_rands(
                             0, self.boto_settings['max_seed_int'],

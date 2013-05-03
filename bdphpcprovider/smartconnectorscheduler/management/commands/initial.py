@@ -245,6 +245,13 @@ class Command(BaseCommand):
                 u'payload_destination': (models.ParameterName.STRING, '', 1),
                 }
                 ],
+            u'http://rmit.edu.au/schemas/stages/deploy':
+                [u'the deploy stage of the smartconnector1',
+                {
+                u'started': (models.ParameterName.STRING, '', 2),
+                u'deployed_nodes': (models.ParameterName.STRING, '', 1)
+                }
+                ],
             u'http://rmit.edu.au/schemas/stages/run':
                 [u'the create stage of the smartconnector1',
                 {
@@ -404,6 +411,7 @@ class Command(BaseCommand):
         self.configure_package = "bdphpcprovider.smartconnectorscheduler.stages.configure.Configure"
         self.create_package = "bdphpcprovider.smartconnectorscheduler.stages.create.Create"
         self.setup_package = "bdphpcprovider.smartconnectorscheduler.stages.setup.Setup"
+        self.deploy_package = "bdphpcprovider.smartconnectorscheduler.stages.deploy.Deploy"
         self.run_package = "bdphpcprovider.smartconnectorscheduler.stages.run.Run"
         self.finished_package = "bdphpcprovider.smartconnectorscheduler.stages.finished.Finished"
         self.transform_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc.transform.Transform"
@@ -439,12 +447,26 @@ class Command(BaseCommand):
                     u'nectar_username': 'centos',
                     u'nectar_password': ''
                 }})
-        setup_stage, _ = models.Stage.objects.get_or_create(name="setup",
+        # setup_stage, _ = models.Stage.objects.get_or_create(name="setup",
+        #     description="This is setup stage of HRMC smart connector",
+        #     parent=hrmc_composite_stage,
+        #     package=self.setup_package,
+        #     order=2)
+        # setup_stage.update_settings(
+        #     {
+        #     u'http://rmit.edu.au/schemas/stages/setup':
+        #         {
+        #             u'payload_source': 'file://127.0.0.1/local/testpayload',
+        #             u'payload_destination': 'celery_payload_2',
+        #         },
+        #     })
+
+        deploy_stage, _ = models.Stage.objects.get_or_create(name="deploy",
             description="This is setup stage of HRMC smart connector",
             parent=hrmc_composite_stage,
-            package=self.setup_package,
+            package=self.deploy_package,
             order=2)
-        setup_stage.update_settings(
+        deploy_stage.update_settings(
             {
             u'http://rmit.edu.au/schemas/stages/setup':
                 {
