@@ -106,7 +106,7 @@ class Run(Stage):
         logger.debug("rand_index=%s" % self.rand_index)
 
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/deploy', u'deployed_nodes'):
-            setup_nodes = run_settings['http://rmit.edu.au/schemas/stages/deploy'][u'deployed_nodes']
+            setup_nodes = ast.literal_eval(str(run_settings['http://rmit.edu.au/schemas/stages/deploy'][u'deployed_nodes']))
         else:
             return False
         logger.debug("setup_nodes=%s" % setup_nodes)
