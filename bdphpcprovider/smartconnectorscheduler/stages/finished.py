@@ -243,8 +243,9 @@ class Finished(Stage):
         self.nodes = botocloudconnector.get_rego_nodes(self.group_id, self.boto_settings)
 
         self.error_nodes = []
-        self.finished_nodes = []
+        #self.finished_nodes = []
         # TODO: parse finished_nodes input
+        logger.debug('self.finished_nodes=%s' % self.finished_nodes)
         self.finished_nodes = ast.literal_eval(self.finished_nodes)
 
         for node in self.nodes:
