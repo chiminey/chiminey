@@ -414,7 +414,7 @@ class NCIStorage(SFTPStorage):
             self._ssh.load_host_keys(os.path.expanduser(os.path.join("~", ".ssh", "known_hosts")))
 
         # and automatically add new host keys for hosts we haven't seen before.
-        self._ssh.set_missing_host_key_policy(paramiko.WarnPolicy())
+        self._ssh.set_missing_host_key_policy(paramiko.WarningPolicy())
 
         try:
             self._ssh.connect(self._host, **self._params)
