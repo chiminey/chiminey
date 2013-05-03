@@ -44,12 +44,29 @@ class Create(Stage):
             but not group_id
         """
         #logger.debug("User_settings %s \n Run_settings %s" % (self.user_settings, run_settings))
-        if not self._exists(run_settings,
-            'http://rmit.edu.au/schemas/stages/create', 'group_id'):
-            if self._exists(run_settings,
-                'http://rmit.edu.au/schemas/system', 'platform'):
-                self.platform = run_settings['http://rmit.edu.au/schemas/system'][u'platform']
-            return True
+
+        '''
+        if smartconnector.key_exists(run_settings,
+            'http://rmit.edu.au/schemas/stages/create/group_id'):
+            try:
+                self.platform = smartconnector.get_existing_key(run_settings,
+                 'http://rmit.edu.au/schemas/system/platform')
+            except KeyError:
+                return False
+            else:
+                return True
+        return False
+        '''
+
+        if self._exists(run_settings,
+            'http://rmit.edu.au/schemas/stages/configure',
+            'configure_done'):
+            if not self._exists(run_settings,
+                'http://rmit.edu.au/schemas/stages/create', 'group_id'):
+                if self._exists(run_settings,
+                    'http://rmit.edu.au/schemas/system', 'platform'):
+                    self.platform = run_settings['http://rmit.edu.au/schemas/system'][u'platform']
+                    return True
         return False
 
     def process(self, run_settings):
