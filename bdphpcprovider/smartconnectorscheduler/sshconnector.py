@@ -128,9 +128,15 @@ def run_command_with_status(ssh_client, command, current_dir=None):
     if current_dir:
         command = "cd %s;%s" % (current_dir, command)
     logger.debug(command)
-    stdin, stdout, stderr = ssh_client.exec_command(command)
-    res = stdout.readlines()
-    errs = stderr.readlines()
+
+    try:
+        stdin, stdout, stderr = ssh_client.exec_command(command)
+        res = stdout.readlines()
+        errs = stderr.readlines()
+    except Exception, e:
+        logger.error(e)
+        errs = [str(e)]
+        res = []
     logger.debug("run_command_stdout=%s" % res)
     if stderr:
         logger.debug("run_command_stderr=%s" % stderr.readlines())

@@ -120,6 +120,7 @@ class Run(Stage):
 
         logger.debug("number_vm_instances=%s" % number_vm_instances)
 
+
         if len(setup_nodes) == number_vm_instances:
             smartconnector.copy_settings(self.boto_settings, run_settings,
                 'http://rmit.edu.au/schemas/stages/setup/payload_source')
@@ -494,9 +495,9 @@ class Run(Stage):
                     }
                 elif num_dim == 2:
                     self.threshold = run_settings['threshold']
-                    logger.debug("threshold=%s" % self.threshold)
+            logger.debug("threshold=%s" % self.threshold)
                     N = int(ast.literal_eval(self.threshold)[0])
-                    logger.debug("N=%s" % N)
+            logger.debug("N=%s" % N)
                     if not self.id:
                         rand_nums = self._generate_rands(
                             0, self.boto_settings['max_seed_int'],
