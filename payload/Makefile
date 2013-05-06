@@ -6,14 +6,17 @@ setupdone:
 	@sh ./setupdone.sh 
 
 setup_hrmc:
+	echo setup_hrmc starting
 	@sh ./setuphrmc.sh >& setup.output &
 
 startrun: psd_run_setup run_hrmc
 
 run_hrmc:
+	@echo running hrmc
 	@cd AEAO_v1_1 ; ./HRMC >& output &  echo "$$!" > "run.pid"
 
 psd_run_setup:
+	echo setting up psd
 	rm -f $(PSD_PACKAGE)/run.pid
 
 run_psd:
@@ -24,5 +27,6 @@ run_psd:
 	cd $(PSD_PACKAGE); ./PSD >& psd_output &  echo "$$!" > "run.pid"
 
 running:
+	@echo checking for running
 	@sh ./running.sh
 	
