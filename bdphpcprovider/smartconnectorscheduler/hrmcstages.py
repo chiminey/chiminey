@@ -387,7 +387,7 @@ class NCIStorage(SFTPStorage):
         import pkg_resources
         version = pkg_resources.get_distribution("django_storages").version
         if not version is "1.1.6":
-            logger.warn("NCIStorage overrides version 1.1.6 of django_storages. found version %s")
+            logger.warn("NCIStorage overrides version 1.1.6 of django_storages. found version %s" % version)
 
         super(NCIStorage, self).__init__()
         if 'params' in settings:
