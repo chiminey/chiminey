@@ -156,6 +156,8 @@ class Run(Stage):
             smartconnector.copy_settings(self.boto_settings, run_settings,
                 'http://rmit.edu.au/schemas/stages/run/random_numbers')
             self.boto_settings['username'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_username']
+            self.boto_settings['username'] = 'root'  # FIXME: schema value is ignored
+
             self.boto_settings['password'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
             key_file = hrmcstages.retrieve_private_key(self.boto_settings, self.user_settings['nectar_private_key'])
             self.boto_settings['private_key'] = key_file
@@ -205,6 +207,11 @@ class Run(Stage):
         #     logger.info("setup was not finished")
         #     return False
 
+
+
+
+
+
     def run_task(self, instance_id, settings):
         """
             Start the task on the instance, then hang and
@@ -212,36 +219,57 @@ class Run(Stage):
         """
         logger.info("run_task %s" % instance_id)
         ip = botocloudconnector.get_instance_ip(instance_id, settings)
+        logger.debug("ip=%s" % ip)
         curr_username = settings['username']
         settings['username'] = 'root'
-        ssh = sshconnector.open_connection(ip_address=ip,
-                                           settings=settings)
-        settings['username'] = curr_username
-        makefile_path = settings['payload_destination']
+        # ssh = sshconnector.open_connection(ip_address=ip,
+        #                                    settings=settings)
+        # settings['username'] = curr_username
+
+        relative_path = settings['platform'] + '@' + settings['payload_destination']
+        destination = smartconnector.get_url_with_pkey(settings, 
+            relative_path,
+            is_relative_path=True,
+            ip_address=ip)
+        makefile_path = get_make_path(destination)
+        #makefile_path = settings['payload_destination']
         command = "cd %s; make %s" % (makefile_path, 'startrun')
-        logger.debug("command=%s" % command)
-        #sshconnector.run_sudo_command_with_status(ssh, command, settings, instance_id)
 
-        command_out, _ = sshconnector.run_command_with_status(ssh, command)
+        command_out = ''
+        errs = ''
+        logger.debug("starting command for %s" % ip)
+        try:
+            ssh = sshconnector.open_connection(ip_address=ip, settings=settings)
+            command_out, errs = sshconnector.run_command_with_status(ssh, command)
+        except Exception, e:
+            logger.error(e)
+        finally:
+            if ssh:
+                ssh.close()
+        logger.debug("command_out2=(%s, %s)" % (command_out, errs))
 
-        # run_command(ssh, "cd %s; ./%s >& %s &\
-        # " % (os.path.join(settings['PAYLOAD_DESTINATION'],
-        #                   settings['PAYLOAD_CLOUD_DIRNAME']),
-        #      settings['COMPILE_FILE'], "output"))
+        # #sshconnector.run_sudo_command_with_status(ssh, command, settings, instance_id)
 
-        attempts = settings['retry_attempts']
-        logger.debug("checking for package start")
-        #FIXME: remove following and instead use a specific MakeFile target to return pid
-        for x in range(0, attempts):
-            time.sleep(5)  # to give process enough time to start
-            pids = sshconnector.get_package_pids(ssh, settings['compile_file'])
-            logger.debug("pids=%s" % pids)
-            if pids:
-                break
-        else:
-            raise PackageFailedError("package did not start")
-            # pids should have maximum of one element
-        return pids
+        # command_out, _ = sshconnector.run_command_with_status(ssh, command)
+
+        # # run_command(ssh, "cd %s; ./%s >& %s &\
+        # # " % (os.path.join(settings['PAYLOAD_DESTINATION'],
+        # #                   settings['PAYLOAD_CLOUD_DIRNAME']),
+        # #      settings['COMPILE_FILE'], "output"))
+
+        # attempts = settings['retry_attempts']
+        # logger.debug("checking for package start")
+        # #FIXME: remove following and instead use a specific MakeFile target to return pid
+        # for x in range(0, attempts):
+        #     time.sleep(5)  # to give process enough time to start
+        #     pids = sshconnector.get_package_pids(ssh, settings['compile_file'])
+        #     logger.debug("pids=%s" % pids)
+        #     if pids:
+        #         break
+        # else:
+        #     raise PackageFailedError("package did not start")
+        #     # pids should have maximum of one element
+        # return pids
 
     @deprecated
     def run_task_old(self, instance_id, settings):
@@ -617,3 +645,24 @@ class Run(Stage):
         run_settings['http://rmit.edu.au/schemas/stages/run'][u'rand_index'] = self.rand_index
 
         return run_settings
+
+
+import os
+from urlparse import urlparse, parse_qsl
+
+def get_make_path(destination):
+    """
+    TODO: move this into hrmcstages?
+    """
+    destination = hrmcstages.get_http_url(destination)
+    url = urlparse(destination)
+    query = parse_qsl(url.query)
+    query_settings = dict(x[0:] for x in query)
+    path = url.path
+    if path[0] == os.path.sep:
+        path = path[1:]
+    make_path = os.path.join(query_settings['root_path'], path)
+    logger.debug("Makefile path %s %s %s " % (make_path, query_settings['root_path'], path))
+    return make_path
+
+    
