@@ -152,14 +152,47 @@ class Finished(Stage):
         """
             Return True if package job on instance_id has job_finished
         """
-        ip = botocloudconnector.get_instance_ip(instance_id, settings)
-        ssh = open_connection(ip_address=ip, settings=settings)
-        makefile_path = settings['payload_destination']
 
+
+        ip = botocloudconnector.get_instance_ip(instance_id, settings)
+        logger.debug("ip=%s" % ip)
+        curr_username = settings['username']
+        settings['username'] = 'root'
+        # ssh = sshconnector.open_connection(ip_address=ip,
+        #                                    settings=settings)
+        # settings['username'] = curr_username
+
+        relative_path = settings['platform'] + '@' + settings['payload_destination']
+        destination = smartconnector.get_url_with_pkey(settings, 
+            relative_path,
+            is_relative_path=True,
+            ip_address=ip)
+        makefile_path = get_make_path(destination)
+        #makefile_path = settings['payload_destination']
         command = "cd %s; make %s" % (makefile_path, 'running')
 
-        #command_out, _ = sshconnector.run_sudo_command(ssh, command, settings, instance_id)
-        command_out, _ = sshconnector.run_command_with_status(ssh, command)
+        command_out = ''
+        errs = ''
+        logger.debug("starting command for %s" % ip)
+        try:
+            ssh = sshconnector.open_connection(ip_address=ip, settings=settings)
+            command_out, errs = sshconnector.run_command_with_status(ssh, command)
+        except Exception, e:
+            logger.error(e)
+        finally:
+            if ssh:
+                ssh.close()
+        logger.debug("command_out2=(%s, %s)" % (command_out, errs))
+
+
+        # ip = botocloudconnector.get_instance_ip(instance_id, settings)
+        # ssh = open_connection(ip_address=ip, settings=settings)
+        # makefile_path = settings['payload_destination']
+
+        # command = "cd %s; make %s" % (makefile_path, 'running')
+
+        # #command_out, _ = sshconnector.run_sudo_command(ssh, command, settings, instance_id)
+        # command_out, _ = sshconnector.run_command_with_status(ssh, command)
 
         if command_out:
             logger.debug("command_out = %s" % command_out)
@@ -234,6 +267,7 @@ class Finished(Stage):
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/create/nectar_password')
         self.boto_settings['username'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_username']
+        self.boto_settings['username'] = 'root'  # FIXME: schema value is ignored        
         self.boto_settings['password'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
         key_file = hrmcstages.retrieve_private_key(self.boto_settings, self.user_settings['nectar_private_key'])
         self.boto_settings['private_key'] = key_file
@@ -314,3 +348,25 @@ class Finished(Stage):
         #update_key('runs_left', nodes_working, context)
         # NOTE: runs_left cannot be deleted or run() will trigger
         return run_settings
+
+
+
+
+import os
+from urlparse import urlparse, parse_qsl
+
+def get_make_path(destination):
+    """
+    TODO: move this into hrmcstages?
+    """
+    destination = hrmcstages.get_http_url(destination)
+    url = urlparse(destination)
+    query = parse_qsl(url.query)
+    query_settings = dict(x[0:] for x in query)
+    path = url.path
+    if path[0] == os.path.sep:
+        path = path[1:]
+    make_path = os.path.join(query_settings['root_path'], path)
+    logger.debug("Makefile path %s %s %s " % (make_path, query_settings['root_path'], path))
+    return make_path
+

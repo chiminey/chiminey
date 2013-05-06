@@ -208,6 +208,7 @@ class Converge(Stage):
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/create/nectar_password')
         self.boto_settings['username'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_username']
+        self.boto_settings['username'] = 'root'  # FIXME: schema value is ignored
         self.boto_settings['password'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
         key_file = hrmcstages.retrieve_private_key(self.boto_settings, self.user_settings['nectar_private_key'])
         self.boto_settings['private_key'] = key_file

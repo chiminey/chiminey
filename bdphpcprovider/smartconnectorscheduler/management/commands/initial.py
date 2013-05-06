@@ -444,7 +444,7 @@ class Command(BaseCommand):
                     u'security_group': '["ssh"]',
                     u'group_id_dir': 'group_id',
                     u'custom_prompt': '[smart-connector_prompt]$',
-                    u'nectar_username': 'centos',
+                    u'nectar_username': 'root',
                     u'nectar_password': ''
                 }})
         # setup_stage, _ = models.Stage.objects.get_or_create(name="setup",
