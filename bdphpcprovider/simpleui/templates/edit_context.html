@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content  %}
+<h1> Edit context</h1>
+<form action="" method="POST">{% csrf_token %} <ul>
+{{ form.as_ul }}
+</ul>
+<p>
+<p>
+<input type="submit" value="Save" /> </form>
+
+<a href="{% url hrmcjob-list %}">back to list</a>
+
+{% endblock %}
