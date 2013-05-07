@@ -26,7 +26,8 @@ class Teardown(smartconnector.Stage):
             'http://rmit.edu.au/schemas/stages/converge',
             u'converged'):
             converged = run_settings['http://rmit.edu.au/schemas/stages/converge'][u'converged']
-            if converged:
+            logger.debug("converged=%s" % converged)
+            if converged == "True":
                 if not self._exists(run_settings,
                     'http://rmit.edu.au/schemas/stages/teardown',
                     u'run_finished'):
