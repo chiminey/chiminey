@@ -211,7 +211,10 @@ def start_setup(instance_id, ip,  settings, source, destination):
     hrmcstages.copy_directories(source, destination)
     makefile_path = get_make_path(destination)
 
-    check_make_installation = '`command -v make  > /dev/null 2>&1 || echo yum install -y make`; '
+    # TODO, FIXME:  need to have timeout for yum install make
+    # and then test can access, otherwise, loop.
+
+    check_make_installation = 'yum install -y make'
 
     curr_username = settings['username']
     settings['username'] = 'root'
