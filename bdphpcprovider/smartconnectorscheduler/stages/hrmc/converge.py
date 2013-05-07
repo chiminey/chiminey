@@ -378,7 +378,7 @@ class Converge(Stage):
             del run['error_nodes']
 
             #update_key('converged', False, context)
-            run_settings['http://rmit.edu.au/schemas/stages/converge']['converged'] = False
+            run_settings['http://rmit.edu.au/schemas/stages/converge'][u'converged'] = False
             # delete_key('runs_left', context)
             # delete_key('error_nodes', context)
             # update_key('converged', False, context)
@@ -386,7 +386,7 @@ class Converge(Stage):
             logger.debug("convergence")
             # we are done, so trigger next stage outside of converge
             #update_key('converged', True, context)
-            run_settings['http://rmit.edu.au/schemas/stages/converge']['converged'] = True
+            run_settings['http://rmit.edu.au/schemas/stages/converge'][u'converged'] = True
             # we are done, so don't trigger iteration stages
 
         #update_key('criterion', self.criterion, context)
