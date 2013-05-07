@@ -43,5 +43,10 @@ urlpatterns = patterns('',
     url(r'^output/(?P<group_id>\w+)/(?P<file_id>[\w.]+)/$', scsviews.getoutput, name="getoutput"),
     url(r'^directive/(?P<directive_id>\d+)/$', scsviews.test_directive),
 
+
+    url(r'^jobs/finished/edit/(?P<pk>\d+)/$', login_required(uiviews.FinishedContextUpdateView.as_view()),
+        name='finishedcontext-edit',),
+
+
 )
 urlpatterns += staticfiles_urlpatterns()

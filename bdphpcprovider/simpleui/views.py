@@ -98,6 +98,26 @@ class ContextList(ListView):
     def get_queryset(self):
         return models.Context.objects.filter(owner__user=self.request.user)
 
+class FinishedContextUpdateView(UpdateView):
+    model = models.Context
+    template_name = "edit_context.html"
+
+    def get_success_url(self):
+        return reverse('hrmcjob-list')
+
+    # def get_context_data(self, **kwargs):
+    #     context = super(UpdateUserProfileParameterView, self).get_context_data(**kwargs)
+    #     context['action'] = reverse('userprofileparameter-edit', kwargs={'pk': self.get_object().id})
+    #     return context
+
+    def get_object(self):
+        object = super(FinishedContextUpdateView, self).get_object()
+        if object.owner.user == self.request.user:
+            return object
+        else:
+            raise Http404
+
+
 from django.views.generic.base import TemplateView
 
 
@@ -142,13 +162,13 @@ class HRMCSubmitFormView(FormView):
     form_class = HRMCSubmitForm
     success_url = '/jobs'
 
-    initial = {'number_vm_instances': 2,
+    initial = {'number_vm_instances': 8,
         'iseed': 42,
         'input_location': 'file://127.0.0.1/myfiles/input',
-        'number_of_dimensions': 1,
-        'threshold': "[1]",
+        'number_of_dimensions': 2,
+        'threshold': "[2]",
         'error_threshold': "0.03",
-        'max_iteration': 20
+        'max_iteration': 10
         }
 
     def form_valid(self, form):
@@ -198,7 +218,7 @@ class CopyFormView(FormView):
     form_class = CopyForm
     success_url = '/jobs'
 
-    initial = {'source_bdp_url': 'file://local@127.0.0.1/myfiles/souredir',
+    initial = {'source_bdp_url': 'file://local@127.0.0.1/myfiles/sourcedir',
         'destination_bdp_url': 'file://local@127.0.0.1/myfiles/destdir',
         }
 
