@@ -224,6 +224,8 @@ class Finished(Stage):
                                                                        instance_id), is_relative_path=True)
         logger.debug('dest_files_url=%s' % dest_files_url)
         hrmcstages.delete_files(dest_files_url, exceptions=[])
+        # FIXME: might want to turn on paramiko compress function 
+        # to speed up this transfer
         hrmcstages.copy_directories(source_files_url, dest_files_url)
 
     def process(self, run_settings):
