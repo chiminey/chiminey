@@ -24,8 +24,10 @@ setup(
         'django-form-utils',
         'django-haystack',
         'django-bootstrap-form',
-        'celery==2.5.5',           # Delayed tasks and queues
-        'django-celery==2.5.5',
+        #'celery==2.5.5',           # Delayed tasks and queues
+        #'django-celery==2.5.5',
+        'celery',           # Delayed tasks and queues
+        'django-celery',
         'django-kombu',
         'decisiontree',
         'django-mptt',
