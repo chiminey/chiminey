@@ -163,7 +163,8 @@ INSTALLED_APPS = (
     'django_nose',
     'storages',
     'djcelery',
-    'djkombu'
+    'djkombu',
+    'tastypie'
 
 ) + OUR_APPS
 

@@ -9,6 +9,26 @@ from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from bdphpcprovider.smartconnectorscheduler import views as scsviews
 from bdphpcprovider.simpleui import views as uiviews
 
+from core.views import (
+    UserProfileResource,
+    SchemaResource,
+    ParameterNameResource,
+    UserProfileParameterResource,
+    UserProfileParameterSetResource,
+    ContextResource,
+    UserResource
+    )
+from tastypie.api import Api
+v1_api = Api(api_name='v1')
+
+v1_api.register(UserResource())
+v1_api.register(UserProfileResource())
+v1_api.register(SchemaResource())
+v1_api.register(UserProfileParameterResource())
+v1_api.register(UserProfileParameterSetResource())
+v1_api.register(ParameterNameResource())
+v1_api.register(ContextResource())
+
 
 urlpatterns = patterns('',
 
@@ -47,6 +67,6 @@ urlpatterns = patterns('',
     url(r'^jobs/finished/edit/(?P<pk>\d+)/$', login_required(uiviews.FinishedContextUpdateView.as_view()),
         name='finishedcontext-edit',),
 
-
+    url(r'^api/', include(v1_api.urls)),
 )
 urlpatterns += staticfiles_urlpatterns()
