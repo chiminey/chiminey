@@ -1,4 +1,22 @@
-# Create your views here.
+# Copyright (C) 2013, RMIT University
+
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to
+# deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+# sell copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+# IN THE SOFTWARE.
 
 import logging
 import logging.config
@@ -7,7 +25,6 @@ logger = logging.getLogger(__name__)
 from django.views.generic import ListView, UpdateView, CreateView, DeleteView
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse
-from pprint import pformat
 
 from django.contrib.auth import logout
 from django.http import HttpResponseRedirect
@@ -18,12 +35,10 @@ from bdphpcprovider.smartconnectorscheduler import models
 
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.smartconnectorscheduler import smartconnector
-from bdphpcprovider.smartconnectorscheduler.errors import ContextKeyMissing, \
-    InvalidInputError
+from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
 
 
 from django.http import Http404
-from django.views.generic import View
 from django.views.generic.edit import FormView
 
 from django.views.generic import DetailView
@@ -69,6 +84,7 @@ class UpdateUserProfileParameterView(UpdateView):
         else:
             raise Http404
 
+
 class DeleteUserProfileParameterView(DeleteView):
     model = models.UserProfileParameter
     template_name = 'delete_userprofileparameter.html'
@@ -82,6 +98,7 @@ class DeleteUserProfileParameterView(DeleteView):
             return object
         else:
             raise Http404
+
 
 def logout_page(request):
     """
@@ -97,6 +114,7 @@ class ContextList(ListView):
 
     def get_queryset(self):
         return models.Context.objects.filter(owner__user=self.request.user)
+
 
 class FinishedContextUpdateView(UpdateView):
     model = models.Context
@@ -129,7 +147,7 @@ class ListDirList(TemplateView):
         context = super(ListDirList, self).get_context_data(**kwargs)
 
         url = smartconnector.get_url_with_pkey({}, ".", is_relative_path=True)
-        file_paths = hrmcstages.list_all_files(url)
+        file_paths = [x[1:] for x in hrmcstages.list_all_files(url)]
         context['paths'] = file_paths
         return context
 
@@ -156,6 +174,7 @@ class ContextView(DetailView):
                 return object
             else:
                 raise Http404
+
 
 class HRMCSubmitFormView(FormView):
     template_name = 'hrmc.html'
@@ -225,7 +244,7 @@ class CopyFormView(FormView):
     def form_valid(self, form):
         # This method is called when valid form data has been POSTed.
         # It should return an HttpResponse.
-        platform = 'nci' #FIXME: should be local
+        platform = 'nci'  # FIXME: should be local
         directive_name = "copy"
         logger.debug("%s" % directive_name)
         directive_args = []
