@@ -42,7 +42,7 @@ def getdirs(dir):
 
 
 def convert_output(output_dir, view_dir, NM=8):
-
+    os.chdir(view_dir)
     raw_dir = os.path.join(view_dir, RAW_PREFIX)
 
     try:
@@ -93,12 +93,13 @@ def convert_output(output_dir, view_dir, NM=8):
     logger.debug("trans=%s" % pformat(trans))
 
     for source, dest in trans.items():
-        os.symlink(os.path.join(view_dir, RAW_PREFIX, source),
+        logger.debug('view dir %s RAW_PRE %s source %s ' % (view_dir, RAW_PREFIX, source))
+        os.symlink(os.path.join('..', RAW_PREFIX, source),
             os.path.join(view_dir, INPUT_PREFIX, dest))
 
     try:
-        os.symlink(os.path.join(view_dir, RAW_PREFIX, OUTPUT_PREFIX),
-            os.path.join(view_dir, OUTPUT_PREFIX, OUTPUT_PREFIX))
+        os.symlink(os.path.join('..', RAW_PREFIX, OUTPUT_PREFIX),
+            os.path.join(OUTPUT_PREFIX, OUTPUT_PREFIX))
         #shutil.copytree(os.path.join(raw_dir,d), os.path.join(view_dir,INPUT_PREFIX,d))
     except os.error, e:
         print "error %s" % e
@@ -150,8 +151,8 @@ def convert_output(output_dir, view_dir, NM=8):
 #    logger.debug("trans=%s" '\n'.join(trans.items()))
 
     for source, dest in trans.items():
-        os.symlink(os.path.join(view_dir, RAW_PREFIX, source),
-            os.path.join(view_dir, OUTPUT_PREFIX, dest))
+        os.symlink(os.path.join('..', RAW_PREFIX, source),
+            os.path.join(OUTPUT_PREFIX, dest))
 
 
 class Command(BaseCommand):
@@ -176,4 +177,3 @@ class Command(BaseCommand):
 
         convert_output(output_path, view_path)
         print "done"
-
