@@ -245,7 +245,7 @@ class CopyFormView(FormView):
         # This method is called when valid form data has been POSTed.
         # It should return an HttpResponse.
         platform = 'nci'  # FIXME: should be local
-        directive_name = "copy"
+        directive_name = "copydir"
         logger.debug("%s" % directive_name)
         directive_args = []
         directive_args.append([form.cleaned_data['source_bdp_url'], []])

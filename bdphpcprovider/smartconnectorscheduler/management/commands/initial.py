@@ -328,15 +328,15 @@ class Command(BaseCommand):
         logger.debug("local_filesys_rootpath=%s" % local_filesys_rootpath)
         local_fs = FileSystemStorage(location=local_filesys_rootpath)
 
-        copy_dir, _ = models.Directive.objects.get_or_create(name="copy")
+        copy_dir, _ = models.Directive.objects.get_or_create(name="copydir")
         program_dir, _ = models.Directive.objects.get_or_create(name="program")
-        self.movement_stage = "bdphpcprovider.smartconnectorscheduler.stages.movement.MovementStage"
+        self.copy_dir_stage = "bdphpcprovider.smartconnectorscheduler.stages.movement.CopyDirectoryStage"
         self.program_stage = "bdphpcprovider.smartconnectorscheduler.stages.program.LocalProgramStage"
         # Define all the stages that will make up the command.  This structure
         # has two layers of composition
-        copy_stage, _ = models.Stage.objects.get_or_create(name="copy",
+        copy_stage, _ = models.Stage.objects.get_or_create(name="copydir",
              description="data movemement operation",
-             package=self.movement_stage,
+             package=self.copy_dir_stage,
              order=100)
         copy_stage.update_settings({})
         program_stage, _ = models.Stage.objects.get_or_create(name="program",
@@ -350,6 +350,17 @@ class Command(BaseCommand):
             ContentFile("{{salutation}} World"))
         local_fs.save("remote/greetaddon.txt",
             ContentFile("(remotely)"))
+
+        copy_dir, _ = models.Directive.objects.get_or_create(name="copyfile")
+        self.copy_file_stage = "bdphpcprovider.smartconnectorscheduler.stages.movement.CopyFileStage"
+        # Define all the stages that will make up the command.  This structure
+        # has two layers of composition
+        copy_stage, _ = models.Stage.objects.get_or_create(name="copy",
+             description="data movemement operation",
+             package=self.copy_file_stage,
+             order=100)
+        copy_stage.update_settings({})
+        comm, _ = models.Command.objects.get_or_create(platform=platform, directive=copy_dir, stage=copy_stage)
 
         smart_dir, _ = models.Directive.objects.get_or_create(name="smartconnector1")
         self.null_package = "bdphpcprovider.smartconnectorscheduler.stages.nullstage.NullStage"
