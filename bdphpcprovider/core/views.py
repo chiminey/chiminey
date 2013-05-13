@@ -31,12 +31,16 @@ from tastypie.utils import dict_strip_unicode_keys
 from tastypie import http
 
 
-# TODO: replace digest authentication with oauth
-from tastypie.authentication import DigestAuthentication
-from tastypie.authorization import DjangoAuthorization
+# FIXME,TODO: replace basic authentication with basic+SSL,
+# or better digest or oauth
+from tastypie.authentication import (BasicAuthentication)
+from tastypie.authorization import DjangoAuthorization, Authorization
 from bdphpcprovider.smartconnectorscheduler import models
 from django.contrib.auth.models import User
 import django
+
+from pprint import pformat
+
 
 from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
 
@@ -59,7 +63,9 @@ class UserProfileResource(ModelResource):
         queryset = models.UserProfile.objects.all()
         resource_name = 'userprofile'
         allowed_methods = ['get']
-        authentication = DigestAuthentication()
+        # TODO: FIXME: BasicAuth is horribly insecure without using SSL.
+        # Digest is better, but configuration proved tricky.
+        authentication = BasicAuthentication()
         authorization = DjangoAuthorization()
 
     def apply_authorization_limits(self, request, object_list):
@@ -80,11 +86,14 @@ class UserProfileResource(ModelResource):
 class SchemaResource(ModelResource):
     class Meta:
         queryset = models.Schema.objects.all()
-        resource_name = 'schemas'
+        resource_name = 'schema'
         allowed_methods = ['get']
 
 
 class ParameterNameResource(ModelResource):
+    schema = fields.ForeignKey(SchemaResource,
+        attribute='schema')
+
     class Meta:
         queryset = models.ParameterName.objects.all()
         resource_name = 'parametername'
@@ -100,7 +109,10 @@ class UserProfileParameterSetResource(ModelResource):
     class Meta:
         queryset = models.UserProfileParameterSet.objects.all()
         resource_name = 'userprofileparameterset'
-        authentication = DigestAuthentication()
+        # TODO: FIXME: BasicAuth is horribly insecure without using SSL.
+        # Digest is better, but configuration proved tricky.
+        authentication = BasicAuthentication()
+        #authentication = DigestAuthentication()
         authorization = DjangoAuthorization()
         allowed_methods = ['get']
 
@@ -127,10 +139,14 @@ class UserProfileParameterResource(ModelResource):
     class Meta:
         queryset = models.UserProfileParameter.objects.all()
         resource_name = 'userprofileparameter'
-        authentication = DigestAuthentication()
+        # TODO: FIXME: BasicAuth is horribly insecure without using SSL.
+        # Digest is better, but configuration proved tricky.
+        authentication = BasicAuthentication()
+        #authentication = DigestAuthentication()
         authorization = DjangoAuthorization()
         # curl --digest --user user2 --dump-header - -H "Content-Type: application/json" -X PUT --data ' {"value": 44}' http://115.146.86.247/api/v1/userprofileparameter/48/?format=json
         allowed_methods = ['get', 'put']
+        # TODO: validation on put value to correct type
 
 
 class ContextResource(ModelResource):
@@ -141,7 +157,10 @@ class ContextResource(ModelResource):
     class Meta:
         queryset = models.Context.objects.all()
         resource_name = 'context'
-        authentication = DigestAuthentication()
+        # TODO: FIXME: BasicAuth is horribly insecure without using SSL.
+        # Digest is better, but configuration proved tricky.
+        authentication = BasicAuthentication()
+        #authentication = DigestAuthentication()
         authorization = DjangoAuthorization()
         allowed_methods = ['get', 'post']
 
@@ -174,13 +193,14 @@ class ContextResource(ModelResource):
                      bundle.data['number_vm_instances']),
                  (u'iseed', bundle.data['iseed']),
                 ('input_location',  bundle.data['input_location']),
-                 ('number_dimensions', bundle.data['number_of_dimensions']),
+                 ('number_dimensions', bundle.data['number_dimensions']),
                  ('threshold', str(bundle.data['threshold'])),
                  ('error_threshold', str(bundle.data['error_threshold'])),
                  ('max_iteration', bundle.data['max_iteration'])
              ]
          ])
 
+        logger.debug("directive_args=%s" % pformat(directive_args))
         # make the system settings, available to initial stage and merged with run_settings
         system_dict = {u'system': u'settings'}
         system_settings = {u'http://rmit.edu.au/schemas/system/misc': system_dict}
@@ -188,6 +208,7 @@ class ContextResource(ModelResource):
         logger.debug("directive_name=%s" % directive_name)
         logger.debug("directive_args=%s" % directive_args)
 
+        location = []
         try:
             (run_settings, command_args, run_context) \
                  = hrmcstages.make_runcontext_for_directive(
@@ -195,12 +216,16 @@ class ContextResource(ModelResource):
                  directive_name,
                  directive_args, system_settings, request.user.username)
 
-        except InvalidInputError:
+        except InvalidInputError,e:
             bundle.obj = None
+            logger.error(e)
+        else:
+            logger.debug("run_context=%s" % run_context)
+            bundle.obj.pk = run_context.id
+            # We do not call obj_create because make_runcontext_for_directive()
+            # has already created the object.
 
-        bundle.obj.pk = run_context.id
-        # We do not call obj_create because make_runcontext_for_directive()
-        # has already created the object.
-        location = self.get_resource_uri(bundle)
+            location = self.get_resource_uri(bundle)
+
 
         return http.HttpCreated(location=location)
