@@ -606,9 +606,11 @@ def get_filesystem(bdp_url):
         password = get_value('password', query_settings)
         root_path = get_value('root_path', query_settings)
         logger.debug("root_path=%s" % root_path)
-        ssh_settings = {'params': {'key_filename': key_file,
-                                   'username': username,
-                                   'password': password},
+        paramiko_settings = {'username': username,
+            'password': password}
+        if key_file:
+            paramiko_settings['key_filename'] = key_file
+        ssh_settings = {'params': paramiko_settings,
                         'host': host,
                         'root': str(root_path) + "/"}
         logger.debug("nci_settings=%s" % pformat(ssh_settings))
@@ -628,17 +630,28 @@ def list_all_files(source_url):
     :param source_url:
     :return:
     """
-    # Will this method copy individual files too?
+    """
+    # FIXME: will not copy individual files
+
     source_scheme = urlparse(source_url).scheme
+    logger.debug("source_scheme=%s" % source_scheme)
     http_source_url = get_http_url(source_url)
+    logger.debug("http_source_url=%s" % http_source_url)
     source = urlparse(http_source_url)
     source_location = source.netloc
+    logger.debug("source_location=%s" % source_location)
     source_path = source.path
+    logger.debug("source_path=%s" % source_path)
     query = parse_qsl(source.query)
     query_settings = dict(x[0:] for x in query)
 
     if source_path[0] == os.path.sep:
         source_path = source_path[1:]
+
+    """
+    logger.debug("list_all_files")
+    (source_scheme, source_location, source_path, source_location, query_settings) = parse_bdpurl(source_url)
+
 
     if source_scheme == "file":
         root_path = get_value('root_path', query_settings)
@@ -651,9 +664,11 @@ def list_all_files(source_url):
         password = get_value('password', query_settings)
         root_path = get_value('root_path', query_settings)
         logger.debug("root_path=%s" % root_path)
-        ssh_settings = {'params': {'key_filename': key_file,
-                                   'username': username,
-                                   'password': password},
+        paramiko_settings = {'username': username,
+            'password': password}
+        if key_file:
+            paramiko_settings['key_filename'] = key_file
+        ssh_settings = {'params': paramiko_settings,
                         'host': source_location,
                         'root': str(root_path) + "/"}
         logger.debug("nci_settings=%s" % pformat(ssh_settings))
@@ -663,7 +678,14 @@ def list_all_files(source_url):
         logger.warn("scheme: %s not supported" % source_scheme)
         return
 
-    current_content = fs.listdir(source_path)
+    logger.debug("source_path=%s"  % source_path)
+
+    if fs.exists(source_path):
+        logger.debug("source_path exists")
+        current_content = fs.listdir(source_path)
+    else:
+        return []
+    logger.debug("current_content=%s" % current_content)
     current_path_pointer = source_path
     dir_path_holder = []
     file_paths = []
@@ -726,9 +748,11 @@ def copy_directories(source_url, destination_url):
         password = get_value('password', query_settings)
         root_path = get_value('root_path', query_settings)
         logger.debug("root_path=%s" % root_path)
-        ssh_settings = {'params': {'key_filename': key_file,
-                                   'username': username,
-                                   'password': password},
+        paramiko_settings = {'username': username,
+            'password': password}
+        if key_file:
+            paramiko_settings['key_filename'] = key_file
+        ssh_settings = {'params': paramiko_settings,
                         'host': source_location,
                         'root': str(root_path) + "/"}
         logger.debug("nci_settings=%s" % pformat(ssh_settings))
@@ -836,9 +860,11 @@ def put_file(file_url, content):
         root_path = get_value('root_path', query_settings)
         logger.debug("key_file=%s" % key_file)
         logger.debug("root_path=%s" % root_path)
-        ssh_settings = {'params': {'key_filename': key_file,
-                                   'username': username,
-                                   'password': password},
+        paramiko_settings = {'username': username,
+            'password': password}
+        if key_file:
+            paramiko_settings['key_filename'] = key_file
+        ssh_settings = {'params': paramiko_settings,
                         'host': location,
                         'root': str(root_path) + "/"}
         logger.debug("ssh_settings=%s" % ssh_settings)
@@ -861,12 +887,46 @@ def put_file(file_url, content):
 def dir_exists(dir_url):
     # Can't use exists here because directories cannot be accessed directly
     # FIXME: this can be slow
+    logger.debug("dir_url=%s" % dir_url)
     try:
         file_paths = list_all_files(dir_url)
     except OSError:
         return False
     logger.debug("file_paths=%s" % pformat(file_paths))
     return len(file_paths) > 0
+
+
+def file_exists(bdp_file_url):
+    logger.debug("bdp_file_url=%s" % bdp_file_url)
+    (source_scheme, source_location, source_path, source_location, query_settings) = parse_bdpurl(bdp_file_url)
+    if source_scheme == "file":
+        root_path = get_value('root_path', query_settings)
+        logger.debug("self.root_path=%s" % root_path)
+        fs = LocalStorage(location=root_path + "/")
+    elif source_scheme == "ssh":
+        logger.debug("getting from ssh")
+        key_file = get_value('key_file', query_settings)
+        username = get_value('username', query_settings)
+        password = get_value('password', query_settings)
+        root_path = get_value('root_path', query_settings)
+        logger.debug("root_path=%s" % root_path)
+        paramiko_settings = {'username': username,
+            'password': password}
+        if key_file:
+            paramiko_settings['key_filename'] = key_file
+        ssh_settings = {'params': paramiko_settings,
+                        'host': source_location,
+                        'root': str(root_path) + "/"}
+        logger.debug("nci_settings=%s" % pformat(ssh_settings))
+        fs = NCIStorage(settings=ssh_settings)
+        logger.debug("fs=%s" % fs)
+    else:
+        logger.warn("scheme: %s not supported" % source_scheme)
+        return
+
+    logger.debug("source_path=%s"  % source_path)
+
+    return fs.exists(source_path)
 
 
 def get_file(file_url):
@@ -927,9 +987,11 @@ def get_filep(file_url):
         password = get_value('password', query_settings)
         root_path = get_value('root_path', query_settings)
         logger.debug("root_path=%s" % root_path)
-        ssh_settings = {'params': {'key_filename': key_file,
-                                   'username': username,
-                                   'password': password},
+        paramiko_settings = {'username': username,
+            'password': password}
+        if key_file:
+            paramiko_settings['key_filename'] = key_file
+        ssh_settings = {'params': paramiko_settings,
                         'host': location,
                         'root': root_path + "/"}
         logger.debug("ssh_settings=%s" % ssh_settings)
@@ -983,7 +1045,7 @@ def check_settings_valid(settings_to_test, user_settings, command):
         try:
             stage = safe_import(current_stage.package, [],
                 {'user_settings': user_settings})
-        except ImproperlyConfigured:
+        except ImproperlyConfigured,e:
             return (False, "Except in import of stage: %s: %s"
                 % (current_stage.name, e))
         logger.debug("stage=%s", stage)

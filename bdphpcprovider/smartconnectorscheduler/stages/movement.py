@@ -30,9 +30,9 @@ from bdphpcprovider.smartconnectorscheduler import smartconnector
 logger = logging.getLogger(__name__)
 
 
-class MovementStage(Stage):
+class CopyDirectoryStage(Stage):
     """
-    Moves files from one location to another
+    copies directories from one location to another
     """
     def __init__(self, user_settings=None):
         self.user_settings = user_settings.copy()
@@ -49,7 +49,7 @@ class MovementStage(Stage):
         has been any other error
         """
         # FIXME: Need to verify that triggered is idempotent.
-        logger.debug("Movement Stage Triggered?")
+        logger.debug("CopyDirectory Stage Triggered?")
         logger.debug("run_settings=%s" % run_settings)
 
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/copy/testing', 'output'):
@@ -66,10 +66,14 @@ class MovementStage(Stage):
         dir_exists = False
         try:
             encoded_d_url = get_url_with_pkey(self.boto_settings, dest_url)
-            dir_exists  = hrmcstages.dir_exists(encoded_d_url)
+            dir_exists = hrmcstages.dir_exists(encoded_d_url)
+            logger.debug("dir_exists=%s" % dir_exists)
         except IOError:
             # TODO: should check checksum of dest to make sure we have correct transfer
             logger.debug("dest file does not exist: %s" % dest_url)
+            return True
+        except Exception, e:
+            logger.debug("dest file does not exist from exeception %s" % e)
             return True
 
         return not dir_exists
@@ -77,7 +81,7 @@ class MovementStage(Stage):
     def process(self, run_settings):
         """ perfrom the stage operation
         """
-        logger.debug("Movement Stage Processing")
+        logger.debug("CopyDirectory Stage Processing")
         logger.debug("run_settings=%s" % run_settings)
         logger.debug("boto_settings=%s", self.boto_settings)
 
@@ -98,7 +102,87 @@ class MovementStage(Stage):
     def output(self, run_settings):
         """ produce the resulting datfiles and metadata
         """
-        logger.debug("Movement Stage Output")
+        logger.debug("CopyDirectory Stage Output")
+        logger.debug("run_settings=%s" % run_settings)
+
+        if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/copy/testing'):
+            run_settings['http://rmit.edu.au/schemas/stages/copy/testing'] = {}
+
+        self.val += 1
+        run_settings['http://rmit.edu.au/schemas/stages/copy/testing']['output'] = self.val
+
+        return run_settings
+
+
+class CopyFileStage(Stage):
+
+    """
+    Moves file from one location to another
+    """
+    def __init__(self, user_settings=None):
+        self.user_settings = user_settings.copy()
+        self.boto_settings = user_settings.copy()
+        pass
+
+    def input_valid(self, settings_to_test):
+        return (True, "ok")
+
+
+    def triggered(self, run_settings):
+        """
+        Return true if the directory pattern triggers this stage, or there
+        has been any other error
+        """
+        # FIXME: Need to verify that triggered is idempotent.
+        logger.debug("Copy File Stage Triggered?")
+        logger.debug("run_settings=%s" % run_settings)
+
+        if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/copy/testing', 'output'):
+            self.val = run_settings['http://rmit.edu.au/schemas/stages/copy/testing']['output']
+        else:
+            self.val = 0
+
+        dest_url = run_settings['http://rmit.edu.au/schemas/copy/files']['file1']
+        logger.debug("dest_url=%s" % dest_url)
+
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/system/platform')
+
+        file_exists = False
+        try:
+            encoded_d_url = get_url_with_pkey(self.boto_settings, dest_url)
+            file_exists = hrmcstages.file_exists(encoded_d_url)
+            logger.debug("file_exists=%s" % file_exists)
+        except IOError:
+            # TODO: should check checksum of dest to make sure we have correct transfer
+            logger.debug("dest file does not exist: %s" % dest_url)
+            return True
+
+        return not file_exists
+
+    def process(self, run_settings):
+        """ perfrom the stage operation
+        """
+        logger.debug("Copy File Stage Processing")
+        logger.debug("run_settings=%s" % run_settings)
+        logger.debug("boto_settings=%s", self.boto_settings)
+
+        source_url = run_settings['http://rmit.edu.au/schemas/copy/files']['file0']
+        logger.debug("source_url=%s" % source_url)
+        encoded_s_url = get_url_with_pkey(self.boto_settings, source_url)
+
+        dest_url = run_settings['http://rmit.edu.au/schemas/copy/files']['file1']
+        logger.debug("dest_url=%s" % dest_url)
+        encoded_d_url = get_url_with_pkey(self.boto_settings, dest_url)
+
+        content = hrmcstages.get_file(encoded_s_url)  # we assume text files
+        logger.debug("content=%s" % content)
+        hrmcstages.put_file(encoded_d_url, content.encode('utf-8'))  # we assume text files
+
+    def output(self, run_settings):
+        """ produce the resulting datfiles and metadata
+        """
+        logger.debug("Copy File Stage Output")
         logger.debug("run_settings=%s" % run_settings)
 
         if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/copy/testing'):

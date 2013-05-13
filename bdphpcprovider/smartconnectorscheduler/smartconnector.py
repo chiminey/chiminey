@@ -134,8 +134,16 @@ def get_url_with_pkey(settings, url_or_relative_path,
                                            relative_path, key_file,
                                            username, password, root_path)
     else:
+        # url_or_relative_path must be a valid url here,
+        # which means we have to remove username, as it is a BDPurl.
+        hostname = parsed_url.netloc
+        logger.debug("hostname=%s" % hostname)
+        relative_path = parsed_url.path
+        logger.debug("relative_path=%s" % relative_path)
+
+        host = "%s://%s%s" % (scheme, ip_address, relative_path)
         url_with_pkey = '%s?key_filename=%s&username=%s' \
-                        '&password=%s&root_path=%s' % (url_or_relative_path, key_file,
+                        '&password=%s&root_path=%s' % (host, key_file,
                                                        username, password,
                                                        root_path)
     logger.debug("Destination %s url_pkey %s" % (str(is_relative_path), url_with_pkey))
