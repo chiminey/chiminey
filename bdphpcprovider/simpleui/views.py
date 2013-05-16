@@ -187,7 +187,8 @@ class HRMCSubmitFormView(FormView):
         'number_of_dimensions': 2,
         'threshold': "[2]",
         'error_threshold': "0.03",
-        'max_iteration': 10
+        'max_iteration': 10,
+        'pottype': 1,
         }
 
     def form_valid(self, form):
@@ -208,7 +209,8 @@ class HRMCSubmitFormView(FormView):
                     ('number_dimensions', form.cleaned_data['number_of_dimensions']),
                     ('threshold', str(form.cleaned_data['threshold'])),
                     ('error_threshold', str(form.cleaned_data['error_threshold'])),
-                    ('max_iteration', form.cleaned_data['max_iteration'])
+                    ('max_iteration', form.cleaned_data['max_iteration']),
+                    ('pottype', form.cleaned_data['pottype'])
                 ]
             ])
 

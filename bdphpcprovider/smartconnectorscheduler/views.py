@@ -239,7 +239,8 @@ def test_directive(request, directive_id):
                         ('number_dimensions', 1),
                         ('threshold', "[1]"),
                         ('error_threshold', "0.03"),
-                        ('max_iteration', 20)
+                        ('max_iteration', 20),
+                        ('pottype', 1)
                     ]
                 ])
 

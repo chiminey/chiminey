@@ -25,12 +25,15 @@ class Teardown(smartconnector.Stage):
         if self._exists(run_settings,
             'http://rmit.edu.au/schemas/stages/converge',
             u'converged'):
-            converged = run_settings['http://rmit.edu.au/schemas/stages/converge'][u'converged']
+            converged = int(run_settings['http://rmit.edu.au/schemas/stages/converge'][u'converged'])
             logger.debug("converged=%s" % converged)
-            if converged == "True":
-                if not self._exists(run_settings,
+            if converged:
+                if self._exists(run_settings,
                     'http://rmit.edu.au/schemas/stages/teardown',
                     u'run_finished'):
+                    run_finished = int(run_settings['http://rmit.edu.au/schemas/stages/teardown'][u'run_finished'])
+                    return not run_finished
+                else:
                     return True
         return False
         # if 'converged' in self.settings:
@@ -46,6 +49,8 @@ class Teardown(smartconnector.Stage):
             'http://rmit.edu.au/schemas/stages/setup/payload_destination')
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/system/platform')
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/stages/create/created_nodes')
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/create/group_id_dir')
         smartconnector.copy_settings(self.boto_settings, run_settings,
@@ -87,5 +92,5 @@ class Teardown(smartconnector.Stage):
     def output(self, run_settings):
         run_settings.setdefault(
             'http://rmit.edu.au/schemas/stages/teardown',
-            {})[u'run_finished'] = True
+            {})[u'run_finished'] = 1
         return run_settings

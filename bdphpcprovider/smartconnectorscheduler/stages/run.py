@@ -29,7 +29,7 @@ import re
 import tempfile
 from itertools import product
 from pprint import pformat
-
+from urlparse import urlparse, parse_qsl
 
 from django.template import Context, Template
 
@@ -63,53 +63,21 @@ class Run(Stage):
          input_dir is assumed to be populated.
         """
 
-        self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
-
-        # TODO: we assume initial input is in "%s/input_0" % self.job_dir
-        # in configure stage we could copy initial data in 'input_location' into this location
-        if self._exists(run_settings, 'http://rmit.edu.au/schemas/system/misc', u'id'):
-            self.id = run_settings['http://rmit.edu.au/schemas/system/misc'][u'id']
-            self.iter_inputdir = os.path.join("%s%s" % (self.job_dir, self.contextid), "input_%s" % self.id)
-        else:
-            # FIXME: not fully tested
-            self.id = 0
-            self.iter_inputdir = os.path.join("%s%s" % (self.job_dir, self.contextid), "input_location")
-
-        # if 'id' in self.boto_settings:
-        #     self.id = self.boto_settings['id']
-        #     #self.iter_inputdir = "input_%s" % self.id
-        #     self.iter_inputdir = self.boto_settings['input_location'] + "_%s" % self.id
-        # else:
-        #     self.id = 0
-        #     #self.iter_inputdir = "input"
-        #     self.iter_inputdir = self.boto_settings['input_location']
-        logger.debug("id = %s" % id)
-
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/create', u'group_id'):
-            self.group_id = run_settings['http://rmit.edu.au/schemas/stages/create'][u'group_id']
+            self.group_id = run_settings[
+                'http://rmit.edu.au/schemas/stages/create'][u'group_id']
         else:
             logger.warn("no group_id found when expected")
             return False
         logger.debug("group_id = %s" % self.group_id)
 
-        if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run', u'initial_numbfile'):
-            self.initial_numbfile = run_settings['http://rmit.edu.au/schemas/stages/run'][u'initial_numbfile']
-        else:
-            logger.warn("setting initial_numbfile for first iteration")
-            self.initial_numbfile = 1
-
-        if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run', u'rand_index'):
-            self.rand_index = run_settings['http://rmit.edu.au/schemas/stages/run'][u'rand_index']
-        else:
-            logger.warn("setting rand_index for first iteration")
-            self.rand_index = run_settings['http://rmit.edu.au/schemas/hrmc']['iseed']
-        logger.debug("rand_index=%s" % self.rand_index)
-
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/deploy', u'deployed_nodes'):
-            setup_nodes = ast.literal_eval(str(run_settings['http://rmit.edu.au/schemas/stages/deploy'][u'deployed_nodes']))
+            deployed_nodes = ast.literal_eval(str(run_settings[
+                'http://rmit.edu.au/schemas/stages/deploy'][
+                u'deployed_nodes']))
         else:
             return False
-        logger.debug("setup_nodes=%s" % setup_nodes)
+        logger.debug("deployed_nodes=%s" % deployed_nodes)
 
         try:
             number_vm_instances = smartconnector.get_existing_key(run_settings,
@@ -120,54 +88,9 @@ class Run(Stage):
 
         logger.debug("number_vm_instances=%s" % number_vm_instances)
 
-        if len(setup_nodes) == number_vm_instances:
-            smartconnector.copy_settings(self.boto_settings, run_settings,
-                'http://rmit.edu.au/schemas/stages/setup/payload_source')
-            smartconnector.copy_settings(self.boto_settings, run_settings,
-                'http://rmit.edu.au/schemas/stages/setup/payload_destination')
-            smartconnector.copy_settings(self.boto_settings, run_settings,
-                'http://rmit.edu.au/schemas/system/platform')
-            smartconnector.copy_settings(self.boto_settings, run_settings,
-                'http://rmit.edu.au/schemas/stages/create/group_id_dir')
-            smartconnector.copy_settings(self.boto_settings, run_settings,
-                'http://rmit.edu.au/schemas/stages/create/custom_prompt')
-            smartconnector.copy_settings(self.boto_settings, run_settings,
-                'http://rmit.edu.au/schemas/stages/create/cloud_sleep_interval')
-            smartconnector.copy_settings(self.boto_settings, run_settings,
-                'http://rmit.edu.au/schemas/stages/run/payload_cloud_dirname')
-            smartconnector.copy_settings(self.boto_settings, run_settings,
-                'http://rmit.edu.au/schemas/stages/run/max_seed_int')
-            smartconnector.copy_settings(self.boto_settings, run_settings,
-                'http://rmit.edu.au/schemas/stages/run/compile_file')
-            smartconnector.copy_settings(self.boto_settings, run_settings,
-                'http://rmit.edu.au/schemas/stages/run/retry_attempts')
-            smartconnector.copy_settings(self.boto_settings, run_settings,
-                'http://rmit.edu.au/schemas/hrmc/number_vm_instances')
-            smartconnector.copy_settings(self.boto_settings, run_settings,
-                'http://rmit.edu.au/schemas/hrmc/iseed')
-            smartconnector.copy_settings(self.boto_settings, run_settings,
-                'http://rmit.edu.au/schemas/hrmc/number_dimensions')
-            smartconnector.copy_settings(self.boto_settings, run_settings,
-                'http://rmit.edu.au/schemas/hrmc/threshold')
-            smartconnector.copy_settings(self.boto_settings, run_settings,
-                'http://rmit.edu.au/schemas/stages/create/nectar_username')
-            smartconnector.copy_settings(self.boto_settings, run_settings,
-                'http://rmit.edu.au/schemas/stages/create/nectar_password')
-            smartconnector.copy_settings(self.boto_settings, run_settings,
-                'http://rmit.edu.au/schemas/stages/run/random_numbers')
-            self.boto_settings['username'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_username']
-            self.boto_settings['username'] = 'root'  # FIXME: schema value is ignored
+        if len(deployed_nodes) == number_vm_instances:
 
-            self.boto_settings['password'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
-            key_file = hrmcstages.retrieve_private_key(self.boto_settings, self.user_settings['nectar_private_key'])
-            self.boto_settings['private_key'] = key_file
-            self.boto_settings['nectar_private_key'] = key_file
-
-            logger.debug("setup_nodes = %s" % setup_nodes)
-            # TODO: remove need to call cloud during triggered() because this is an expensive operation
-            #packaged_nodes = len(botocloudconnector.get_rego_nodes(self.group_id,
-            #    self.boto_settings))
-            #logger.debug("packaged_nodes = %s" % packaged_nodes)
+            logger.debug("deployed_nodes = %s" % deployed_nodes)
 
             if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run'):
                 run_settings['http://rmit.edu.au/schemas/stages/run'] = {}
@@ -175,42 +98,9 @@ class Run(Stage):
                 logger.debug("found runs_left")
                 return False
             return True
-            # The process tages will recheck this anyway
-            # if packaged_nodes == setup_nodes:
-            #     return True
-            # else:
-            #     logger.error("Indicated number of setup nodes does not match allocated number")
-            #     logger.error("%s != %s" % (packaged_nodes, setup_nodes))
-            #     return False
 
         logger.info("setup was not finished")
         return False
-
-        # if self.boto_settings['setup_finished']:
-        #     setup_nodes = self.boto_settings['setup_finished']
-        #     logger.debug("setup_nodes = %s" % setup_nodes)
-        #     packaged_nodes = len(botocloudconnector.get_rego_nodes(self.group_id, self.boto_settings))
-        #     logger.debug("packaged_nodes = %s" % packaged_nodes)
-
-        #     if 'runs_left' in self.boto_settings:
-        #         logger.debug("found runs_left")
-        #         return False
-
-        #     if packaged_nodes == setup_nodes:
-        #         logger.debug("Run triggered")
-        #         return True
-        #     else:
-        #         logger.error("Indicated number of setup nodes does not match allocated number")
-        #         logger.error("%s != %s" % (packaged_nodes, setup_nodes))
-        #         return False
-        # else:
-        #     logger.info("setup was not finished")
-        #     return False
-
-
-
-
-
 
     def run_task(self, instance_id, settings):
         """
@@ -227,7 +117,7 @@ class Run(Stage):
         # settings['username'] = curr_username
 
         relative_path = settings['platform'] + '@' + settings['payload_destination']
-        destination = smartconnector.get_url_with_pkey(settings, 
+        destination = smartconnector.get_url_with_pkey(settings,
             relative_path,
             is_relative_path=True,
             ip_address=ip)
@@ -463,10 +353,12 @@ class Run(Stage):
         """
         template_pat = re.compile("(.*)_template")
 
-        fname_url_with_pkey = smartconnector.get_url_with_pkey(self.boto_settings,
-                                               os.path.join(self.iter_inputdir,
-                                                            input_dir), is_relative_path=True)
-        input_files = hrmcstages.list_dirs(fname_url_with_pkey, list_files=True)
+        fname_url_with_pkey = smartconnector.get_url_with_pkey(
+            self.boto_settings,
+            os.path.join(self.iter_inputdir, input_dir),
+            is_relative_path=True)
+        input_files = hrmcstages.list_dirs(fname_url_with_pkey,
+            list_files=True)
 
         variations = {}
         for fname in input_files:
@@ -476,9 +368,10 @@ class Run(Stage):
             template_mat = template_pat.match(fname)
             if template_mat:
                 # get the template
-                basename_url_with_pkey = smartconnector.get_url_with_pkey(self.boto_settings,
-                                                       os.path.join(self.iter_inputdir,
-                                                                    input_dir, fname), is_relative_path=True)
+                basename_url_with_pkey = smartconnector.get_url_with_pkey(
+                    self.boto_settings,
+                    os.path.join(self.iter_inputdir, input_dir, fname),
+                    is_relative_path=True)
                 template = hrmcstages.get_file(basename_url_with_pkey)
 
                 base_fname = template_mat.group(1)
@@ -487,9 +380,12 @@ class Run(Stage):
                 # find assocaited values file and generator_counter
                 generator_counter = 0
                 try:
-                    values_url_with_pkey = smartconnector.get_url_with_pkey(self.boto_settings,
-                                                           os.path.join(self.iter_inputdir,
-                                                                        input_dir, '%s_values' % base_fname), is_relative_path=True)
+                    values_url_with_pkey = smartconnector.get_url_with_pkey(
+                        self.boto_settings,
+                        os.path.join(self.iter_inputdir,
+                            input_dir,
+                            '%s_values' % base_fname),
+                        is_relative_path=True)
 
                     logger.debug("values_file=%s" % values_url_with_pkey)
                     values_content = hrmcstages.get_file(values_url_with_pkey)
@@ -501,6 +397,14 @@ class Run(Stage):
                     #values_content = hrmcstages.get_file(values_url_with_pkey)
                     logger.debug("values_content = %s" % values_content)
                     values_map = dict(json.loads(values_content))
+
+                    # TODO: rather than loading up specific vars for info
+                    # to send to next set of variations, pass whole values_map
+                    # and then override with map.  This means we need no
+                    # special variables here, could easily propogate values
+                    # between iterations and we might also pass an list
+                    # of values...
+
                     logger.debug("values_map=%s" % values_map)
                     try:
                         generator_counter = values_map.get('run_counter')
@@ -524,6 +428,15 @@ class Run(Stage):
                     self.threshold = run_settings['threshold']
                     logger.debug("threshold=%s" % self.threshold)
                     N = int(ast.literal_eval(self.threshold)[0])
+                    if 'pottype' in run_settings:
+                        logger.debug("pottype=%s" % run_settings['pottype'])
+                        try:
+                            pottype = int(run_settings['pottype'])
+                        except ValueError:
+                            logger.error("cannot convert %s to pottype" % run_settings['pottype'])
+                            pottype = 0
+                    else:
+                        pottype = 0
                     logger.debug("N=%s" % N)
                     if not self.id:
                         rand_nums = self._generate_rands(
@@ -532,7 +445,8 @@ class Run(Stage):
                         map = {
                             'temp': [300],
                             'iseed': rand_nums,
-                            'istart': [2]
+                            'istart': [2],
+                            'pottype': [pottype],
                         }
                     else:
                         rand_nums = self._generate_rands(
@@ -541,7 +455,8 @@ class Run(Stage):
                         map = {
                             'temp': [i for i in [300, 700, 1100, 1500]],
                             'iseed': rand_nums,
-                            'istart': [1]
+                            'istart': [1],
+                            'pottype': [pottype],
 
                         }
                 else:
@@ -620,6 +535,89 @@ class Run(Stage):
 
         logger.debug("processing run stage")
 
+        self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
+
+        # TODO: we assume initial input is in "%s/input_0" % self.job_dir
+        # in configure stage we could copy initial data in 'input_location' into this location
+        if self._exists(run_settings, 'http://rmit.edu.au/schemas/system/misc', u'id'):
+            self.id = run_settings['http://rmit.edu.au/schemas/system/misc'][u'id']
+            self.iter_inputdir = os.path.join("%s%s" % (self.job_dir, self.contextid), "input_%s" % self.id)
+        else:
+            # FIXME: not fully tested
+            self.id = 0
+            self.iter_inputdir = os.path.join("%s%s" % (self.job_dir, self.contextid), "input_location")
+
+        # if 'id' in self.boto_settings:
+        #     self.id = self.boto_settings['id']
+        #     #self.iter_inputdir = "input_%s" % self.id
+        #     self.iter_inputdir = self.boto_settings['input_location'] + "_%s" % self.id
+        # else:
+        #     self.id = 0
+        #     #self.iter_inputdir = "input"
+        #     self.iter_inputdir = self.boto_settings['input_location']
+        logger.debug("id = %s" % self.id)
+
+        if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run', u'initial_numbfile'):
+            self.initial_numbfile = run_settings['http://rmit.edu.au/schemas/stages/run'][u'initial_numbfile']
+        else:
+            logger.warn("setting initial_numbfile for first iteration")
+            self.initial_numbfile = 1
+
+        if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run', u'rand_index'):
+            self.rand_index = run_settings['http://rmit.edu.au/schemas/stages/run'][u'rand_index']
+        else:
+            logger.warn("setting rand_index for first iteration")
+            self.rand_index = run_settings['http://rmit.edu.au/schemas/hrmc']['iseed']
+        logger.debug("rand_index=%s" % self.rand_index)
+
+        logger.debug("run_settings=%s" % run_settings)
+
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/stages/setup/payload_source')
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/stages/setup/payload_destination')
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/system/platform')
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/stages/create/group_id_dir')
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/stages/create/custom_prompt')
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/stages/create/cloud_sleep_interval')
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/stages/create/created_nodes')
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/stages/run/payload_cloud_dirname')
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/stages/run/max_seed_int')
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/stages/run/compile_file')
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/stages/run/retry_attempts')
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/hrmc/number_vm_instances')
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/hrmc/iseed')
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/hrmc/number_dimensions')
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/hrmc/threshold')
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/hrmc/pottype')
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/stages/create/nectar_username')
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/stages/create/nectar_password')
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/stages/run/random_numbers')
+        self.boto_settings['username'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_username']
+        self.boto_settings['username'] = 'root'  # FIXME: schema value is ignored
+
+        self.boto_settings['password'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
+        key_file = hrmcstages.retrieve_private_key(self.boto_settings, self.user_settings['nectar_private_key'])
+        self.boto_settings['private_key'] = key_file
+        self.boto_settings['nectar_private_key'] = key_file
+
         self._prepare_inputs()
         try:
             pids = self.run_multi_task(self.group_id, self.iter_inputdir,
@@ -647,9 +645,6 @@ class Run(Stage):
         return run_settings
 
 
-import os
-from urlparse import urlparse, parse_qsl
-
 def get_make_path(destination):
     """
     TODO: move this into hrmcstages?
@@ -665,4 +660,4 @@ def get_make_path(destination):
     logger.debug("Makefile path %s %s %s " % (make_path, query_settings['root_path'], path))
     return make_path
 
-    
+

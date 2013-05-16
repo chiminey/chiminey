@@ -67,18 +67,6 @@ class Transform(Stage):
 
         # self.threshold = context['threshold']
 
-        self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
-
-        if self._exists(run_settings, 'http://rmit.edu.au/schemas/system/misc', u'id'):
-            self.id = run_settings['http://rmit.edu.au/schemas/system/misc'][u'id']
-            self.output_dir = os.path.join("%s%s" % (self.job_dir, self.contextid), "output_%s" % self.id)
-            self.input_dir = os.path.join("%s%s" % (self.job_dir, self.contextid), "input_%d" % self.id)
-            self.new_input_dir = os.path.join("%s%s" % (self.job_dir, self.contextid), "input_%d" % (self.id + 1))
-        else:
-            # FIXME: Not clear that this a valid path through stages
-            self.output_dir = os.path.join("%s%s" % (self.job_dir, self.contextid), "output")
-            self.output_dir = os.path.join("%s%s" % (self.job_dir, self.contextid), "input")
-            self.new_input_dir = os.path.join("%s%s" % (self.job_dir, self.contextid), "input_1")
 
         # if 'id' in self.settings:
         #     self.id = self.settings['id']
@@ -105,9 +93,9 @@ class Transform(Stage):
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run', u'runs_left'):
             self.runs_left = run_settings['http://rmit.edu.au/schemas/stages/run'][u'runs_left']
             if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/transform', u'transformed'):
-                self.transformed = (run_settings['http://rmit.edu.au/schemas/stages/transform'][u'transformed'] == u'True')
+                self.transformed = int(run_settings['http://rmit.edu.au/schemas/stages/transform'][u'transformed'])
             else:
-                self.transformed = False
+                self.transformed = 0
             if (self.runs_left == 0) and (not self.transformed) and (not self.converged):
                 return True
             else:
@@ -162,6 +150,20 @@ class Transform(Stage):
         # start_time = time.time()
         # logger.debug("Start time %f "% start_time)
 
+        self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
+
+        if self._exists(run_settings, 'http://rmit.edu.au/schemas/system/misc', u'id'):
+            self.id = run_settings['http://rmit.edu.au/schemas/system/misc'][u'id']
+            self.output_dir = os.path.join("%s%s" % (self.job_dir, self.contextid), "output_%s" % self.id)
+            self.input_dir = os.path.join("%s%s" % (self.job_dir, self.contextid), "input_%d" % self.id)
+            self.new_input_dir = os.path.join("%s%s" % (self.job_dir, self.contextid), "input_%d" % (self.id + 1))
+        else:
+            # FIXME: Not clear that this a valid path through stages
+            self.output_dir = os.path.join("%s%s" % (self.job_dir, self.contextid), "output")
+            self.output_dir = os.path.join("%s%s" % (self.job_dir, self.contextid), "input")
+            self.new_input_dir = os.path.join("%s%s" % (self.job_dir, self.contextid), "input_1")
+
+
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/setup/payload_source')
         smartconnector.copy_settings(self.boto_settings, run_settings,
@@ -174,6 +176,8 @@ class Transform(Stage):
             'http://rmit.edu.au/schemas/stages/create/custom_prompt')
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/create/cloud_sleep_interval')
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/stages/create/created_nodes')
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/run/payload_cloud_dirname')
         smartconnector.copy_settings(self.boto_settings, run_settings,
@@ -330,6 +334,9 @@ class Transform(Stage):
                 if not found:
                     logger.warn("No matching %s file found to transfer")
 
+                # FIXME: given that rmcen_inp for next iteration generated from
+                # template file, don't need to change rmcen_input here?
+
                 new_rmcen_url = smartconnector.get_url_with_pkey(self.boto_settings,
                     os.path.join(self.new_input_node_dir, 'rmcen.inp'), is_relative_path=True)
                 new_rmcen_content = hrmcstages.get_file(new_rmcen_url)
@@ -373,7 +380,7 @@ class Transform(Stage):
 
         if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/transform'):
             run_settings['http://rmit.edu.au/schemas/stages/transform'] = {}
-        run_settings['http://rmit.edu.au/schemas/stages/transform'][u'transformed'] = True
+        run_settings['http://rmit.edu.au/schemas/stages/transform'][u'transformed'] = 1
 
         print "End of Transformation: \n %s" % self.audit
 

@@ -60,9 +60,8 @@ class IterationConverge(Stage):
         logger.debug("id = %s" % self.id)
 
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/transform', u'transformed'):
-            self.transformed = run_settings['http://rmit.edu.au/schemas/stages/transformed'][u'transformed']
-            if self.transformed:
-                return True
+            self.transformed = int(run_settings['http://rmit.edu.au/schemas/stages/transformed'][u'transformed'])
+            self.transformed
         return False
 
     def process(self, context):
@@ -157,9 +156,8 @@ class Converge(Stage):
         #     self.id = 0
 
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/transform', u'transformed'):
-            self.transformed = run_settings['http://rmit.edu.au/schemas/stages/transform'][u'transformed']
-            if self.transformed:
-                return True
+            self.transformed = int(run_settings['http://rmit.edu.au/schemas/stages/transform'][u'transformed'])
+            return self.transformed
 
         # if 'transformed' in self.settings:
         #     self.transformed = self.settings["transformed"]
@@ -187,6 +185,8 @@ class Converge(Stage):
             'http://rmit.edu.au/schemas/stages/create/custom_prompt')
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/create/cloud_sleep_interval')
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/stages/create/created_nodes')
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/run/payload_cloud_dirname')
         smartconnector.copy_settings(self.boto_settings, run_settings,
@@ -378,7 +378,7 @@ class Converge(Stage):
             del run['error_nodes']
 
             #update_key('converged', False, context)
-            run_settings['http://rmit.edu.au/schemas/stages/converge'][u'converged'] = False
+            run_settings['http://rmit.edu.au/schemas/stages/converge'][u'converged'] = 0
             # delete_key('runs_left', context)
             # delete_key('error_nodes', context)
             # update_key('converged', False, context)
@@ -386,7 +386,7 @@ class Converge(Stage):
             logger.debug("convergence")
             # we are done, so trigger next stage outside of converge
             #update_key('converged', True, context)
-            run_settings['http://rmit.edu.au/schemas/stages/converge'][u'converged'] = True
+            run_settings['http://rmit.edu.au/schemas/stages/converge'][u'converged'] = 1
             # we are done, so don't trigger iteration stages
 
         #update_key('criterion', self.criterion, context)

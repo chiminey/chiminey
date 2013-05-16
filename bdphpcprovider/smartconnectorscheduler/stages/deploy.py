@@ -81,9 +81,9 @@ class Deploy(Stage):
 
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/deploy',
             u'started'):
-            self.started = run_settings['http://rmit.edu.au/schemas/stages/deploy'][u'started']
+            self.started = int(run_settings['http://rmit.edu.au/schemas/stages/deploy'][u'started'])
         else:
-            self.started = False
+            self.started = 0
 
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/setup/payload_source')
@@ -92,11 +92,15 @@ class Deploy(Stage):
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/system/platform')
         smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/stages/create/created_nodes')
+        smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/create/group_id_dir')
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/create/custom_prompt')
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/create/cloud_sleep_interval')
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/stages/create/created_nodes')
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/hrmc/number_vm_instances')
         smartconnector.copy_settings(self.boto_settings, run_settings,
@@ -125,7 +129,7 @@ class Deploy(Stage):
             except PackageFailedError, e:
                 logger.error("unable to start setup of packages: %s" % e)
             pass
-            self.started = True
+            self.started = 1
         else:
             self.nodes = botocloudconnector.get_rego_nodes(self.group_id,
                 self.boto_settings)
@@ -156,7 +160,7 @@ class Deploy(Stage):
                 logger.debug("fin=%s" % fin)
                 if fin:
                     print "done. output is available"
-                    logger.debug("node=%s" % node)
+                    logger.debug("node=%s" % str(node))
                     logger.debug("deployed_nodes=%s" % self.deployed_nodes)
                     if not (node.id in [x for x in self.deployed_nodes]):
                         self.deployed_nodes.append(node.id)
@@ -202,11 +206,11 @@ def job_finished(instance_id, ip, settings, destination):
     return False
 
 
-def start_setup(instance_id, ip,  settings, source, destination):
+def start_setup(instance, ip,  settings, source, destination):
     """
         Start the task on the instance, then return
     """
-    logger.info("run_task %s" % instance_id)
+    logger.info("run_task %s" % str(instance))
 
     hrmcstages.copy_directories(source, destination)
     makefile_path = get_make_path(destination)
@@ -294,7 +298,9 @@ def start_multi_setup_task(group_id, settings, maketarget_nodegroup_pair={}):
     for make_target in maketarget_nodegroup_pair:
         for i in range(0, maketarget_nodegroup_pair[make_target]):
             instance = nodes[0]
-            logger.debug("instance=%s" % instance)
+            logger.debug("instance.id=%s" % str(instance.id))
+            logger.debug("instance.ip=%s" % str(instance.ip))
+            logger.debug("instance=%s" % str(instance))
             node_ip = botocloudconnector.get_instance_ip(instance.id, settings)
             logger.debug("node_ip=%s"  % node_ip)
             source = smartconnector.get_url_with_pkey(settings, settings['payload_source'])

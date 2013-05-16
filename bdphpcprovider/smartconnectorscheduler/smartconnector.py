@@ -44,7 +44,9 @@ def copy_settings(dest_context, context, key):
     """
     """
     # Note that all run_settings and user_settings are flattened
-    dest_context[os.path.basename(key)] = context[os.path.dirname(key)][os.path.basename(key)]
+    res = context[os.path.dirname(key)][os.path.basename(key)]
+    dest_context[os.path.basename(key)] = res
+    logger.debug("dest_contxt[%s] = %s" % (os.path.basename(key), dest_context[os.path.basename(key)]))
 
 
 def get_url_with_pkey(settings, url_or_relative_path,
