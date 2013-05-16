@@ -61,7 +61,7 @@ class IterationConverge(Stage):
 
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/transform', u'transformed'):
             self.transformed = int(run_settings['http://rmit.edu.au/schemas/stages/transformed'][u'transformed'])
-            self.transformed
+            return self.transformed
         return False
 
     def process(self, context):
@@ -126,6 +126,24 @@ class Converge(Stage):
     def triggered(self, run_settings):
         """
         """
+        if self._exists(run_settings, 'http://rmit.edu.au/schemas/hrmc', u'error_threshold'):
+            self.error_threshold = float(run_settings['http://rmit.edu.au/schemas/hrmc'][u'error_threshold'])
+        else:
+            pass  # FIXME: is this an error condition?
+
+        logger.debug("error_threshold=%s" % self.error_threshold)
+
+        if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/transform', u'transformed'):
+            self.transformed = int(run_settings['http://rmit.edu.au/schemas/stages/transform'][u'transformed'])
+            return self.transformed
+
+        return False
+
+    def process(self, run_settings):
+
+        #import time
+        # start_time = time.time()
+        # logger.debug("Start time %f "% start_time)
 
         self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
 
@@ -138,40 +156,6 @@ class Converge(Stage):
             self.output_dir = os.path.join("%s%s" % (self.job_dir, self.contextid), "output")
             self.iter_inputdir = os.path.join("%s%s" % (self.job_dir, self.contextid), "input")
             self.id = 0
-
-        if self._exists(run_settings, 'http://rmit.edu.au/schemas/hrmc', u'error_threshold'):
-            self.error_threshold = float(run_settings['http://rmit.edu.au/schemas/hrmc'][u'error_threshold'])
-        else:
-            pass  # FIXME: is this an error condition?
-
-        logger.debug("error_threshold=%s" % self.error_threshold)
-        # if 'id' in self.settings:
-        #     self.id = self.settings['id']
-        #     self.output_dir = "output_%d" % self.id
-        #     self.iter_inputdir = "input_%d" % (self.id + 1)
-        #     #self.new_iter_inputdir = "input_%d" % (self.id + 1)
-        # else:
-        #     self.output_dir = "output"
-        #     self.iter_inputdir = "input"
-        #     self.id = 0
-
-        if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/transform', u'transformed'):
-            self.transformed = int(run_settings['http://rmit.edu.au/schemas/stages/transform'][u'transformed'])
-            return self.transformed
-
-        # if 'transformed' in self.settings:
-        #     self.transformed = self.settings["transformed"]
-        #     if self.transformed:
-        #         return True
-
-        return False
-
-    def process(self, run_settings):
-
-        #import time
-        # start_time = time.time()
-        # logger.debug("Start time %f "% start_time)
-
 
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/setup/payload_source')
@@ -241,16 +225,6 @@ class Converge(Stage):
         for input_dir in input_dirs:
             # Retrieve audit file
 
-            # if not fs.isdir(self.iter_inputdir, input_dir):
-            #     continue
-            # try:
-            #     text = fs.retrieve_under_dir(self.iter_inputdir, input_dir,
-            #         "audit.txt").retrieve()
-            # except IOError:
-            #     logger.warn("Cannot retrieve audit.txt file from node directory")
-            #     raise
-            # logger.debug("text=%s" % text)
-
             audit_url = smartconnector.get_url_with_pkey(self.boto_settings,
                 os.path.join(self.iter_inputdir, input_dir, 'audit.txt'), is_relative_path=True)
             audit_content = hrmcstages.get_file(audit_url)
@@ -287,12 +261,6 @@ class Converge(Stage):
         else:
             self.prev_criterion = sys.float_info.max - 1.0
             logger.warn("no previous criterion found")
-
-        # if 'criterion' in self.settings:
-        #     self.prev_criterion = float(self.settings['criterion'])
-        # else:
-        #     self.prev_criterion = sys.float_info.max - 1.0
-        #     logger.warn("no previous criterion found")
 
         # check whether we are under the error threshold
         logger.debug("best_num=%s" % best_numb)

@@ -17,10 +17,11 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
-
-import re
 import os
+import ast
+import json
 import logging
+from collections import namedtuple
 import fnmatch
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
@@ -36,7 +37,7 @@ class Transform(Stage):
         Convert output into input for next iteration.
     """
     # FIXME: put part of config file, or pull from original input file
-    domain_input_files = ['pore.xyz', 'sqexp.dat', 'grexp.dat', ]
+    domain_input_files = ['input_bo.dat', 'input_gr.dat', 'input_sq.dat']
 
     def __init__(self, user_settings=None):
         self.user_settings = user_settings.copy()
@@ -54,9 +55,6 @@ class Transform(Stage):
             return False
         logger.debug("group_id = %s" % self.group_id)
 
-        # self.group_id = self.settings['group_id']
-
-        import ast
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/hrmc', u'threshold'):
             # FIXME: need to validate this output to make sure list of int
             self.threshold = ast.literal_eval(run_settings['http://rmit.edu.au/schemas/hrmc'][u'threshold'])
@@ -65,30 +63,11 @@ class Transform(Stage):
             return False
         logger.debug("threshold = %s" % self.threshold)
 
-        # self.threshold = context['threshold']
-
-
-        # if 'id' in self.settings:
-        #     self.id = self.settings['id']
-        #     self.output_dir = "output_%d" % self.id
-        #     self.input_dir = "input_%d" % self.id
-        #     self.new_input_dir = "input_%d" % (self.id + 1)
-        # else:
-        #     # FIXME: Not clear that this a valid path through stages
-        #     self.output_dir = "output"
-        #     self.output_dir = "input"
-        #     self.new_input_dir = "input_1"
-
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/converge', u'converged'):
             # FIXME: should use NUMERIC for bools, so use 0,1 and natural comparison will work.
-            self.converged = (run_settings['http://rmit.edu.au/schemas/stages/converge'][u'converged'] == u'True')
+            self.converged = int(run_settings['http://rmit.edu.au/schemas/stages/converge'][u'converged'])
         else:
-            self.converged = False
-
-        # if 'converged' in self.settings:
-        #     self.converged = self.settings['converged']
-        # else:
-        #     self.converged = False
+            self.converged = 0
 
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run', u'runs_left'):
             self.runs_left = run_settings['http://rmit.edu.au/schemas/stages/run'][u'runs_left']
@@ -101,16 +80,6 @@ class Transform(Stage):
             else:
                 logger.debug("%s %s %s" % (self.runs_left, self.transformed, self.converged))
                 pass
-
-        # if 'runs_left' in self.settings:
-        #     self.runs_left = self.settings["runs_left"]
-        #     if 'transformed' in self.settings:
-        #         self.transformed = self.settings['transformed']
-        #     else:
-        #         self.transformed = False
-        #     if self.runs_left == 0 and not self.transformed and not self.converged:
-        #         logger.debug("Transform triggered")
-        #         return True
 
         return False
 
@@ -146,10 +115,6 @@ class Transform(Stage):
     def process(self, run_settings):
         #TODO: break up this function as it is way too long
 
-        # import time
-        # start_time = time.time()
-        # logger.debug("Start time %f "% start_time)
-
         self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
 
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/system/misc', u'id'):
@@ -163,6 +128,9 @@ class Transform(Stage):
             self.output_dir = os.path.join("%s%s" % (self.job_dir, self.contextid), "input")
             self.new_input_dir = os.path.join("%s%s" % (self.job_dir, self.contextid), "input_1")
 
+        # import time
+        # start_time = time.time()
+        # logger.debug("Start time %f "% start_time)
 
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/setup/payload_source')
@@ -177,7 +145,7 @@ class Transform(Stage):
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/create/cloud_sleep_interval')
         smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/stages/create/created_nodes')
+          'http://rmit.edu.au/schemas/stages/create/created_nodes')
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/run/payload_cloud_dirname')
         smartconnector.copy_settings(self.boto_settings, run_settings,
@@ -205,6 +173,7 @@ class Transform(Stage):
         self.boto_settings['private_key'] = key_file
         self.boto_settings['nectar_private_key'] = key_file
 
+        logger.debug("boto_settings=%s" % self.boto_settings)
 
         output_url = smartconnector.get_url_with_pkey(self.boto_settings,
             self.output_dir, is_relative_path=True)
@@ -213,37 +182,32 @@ class Transform(Stage):
         node_output_dirs, _ = fsys.listdir(self.output_dir)
         logger.debug("node_output_dirs=%s" % node_output_dirs)
         self.audit = ""
-        result_info = []
+        outputs = []
+
+        Node_info = namedtuple('Node_info',
+            ['dir', 'index', 'number', 'criterion'])
+
+        # gather node_infos
         for node_output_dir in node_output_dirs:
-
-            rmcen_url = smartconnector.get_url_with_pkey(self.boto_settings,
-                os.path.join(self.output_dir, node_output_dir, 'rmcen.inp'), is_relative_path=True)
-
-            logger.debug("rmcen_url=%s" % rmcen_url)
-            rmcen_content = hrmcstages.get_file(rmcen_url)
-            logger.debug("rmcen_content=%s" % rmcen_content)
-            # Get numbfile from rmcen.inp
-            numb = [x.split()[0] for x in rmcen_content.split('\n') if 'numbfile' in x]
-            if numb:
-                number = int(numb[0])
-            else:
-                raise ValueError("No numbfile record found")
-
-            logger.debug("number=%s" % number)
+            base_fname = "HRMC.inp"
+            try:
+                values_url = smartconnector.get_url_with_pkey(self.boto_settings,
+                    os.path.join(self.output_dir, node_output_dir,
+                    '%s_values' % base_fname), is_relative_path=True)
+                values_content = hrmcstages.get_file(values_url)
+                logger.debug("values_file=%s" % values_url)
+            except IOError:
+                logger.warn("no values file found")
+            values_map = dict(json.loads(values_content))
             criterion = self.compute_psd_criterion(node_output_dir, fsys)
+            #criterion = self.compute_hrmc_criterion(values_map['run_counter'], node_output_dir, fs)
             logger.debug("criterion=%s" % criterion)
-            #criterion = self.compute_hrmc_criterion(number, node_output_dir, fs)
-            index = 0
-            result_info.append((node_output_dir, index, number, criterion))
+            index = 0   # FIXME: as node_output_dirs in particular order, then index is not useful.
+            outputs.append(Node_info(dir=node_output_dir,
+                index=index, number=values_map['run_counter'], criterion=criterion))
 
-        # Get Maximum numbfile in all previous runs
-        max_numbfile = max([x[2] for x in result_info])
-        logger.debug("maximum numbfile value=%s" % max_numbfile)
-
-        # Get informatiion about minimum criterion previous run.
-        logger.debug("result_info=%s" % result_info)
-        result_info.sort(key=lambda x: int(x[3]))
-        logger.debug("result_info=%s" % result_info)
+        outputs.sort(key=lambda x: int(x.criterion))
+        logger.debug("outputs=%s" % outputs)
 
         total_picks = 1
         if len(self.threshold) > 1:
@@ -252,125 +216,52 @@ class Transform(Stage):
         else:
             total_picks = self.threshold[0]
 
-        if result_info:
-            for i in range(0, total_picks):
-                (best_node_dir, best_index, number, criterion) = result_info[i]
-                self.new_input_node_dir = os.path.join(self.new_input_dir, best_node_dir)
-                logger.debug("New input node dir %s" % self.new_input_node_dir)
+        if not outputs:
+            logger.error("no ouput found for this iteration")
+            return
 
-                # Transfer rmcen.inp to next iteration inputdir initially unchanged
+        for index in range(0, total_picks):
+            Node_info = outputs[index]
+            logger.debug("node_info.dir=%s" % Node_info.dir)
+            logger.debug("Node_info=%s" % str(Node_info))
+            self.new_input_node_dir = os.path.join(self.new_input_dir,
+                Node_info.dir)
+            logger.debug("New input node dir %s" % self.new_input_node_dir)
+
+            # Move all existing domain input files unchanged to next input directory
+            for f in self.domain_input_files:
                 source_url = smartconnector.get_url_with_pkey(self.boto_settings,
-                    os.path.join(self.output_dir, best_node_dir, 'rmcen.inp'), is_relative_path=True)
+                    os.path.join(self.output_dir, Node_info.dir, f), is_relative_path=True)
                 dest_url = smartconnector.get_url_with_pkey(self.boto_settings,
-                    os.path.join(self.new_input_node_dir, 'rmcen.inp'), is_relative_path=True)
-                rmcen_content = hrmcstages.get_file(source_url)
-                hrmcstages.put_file(dest_url, rmcen_content)
+                    os.path.join(self.new_input_node_dir, f), is_relative_path=True)
+                content = hrmcstages.get_file(source_url)
+                hrmcstages.put_file(dest_url, content)
 
-                # Move all existing domain input files unchanged to next input directory
-                for f in self.domain_input_files:
-                    source_url = smartconnector.get_url_with_pkey(self.boto_settings,
-                        os.path.join(self.output_dir, best_node_dir, f), is_relative_path=True)
-                    dest_url = smartconnector.get_url_with_pkey(self.boto_settings,
-                        os.path.join(self.new_input_node_dir, f), is_relative_path=True)
-                    content = hrmcstages.get_file(source_url)
-                    hrmcstages.put_file(dest_url, content)
+            pattern = "*_values"
+            self.copy_files_with_pattern(fsys, os.path.join(self.output_dir, Node_info.dir),
+                self.new_input_node_dir, pattern)
 
-                pattern = "*_values"
-                self.copy_files_with_pattern(fsys, os.path.join(self.output_dir, best_node_dir),
-                    self.new_input_node_dir, pattern)
+            pattern = "*_template"
+            self.copy_files_with_pattern(fsys, os.path.join(self.output_dir, Node_info.dir),
+                self.new_input_node_dir, pattern)
 
-                pattern = "*_template"
-                self.copy_files_with_pattern(fsys, os.path.join(self.output_dir, best_node_dir),
-                    self.new_input_node_dir, pattern)
+            # NB: Converge stage triggers based on criterion value from audit.
 
-                # NB: Converge stage triggers based on criterion value from audit.
+            info = "Run %s preserved (error %s)\n" % (Node_info.number, Node_info.criterion)
+            audit_url = smartconnector.get_url_with_pkey(self.boto_settings,
+                    os.path.join(self.new_input_node_dir, 'audit.txt'), is_relative_path=True)
+            hrmcstages.put_file(audit_url, info)
+            logger.debug("audit=%s" % info)
+            self.audit += info
 
-                info = "Run %s preserved (error %s)\n" % (number, criterion)
-                audit_url = smartconnector.get_url_with_pkey(self.boto_settings,
-                        os.path.join(self.new_input_node_dir, 'audit.txt'), is_relative_path=True)
-                hrmcstages.put_file(audit_url, info)
-                logger.debug("audit=%s" % info)
-                self.audit += info
-
-                logger.debug("best_node_dir=%s" % best_node_dir)
-                logger.debug("best_index=%s" % best_index)
-                logger.debug("number=%s" % number)
-
-                try:
-                    xyzfiles = ['hrmc%s.xyz' % str(number).zfill(2)]
-                    xyzfile_url = smartconnector.get_url_with_pkey(self.boto_settings,
-                        os.path.join(self.output_dir,
-                            best_node_dir, 'hrmc%s.xyz' % str(number).zfill(2)), is_relative_path=True)
-                    f = hrmcstages.get_file(xyzfile_url)  # FIXME: check that get_file can raise IOError
-                except IOError:
-                    logger.warn("no hrmcstages found")
-                logger.debug("xyzfiles=%s " % xyzfiles)
-
-                found = False
-                for file_name in xyzfiles:
-                    # TODO: len(xyzfiles) == 1
-                    if file_name == 'hrmc%s.xyz' % (str(number).zfill(2)):
-                        logger.debug("%s -> %s" % (file_name, 'initial.xyz'))
-                        try:
-
-                            source_url = smartconnector.get_url_with_pkey(self.boto_settings,
-                                os.path.join(self.output_dir, best_node_dir, file_name), is_relative_path=True)
-                            dest_url = smartconnector.get_url_with_pkey(self.boto_settings,
-                                os.path.join(self.new_input_node_dir, 'initial.xyz'), is_relative_path=True)
-                            content = hrmcstages.get_file(source_url)
-                            hrmcstages.put_file(dest_url, content)
-                            # self.copy_file(fsys,
-                            #     os.path.join(self.output_dir, best_node_dir, file_name),
-                            #     os.path.join(self.new_input_node_dir, 'initial.xyz'))
-                            # fs.copy(self.output_dir, best_node_dir,
-                            #     file_name, self.new_input_dir,
-                            #     'initial.xyz', overwrite=True)
-                        except IOError as e:
-                            logger.warn("no %s found in  %s/%s: %s"
-                                        % (file_name, self.output_dir, best_node_dir, e))
-                            continue
-                        else:
-                            found = True
-                if not found:
-                    logger.warn("No matching %s file found to transfer")
-
-                # FIXME: given that rmcen_inp for next iteration generated from
-                # template file, don't need to change rmcen_input here?
-
-                new_rmcen_url = smartconnector.get_url_with_pkey(self.boto_settings,
-                    os.path.join(self.new_input_node_dir, 'rmcen.inp'), is_relative_path=True)
-                new_rmcen_content = hrmcstages.get_file(new_rmcen_url)
-
-                # Change numfile to be higher than any of previous iteration
-                p = re.compile("^([0-9]*)[ \t]*numbfile.*$", re.MULTILINE)
-                m = p.search(new_rmcen_content)
-                if m:
-                    numbfile = int(m.group(1))
-                else:
-                    logger.warn("could not find numbfile in rmcen.inp")
-                    numbfile = self.id
-                new_rmcen_content = re.sub(p, "%d    numbfile" % (max_numbfile + 1), new_rmcen_content)
-                logger.debug("numfile = %d" % numbfile)
-
-                # Change istart from 2 to 1 after first iteration
-                p = re.compile("^([0-9]*)[ \t]*istart.*$", re.MULTILINE)
-                m = p.search(new_rmcen_content)
-                if m:
-                    logger.debug("match = %s" % m.groups())
-                    new_rmcen_content = re.sub(p, "1     istart", new_rmcen_content)
-                else:
-                    logger.warn("Cloud not find istart in rmcen.inp")
-                logger.debug("new_rmcen_content = %s" % new_rmcen_content)
-
-                # FIXME: assume we always overwrite to local storage
-                hrmcstages.put_file(new_rmcen_url, new_rmcen_content)
-
-                self.audit += "spawning diamond runs\n"
-
-        else:
-            # FIXME: can we carry on here?
-            logger.warning("no output directory found")
-            (best_node_dir, best_index, number, criterion) = ("", 0, 0, 0)  # ?
+            # move xyz_final.xyz to initial.xyz
+            source_url = smartconnector.get_url_with_pkey(self.boto_settings,
+                os.path.join(self.output_dir, Node_info.dir, "xyz_final.xyz"), is_relative_path=True)
+            dest_url = smartconnector.get_url_with_pkey(self.boto_settings,
+                os.path.join(self.new_input_node_dir, 'input_initial.xyz'), is_relative_path=True)
+            content = hrmcstages.get_file(source_url)
+            hrmcstages.put_file(dest_url, content)
+            self.audit += "spawning diamond runs\n"
 
     def output(self, run_settings):
         logger.debug("transform.output")

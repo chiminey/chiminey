@@ -41,11 +41,14 @@ class Configure(Stage, UI):
         if self._exists(run_settings,
             'http://rmit.edu.au/schemas/stages/configure',
             'configure_done'):
-            return False
-        self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
+            configure_done = int(run_settings['http://rmit.edu.au/schemas/stages/configure'][u'configure_done'])
+            return not configure_done
         return True
 
     def process(self, run_settings):
+
+        self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
+
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/system/platform')
         smartconnector.copy_settings(self.boto_settings, run_settings,
@@ -67,7 +70,7 @@ class Configure(Stage, UI):
 
         run_settings.setdefault(
             'http://rmit.edu.au/schemas/stages/configure',
-            {})[u'configure_done'] = True
+            {})[u'configure_done'] = 1
         # if not self._exists(run_settings,
         #         'http://rmit.edu.au/schemas/stages/configure'):
         #     run_settings['http://rmit.edu.au/schemas/stages/configure'] = {}

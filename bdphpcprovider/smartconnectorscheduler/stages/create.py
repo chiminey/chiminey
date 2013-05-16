@@ -21,11 +21,10 @@
 import logging
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
-from bdphpcprovider.smartconnectorscheduler.hrmcstages import clear_temp_files, \
-    get_filesys, get_settings, get_run_info
-from bdphpcprovider.smartconnectorscheduler.botocloudconnector import create_environ
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
+from bdphpcprovider.smartconnectorscheduler import botocloudconnector
+
 
 logger = logging.getLogger(__name__)
 
@@ -43,30 +42,18 @@ class Create(Stage):
             Return True if there is a platform
             but not group_id
         """
-        #logger.debug("User_settings %s \n Run_settings %s" % (self.user_settings, run_settings))
-
-        '''
-        if smartconnector.key_exists(run_settings,
-            'http://rmit.edu.au/schemas/stages/create/group_id'):
-            try:
-                self.platform = smartconnector.get_existing_key(run_settings,
-                 'http://rmit.edu.au/schemas/system/platform')
-            except KeyError:
-                return False
-            else:
-                return True
-        return False
-        '''
 
         if self._exists(run_settings,
             'http://rmit.edu.au/schemas/stages/configure',
             'configure_done'):
-            if not self._exists(run_settings,
-                'http://rmit.edu.au/schemas/stages/create', 'group_id'):
-                if self._exists(run_settings,
-                    'http://rmit.edu.au/schemas/system', 'platform'):
-                    self.platform = run_settings['http://rmit.edu.au/schemas/system'][u'platform']
-                    return True
+                configure_done = run_settings['http://rmit.edu.au/schemas/stages/configure'][u'configure_done']
+                if configure_done:
+                    if not self._exists(run_settings,
+                        'http://rmit.edu.au/schemas/stages/create', 'group_id'):
+                        if self._exists(run_settings,
+                            'http://rmit.edu.au/schemas/system', 'platform'):
+                            self.platform = run_settings['http://rmit.edu.au/schemas/system'][u'platform']
+                            return True
         return False
 
     def process(self, run_settings):
@@ -105,7 +92,11 @@ class Create(Stage):
         self.boto_settings['nectar_private_key'] = key_file
 
         logger.debug("botosettings=%s" % self.boto_settings)
-        self.group_id = create_environ(number_vm_instances, self.boto_settings)
+        #self.group_id = create_environ(number_vm_instances, self.boto_settings)
+        self.group_id, self.nodes = botocloudconnector.create_environ(
+            number_vm_instances,
+            self.boto_settings)
+
         if not self.group_id:
             self.group_id = ''  # FIXME: do we we mean '' or None here?
             logger.debug("No new VM instance can be created for this computation. Retry later.")
@@ -116,9 +107,14 @@ class Create(Stage):
         """
         Inserting a new group if into run settings.
         """
-
         run_settings.setdefault(
             'http://rmit.edu.au/schemas/stages/create', {})[u'group_id'] \
             = self.group_id
+        run_settings.setdefault(
+            'http://rmit.edu.au/schemas/stages/create', {})[u'created_nodes'] \
+            = [(x.id,
+                botocloudconnector.get_instance_ip(x.id,
+                    self.boto_settings)) for x in self.nodes]
+
         logger.debug("Updated run settings %s" % run_settings)
         return run_settings

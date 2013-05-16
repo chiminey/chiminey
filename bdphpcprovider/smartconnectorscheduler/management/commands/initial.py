@@ -206,35 +206,37 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/hrmc':
                 [u'the hrmc smart connector input values',
                 {
-                u'number_vm_instances': (models.ParameterName.NUMERIC, '', 7),
-                u'iseed': (models.ParameterName.NUMERIC, '', 6),
-                u'input_location': (models.ParameterName.STRING, '', 5),
-                u'number_dimensions': (models.ParameterName.NUMERIC, '', 4),
-                u'threshold': (models.ParameterName.STRING, '', 3),  # FIXME: should be list of ints
-                u'error_threshold': (models.ParameterName.STRING, '', 2),  # FIXME: should use float here
-                u'max_iteration': (models.ParameterName.NUMERIC, '', 1)
+                u'number_vm_instances': (models.ParameterName.NUMERIC, '', 8),
+                u'iseed': (models.ParameterName.NUMERIC, '', 7),
+                u'input_location': (models.ParameterName.STRING, '', 6),
+                u'number_dimensions': (models.ParameterName.NUMERIC, '', 5),
+                u'threshold': (models.ParameterName.STRING, '', 4),  # FIXME: should be list of ints
+                u'error_threshold': (models.ParameterName.STRING, '', 3),  # FIXME: should use float here
+                u'max_iteration': (models.ParameterName.NUMERIC, '', 2),
+                u'pottype': (models.ParameterName.NUMERIC, '', 1)
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/configure':
                 [u'the configure state of the hrmc smart connector',
                 {
-                u'configure_done': (models.ParameterName.STRING, '', 1),
+                u'configure_done': (models.ParameterName.NUMERIC, '', 1),
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/create':
                 [u'the create state of the smartconnector1',
                 {
-                u'group_id': (models.ParameterName.STRING, '', 9),
-                u'vm_size': (models.ParameterName.STRING, '', 8),
-                u'vm_image': (models.ParameterName.STRING, '', 7),
-                u'security_group': (models.ParameterName.STRLIST, '', 6),
-                u'group_id_dir': (models.ParameterName.STRING, '', 5),
-                u'cloud_sleep_interval': (models.ParameterName.NUMERIC, '', 4),
-                u'custom_prompt': (models.ParameterName.STRING, '', 3),
+                u'group_id': (models.ParameterName.STRING, '', 10),
+                u'vm_size': (models.ParameterName.STRING, '', 9),
+                u'vm_image': (models.ParameterName.STRING, '', 8),
+                u'security_group': (models.ParameterName.STRLIST, '', 7),
+                u'group_id_dir': (models.ParameterName.STRING, '', 6),
+                u'cloud_sleep_interval': (models.ParameterName.NUMERIC, '', 5),
+                u'custom_prompt': (models.ParameterName.STRING, '', 4),
                 u'nectar_username': (models.ParameterName.STRING,
-                    'name of username for accessing nectar', 2),
+                    'name of username for accessing nectar', 3),
                 u'nectar_password': (models.ParameterName.STRING,
-                    'password of username for accessing nectar', 1),
+                    'password of username for accessing nectar', 2),
+                u'created_nodes': (models.ParameterName.STRING, '', 1)
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/setup':
@@ -248,7 +250,7 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/stages/deploy':
                 [u'the deploy stage of the smartconnector1',
                 {
-                u'started': (models.ParameterName.STRING, '', 2),
+                u'started': (models.ParameterName.NUMERIC, '', 2),
                 u'deployed_nodes': (models.ParameterName.STRING, '', 1)
                 }
                 ],
@@ -270,20 +272,20 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/stages/transform':
                 [u'the transform stage of the smartconnector1',
                 {
-                u'transformed': (models.ParameterName.STRING, '', 1),
+                u'transformed': (models.ParameterName.NUMERIC, '', 1),
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/converge':
                 [u'the converge stage of the smartconnector1',
                 {
-                u'converged': (models.ParameterName.STRING, '', 2),  # FIXME: use NUMERIC for booleans (with 0,1)
+                u'converged': (models.ParameterName.NUMERIC, '', 2),
                 u'criterion': (models.ParameterName.STRING, '', 1),  # Use STRING as float not implemented
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/teardown':
                 [u'the teardown stage of the smartconnector1',
                 {
-                u'run_finished': (models.ParameterName.STRING, '', 1),  # FIXME: use NUMERIC for booleans (with 0,1)
+                u'run_finished': (models.ParameterName.NUMERIC, '', 1),
                 }
                 ],
 
@@ -425,8 +427,8 @@ class Command(BaseCommand):
         self.deploy_package = "bdphpcprovider.smartconnectorscheduler.stages.deploy.Deploy"
         self.run_package = "bdphpcprovider.smartconnectorscheduler.stages.run.Run"
         self.finished_package = "bdphpcprovider.smartconnectorscheduler.stages.finished.Finished"
-        self.transform_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc.transform.Transform"
-        self.converge_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc.converge.Converge"
+        self.transform_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc2.transform.Transform"
+        self.converge_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc2.converge.Converge"
         self.teardown_package = "bdphpcprovider.smartconnectorscheduler.stages.teardown.Teardown"
 
         hrmc_composite_stage, _ = models.Stage.objects.get_or_create(name="hrmc_connector",

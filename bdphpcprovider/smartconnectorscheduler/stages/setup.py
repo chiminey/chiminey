@@ -11,11 +11,12 @@ from bdphpcprovider.smartconnectorscheduler import sshconnector
 from bdphpcprovider.smartconnectorscheduler.stages.errors import InsufficientResourceError
 from bdphpcprovider.smartconnectorscheduler.stages.errors import MissingConfigurationError
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
-
+from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 
 logger = logging.getLogger(__name__)
 
 
+@deprecated
 class Setup(Stage):
     """
     Handles creation of a running executable on the VMS in a group
@@ -42,17 +43,15 @@ class Setup(Stage):
             logger.warn("no group_id found in context")
             return False
 
-        # if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/create', u'group_id'):
-        #     self.group_id = run_settings['http://rmit.edu.au/schemas/stages/create'][u'group_id']
-        # else:
-        #     logger.warn("no group_id found when expected")
-        #     return False
-
         logger.debug("group_id = %s" % self.group_id)
 
-        if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/setup', u'setup_finished'):
-            logger.debug(run_settings['http://rmit.edu.au/schemas/stages/setup'][u'setup_finished'])
+        if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/setup',
+            u'setup_finished'):
+            logger.debug(run_settings[
+                'http://rmit.edu.au/schemas/stages/setup'][u'setup_finished'])
             logger.warn("setup_finished exists")
+            # TODO: check whether number of setup_nodes equals number_vm_instances
+            # otherwise retry this method to allocate rest
             return False
 
         smartconnector.copy_settings(self.boto_settings, run_settings,
@@ -86,7 +85,6 @@ class Setup(Stage):
         self.boto_settings['private_key'] = key_file
         self.boto_settings['nectar_private_key'] = key_file
 
-
         self.packaged_nodes = botocloudconnector.get_rego_nodes(self.group_id,
             self.boto_settings)
         logger.debug("packaged_nodes = %s" % self.packaged_nodes)
@@ -108,15 +106,10 @@ class Setup(Stage):
         run_settings.setdefault(
             'http://rmit.edu.au/schemas/stages/setup',
             {})[u'setup_finished'] = len(self.packaged_nodes)
-        # if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/setup'):
-        #     run_settings['http://rmit.edu.au/schemas/stages/setup'] = {}
-        # run_settings['http://rmit.edu.au/schemas/stages/setup']['setup_finished'] = len(self.packaged_nodes)
         run_settings.setdefault(
             'http://rmit.edu.au/schemas/system/misc',
             {})[u'id'] = 0
-        # if not self._exists(run_settings, 'http://rmit.edu.au/schemas/system/misc'):
-        #     run_settings['http://rmit.edu.au/schemas/system/misc'] = {}
-        # run_settings['http://rmit.edu.au/schemas/system/misc']['id'] = 0
+
         # FIXME: probably should be set at beginning of run or connector?
         #update_key('id', 0, context)
         logger.debug('Setup output returned')

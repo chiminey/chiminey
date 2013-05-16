@@ -25,6 +25,9 @@ import time
 import logging
 import hashlib
 
+import ast
+from collections import namedtuple
+
 
 from boto.ec2.regioninfo import RegionInfo
 from boto.exception import EC2ResponseError
@@ -89,8 +92,9 @@ def create_environ(number_vm_instances, settings):
         logger.info("Group ID %s" % group_id)
         logger.info('Created VM instances:')
         print_all_information(settings, all_instances=all_running_instances)
-        return group_id
-
+        nodes = retrieve_node_info(group_id,
+            settings)
+        return (group_id, nodes)
         # FIXME: if host keys check fail, then need to remove offending
         # key from known_hosts and try again.
 
@@ -416,8 +420,29 @@ def get_running_instances(settings):
     return running_instances
 
 
-#newly added methods from simplepackage
 def get_rego_nodes(group_id, settings):
+
+    res = []
+    NodeInfo = namedtuple('NodeInfo',
+        ['id', 'ip'])
+    try:
+        created_nodes = settings['created_nodes']
+    except KeyError:
+        logger.debug("settings=%s" % settings)
+        logger.error("created_nodes missing from context")
+        raise
+    try:
+        nodes = ast.literal_eval(created_nodes)
+    except KeyError:
+        logger.error("error with parsing created_nodes")
+        raise
+    for node in nodes:
+        res.append(NodeInfo(id=node[0], ip=node[1]))
+    logger.debug("nodes=%s" % res)
+    return res
+
+
+def retrieve_node_info(group_id, settings):
     """
     Returns nectar nodes that are currently packaged enabled.
     """
