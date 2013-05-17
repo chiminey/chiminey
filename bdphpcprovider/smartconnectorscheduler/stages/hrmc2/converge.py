@@ -147,6 +147,9 @@ class Converge(Stage):
 
         self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
 
+        #TODO: we assume relative path BDP_URL here, but could be made to work with non-relative (ie., remote paths)
+        self.job_dir = run_settings['http://rmit.edu.au/schemas/system/misc'][u'output_location']
+
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/system/misc', u'id'):
             self.id = run_settings['http://rmit.edu.au/schemas/system/misc'][u'id']
             self.output_dir = os.path.join("%s%s" % (self.job_dir, self.contextid), "output_%d" % self.id)

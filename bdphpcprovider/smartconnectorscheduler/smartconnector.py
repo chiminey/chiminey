@@ -126,6 +126,8 @@ def get_url_with_pkey(settings, url_or_relative_path,
         if partial_path:
             if partial_path[0] == os.path.sep:
                 partial_path = parsed_url.path[1:]
+        # FIXME: for relative paths of subdirectories, X/Y, X cannot be upper case
+        # TODO: don't use urlparse for relative paths, just break down manually
         relative_path = os.path.join(parsed_url.hostname, partial_path)
         logger.debug('host=%s path=%s relativepath=%s' % (parsed_url.hostname,
                                                           partial_path,

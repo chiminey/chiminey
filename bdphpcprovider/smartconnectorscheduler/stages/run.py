@@ -53,7 +53,7 @@ class Run(Stage):
         self.user_settings = user_settings.copy()
         self.numbfile = 0
 
-        self.job_dir = "hrmcrun"  # TODO: make a stageparameter + suffix on real job number
+        self.job_dir = "hrmcrun"
         self.boto_settings = user_settings.copy()
         logger.debug("Run stage initialized")
 
@@ -214,12 +214,14 @@ class Run(Stage):
         all_pids = dict(zip(nodes, pids))
         return all_pids
 
-    def _expand_variations(self, template, maps, initial_numbfile, generator_counter):
+    def _expand_variations(self, template, maps, values, initial_numbfile):
         """
         Based on maps, generate all range variations from the template
         """
         # FIXME: doesn't handle multipe template files together
+        logger.debug("values=%s" % values)
         res = []
+        generator_counter = 0
         numbfile = initial_numbfile
         for iter, template_map in enumerate(maps):
             logger.debug("template_map=%s" % template_map)
@@ -230,12 +232,18 @@ class Run(Stage):
             logger.debug("map_keys %s" % map_keys)
             map_ranges = [list(template_map[x]) for x in map_keys]
             for z in product(*map_ranges):
-                context = {}
+                context = values
                 for i, k in enumerate(map_keys):
                     context[k] = str(z[i])  # str() so that 0 doesn't default value
                 #instance special variables into the template context
                 context['run_counter'] = numbfile
+
+                try:
+                    generator_counter = values['run_counter']
+                except KeyError:
+                    logger.warn("could not retrieve generator counter")
                 context['generator_counter'] = generator_counter  # FIXME: not needed?
+
                 numbfile += 1
                 #logger.debug(context)
                 t = Template(template)
@@ -244,6 +252,10 @@ class Run(Stage):
                 temp_num += 1
             logger.debug("%d files created" % (temp_num))
         return res
+
+
+
+
 
     def _upload_variation_inputs(self, variations, nodes, input_dir):
         '''
@@ -378,7 +390,7 @@ class Run(Stage):
                 logger.debug("base_fname=%s" % base_fname)
 
                 # find assocaited values file and generator_counter
-                generator_counter = 0
+                values_map = {}
                 try:
                     values_url_with_pkey = smartconnector.get_url_with_pkey(
                         self.boto_settings,
@@ -405,14 +417,18 @@ class Run(Stage):
                     # between iterations and we might also pass an list
                     # of values...
 
-                    logger.debug("values_map=%s" % values_map)
-                    try:
-                        generator_counter = values_map.get('run_counter')
-                    except KeyError:
-                        logger.warn("could not retrieve generator counter")
-
                 num_dim = run_settings['number_dimensions']
                 # variations map spectification
+                if 'pottype' in run_settings:
+                    logger.debug("pottype=%s" % run_settings['pottype'])
+                    try:
+                        pottype = int(run_settings['pottype'])
+                    except ValueError:
+                        logger.error("cannot convert %s to pottype" % run_settings['pottype'])
+                        pottype = 0
+                else:
+                    pottype = 0
+
                 if num_dim == 1:
 
                     N = run_settings['number_vm_instances']
@@ -422,21 +438,13 @@ class Run(Stage):
                     map = {
                         'temp': [300],
                         'iseed': rand_nums,
-                        'istart': [1 if self.id > 0 else 2]
+                        'istart': [1 if self.id > 0 else 2],
+                        'pottype': [pottype]
                     }
                 elif num_dim == 2:
                     self.threshold = run_settings['threshold']
                     logger.debug("threshold=%s" % self.threshold)
                     N = int(ast.literal_eval(self.threshold)[0])
-                    if 'pottype' in run_settings:
-                        logger.debug("pottype=%s" % run_settings['pottype'])
-                        try:
-                            pottype = int(run_settings['pottype'])
-                        except ValueError:
-                            logger.error("cannot convert %s to pottype" % run_settings['pottype'])
-                            pottype = 0
-                    else:
-                        pottype = 0
                     logger.debug("N=%s" % N)
                     if not self.id:
                         rand_nums = self._generate_rands(
@@ -463,14 +471,13 @@ class Run(Stage):
                     message = "Unknown dimensionality of problem"
                     logger.error(message)
                     raise BadSpecificationError(message)
-                logger.debug("generator_counter= %s" % generator_counter)
                 if not template_mat.groups():
                     logger.info("found odd template matching file %s" % fname)
                 else:
 
                     # generates a set of variations for the template fname
                     variation_set = self._expand_variations(template,
-                                                            [map], self.initial_numbfile, generator_counter)
+                                                            [map], values_map,  self.initial_numbfile)
                     self.initial_numbfile += len(variation_set)
                     variations[base_fname] = variation_set
                 logger.debug("map=%s" % map)
@@ -536,6 +543,9 @@ class Run(Stage):
         logger.debug("processing run stage")
 
         self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
+
+        #TODO: we assume relative path BDP_URL here, but could be made to work with non-relative (ie., remote paths)
+        self.job_dir = run_settings['http://rmit.edu.au/schemas/system/misc'][u'output_location']
 
         # TODO: we assume initial input is in "%s/input_0" % self.job_dir
         # in configure stage we could copy initial data in 'input_location' into this location

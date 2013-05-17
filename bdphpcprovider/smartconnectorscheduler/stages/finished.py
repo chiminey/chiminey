@@ -211,6 +211,10 @@ class Finished(Stage):
 
         self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
 
+        #TODO: we assume relative path BDP_URL here, but could be made to work with non-relative (ie., remote paths)
+        self.job_dir = run_settings['http://rmit.edu.au/schemas/system/misc'][u'output_location']
+
+
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run', u'finished_nodes'):
             self.finished_nodes = str(run_settings['http://rmit.edu.au/schemas/stages/run'][u'finished_nodes'])
         else:

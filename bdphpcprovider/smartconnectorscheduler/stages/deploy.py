@@ -47,7 +47,6 @@ class Deploy(Stage):
 
     def __init__(self, user_settings=None):
         self.user_settings = user_settings.copy()
-        self.job_dir = "hrmcrun"
         self.boto_settings = user_settings.copy()
 
     def triggered(self, run_settings):
