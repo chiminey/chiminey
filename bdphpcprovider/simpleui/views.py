@@ -19,6 +19,7 @@
 # IN THE SOFTWARE.
 
 import logging
+import os
 import logging.config
 logger = logging.getLogger(__name__)
 
@@ -215,7 +216,9 @@ class HRMCSubmitFormView(FormView):
             ])
 
         # make the system settings, available to initial stage and merged with run_settings
-        system_dict = {u'system': u'settings'}
+        system_dict = {
+        u'system': u'settings',
+        u'output_location': os.path.join('grid01', 'hrmcrun')}
         system_settings = {u'http://rmit.edu.au/schemas/system/misc': system_dict}
 
         logger.debug("directive_name=%s" % directive_name)

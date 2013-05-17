@@ -49,6 +49,9 @@ class Configure(Stage, UI):
 
         self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
 
+        #TODO: we assume relative path BDP_URL here, but could be made to work with non-relative (ie., remote paths)
+        self.job_dir = run_settings['http://rmit.edu.au/schemas/system/misc'][u'output_location']
+
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/system/platform')
         smartconnector.copy_settings(self.boto_settings, run_settings,

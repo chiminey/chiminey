@@ -113,14 +113,14 @@ class Command(BaseCommand):
                 u'transitions': (models.ParameterName.STRING, '', 4),  # deprecated
                 u'system': (models.ParameterName.STRING, '', 3),
                 u'id': (models.ParameterName.NUMERIC, '', 2),
+                u'output_location': (models.ParameterName.STRING, '', 1)
                 }
                 ],
             u'http://rmit.edu.au/schemas/system':
                 [u'Information about the deployment platform',
                 {
                 u'platform': (models.ParameterName.STRING, '', 2),
-                u'contextid': (models.ParameterName.NUMERIC, '', 1)
-                }
+                u'contextid': (models.ParameterName.NUMERIC, '', 1)                }
                 ],
             u'http://tardis.edu.au/schemas/hrmc/dfmeta':
                 ["datafile",
