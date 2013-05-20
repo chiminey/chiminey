@@ -432,9 +432,12 @@ class Run(Stage):
                 if num_dim == 1:
 
                     N = run_settings['number_vm_instances']
-                    rand_nums = self._generate_rands(
+
+                    rand_nums = hrmcstages.generate_rands(run_settings,
                         0, self.boto_settings['max_seed_int'],
-                        N)
+                        N, self.rand_index)
+                    self.rand_index += N
+
                     map = {
                         'temp': [300],
                         'iseed': rand_nums,
@@ -447,9 +450,11 @@ class Run(Stage):
                     N = int(ast.literal_eval(self.threshold)[0])
                     logger.debug("N=%s" % N)
                     if not self.id:
-                        rand_nums = self._generate_rands(
-                            0, self.boto_settings['max_seed_int'],
-                            4 * N)
+
+                        rand_nums = hrmcstages.generate_rands(run_settings,
+                           0, self.boto_settings['max_seed_int'],
+                           4 * N, self.rand_index)
+                        self.rand_index += N
                         map = {
                             'temp': [300],
                             'iseed': rand_nums,
@@ -457,9 +462,10 @@ class Run(Stage):
                             'pottype': [pottype],
                         }
                     else:
-                        rand_nums = self._generate_rands(
+                        rand_nums = hrmcstages.generate_rands(run_settings,
                             0, self.boto_settings['max_seed_int'],
-                            1)
+                            1, self.rand_index)
+                        self.rand_index += N
                         map = {
                             'temp': [i for i in [300, 700, 1100, 1500]],
                             'iseed': rand_nums,
@@ -487,22 +493,8 @@ class Run(Stage):
         logger.debug('Variations %s' % variations)
         return variations
 
-    def _generate_rands(self, start_range,  end_range, num_required):
-        rand_nums = []
-        num_url = smartconnector.get_url_with_pkey(self.boto_settings, self.boto_settings['random_numbers'],
-            is_relative_path=False)
-        random_content = hrmcstages.get_file(num_url)
-        # FIXME: this loads the entire file, which could be very large.
-        for i, line in enumerate(random_content.split('\n')):
-            if self.rand_index <= i < (self.rand_index + num_required):
-                raw_num = float(line)
-                num = int((raw_num * float(end_range - start_range)) + start_range)
-                logger.debug("[0,1) %s -> [%s,%s) %s" % (raw_num, start_range, end_range, num))
-                rand_nums.append(num)
-        self.rand_index += num_required
-        logger.debug("Generated %s random numbers from %s in range [%s, %s): %s "
-            % (num_required, num_url, start_range, end_range, pformat(rand_nums)))
-        return rand_nums
+
+
 
     def _prepare_inputs(self):
         """
@@ -551,11 +543,11 @@ class Run(Stage):
         # in configure stage we could copy initial data in 'input_location' into this location
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/system/misc', u'id'):
             self.id = run_settings['http://rmit.edu.au/schemas/system/misc'][u'id']
-            self.iter_inputdir = os.path.join("%s%s" % (self.job_dir, self.contextid), "input_%s" % self.id)
+            self.iter_inputdir = os.path.join(self.job_dir, "input_%s" % self.id)
         else:
             # FIXME: not fully tested
             self.id = 0
-            self.iter_inputdir = os.path.join("%s%s" % (self.job_dir, self.contextid), "input_location")
+            self.iter_inputdir = os.path.join(self.job_dir, "input_location")
 
         # if 'id' in self.boto_settings:
         #     self.id = self.boto_settings['id']

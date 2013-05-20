@@ -52,7 +52,7 @@ def progress_context(context_id):
     try:
         run_context = models.Context.objects.get(id=context_id, deleted=False)
     except models.Context.DoesNotExist:
-        logger.warn("Context removed from other thread")
+        logger.warn("Context %s removed from other thread" % context_id)
         return
     #logger.debug("process context %s" % run_context)
 

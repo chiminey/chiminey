@@ -120,17 +120,16 @@ class Transform(Stage):
         #TODO: we assume relative path BDP_URL here, but could be made to work with non-relative (ie., remote paths)
         self.job_dir = run_settings['http://rmit.edu.au/schemas/system/misc'][u'output_location']
 
-
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/system/misc', u'id'):
             self.id = run_settings['http://rmit.edu.au/schemas/system/misc'][u'id']
-            self.output_dir = os.path.join("%s%s" % (self.job_dir, self.contextid), "output_%s" % self.id)
-            self.input_dir = os.path.join("%s%s" % (self.job_dir, self.contextid), "input_%d" % self.id)
-            self.new_input_dir = os.path.join("%s%s" % (self.job_dir, self.contextid), "input_%d" % (self.id + 1))
+            self.output_dir = os.path.join(os.path.join(self.job_dir, "output_%s" % self.id))
+            self.input_dir = os.path.join(os.path.join(self.job_dir, "input_%d" % self.id))
+            self.new_input_dir = os.path.join(os.path.join(self.job_dir, "input_%d" % (self.id + 1)))
         else:
             # FIXME: Not clear that this a valid path through stages
-            self.output_dir = os.path.join("%s%s" % (self.job_dir, self.contextid), "output")
-            self.output_dir = os.path.join("%s%s" % (self.job_dir, self.contextid), "input")
-            self.new_input_dir = os.path.join("%s%s" % (self.job_dir, self.contextid), "input_1")
+            self.output_dir = os.path.join(os.path.join(self.job_dir, "output"))
+            self.output_dir = os.path.join(os.path.join(self.job_dir, "input"))
+            self.new_input_dir = os.path.join(os.path.join(self.job_dir, "input_1"))
 
         # import time
         # start_time = time.time()

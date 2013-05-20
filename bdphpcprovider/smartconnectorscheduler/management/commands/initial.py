@@ -288,7 +288,22 @@ class Command(BaseCommand):
                 u'run_finished': (models.ParameterName.NUMERIC, '', 1),
                 }
                 ],
+            u'http://rmit.edu.au/schemas/stages/sweep':
+                [u'the sweep stage',
+                {
+                u'input_location': (mode.ParameterName.STRING, '', 4),
+                u'directive': (models.ParameterName.STRING, '', 3),
+                u'template_name': (models.ParameterName.STRING, '',2),
+                u'sweep_done': (models.ParameterName.NUMERIC, '',1)
 
+                }
+                ],
+
+            u'http://rmit.edu.au/schemas/sweep/files':
+                 [u'the smartconnector hrmc input files',
+                 {
+                 }
+                 ],
         }
 
         from urlparse import urlparse
@@ -320,7 +335,7 @@ class Command(BaseCommand):
 
         logger.debug("stages=%s" % models.Stage.objects.all())
         local_filesys_rootpath = '/var/cloudenabling/remotesys'
-        models.Platform.objects.get_or_create(name='local',
+        local_platform, _ = models.Platform.objects.get_or_create(name='local',
             root_path=local_filesys_rootpath)
         nectar_platform, _ = models.Platform.objects.get_or_create(
             name='nectar', root_path='/home/centos')
@@ -530,6 +545,31 @@ class Command(BaseCommand):
         comm, _ = models.Command.objects.get_or_create(platform=nectar_platform,
             directive=hrmc_smart_dir, stage=hrmc_composite_stage)
         print "done"
+
+        sweep, _ = models.Directive.objects.get_or_create(name="sweep")
+
+        sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep",
+            description="Sweep Test",
+            package="bdphpcprovider.smartconnectorscheduler.stages.sweep.Sweep",
+            order=100)
+        sweep_stage.update_settings({
+            u'http://rmit.edu.au/schemas/stages/sweep':
+            {
+                u'template_name': 'HRMC.inp'
+            },
+            # FIXME: move random_numbers into system schema
+            u'http://rmit.edu.au/schemas/stages/run':
+            {
+                u'random_numbers': 'file://127.0.0.1/randomnums.txt'
+            },
+
+            })
+
+        # FIXME: tasks.progress_context does not load up composite stage settings
+        comm, _ = models.Command.objects.get_or_create(platform=local_platform,
+            directive=sweep, stage=sweep_stage)
+        print "done"
+
 
     def handle(self, *args, **options):
         self.setup()

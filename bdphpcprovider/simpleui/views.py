@@ -31,6 +31,8 @@ from django.contrib.auth import logout
 from django.http import HttpResponseRedirect
 
 from bdphpcprovider.simpleui.hrmc.hrmcsubmit import HRMCSubmitForm
+from bdphpcprovider.simpleui.sweepform import SweepSubmitForm
+
 from bdphpcprovider.simpleui.hrmc.copy import CopyForm
 from bdphpcprovider.smartconnectorscheduler import models
 
@@ -114,7 +116,7 @@ class ContextList(ListView):
     template_name = "list_jobs.html"
 
     def get_queryset(self):
-        return models.Context.objects.filter(owner__user=self.request.user)
+        return models.Context.objects.filter(owner__user=self.request.user).order_by('-id')
 
 
 class FinishedContextUpdateView(UpdateView):
@@ -218,7 +220,7 @@ class HRMCSubmitFormView(FormView):
         # make the system settings, available to initial stage and merged with run_settings
         system_dict = {
         u'system': u'settings',
-        u'output_location': os.path.join('grid01', 'hrmcrun')}
+        u'output_location': os.path.join('hrmcrun')}
         system_settings = {u'http://rmit.edu.au/schemas/system/misc': system_dict}
 
         logger.debug("directive_name=%s" % directive_name)
@@ -234,7 +236,75 @@ class HRMCSubmitFormView(FormView):
         except InvalidInputError, e:
             return HttpResponse(str(e))
 
+
+
         return super(HRMCSubmitFormView, self).form_valid(form)
+
+
+class SweepSubmitFormView(FormView):
+    template_name = 'sweep.html'
+    form_class = SweepSubmitForm
+    success_url = '/jobs'
+
+    initial = {'number_vm_instances': 1,
+        'iseed': 42,
+        'input_location': 'file://127.0.0.1/myfiles/input',
+        'number_of_dimensions': 1,
+        'threshold': "[1]",
+        'error_threshold': "0.03",
+        'max_iteration': 2,
+        'pottype': 1,
+        }
+
+    def form_valid(self, form):
+        # This method is called when valid form data has been POSTed.
+        # It should return an HttpResponse.
+        platform = 'local'
+        directive_name = "sweep"
+        logger.debug("%s" % directive_name)
+        directive_args = []
+
+        directive_args.append(
+            ['',
+                ['http://rmit.edu.au/schemas/hrmc',
+                    ('number_vm_instances',
+                        form.cleaned_data['number_vm_instances']),
+                    (u'iseed', form.cleaned_data['iseed']),
+                    ('input_location',  ''),
+                    ('number_dimensions', form.cleaned_data['number_of_dimensions']),
+                    ('threshold', str(form.cleaned_data['threshold'])),
+                    ('error_threshold', str(form.cleaned_data['error_threshold'])),
+                    ('max_iteration', form.cleaned_data['max_iteration']),
+                    ('pottype', form.cleaned_data['pottype'])],
+                ['http://rmit.edu.au/schemas/stages/sweep',
+                    ('input_location',  form.cleaned_data['input_location'])
+                ]
+            ])
+
+        logger.debug("directive_args=%s" % directive_args)
+
+        # make the system settings, available to initial stage and merged with run_settings
+        system_dict = {
+            u'system': u'settings',
+            u'output_location': 'sweephrmc'}
+        system_settings = {u'http://rmit.edu.au/schemas/system/misc': system_dict}
+
+        logger.debug("directive_name=%s" % directive_name)
+        logger.debug("directive_args=%s" % directive_args)
+
+        try:
+            (run_settings, command_args, run_context) \
+                = hrmcstages.make_runcontext_for_directive(
+                platform,
+                directive_name,
+                directive_args, system_settings, self.request.user.username)
+
+        except InvalidInputError, e:
+            return HttpResponse(str(e))
+
+        return super(SweepSubmitFormView, self).form_valid(form)
+
+
 
 
 class CopyFormView(FormView):

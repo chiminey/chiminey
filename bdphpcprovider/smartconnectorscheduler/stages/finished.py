@@ -195,7 +195,7 @@ class Finished(Stage):
         logger.debug('source_files_url=%s' % source_files_url)
 
         dest_files_url = smartconnector.get_url_with_pkey(self.boto_settings,
-                                                          os.path.join("%s%s" % (self.job_dir, self.contextid), self.output_dir,
+                                                          os.path.join(self.job_dir, self.output_dir,
                                                                        instance_id), is_relative_path=True)
         logger.debug('dest_files_url=%s' % dest_files_url)
         hrmcstages.delete_files(dest_files_url, exceptions=[])

@@ -47,8 +47,8 @@ class Configure(Stage, UI):
 
     def process(self, run_settings):
 
-        self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
-
+        self.contextid = int(run_settings['http://rmit.edu.au/schemas/system'][u'contextid'])
+        logger.debug("self.contextid=%s" % self.contextid)
         #TODO: we assume relative path BDP_URL here, but could be made to work with non-relative (ie., remote paths)
         self.job_dir = run_settings['http://rmit.edu.au/schemas/system/misc'][u'output_location']
 
@@ -60,7 +60,13 @@ class Configure(Stage, UI):
             'http://rmit.edu.au/schemas/hrmc/threshold')
 
         input_location = run_settings['http://rmit.edu.au/schemas/hrmc']['input_location']
-        iter_inputdir = os.path.join("%s%s" % (self.job_dir, self.contextid), "input_0", "initial")
+        logger.debug("input_location=%s" % input_location)
+
+        #prefix = "%s%s" % (self.job_dir, self.contextid)
+        prefix = self.job_dir
+        logger.debug("prefix=%s" % prefix)
+        iter_inputdir = os.path.join(prefix, "input_0")
+        logger.debug("iter_inputdir=%s" % iter_inputdir)
         source_url = smartconnector.get_url_with_pkey(self.boto_settings,
             input_location)
         logger.debug("source_url=%s" % source_url)
