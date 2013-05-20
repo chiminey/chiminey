@@ -386,8 +386,8 @@ class NCIStorage(SFTPStorage):
     def __init__(self, settings=None):
         import pkg_resources
         version = pkg_resources.get_distribution("django_storages").version
-        if not version is "1.1.6":
-            logger.warn("NCIStorage overrides version 1.1.6 of django_storages. found version %s" % version)
+        if not version is "1.1.8":
+            logger.warn("NCIStorage overrides version 1.1.8 of django_storages. found version %s" % version)
 
         super(NCIStorage, self).__init__()
         if 'params' in settings:
@@ -728,6 +728,7 @@ def copy_directories(source_url, destination_url):
 
     http_destination_url = get_http_url(destination_url)
     destination_prefix = destination_url.split('?')[0]
+    logger.debug("destination_prefix=%s" % destination_prefix)
     destination_suffix = ""
     destination = urlparse(http_destination_url)
     destination_query = destination.query
@@ -762,24 +763,36 @@ def copy_directories(source_url, destination_url):
         logger.warn("scheme: %s not supported" % source_scheme)
         return
 
+    logger.debug("destination_suffix=%s" % destination_suffix)
+    logger.debug("source_path=%s" % source_path)
     current_content = fs.listdir(source_path)
+    if current_content:
+        logger.debug("current_content=%s" % pformat(current_content))
     current_path_pointer = source_path
+    logger.debug("current_path_pointer=%s" % current_path_pointer)
     file_path_holder = []
     dir_path_holder = []
     while len(current_content) > 0:
         for i in current_content[1]:
+            logger.debug("i=%s" % i)
             file_path = str(os.path.join(current_path_pointer, i))
+            logger.debug("file_path=%s" % file_path)
             file_path_holder.append(file_path)
+            logger.debug("file_path=%s" % file_path)
             content = fs.open(file_path).read()  # Can't we just call get_file ?
             logger.debug("content loaded")
             updated_file_path = file_path[len(source_path) + 1:]
+            logger.debug("updated_file_path=%s" % updated_file_path)
             curr_dest_url = os.path.join(destination_prefix, updated_file_path) \
                             + destination_suffix
             logger.debug("Current destination url %s" % curr_dest_url)
             put_file(curr_dest_url, content)
         for j in current_content[0]:
+            logger.debug("j=%s" % j)
             list = [os.path.join(current_path_pointer, j), True]
+            logger.debug("list=%s" % list)
             dir_path_holder.append(list)
+            logger.debug("dir_path_holder=%s" % dir_path_holder)
 
         current_content = []
         for k in dir_path_holder:
@@ -1064,12 +1077,17 @@ def make_runcontext_for_directive(platform_name, directive_name,
     """
     logger.debug("Platform Name %s" % platform_name)
     user = User.objects.get(username=username)  # FIXME: pass in username
+    logger.debug("user=%s" % user)
     profile = models.UserProfile.objects.get(user=user)
+    logger.debug("profile=%s" % profile)
+
     platform = models.Platform.objects.get(name=platform_name)
+    logger.debug("platform=%s" % platform)
 
     run_settings = dict(initial_settings)  # we may share initial_settings
 
     directive = models.Directive.objects.get(name=directive_name)
+    logger.debug("directive=%s" % directive)
     command_for_directive = models.Command.objects.get(directive=directive,
         platform=platform)
     logger.debug("command_for_directive=%s" % command_for_directive)
@@ -1101,6 +1119,10 @@ def make_runcontext_for_directive(platform_name, directive_name,
     run_context.save()
 
     run_settings[u'http://rmit.edu.au/schemas/system'][u'contextid'] = run_context.id
+
+    # Add the run_context id as suffix to the current output_location
+    output_location = run_settings['http://rmit.edu.au/schemas/system/misc']['output_location']
+    run_settings[u'http://rmit.edu.au/schemas/system/misc']['output_location'] = "%s%s" % (output_location, run_context.id)
     run_context.update_run_settings(run_settings)
 
     logger.debug("command=%s new runcontext=%s" % (command_for_directive, run_context))
@@ -1247,6 +1269,48 @@ def retrieve_private_key(settings, private_key_url):
     private_key_file = get_remote_path(local_url)
     logger.debug("private_key_file=%s" % private_key_file)
     return private_key_file
+
+
+
+def generate_rands(settings, start_range,  end_range, num_required, start_index):
+    # FIXME: there must be an third party library that does this more
+    # effectively.
+    rand_nums = []
+    num_url = get_url_with_pkey(settings, settings['random_numbers'],
+        is_relative_path=False)
+    random_content = get_file(num_url)
+    # FIXME: this loads the entire file, which could be very large.
+    numbers = random_content.split('\n')
+
+    random_counter = start_index
+    # FIXME: better handled with separate function
+    if end_range < start_range:
+        # special case, where we want rands in range of number of rands in file
+        start_range = 0
+        end_range = len(numbers)
+
+    for i in range(0, num_required):
+
+        raw_num = float(numbers[random_counter])
+        num = int((raw_num * float(end_range - start_range)) + start_range)
+
+        rand_nums.append(num)
+        logger.debug("[0,1) %s -> [%s,%s) %s" % (raw_num, start_range, end_range, num))
+
+        random_counter += 1
+        if random_counter >= len(numbers):
+            random_counter = 0
+
+    # for i, line in enumerate(random_content.split('\n')):
+    #     if start_index <= i < (start_index + num_required):
+    #         raw_num = float(line)
+    #         num = int((raw_num * float(end_range - start_range)) + start_range)
+    #         logger.debug("[0,1) %s -> [%s,%s) %s" % (raw_num, start_range, end_range, num))
+    #         rand_nums.append(num)
+
+    logger.debug("Generated %s random numbers from %s in range [%s, %s): %s "
+        % (num_required, num_url, start_range, end_range, pformat(rand_nums)))
+    return rand_nums
 
 @deprecated
 def clear_temp_files(context):
