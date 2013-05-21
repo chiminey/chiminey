@@ -1,13 +1,24 @@
 {% extends "base.html" %}
 {% block content %}
 <h1>User Settings for {{ user }} </h1>
-<ul>
-{% for profileparameter in object_list %} <li>
-{{ profileparameter.name.name }} = {{ profileparameter.value }}
-(<a href="{% url userprofileparameter-edit pk=profileparameter.id %}">edit</a>) </li>
+            <table class="table table-hover table-striped table-bordered">
+                <thead>
+                    <tr>
+                    <td> <strong>Key</strong></td>
+                    <td> <strong>Value</strong></td>
+        </tr>
+                </thead>
+                <tbody>
+{% for profileparameter in object_list %}
+<tr>
+<td>{{ profileparameter.name.name }}</td>
+<td>{{ profileparameter.value }}</td>
+<td><button onclick="window.location.href='{% url userprofileparameter-edit pk=profileparameter.id %}'" class="btn">edit</button> </td>
+</tr>
 {% endfor %}
+</tbody>
+</table>
 <p>
-<a href="{% url userprofileparameter-new %}">add user parameter</a>
-</ul>
+    <button onclick="window.location.href='{% url userprofileparameter-new %}'" class="btn">Add User Parameter</button>
 {% endblock %}
 

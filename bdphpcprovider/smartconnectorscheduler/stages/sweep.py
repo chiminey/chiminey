@@ -125,11 +125,14 @@ class Sweep(Stage):
         user = context.owner.user.username
         self.job_dir = run_settings['http://rmit.edu.au/schemas/system/misc'][u'output_location']
 
-        # generate all variations
-        map = {
-            'var1': [3, 7],
-            'var2': [1, 2]
-        }
+        map_text = run_settings['http://rmit.edu.au/schemas/stages/sweep']['sweep_map']
+        map = json.loads(map_text)
+        # # generate all variations
+        # map = {
+        #     'var1': [3, 7],
+        #     'var2': [1, 2]
+        # }
+        logger.debug("map=%s" % pformat(map))
         runs = self._expand_variations(maps=[map], values={})
 
         # prep random seeds for each run based off original iseed

@@ -266,7 +266,8 @@ class Command(BaseCommand):
                 u'initial_numbfile': (models.ParameterName.NUMERIC, '', 4),
                 u'random_numbers': (models.ParameterName.STRING, '', 3),
                 u'rand_index': (models.ParameterName.NUMERIC, '', 2),
-                u'finished_nodes': (models.ParameterName.STRING, '', 1)
+                u'finished_nodes': (models.ParameterName.STRING, '', 1),
+                u'run_map': (models.ParameterName.STRING, '', 0)
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/transform':
@@ -291,11 +292,11 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/stages/sweep':
                 [u'the sweep stage',
                 {
-                u'input_location': (mode.ParameterName.STRING, '', 4),
-                u'directive': (models.ParameterName.STRING, '', 3),
-                u'template_name': (models.ParameterName.STRING, '',2),
-                u'sweep_done': (models.ParameterName.NUMERIC, '',1)
-
+                u'input_location': (mode.ParameterName.STRING, '', 5),
+                u'directive': (models.ParameterName.STRING, '', 4),
+                u'template_name': (models.ParameterName.STRING, '',3),
+                u'sweep_done': (models.ParameterName.NUMERIC, '',2),
+                u'sweep_map': (models.ParameterName.STRING, '', 1)
                 }
                 ],
 

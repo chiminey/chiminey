@@ -2,12 +2,31 @@
 
 {% block content %}
 <h1> Submit new HRMC Job</h1>
-<form action="{{ action }}" method="POST"> {% csrf_token %}
-    <ul>
-        {{ form.as_ul }}
-    </ul>
-<input type="submit" value="Submit Job" />
 
+
+<form class="form-horizontal" action="{{ action }}" method="POST"> {% csrf_token %}
+
+    {% for field in form %}
+    {% if field.errors %}
+            <div class="control-group error">
+              <label class="control-label">{{field.label}}</label>
+              <div class="controls">
+                {{field}}
+                <span class="help-inline">{{field.errors}}</span>
+              </div>
+            </div>
+           {% else %}
+           <div class="control-group">
+            <label class="control-label">{{field.label}}</label>
+            <div class="controls">
+                {{field}}
+            </div>
+            </div>
+            {% endif %}
+        {% endfor %}
+        <div class="controls">
+<button type="submit" class="btn">Submit Job </button>
+</div>
 </form>
 
 {%endblock %}

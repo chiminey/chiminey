@@ -1,16 +1,51 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Jobs</h1>
+<div class="page-header"><h1>Jobs</h1></div>
 <ul>
+    <table class="table table-hover table-striped table-bordered">
+        <thead>
+            <tr>
+            <td> <strong>JobID</strong>
+            </td>
+            <td>
+                <strong>Owner</strong>
+            </td>
+            <td>
+                <strong>Current Stage</strong>
+            </td>
+
+            <td>
+                <strong>State</strong>
+            </td>
+</tr>
+        </thead>
+        <tbody>
 {% for job in object_list %}
-<li>
-JobID= {{ job.id }} Owner={{job.owner.user.username}} CurrentState={{job.current_stage.name}}
 {% if job.deleted %}
-FINISHED
-{% endif %} <a href="{{ job.get_absolute_url }}">INFO</a>
-<a href="{% url finishedcontext-edit job.id %}">EDIT</a>
-</li>
+<tr class="success">
+{% else %}
+<tr>
+{% endif %}
+<td>{{ job.id }} </td>
+<td>{{job.owner.user.username}} </td>
+<td>{{job.current_stage.name}}</td>
+<td>{% if job.deleted %}
+<p class="text-success">
+FINISHED</p>
+{% else %}
+<p class="text-muted">PROCESSING</p>
+{% endif %}
+</td>
+<td>
+<div class="btn-group">
+  <button onclick="window.location.href='{{ job.get_absolute_url }}'" class="btn" >Info</button>
+  <button onclick="window.location.href='{% url finishedcontext-edit job.id %}'" class="btn">Edit</button>
+</div>
+</td>
+</tr>
 {% endfor %}
 </ul>
+</tbody>
+</table>
 {% endblock %}
 

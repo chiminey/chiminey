@@ -1,14 +1,61 @@
+{% load staticfiles %}
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="utf-8">
 
-<a href="{% url login %}">login</a>
-<a href="{% url logout %}">logout</a>
-<a href="{% url hrmcjob-list %}">List Jobs</a>
-<a href="{% url hrmcjob-new %}">Submit HRMC Job</a>
-<a href="{% url sweepjob-new %}">Submit SWEEP Job</a>
-<a href="{% url userprofileparameter-list %}">User Settings</a>
-<a href="{% url listdir-list %}">List Directory</a>
-<a href="{% url copyjob-new %}">Copy Data</a>
-<a href="/admin">Admin</a>
+<title>Bioscience Data Platform: TARDIS In The Cloud</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<style type="text/css">body{padding-top:10px;padding-bottom:40px}</style>
+<link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap.min.css" %}">
+<link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap-responsive.css" %}">
+<link rel="stylesheet" type="text/css" href="{% static "smartconnectorscheduler/css/default.css" %}">
 
 
-{% block content %}
-{%endblock %}
+</head>
+<body>
+
+    <body>
+        <div class="navbar navbar-fixed-top">
+          <div class="navbar-inner">
+            <div class="container-fluid">
+              <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </a>
+
+              <span class="brand"><a href="/">BDPHPC</a></span>
+
+              <div class="nav-collapse">
+                <ul class="nav">
+
+                    <li><a  href="{% url login %}">login</a></li>
+                    <li><a  href="{% url logout %}">logout</a></li>
+                    <li><a  href="{% url hrmcjob-list %}">Retrieve Jobs</a></li>
+                    <li><a  href="{% url hrmcjob-new %}">Create HRMC Job</a></li>
+                    <li><a  href="{% url sweepjob-new %}">Create SWEEP Job</a></li>
+                    <li><a  href="{% url userprofileparameter-list %}">User Settings</a></li>
+                    <li><a  href="{% url listdir-list %}">Directory</a></li>
+                    <li><a  href="{% url copyjob-new %}">Copy Data</a></li>
+                    <li><a  href="/admin">Admin</a></li>
+                </ul>
+                <ul class="login-nav nav pull-right">
+              </div><!--/.nav-collapse -->
+            </div>
+          </div>
+        </div>
+<div class="container">
+    <div class="row-fluid" style="margin-bottom: 0px;">
+        <div align="right"><a class="btn" href="#">Log in with AAF</a> (soon!)</div>
+        {% block content %} {% endblock %}
+    <hr>
+        <footer>
+            <div class="pull-left"><img src="http://nectar.org.au/sites/default/files/logo-small.png">
+                <small><p>The Bioscience Data Platform acknowledges funding from the <a href="http://www.nectar.org.au">NeCTAR project</a>.</p></small></div>
+            <div class="pull-right"><a href="x">Link 1</a> · <a href="y">Link 2</a></div>
+        </footer>
+    </div>
+
+</body>
+</html>
+
