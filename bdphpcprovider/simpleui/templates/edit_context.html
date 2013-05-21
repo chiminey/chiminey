@@ -1,13 +1,30 @@
 {% extends "base.html" %}
 {% block content  %}
 <h1> Edit context</h1>
-<form action="" method="POST">{% csrf_token %} <ul>
-{{ form.as_ul }}
-</ul>
-<p>
-<p>
-<input type="submit" value="Save" /> </form>
+<form class="form-horizontal" action="" method="POST">{% csrf_token %}
+    {% for field in form %}
 
-<a href="{% url hrmcjob-list %}">back to list</a>
+        {% if field.errors %}
+                <div class="control-group error">
+                  <label class="control-label">{{field.label}}</label>
+                  <div class="controls">
+                    {{field}}
+                    <span class="help-inline">{{field.errors}}</span>
+                  </div>
+                </div>
+               {% else %}
+               <div class="control-group">
+                <label class="control-label">{{field.label}}</label>
+                <div class="controls">
+                    {{field}}
+                </div>
+                </div>
+                {% endif %}
+            {% endfor %}
+            <div class="controls">
+    <button type="submit" class="btn">Submit</button>
+    </div>
+</form>
+<button onclick="window.location.href='{% url hrmcjob-list %}'" class="btn" >Back to list</button>
 
 {% endblock %}

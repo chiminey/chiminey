@@ -164,7 +164,7 @@ INSTALLED_APPS = (
     'storages',
     'djcelery',
     'djkombu',
-    'tastypie'
+    'tastypie',
 
 ) + OUR_APPS
 

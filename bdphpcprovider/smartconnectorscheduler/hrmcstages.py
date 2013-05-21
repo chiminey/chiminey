@@ -685,7 +685,7 @@ def list_all_files(source_url):
         current_content = fs.listdir(source_path)
     else:
         return []
-    logger.debug("current_content=%s" % current_content)
+    #logger.debug("current_content=%s" % current_content)
     current_path_pointer = source_path
     dir_path_holder = []
     file_paths = []

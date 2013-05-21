@@ -20,6 +20,7 @@
 
 import logging
 import os
+from pprint import pformat
 import logging.config
 logger = logging.getLogger(__name__)
 
@@ -165,7 +166,8 @@ class ContextView(DetailView):
         res = []
         context['stage'] = self.object.current_stage.name
         for cps in cpset:
-            res.append("<h3>%s</h3> " % cps.schema.namespace)
+            # TODO: HTML should be part of template
+            res.append("<h2>%s</h2> " % cps.schema.namespace)
             for cp in models.ContextParameter.objects.filter(paramset=cps):
                 res.append("%s=%s" % (cp.name.name, cp.value))
         context['settings'] = '<br>'.join(res)
@@ -254,6 +256,8 @@ class SweepSubmitFormView(FormView):
         'error_threshold': "0.03",
         'max_iteration': 2,
         'pottype': 1,
+        'sweep_map': '{"var1": [3, 7], "var2": [1, 2]}',
+        'run_map': '{}'
         }
 
     def form_valid(self, form):
@@ -277,9 +281,15 @@ class SweepSubmitFormView(FormView):
                     ('max_iteration', form.cleaned_data['max_iteration']),
                     ('pottype', form.cleaned_data['pottype'])],
                 ['http://rmit.edu.au/schemas/stages/sweep',
-                    ('input_location',  form.cleaned_data['input_location'])
+                    ('input_location',  form.cleaned_data['input_location']),
+                    ('sweep_map', form.cleaned_data['sweep_map']),
+                ],
+                ['http://rmit.edu.au/schemas/stages/run',
+                    ('run_map', form.cleaned_data['run_map'])
                 ]
             ])
+
+        logger.debug("form=%s" % pformat(form.cleaned_data))
 
         logger.debug("directive_args=%s" % directive_args)
 

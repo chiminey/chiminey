@@ -486,23 +486,6 @@ class SmartConnector(object):
             raise PackageFailedError()
 
 
-def generate_rands(settings, start_range,  end_range, num_required, start_index):
-    rand_nums = []
-    num_url = get_url_with_pkey(settings, settings['random_numbers'],
-        is_relative_path=False)
-    random_content = hrmcstages.get_file(num_url)
-    # FIXME: this loads the entire file, which could be very large.
-    # FIXME: if rand_index > length of the file?
-    for i, line in enumerate(random_content.split('\n')):
-        if start_index <= i < (start_index + num_required):
-            raw_num = float(line)
-            num = int((raw_num * float(end_range - start_range)) + start_range)
-            logger.debug("[0,1) %s -> [%s,%s) %s" % (raw_num, start_range, end_range, num))
-            rand_nums.append(num)
-    logger.debug("Generated %s random numbers from %s in range [%s, %s): %s "
-        % (num_required, num_url, start_range, end_range, pformat(rand_nums)))
-    return rand_nums
-
 # def mainloop():
 # # load system wide settings, e.g Security_Group
 # #communicating between stages: crud context or filesystem
