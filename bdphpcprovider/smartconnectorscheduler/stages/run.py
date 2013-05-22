@@ -223,6 +223,10 @@ class Run(Stage):
         res = []
         generator_counter = 0
         numbfile = initial_numbfile
+        try:
+            generator_counter = values['run_counter']
+        except KeyError:
+            logger.warn("could not retrieve generator counter")
         for iter, template_map in enumerate(maps):
             logger.debug("template_map=%s" % template_map)
             logger.debug("iter #%d" % iter)
@@ -232,16 +236,11 @@ class Run(Stage):
             logger.debug("map_keys %s" % map_keys)
             map_ranges = [list(template_map[x]) for x in map_keys]
             for z in product(*map_ranges):
-                context = values
+                context = dict(values)
                 for i, k in enumerate(map_keys):
                     context[k] = str(z[i])  # str() so that 0 doesn't default value
                 #instance special variables into the template context
                 context['run_counter'] = numbfile
-
-                try:
-                    generator_counter = values['run_counter']
-                except KeyError:
-                    logger.warn("could not retrieve generator counter")
                 context['generator_counter'] = generator_counter  # FIXME: not needed?
 
                 numbfile += 1
@@ -373,6 +372,7 @@ class Run(Stage):
             list_files=True)
 
         variations = {}
+        # TODO: only tested with single template file per input
         for fname in input_files:
             logger.debug("trying %s/%s/%s" % (self.iter_inputdir, input_dir,
                                               fname))

@@ -160,7 +160,7 @@ class ContextView(DetailView):
     model = models.Context
     template_name = 'view_context.html'
 
-    def get_context_data(self, **kwargs):
+    def get_context_data_old(self, **kwargs):
         context = super(ContextView, self).get_context_data(**kwargs)
         cpset = models.ContextParameterSet.objects.filter(context=self.object)
         res = []
@@ -171,6 +171,19 @@ class ContextView(DetailView):
             for cp in models.ContextParameter.objects.filter(paramset=cps):
                 res.append("%s=%s" % (cp.name.name, cp.value))
         context['settings'] = '<br>'.join(res)
+        return context
+
+    def get_context_data(self, **kwargs):
+        context = super(ContextView, self).get_context_data(**kwargs)
+        cpset = models.ContextParameterSet.objects.filter(context=self.object)
+        res = {}
+        context['stage'] = self.object.current_stage.name
+        for cps in cpset:
+            res2 = {}
+            for cp in models.ContextParameter.objects.filter(paramset=cps):
+                res2[cp.name.name] = cp.value
+            res[cps.schema.namespace] = res2
+        context['settings'] = res
         return context
 
     def get_object(self):
