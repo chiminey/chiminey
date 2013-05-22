@@ -94,3 +94,28 @@ body {
 h2 small, blockquote small {
     color: rgba(35, 66, 25, 0.79);
 }
+
+/* textinput widths */
+#id_input_location {
+    width: 900px;
+}
+
+#id_number_vm_instances {
+    width: 200px;
+}
+
+#id_sweep_map {
+    width: 900px;
+}
+
+#id_run_map {
+    width: 900px;
+}
+
+#id_source_bdp_url {
+    width: 900px;
+}
+
+#id_destination_bdp_url {
+    width: 900px;
+}

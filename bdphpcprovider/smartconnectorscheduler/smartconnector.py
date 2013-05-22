@@ -88,17 +88,29 @@ def get_url_with_pkey(settings, url_or_relative_path,
     logger.debug("url_or_relative_path=%s" % url_or_relative_path)
     parsed_url = urlparse(url)
     platform = parsed_url.username
+    url_settings = {}
     if platform == 'nectar':
-        key_file = settings['nectar_private_key']
-
-        username = settings['nectar_username']
-        password = settings['nectar_password']
+        url_settings['username'] = settings['nectar_username']
+        url_settings['password'] = settings['nectar_password']
+        url_settings['key_file'] = settings['nectar_private_key']
+        # key_file = settings['nectar_private_key']
+        # username = settings['nectar_username']
+        # password = settings['nectar_password']
         scheme = 'ssh'
     elif platform == 'nci':
-        key_file = settings['nci_private_key']
-        username = settings['nci_user']
-        password = settings['nci_password']
+        url_settings['username'] = settings['nci_user']
+        url_settings['password'] = settings['nci_password']
+        url_settings['key_file'] = settings['nci_private_key']
+        # key_file = settings['nci_private_key']
+        # username = settings['nci_user']
+        # password = settings['nci_password']
         scheme = 'ssh'
+    elif platform == 'tardis':
+        url_settings['username'] = settings['tardis_user']
+        url_settings['password'] = settings['tardis_password']
+        url_settings['exp']
+        scheme = 'tardis'
+
     elif not platform:
         platform = 'local'
         scheme = 'file'
@@ -118,9 +130,11 @@ def get_url_with_pkey(settings, url_or_relative_path,
 
     # FIXME: suffix root_path with username
     root_path = platform_object.root_path
+    url_settings['root_path'] = root_path
     # FIXME: URIs cannot contain unicode data, but IRI can. So need to convert IRI to URL
     # if parameters can be non-ascii
     # https://docs.djangoproject.com/en/dev/ref/unicode/#uri-and-iri-handling
+    args = '&'.join(["%s=%s" % (k,v) for k,v in sorted(url_settings.items())])
     if is_relative_path:
         partial_path = parsed_url.path
         if partial_path:
@@ -132,11 +146,15 @@ def get_url_with_pkey(settings, url_or_relative_path,
         logger.debug('host=%s path=%s relativepath=%s' % (parsed_url.hostname,
                                                           partial_path,
                                                           relative_path))
-        url_with_pkey = '%s://%s/%s?key_file=%s' \
-                        '&username=%s&password=%s' \
-                        '&root_path=%s' % (scheme, ip_address,
-                                           relative_path, key_file,
-                                           username, password, root_path)
+
+        # url_with_pkey = '%s://%s/%s?key_file=%s' \
+        #                 '&username=%s&password=%s' \
+        #                 '&root_path=%s' % (scheme, ip_address,
+        #                                    relative_path, key_file,
+        #                                    username, password, root_path)
+        url_with_pkey = '%s://%s/%s?%s' % (scheme, ip_address,
+                                           relative_path,
+                                           args)
     else:
         # url_or_relative_path must be a valid url here,
         # which means we have to remove username, as it is a BDPurl.
@@ -146,10 +164,13 @@ def get_url_with_pkey(settings, url_or_relative_path,
         logger.debug("relative_path=%s" % relative_path)
 
         host = "%s://%s%s" % (scheme, ip_address, relative_path)
-        url_with_pkey = '%s?key_filename=%s&username=%s' \
-                        '&password=%s&root_path=%s' % (host, key_file,
-                                                       username, password,
-                                                       root_path)
+
+        url_with_pkey = '%s?%s' % (host, args)
+
+        # url_with_pkey = '%s?key_filename=%s&username=%s' \
+        #                 '&password=%s&root_path=%s' % (host, key_file,
+        #                                                username, password,
+        #                                                root_path)
     logger.debug("Destination %s url_pkey %s" % (str(is_relative_path), url_with_pkey))
     return url_with_pkey
 

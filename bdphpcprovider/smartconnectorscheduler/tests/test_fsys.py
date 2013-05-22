@@ -67,58 +67,48 @@ class TestBDPURLS(unittest.TestCase):
 
         res = smartconnector.get_url_with_pkey(settings, url)
 
-        self.assertEquals("ssh://127.0.0.1/remote/greet.txt"
-            "?key_filename=nci_private_key&username=nci_user&"
-            "password=nci_password&root_path=/var/cloudenabling/nci", res)
+        self.assertEquals("ssh://127.0.0.1/remote/greet.txt?"
+            "key_file=nci_private_key&password=nci_password&"
+            "root_path=/var/cloudenabling/nci&username=nci_user", res)
 
         url = "ssh://127.0.0.1/foo/bar.txt"
 
         res = smartconnector.get_url_with_pkey(settings, url)
 
-        self.assertEquals("file://127.0.0.1/foo/bar.txt"
-            "?key_filename=&username=&password="
-            "&root_path=/var/cloudenabling/remotesys", res)
+        self.assertEquals("file://127.0.0.1/foo/bar.txt?"
+            "root_path=/var/cloudenabling/remotesys", res)
 
 
         url = 'file://local@127.0.0.1/local/finalresult.txt'
 
         res = smartconnector.get_url_with_pkey(settings, url)
 
-        self.assertEquals("file://127.0.0.1/local/finalresult.txt"
-            "?key_filename=&username="
-            "&password=&root_path=/var/cloudenabling/remotesys", res)
+        self.assertEquals("file://127.0.0.1/local/finalresult.txt?"
+            "root_path=/var/cloudenabling/remotesys", res)
 
         url = 'file://local@127.0.0.1/local/finalresult.txt'
 
         res = smartconnector.get_url_with_pkey(settings, url)
 
-        self.assertEquals("file://127.0.0.1/local/finalresult.txt"
-            "?key_filename=&username="
-            "&password=&root_path=/var/cloudenabling/remotesys", res)
+        self.assertEquals("file://127.0.0.1/local/finalresult.txt?root_path=/var/cloudenabling/remotesys", res)
 
         url = 'file://127.0.0.1/hrmcrun/input_0'
 
         res = smartconnector.get_url_with_pkey(settings, url)
 
-        self.assertEquals("file://127.0.0.1/hrmcrun/input_0"
-            "?key_filename=&username="
-            "&password=&root_path=/var/cloudenabling/remotesys", res)
+        self.assertEquals("file://127.0.0.1/hrmcrun/input_0?root_path=/var/cloudenabling/remotesys", res)
 
         url = 'celery_payload_2'
 
         res = smartconnector.get_url_with_pkey(settings, url, is_relative_path=True)
 
-        self.assertEquals("file://127.0.0.1/celery_payload_2/"
-            "?key_file=&username=&password=&root_path="
-            "/var/cloudenabling/remotesys", res)
+        self.assertEquals("file://127.0.0.1/celery_payload_2/?root_path=/var/cloudenabling/remotesys", res)
 
         url = 'nci@celery_payload_2'
 
         res = smartconnector.get_url_with_pkey(settings, url, is_relative_path=True)
 
-        self.assertEquals("ssh://127.0.0.1/celery_payload_2/"
-            "?key_file=nci_private_key&username=nci_user&"
-            "password=nci_password&root_path=/var/cloudenabling/nci", res)
+        self.assertEquals("ssh://127.0.0.1/celery_payload_2/?key_file=nci_private_key&password=nci_password&root_path=/var/cloudenabling/nci&username=nci_user", res)
 
 
 
