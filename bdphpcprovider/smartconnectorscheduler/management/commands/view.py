@@ -41,7 +41,7 @@ def getdirs(dir):
     return [p for p in os.listdir(dir) if os.path.isdir(os.path.join(dir,p))]
 
 
-def convert_output(output_dir, view_dir, NM=8):
+def convert_output(output_dir, view_dir, NM=32):
     os.chdir(view_dir)
     raw_dir = os.path.join(view_dir, RAW_PREFIX)
 
@@ -74,7 +74,8 @@ def convert_output(output_dir, view_dir, NM=8):
             continue
 
         for node in getdirs(os.path.join(view_dir, RAW_PREFIX, indir)):
-            rmcen_path = os.path.join(view_dir, RAW_PREFIX,  indir, node, "rmcen.inp_values")
+            #rmcen_path = os.path.join(view_dir, RAW_PREFIX,  indir, node, "rmcen.inp_values")
+            rmcen_path = os.path.join(view_dir, RAW_PREFIX,  indir, node, "HRMC.inp_values")
             if os.path.exists(rmcen_path):
                 logger.debug("rmcen_path=%s" % rmcen_path)
                 f = open(rmcen_path, "r")  # only works for one template
@@ -87,13 +88,14 @@ def convert_output(output_dir, view_dir, NM=8):
                         counter_alpha = "_"
             else:
                 counter_alpha = "_"
-            trans[os.path.join(indir, node)] = "%s%s" % (input_iter, counter_alpha )
+            #trans[os.path.join(indir, node)] = "%s%s" % (input_iter, counter_alpha )
+            trans[os.path.join(indir, node)] = "%s_%s" % (input_iter, run_counter )
 
     from pprint import pformat
     logger.debug("trans=%s" % pformat(trans))
 
     for source, dest in trans.items():
-        logger.debug('view dir %s RAW_PRE %s source %s ' % (view_dir, RAW_PREFIX, source))
+        logger.debug('view dir ../%s/%s %s/%s/%s ' % (RAW_PREFIX, source, view_dir, INPUT_PREFIX, dest))
         os.symlink(os.path.join('..', RAW_PREFIX, source),
             os.path.join(view_dir, INPUT_PREFIX, dest))
 
@@ -124,7 +126,8 @@ def convert_output(output_dir, view_dir, NM=8):
 
         for node in getdirs(os.path.join(view_dir, RAW_PREFIX, outdir)):
             logger.debug("node=%s" % node)
-            f = open(os.path.join(view_dir, RAW_PREFIX,  outdir, node, "rmcen.inp_values"),"r")  # only works for one template
+            #f = open(os.path.join(view_dir, RAW_PREFIX,  outdir, node, "rmcen.inp_values"),"r")  # only works for one template
+            f = open(os.path.join(view_dir, RAW_PREFIX,  outdir, node, "HRMC.inp_values"),"r")  # only works for one template
             values_map = dict(json.loads(f.read()))
             if 'generator_counter' in values_map:
                 prev_numbfile = values_map['generator_counter']
@@ -142,9 +145,9 @@ def convert_output(output_dir, view_dir, NM=8):
             logger.debug("curr_numbfile=%s" % curr_numbfile)
 
 #            trans[os.path.join(outdir,node)] = "%s%s%s" % (output_iter, prev_alpha, curr_numbfile % NM)
-#            trans[os.path.join(outdir, node)] = "%s_%s_%s" % (output_iter, prev_numbfile, curr_numbfile )
-            trans[os.path.join(outdir, node)] = "%s%s%s" % (output_iter,
-                prev_alpha, ((curr_numbfile %NM) -1) % NM)
+            trans[os.path.join(outdir, node)] = "%s_%s_%s" % (output_iter, prev_numbfile, curr_numbfile )
+            #trans[os.path.join(outdir, node)] = "%s%s%s" % (output_iter,
+            #    prev_alpha, ((curr_numbfile %NM) -1) % NM)
 
     from pprint import pformat
     logger.debug("trans=%s" % pformat(trans))
