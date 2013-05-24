@@ -160,6 +160,8 @@ class Command(BaseCommand):
                         'NeCTAR EC2 Access Key', 2),
                     u'nectar_ec2_secret_key': (models.ParameterName.STRING,
                         'NeCTAR EC2 Secret Key', 1),
+                    u'mytardis_host': (models.ParameterName.STRING,
+                        'hostname for tardis', 0)
                 }
                 ],
             u'http://rmit.edu.au/schemas/copy/files':
@@ -213,7 +215,8 @@ class Command(BaseCommand):
                 u'threshold': (models.ParameterName.STRING, '', 4),  # FIXME: should be list of ints
                 u'error_threshold': (models.ParameterName.STRING, '', 3),  # FIXME: should use float here
                 u'max_iteration': (models.ParameterName.NUMERIC, '', 2),
-                u'pottype': (models.ParameterName.NUMERIC, '', 1)
+                u'pottype': (models.ParameterName.NUMERIC, '', 1),
+                u'experiment_id': (models.ParameterName.NUMERIC, '', 0)
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/configure':
@@ -292,9 +295,9 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/stages/sweep':
                 [u'the sweep stage',
                 {
-                u'input_location': (mode.ParameterName.STRING, '', 5),
+                u'input_location': (models.ParameterName.STRING, '', 5),
                 u'directive': (models.ParameterName.STRING, '', 4),
-                u'template_name': (models.ParameterName.STRING, '',3),
+                u'template_name': (models.ParameterName.STRING, '', 3),
                 u'sweep_done': (models.ParameterName.NUMERIC, '',2),
                 u'sweep_map': (models.ParameterName.STRING, '', 1)
                 }

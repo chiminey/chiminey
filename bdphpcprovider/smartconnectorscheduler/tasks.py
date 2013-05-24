@@ -40,6 +40,9 @@ def test():
 
 @task(name="smartconnectorscheduler.run_contexts", time_limit=10000, ignore_result=True)
 def run_contexts():
+    # Collect all valid contexts and process all before getting new set. This
+    # should ensure that difficult for one user to monopolise processor, though
+    # still not effective against DoS attack of job submission requests...
     try:
         for context in models.Context.objects.filter(deleted=False):
             progress_context.delay(context.id)

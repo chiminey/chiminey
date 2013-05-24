@@ -207,6 +207,8 @@ class HRMCSubmitFormView(FormView):
         'error_threshold': "0.03",
         'max_iteration': 10,
         'pottype': 1,
+        'experiment_id': 0
+
         }
 
     def form_valid(self, form):
@@ -228,7 +230,8 @@ class HRMCSubmitFormView(FormView):
                     ('threshold', str(form.cleaned_data['threshold'])),
                     ('error_threshold', str(form.cleaned_data['error_threshold'])),
                     ('max_iteration', form.cleaned_data['max_iteration']),
-                    ('pottype', form.cleaned_data['pottype'])
+                    ('pottype', form.cleaned_data['pottype']),
+                    ('experiment_id', form.cleaned_data['experiment_id'])
                 ]
             ])
 
@@ -251,8 +254,6 @@ class HRMCSubmitFormView(FormView):
         except InvalidInputError, e:
             return HttpResponse(str(e))
 
-
-
         return super(HRMCSubmitFormView, self).form_valid(form)
 
 
@@ -270,7 +271,9 @@ class SweepSubmitFormView(FormView):
         'max_iteration': 2,
         'pottype': 1,
         'sweep_map': '{"var1": [3, 7], "var2": [1, 2]}',
-        'run_map': '{}'
+        'run_map': '{}',
+        'experiment_id': 0
+
         }
 
     def form_valid(self, form):
@@ -292,6 +295,7 @@ class SweepSubmitFormView(FormView):
                     ('threshold', str(form.cleaned_data['threshold'])),
                     ('error_threshold', str(form.cleaned_data['error_threshold'])),
                     ('max_iteration', form.cleaned_data['max_iteration']),
+                    ('experiment_id', form.cleaned_data['experiment_id']),
                     ('pottype', form.cleaned_data['pottype'])],
                 ['http://rmit.edu.au/schemas/stages/sweep',
                     ('input_location',  form.cleaned_data['input_location']),
