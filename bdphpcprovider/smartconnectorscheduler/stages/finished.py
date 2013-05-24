@@ -29,6 +29,7 @@ from bdphpcprovider.smartconnectorscheduler import sshconnector
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler import hrmcimpl
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
+from bdphpcprovider.smartconnectorscheduler import mytardis
 
 logger = logging.getLogger(__name__)
 
@@ -203,6 +204,17 @@ class Finished(Stage):
         # to speed up this transfer
         hrmcstages.copy_directories(source_files_url, dest_files_url)
 
+        # Copy output directory to mytardis only after saving locally, so if
+        # something goes wrong we still have the results
+        if settings['mytardis_host']:
+
+            self.experiment_id = mytardis.put_dataset(
+                source_url=dest_files_url,
+                exp_id=self.experiment_id, mytardis_host=settings['mytardis_host'])
+        else:
+            logger.warn("no mytardis host specified")
+
+
     def process(self, run_settings):
         """
             Check all registered nodes to find whether
@@ -214,6 +226,10 @@ class Finished(Stage):
         #TODO: we assume relative path BDP_URL here, but could be made to work with non-relative (ie., remote paths)
         self.job_dir = run_settings['http://rmit.edu.au/schemas/system/misc'][u'output_location']
 
+        if self._exists(run_settings, 'http://rmit.edu.au/schemas/hrmc', u'experiment_id'):
+            self.experiment_id = str(run_settings['http://rmit.edu.au/schemas/hrmc'][u'experiment_id'])
+        else:
+            self.experiment_id = 0
 
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run', u'finished_nodes'):
             self.finished_nodes = str(run_settings['http://rmit.edu.au/schemas/stages/run'][u'finished_nodes'])
@@ -342,6 +358,7 @@ class Finished(Stage):
         if not nodes_working:
             self.finished_nodes = []
         run_settings['http://rmit.edu.au/schemas/stages/run']['finished_nodes'] = str(self.finished_nodes)
+        run_settings['http://rmit.edu.au/schemas/hrmc']['experiment_id'] = str(self.experiment_id)
 
         #update_key('error_nodes', len(self.error_nodes), context)
         #update_key('runs_left', nodes_working, context)

@@ -101,6 +101,8 @@ class Sweep(Stage):
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/hrmc/number_vm_instances')
         smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/hrmc/experiment_id')
+        smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/hrmc/iseed')
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/hrmc/number_dimensions')
@@ -164,9 +166,12 @@ class Sweep(Stage):
                 input_location)
             logger.debug("input_url=%s" % input_url)
             # job_dir contains some overriding context that this run is situated under
+            # run_inputdir = os.path.join(self.job_dir,
+            #     "run%s" % str(run_counter),
+            #     "input_0", "initial")
             run_inputdir = os.path.join(self.job_dir,
                 "run%s" % str(run_counter),
-                "input_0", "initial")
+                "input_0",)
             logger.debug("run_inputdir=%s" % run_inputdir)
             run_iter_url = smartconnector.get_url_with_pkey(self.boto_settings,
                 run_inputdir, is_relative_path=True)
@@ -235,6 +240,8 @@ class Sweep(Stage):
                         ('threshold', self.boto_settings['threshold']),
                         ('error_threshold', self.boto_settings['error_threshold']),
                         ('max_iteration', self.boto_settings['max_iteration']),
+                        # We assume that each subtask puts results into same mytardis experiment
+                        ('experiment_id', self.boto_settings['experiment_id']),
                         ('pottype', self.boto_settings['pottype'])
                     ]
                 ])

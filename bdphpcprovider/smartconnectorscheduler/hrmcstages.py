@@ -340,7 +340,9 @@ def _get_command_actual_args(directive_args, user_settings):
                         try:
                             typed_val = int(v)
                         except ValueError:
-                            typed_val = v.decode('utf8')  # as a string
+                           typed_val = v.decode('utf8')  # as a string
+                        except TypeError:
+                            typed_val = ""
 
                         if file_url:
                             rendering_context[k.decode('utf8')] = typed_val
