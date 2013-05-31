@@ -181,7 +181,8 @@ class ContextView(DetailView):
         for cps in cpset:
             res2 = {}
             for cp in models.ContextParameter.objects.filter(paramset=cps):
-                res2[cp.name.name] = cp.value
+                res2[cp.name.name] = [cp.value, cp.name.help_text]
+                #res2[cp.name.name] = [cp.value, "hello"]
             res[cps.schema.namespace] = res2
         context['settings'] = res
         return context

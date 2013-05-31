@@ -29,6 +29,8 @@ from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
+from bdphpcprovider.smartconnectorscheduler import mytardis
+
 
 logger = logging.getLogger(__name__)
 
@@ -159,6 +161,14 @@ class Converge(Stage):
             self.output_dir = os.path.join(self.job_dir, "output")
             self.iter_inputdir = os.path.join(self.job_dir, "input")
             self.id = 0
+
+        if self._exists(run_settings, 'http://rmit.edu.au/schemas/hrmc', u'experiment_id'):
+            try:
+                self.experiment_id = int(run_settings['http://rmit.edu.au/schemas/hrmc'][u'experiment_id'])
+            except ValueError, e:
+                self.experiment_id = 0
+        else:
+            self.experiment_id = 0
 
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/setup/payload_source')
@@ -332,10 +342,30 @@ class Converge(Stage):
 
         hrmcstages.copy_directories(source_url, dest_url)
 
+        node_dirs = hrmcstages.list_dirs(dest_url)
+        logger.debug("node_dirs=%s" % node_dirs)
+
+
+        if self.boto_settings['mytardis_host']:
+
+            for node_dir in node_dirs:
+                source_url = smartconnector.get_url_with_pkey(self.boto_settings,
+                    os.path.join(new_output_dir, node_dir), is_relative_path=True)
+                logger.debug("source_url=%s" % source_url)
+
+                self.experiment_id = mytardis.post_dataset(
+                    settings=self.boto_settings,
+                    source_url=source_url,
+                    exp_id=self.experiment_id)
+        else:
+            logger.warn("no mytardis host specified")
+
     def output(self, run_settings):
 
         if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/converge'):
             run_settings['http://rmit.edu.au/schemas/stages/converge'] = {}
+
+        run_settings['http://rmit.edu.au/schemas/hrmc']['experiment_id'] = str(self.experiment_id)
 
         if not self.done_iterating:
             # trigger first of iteration stages

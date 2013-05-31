@@ -14,6 +14,8 @@
                 {{field}}
                 <span class="help-inline">{{field.errors}}</span>
               </div>
+              <div class="controls"><em>{{field.help_text}}</em></div>
+              </div>
             </div>
            {% else %}
            <div class="control-group">
@@ -21,6 +23,7 @@
             <div class="controls">
                 {{field}}
             </div>
+            <div class="controls"><em>{{field.help_text}}</em></div>
             </div>
             {% endif %}
         {% endfor %}

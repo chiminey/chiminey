@@ -6,9 +6,11 @@ from bdphpcprovider.simpleui import validators
 
 class SweepSubmitForm(forms.Form):
 
-    number_vm_instances = forms.IntegerField()
+    number_vm_instances = forms.IntegerField(
+        help_text="Ensure tenancy has sufficient resources")
     input_location = forms.CharField(label=_("Input Location"),
         max_length=255,
+        help_text="A BDPUrl Directory",
         widget=forms.Textarea(attrs={'cols': 80, 'rows': 1}))
     number_of_dimensions = forms.IntegerField(min_value=0,
         label=_("Degrees of Variation"), help_text="degrees of freedom")

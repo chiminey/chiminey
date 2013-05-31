@@ -181,6 +181,8 @@ class Command(BaseCommand):
             'nectar_ec2_access_key': '',
             'nectar_ec2_secret_key': '',
             'mytardis_host': '',
+            'mytardis_user': '',
+            'mytardis_password': ''
             }
 
         #TODO: prompt user to enter private key paths and names and other credentials

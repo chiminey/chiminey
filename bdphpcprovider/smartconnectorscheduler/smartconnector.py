@@ -106,9 +106,8 @@ def get_url_with_pkey(settings, url_or_relative_path,
         # password = settings['nci_password']
         scheme = 'ssh'
     elif platform == 'tardis':
-        url_settings['username'] = settings['tardis_user']
-        url_settings['password'] = settings['tardis_password']
-        url_settings['exp']
+        url_settings['username'] = settings['mytardis_user']
+        url_settings['password'] = settings['mytardis_password']
         scheme = 'tardis'
 
     elif not platform:

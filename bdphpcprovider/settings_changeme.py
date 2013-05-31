@@ -212,6 +212,7 @@ LOGGING = {
 }
 
 
+
 FIXTURE_DIRS = (
                 path.join(path.dirname(__file__),
                                'smartconnectorscheduler/site_media').replace('\\', '/'),)
@@ -241,6 +242,11 @@ CELERYBEAT_SCHEDULE = {
 #CELERYD_OPTS = "--time-limit=10"
 
 FILE_UPLOAD_PERMISSIONS = 0700
+
+# A MyTardis API endopoint
+TEST_MYTARDIS_IP = ""
+TEST_MTARDIS_USER = ""
+TEST_MYTARDIS_PASSWORD = ""
 
 djcelery.setup_loader()
 

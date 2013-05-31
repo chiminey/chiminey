@@ -31,7 +31,8 @@ setup(
         'django-kombu',
         'decisiontree',
         'django-mptt',
-        'django-storages'
+        'django-storages',
+        'requests'
         ],
     dependency_links = [
         'https://github.com/dahlia/wand/tarball/warning-bugfix#egg=Wand-0.1.10',

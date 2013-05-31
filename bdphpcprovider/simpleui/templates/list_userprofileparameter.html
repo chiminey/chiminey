@@ -6,6 +6,8 @@
                     <tr>
                     <td> <strong>Key</strong></td>
                     <td> <strong>Value</strong></td>
+                    <td> <strong>Notes</strong></td>
+
         </tr>
                 </thead>
                 <tbody>
@@ -13,6 +15,8 @@
 <tr>
 <td>{{ profileparameter.name.name }}</td>
 <td>{{ profileparameter.value }}</td>
+<td><em>{{ profileparameter.name.help_text }}</em></td>
+
 <td><button onclick="window.location.href='{% url userprofileparameter-edit pk=profileparameter.id %}'" class="btn">edit</button> </td>
 </tr>
 {% endfor %}
