@@ -208,9 +208,10 @@ class Finished(Stage):
         # something goes wrong we still have the results
         if settings['mytardis_host']:
 
-            self.experiment_id = mytardis.put_dataset(
+            self.experiment_id = mytardis.post_dataset(
+                settings=self.boto_settings,
                 source_url=dest_files_url,
-                exp_id=self.experiment_id, mytardis_host=settings['mytardis_host'])
+                exp_id=self.experiment_id)
         else:
             logger.warn("no mytardis host specified")
 
@@ -227,7 +228,10 @@ class Finished(Stage):
         self.job_dir = run_settings['http://rmit.edu.au/schemas/system/misc'][u'output_location']
 
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/hrmc', u'experiment_id'):
-            self.experiment_id = str(run_settings['http://rmit.edu.au/schemas/hrmc'][u'experiment_id'])
+            try:
+                self.experiment_id = int(run_settings['http://rmit.edu.au/schemas/hrmc'][u'experiment_id'])
+            except ValueError, e:
+                self.experiment_id = 0
         else:
             self.experiment_id = 0
 

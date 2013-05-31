@@ -21,10 +21,8 @@
           <label class="control-label" for="id_{{field.html_name}}">{{field.label}}</label>
           <div class="controls">
               {{field}}
-              {% if field.help_text %}
-                        <p class="help-inline"><small>{{ field.help_text }}</small></p>
-                {% endif %}
           </div>
+              <div class="controls"><em>{{field.help_text}}</em></div>
           </div>
           {% endif %}
       {% endfor %}

@@ -5,17 +5,18 @@ from bdphpcprovider.simpleui import validators
 
 class HRMCSubmitForm(forms.Form):
 
-    number_vm_instances = forms.IntegerField(min_value=0)
+    number_vm_instances = forms.IntegerField(min_value=0,help_text="Ensure tenancy has sufficient resources")
     input_location = forms.CharField(label=_("Input Location"),
         max_length=255,
         widget=forms.TextInput,
+        help_text="A BDPUrl Directory"
     )
     number_of_dimensions = forms.IntegerField(min_value=0, label=_("Degrees of Variation"))
     threshold = forms.CharField(label=_("Threshold"),
             max_length=255,
             widget=forms.TextInput,
         )
-    iseed = forms.IntegerField(min_value=0)
+    iseed = forms.IntegerField(min_value=0,help_text="help")
     error_threshold = forms.DecimalField()
 
     max_iteration = forms.IntegerField(min_value=1)
