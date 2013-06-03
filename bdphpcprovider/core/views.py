@@ -44,8 +44,22 @@ from pprint import pformat
 
 from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
 
-
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
+
+class MyBasicAuthentication(BasicAuthentication):
+    def __init__(self, *args, **kwargs):
+        super(MyBasicAuthentication, self).__init__(*args, **kwargs)
+
+    def is_authenticated(self, request, **kwargs):
+        from django.contrib.sessions.models import Session
+        if 'sessionid' in request.COOKIES:
+            s = Session.objects.get(pk=request.COOKIES['sessionid'])
+            if '_auth_user_id' in s.get_decoded():
+                u = User.objects.get(id=s.get_decoded()['_auth_user_id'])
+                request.user = u
+                return True
+        return super(MyBasicAuthentication, self).is_authenticated(request, **kwargs)
+
 
 
 class UserResource(ModelResource):
@@ -160,6 +174,7 @@ class ContextResource(ModelResource):
         # TODO: FIXME: BasicAuth is horribly insecure without using SSL.
         # Digest is better, but configuration proved tricky.
         authentication = BasicAuthentication()
+        authentication = MyBasicAuthentication()
         #authentication = DigestAuthentication()
         authorization = DjangoAuthorization()
         allowed_methods = ['get', 'post']
@@ -203,7 +218,8 @@ class ContextResource(ModelResource):
 
         logger.debug("directive_args=%s" % pformat(directive_args))
         # make the system settings, available to initial stage and merged with run_settings
-        system_dict = {u'system': u'settings'}
+        system_dict = {u'system': u'settings', u'output_location': bundle.data['output_location']}
+
         system_settings = {u'http://rmit.edu.au/schemas/system/misc': system_dict}
 
         logger.debug("directive_name=%s" % directive_name)

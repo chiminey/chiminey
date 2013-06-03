@@ -21,6 +21,8 @@
 import logging
 import os
 from pprint import pformat
+import json
+import requests
 import logging.config
 logger = logging.getLogger(__name__)
 
@@ -31,12 +33,15 @@ from django.http import HttpResponse
 from django.contrib.auth import logout
 from django.http import HttpResponseRedirect
 
+
 from bdphpcprovider.simpleui.hrmc.hrmcsubmit import HRMCSubmitForm
 from bdphpcprovider.simpleui.sweepform import SweepSubmitForm
-
 from bdphpcprovider.simpleui.hrmc.copy import CopyForm
-from bdphpcprovider.smartconnectorscheduler import models
 
+#TODO,FIXME: simpleui shouldn't refer to anything in smartconnectorscheduler
+#and should be using its own models and use the REST API for all information.
+
+from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
@@ -245,15 +250,40 @@ class HRMCSubmitFormView(FormView):
         logger.debug("directive_name=%s" % directive_name)
         logger.debug("directive_args=%s" % directive_args)
 
-        try:
-            (run_settings, command_args, run_context) \
-                = hrmcstages.make_runcontext_for_directive(
-                platform,
-                directive_name,
-                directive_args, system_settings, self.request.user.username)
+        api_host = "http://127.0.0.1"
+        url = "%s/api/v1/context/?format=json" % api_host
 
-        except InvalidInputError, e:
-            return HttpResponse(str(e))
+        logger.debug("self.request.user.username=%s" % self.request.user.username)
+        logger.debug("self.request.user.username=%s" % self.request.user.password)
+
+        cookies = dict(self.request.COOKIES)
+        logger.debug("cookies=%s" % cookies)
+        headers = {'content-type': 'application/json'}
+        data = json.dumps({'number_vm_instances': form.cleaned_data['number_vm_instances'],
+                    u'iseed': form.cleaned_data['iseed'],
+                    'input_location':  form.cleaned_data['input_location'],
+                    'number_dimensions': form.cleaned_data['number_of_dimensions'],
+                    'threshold': str(form.cleaned_data['threshold']),
+                    'error_threshold': str(form.cleaned_data['error_threshold']),
+                    'max_iteration': form.cleaned_data['max_iteration'],
+                    'pottype': form.cleaned_data['pottype'],
+                    'experiment_id': form.cleaned_data['experiment_id'],
+                    'output_location': os.path.join('hrmcrun')})
+
+        r = requests.post(url,
+            data=data,
+            headers=headers,
+            cookies=cookies)
+
+        # FIXME: need to check for status_code and handle failures.
+
+        logger.debug("r.json=%s" % r.json)
+        logger.debug("r.text=%s" % r.text)
+        logger.debug("r.headers=%s" % r.headers)
+        header_location = r.headers['location']
+        logger.debug("header_location=%s" % header_location)
+        new_context_uri = header_location[len(api_host):]
+        logger.debug("new_context_uri=%s" % new_context_uri)
 
         return super(HRMCSubmitFormView, self).form_valid(form)
 
@@ -319,6 +349,9 @@ class SweepSubmitFormView(FormView):
 
         logger.debug("directive_name=%s" % directive_name)
         logger.debug("directive_args=%s" % directive_args)
+
+        # FIXME: we should be sending this request to scheduler API using
+        # POST, to keep separation of concerns.  See mytardis.py for example.
 
         try:
             (run_settings, command_args, run_context) \
