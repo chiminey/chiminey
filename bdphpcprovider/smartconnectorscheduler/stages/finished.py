@@ -21,6 +21,8 @@
 import logging
 import ast
 import os
+import json
+
 
 from bdphpcprovider.smartconnectorscheduler.sshconnector import open_connection
 from bdphpcprovider.smartconnectorscheduler import botocloudconnector
@@ -204,17 +206,6 @@ class Finished(Stage):
         # to speed up this transfer
         hrmcstages.copy_directories(source_files_url, dest_files_url)
 
-        # Copy output directory to mytardis only after saving locally, so if
-        # something goes wrong we still have the results
-        if settings['mytardis_host']:
-
-            self.experiment_id = mytardis.post_dataset(
-                settings=self.boto_settings,
-                source_url=dest_files_url,
-                exp_id=self.experiment_id)
-        else:
-            logger.warn("no mytardis host specified")
-
 
     def process(self, run_settings):
         """
@@ -227,13 +218,7 @@ class Finished(Stage):
         #TODO: we assume relative path BDP_URL here, but could be made to work with non-relative (ie., remote paths)
         self.job_dir = run_settings['http://rmit.edu.au/schemas/system/misc'][u'output_location']
 
-        if self._exists(run_settings, 'http://rmit.edu.au/schemas/hrmc', u'experiment_id'):
-            try:
-                self.experiment_id = int(run_settings['http://rmit.edu.au/schemas/hrmc'][u'experiment_id'])
-            except ValueError, e:
-                self.experiment_id = 0
-        else:
-            self.experiment_id = 0
+
 
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run', u'finished_nodes'):
             self.finished_nodes = str(run_settings['http://rmit.edu.au/schemas/stages/run'][u'finished_nodes'])
@@ -362,7 +347,6 @@ class Finished(Stage):
         if not nodes_working:
             self.finished_nodes = []
         run_settings['http://rmit.edu.au/schemas/stages/run']['finished_nodes'] = str(self.finished_nodes)
-        run_settings['http://rmit.edu.au/schemas/hrmc']['experiment_id'] = str(self.experiment_id)
 
         #update_key('error_nodes', len(self.error_nodes), context)
         #update_key('runs_left', nodes_working, context)
@@ -387,4 +371,7 @@ def get_make_path(destination):
     make_path = os.path.join(query_settings['root_path'], path)
     logger.debug("Makefile path %s %s %s " % (make_path, query_settings['root_path'], path))
     return make_path
+
+
+
 

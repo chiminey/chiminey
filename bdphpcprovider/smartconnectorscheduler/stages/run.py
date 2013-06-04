@@ -41,6 +41,8 @@ from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadSpecificationError, BadInputException
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
+from bdphpcprovider.smartconnectorscheduler import mytardis
+
 
 logger = logging.getLogger(__name__)
 
@@ -262,6 +264,27 @@ class Run(Stage):
         '''
         #logger.debug("variations = %s" % variations)
         # generate variations for the input_dir
+
+        source_files_url = smartconnector.get_url_with_pkey(self.boto_settings,
+                                                  os.path.join(self.iter_inputdir,
+                                                               input_dir), is_relative_path=True)
+        logger.debug('source_files_url=%s' % source_files_url)
+
+        # Copy input directory to mytardis only after saving locally, so if
+        # something goes wrong we still have the results
+        if self.boto_settings['mytardis_host']:
+
+            self.experiment_id = mytardis.post_dataset(
+                settings=self.boto_settings,
+                source_url=source_files_url,
+                exp_id=self.experiment_id,
+                exp_name=_get_exp_name_for_input,
+                dataset_name=_get_dataset_name_for_input,
+                dataset_schema="http://rmit.edu.au/schemas/hrmcdataset/input")
+        else:
+            logger.warn("no mytardis host specified")
+
+
         for var_fname in variations.keys():
             logger.debug("var_fname=%s" % var_fname)
             for var_content, values in variations[var_fname]:
@@ -285,10 +308,6 @@ class Run(Stage):
                 exceptions = [self.boto_settings['compile_file'], "..", ".",
                               'PSD', 'PSD.f', 'PSD_exp.dat', 'PSD.inp']
                 hrmcstages.delete_files(dest_files_url, exceptions=exceptions)
-                source_files_url = smartconnector.get_url_with_pkey(self.boto_settings,
-                                                          os.path.join(self.iter_inputdir,
-                                                                       input_dir), is_relative_path=True)
-                logger.debug('source_files_url=%s' % source_files_url)
                 hrmcstages.copy_directories(source_files_url, dest_files_url)
 
                 # # then create template variated file
@@ -357,6 +376,7 @@ class Run(Stage):
                     is_relative_path=True)
                 logger.debug("deleting %s" % tmp_url)
                 #hrmcstages.delete_files(url)
+
 
     def _generate_variations(self, input_dir, run_settings):
         """
@@ -530,6 +550,9 @@ class Run(Stage):
             self._upload_variation_inputs(self._generate_variations(input_dir, self.boto_settings),
                                           nodes, input_dir)
 
+
+
+
     def process(self, run_settings):
 
         logger.debug("processing run stage")
@@ -571,6 +594,14 @@ class Run(Stage):
             logger.warn("setting rand_index for first iteration")
             self.rand_index = run_settings['http://rmit.edu.au/schemas/hrmc']['iseed']
         logger.debug("rand_index=%s" % self.rand_index)
+
+        if self._exists(run_settings, 'http://rmit.edu.au/schemas/hrmc', u'experiment_id'):
+            try:
+                self.experiment_id = int(run_settings['http://rmit.edu.au/schemas/hrmc'][u'experiment_id'])
+            except ValueError, e:
+                self.experiment_id = 0
+        else:
+            self.experiment_id = 0
 
         logger.debug("run_settings=%s" % run_settings)
 
@@ -620,6 +651,7 @@ class Run(Stage):
         self.boto_settings['private_key'] = key_file
         self.boto_settings['nectar_private_key'] = key_file
 
+
         self._prepare_inputs()
         try:
             pids = self.run_multi_task(self.group_id, self.iter_inputdir,
@@ -629,7 +661,9 @@ class Run(Stage):
             logger.error("unable to start packages: %s" % e)
             #TODO: cleanup node of copied input files etc.
             sys.exit(1)
+
         return pids
+
 
     def output(self, run_settings):
         """
@@ -643,6 +677,8 @@ class Run(Stage):
         run_settings['http://rmit.edu.au/schemas/stages/run'][u'runs_left'] = len(nodes)
         run_settings['http://rmit.edu.au/schemas/stages/run'][u'initial_numbfile'] = self.initial_numbfile
         run_settings['http://rmit.edu.au/schemas/stages/run'][u'rand_index'] = self.rand_index
+        run_settings['http://rmit.edu.au/schemas/hrmc']['experiment_id'] = str(self.experiment_id)
+
 
         return run_settings
 
@@ -663,3 +699,49 @@ def get_make_path(destination):
     return make_path
 
 
+EXP_DATASET_NAME_SPLIT = 2
+
+
+def _get_exp_name_for_input(settings, url, path):
+    return str(os.sep.join(path.split(os.sep)[:-EXP_DATASET_NAME_SPLIT]))
+
+
+def _get_dataset_name_for_input(settings, url, path):
+    logger.debug("path=%s" % path)
+
+    source_url = smartconnector.get_url_with_pkey(
+        settings, os.path.join(path, "HRMC.inp_values"),
+        is_relative_path=True)
+    logger.debug("source_url=%s" % source_url)
+    try:
+        content = hrmcstages.get_file(source_url)
+    except IOError:
+        return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
+
+    logger.debug("content=%s" % content)
+    try:
+        values_map = dict(json.loads(str(content)))
+    except Exception, e:
+        logger.warn("cannot load %s: %s" % (content, e))
+        return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
+
+    try:
+        iteration = str(path.split(os.sep)[-2:-1][0])
+    except Exception, e:
+        logger.error(e)
+        iteration = ""
+
+    if "_" in iteration:
+        iteration = iteration.split("_")[1]
+    else:
+        iteration = "initial"
+
+    if 'run_counter' in values_map:
+        run_counter = values_map['run_counter']
+    else:
+        run_counter = 0
+
+    dataset_name = "%s_%s" % (iteration,
+        run_counter)
+    logger.debug("dataset_name=%s" % dataset_name)
+    return dataset_name

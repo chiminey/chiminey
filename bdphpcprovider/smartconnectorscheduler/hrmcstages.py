@@ -1327,3 +1327,49 @@ def clear_temp_files(context):
 
 def test_task():
     print "Hello World"
+
+
+
+EXP_DATASET_NAME_SPLIT = 2
+
+
+def get_exp_name_for_output(settings, url, path):
+    return str(os.sep.join(path.split(os.sep)[:-EXP_DATASET_NAME_SPLIT]))
+
+
+def get_dataset_name_for_output(settings, url, path):
+    logger.debug("path=%s" % path)
+
+    source_url = smartconnector.get_url_with_pkey(
+        settings, os.path.join(path, "HRMC.inp_values"),
+        is_relative_path=True)
+    logger.debug("source_url=%s" % source_url)
+    try:
+        content = get_file(source_url)
+    except IOError:
+        return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
+
+    logger.debug("content=%s" % content)
+    try:
+        values_map = dict(json.loads(str(content)))
+    except Exception, e:
+        logger.warn("cannot load %s: %s" % (content, e))
+        return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
+
+    try:
+        iteration = str(path.split(os.sep)[-2:-1][0])
+    except Exception, e:
+        logger.error(e)
+        iteration = ""
+
+    if "_" in iteration:
+        iteration = iteration.split("_")[1]
+    else:
+        iteration = "final"
+
+    dataset_name = "%s_%s_%s" % (iteration,
+        values_map['generator_counter'],
+        values_map['run_counter'])
+    logger.debug("dataset_name=%s" % dataset_name)
+    return dataset_name
+

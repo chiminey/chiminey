@@ -27,6 +27,7 @@ import fnmatch
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
+from bdphpcprovider.smartconnectorscheduler import mytardis
 
 
 logger = logging.getLogger(__name__)
@@ -131,6 +132,13 @@ class Transform(Stage):
             self.output_dir = os.path.join(os.path.join(self.job_dir, "input"))
             self.new_input_dir = os.path.join(os.path.join(self.job_dir, "input_1"))
 
+        if self._exists(run_settings, 'http://rmit.edu.au/schemas/hrmc', u'experiment_id'):
+            try:
+                self.experiment_id = int(run_settings['http://rmit.edu.au/schemas/hrmc'][u'experiment_id'])
+            except ValueError, e:
+                self.experiment_id = 0
+        else:
+            self.experiment_id = 0
         # import time
         # start_time = time.time()
         # logger.debug("Start time %f "% start_time)
@@ -212,6 +220,24 @@ class Transform(Stage):
         outputs.sort(key=lambda x: int(x.criterion))
         logger.debug("outputs=%s" % outputs)
 
+        if self.boto_settings['mytardis_host']:
+
+            for node_output_dir in node_output_dirs:
+
+                source_url = smartconnector.get_url_with_pkey(self.boto_settings,
+                    os.path.join(self.output_dir, node_output_dir), is_relative_path=True)
+                logger.debug("source_url=%s" % source_url)
+                self.experiment_id = mytardis.post_dataset(
+                    settings=self.boto_settings,
+                    source_url=source_url,
+                    exp_id=self.experiment_id,
+                   exp_name=hrmcstages.get_exp_name_for_output,
+                   dataset_name=hrmcstages.get_dataset_name_for_output,
+                    dataset_schema="http://rmit.edu.au/schemas/hrmcdataset/output")
+        else:
+            logger.warn("no mytardis host specified")
+
+
         total_picks = 1
         if len(self.threshold) > 1:
             for i in self.threshold:
@@ -266,6 +292,8 @@ class Transform(Stage):
             hrmcstages.put_file(dest_url, content)
             self.audit += "spawning diamond runs\n"
 
+
+
     def output(self, run_settings):
         logger.debug("transform.output")
         audit_url = smartconnector.get_url_with_pkey(self.boto_settings,
@@ -275,6 +303,7 @@ class Transform(Stage):
         if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/transform'):
             run_settings['http://rmit.edu.au/schemas/stages/transform'] = {}
         run_settings['http://rmit.edu.au/schemas/stages/transform'][u'transformed'] = 1
+        run_settings['http://rmit.edu.au/schemas/hrmc']['experiment_id'] = str(self.experiment_id)
 
         print "End of Transformation: \n %s" % self.audit
 
@@ -360,3 +389,6 @@ class Transform(Stage):
         # fs.create(criterion_path, criterion_file)
 
         return criterion
+
+
+

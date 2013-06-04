@@ -32,8 +32,23 @@ logger = logging.getLogger(__name__)
 from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
 
+EXP_DATASET_NAME_SPLIT = 2
 
-def post_dataset(settings, source_url, exp_id):
+
+def _get_exp_name(settings, url, path):
+    return str(os.sep.join(path.split(os.sep)[:-EXP_DATASET_NAME_SPLIT]))
+
+
+def _get_dataset_name(settings, url, path):
+    return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
+
+
+def post_dataset(settings,
+        source_url,
+        exp_id,
+        exp_name=_get_exp_name,
+        dataset_name=_get_dataset_name,
+        dataset_schema=None):
     """
     POST to mytardis_host REST API with mytardis_user and mytardis_password credentials
     to create or update experiment for a new dataset containing datafiles from
@@ -42,13 +57,13 @@ def post_dataset(settings, source_url, exp_id):
     FIXME: what if tardis in unavailable?
     """
 
-    EXP_DATASET_NAME_SPLIT = 2
     tardis_user = settings["mytardis_user"]
     tardis_pass = settings["mytardis_password"]
     tardis_host_url = "http://%s" % settings["mytardis_host"]
     logger.debug("posting dataset from %s to mytardis at %s" % (source_url, tardis_host_url))
 
     (source_scheme, source_location, source_path, source_location, query_settings) = hrmcstages.parse_bdpurl(source_url)
+
     logger.debug("source_path=%s" % source_path)
     if source_scheme == "file":
         root_path = hrmcstages.get_value('root_path', query_settings)
@@ -65,8 +80,9 @@ def post_dataset(settings, source_url, exp_id):
         url = "%s/api/v1/experiment/?format=json" % tardis_host_url
         headers = {'content-type': 'application/json'}
         data = json.dumps({
-            'title': str(os.sep.join(source_path.split(os.sep)[:-EXP_DATASET_NAME_SPLIT])),
+            'title': exp_name(settings, source_url, source_path),
             'description': 'some test repo'})
+        logger.debug("data=%s" % data)
         r = requests.post(url,
             data=data,
             headers=headers,
@@ -103,13 +119,21 @@ def post_dataset(settings, source_url, exp_id):
     headers = {'content-type': 'application/json'}
     # FIXME: the split of source_path into experiment/dataset name sections
     # needs to be generalised
-    data = json.dumps({
-        'experiments': [new_experiment_uri],
-        'description': str(os.sep.join(source_path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:])),
-        "parameter_sets": [{
+
+    schemas = [{
                 "schema": "http://rmit.edu.au/schemas/hrmcdataset",
                 "parameters": []
                }]
+    if dataset_schema:
+        schemas.append({
+            "schema": dataset_schema,
+            "parameters": []
+            })
+    logger.debug("schemas=%s" % schemas)
+    data = json.dumps({
+        'experiments': [new_experiment_uri],
+        'description': dataset_name(settings, source_url, source_path),
+        "parameter_sets": schemas
             })
     logger.debug("data=%s" % data)
     r = requests.post(url, data=data, headers=headers, auth=HTTPBasicAuth(tardis_user, tardis_pass))
