@@ -345,7 +345,6 @@ class Converge(Stage):
         node_dirs = hrmcstages.list_dirs(dest_url)
         logger.debug("node_dirs=%s" % node_dirs)
 
-
         if self.boto_settings['mytardis_host']:
 
             for node_dir in node_dirs:
@@ -356,7 +355,10 @@ class Converge(Stage):
                 self.experiment_id = mytardis.post_dataset(
                     settings=self.boto_settings,
                     source_url=source_url,
-                    exp_id=self.experiment_id)
+                    exp_name=hrmcstages.get_exp_name_for_output,
+                    dataset_name=hrmcstages.get_dataset_name_for_output,
+                    exp_id=self.experiment_id,
+                    dataset_schema="http://rmit.edu.au/schemas/hrmcdataset/output")
         else:
             logger.warn("no mytardis host specified")
 

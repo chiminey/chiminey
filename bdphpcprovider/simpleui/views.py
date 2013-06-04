@@ -256,6 +256,7 @@ class HRMCSubmitFormView(FormView):
         logger.debug("self.request.user.username=%s" % self.request.user.username)
         logger.debug("self.request.user.username=%s" % self.request.user.password)
 
+        # pass the sessionid cookie through to the internal API
         cookies = dict(self.request.COOKIES)
         logger.debug("cookies=%s" % cookies)
         headers = {'content-type': 'application/json'}

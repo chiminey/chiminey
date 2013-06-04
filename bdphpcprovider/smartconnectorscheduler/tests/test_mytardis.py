@@ -58,17 +58,18 @@ class TestTardisAPI(unittest.TestCase):
             'mytardis_host': '115.146.85.142'}
 
         file_info = (
-            ('test/sweep01/run02/output1/node01/file1.txt', "content1"),
-            ('test/sweep01/run02/output1/node02/file2.txt', "content2"),
-            ('test/sweep01/run02/output2/node01/file3.txt', "content3"),
-            ('test/sweep01/run02/output3/node01/foo/file4.txt', "content4"),
-            ('test/sweep01/run02/output3/node02/file5.txt', "content5"),
+            ('test/sweep01/run02/output_1/node01/file1.txt', "content1"),
+            ('test/sweep01/run02/output_1/node02/file2.txt', "content2"),
+            ('test/sweep01/run02/output_2/node01/HRMC.inp_values',
+                '{"run_counter": 4, "generator_counter": 2}'),
+            ('test/sweep01/run02/output_3/node01/foo/file4.txt', "content4"),
+            ('test/sweep01/run02/output_3/node02/file5.txt', "content5"),
             )
 
         for fpath, content in file_info:
             dest_url = smartconnector.get_url_with_pkey(self.settings,
                 fpath, is_relative_path=True)
-            hrmcstages.put_file(dest_url, content.decode('utf-8'))
+            hrmcstages.put_file(dest_url, content.encode('utf-8'))
 
     def tearDown(self):
         pass
@@ -151,18 +152,19 @@ class TestTardisAPI(unittest.TestCase):
         print r.headers
 
 
+
     def test_hrmc(self):
 
         if not settings.TEST_MYTARDIS_IP:
             raise SkipTest
 
         file_info = (
-            'test/sweep01/run02/output1/node01',
-            'test/sweep01/run02/output1/node02',
-            'test/sweep01/run02/output2/node01',
-            'test/sweep01/run02/output2/node02',
-            'test/sweep01/run02/output3/node01',
-            'test/sweep01/run02/output3/node02',
+            'test/sweep01/run02/output_1/node01',
+            'test/sweep01/run02/output_1/node02',
+            'test/sweep01/run02/output_2/node01',
+            'test/sweep01/run02/output_2/node02',
+            'test/sweep01/run02/output_3/node01',
+            'test/sweep01/run02/output_3/node02',
             )
 
         exp_id = 0
@@ -171,9 +173,12 @@ class TestTardisAPI(unittest.TestCase):
             source_url = smartconnector.get_url_with_pkey(
                 self.settings, file_path,
                 is_relative_path=True)
+            logger.debug("source_url=%s"  % source_url)
             exp_id = mytardis.post_dataset(settings=self.settings,
                 source_url=source_url,
-                exp_id=exp_id)
+                exp_id=exp_id,
+                dataset_schema="http://rmit.edu.au/schemas/hrmcdataset/output")
+
 
 
 

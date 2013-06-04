@@ -450,7 +450,8 @@ class ContextResourceTest(ResourceTestCase):
                 u'number_dimensions': (models.ParameterName.NUMERIC, '', 4),
                 u'threshold': (models.ParameterName.STRING, '', 3),  # FIXME: should be list of ints
                 u'error_threshold': (models.ParameterName.STRING, '', 2),  # FIXME: should use float here
-                u'max_iteration': (models.ParameterName.NUMERIC, '', 1)
+                u'max_iteration': (models.ParameterName.NUMERIC, '', 1),
+                u'pottype': (models.ParameterName.NUMERIC, '', 0)
                 }
                 ],
             u'http://rmit.edu.au/schemas/system':
@@ -466,6 +467,7 @@ class ContextResourceTest(ResourceTestCase):
                 u'transitions': (models.ParameterName.STRING, '', 4),  # deprecated
                 u'system': (models.ParameterName.STRING, '', 3),
                 u'id': (models.ParameterName.NUMERIC, '', 2),
+                u'output_location': (models.ParameterName.STRING, '', 1)
                 }
                 ],
             u'http://rmit.edu.au/schemas/smartconnector_hrmc/files':
@@ -558,7 +560,9 @@ class ContextResourceTest(ResourceTestCase):
                 'number_dimensions': 1,
                 'threshold': "[1]",
                 'error_threshold': "0.03",
-                'max_iteration': 20}
+                'max_iteration': 20,
+                'pottype': 1,
+                'output_location': 'foobar'}
 
         self.assertHttpCreated(self.api_client.post('/api/v1/context/?format=json',
             format='json', data=self.post_data,
