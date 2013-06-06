@@ -75,13 +75,14 @@ class TestTardisAPI(unittest.TestCase):
         pass
 
     def test_post_experiment(self):
+        """ Simple post of experiment, dataset and datafile to mytardis
+        """
 
         if not settings.TEST_MYTARDIS_IP:
             raise SkipTest
 
 
         tardis_host = settings.TEST_MYTARDIS_IP
-
         tardis_user = settings.TEST_MTARDIS_USER
         tardis_pass = settings.TEST_MYTARDIS_PASSWORD
 
@@ -139,7 +140,7 @@ class TestTardisAPI(unittest.TestCase):
             'filename': 'testfile.txt',
             'size': 6,
             'mimetype': 'text/plain',
-            'md5sum' : 'b1946ac92492d2347c6235b4d2611184'
+            'md5sum': 'b1946ac92492d2347c6235b4d2611184'
             })
 
         logger.debug("data=%s" % data)
@@ -150,11 +151,12 @@ class TestTardisAPI(unittest.TestCase):
         print r.json
         print r.text
         print r.headers
-
-
+        # FIXME: these are proper tests as no assertion yet.
 
     def test_hrmc(self):
-
+        """
+        Test bdphpcprovider interface for communicating results to mytardis
+        """
         if not settings.TEST_MYTARDIS_IP:
             raise SkipTest
 
@@ -178,6 +180,8 @@ class TestTardisAPI(unittest.TestCase):
                 source_url=source_url,
                 exp_id=exp_id,
                 dataset_schema="http://rmit.edu.au/schemas/hrmcdataset/output")
+
+            # FIXME: these are proper tests as no assertion yet.
 
 
 

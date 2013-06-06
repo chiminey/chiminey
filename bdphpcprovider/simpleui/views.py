@@ -250,6 +250,11 @@ class HRMCSubmitFormView(FormView):
         logger.debug("directive_name=%s" % directive_name)
         logger.debug("directive_args=%s" % directive_args)
 
+        # An example of using the REST API to control the system, rather than
+        # talking directly to the models in smartconnectorscheduler.
+        # TODO: do the same for other parts of UI, e.g., user settings form
+        # should call user_setttings API endpoint.
+
         api_host = "http://127.0.0.1"
         url = "%s/api/v1/context/?format=json" % api_host
 
@@ -276,7 +281,7 @@ class HRMCSubmitFormView(FormView):
             headers=headers,
             cookies=cookies)
 
-        # FIXME: need to check for status_code and handle failures.
+        # TODO: need to check for status_code and handle failures.
 
         logger.debug("r.json=%s" % r.json)
         logger.debug("r.text=%s" % r.text)
@@ -352,7 +357,7 @@ class SweepSubmitFormView(FormView):
         logger.debug("directive_args=%s" % directive_args)
 
         # FIXME: we should be sending this request to scheduler API using
-        # POST, to keep separation of concerns.  See mytardis.py for example.
+        # POST, to keep separation of concerns.  See sweep for example.
 
         try:
             (run_settings, command_args, run_context) \
@@ -365,8 +370,6 @@ class SweepSubmitFormView(FormView):
             return HttpResponse(str(e))
 
         return super(SweepSubmitFormView, self).form_valid(form)
-
-
 
 
 class CopyFormView(FormView):
