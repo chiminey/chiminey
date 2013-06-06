@@ -13,16 +13,17 @@ class SweepSubmitForm(forms.Form):
         help_text="A BDPUrl Directory",
         widget=forms.Textarea(attrs={'cols': 80, 'rows': 1}))
     number_of_dimensions = forms.IntegerField(min_value=0,
-        label=_("Degrees of Variation"), help_text="degrees of freedom")
+        label=_("Degrees of Variation"), help_text="1 = iseed variation, 2 = iseed/temp variation")
     threshold = forms.CharField(label=_("Threshold"),
-            max_length=255
+            max_length=255,
+            help_text="Number of outputs to keep between iterations"
         )
-    iseed = forms.IntegerField(min_value=0)
-    error_threshold = forms.DecimalField()
+    iseed = forms.IntegerField(min_value=0, help_text="initial seed for random numbers")
+    error_threshold = forms.DecimalField(help_text="delta for interation convergence")
 
-    max_iteration = forms.IntegerField(min_value=1)
+    max_iteration = forms.IntegerField(min_value=1, help_text="Force convergence")
     pottype = forms.IntegerField(min_value=0)
-    experiment_id = forms.IntegerField(required=False)
+    experiment_id = forms.IntegerField(required=False, help_text="MyTardis experiment number.  Zero for new experiment")
     sweep_map = forms.CharField(label="Sweep Map JSON",
         widget=forms.Textarea(attrs={'cols': 80, 'rows': 10}
         ))
