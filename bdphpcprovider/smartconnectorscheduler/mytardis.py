@@ -34,14 +34,50 @@ from bdphpcprovider.smartconnectorscheduler import hrmcstages
 
 EXP_DATASET_NAME_SPLIT = 2
 
-
 def _get_exp_name(settings, url, path):
+    """
+    Break path based on EXP_DATASET_NAME_SPLIT
+    """
     return str(os.sep.join(path.split(os.sep)[:-EXP_DATASET_NAME_SPLIT]))
 
 
 def _get_dataset_name(settings, url, path):
+    """
+    Break path based on EXP_DATASET_NAME_SPLIT
+    """
     return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
 
+
+# def post_exp_parameterset(settings,
+#     exp_id,
+#     experiment_schema):
+
+#     tardis_user = settings["mytardis_user"]
+#     tardis_pass = settings["mytardis_password"]
+#     tardis_host_url = "http://%s" % settings["mytardis_host"]
+#     logger.debug("posting exp metadata to mytardis at %s" % tardis_host_url)
+
+#     url = "%s/api/v1/experiment/?format=json" % tardis_host_url
+#     headers = {'content-type': 'application/json'}
+#     schemas = [{
+#                 "schema": "http://rmit.edu.au/schemas/hrmcexp",
+#                 "parameters": []
+#                }]
+#     data = json.dumps({
+#         'title': exp_name(settings, source_url, source_path),
+#         'description': 'some test repo',
+#         "parameter_sets": schemas})
+#     logger.debug("data=%s" % data)
+#     r = requests.post(url,
+#         data=data,
+#         headers=headers,
+#         auth=(tardis_user, tardis_pass))
+
+#     # TODO: need to check for status_code and handle failures by repolling.
+
+#     logger.debug(r.json)
+#     logger.debug(r.text)
+#     logger.debug(r.headers)
 
 def post_dataset(settings,
         source_url,
@@ -52,9 +88,22 @@ def post_dataset(settings,
     """
     POST to mytardis_host REST API with mytardis_user and mytardis_password credentials
     to create or update experiment for a new dataset containing datafiles from
-    source_url BDP directory.  Experiment name is path up to last EXP_DATASET_NAME_SPLIT path elements
-    and dataset is the rest of the path.
-    FIXME: what if tardis in unavailable?
+    source_url BDP directory.
+
+    exp_name and dataset_name are supplied functions that break up the
+    experiment and dataset names respectively.
+
+    dataset_schema is the namespace of the schema at the mytardis that will
+    be tagged to the dataset.
+
+    FIXME: What if tardis in unavailable?  Connection to mytardis probably
+    better handled as sperate celery subtask, which can retry until working and
+    be async
+
+    FIXME: this method is not generic enough to handle all situations. e.g.,
+    it sets hrmc* schemas which should be parameters like dataset_schema
+
+    FIXME: missing all error checking and retrying of connection to mytardis.
     """
 
     tardis_user = settings["mytardis_user"]
@@ -79,9 +128,14 @@ def post_dataset(settings,
 
         url = "%s/api/v1/experiment/?format=json" % tardis_host_url
         headers = {'content-type': 'application/json'}
+        schemas = [{
+                    "schema": "http://rmit.edu.au/schemas/hrmcexp",
+                    "parameters": []
+                   }]
         data = json.dumps({
             'title': exp_name(settings, source_url, source_path),
-            'description': 'some test repo'})
+            'description': 'some test repo',
+            "parameter_sets": schemas})
         logger.debug("data=%s" % data)
         r = requests.post(url,
             data=data,
@@ -117,9 +171,8 @@ def post_dataset(settings,
     logger.debug("saving dataset in experiment at %s" % new_exp_id)
     url = "%s/api/v1/dataset/?format=json" % tardis_host_url
     headers = {'content-type': 'application/json'}
-    # FIXME: the split of source_path into experiment/dataset name sections
-    # needs to be generalised
 
+    # FIXME: schema should be a parameter
     schemas = [{
                 "schema": "http://rmit.edu.au/schemas/hrmcdataset",
                 "parameters": []
@@ -137,6 +190,8 @@ def post_dataset(settings,
             })
     logger.debug("data=%s" % data)
     r = requests.post(url, data=data, headers=headers, auth=HTTPBasicAuth(tardis_user, tardis_pass))
+    # FIXME: need to check for status_code and handle failures.
+
     logger.debug("r.json=%s" % r.json)
     logger.debug("r.text=%s" % r.text)
     logger.debug("r.headers=%s" % r.headers)
@@ -167,6 +222,7 @@ def post_dataset(settings,
             files={'attached_file': open(file_path, 'rb')},
             auth=HTTPBasicAuth(tardis_user, tardis_pass)
             )
+        # FIXME: need to check for status_code and handle failures.
 
         logger.debug("r.js=%s" % r.json)
         logger.debug("r.te=%s" % r.text)
