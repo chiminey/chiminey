@@ -46,7 +46,7 @@ def is_ssh_ready(settings, ip_address):
             ssh_ready = True
         except Exception, e:
             sleep(settings['cloud_sleep_interval'])
-            print ("Connecting to %s in progress ..." % ip_address)
+            logger.debug("Connecting to %s in progress ..." % ip_address)
             logger.debug("exception is %s" % e)
             #import traceback, sys
 
@@ -92,7 +92,7 @@ def open_connection(ip_address, settings):
     except paramiko.AuthenticationException, e:
         raise AuthError(e)
     except Exception, e:
-        logger.error("Exception: %s" % e)
+        logger.error("[%s] Exception: %s" % (ip_address, e))
         raise
     logger.debug("Made connection")
     return ssh_client

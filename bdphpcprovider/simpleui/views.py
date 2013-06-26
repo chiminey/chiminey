@@ -217,44 +217,14 @@ class HRMCSubmitFormView(FormView):
 
         }
 
+    # This method is called when valid form data has been POSTed.
+    # It should return an HttpResponse.
     def form_valid(self, form):
-        # This method is called when valid form data has been POSTed.
-        # It should return an HttpResponse.
-        platform = 'nectar'
-        directive_name = "smartconnector_hrmc"
-        logger.debug("%s" % directive_name)
-        directive_args = []
-
-        directive_args.append(
-            ['',
-                ['http://rmit.edu.au/schemas/hrmc',
-                    ('number_vm_instances',
-                        form.cleaned_data['number_vm_instances']),
-                    (u'iseed', form.cleaned_data['iseed']),
-                    ('input_location',  form.cleaned_data['input_location']),
-                    ('number_dimensions', form.cleaned_data['number_of_dimensions']),
-                    ('threshold', str(form.cleaned_data['threshold'])),
-                    ('error_threshold', str(form.cleaned_data['error_threshold'])),
-                    ('max_iteration', form.cleaned_data['max_iteration']),
-                    ('pottype', form.cleaned_data['pottype']),
-                    ('experiment_id', form.cleaned_data['experiment_id'])
-                ]
-            ])
-
-        # make the system settings, available to initial stage and merged with run_settings
-        system_dict = {
-        u'system': u'settings',
-        u'output_location': os.path.join('hrmcrun')}
-        system_settings = {u'http://rmit.edu.au/schemas/system/misc': system_dict}
-
-        logger.debug("directive_name=%s" % directive_name)
-        logger.debug("directive_args=%s" % directive_args)
-
         # An example of using the REST API to control the system, rather than
         # talking directly to the models in smartconnectorscheduler.
         # TODO: do the same for other parts of UI, e.g., user settings form
         # should call user_setttings API endpoint.
-
+        #FIXME: consider using non-locahost URL for api_host
         api_host = "http://127.0.0.1"
         url = "%s/api/v1/context/?format=json" % api_host
 
@@ -265,7 +235,8 @@ class HRMCSubmitFormView(FormView):
         cookies = dict(self.request.COOKIES)
         logger.debug("cookies=%s" % cookies)
         headers = {'content-type': 'application/json'}
-        data = json.dumps({'number_vm_instances': form.cleaned_data['number_vm_instances'],
+        data = json.dumps({'smart_connector': 'smartconnector_hrmc',
+                    'number_vm_instances': form.cleaned_data['number_vm_instances'],
                     u'iseed': form.cleaned_data['iseed'],
                     'input_location':  form.cleaned_data['input_location'],
                     'number_dimensions': form.cleaned_data['number_of_dimensions'],
@@ -313,61 +284,49 @@ class SweepSubmitFormView(FormView):
 
         }
 
+    # This method is called when valid form data has been POSTed.
+    # It should return an HttpResponse.
     def form_valid(self, form):
-        # This method is called when valid form data has been POSTed.
-        # It should return an HttpResponse.
-        platform = 'local'
-        directive_name = "sweep"
-        logger.debug("%s" % directive_name)
-        directive_args = []
+        #FIXME: consider using non-locahost URL for api_host
+        api_host = "http://127.0.0.1"
+        url = "%s/api/v1/context/?format=json" % api_host
 
-        directive_args.append(
-            ['',
-                ['http://rmit.edu.au/schemas/hrmc',
-                    ('number_vm_instances',
-                        form.cleaned_data['number_vm_instances']),
-                    (u'iseed', form.cleaned_data['iseed']),
-                    ('input_location',  ''),
-                    ('number_dimensions', form.cleaned_data['number_of_dimensions']),
-                    ('threshold', str(form.cleaned_data['threshold'])),
-                    ('error_threshold', str(form.cleaned_data['error_threshold'])),
-                    ('max_iteration', form.cleaned_data['max_iteration']),
-                    ('experiment_id', form.cleaned_data['experiment_id']),
-                    ('pottype', form.cleaned_data['pottype'])],
-                ['http://rmit.edu.au/schemas/stages/sweep',
-                    ('input_location',  form.cleaned_data['input_location']),
-                    ('sweep_map', form.cleaned_data['sweep_map']),
-                ],
-                ['http://rmit.edu.au/schemas/stages/run',
-                    ('run_map', form.cleaned_data['run_map'])
-                ]
-            ])
+        logger.debug("self.request.user.username=%s" % self.request.user.username)
+        logger.debug("self.request.user.username=%s" % self.request.user.password)
 
-        logger.debug("form=%s" % pformat(form.cleaned_data))
+        # pass the sessionid cookie through to the internal API
+        cookies = dict(self.request.COOKIES)
+        logger.debug("cookies=%s" % cookies)
+        headers = {'content-type': 'application/json'}
 
-        logger.debug("directive_args=%s" % directive_args)
+        data = json.dumps({'smart_connector': 'sweep',
+                    'number_vm_instances': form.cleaned_data['number_vm_instances'],
+                    u'iseed': form.cleaned_data['iseed'],
+                    'input_location':  form.cleaned_data['input_location'],
+                    'number_dimensions': form.cleaned_data['number_of_dimensions'],
+                    'threshold': str(form.cleaned_data['threshold']),
+                    'error_threshold': str(form.cleaned_data['error_threshold']),
+                    'max_iteration': form.cleaned_data['max_iteration'],
+                    'pottype': form.cleaned_data['pottype'],
+                    'experiment_id': form.cleaned_data['experiment_id'],
+                    'sweep_map': form.cleaned_data['sweep_map'],
+                    'run_map': form.cleaned_data['run_map'],
+                    'output_location': os.path.join('sweephrmc')})
 
-        # make the system settings, available to initial stage and merged with run_settings
-        system_dict = {
-            u'system': u'settings',
-            u'output_location': 'sweephrmc'}
-        system_settings = {u'http://rmit.edu.au/schemas/system/misc': system_dict}
+        r = requests.post(url,
+            data=data,
+            headers=headers,
+            cookies=cookies)
 
-        logger.debug("directive_name=%s" % directive_name)
-        logger.debug("directive_args=%s" % directive_args)
+         # TODO: need to check for status_code and handle failures.
 
-        # FIXME: we should be sending this request to scheduler API using
-        # POST, to keep separation of concerns.  See sweep for example.
-
-        try:
-            (run_settings, command_args, run_context) \
-                = hrmcstages.make_runcontext_for_directive(
-                platform,
-                directive_name,
-                directive_args, system_settings, self.request.user.username)
-
-        except InvalidInputError, e:
-            return HttpResponse(str(e))
+        logger.debug("r.json=%s" % r.json)
+        logger.debug("r.text=%s" % r.text)
+        logger.debug("r.headers=%s" % r.headers)
+        header_location = r.headers['location']
+        logger.debug("header_location=%s" % header_location)
+        new_context_uri = header_location[len(api_host):]
+        logger.debug("new_context_uri=%s" % new_context_uri)
 
         return super(SweepSubmitFormView, self).form_valid(form)
 
@@ -381,31 +340,39 @@ class CopyFormView(FormView):
         'destination_bdp_url': 'file://local@127.0.0.1/myfiles/destdir',
         }
 
+    # This method is called when valid form data has been POSTed.
+    # It should return an HttpResponse.
     def form_valid(self, form):
-        # This method is called when valid form data has been POSTed.
-        # It should return an HttpResponse.
-        platform = 'nci'  # FIXME: should be local
-        directive_name = "copydir"
-        logger.debug("%s" % directive_name)
-        directive_args = []
-        directive_args.append([form.cleaned_data['source_bdp_url'], []])
-        directive_args.append([form.cleaned_data['destination_bdp_url'], []])
+        #FIXME: consider using non-locahost URL for api_host
+        api_host = "http://127.0.0.1"
+        url = "%s/api/v1/context/?format=json" % api_host
 
-        # make the system settings, available to initial stage and merged with run_settings
-        system_dict = {u'system': u'settings'}
-        system_settings = {u'http://rmit.edu.au/schemas/system/misc': system_dict}
+        logger.debug("self.request.user.username=%s" % self.request.user.username)
+        logger.debug("self.request.user.username=%s" % self.request.user.password)
 
-        logger.debug("directive_name=%s" % directive_name)
-        logger.debug("directive_args=%s" % directive_args)
+        # pass the sessionid cookie through to the internal API
+        cookies = dict(self.request.COOKIES)
+        logger.debug("cookies=%s" % cookies)
+        headers = {'content-type': 'application/json'}
 
-        try:
-            (run_settings, command_args, run_context) \
-                = hrmcstages.make_runcontext_for_directive(
-                platform,
-                directive_name,
-                directive_args, system_settings, self.request.user.username)
+        data = json.dumps({'smart_connector': 'copydir',
+                           'source_bdp_url': form.cleaned_data['source_bdp_url'],
+                           'destination_bdp_url': form.cleaned_data['destination_bdp_url']
+                           })
 
-        except InvalidInputError, e:
-            return HttpResponse(str(e))
+        r = requests.post(url,
+            data=data,
+            headers=headers,
+            cookies=cookies)
+
+         # TODO: need to check for status_code and handle failures.
+
+        logger.debug("r.json=%s" % r.json)
+        logger.debug("r.text=%s" % r.text)
+        logger.debug("r.headers=%s" % r.headers)
+        header_location = r.headers['location']
+        logger.debug("header_location=%s" % header_location)
+        new_context_uri = header_location[len(api_host):]
+        logger.debug("new_context_uri=%s" % new_context_uri)
 
         return super(CopyFormView, self).form_valid(form)

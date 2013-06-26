@@ -68,7 +68,7 @@ def _create_nectar_connection(settings):
         region=region,
         port=8773,
         path="/services/Cloud")
-
+    #logger.info("settings %s" % settings)
     logger.info("Connecting to... %s" % region.name)
     return connection
 
@@ -180,6 +180,7 @@ def _customize_prompt(all_instances, settings):
         instance_id = instance.id
         ip_address = get_instance_ip(instance_id, settings)
         logger.info("Customizing command prompt")
+        logger.debug("Custom prompt %s" % settings['custom_prompt'])
         ssh_ready = is_ssh_ready(settings, ip_address)
         if ssh_ready:
             ssh_client = open_connection(ip_address=ip_address, settings=settings)
