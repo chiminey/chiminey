@@ -208,6 +208,10 @@ LOGGING = {
              'handlers': ['console', 'file2'],
              'level': 'DEBUG',
              },
+         'bdphpcprovider.core':{
+             'handlers': ['console', 'file1'],
+             'level': 'DEBUG'
+         },
         },
 }
 

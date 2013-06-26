@@ -196,6 +196,41 @@ class ContextResource(ModelResource):
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
 
+        logger.debug('smart_connector=%s' % bundle.data['smart_connector'])
+        logger.info('smart_connector=%s' % bundle.data['smart_connector'])
+
+        if bundle.data['smart_connector'] == 'smartconnector_hrmc':
+            (platform, directive_name,
+             directive_args, system_settings) = self._post_to_hrmc(bundle)
+        elif bundle.data['smart_connector'] == 'sweep':
+            (platform, directive_name,
+             directive_args, system_settings) = self._post_to_sweep(bundle)
+        elif bundle.data['smart_connector'] == 'copydir':
+            (platform, directive_name,
+             directive_args, system_settings) = self._post_to_copy(bundle)
+
+        location = []
+        try:
+            (run_settings, command_args, run_context) \
+                 = hrmcstages.make_runcontext_for_directive(
+                 platform,
+                 directive_name,
+                 directive_args, system_settings, request.user.username)
+
+        except InvalidInputError,e:
+            bundle.obj = None
+            logger.error(e)
+        else:
+            logger.debug("run_context=%s" % run_context)
+            bundle.obj.pk = run_context.id
+            # We do not call obj_create because make_runcontext_for_directive()
+            # has already created the object.
+
+            location = self.get_resource_uri(bundle)
+
+        return http.HttpCreated(location=location)
+
+    def _post_to_hrmc(self, bundle):
         platform = 'nectar'
         directive_name = "smartconnector_hrmc"
         logger.debug("%s" % directive_name)
@@ -225,24 +260,66 @@ class ContextResource(ModelResource):
         logger.debug("directive_name=%s" % directive_name)
         logger.debug("directive_args=%s" % directive_args)
 
-        location = []
-        try:
-            (run_settings, command_args, run_context) \
-                 = hrmcstages.make_runcontext_for_directive(
-                 platform,
-                 directive_name,
-                 directive_args, system_settings, request.user.username)
+        return (platform, directive_name, directive_args, system_settings)
 
-        except InvalidInputError,e:
-            bundle.obj = None
-            logger.error(e)
-        else:
-            logger.debug("run_context=%s" % run_context)
-            bundle.obj.pk = run_context.id
-            # We do not call obj_create because make_runcontext_for_directive()
-            # has already created the object.
+    def _post_to_sweep(self, bundle):
+        platform = 'local'
+        directive_name = "sweep"
+        logger.debug("%s" % directive_name)
+        directive_args = []
 
-            location = self.get_resource_uri(bundle)
+        directive_args.append(
+            ['',
+                ['http://rmit.edu.au/schemas/hrmc',
+                    ('number_vm_instances',
+                        bundle.data['number_vm_instances']),
+                    (u'iseed', bundle.data['iseed']),
+                    ('input_location',  ''),
+                    ('number_dimensions', bundle.data['number_of_dimensions']),
+                    ('threshold', str(bundle.data['threshold'])),
+                    ('error_threshold', str(bundle.data['error_threshold'])),
+                    ('max_iteration', bundle.data['max_iteration']),
+                    ('experiment_id', bundle.data['experiment_id']),
+                    ('pottype', bundle.data['pottype'])],
+                ['http://rmit.edu.au/schemas/stages/sweep',
+                    ('input_location', bundle.data['input_location']),
+                    ('sweep_map', bundle.data['sweep_map']),
+                ],
+                ['http://rmit.edu.au/schemas/stages/run',
+                    ('run_map', bundle.data['run_map'])
+                ]
+            ])
+
+        logger.debug("directive_args=%s" % pformat(directive_args))
+        # make the system settings, available to initial stage and merged with run_settings
+
+        system_dict = {
+            u'system': u'settings',
+            u'output_location': bundle.data['output_location']}
+        system_settings = {u'http://rmit.edu.au/schemas/system/misc': system_dict}
+
+        logger.debug("directive_name=%s" % directive_name)
+        logger.debug("directive_args=%s" % directive_args)
+
+        return (platform, directive_name, directive_args, system_settings)
+
+    def _post_to_copy(self, bundle):
+        platform = 'nci'  # FIXME: should be local, why local Ian?
+        directive_name = "copydir"
+        logger.debug("%s" % directive_name)
+        directive_args = []
+
+        directive_args.append([bundle.data['source_bdp_url'], []])
+        directive_args.append([bundle.data['destination_bdp_url'], []])
 
 
-        return http.HttpCreated(location=location)
+        logger.debug("directive_args=%s" % pformat(directive_args))
+
+        # make the system settings, available to initial stage and merged with run_settings
+        system_dict = {u'system': u'settings'}
+        system_settings = {u'http://rmit.edu.au/schemas/system/misc': system_dict}
+
+        logger.debug("directive_name=%s" % directive_name)
+        logger.debug("directive_args=%s" % directive_args)
+
+        return (platform, directive_name, directive_args, system_settings)
