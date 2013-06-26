@@ -90,6 +90,7 @@ class Sweep(Stage):
                     context[k] = str(z[i])  # str() so that 0 doesn't default value
                     #logger.debug("context[%s] = %s" % (k, context[k]))
                 context['run_counter'] = numbfile
+                context['generator_counter'] = context['run_counter']
                 numbfile += 1
                 res.append(context)
         return res
