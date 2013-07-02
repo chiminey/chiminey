@@ -187,6 +187,7 @@ admin.site.register(models.Context, ContextAdmin)
 admin.site.register(models.ContextParameterSet, ContextParameterSetAdmin)
 admin.site.register(models.ContextParameter)
 admin.site.register(models.StageParameterSet, StageParameterSetAdmin)
+admin.site.register(models.StageParameter)
 admin.site.register(models.Command)
 admin.site.register(models.Directive)
-
+admin.site.register(models.DirectiveArgSet)

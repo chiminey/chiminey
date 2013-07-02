@@ -205,7 +205,6 @@ class Transform(Stage):
                 values_url = smartconnector.get_url_with_pkey(self.boto_settings,
                     os.path.join(self.output_dir, node_output_dir,
                     '%s_values' % base_fname), is_relative_path=True)
-                logger.info('values_url=%s' % values_url)
                 values_content = hrmcstages.get_file(values_url)
                 logger.debug("values_file=%s" % values_url)
             except IOError:
@@ -286,7 +285,7 @@ class Transform(Stage):
 
             # move xyz_final.xyz to initial.xyz
             source_url = smartconnector.get_url_with_pkey(self.boto_settings,
-                os.path.join(self.output_dir, Node_info.dir, "input_initial.xyz"), is_relative_path=True)
+                os.path.join(self.output_dir, Node_info.dir, "xyz_final.xyz"), is_relative_path=True)
             dest_url = smartconnector.get_url_with_pkey(self.boto_settings,
                 os.path.join(self.new_input_node_dir, 'input_initial.xyz'), is_relative_path=True)
             content = hrmcstages.get_file(source_url)

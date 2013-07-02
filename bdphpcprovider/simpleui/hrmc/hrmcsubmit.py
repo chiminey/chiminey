@@ -11,7 +11,7 @@ class HRMCSubmitForm(forms.Form):
         widget=forms.TextInput,
         help_text="A BDPUrl Directory"
     )
-    number_of_dimensions = forms.IntegerField(min_value=0, label=_("Degrees of Variation"), help_text="1 = iseed variation, 2 = iseed/temp variation")
+    number_dimensions = forms.IntegerField(min_value=0, label=_("Degrees of Variation"), help_text="1 = iseed variation, 2 = iseed/temp variation")
     threshold = forms.CharField(label=_("Threshold"),
             max_length=255,
             widget=forms.TextInput,
@@ -28,7 +28,7 @@ class HRMCSubmitForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(HRMCSubmitForm, self).__init__(*args, **kwargs)
         self.fields["number_vm_instances"].validators.append(validators.validate_number_vm_instances)
-        self.fields["number_of_dimensions"].validators.append(validators.validate_number_of_dimensions)
+        self.fields["number_dimensions"].validators.append(validators.validate_number_dimensions)
         self.fields["threshold"].validators.append(validators.validate_threshold)
         self.fields["iseed"].validators.append(validators.validate_iseed)
         self.fields["pottype"].validators.append(validators.validate_pottype)

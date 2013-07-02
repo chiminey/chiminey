@@ -12,7 +12,7 @@ class SweepSubmitForm(forms.Form):
         max_length=255,
         help_text="A BDPUrl Directory",
         widget=forms.Textarea(attrs={'cols': 80, 'rows': 1}))
-    number_of_dimensions = forms.IntegerField(min_value=0,
+    number_dimensions = forms.IntegerField(min_value=0,
         label=_("Degrees of Variation"), help_text="1 = iseed variation, 2 = iseed/temp variation")
     threshold = forms.CharField(label=_("Threshold"),
             max_length=255,
@@ -36,7 +36,7 @@ class SweepSubmitForm(forms.Form):
         self.fields["sweep_map"].validators.append(validators.validate_sweep_map)
         self.fields["run_map"].validators.append(validators.validate_run_map)
         self.fields["number_vm_instances"].validators.append(validators.validate_number_vm_instances)
-        self.fields["number_of_dimensions"].validators.append(validators.validate_number_of_dimensions)
+        self.fields["number_dimensions"].validators.append(validators.validate_number_dimensions)
         self.fields["threshold"].validators.append(validators.validate_threshold)
         self.fields["iseed"].validators.append(validators.validate_iseed)
         self.fields["pottype"].validators.append(validators.validate_pottype)

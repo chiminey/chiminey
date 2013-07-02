@@ -275,7 +275,7 @@ class ContextResource(ModelResource):
                         bundle.data['number_vm_instances']),
                     (u'iseed', bundle.data['iseed']),
                     ('input_location',  ''),
-                    ('number_dimensions', bundle.data['number_of_dimensions']),
+                    ('number_dimensions', bundle.data['number_dimensions']),
                     ('threshold', str(bundle.data['threshold'])),
                     ('error_threshold', str(bundle.data['error_threshold'])),
                     ('max_iteration', bundle.data['max_iteration']),

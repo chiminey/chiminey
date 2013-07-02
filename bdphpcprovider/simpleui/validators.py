@@ -36,17 +36,17 @@ def validate_number_vm_instances(value):
     return number_vm_instances
 
 
-def validate_number_of_dimensions(value):
-    number_of_dimensions = value
+def validate_number_dimensions(value):
+    number_dimensions = value
 
     msg = u'number of dimensions should be in [1,2]'
     try:
-        nd = int(number_of_dimensions)
+        nd = int(number_dimensions)
     except ValueError:
         raise ValidationError(msg)
     if not nd in [1,2]:
         raise ValidationError(msg)
-    return number_of_dimensions
+    return number_dimensions
 
 
 def validate_threshold(value):
