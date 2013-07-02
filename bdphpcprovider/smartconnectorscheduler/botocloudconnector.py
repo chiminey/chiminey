@@ -117,6 +117,7 @@ def create_VM_instances(number_vm_instances, settings):
         while instance_count < number_vm_instances:
             #logger.debug(number_vm_instances)
             reservation = connection.run_instances(
+                placement='monash',
                 image_id=settings['vm_image'],
                 min_count=1,
                 max_count=1,
