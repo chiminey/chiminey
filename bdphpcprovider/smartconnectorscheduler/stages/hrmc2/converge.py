@@ -30,6 +30,7 @@ from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
 from bdphpcprovider.smartconnectorscheduler import mytardis
+from bdphpcprovider.smartconnectorscheduler import models
 
 
 logger = logging.getLogger(__name__)
@@ -120,8 +121,7 @@ class Converge(Stage):
         """
         """
         logger.debug("created converge")
-        self.user_settings = user_settings.copy()
-        self.boto_settings = user_settings.copy()
+
         self.job_dir = "hrmcrun"  # TODO: make a stageparameter + suffix on real job number
         self.id = 0
 
@@ -146,6 +146,8 @@ class Converge(Stage):
         #import time
         # start_time = time.time()
         # logger.debug("Start time %f "% start_time)
+
+        self.boto_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
 
         self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
 
@@ -207,7 +209,10 @@ class Converge(Stage):
         self.boto_settings['username'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_username']
         self.boto_settings['username'] = 'root'  # FIXME: schema value is ignored
         self.boto_settings['password'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
-        key_file = hrmcstages.retrieve_private_key(self.boto_settings, self.user_settings['nectar_private_key'])
+
+        key_file = hrmcstages.retrieve_private_key(self.boto_settings,
+            run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nectar_private_key'])
+
         self.boto_settings['private_key'] = key_file
         self.boto_settings['nectar_private_key'] = key_file
 

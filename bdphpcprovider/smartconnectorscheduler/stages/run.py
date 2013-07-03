@@ -37,6 +37,7 @@ from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import botocloudconnector
 from bdphpcprovider.smartconnectorscheduler.errors import PackageFailedError
 from bdphpcprovider.smartconnectorscheduler import sshconnector
+from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadSpecificationError, BadInputException
@@ -52,11 +53,9 @@ class Run(Stage):
     Start application on nodes and return status
     """
     def __init__(self, user_settings=None):
-        self.user_settings = user_settings.copy()
         self.numbfile = 0
 
         self.job_dir = "hrmcrun"
-        self.boto_settings = user_settings.copy()
         logger.debug("Run stage initialized")
 
     def triggered(self, run_settings):
@@ -557,6 +556,8 @@ class Run(Stage):
 
         logger.debug("processing run stage")
 
+        self.boto_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
+
         self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
 
         #TODO: we assume relative path BDP_URL here, but could be made to work with non-relative (ie., remote paths)
@@ -647,10 +648,10 @@ class Run(Stage):
         self.boto_settings['username'] = 'root'  # FIXME: schema value is ignored
 
         self.boto_settings['password'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
-        key_file = hrmcstages.retrieve_private_key(self.boto_settings, self.user_settings['nectar_private_key'])
+        key_file = hrmcstages.retrieve_private_key(self.boto_settings,
+            run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nectar_private_key'])
         self.boto_settings['private_key'] = key_file
         self.boto_settings['nectar_private_key'] = key_file
-
 
         self._prepare_inputs()
         try:
@@ -663,7 +664,6 @@ class Run(Stage):
             sys.exit(1)
 
         return pids
-
 
     def output(self, run_settings):
         """
@@ -678,7 +678,6 @@ class Run(Stage):
         run_settings['http://rmit.edu.au/schemas/stages/run'][u'initial_numbfile'] = self.initial_numbfile
         run_settings['http://rmit.edu.au/schemas/stages/run'][u'rand_index'] = self.rand_index
         run_settings['http://rmit.edu.au/schemas/hrmc']['experiment_id'] = str(self.experiment_id)
-
 
         return run_settings
 

@@ -24,6 +24,7 @@ from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.smartconnectorscheduler import botocloudconnector
+from bdphpcprovider.smartconnectorscheduler import models
 
 
 logger = logging.getLogger(__name__)
@@ -32,10 +33,8 @@ logger = logging.getLogger(__name__)
 class Create(Stage):
 
     def __init__(self, user_settings=None):
-        self.user_settings = user_settings.copy()
         self.group_id = ''
         self.platform = None
-        self.boto_settings = user_settings.copy()
 
     def triggered(self, run_settings):
         """
@@ -60,7 +59,7 @@ class Create(Stage):
         """
         Make new VMS and store group_id
         """
-        #self.boto_settings.update(run_settings)
+        self.boto_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
         number_vm_instances = run_settings['http://rmit.edu.au/schemas/hrmc'][u'number_vm_instances']
         logger.debug("VM instance %d" % number_vm_instances)
 
@@ -83,11 +82,14 @@ class Create(Stage):
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/create/nectar_password')
 
-        self.boto_settings['username'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_username']
-        self.boto_settings['password'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
+        self.boto_settings['username'] = run_settings[
+            'http://rmit.edu.au/schemas/stages/create']['nectar_username']
+        self.boto_settings['password'] = run_settings[
+            'http://rmit.edu.au/schemas/stages/create']['nectar_password']
         self.boto_settings['username'] = 'root'  # FIXME: schema value is ignored
 
-        key_file = hrmcstages.retrieve_private_key(self.boto_settings, self.user_settings['nectar_private_key'])
+        key_file = hrmcstages.retrieve_private_key(self.boto_settings,
+            run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nectar_private_key'])
         self.boto_settings['private_key'] = key_file
         self.boto_settings['nectar_private_key'] = key_file
 

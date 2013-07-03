@@ -9,8 +9,7 @@ logger = logging.getLogger(__name__)
 class Teardown(smartconnector.Stage):
 
     def __init__(self, user_settings=None):
-        self.user_settings = user_settings
-        self.boto_settings = user_settings.copy()
+        pass
 
     def triggered(self, run_settings):
         if self._exists(run_settings,
@@ -43,6 +42,9 @@ class Teardown(smartconnector.Stage):
         # return False
 
     def process(self, run_settings):
+
+        self.boto_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
+
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/setup/payload_source')
         smartconnector.copy_settings(self.boto_settings, run_settings,
@@ -79,9 +81,13 @@ class Teardown(smartconnector.Stage):
             'http://rmit.edu.au/schemas/stages/create/nectar_password')
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/run/random_numbers')
-        self.boto_settings['username'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_username']
-        self.boto_settings['password'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
-        key_file = hrmcstages.retrieve_private_key(self.boto_settings, self.user_settings['nectar_private_key'])
+        self.boto_settings['username'] = run_settings[
+            'http://rmit.edu.au/schemas/stages/create']['nectar_username']
+        self.boto_settings['password'] = run_settings[
+            'http://rmit.edu.au/schemas/stages/create']['nectar_password']
+        key_file = hrmcstages.retrieve_private_key(self.boto_settings,
+            run_settings[models.UserProfile.PROFILE_SCHEMA_NS][
+                'nectar_private_key'])
         self.boto_settings['private_key'] = key_file
         self.boto_settings['nectar_private_key'] = key_file
 
