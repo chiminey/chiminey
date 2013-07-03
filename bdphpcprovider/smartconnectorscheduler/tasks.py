@@ -32,7 +32,6 @@ logger = logging.getLogger(__name__)
 # after_setup_task_logger.connect(foo_tasks_setup_logging)
 
 
-
 @task(name="smartconnectorscheduler.test", ignore_result=True)
 def test():
     print "Hello World"
@@ -50,7 +49,7 @@ def run_contexts():
         logger.warn("Context removed from other thread")
 
 
-@task(name="smartconnectorscheduler.progress_context",time_limit=10000, ignore_result=True)
+@task(name="smartconnectorscheduler.progress_context", time_limit=10000, ignore_result=True)
 def progress_context(context_id):
     try:
         run_context = models.Context.objects.get(id=context_id, deleted=False)
@@ -62,9 +61,11 @@ def progress_context(context_id):
     test_info = []
     with transaction.commit_on_success():
         try:
-            run_context = models.Context.objects.select_for_update(nowait=True).get(id=run_context.id, deleted=False)
+            run_context = models.Context.objects.select_for_update(
+                nowait=True).get(id=run_context.id, deleted=False)
         except DatabaseError:
-            logger.info("progress context for %s is already running.  exiting" % context_id)
+            logger.info("progress context for %s is already running.  exiting"
+                % context_id)
             return
         else:
             logger.info("processing %s" % context_id)
@@ -85,11 +86,10 @@ def progress_context(context_id):
         run_settings = run_context.get_context()
         logger.debug("retrieved run_settings=%s" % run_settings)
 
-        # FIXME: if we retrieve user_settings now, then cannot
-        # run multiple jobs with different settings.  Better
-        # to freeze current values at start of first stage.
-        user_settings = hrmcstages.retrieve_settings(profile)
-        logger.debug("user_settings=%s" % user_settings)
+        # user_settings are r/w during execution, but original values
+        # associated with UserProfile are unchanged as loaded once on
+        # context creation.
+        user_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
 
         triggered = 0
         for current_stage in stageset:
@@ -101,6 +101,7 @@ def progress_context(context_id):
 
             task_run_settings = deepcopy(run_settings)
             logger.debug("starting task settings = %s" % task_run_settings)
+            # stage_settings are read only as transfered into context here
             stage_settings = current_stage.get_settings()
             logger.debug("stage_settings=%s" % stage_settings)
 

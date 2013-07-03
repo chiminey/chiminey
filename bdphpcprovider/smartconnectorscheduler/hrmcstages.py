@@ -1030,7 +1030,6 @@ def get_filep(file_url):
     return fp
 
 
-
 def transfer(old, new):
     """
     Transfer new dict into new dict at two levels by items rather than wholesale
@@ -1042,6 +1041,7 @@ def transfer(old, new):
                 old[k] = {}
             old[k][k1] = v1
     return old
+
 
 def check_settings_valid(settings_to_test, user_settings, command):
     """
@@ -1124,7 +1124,13 @@ def make_runcontext_for_directive(platform_name, directive_name,
 
     # Add the run_context id as suffix to the current output_location
     output_location = run_settings['http://rmit.edu.au/schemas/system/misc']['output_location']
-    run_settings[u'http://rmit.edu.au/schemas/system/misc']['output_location'] = "%s%s" % (output_location, run_context.id)
+    run_settings[u'http://rmit.edu.au/schemas/system/misc']['output_location'] \
+        = "%s%s" % (output_location, run_context.id)
+
+    # Add User settings to context, so we get set values when context executed
+    # and local changes can be made to values in that context.
+    run_settings[models.UserProfile.PROFILE_SCHEMA_NS] = user_settings
+
     run_context.update_run_settings(run_settings)
 
     logger.debug("command=%s new runcontext=%s" % (command_for_directive, run_context))
@@ -1141,6 +1147,7 @@ def _make_new_run_context(stage, profile, run_settings):
         current_stage=stage)
     run_context.update_run_settings(run_settings)
     return run_context
+
 
 @deprecated
 def process_all_contexts():

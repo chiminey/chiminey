@@ -22,6 +22,7 @@ import os
 import logging
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, UI
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
+from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 logger = logging.getLogger(__name__)
 
@@ -33,24 +34,28 @@ class Configure(Stage, UI):
     """
 
     def __init__(self, user_settings=None):
-        self.user_settings = user_settings.copy()
         self.job_dir = "hrmcrun"  # TODO: make a stageparameter + suffix on real job number
-        self.boto_settings = user_settings.copy()
 
     def triggered(self, run_settings):
         if self._exists(run_settings,
             'http://rmit.edu.au/schemas/stages/configure',
             'configure_done'):
-            configure_done = int(run_settings['http://rmit.edu.au/schemas/stages/configure'][u'configure_done'])
+            configure_done = int(run_settings[
+                'http://rmit.edu.au/schemas/stages/configure'][u'configure_done'])
             return not configure_done
         return True
 
     def process(self, run_settings):
 
-        self.contextid = int(run_settings['http://rmit.edu.au/schemas/system'][u'contextid'])
+        self.boto_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
+
+        self.contextid = int(run_settings[
+            'http://rmit.edu.au/schemas/system'][u'contextid'])
         logger.debug("self.contextid=%s" % self.contextid)
-        #TODO: we assume relative path BDP_URL here, but could be made to work with non-relative (ie., remote paths)
-        self.job_dir = run_settings['http://rmit.edu.au/schemas/system/misc'][u'output_location']
+        #TODO: we assume relative path BDP_URL here, but could be made to work
+        # with non-relative (ie., remote paths)
+        self.job_dir = run_settings[
+            'http://rmit.edu.au/schemas/system/misc'][u'output_location']
 
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/system/platform')
@@ -59,7 +64,8 @@ class Configure(Stage, UI):
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/hrmc/threshold')
 
-        input_location = run_settings['http://rmit.edu.au/schemas/hrmc']['input_location']
+        input_location = run_settings[
+            'http://rmit.edu.au/schemas/hrmc']['input_location']
         logger.debug("input_location=%s" % input_location)
 
         #prefix = "%s%s" % (self.job_dir, self.contextid)
@@ -85,6 +91,5 @@ class Configure(Stage, UI):
         #     run_settings['http://rmit.edu.au/schemas/stages/configure'] = {}
         # run_settings['http://rmit.edu.au/schemas/stages/configure']
         # [u'configure_done'] = True
-
 
         return run_settings

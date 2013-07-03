@@ -30,6 +30,7 @@ from bdphpcprovider.smartconnectorscheduler.sshconnector import open_connection
 from bdphpcprovider.smartconnectorscheduler import botocloudconnector
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import sshconnector
+from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.smartconnectorscheduler.errors import PackageFailedError
@@ -46,10 +47,11 @@ class Deploy(Stage):
     """
 
     def __init__(self, user_settings=None):
-        self.user_settings = user_settings.copy()
-        self.boto_settings = user_settings.copy()
+        pass
 
     def triggered(self, run_settings):
+
+        self.boto_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
 
         try:
             self.group_id = smartconnector.get_existing_key(run_settings,
@@ -117,7 +119,9 @@ class Deploy(Stage):
         self.boto_settings['username'] = 'root'  # FIXME: schema value is ignored
         self.boto_settings['password'] = \
             run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
-        key_file = hrmcstages.retrieve_private_key(self.boto_settings, self.user_settings['nectar_private_key'])
+        key_file = hrmcstages.retrieve_private_key(
+            self.boto_settings, run_settings[
+                models.UserProfile.PROFILE_SCHEMA_NS]['nectar_private_key'])
         self.boto_settings['private_key'] = key_file
         self.boto_settings['nectar_private_key'] = key_file
 

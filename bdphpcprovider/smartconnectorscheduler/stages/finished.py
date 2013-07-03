@@ -20,18 +20,18 @@
 
 import logging
 import ast
-import os
 import json
-
+import os
+from urlparse import urlparse, parse_qsl
 
 from bdphpcprovider.smartconnectorscheduler.sshconnector import open_connection
 from bdphpcprovider.smartconnectorscheduler import botocloudconnector
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import sshconnector
 from bdphpcprovider.smartconnectorscheduler import smartconnector
+from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler import hrmcimpl
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
-from bdphpcprovider.smartconnectorscheduler import mytardis
 
 logger = logging.getLogger(__name__)
 
@@ -103,11 +103,9 @@ class Finished(Stage):
     """
 
     def __init__(self, user_settings=None):
-        self.user_settings = user_settings.copy()
         self.runs_left = 0
         self.error_nodes = 0
         self.job_dir = "hrmcrun"  # TODO: make a stageparameter + suffix on real job number
-        self.boto_settings = user_settings.copy()
         logger.debug("finished stage initialised")
 
     def triggered(self, run_settings):
@@ -131,7 +129,6 @@ class Finished(Stage):
         """
             Return True if package job on instance_id has job_finished
         """
-
         ip = botocloudconnector.get_instance_ip(instance_id, settings)
         logger.debug("ip=%s" % ip)
         curr_username = settings['username']
@@ -161,7 +158,6 @@ class Finished(Stage):
             if ssh:
                 ssh.close()
         logger.debug("command_out2=(%s, %s)" % (command_out, errs))
-
 
         # ip = botocloudconnector.get_instance_ip(instance_id, settings)
         # ssh = open_connection(ip_address=ip, settings=settings)
@@ -206,7 +202,6 @@ class Finished(Stage):
         # to speed up this transfer
         hrmcstages.copy_directories(source_files_url, dest_files_url)
 
-
     def process(self, run_settings):
         """
             Check all registered nodes to find whether
@@ -218,7 +213,7 @@ class Finished(Stage):
         #TODO: we assume relative path BDP_URL here, but could be made to work with non-relative (ie., remote paths)
         self.job_dir = run_settings['http://rmit.edu.au/schemas/system/misc'][u'output_location']
 
-
+        self.boto_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
 
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run', u'finished_nodes'):
             self.finished_nodes = str(run_settings['http://rmit.edu.au/schemas/stages/run'][u'finished_nodes'])
@@ -273,7 +268,8 @@ class Finished(Stage):
         self.boto_settings['username'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_username']
         self.boto_settings['username'] = 'root'  # FIXME: schema value is ignored
         self.boto_settings['password'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
-        key_file = hrmcstages.retrieve_private_key(self.boto_settings, self.user_settings['nectar_private_key'])
+        key_file = hrmcstages.retrieve_private_key(self.boto_settings,
+            run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nectar_private_key'])
         self.boto_settings['private_key'] = key_file
         self.boto_settings['nectar_private_key'] = key_file
 
@@ -352,10 +348,6 @@ class Finished(Stage):
         #update_key('runs_left', nodes_working, context)
         # NOTE: runs_left cannot be deleted or run() will trigger
         return run_settings
-
-
-import os
-from urlparse import urlparse, parse_qsl
 
 def get_make_path(destination):
     """
