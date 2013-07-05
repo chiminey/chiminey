@@ -195,7 +195,7 @@ class Finished(Stage):
 
         dest_files_url = smartconnector.get_url_with_pkey(self.boto_settings,
                                                           os.path.join(self.job_dir, self.output_dir,
-                                                                       instance_id), is_relative_path=True)
+                                                                       instance_id), is_relative_path=False)
         logger.debug('dest_files_url=%s' % dest_files_url)
         hrmcstages.delete_files(dest_files_url, exceptions=[])
         # FIXME: might want to turn on paramiko compress function

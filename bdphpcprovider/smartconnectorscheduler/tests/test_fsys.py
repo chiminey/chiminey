@@ -40,7 +40,7 @@ def error(e):
 
 class TestBDPURLS(unittest.TestCase):
     """
-    Test functions that manipulate BDPURLS>
+    Test functions that manipulate BDPURLS
     """
 
     def setUp(self):
@@ -110,6 +110,99 @@ class TestBDPURLS(unittest.TestCase):
 
         self.assertEquals("ssh://127.0.0.1/celery_payload_2/?key_file=nci_private_key&password=nci_password&root_path=/var/cloudenabling/nci&username=nci_user", res)
 
+
+class TestCopy(unittest.TestCase):
+
+    def setUp(self):
+        models.Platform.objects.get_or_create(name='local',
+            root_path="/var/cloudenabling/remotesys")
+
+    def tearDown(self):
+        pass
+
+    def test_copydir_rel(self):
+
+        self.settings = {'mytardis_user': 'mytardis',
+            'mytardis_password': 'dtofaamdtofaam',
+            'mytardis_host': '115.146.85.142'}
+
+        file_info = (
+            ('user/testdir/file1.txt', "content1"),
+            ('user/testdir/dir/file2.txt', "content2")
+        )
+
+        final_file_info = {
+            'user/testdir2/file1.txt': 'content1',
+            'user/testdir2/dir/file2.txt': 'content2'
+        }
+        final_file_info = {
+                'user/testdir2/file1.txt': 'content1',
+                'user/testdir2/dir/file2.txt': 'content2'
+            }
+
+
+        for fpath, content in file_info:
+            dest_url = smartconnector.get_url_with_pkey(self.settings,
+                fpath, is_relative_path=True)
+            hrmcstages.put_file(dest_url, content.encode('utf-8'))
+        source_url = smartconnector.get_url_with_pkey(self.settings,
+            'user/testdir', is_relative_path=True)
+        destination_url = smartconnector.get_url_with_pkey(self.settings,
+            'user/testdir2', is_relative_path=True)
+        hrmcstages.copy_directories(source_url, destination_url)
+
+        files_list = hrmcstages.list_all_files(destination_url)
+        self.assertEquals(len(files_list), len(file_info))
+        for path in files_list:
+            logger.debug(path)
+            relpath = smartconnector.get_url_with_pkey(self.settings,
+                path, is_relative_path=True)
+            content = hrmcstages.get_file(relpath)
+            logger.debug(content)
+            self.assertEquals(final_file_info[path], content)
+
+        hrmcstages.delete_files(destination_url, [])
+        hrmcstages.delete_files(source_url, [])
+
+
+    def test_copydir_rel2(self):
+
+        self.settings = {'mytardis_user': 'mytardis',
+            'mytardis_password': 'dtofaamdtofaam',
+            'mytardis_host': '115.146.85.142'}
+
+        file_info = (
+            ('testdir/file1.txt', "content1"),
+            ('testdir/dir/file2.txt', "content2")
+            )
+
+        final_file_info = {
+            'testdir2/file1.txt': 'content1',
+            'testdir2/dir/file2.txt': 'content2'
+            }
+
+        for fpath, content in file_info:
+            dest_url = smartconnector.get_url_with_pkey(self.settings,
+                fpath, is_relative_path=True)
+            hrmcstages.put_file(dest_url, content.encode('utf-8'))
+        source_url = smartconnector.get_url_with_pkey(self.settings,
+            'testdir', is_relative_path=True)
+        destination_url = smartconnector.get_url_with_pkey(self.settings,
+            'testdir2', is_relative_path=True)
+        hrmcstages.copy_directories(source_url, destination_url)
+
+        files_list = hrmcstages.list_all_files(destination_url)
+        self.assertEquals(len(files_list), len(file_info))
+        for path in files_list:
+            logger.debug(path)
+            relpath = smartconnector.get_url_with_pkey(self.settings,
+                path, is_relative_path=True)
+            content = hrmcstages.get_file(relpath)
+            logger.debug(content)
+            self.assertEquals(final_file_info[path], content)
+
+        hrmcstages.delete_files(destination_url,[])
+        hrmcstages.delete_files(source_url,[])
 
 
 

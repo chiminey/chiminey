@@ -213,8 +213,8 @@ class HRMCSubmitFormView(FormView):
         'error_threshold': "0.03",
         'max_iteration': 10,
         'pottype': 1,
-        'experiment_id': 0
-
+        'experiment_id': 0,
+        'output_location': 'file://local@127.0.0.1/hrmcrun'
         }
 
     # This method is called when valid form data has been POSTed.
@@ -245,7 +245,7 @@ class HRMCSubmitFormView(FormView):
                     'max_iteration': form.cleaned_data['max_iteration'],
                     'pottype': form.cleaned_data['pottype'],
                     'experiment_id': form.cleaned_data['experiment_id'],
-                    'output_location': os.path.join('hrmcrun')})
+                    'output_location': form.cleaned_data['output_location']})
 
         r = requests.post(url,
             data=data,
@@ -280,7 +280,8 @@ class SweepSubmitFormView(FormView):
         'pottype': 1,
         'sweep_map': '{"var1": [3, 7], "var2": [1, 2]}',
         'run_map': '{}',
-        'experiment_id': 0
+        'experiment_id': 0,
+        'output_location': 'file://local@127.0.0.1/sweephrmc'
 
         }
 
@@ -311,7 +312,7 @@ class SweepSubmitFormView(FormView):
                     'experiment_id': form.cleaned_data['experiment_id'],
                     'sweep_map': form.cleaned_data['sweep_map'],
                     'run_map': form.cleaned_data['run_map'],
-                    'output_location': os.path.join('sweephrmc')})
+                    'output_location': form.cleaned_data['output_location']})
 
         r = requests.post(url,
             data=data,

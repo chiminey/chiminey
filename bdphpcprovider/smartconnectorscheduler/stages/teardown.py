@@ -1,6 +1,7 @@
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler.botocloudconnector import collect_instances, destroy_environ
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
+from bdphpcprovider.smartconnectorscheduler import models
 
 import logging
 logger = logging.getLogger(__name__)

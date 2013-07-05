@@ -266,7 +266,7 @@ class Run(Stage):
 
         source_files_url = smartconnector.get_url_with_pkey(self.boto_settings,
                                                   os.path.join(self.iter_inputdir,
-                                                               input_dir), is_relative_path=True)
+                                                               input_dir), is_relative_path=False)
         logger.debug('source_files_url=%s' % source_files_url)
 
         # Copy input directory to mytardis only after saving locally, so if
@@ -376,7 +376,6 @@ class Run(Stage):
                 logger.debug("deleting %s" % tmp_url)
                 #hrmcstages.delete_files(url)
 
-
     def _generate_variations(self, input_dir, run_settings):
         """
         For each templated file in input_dir, generate all variations
@@ -386,7 +385,7 @@ class Run(Stage):
         fname_url_with_pkey = smartconnector.get_url_with_pkey(
             self.boto_settings,
             os.path.join(self.iter_inputdir, input_dir),
-            is_relative_path=True)
+            is_relative_path=False)
         input_files = hrmcstages.list_dirs(fname_url_with_pkey,
             list_files=True)
 
@@ -402,7 +401,7 @@ class Run(Stage):
                 basename_url_with_pkey = smartconnector.get_url_with_pkey(
                     self.boto_settings,
                     os.path.join(self.iter_inputdir, input_dir, fname),
-                    is_relative_path=True)
+                    is_relative_path=False)
                 template = hrmcstages.get_file(basename_url_with_pkey)
 
                 base_fname = template_mat.group(1)
@@ -416,7 +415,7 @@ class Run(Stage):
                         os.path.join(self.iter_inputdir,
                             input_dir,
                             '%s_values' % base_fname),
-                        is_relative_path=True)
+                        is_relative_path=False)
 
                     logger.debug("values_file=%s" % values_url_with_pkey)
                     values_content = hrmcstages.get_file(values_url_with_pkey)
@@ -521,7 +520,6 @@ class Run(Stage):
         """
         logger.debug("preparing inputs")
 
-
         # TODO: to ensure reproducability, may want to precalculate all random numbers and
         # store rather than rely on canonical execution of rest of this funciton.
         # seeds = {}
@@ -539,7 +537,7 @@ class Run(Stage):
         nodes = sorted(botocloudconnector.get_rego_nodes(self.group_id, self.boto_settings))
         self.node_ind = 0
         logger.debug("Iteration Input dir %s" % self.iter_inputdir)
-        url_with_pkey = smartconnector.get_url_with_pkey(self.boto_settings, self.iter_inputdir, is_relative_path=True)
+        url_with_pkey = smartconnector.get_url_with_pkey(self.boto_settings, self.iter_inputdir, is_relative_path=False)
         logger.debug("url_with_pkey=%s" % url_with_pkey)
         input_dirs = hrmcstages.list_dirs(url_with_pkey)
         if not input_dirs:
@@ -548,9 +546,6 @@ class Run(Stage):
             logger.debug("Input dir %s" % input_dir)
             self._upload_variation_inputs(self._generate_variations(input_dir, self.boto_settings),
                                           nodes, input_dir)
-
-
-
 
     def process(self, run_settings):
 

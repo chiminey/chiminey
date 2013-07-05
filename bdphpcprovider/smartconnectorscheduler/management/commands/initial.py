@@ -306,7 +306,11 @@ class Command(BaseCommand):
                 u'sweep_map': (models.ParameterName.STRING, '', 1)
                 }
                 ],
-
+            u'http://rmit.edu.au/schemas/hrmc/config':
+            [u'configuration for hrmc connectors',
+            {
+            }
+            ],
             u'http://rmit.edu.au/schemas/sweep/files':
                  [u'the smartconnector hrmc input files',
                  {

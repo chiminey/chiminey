@@ -597,6 +597,7 @@ def get_filesystem(bdp_url):
     # query = parse_qsl(parsed_url.query)
     # query_settings = dict(x[0:] for x in query)
     (scheme, host, mpath, location, query_settings) = parse_bdpurl(bdp_url)
+    logger.debug("mpath=%s" % mpath)
     if scheme == "file":
         root_path = get_value('root_path', query_settings)
         logger.debug("self.root_path=%s" % root_path)
@@ -740,6 +741,9 @@ def copy_directories(source_url, destination_url):
     if source_path[0] == os.path.sep:
         source_path = source_path[1:]
 
+    if source_path[-1] == os.path.sep:
+        source_path = source_path[:-1]
+
     if source_scheme == "file":
         root_path = get_value('root_path', query_settings)
         logger.debug("self.root_path=%s" % root_path)
@@ -783,8 +787,10 @@ def copy_directories(source_url, destination_url):
             logger.debug("file_path=%s" % file_path)
             content = fs.open(file_path).read()  # Can't we just call get_file ?
             logger.debug("content loaded")
+
             updated_file_path = file_path[len(source_path) + 1:]
             logger.debug("updated_file_path=%s" % updated_file_path)
+
             curr_dest_url = os.path.join(destination_prefix, updated_file_path) \
                             + destination_suffix
             logger.debug("Current destination url %s" % curr_dest_url)
@@ -888,7 +894,11 @@ def put_file(file_url, content):
         fs.save(mypath, ContentFile(content))  # NB: ContentFile only takes bytes
         logger.debug("File to be written on %s" % location)
     elif scheme == "tardis":
-        logger.warn("tardis put not implemented")
+        # TODO: do a POST of a new datafile into existing exp and dataset
+        # parse file_url to extract tardis host, exp_id and dataset_id
+        exp_id = 0
+        dataset_id = 0
+        mytardis.post_datafile(file_url, exp_id, dataset_id)
         #raise NotImplementedError()
     elif scheme == "file":
         root_path = get_value('root_path', query_settings)
@@ -1018,6 +1028,12 @@ def get_filep(file_url):
         #content = fp.read()
         #logger.debug("content=%s" % content)
     elif scheme == "tardis":
+        # TODO: implement GET of a datafile in a given exp and dataset
+        # parse file_url to extract tardis host, exp_id and dataset_id
+        exp_id = 0
+        dataset_id = 0
+        mytardis.get_datafile(file_url, exp_id, dataset_id)
+        # get content and make a file pointer out of it
         return "a={{a}} b={{b}}"
         raise NotImplementedError("tardis scheme not implemented")
     elif scheme == "file":

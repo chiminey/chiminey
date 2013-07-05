@@ -217,9 +217,10 @@ class Converge(Stage):
         self.boto_settings['nectar_private_key'] = key_file
 
         inputdir_url = smartconnector.get_url_with_pkey(self.boto_settings,
-            self.iter_inputdir, is_relative_path=True)
+            self.iter_inputdir, is_relative_path=False)
+        (scheme, host, mypath, location, query_settings) = hrmcstages.parse_bdpurl(inputdir_url)
         fsys = hrmcstages.get_filesystem(inputdir_url)
-        input_dirs, _ = fsys.listdir(self.iter_inputdir)
+        input_dirs, _ = fsys.listdir(mypath)
         # TODO: store all audit info in single file in input_X directory in transform,
         # so we do not have to load individual files within node directories here.
         min_crit = sys.float_info.max - 1.0
@@ -244,7 +245,7 @@ class Converge(Stage):
             # Retrieve audit file
 
             audit_url = smartconnector.get_url_with_pkey(self.boto_settings,
-                os.path.join(self.iter_inputdir, input_dir, 'audit.txt'), is_relative_path=True)
+                os.path.join(self.iter_inputdir, input_dir, 'audit.txt'), is_relative_path=False)
             audit_content = hrmcstages.get_file(audit_url)
 
             # extract the best criterion error
@@ -341,9 +342,9 @@ class Converge(Stage):
         # shutil.copytree(source, dest)
 
         source_url = smartconnector.get_url_with_pkey(self.boto_settings,
-            os.path.join(self.output_dir), is_relative_path=True)
+            os.path.join(self.output_dir), is_relative_path=False)
         dest_url = smartconnector.get_url_with_pkey(self.boto_settings,
-            os.path.join(new_output_dir), is_relative_path=True)
+            os.path.join(new_output_dir), is_relative_path=False)
 
         hrmcstages.copy_directories(source_url, dest_url)
 
@@ -354,7 +355,7 @@ class Converge(Stage):
 
             for node_dir in node_dirs:
                 source_url = smartconnector.get_url_with_pkey(self.boto_settings,
-                    os.path.join(new_output_dir, node_dir), is_relative_path=True)
+                    os.path.join(new_output_dir, node_dir), is_relative_path=False)
                 logger.debug("source_url=%s" % source_url)
 
                 self.experiment_id = mytardis.post_dataset(

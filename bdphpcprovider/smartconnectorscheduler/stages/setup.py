@@ -23,12 +23,10 @@ class Setup(Stage):
     """
 
     def __init__(self, user_settings=None):
-        self.user_settings = user_settings.copy()
         self.group_id = ''
         self.platform = None
         # We want to isolate all the botoconnector methods from run_settings structure, so
         # build dict to hold user_settings plus needed values.
-        self.boto_settings = user_settings.copy()
         logger.debug('Setup initialised')
 
     def triggered(self, run_settings):
@@ -36,6 +34,8 @@ class Setup(Stage):
         Triggered if appropriate vms exist and we have not finished setup
         """
 
+        sdfasgfsa
+        self.boto_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
         try:
             self.group_id = smartconnector.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/stages/create/group_id')
