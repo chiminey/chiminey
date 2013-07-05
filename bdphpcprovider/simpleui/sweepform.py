@@ -11,8 +11,16 @@ class SweepSubmitForm(forms.Form):
     input_location = forms.CharField(label=_("Input Location"),
         max_length=255,
         help_text="A BDPUrl Directory",
-        widget=forms.Textarea(attrs={'cols': 80, 'rows': 1}))
-    number_dimensions = forms.IntegerField(min_value=0,
+        widget=forms.TextInput
+        #widget=forms.Textarea(attrs={'cols': 80, 'rows': 1})
+        )
+    output_location = forms.CharField(label=_("Output Location"),
+        max_length=255,
+        help_text="A BDPUrl Directory",
+        widget=forms.TextInput
+        #widget=forms.Textarea(attrs={'cols': 80, 'rows': 1})
+        )
+    number_of_dimensions = forms.IntegerField(min_value=0,
         label=_("Degrees of Variation"), help_text="1 = iseed variation, 2 = iseed/temp variation")
     threshold = forms.CharField(label=_("Threshold"),
             max_length=255,
@@ -30,6 +38,7 @@ class SweepSubmitForm(forms.Form):
     run_map = forms.CharField(label="Run Map JSON",
         widget=forms.Textarea(attrs={'cols': 80, 'rows': 10}
         ))
+
 
     def __init__(self, *args, **kwargs):
         super(SweepSubmitForm, self).__init__(*args, **kwargs)

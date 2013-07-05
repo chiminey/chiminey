@@ -77,7 +77,7 @@ class Configure(Stage, UI):
             input_location)
         logger.debug("source_url=%s" % source_url)
         destination_url = smartconnector.get_url_with_pkey(self.boto_settings,
-            iter_inputdir, is_relative_path=True)
+            iter_inputdir, is_relative_path=False)
         logger.debug("destination_url=%s" % destination_url)
         hrmcstages.copy_directories(source_url, destination_url)
 

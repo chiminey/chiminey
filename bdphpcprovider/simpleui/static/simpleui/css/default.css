@@ -100,6 +100,10 @@ h2 small, blockquote small {
     width: 900px;
 }
 
+#id_output_location {
+    width: 900px;
+}
+
 #id_number_vm_instances {
     width: 200px;
 }

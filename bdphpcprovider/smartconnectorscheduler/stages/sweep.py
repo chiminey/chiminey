@@ -50,11 +50,9 @@ logger = logging.getLogger(__name__)
 
 class Sweep(Stage):
     def __init__(self, user_settings=None):
-        self.user_settings = user_settings.copy()
         self.numbfile = 0
 
         self.job_dir = "hrmcrun"
-        self.boto_settings = user_settings.copy()
         logger.debug("Run stage initialized")
 
     def triggered(self, run_settings):
@@ -79,7 +77,7 @@ class Sweep(Stage):
             map_keys = template_map.keys()
             logger.debug("map_keys %s" % map_keys)
             map_ranges = [list(template_map[x]) for x in map_keys]
-            logger.debug("map_ranges=%s"  % map_ranges)
+            logger.debug("map_ranges=%s" % map_ranges)
             for z in product(*map_ranges):
                 logger.debug("len(z)=%s" % len(z))
                 context = dict(values)
@@ -95,6 +93,8 @@ class Sweep(Stage):
         return res
 
     def process(self, run_settings):
+        self.boto_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
+
 
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/system/platform')
@@ -117,7 +117,8 @@ class Sweep(Stage):
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/run/random_numbers')
 
-        contextid = int(run_settings['http://rmit.edu.au/schemas/system'][u'contextid'])
+        contextid = int(run_settings['http://rmit.edu.au/schemas/system'][
+            u'contextid'])
         logger.debug("contextid=%s" % contextid)
 
         self.rand_index = run_settings['http://rmit.edu.au/schemas/hrmc']['iseed']
@@ -125,9 +126,11 @@ class Sweep(Stage):
 
         context = models.Context.objects.get(id=contextid)
         user = context.owner.user.username
-        self.job_dir = run_settings['http://rmit.edu.au/schemas/system/misc'][u'output_location']
+        self.job_dir = run_settings['http://rmit.edu.au/schemas/system/misc'][
+            u'output_location']
 
-        map_text = run_settings['http://rmit.edu.au/schemas/stages/sweep']['sweep_map']
+        map_text = run_settings['http://rmit.edu.au/schemas/stages/sweep'][
+            'sweep_map']
         map = json.loads(map_text)
         # # generate all variations
         # map = {
@@ -161,9 +164,11 @@ class Sweep(Stage):
             logger.debug("run_settings=%s" % run_settings)
             run_counter = int(run['run_counter'])
             logger.debug("run_counter=%s" % run_counter)
-            input_location = run_settings['http://rmit.edu.au/schemas/stages/sweep'][u'input_location']
+            input_location = run_settings[
+                'http://rmit.edu.au/schemas/stages/sweep'][
+                u'input_location']
             input_url = smartconnector.get_url_with_pkey(self.boto_settings,
-                input_location)
+                input_location, is_relative_path=False)
             logger.debug("input_url=%s" % input_url)
             # job_dir contains some overriding context that this run is situated under
             # run_inputdir = os.path.join(self.job_dir,
@@ -174,7 +179,7 @@ class Sweep(Stage):
                 "input_0",)
             logger.debug("run_inputdir=%s" % run_inputdir)
             run_iter_url = smartconnector.get_url_with_pkey(self.boto_settings,
-                run_inputdir, is_relative_path=True)
+                run_inputdir, is_relative_path=False)
             logger.debug("run_iter_url=%s" % run_iter_url)
             hrmcstages.copy_directories(input_url, run_iter_url)
 
@@ -197,7 +202,7 @@ class Sweep(Stage):
                     self.boto_settings,
                     os.path.join(run_inputdir, "initial",
                         '%s_values' % template_name),
-                    is_relative_path=True)
+                    is_relative_path=False)
 
                 logger.debug("values_url=%s" % values_url)
                 values_content = hrmcstages.get_file(values_url)
@@ -228,7 +233,8 @@ class Sweep(Stage):
                 "run%s" % str(run_counter),
                 "input_0", "initial")
 
-            new_input_location = "file://127.0.0.1/%s/run%s/input_0" % (self.job_dir, run_counter)
+            # this assumes all interim results kept in local storage
+            new_input_location = "%s/run%s/input_0" % (self.job_dir, run_counter)
 
             directive_args.append(
                 ['',

@@ -86,9 +86,9 @@ def post_dataset(settings,
         dataset_name=_get_dataset_name,
         dataset_schema=None):
     """
-    POST to mytardis_host REST API with mytardis_user and mytardis_password credentials
-    to create or update experiment for a new dataset containing datafiles from
-    source_url BDP directory.
+    POST to mytardis_host REST API with mytardis_user and mytardis_password
+    credentials to create or update experiment for a new dataset containing
+    datafiles from source_url BDP directory.
 
     exp_name and dataset_name are supplied functions that break up the
     experiment and dataset names respectively.
@@ -109,9 +109,11 @@ def post_dataset(settings,
     tardis_user = settings["mytardis_user"]
     tardis_pass = settings["mytardis_password"]
     tardis_host_url = "http://%s" % settings["mytardis_host"]
-    logger.debug("posting dataset from %s to mytardis at %s" % (source_url, tardis_host_url))
+    logger.debug("posting dataset from %s to mytardis at %s" % (source_url,
+        tardis_host_url))
 
-    (source_scheme, source_location, source_path, source_location, query_settings) = hrmcstages.parse_bdpurl(source_url)
+    (source_scheme, source_location, source_path, source_location,
+        query_settings) = hrmcstages.parse_bdpurl(source_url)
 
     logger.debug("source_path=%s" % source_path)
     if source_scheme == "file":
@@ -229,3 +231,32 @@ def post_dataset(settings,
         logger.debug("r.he=%s" % r.headers)
 
     return new_exp_id
+
+
+def get_datafile(
+        source_url,
+        exp_id,
+        dataset_id,
+        exp_name=_get_exp_name,
+        dataset_name=_get_dataset_name,
+        dataset_schema=None):
+    """
+       Do post to mytardis to create new datafile and any exp and dataset if
+       needed
+    """
+    # this may be used for input directory information
+    pass
+
+def post_datafile(
+        source_url,
+        exp_id,
+        dataset_id,
+        exp_name=_get_exp_name,
+        dataset_name=_get_dataset_name,
+        dataset_schema=None):
+    """
+       Do post to mytardis to create new datafile and any exp and dataset if
+       needed
+    """
+    pass
+    # this may be use for output directory information
