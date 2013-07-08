@@ -896,10 +896,7 @@ def put_file(file_url, content):
     elif scheme == "tardis":
         # TODO: do a POST of a new datafile into existing exp and dataset
         # parse file_url to extract tardis host, exp_id and dataset_id
-        exp_id = 0
-        dataset_id = 0
-        mytardis.post_datafile(file_url, exp_id, dataset_id)
-        #raise NotImplementedError()
+        mytardis.post_datafile(file_url, content)
     elif scheme == "file":
         root_path = get_value('root_path', query_settings)
         logger.debug("remote_fs_path=%s" % root_path)
