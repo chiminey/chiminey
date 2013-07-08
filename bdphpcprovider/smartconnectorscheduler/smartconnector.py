@@ -106,8 +106,27 @@ def get_url_with_pkey(settings, url_or_relative_path,
         # password = settings['nci_password']
         scheme = 'ssh'
     elif platform == 'tardis':
-        url_settings['username'] = settings['mytardis_user']
-        url_settings['password'] = settings['mytardis_password']
+        url_settings['mytardis_username'] = settings['mytardis_user']
+        url_settings['mytardis_password'] = settings['mytardis_password']
+
+        relative_path = parsed_url.path
+        if relative_path[0] == os.path.sep:
+            relative_path = relative_path[1:]
+
+        if relative_path[-1] == os.path.sep:
+            relative_path = relative_path[:-1]
+
+        path_parts = relative_path.split(os.path.sep)
+        logger.debug("path_parts=%s" % path_parts)
+        username = path_parts[0]
+        fname = path_parts[-1]
+        dataset_name = path_parts[-2:-1]
+        exp_name = path_parts[1:-2]
+        url_settings['exp_name'] = os.sep.join(exp_name)
+        url_settings['dataset_name'] = dataset_name[0]
+        url_settings['username'] = username
+        url_settings['fname'] = str(fname)
+
         scheme = 'tardis'
 
     elif not platform:
@@ -160,6 +179,11 @@ def get_url_with_pkey(settings, url_or_relative_path,
         hostname = parsed_url.netloc
         logger.debug("hostname=%s" % hostname)
         relative_path = parsed_url.path
+
+        # ip_address only used for relative url, otherwise extract from url
+        if '@' in hostname:
+            ip_address = hostname.split('@')[1]
+            logger.debug("ip_address=%s" % ip_address)
         logger.debug("relative_path=%s" % relative_path)
 
         host = "%s://%s%s" % (scheme, ip_address, relative_path)

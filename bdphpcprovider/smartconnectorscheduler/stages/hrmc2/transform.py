@@ -323,7 +323,7 @@ class Transform(Stage):
         logger.debug("grerr_file=%s " % grerr_file)
         grerr_url = smartconnector.get_url_with_pkey(self.boto_settings,
                         os.path.join(self.output_dir,
-                            node_output_dir, 'grerr%s.dat' % str(number).zfill(2)), is_relative_path=True)
+                            node_output_dir, 'grerr%s.dat' % str(number).zfill(2)), is_relative_path=False)
         grerr_content = hrmcstages.get_file(grerr_url)  # FIXME: check that get_file can raise IOError
         if not grerr_content:
             logger.warn("no gerr content found")
