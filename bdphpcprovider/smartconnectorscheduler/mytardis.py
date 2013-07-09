@@ -265,9 +265,9 @@ def get_or_create_experiment(query_settings, exp_name):
     tardis_host_url = "http://%s" % query_settings["mytardis_host"]
     tardis_url = "%s/api/v1/experiment/?limit=0&format=json" % tardis_host_url
     r = requests.get(tardis_url, headers=headers, auth=(tardis_user, tardis_pass))
-    logger.debug(r.json)
-    logger.debug(r.text)
-    logger.debug(r.headers)
+    # logger.debug(r.json)
+    # logger.debug(r.text)
+    # logger.debug(r.headers)
     # TODO: better done in server side using api search filter
     try:
         ids = [(x['id'], x['title']) for x in r.json()['objects'] if x['title'] == exp_name]
@@ -294,9 +294,9 @@ def get_or_create_experiment(query_settings, exp_name):
             headers=headers,
             auth=(tardis_user, tardis_pass))
 
-        logger.debug(r.json)
-        logger.debug(r.text)
-        logger.debug(r.headers)
+        # logger.debug(r.json)
+        # logger.debug(r.text)
+        # logger.debug(r.headers)
         new_exp_id = _extract_id_from_location(exp_name, r)
         return (new_exp_id, True)
 
@@ -351,9 +351,9 @@ def get_or_create_dataset(settings, dataset_name, exp_id, dataset_schema=None):
             auth=HTTPBasicAuth(tardis_user, tardis_pass))
         # FIXME: need to check for status_code and handle failures.
 
-        logger.debug("r.json=%s" % r.json)
-        logger.debug("r.text=%s" % r.text)
-        logger.debug("r.headers=%s" % r.headers)
+        # logger.debug("r.json=%s" % r.json)
+        # logger.debug("r.text=%s" % r.text)
+        # logger.debug("r.headers=%s" % r.headers)
 
         return (_extract_id_from_location(dataset_name, r), True)
 
@@ -361,13 +361,8 @@ def get_or_create_dataset(settings, dataset_name, exp_id, dataset_schema=None):
         return (ids[0], False)
 
 
-def get_datafile(
-        dest_url,
-        ):
-    """
-       Do post to mytardis to create new datafile and any exp and dataset if
-       needed
-    """
+def get_datafile(dest_url):
+
     (source_scheme, tardis_host_url, source_path, source_location,
         query_settings) = hrmcstages.parse_bdpurl(dest_url)
 
@@ -389,8 +384,8 @@ def get_datafile(
     headers = {'Accept': 'application/json'}
 
     logger.debug("fname=%s" % fname)
-    file_path = os.path.join(root_path, fname)
-    logger.debug("file_path=%s" % file_path)
+    # file_path = os.path.join(root_path, fname)
+    # logger.debug("file_path=%s" % file_path)
     #logger.debug("content=%s" % open(file_path,'rb').read())
     # data = json.dumps({
     #     'dataset': str(new_dataset_uri),
@@ -407,9 +402,9 @@ def get_datafile(
         )
     # FIXME: need to check for status_code and handle failures.
 
-    logger.debug("r.js=%s" % r.json)
-    logger.debug("r.te=%s" % r.text)
-    logger.debug("r.he=%s" % r.headers)
+    # logger.debug("r.js=%s" % r.json)
+    # logger.debug("r.te=%s" % r.text)
+    # logger.debug("r.he=%s" % r.headers)
     return r.text
 
 
@@ -466,8 +461,8 @@ def post_datafile(dest_url, content):
         )
     # FIXME: need to check for status_code and handle failures.
 
-    logger.debug("r.js=%s" % r.json)
-    logger.debug("r.te=%s" % r.text)
-    logger.debug("r.he=%s" % r.headers)
+    # logger.debug("r.js=%s" % r.json)
+    # logger.debug("r.te=%s" % r.text)
+    # logger.debug("r.he=%s" % r.headers)
 
 

@@ -152,7 +152,7 @@ def get_url_with_pkey(settings, url_or_relative_path,
     # FIXME: URIs cannot contain unicode data, but IRI can. So need to convert IRI to URL
     # if parameters can be non-ascii
     # https://docs.djangoproject.com/en/dev/ref/unicode/#uri-and-iri-handling
-    args = '&'.join(["%s=%s" % (k,v) for k,v in sorted(url_settings.items())])
+    args = '&'.join(["%s=%s" % (k, v) for k, v in sorted(url_settings.items())])
     if is_relative_path:
         partial_path = parsed_url.path
         if partial_path:
