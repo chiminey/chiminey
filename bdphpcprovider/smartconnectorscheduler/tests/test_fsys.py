@@ -149,12 +149,10 @@ class TestCopy(unittest.TestCase):
                 'user/testdir2/dir/file2.txt': 'content2'
             }
 
-
         for fpath, content in file_info:
             dest_url = smartconnector.get_url_with_pkey(self.my_settings,
                 fpath, is_relative_path=True)
             hrmcstages.put_file(dest_url, content.encode('utf-8'))
-
 
         source_url = smartconnector.get_url_with_pkey(self.my_settings,
             'user/testdir', is_relative_path=True)
@@ -174,7 +172,6 @@ class TestCopy(unittest.TestCase):
 
         hrmcstages.delete_files(destination_url, [])
         hrmcstages.delete_files(source_url, [])
-
 
     def test_copydir_rel2(self):
 
@@ -215,7 +212,7 @@ class TestCopy(unittest.TestCase):
             logger.debug(content)
             self.assertEquals(final_file_info[path], content)
 
-        hrmcstages.delete_files(destination_url,[])
+        hrmcstages.delete_files(destination_url, [])
         hrmcstages.delete_files(source_url, [])
 
     def test_exp_dataset_post(self):
@@ -307,7 +304,69 @@ class TestCopy(unittest.TestCase):
 
         mytardis.post_datafile(mytardis_bdp_url, write_content)
 
-        # read_content = mytardis.get_datafile(mytardis_bdp_url)
-        # self.assertEquals(read_content, write_content)
+        read_content = mytardis.get_datafile(mytardis_bdp_url)
+        self.assertEquals(read_content, write_content)
+
+    def test_mytardis_datafile_copy1(self):
+        """
+        Copy a local file to mytardis
+        """
+        models.Platform.objects.get_or_create(name='tardis',
+            root_path="/var/cloudenabling/remotesys")
+        if not settings.TEST_MYTARDIS_IP:
+            raise SkipTest
+
+        self.mysettings = {'mytardis_user': settings.TEST_MYTARDIS_USER,
+                'mytardis_password': settings.TEST_MYTARDIS_PASSWORD,
+                'mytardis_host': settings.TEST_MYTARDIS_IP}
+
+        self._make_test_data()
+
+        local_url = smartconnector.get_url_with_pkey(self.my_settings,
+            'testdir', is_relative_path=True)
+        # add file to existing dataset (or create if not found)
+        mytardis_url = "http://tardis@115.146.85.142/username/" \
+                        "sweep313/hrmc1439/1_1_2/file2.txt"
+        mytardis_bdp_url = smartconnector.get_url_with_pkey(self.mysettings,
+            mytardis_url, is_relative_path=False)
+
+        logger.debug("mytardis_bdp_url=%s" % mytardis_bdp_url)
+
+        hrmcstages.copy_directories(local_url, mytardis_bdp_url)
+
+        read_content = mytardis.get_datafile(mytardis_bdp_url)
+        self.assertEquals(read_content, write_content)
+
+
+    def test_mytardis_datafile_copy1(self):
+        """
+        Copy a mytardis datafile to local storage
+        """
+
+        models.Platform.objects.get_or_create(name='tardis',
+            root_path="/var/cloudenabling/remotesys")
+        if not settings.TEST_MYTARDIS_IP:
+            raise SkipTest
+
+        self.mysettings = {'mytardis_user': settings.TEST_MYTARDIS_USER,
+                'mytardis_password': settings.TEST_MYTARDIS_PASSWORD,
+                'mytardis_host': settings.TEST_MYTARDIS_IP}
+
+        self._make_test_data()
+
+        local_url = smartconnector.get_url_with_pkey(self.my_settings,
+            'testdir', is_relative_path=True)
+        # add file to existing dataset (or create if not found)
+        mytardis_url = "http://tardis@115.146.85.142/username/" \
+                        "sweep313/hrmc1439/1_1_2/file2.txt"
+        mytardis_bdp_url = smartconnector.get_url_with_pkey(self.mysettings,
+            mytardis_url, is_relative_path=False)
+
+        logger.debug("mytardis_bdp_url=%s" % mytardis_bdp_url)
+
+        hrmcstages.copy_directories(mytardis_bdp_url, local_url)
+
+        read_content = hrmcstages.get(local_url)
+        self.assertEquals(read_content, write_content)
 
 

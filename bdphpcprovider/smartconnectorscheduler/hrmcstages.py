@@ -719,31 +719,39 @@ def copy_directories(source_url, destination_url):
     :param destination_url:
     :return:
     """
-    # FIXME: Will not work with individual files, not directories
+    # FIXME: Will not work with individual files, only directories
+    # TODO: replace with parse_bdpurl()
     logger.debug("copy_directories %s -> %s" % (source_url, destination_url))
-    source_scheme = urlparse(source_url).scheme
+
+    (source_scheme, host, source_path,
+        source_location, query_settings) = parse_bdpurl(source_url)
+
     http_source_url = get_http_url(source_url)
+    source_prefix = source_url.split('?')[0]
+    logger.debug("source_prefix=%s" % source_prefix)
     source = urlparse(http_source_url)
-    source_location = source.netloc
-    source_path = source.path
-    query = parse_qsl(source.query)
-    query_settings = dict(x[0:] for x in query)
+    source_query = source.query
+
+    if source_query:
+        source_suffix = "?" + source_url.split('?')[1]
+    else:
+        source_suffix = ""
+    logger.debug("source_suffix=%s" % source_suffix)
 
     http_destination_url = get_http_url(destination_url)
     destination_prefix = destination_url.split('?')[0]
     logger.debug("destination_prefix=%s" % destination_prefix)
-    destination_suffix = ""
+
     destination = urlparse(http_destination_url)
     destination_query = destination.query
+
     if destination_query:
         destination_suffix = "?" + destination_url.split('?')[1]
+    else:
+        destination_suffix = ""
+    logger.debug("destination_suffix=%s" % destination_suffix)
 
-    if source_path[0] == os.path.sep:
-        source_path = source_path[1:]
-
-    if source_path[-1] == os.path.sep:
-        source_path = source_path[:-1]
-
+    # TODO: replace with call to get_filesystem
     if source_scheme == "file":
         root_path = get_value('root_path', query_settings)
         logger.debug("self.root_path=%s" % root_path)
@@ -769,50 +777,60 @@ def copy_directories(source_url, destination_url):
         logger.warn("scheme: %s not supported" % source_scheme)
         return
 
-    logger.debug("destination_suffix=%s" % destination_suffix)
+    if source_path[0] == os.path.sep:
+        source_path = source_path[1:]
+    if source_path[-1] == os.path.sep:
+        source_path = source_path[:-1]
     logger.debug("source_path=%s" % source_path)
-    current_content = fs.listdir(source_path)
-    if current_content:
-        logger.debug("current_content=%s" % pformat(current_content))
-    current_path_pointer = source_path
-    logger.debug("current_path_pointer=%s" % current_path_pointer)
-    file_path_holder = []
-    dir_path_holder = []
-    while len(current_content) > 0:
-        for i in current_content[1]:
-            logger.debug("i=%s" % i)
-            file_path = str(os.path.join(current_path_pointer, i))
-            logger.debug("file_path=%s" % file_path)
-            file_path_holder.append(file_path)
-            logger.debug("file_path=%s" % file_path)
-            content = fs.open(file_path).read()  # Can't we just call get_file ?
-            logger.debug("content loaded")
 
+    dir_file_info = fs.listdir(source_path)
+    if dir_file_info:
+        logger.debug("dir_file_info=%s" % pformat(dir_file_info))
+    current_dirname = source_path
+    logger.debug("current_dirname=%s" % current_dirname)
+    file_paths = []
+    dir_paths = []
+    while len(dir_file_info) > 0:
+        # for each file in current directory
+        for fname in dir_file_info[1]:
+            logger.debug("fname=%s" % fname)
+            file_path = str(os.path.join(current_dirname, fname))
+            logger.debug("file_path=%s" % file_path)
+            file_paths.append(file_path)
+            logger.debug("file_paths=%s" % file_paths)
             updated_file_path = file_path[len(source_path) + 1:]
             logger.debug("updated_file_path=%s" % updated_file_path)
 
+            curr_source_url = os.path.join(source_prefix, updated_file_path) \
+                + source_suffix
+            logger.debug("Current source url %s" % curr_source_url)
+            content = get_file(curr_source_url)
+            # FIXME: file_path is a relative path from fs.  Is that compabible with myTardis?
+            #content = fs.open(file_path).read()  # Can't we just call get_file ?
+            logger.debug("content loaded")
             curr_dest_url = os.path.join(destination_prefix, updated_file_path) \
                             + destination_suffix
             logger.debug("Current destination url %s" % curr_dest_url)
             put_file(curr_dest_url, content)
-        for j in current_content[0]:
-            logger.debug("j=%s" % j)
-            list = [os.path.join(current_path_pointer, j), True]
+        # for each directory below current directory
+        for directory in dir_file_info[0]:
+            logger.debug("directory=%s" % directory)
+            list = [os.path.join(current_dirname, directory), True]
             logger.debug("list=%s" % list)
-            dir_path_holder.append(list)
-            logger.debug("dir_path_holder=%s" % dir_path_holder)
+            dir_paths.append(list)
+            logger.debug("dir_paths=%s" % dir_paths)
 
-        current_content = []
-        for k in dir_path_holder:
+        dir_file_info = []
+        for k in dir_paths:
             if k[1]:
                 k[1] = False
-                current_path_pointer = k[0]
-                current_content = fs.listdir(current_path_pointer)
-                logger.debug("Current pointer %s " % current_path_pointer)
+                current_dirname = k[0]
+                dir_file_info = fs.listdir(current_dirname)
+                logger.debug("Current pointer %s " % current_dirname)
                 break
     logger.debug("All files")
-    logger.debug(file_path_holder)
-    logger.debug(dir_path_holder)
+    logger.debug(file_paths)
+    logger.debug(dir_paths)
     logger.debug("end of copy_directories")
 
 # def copy_files_with_pattern(self, local_filesystem, source_dir,
@@ -847,6 +865,7 @@ def put_file(file_url, content):
         raise InvalidInputError(".. not allowed in urls")
     scheme = urlparse(file_url).scheme
     http_file_url = get_http_url(file_url)
+    # TODO: replace with parse_bdp_url()
     o = urlparse(http_file_url)
     mypath = o.path
     location = o.netloc
@@ -966,29 +985,29 @@ def get_file(file_url):
     return content
 
 
-def get_filep(file_url):
+def get_filep(file_bdp_url):
     """
-    opens a django file pointer to file_url
+    opens a django file pointer to file_bdp_url
     """
-    logger.debug("file_url=%s" % file_url)
-    if '..' in file_url:
+    logger.debug("file_bdp_url=%s" % file_bdp_url)
+    if '..' in file_bdp_url:
         # .. allow url to potentially leave the user filesys. This would be bad.
         raise InvalidInputError(".. not allowed in urls")
-    scheme = urlparse(file_url).scheme
-    http_file_url = get_http_url(file_url)
-    o = urlparse(http_file_url)
-    mypath = str(o.path)
-    location = o.netloc
 
-    # TODO: add error checking for urlparse
+    # scheme = urlparse(file_bdp_url).scheme
+    # http_file_url = get_http_url(file_bdp_url)
+    # o = urlparse(http_file_url)
+    # mypath = str(o.path)
+    # location = o.netloc
+    (scheme, host, mypath, location, query_settings) = parse_bdpurl(file_bdp_url)
     logger.debug("scheme=%s" % scheme)
     logger.debug("mypath=%s" % mypath)
+    #if mypath[0] == os.path.sep:
+    #    mypath = str(mypath[1:])
+    #logger.debug("mypath=%s" % mypath)
+    # query = parse_qsl(o.query)
+    # query_settings = dict(x[0:] for x in query)
 
-    if mypath[0] == os.path.sep:
-        mypath = str(mypath[1:])
-    logger.debug("mypath=%s" % mypath)
-    query = parse_qsl(o.query)
-    query_settings = dict(x[0:] for x in query)
 
     if '@' in location:
         location = location.split('@')[1]
@@ -1003,7 +1022,7 @@ def get_filep(file_url):
         logger.debug("getting from hpc")
         key_file = get_value('key_file', query_settings)
         if not key_file:
-            key_file = None  # require None for ssh_settings to skip keys
+            key_file = None  # require None for ssh_settinglesss to skip keys
 
         username = get_value('username', query_settings)
         password = get_value('password', query_settings)
@@ -1026,11 +1045,11 @@ def get_filep(file_url):
         #logger.debug("content=%s" % content)
     elif scheme == "tardis":
         # TODO: implement GET of a datafile in a given exp and dataset
-        # parse file_url to extract tardis host, exp_id and dataset_id
+        # parse file_bdp_url to extract tardis host, exp_id and dataset_id
         exp_id = 0
         dataset_id = 0
-        mytardis.get_datafile(file_url, exp_id, dataset_id)
-        # get content and make a file pointer out of it
+        mytardis.get_datafile(file_bdp_url, exp_id, dataset_id)
+        # TODO: get content and make a file pointer out of it
         return "a={{a}} b={{b}}"
         raise NotImplementedError("tardis scheme not implemented")
     elif scheme == "file":
