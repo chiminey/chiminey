@@ -307,15 +307,47 @@ class Command(BaseCommand):
                 }
                 ],
             u'http://rmit.edu.au/schemas/hrmc/config':
-            [u'configuration for hrmc connectors',
-            {
-            }
-            ],
+                [u'configuration for hrmc connectors',
+                {
+                }
+                ],
             u'http://rmit.edu.au/schemas/sweep/files':
-                 [u'the smartconnector hrmc input files',
-                 {
-                 }
-                 ],
+                [u'the smartconnector hrmc input files',
+                {
+                }
+                ],
+
+            u'http://rmit.edu.au/schemas/remotemake':
+                [u'',
+                {
+                u'input_location': (models.ParameterName.STRING, '', 1),
+                }
+                ],
+            u'http://rmit.edu.au/schemas/remotemake/files':
+                [u'',
+                {
+                }
+                ],
+
+            u'http://rmit.edu.au/schemas/remotemake/config':
+                [u'',
+                {
+                u'payload_destination': (models.ParameterName.STRING, '', 2)
+                }
+                ],
+            u'http://rmit.edu.au/schemas/stages/upload_makefile':
+                [u'the smartconnector hrmc input files',
+                {
+                u'done': (models.ParameterName.NUMERIC, '',1)
+                }
+                ],
+            u'http://rmit.edu.au/schemas/stages/make':
+                [u'',
+                {
+                u'running': (models.ParameterName.NUMERIC, '',1),
+                u'program_success': (models.ParameterName.NUMERIC, '', 2)
+                }
+                ]
         }
 
         from urlparse import urlparse
@@ -347,12 +379,13 @@ class Command(BaseCommand):
 
         logger.debug("stages=%s" % models.Stage.objects.all())
         local_filesys_rootpath = '/var/cloudenabling/remotesys'
+        nci_filesys_root_path = '/home/centos/bdp'
         local_platform, _ = models.Platform.objects.get_or_create(name='local',
             root_path=local_filesys_rootpath)
         nectar_platform, _ = models.Platform.objects.get_or_create(
             name='nectar', root_path='/home/centos')
-        platform, _ = models.Platform.objects.get_or_create(
-            name='nci', root_path=local_filesys_rootpath)
+        nci_platform, _ = models.Platform.objects.get_or_create(
+            name='nci', root_path=nci_filesys_root_path)
 
         logger.debug("local_filesys_rootpath=%s" % local_filesys_rootpath)
         local_fs = FileSystemStorage(location=local_filesys_rootpath)
@@ -373,8 +406,8 @@ class Command(BaseCommand):
             package=self.program_stage,
             order=0)
         program_stage.update_settings({})
-        comm, _ = models.Command.objects.get_or_create(platform=platform, directive=copy_dir, stage=copy_stage)
-        comm, _ = models.Command.objects.get_or_create(platform=platform, directive=program_dir, stage=program_stage)
+        comm, _ = models.Command.objects.get_or_create(platform=nci_platform, directive=copy_dir, stage=copy_stage)
+        comm, _ = models.Command.objects.get_or_create(platform=nci_platform, directive=program_dir, stage=program_stage)
         local_fs.save("local/greet.txt",
             ContentFile("{{salutation}} World"))
         local_fs.save("remote/greetaddon.txt",
@@ -389,7 +422,7 @@ class Command(BaseCommand):
              package=self.copy_file_stage,
              order=100)
         copy_stage.update_settings({})
-        comm, _ = models.Command.objects.get_or_create(platform=platform, directive=copy_dir, stage=copy_stage)
+        comm, _ = models.Command.objects.get_or_create(platform=nci_platform, directive=copy_dir, stage=copy_stage)
 
         smart_dir, _ = models.Directive.objects.get_or_create(name="smartconnector1")
         self.null_package = "bdphpcprovider.smartconnectorscheduler.stages.nullstage.NullStage"
@@ -441,7 +474,7 @@ class Command(BaseCommand):
             description="And here we finish everything off",
             package=self.null_package,
             order=3)
-        comm, _ = models.Command.objects.get_or_create(platform=platform, directive=smart_dir, stage=composite_stage)
+        comm, _ = models.Command.objects.get_or_create(platform=nci_platform, directive=smart_dir, stage=composite_stage)
         local_fs.save("input/input.txt",
             ContentFile("a={{a}} b={{b}} c={{c}}"))
         local_fs.save("input/file.txt",
@@ -580,8 +613,75 @@ class Command(BaseCommand):
         # FIXME: tasks.progress_context does not load up composite stage settings
         comm, _ = models.Command.objects.get_or_create(platform=local_platform,
             directive=sweep, stage=sweep_stage)
+
+        self.define_remote_make(nci_platform)
         print "done"
 
+    def define_remote_make(self, nci_platform):
+        remote_make, _ = models.Directive.objects.get_or_create(name="remotemake")
+        smartpack = "bdphpcprovider.smartconnectorscheduler.stages"
+        self.upload_makefile = smartpack + ".make.movement.MakeUploadStage"
+        self.download_makefile = smartpack + ".make.movement.MakeDownloadStage"
+        self.remote_make_stage = smartpack + ".make.remotemake.MakeRunStage"
+        self.make_finished_stage = smartpack + ".make.makefinished.MakeFinishedStage"
+
+        remote_make_composite_stage, _ = models.Stage.objects.get_or_create(
+            name="remotemake_connector",
+            description="Remote make file execution",
+            package=self.parallel_package,
+            order=0)
+        remote_make_composite_stage.update_settings({})
+
+        # TODO: need to build specific upload/download stages because no way
+        # adapt to different connectors yet...
+
+        # copies input files + makefile to remote system
+        upload_makefile_stage, _ = models.Stage.objects.get_or_create(
+            name="upload_makefile",
+            description="upload payload to remote",
+            package=self.upload_makefile,
+            parent=remote_make_composite_stage,
+            order=1)
+        upload_makefile_stage.update_settings(
+            {
+                'http://rmit.edu.au/schemas/remotemake/config':
+                {
+                    u'payload_destination': 'bdp_payload'
+                }
+            })
+        # executes make with run target
+        remote_make_stage, _ = models.Stage.objects.get_or_create(
+            name="make",
+            description="Makefile execution stage",
+            package=self.remotemake_stage,
+            parent=remote_make_composite_stage,
+            order=2)
+        remote_make_stage.update_settings({})
+
+        # executes make with finished target and repeats until finished.
+        make_finished_stage = models.Stage.objects.get_or_create(
+            name="makefinished",
+            description="Makefile execution stage",
+            package=self.make_finished_stage,
+            parent=remote_make_composite_stage,
+            order=3)
+        make_finished_stage.update_settings({})
+
+        # # copies input files + makefile to remote system
+        # download_makefile_stage, _ = models.Stage.objects.get_or_create(
+        #     name="download_makefile",
+        #     description="download payload to remote",
+        #     package=self.download_makefile,
+        #     parent=remote_make_composite_stage,
+        #     order=4)
+        # download_makefile_stage.update_settings({})
+
+        # FIXME: not clear wether we need to store platform in command
+        # as different stages make run on different platforms.
+        comm, _ = models.Command.objects.get_or_create(
+            platform=nci_platform,
+            directive=remote_make,
+            stage=remote_make_composite_stage)
 
     def handle(self, *args, **options):
         self.setup()
