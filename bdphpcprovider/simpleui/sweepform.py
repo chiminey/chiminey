@@ -20,7 +20,7 @@ class SweepSubmitForm(forms.Form):
         widget=forms.TextInput
         #widget=forms.Textarea(attrs={'cols': 80, 'rows': 1})
         )
-    number_of_dimensions = forms.IntegerField(min_value=0,
+    number_dimensions = forms.IntegerField(min_value=0,
         label=_("Degrees of Variation"), help_text="1 = iseed variation, 2 = iseed/temp variation")
     threshold = forms.CharField(label=_("Threshold"),
             max_length=255,
