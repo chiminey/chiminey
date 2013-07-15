@@ -22,7 +22,9 @@
 import logging
 import logging.config
 
-from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, UI, get_url_with_pkey
+from bdphpcprovider.smartconnectorscheduler.smartconnector import (
+    Stage, get_url_with_pkey)
+from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 
@@ -41,7 +43,6 @@ class CopyDirectoryStage(Stage):
 
     def input_valid(self, settings_to_test):
         return (True, "ok")
-
 
     def triggered(self, run_settings):
         """
@@ -126,7 +127,6 @@ class CopyFileStage(Stage):
 
     def input_valid(self, settings_to_test):
         return (True, "ok")
-
 
     def triggered(self, run_settings):
         """

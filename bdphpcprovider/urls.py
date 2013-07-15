@@ -56,6 +56,8 @@ urlpatterns = patterns('',
         name='hrmcjob-new',),
     url(r'^jobs/sweep/new/$', login_required(uiviews.SweepSubmitFormView.as_view()),
         name='sweepjob-new',),
+    url(r'^jobs/pbs/new/$', login_required(uiviews.MakeSubmitFormView.as_view()),
+        name='makejob-new',),
 
     url(r'^jobs/copy/new/$', login_required(uiviews.CopyFormView.as_view()),
         name='copyjob-new',),

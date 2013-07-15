@@ -253,10 +253,6 @@ class Run(Stage):
             logger.debug("%d files created" % (temp_num))
         return res
 
-
-
-
-
     def _upload_variation_inputs(self, variations, nodes, input_dir):
         '''
         Create input packages for each variation and upload the vms
@@ -282,7 +278,6 @@ class Run(Stage):
                 dataset_schema="http://rmit.edu.au/schemas/hrmcdataset/input")
         else:
             logger.warn("no mytardis host specified")
-
 
         for var_fname in variations.keys():
             logger.debug("var_fname=%s" % var_fname)
