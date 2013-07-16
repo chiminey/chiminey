@@ -49,8 +49,12 @@ def setup_settings(run_settings):
             run_settings[
                 'http://rmit.edu.au/schemas/system/misc'][
                 'output_location']
-    key_file = hrmcstages.retrieve_private_key(settings,
-        run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nci_private_key'])
+
+    key_file = ""
+    if 'nci_private' in run_settings[models.UserProfile.PROFILE_SCHEMA_NS]:
+        if run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nci_private_key']:
+            key_file = hrmcstages.retrieve_private_key(settings,
+                run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nci_private_key'])
     settings['private_key'] = key_file
     settings['nci_private_key'] = key_file
 
