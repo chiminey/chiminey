@@ -95,9 +95,16 @@ class Create(Stage):
 
         logger.debug("botosettings=%s" % self.boto_settings)
         #self.group_id = create_environ(number_vm_instances, self.boto_settings)
-        self.group_id, self.nodes = botocloudconnector.create_environ(
+        self.nodes = botocloudconnector.create_environ(
             number_vm_instances,
             self.boto_settings)
+
+        self.nodes = botocloudconnector.get_ssh_ready_instances(self.nodes, self.boto_settings)
+        self.group_id, self.nodes = botocloudconnector.brand_instances(
+            self.nodes, self.boto_settings)
+
+        botocloudconnector.print_all_information(self.boto_settings,
+                                                 all_instances=self.nodes)
 
         if not self.group_id:
             self.group_id = ''  # FIXME: do we we mean '' or None here?

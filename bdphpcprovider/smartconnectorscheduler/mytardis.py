@@ -146,9 +146,10 @@ def post_dataset(settings,
 
         # FIXME: need to check for status_code and handle failures.
 
-        logger.debug(r.json)
-        logger.debug(r.text)
-        logger.debug(r.headers)
+        logger.debug('URL=%s' % url)
+        logger.debug('r.json=%s' % r.json)
+        logger.debug('r.text=%s' % r.text)
+        logger.debug('r.headers=%s' % r.headers)
 
         new_experiment_location = r.headers['location']
         logger.debug("new_experiment_location=%s" % new_experiment_location)
