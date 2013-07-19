@@ -33,6 +33,8 @@ from boto.ec2.regioninfo import RegionInfo
 from boto.exception import EC2ResponseError
 from bdphpcprovider.smartconnectorscheduler.sshconnector import open_connection,\
     run_command, is_ssh_ready, AuthError
+from bdphpcprovider.smartconnectorscheduler.errors import deprecated
+
 
 logger = logging.getLogger(__name__)
 NODE_STATE = ['RUNNING', 'REBOOTING', 'TERMINATED', 'PENDING', 'UNKNOWN']
@@ -85,11 +87,6 @@ def create_environ(number_vm_instances, settings):
     all_instances = create_VM_instances(number_vm_instances, settings)
     if all_instances:
         all_running_instances = _wait_for_instance_to_start_running(all_instances, settings)
-
-        #logger.info('Created VM instances:')
-        #print_all_information(settings, all_instances=all_running_instances)
-        #nodes = retrieve_node_info(group_id,
-        #    settings)
         return all_running_instances
         # FIXME: if host keys check fail, then need to remove offending
         # key from known_hosts and try again.
@@ -162,9 +159,10 @@ def brand_instances(all_instances, settings):
     group_id = _generate_group_id(all_instances)
     branded_instances = []
     if all_instances:
-        branded_instances = _store_md5_on_instances(all_instances,
+        customised_instances = _customize_prompt(all_instances, settings)
+        branded_instances = _store_md5_on_instances(customised_instances,
                                                     group_id, settings)
-        branded_instances = _customize_prompt(branded_instances, settings)
+
     return (group_id, branded_instances)
 
 
@@ -193,7 +191,7 @@ def _store_md5_on_instances(all_instances, group_id, settings):
 
 
 def _customize_prompt(all_instances, settings):
-    cusstomised_instances = []
+    customised_instances = []
     for instance in all_instances:
         ip_address = instance.ip_address
         logger.info("Customizing command prompt")
@@ -205,14 +203,14 @@ def _customize_prompt(all_instances, settings):
             command = 'cd ~; %s; %s' % (command_bash, command_csh)
             logger.debug("Command Prompt %s" % command)
             run_command(ssh_client, command)
-            logger.debug("Customized prompt")
-            cusstomised_instances(instance)
+            logger.debug("Customized prompt for %s" % ip_address)
+            customised_instances.append(instance)
         except Exception as ex:
             logger.info("Unable to customize command " \
                   "prompt for VM instance %s" \
             % (ip_address))
             logger.debug(ex)
-    return cusstomised_instances
+    return customised_instances
 
 
 def _generate_group_id(all_instances):
@@ -268,9 +266,10 @@ def destroy_environ(settings, all_instances, ids_of_all_instances=None):
             - a single instance
     """
     logger.info("destroy_environ")
+    logger.debug('all_instances(teardown)=%s' % all_instances)
     if not all_instances:
         logging.error("No running instance(s)")
-        sys.exit(1)
+        return
 
     if not ids_of_all_instances:
         ids_of_all_instances = []
@@ -313,12 +312,9 @@ def _wait_for_instance_to_start_running(all_instances, settings):
         for instance in all_instances:
             logger.debug("this instance %s" % instance)
             if is_instance_running(instance):
-                logger.debug("Instance running %s" % instance)
                 all_running_instances.append(instance)
                 all_instances.remove(instance)
-            else:
-                logger.debug("Instance not running %s" % instance)
-            logger.debug('Current status of Instance %s: %s' % (instance, instance.state))
+            logger.debug('Current status of %s: %s' % (instance.ip_address, instance.state))
         time.sleep(settings['cloud_sleep_interval'])
     return all_running_instances
 
@@ -339,7 +335,7 @@ def _wait_for_instance_to_terminate(all_instances, settings):
         for instance in all_instances:
             if is_instance_terminated(instance):
                 all_instances.remove(instance)
-                logger.debug('Instance %s terminated' % instance.ip_address)
+            logger.debug('Current status of %s: %s' % (instance.ip_address, instance.state))
         time.sleep(settings['cloud_sleep_interval'])
 
 
@@ -355,14 +351,13 @@ def print_all_information(settings, all_instances=None):
         all_instances = get_running_instances(settings)
         if not all_instances:
             logger.info('\t No running instances')
-            sys.exit(1)
+            return
 
     counter = 1
     logger.info('\tNo.\tID\t\tIP\t\tPackage\t\tGroup')
     for instance in all_instances:
         instance_id = instance.id
-        ip = get_instance_ip(instance_id, settings)
-        #if is_ssh_ready(settings, ip):
+        ip = instance.ip_address
         try:
             ssh = open_connection(ip, settings)
             group_name = run_command(ssh, "ls %s " % settings['group_id_dir'])
@@ -384,7 +379,7 @@ def print_all_information(settings, all_instances=None):
                          "are not created with the provided private key")
 
 
-
+@deprecated
 def _get_this_instance(instance_id, settings):
     """
         Get a reference to node with instance_id
@@ -396,6 +391,18 @@ def _get_this_instance(instance_id, settings):
             this_node = i
             break
     return this_node
+
+
+def get_this_instance(instance_id, settings):
+    connection = _create_cloud_connection(settings)
+    try:
+        reservation_list = connection.get_all_instances(
+            instance_ids=[instance_id], filters=None)
+        for i in reservation_list[0].instances:
+            if i.id in instance_id:
+                return i
+    except Exception, e:
+        logger.debug(e)
 
 
 def get_all_instances(settings):
@@ -455,7 +462,12 @@ def get_rego_nodes(group_id, settings):
         logger.error("error with parsing created_nodes")
         raise
     for node in nodes:
-        res.append(NodeInfo(id=node[0], ip=node[1]))
+        instance = get_this_instance(node[0], settings)
+        if not instance:
+            logger.debug('instance [%s:%s] not found' % (node[0], node[1]))
+        else:
+            res.append(instance)
+        #res.append(NodeInfo(id=node[0], ip=node[1]))
     logger.debug("nodes=%s" % res)
     return res
 

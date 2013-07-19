@@ -48,7 +48,7 @@ def _status_of_nodeset(fs, nodes, output_dir, settings):
         instance_id = node.id
         logger.debug("instance_id = %s" % instance_id)
 
-        if not botocloudconnector.is_instance_running(instance_id, settings):
+        if not botocloudconnector.is_instance_running(node):
             # An unlikely situation where the node crashed after is was
             # detected as registered.
             logging.error('Instance %s not running' % instance_id)
@@ -285,7 +285,7 @@ class Finished(Stage):
             instance_id = node.id
             #ip = botocloudconnector.get_instance_ip(instance_id, self.boto_settings)
             #ssh = open_connection(ip_address=ip, settings=self.boto_settings)
-            if not botocloudconnector.is_instance_running(instance_id, self.boto_settings):
+            if not botocloudconnector.is_instance_running(node):
                 # An unlikely situation where the node crashed after is was
                 # detected as registered.
                 #FIXME: should error nodes be counted as finished?
