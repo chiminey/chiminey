@@ -47,7 +47,7 @@ def is_ssh_ready(settings, ip_address):
             ssh_ready = True
         except Exception as ex:
             logger.debug("[%s] Exception: %s" % (ip_address, ex))
-            if '[Errno 61]' in ex:
+            if 'Connection refused' in ex:
                 pass
             elif 'Authentication failed' in ex:
                 pass
