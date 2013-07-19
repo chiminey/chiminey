@@ -272,10 +272,12 @@ def start(args):
             all_instances = collect_instances(settings, group_id=options.group_id)
             if confirm_teardown(settings, all_instances):
                 destroy_environ(settings, all_instances)
-        elif options.instance_id:
-            all_instances = collect_instances(settings, instance_id=options.instance_id)
-            if confirm_teardown(settings, all_instances):
-                destroy_environ(settings, all_instances)
+
+#        elif options.instance_id:
+#            all_instances = collect_instances(settings, instance_id=options.instance_id)
+#            if confirm_teardown(settings, all_instances):
+#                destroy_environ(settings, all_instances)
+
         elif 'teardown_all' in args:
             all_instances = collect_instances(settings, all_VM=True)
             if confirm_teardown(settings, all_instances):

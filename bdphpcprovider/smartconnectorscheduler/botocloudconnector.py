@@ -83,21 +83,16 @@ def create_environ(number_vm_instances, settings):
     """
     logger.info("create_environ")
     all_instances = create_VM_instances(number_vm_instances, settings)
-    logger.debug("Printing ---- %s " % all_instances)
-
     if all_instances:
         all_running_instances = _wait_for_instance_to_start_running(all_instances, settings)
-        group_id = _store_md5_on_instances(all_running_instances, settings)
-        _customize_prompt(all_running_instances, settings)
-        logger.info("Group ID %s" % group_id)
-        logger.info('Created VM instances:')
-        print_all_information(settings, all_instances=all_running_instances)
-        nodes = retrieve_node_info(group_id,
-            settings)
-        return (group_id, nodes)
+
+        #logger.info('Created VM instances:')
+        #print_all_information(settings, all_instances=all_running_instances)
+        #nodes = retrieve_node_info(group_id,
+        #    settings)
+        return all_running_instances
         # FIXME: if host keys check fail, then need to remove offending
         # key from known_hosts and try again.
-
     return None
 
 
@@ -147,43 +142,63 @@ def create_VM_instances(number_vm_instances, settings):
     return all_instances
 
 
-def _store_md5_on_instances(all_instances, settings):
+def get_ssh_ready_instances(all_instances, settings):
+    '''
+        Returns instances that can be reached via ssh
+    '''
+    ssh_ready_instances = []
+    for instance in all_instances:
+        ip = instance.ip_address
+        try:
+            if is_ssh_ready(settings, ip):
+                ssh_ready_instances.append(instance)
+                logger.debug('[%s] is ssh ready' % ip)
+        except Exception as ex:
+            logger.debug("[%s] Exception: %s" % (instance.ip_address, ex))
+    return ssh_ready_instances
+
+
+def brand_instances(all_instances, settings):
     group_id = _generate_group_id(all_instances)
-    logger.info("Creating group '%s' ..." % group_id)
+    branded_instances = []
+    if all_instances:
+        branded_instances = _store_md5_on_instances(all_instances,
+                                                    group_id, settings)
+        branded_instances = _customize_prompt(branded_instances, settings)
+    return (group_id, branded_instances)
+
+
+def _store_md5_on_instances(all_instances, group_id, settings):
+    logger.info("Creating vm group '%s' ..." % group_id)
+    instances_with_groupid = []
     for instance in all_instances:
         # login and store md5 file
-        logger.debug("Instance ID  ...")
-        instance_id = instance.id
-        logger.debug("Instance ID %s" % instance_id)
-        ip_address = get_instance_ip(instance_id, settings)
+        ip_address = instance.ip_address
         logger.debug("Instance IP %s" % ip_address)
-        ssh_ready = is_ssh_ready(settings, ip_address)
-        if ssh_ready:
-            logger.info("Registering %s (%s) to group '%s'\
-            " % (instance_id, ip_address, group_id))
-
+        try:
+            logger.info("Registering %s to group '%s'\
+            " % (ip_address, group_id))
             ssh_client = open_connection(ip_address=ip_address, settings=settings)
             group_id_path = os.path.join(settings['group_id_dir'], group_id)
-
             run_command(ssh_client, "mkdir %s" % settings['group_id_dir'])
             logger.info("Group ID directory created")
             run_command(ssh_client, "touch %s" % group_id_path)
             logger.info("Group ID file created")
-        else:
+            instances_with_groupid.append(instance)
+        except Exception as ex:
             logger.info("VM instance %s will not be registered to group '%s'\
-            " % (instance_id, ip_address, group_id))
-
-    return group_id
+            " % (ip_address, group_id))
+            logger.deug(ex)
+    return instances_with_groupid
 
 
 def _customize_prompt(all_instances, settings):
+    cusstomised_instances = []
     for instance in all_instances:
-        instance_id = instance.id
-        ip_address = get_instance_ip(instance_id, settings)
+        ip_address = instance.ip_address
         logger.info("Customizing command prompt")
         logger.debug("Custom prompt %s" % settings['custom_prompt'])
-        ssh_ready = is_ssh_ready(settings, ip_address)
-        if ssh_ready:
+        try:
             ssh_client = open_connection(ip_address=ip_address, settings=settings)
             command_bash = 'echo \'export PS1="%s"\' >> .bash_profile' % settings['custom_prompt']
             command_csh = 'echo \'setenv PS1 "%s"\' >> .cshrc' % settings['custom_prompt']
@@ -191,10 +206,13 @@ def _customize_prompt(all_instances, settings):
             logger.debug("Command Prompt %s" % command)
             run_command(ssh_client, command)
             logger.debug("Customized prompt")
-        else:
+            cusstomised_instances(instance)
+        except Exception as ex:
             logger.info("Unable to customize command " \
                   "prompt for VM instance %s" \
-            % (instance_id, ip_address))
+            % (ip_address))
+            logger.debug(ex)
+    return cusstomised_instances
 
 
 def _generate_group_id(all_instances):
@@ -213,9 +231,10 @@ def collect_instances(settings, group_id=None, instance_id=None, all_VM=False):
         all_instances = get_running_instances(settings)
     elif group_id:
         all_instances = get_rego_nodes(group_id, settings)
-    elif instance_id:
-        if is_instance_running(instance_id, settings):
-            all_instances.append(_get_this_instance(instance_id, settings))
+
+#    elif instance_id:
+#        if is_instance_running(instance_id, settings):
+#            all_instances.append(_get_this_instance(instance_id, settings))
     return all_instances
 
 
@@ -273,23 +292,15 @@ def destroy_environ(settings, all_instances, ids_of_all_instances=None):
     _wait_for_instance_to_terminate(all_instances, settings)
 
 
-def is_instance_running(instance_id, settings):
+def is_instance_running(instance):
     """
         Checks whether an instance with @instance_id
         is running or not
     """
-    instance_running = False
-    all_instances = get_all_instances(settings)
-    for instance in all_instances:
-        if instance.id == instance_id:
-            #logger.debug("Instance Found")
-            if instance.state == "running":
-                instance_running = True
-                break
-        else:
-            pass
-            #logger.debug("Instance not found")
-    return instance_running
+    instance.update()
+    if instance.state in 'running':
+        return True
+    return False
 
 
 def _wait_for_instance_to_start_running(all_instances, settings):
@@ -301,7 +312,7 @@ def _wait_for_instance_to_start_running(all_instances, settings):
     while all_instances:
         for instance in all_instances:
             logger.debug("this instance %s" % instance)
-            if is_instance_running(instance.id, settings):
+            if is_instance_running(instance):
                 logger.debug("Instance running %s" % instance)
                 all_running_instances.append(instance)
                 all_instances.remove(instance)
@@ -309,21 +320,26 @@ def _wait_for_instance_to_start_running(all_instances, settings):
                 logger.debug("Instance not running %s" % instance)
             logger.debug('Current status of Instance %s: %s' % (instance, instance.state))
         time.sleep(settings['cloud_sleep_interval'])
-
     return all_running_instances
+
+
+def is_instance_terminated(instance):
+    """
+        Checks whether an instance with @instance_id
+        is running or not
+    """
+    instance.update()
+    if instance.state in 'terminated':
+        return True
+    return False
 
 
 def _wait_for_instance_to_terminate(all_instances, settings):
     while all_instances:
         for instance in all_instances:
-            instance_id = instance.id
-            if not is_instance_running(instance_id, settings):
+            if is_instance_terminated(instance):
                 all_instances.remove(instance)
-                '''print 'Current status of Instance %s: %s\
-                ' % (instance_id, NODE_STATE[NodeState.TERMINATED])
-                '''
-            #logger.info('Current status of Instance %s: %s' %(instance_id, instance.state))
-
+                logger.debug('Instance %s terminated' % instance.ip_address)
         time.sleep(settings['cloud_sleep_interval'])
 
 
@@ -417,7 +433,7 @@ def get_running_instances(settings):
     running_instances = []
     for instance in all_instances:
         #logger.debug(len(all_instances))
-        if is_instance_running(instance.id, settings):
+        if is_instance_running(instance):
             running_instances.append(instance)
     return running_instances
 
