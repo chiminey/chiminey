@@ -136,8 +136,7 @@ class Deploy(Stage):
             for node in self.nodes:
                 #ip = botocloudconnector.get_instance_ip(node.id, self.boto_settings)
                 #ssh = open_connection(ip_address=ip, settings=self.boto_settings)
-                if not botocloudconnector.is_instance_running(node.id,
-                     self.boto_settings):
+                if not botocloudconnector.is_instance_running(node):
                     # An unlikely situation where the node crashed after is was
                     # detected as registered.
                     #FIXME: should error nodes be counted as finished?
@@ -298,7 +297,7 @@ def start_multi_setup_task(group_id, settings, maketarget_nodegroup_pair={}):
         for i in range(0, maketarget_nodegroup_pair[make_target]):
             instance = nodes[0]
             logger.debug("instance.id=%s" % str(instance.id))
-            logger.debug("instance.ip=%s" % str(instance.ip))
+            logger.debug("instance.ip=%s" % str(instance.ip_address))
             logger.debug("instance=%s" % str(instance))
             node_ip = botocloudconnector.get_instance_ip(instance.id, settings)
             logger.debug("node_ip=%s"  % node_ip)
