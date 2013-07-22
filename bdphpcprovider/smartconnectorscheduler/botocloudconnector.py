@@ -152,6 +152,7 @@ def get_ssh_ready_instances(all_instances, settings):
                 logger.debug('[%s] is ssh ready' % ip)
         except Exception as ex:
             logger.debug("[%s] Exception: %s" % (instance.ip_address, ex))
+        logger.debug('ssh ready instances are %s' % ssh_ready_instances)
     return ssh_ready_instances
 
 
@@ -162,7 +163,8 @@ def brand_instances(all_instances, settings):
         customised_instances = _customize_prompt(all_instances, settings)
         branded_instances = _store_md5_on_instances(customised_instances,
                                                     group_id, settings)
-
+    logger.debug('groupid=%s' % group_id)
+    logger.debug('Customised instances are %s' % branded_instances)
     return (group_id, branded_instances)
 
 
@@ -278,7 +280,7 @@ def destroy_environ(settings, all_instances, ids_of_all_instances=None):
 
     logger.info("Terminating %d VM instance(s)" % len(ids_of_all_instances))
     connection = _create_cloud_connection(settings)
-    connection.terminate_instances(ids_of_all_instances)
+    terminated_instances = connection.terminate_instances(ids_of_all_instances)
 
     '''
     for instance in all_instances:
@@ -288,7 +290,7 @@ def destroy_environ(settings, all_instances, ids_of_all_instances=None):
         except Exception:
             traceback.print_exc(file=sys.stdout)
     '''
-    _wait_for_instance_to_terminate(all_instances, settings)
+    _wait_for_instance_to_terminate(terminated_instances, settings)
 
 
 def is_instance_running(instance):
@@ -296,9 +298,12 @@ def is_instance_running(instance):
         Checks whether an instance with @instance_id
         is running or not
     """
-    instance.update()
-    if instance.state in 'running':
-        return True
+    try:
+        instance.update()
+        if instance.state in 'running':
+            return True
+    except boto.exception.EC2ResponseError, e:
+        logger.debug(e)
     return False
 
 
@@ -324,18 +329,28 @@ def is_instance_terminated(instance):
         Checks whether an instance with @instance_id
         is running or not
     """
-    instance.update()
-    if instance.state in 'terminated':
-        return True
+    try:
+        instance.update()
+        if instance.state in 'terminated':
+            return True
+    except boto.exception.EC2ResponseError as e:
+        if 'InstanceNotFound' in e.error_code:
+            return True
+        raise
     return False
 
 
 def _wait_for_instance_to_terminate(all_instances, settings):
+    logger.debug('remaining_instances=%s' % all_instances)
     while all_instances:
         for instance in all_instances:
-            if is_instance_terminated(instance):
+            current_instance = instance
+            if is_instance_terminated(current_instance):
                 all_instances.remove(instance)
-            logger.debug('Current status of %s: %s' % (instance.ip_address, instance.state))
+                logger.debug('Current status of %s: %s' % (instance.ip_address, 'terminated'))
+                logger.debug('remaining_instances=%s' % all_instances)
+            else:
+                logger.debug('Current status of %s: %s' % (instance.ip_address, instance.state))
         time.sleep(settings['cloud_sleep_interval'])
 
 
