@@ -101,41 +101,20 @@ def create_VM_instances(number_vm_instances, settings):
     # nectar automagically, so we can control allowed ports etc.
     connection = _create_cloud_connection(settings)
     all_instances = []
-    try:
-        logger.info("Creating %d VM instance(s)" % number_vm_instances)
-        instance_count = 0
-        logger.debug("Instance Count %d total %d" % (instance_count,
-            number_vm_instances))
-        while instance_count < number_vm_instances:
-            #logger.debug(number_vm_instances)
-            reservation = connection.run_instances(
+    logger.info("Creating %d VM(s)" % number_vm_instances)
+    reservation = connection.run_instances(
                 placement='monash',
                 image_id=settings['vm_image'],
                 min_count=1,
-                max_count=1,
+                max_count=number_vm_instances,
                 key_name=settings['nectar_private_key_name'],
                 security_groups=settings['security_group'],
                 instance_type=settings['vm_size'])
-            logger.debug("Created Reservation %s" % reservation)
-            new_instance = reservation.instances[0]
-            logger.debug("Created Instance %s" % new_instance)
-            all_instances.append(new_instance)
-            instance_count += 1
-    except EC2ResponseError, e:
-        logger.debug("Reservation not created")
-        logger.debug(e)
-
-    if len(all_instances) < number_vm_instances:
-        excess_instances = number_vm_instances \
-                            - len(all_instances)
-        logger.debug("Quota Exceeded")
-        logger.info("Quota Limit Reached: ")
-        logger.info("\t %s instances are created." % len(all_instances))
-        logger.info("\t Additional %s instances will" \
-              " not be created" % excess_instances)
-        if len(all_instances) == 0:
-            logger.info('Running VM instances:')
-            print_all_information(settings)
+    logger.debug("Created Reservation %s" % reservation)
+    for instance in reservation.instances:
+        all_instances.append(instance)
+    logger.debug('%d of %d requested VM(s) created'
+                 % (len(all_instances), number_vm_instances))
     return all_instances
 
 
