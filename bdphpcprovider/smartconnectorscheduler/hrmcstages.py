@@ -51,6 +51,19 @@ from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 logger = logging.getLogger(__name__)
 
 
+def get_make_path(destination):
+    destination = get_http_url(destination)
+    url = urlparse(destination)
+    query = parse_qsl(url.query)
+    query_settings = dict(x[0:] for x in query)
+    path = url.path
+    if path[0] == os.path.sep:
+        path = path[1:]
+    make_path = os.path.join(query_settings['root_path'], path)
+    logger.debug("Makefile path %s %s %s " % (make_path, query_settings['root_path'], path))
+    return make_path
+
+
 @deprecated
 def get_filesys(context):
     """
