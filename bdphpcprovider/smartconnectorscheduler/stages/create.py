@@ -119,9 +119,6 @@ class Create(Stage):
             = self.group_id
         run_settings.setdefault(
             'http://rmit.edu.au/schemas/stages/create', {})[u'created_nodes'] \
-            = [(x.id,
-                botocloudconnector.get_instance_ip(x.id,
-                    self.boto_settings)) for x in self.nodes]
-
+            = [(x.id, x.ip_address, unicode(x.region)) for x in self.nodes]
         logger.debug("Updated run settings %s" % run_settings)
         return run_settings

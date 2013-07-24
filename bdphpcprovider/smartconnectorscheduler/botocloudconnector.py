@@ -102,17 +102,21 @@ def create_VM_instances(number_vm_instances, settings):
     connection = _create_cloud_connection(settings)
     all_instances = []
     logger.info("Creating %d VM(s)" % number_vm_instances)
-    reservation = connection.run_instances(
-                placement='monash',
-                image_id=settings['vm_image'],
-                min_count=1,
-                max_count=number_vm_instances,
-                key_name=settings['nectar_private_key_name'],
-                security_groups=settings['security_group'],
-                instance_type=settings['vm_size'])
-    logger.debug("Created Reservation %s" % reservation)
-    for instance in reservation.instances:
-        all_instances.append(instance)
+    try:
+        reservation = connection.run_instances(
+                    placement='monash',
+                    image_id=settings['vm_image'],
+                    min_count=1,
+                    max_count=number_vm_instances,
+                    key_name=settings['nectar_private_key_name'],
+                    security_groups=settings['security_group'],
+                    instance_type=settings['vm_size'])
+        logger.debug("Created Reservation %s" % reservation)
+        for instance in reservation.instances:
+            all_instances.append(instance)
+    except EC2ResponseError as e:
+        if 'TooManyInstances' not in e.error_code:
+            raise
     logger.debug('%d of %d requested VM(s) created'
                  % (len(all_instances), number_vm_instances))
     return all_instances
@@ -414,6 +418,7 @@ def get_all_instances(settings):
     return all_instances
 
 
+@deprecated
 def get_instance_ip(instance_id, settings):
     """
         Get the ip address of an instance
