@@ -69,7 +69,11 @@ class Deploy(Stage):
             u'deployed_nodes'):
             deploy_str = run_settings['http://rmit.edu.au/schemas/stages/deploy'][u'deployed_nodes']
             self.deployed_nodes = ast.literal_eval(deploy_str)
-            return len(self.deployed_nodes) < number_vm_instances
+            created_nodes = run_settings['http://rmit.edu.au/schemas/stages/create'][u'created_nodes']
+            number_created_nodes = len(eval(created_nodes))
+            logger.debug('deployed nodes=%d, created nodes = %d'
+                         % (len(self.deployed_nodes), number_created_nodes))
+            return len(self.deployed_nodes) < number_created_nodes
         else:
             self.deployed_nodes = []
             return True
