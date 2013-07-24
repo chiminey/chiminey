@@ -261,6 +261,13 @@ class Command(BaseCommand):
                 u'deployed_nodes': (models.ParameterName.STRING, '', 1)
                 }
                 ],
+            u'http://rmit.edu.au/schemas/stages/bootstrap':
+                [u'the bootstrap stage of the smartconnector1',
+                {
+                u'started': (models.ParameterName.NUMERIC, '', 2),
+                u'bootstrapped_nodes': (models.ParameterName.STRING, '', 1)
+                }
+                ],
             u'http://rmit.edu.au/schemas/stages/run':
                 [u'the create stage of the smartconnector1',
                 {
@@ -487,7 +494,8 @@ class Command(BaseCommand):
         self.configure_package = "bdphpcprovider.smartconnectorscheduler.stages.configure.Configure"
         self.create_package = "bdphpcprovider.smartconnectorscheduler.stages.create.Create"
         self.setup_package = "bdphpcprovider.smartconnectorscheduler.stages.setup.Setup"
-        self.deploy_package = "bdphpcprovider.smartconnectorscheduler.stages.deploy.Deploy"
+        #self.deploy_package = "bdphpcprovider.smartconnectorscheduler.stages.deploy.Deploy"
+        self.bootstrap_package = "bdphpcprovider.smartconnectorscheduler.stages.bootstrap.Bootstrap"
         self.run_package = "bdphpcprovider.smartconnectorscheduler.stages.run.Run"
         self.finished_package = "bdphpcprovider.smartconnectorscheduler.stages.finished.Finished"
         self.transform_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc2.transform.Transform"
@@ -537,12 +545,25 @@ class Command(BaseCommand):
         #         },
         #     })
 
-        deploy_stage, _ = models.Stage.objects.get_or_create(name="deploy",
-            description="This is setup stage of HRMC smart connector",
+        #deploy_stage, _ = models.Stage.objects.get_or_create(name="deploy",
+        #    description="This is setup stage of HRMC smart connector",
+        #    parent=hrmc_composite_stage,
+        #    package=self.deploy_package,
+        #    order=2)
+        #deploy_stage.update_settings(
+        #    {
+        #    u'http://rmit.edu.au/schemas/stages/setup':
+        #        {
+        #            u'payload_source': 'file://127.0.0.1/local/testpayload',
+        #            u'payload_destination': 'celery_payload_2',
+        #        },
+        #    })
+        bootstrap_stage, _ = models.Stage.objects.get_or_create(name="bootstrap",
+            description="This is bootstrap stage of this smart connector",
             parent=hrmc_composite_stage,
-            package=self.deploy_package,
+            package=self.bootstrap_package,
             order=2)
-        deploy_stage.update_settings(
+        bootstrap_stage.update_settings(
             {
             u'http://rmit.edu.au/schemas/stages/setup':
                 {
