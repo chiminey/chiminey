@@ -89,7 +89,11 @@ class Run(Stage):
 
         logger.debug("number_vm_instances=%s" % number_vm_instances)
 
-        if len(deployed_nodes) == number_vm_instances:
+        created_nodes = run_settings['http://rmit.edu.au/schemas/stages/create'][u'created_nodes']
+        number_created_nodes = len(eval(created_nodes))
+        logger.debug('created nodes = %d' % number_created_nodes)
+
+        if number_created_nodes and len(deployed_nodes) == number_created_nodes:
 
             logger.debug("deployed_nodes = %s" % deployed_nodes)
 
@@ -498,12 +502,14 @@ class Run(Stage):
                     variation_set = self._expand_variations(template,
                                                             [map], values_map,  self.initial_numbfile)
                     self.initial_numbfile += len(variation_set)
+                    logger.debug('variation_set=%d' % len(variation_set))
                     variations[base_fname] = variation_set
                 logger.debug("map=%s" % map)
         else:
             # normal file
             pass
         logger.debug('Variations %s' % variations)
+        logger.debug("Variations items %d" % len(variations.items()))
         return variations
 
 
