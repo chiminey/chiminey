@@ -41,6 +41,7 @@ class Bootstrap(Stage):
         self.boto_settings = user_settings.copy()
 
     def triggered(self, run_settings):
+
         try:
             self.group_id = smartconnector.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/stages/create/group_id')
@@ -48,15 +49,15 @@ class Bootstrap(Stage):
         except KeyError:
             logger.warn("no group_id found in context")
             return False
+        created_str = run_settings['http://rmit.edu.au/schemas/stages/create'][u'created_nodes']
+        self.created_nodes = ast.literal_eval(created_str)
         try:
             bootstrapped_str = smartconnector.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/stages/bootstrap/bootstrapped_nodes')
             self.bootstrapped_nodes = ast.literal_eval(bootstrapped_str)
-            created_str = run_settings['http://rmit.edu.au/schemas/stages/create'][u'created_nodes']
-            created_nodes = len(ast.literal_eval(created_str))
             logger.debug('bootstrapped nodes=%d, created nodes = %d'
-                         % (len(self.bootstrapped_nodes), created_nodes))
-            return len(self.bootstrapped_nodes) < created_nodes
+                         % (len(self.bootstrapped_nodes), len(self.created_nodes)))
+            return len(self.bootstrapped_nodes) < len(self.created_nodes)
         except KeyError:
             self.bootstrapped_nodes = []
             return True
@@ -125,6 +126,10 @@ class Bootstrap(Stage):
         run_settings.setdefault(
             'http://rmit.edu.au/schemas/system/misc',
             {})[u'id'] = 0
+        logger.debug('created_nodes=%s' % self.created_nodes)
+        if len(self.bootstrapped_nodes) == len(self.created_nodes):
+            run_settings.setdefault('http://rmit.edu.au/schemas/stages/bootstrap',
+            {})[u'bootstrap_done'] = 1
         return run_settings
 
 
