@@ -41,7 +41,6 @@ class Bootstrap(Stage):
         self.boto_settings = user_settings.copy()
 
     def triggered(self, run_settings):
-
         try:
             self.group_id = smartconnector.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/stages/create/group_id')
