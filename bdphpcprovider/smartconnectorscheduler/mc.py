@@ -9,7 +9,7 @@ from bdphpcprovider.smartconnectorscheduler.botocloudconnector import create_env
 
 from bdphpcprovider.smartconnectorscheduler.stages.configure import Configure
 from bdphpcprovider.smartconnectorscheduler.stages.create import Create
-from bdphpcprovider.smartconnectorscheduler.stages.schedule import Schedule
+from bdphpcprovider.smartconnectorscheduler.stages.schedule_old import Schedule
 from bdphpcprovider.smartconnectorscheduler.stages.setup import Setup
 from bdphpcprovider.smartconnectorscheduler.stages.run import Run
 from bdphpcprovider.smartconnectorscheduler.stages.finished import Finished

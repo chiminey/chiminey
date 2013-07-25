@@ -269,6 +269,13 @@ class Command(BaseCommand):
                 u'bootstrap_done': (models.ParameterName.NUMERIC, '', 1)
                 }
                 ],
+            u'http://rmit.edu.au/schemas/stages/schedule':
+                [u'the schedule stage of the smartconnector1',
+                {
+                u'scheduled_nodes': (models.ParameterName.STRING, '', 2),
+                u'schedule_completed': (models.ParameterName.NUMERIC, '', 1)
+                }
+                ],
             u'http://rmit.edu.au/schemas/stages/run':
                 [u'the create stage of the smartconnector1',
                 {
@@ -497,6 +504,7 @@ class Command(BaseCommand):
         self.setup_package = "bdphpcprovider.smartconnectorscheduler.stages.setup.Setup"
         #self.deploy_package = "bdphpcprovider.smartconnectorscheduler.stages.deploy.Deploy"
         self.bootstrap_package = "bdphpcprovider.smartconnectorscheduler.stages.bootstrap.Bootstrap"
+        self.schedule_package = "bdphpcprovider.smartconnectorscheduler.stages.schedule.Schedule"
         self.run_package = "bdphpcprovider.smartconnectorscheduler.stages.run.Run"
         self.finished_package = "bdphpcprovider.smartconnectorscheduler.stages.finished.Finished"
         self.transform_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc2.transform.Transform"
@@ -563,7 +571,7 @@ class Command(BaseCommand):
             description="This is bootstrap stage of this smart connector",
             parent=hrmc_composite_stage,
             package=self.bootstrap_package,
-            order=2)
+            order=20)
         bootstrap_stage.update_settings(
             {
             u'http://rmit.edu.au/schemas/stages/setup':
@@ -572,11 +580,16 @@ class Command(BaseCommand):
                     u'payload_destination': 'celery_payload_2',
                 },
             })
+        schedule_stage, _ = models.Stage.objects.get_or_create(name="schedule",
+            description="This is schedule stage of this smart connector",
+            parent=hrmc_composite_stage,
+            package=self.schedule_package,
+            order=25)
         run_stage, _ = models.Stage.objects.get_or_create(name="run",
             description="This is run stage of HRMC smart connector",
             parent=hrmc_composite_stage,
             package=self.run_package,
-            order=3)
+            order=30)
         run_stage.update_settings(
             {
             u'http://rmit.edu.au/schemas/stages/run':
@@ -592,25 +605,25 @@ class Command(BaseCommand):
             description="This is finished stage of HRMC smart connector",
             parent=hrmc_composite_stage,
             package=self.finished_package,
-            order=4)
+            order=40)
         finished_stage.update_settings({})
         transform_stage, _ = models.Stage.objects.get_or_create(name="transform",
             description="This is transform stage of HRMC smart connector",
             parent=hrmc_composite_stage,
             package=self.transform_package,
-            order=5)
+            order=50)
         transform_stage.update_settings({})
         converge_stage, _ = models.Stage.objects.get_or_create(name="converge",
             description="This is converge stage of HRMC smart connector",
             parent=hrmc_composite_stage,
             package=self.converge_package,
-            order=6)
+            order=60)
         converge_stage.update_settings({})
         teardown_stage, _ = models.Stage.objects.get_or_create(name="teardown",
             description="This is teardown stage of HRMC smart connector",
             parent=hrmc_composite_stage,
             package=self.teardown_package,
-            order=7)
+            order=70)
         teardown_stage.update_settings({})
         comm, _ = models.Command.objects.get_or_create(platform=nectar_platform,
             directive=hrmc_smart_dir, stage=hrmc_composite_stage)
