@@ -264,8 +264,9 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/stages/bootstrap':
                 [u'the bootstrap stage of the smartconnector1',
                 {
-                u'started': (models.ParameterName.NUMERIC, '', 2),
-                u'bootstrapped_nodes': (models.ParameterName.STRING, '', 1)
+                u'started': (models.ParameterName.NUMERIC, '', 3),
+                u'bootstrapped_nodes': (models.ParameterName.STRING, '', 2),
+                u'bootstrap_done': (models.ParameterName.NUMERIC, '', 1)
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/run':
@@ -567,7 +568,7 @@ class Command(BaseCommand):
             {
             u'http://rmit.edu.au/schemas/stages/setup':
                 {
-                    u'payload_source': 'file://127.0.0.1/local/testpayload',
+                    u'payload_source': 'file://127.0.0.1/local/testpayload_new',
                     u'payload_destination': 'celery_payload_2',
                 },
             })
