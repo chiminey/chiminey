@@ -1,5 +1,7 @@
 PSD_PACKAGE=PSDCode
 HRMC_PACKAGE=HRMC2
+PAYLOAD_NAME='process_payload
+IDS='proc_ids'
 # version 2.0
 
 #deprecated
@@ -13,6 +15,12 @@ setupdone:
 do_setup:
 	@echo do_setup starting
 	@sh ./env_setupstart.sh >& setup.output &
+
+schedulestart:
+	@sh ./schedule_start $(PAYLOAD_NAME) $(IDS)
+
+scheduledone:
+	@sh ./schedule_done $(IDS)
 
 startrun: psd_run_setup run_hrmc
 

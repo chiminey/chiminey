@@ -80,8 +80,7 @@ class Bootstrap(Stage):
             pass
             self.started = 1
         else:
-            self.nodes = botocloudconnector.get_rego_nodes(self.group_id,
-                self.boto_settings)
+            self.nodes = botocloudconnector.get_rego_nodes(self.boto_settings)
             self.error_nodes = []
             for node in self.nodes:
                 if not botocloudconnector.is_instance_running(node):
@@ -90,7 +89,8 @@ class Bootstrap(Stage):
                     #FIXME: should error nodes be counted as finished?
                     #FIXME: remove this instance from created_nodes
                     logging.error('Instance %s not running' % node.id)
-                    self.error_nodes.append(node)
+                    self.error_nodes.append((node.id, node.ip_address,
+                                            unicode(node.region)))
                     continue
                 node_ip = node.ip_address
                 relative_path = "%s@%s" % (self.boto_settings['platform'],
@@ -104,14 +104,16 @@ class Bootstrap(Stage):
                 fin = job_finished(node_ip, self.boto_settings, destination)
                 logger.debug("fin=%s" % fin)
                 if fin:
-                    print "done. output is available"
+                    print "done."
                     logger.debug("node=%s" % str(node))
                     logger.debug("bootstrapped_nodes=%s" % self.bootstrapped_nodes)
                     if not (node.ip_address in [x for x in self.bootstrapped_nodes]):
-                        self.bootstrapped_nodes.append(node.ip_address)
+                        logger.debug('new ip = %s' % node.ip_address)
+                        self.bootstrapped_nodes.append((node.id, node.ip_address,
+                                            unicode(node.region)))
                     else:
                         logger.info("We have already "
-                            + "processed output from node %s" % node.ip_address)
+                            + "bootstrapped node %s" % node.ip_address)
                 else:
                     print "job still running on %s" % node.ip_address
 
@@ -163,7 +165,7 @@ def start_multi_setup_task(group_id, settings, maketarget_nodegroup_pair={}):
     Run the package on each of the nodes in the group and grab
     any output as needed
     """
-    nodes = botocloudconnector.get_rego_nodes(group_id, settings)
+    nodes = botocloudconnector.get_rego_nodes(settings)
     logger.debug("nodes=%s" % nodes)
     requested_nodes = 0
 
