@@ -85,7 +85,7 @@ class Setup(Stage):
         self.boto_settings['private_key'] = key_file
         self.boto_settings['nectar_private_key'] = key_file
 
-        self.packaged_nodes = botocloudconnector.get_rego_nodes(self.group_id,
+        self.packaged_nodes = botocloudconnector.get_rego_nodes(
             self.boto_settings)
         logger.debug("packaged_nodes = %s" % self.packaged_nodes)
 
@@ -116,7 +116,7 @@ class Setup(Stage):
         return run_settings
 
     def setup(self, settings, group_id, maketarget_nodegroup_pair={}):
-        available_nodes = list(botocloudconnector.get_rego_nodes(group_id, settings))
+        available_nodes = list(botocloudconnector.get_rego_nodes(settings))
         requested_nodes = 0
 
         if 'payload_source' not in settings:

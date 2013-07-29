@@ -213,7 +213,7 @@ def collect_instances(settings, group_id=None, instance_id=None, all_VM=False):
     if all_VM:
         all_instances = get_running_instances(settings)
     elif group_id:
-        all_instances = get_rego_nodes(group_id, settings)
+        all_instances = get_rego_nodes(settings)
 
 #    elif instance_id:
 #        if is_instance_running(instance_id, settings):
@@ -444,19 +444,19 @@ def get_running_instances(settings):
     return running_instances
 
 
-def get_rego_nodes(group_id, settings):
+def get_rego_nodes(settings, node_type='created_nodes'):
 
     res = []
     NodeInfo = namedtuple('NodeInfo',
         ['id', 'ip'])
     try:
-        created_nodes = settings['created_nodes']
+        requested_nodes = settings[node_type]
     except KeyError:
         logger.debug("settings=%s" % settings)
         logger.error("created_nodes missing from context")
         raise
     try:
-        nodes = ast.literal_eval(created_nodes)
+        nodes = ast.literal_eval(requested_nodes)
     except KeyError:
         logger.error("error with parsing created_nodes")
         raise

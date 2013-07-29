@@ -205,7 +205,7 @@ class Run(Stage):
         Run the package on each of the nodes in the group and grab
         any output as needed
         """
-        nodes = botocloudconnector.get_rego_nodes(group_id, settings)
+        nodes = botocloudconnector.get_rego_nodes(settings)
         pids = []
         for node in nodes:
             instance_id = node.id
@@ -543,7 +543,7 @@ class Run(Stage):
         #                  for x in seeds.keys()]))
         # logger.debug("seeds = %s" % seeds)
 
-        nodes = sorted(botocloudconnector.get_rego_nodes(self.group_id, self.boto_settings))
+        nodes = sorted(botocloudconnector.get_rego_nodes(self.boto_settings))
         self.node_ind = 0
         logger.debug("Iteration Input dir %s" % self.iter_inputdir)
         url_with_pkey = smartconnector.get_url_with_pkey(self.boto_settings, self.iter_inputdir, is_relative_path=True)
@@ -675,7 +675,7 @@ class Run(Stage):
         """
         Assume that no nodes have finished yet and indicate to future stages
         """
-        nodes = botocloudconnector.get_rego_nodes(self.group_id, self.boto_settings)
+        nodes = botocloudconnector.get_rego_nodes(self.boto_settings)
         logger.debug("nodes = %s" % nodes)
 
         if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run'):

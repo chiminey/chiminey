@@ -196,7 +196,7 @@ def setup_multi_task(group_id, settings):
     Transfer the task package to the instances in group_id and install
     """
     logger.info("setup_multi_task %s " % group_id)
-    packaged_nodes = botocloudconnector.get_rego_nodes(group_id, settings)
+    packaged_nodes = botocloudconnector.get_rego_nodes(settings)
     import threading
     import datetime
     logger.debug("packaged_nodes = %s" % packaged_nodes)
@@ -248,7 +248,7 @@ def prepare_multi_input(group_id, input_dir, settings, seed):
         instances in the group and ready
 
     """
-    nodes = botocloudconnector.get_rego_nodes(group_id, settings)
+    nodes = botocloudconnector.get_rego_nodes(settings)
 
     import random
     random.seed(seed)
