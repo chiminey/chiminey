@@ -1,0 +1,4 @@
+#!/bin/bash
+echo "starting up"
+sleep 30
+echo "shutting down"

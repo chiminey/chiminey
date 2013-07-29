@@ -1,5 +1,5 @@
 startrun:
-	@echo hello world
+	@qsub test.pbs > run.pid
 
 running:
-	@echo stillrunning
+	@sh ./running.sh 
