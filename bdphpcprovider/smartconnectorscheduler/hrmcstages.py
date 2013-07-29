@@ -249,7 +249,7 @@ def safe_import(path, args, kw):
     """
         Dynamically imports a package at path and executes it current namespace with given args
     """
-
+    logger.debug(path)
     logger.debug("path %s args %s kw %s  " % (path, args, kw))
     try:
         dot = path.rindex('.')

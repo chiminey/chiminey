@@ -18,12 +18,16 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+
 import os
 import logging
+
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, UI
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler import smartconnector
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -46,7 +50,6 @@ class Configure(Stage, UI):
         return True
 
     def process(self, run_settings):
-
         self.boto_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
 
         self.contextid = int(run_settings[
