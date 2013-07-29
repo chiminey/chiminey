@@ -107,7 +107,7 @@ class Bootstrap(Stage):
                     print "done."
                     logger.debug("node=%s" % str(node))
                     logger.debug("bootstrapped_nodes=%s" % self.bootstrapped_nodes)
-                    if not (node.ip_address in [x for x in self.bootstrapped_nodes]):
+                    if not (node.ip_address in [x[1] for x in self.bootstrapped_nodes]):
                         logger.debug('new ip = %s' % node.ip_address)
                         self.bootstrapped_nodes.append((node.id, node.ip_address,
                                             unicode(node.region)))
