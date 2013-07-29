@@ -19,9 +19,11 @@
 # IN THE SOFTWARE.
 
 
-from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 import logging
-import logging.config
+
+from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
+from itertools import product
+
 
 logger = logging.getLogger(__name__)
 
@@ -77,3 +79,20 @@ class ParallelStage(Stage):
         self.parallel_index -= 1
         run_settings[u'http://rmit.edu.au/schemas/stages/parallel/testing'][u'index'] = self.parallel_index
         return run_settings
+
+
+    def get_run_map(self, settings, **kwargs):
+        return {}, kwargs
+
+    def get_total_templates(self, maps):
+        for iter, template_map in enumerate(maps):
+            logger.debug("template_map=%s" % template_map)
+            total_templates = 0
+            # ensure ordering of the template_map entries
+            map_keys = template_map.keys()
+            logger.debug("map_keys %s" % map_keys)
+            map_ranges = [list(template_map[x]) for x in map_keys]
+            for z in product(*map_ranges):
+                total_templates += 1
+            logger.debug("total_templates=%d" % (total_templates))
+        return total_templates

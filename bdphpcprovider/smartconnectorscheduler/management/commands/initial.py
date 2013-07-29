@@ -212,6 +212,8 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/hrmc':
                 [u'the hrmc smart connector input values',
                 {
+                u'random_numbers': (models.ParameterName.STRING, '', 10),
+                u'max_seed_int': (models.ParameterName.NUMERIC, '', 9),
                 u'number_vm_instances': (models.ParameterName.NUMERIC, '', 8),
                 u'iseed': (models.ParameterName.NUMERIC, '', 7),
                 u'input_location': (models.ParameterName.STRING, '', 6),
@@ -249,7 +251,8 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/stages/setup':
                 [u'the create stage of the smartconnector1',
                 {
-                u'setup_finished': (models.ParameterName.NUMERIC, '', 3),
+                u'setup_finished': (models.ParameterName.NUMERIC, '', 4),
+                u'payload_name': (models.ParameterName.STRING, '', 3),
                 u'payload_source': (models.ParameterName.STRING, '', 2),
                 u'payload_destination': (models.ParameterName.STRING, '', 1),
                 }
@@ -272,6 +275,8 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/stages/schedule':
                 [u'the schedule stage of the smartconnector1',
                 {
+                u'schedule_started': (models.ParameterName.NUMERIC, '', 4),
+                u'total_processes': (models.ParameterName.NUMERIC, '', 3),
                 u'scheduled_nodes': (models.ParameterName.STRING, '', 2),
                 u'schedule_completed': (models.ParameterName.NUMERIC, '', 1)
                 }
@@ -279,14 +284,12 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/stages/run':
                 [u'the create stage of the smartconnector1',
                 {
-                u'runs_left': (models.ParameterName.NUMERIC, '', 10),
-                u'max_seed_int': (models.ParameterName.NUMERIC, '', 9),
-                u'payload_cloud_dirname': (models.ParameterName.STRING, '', 8),
-                u'compile_file': (models.ParameterName.STRING, '', 7),
-                u'retry_attempts': (models.ParameterName.NUMERIC, '', 6),
-                u'error_nodes': (models.ParameterName.NUMERIC, '', 5),
-                u'initial_numbfile': (models.ParameterName.NUMERIC, '', 4),
-                u'random_numbers': (models.ParameterName.STRING, '', 3),
+                u'runs_left': (models.ParameterName.NUMERIC, '', 8),
+                u'payload_cloud_dirname': (models.ParameterName.STRING, '', 7),
+                u'compile_file': (models.ParameterName.STRING, '', 6),
+                u'retry_attempts': (models.ParameterName.NUMERIC, '', 5),
+                u'error_nodes': (models.ParameterName.NUMERIC, '', 4),
+                u'initial_numbfile': (models.ParameterName.NUMERIC, '', 3),
                 u'rand_index': (models.ParameterName.NUMERIC, '', 2),
                 u'finished_nodes': (models.ParameterName.STRING, '', 1),
                 u'run_map': (models.ParameterName.STRING, '', 0)
@@ -405,6 +408,7 @@ class Command(BaseCommand):
         smart_dir, _ = models.Directive.objects.get_or_create(name="smartconnector1")
         self.null_package = "bdphpcprovider.smartconnectorscheduler.stages.nullstage.NullStage"
         self.parallel_package = "bdphpcprovider.smartconnectorscheduler.stages.composite.ParallelStage"
+        self.hrmc_parallel_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc_composite.HRMCParallelStage"
         # Define all the stages that will make up the command.  This structure
         # has two layers of composition
         composite_stage, _ = models.Stage.objects.get_or_create(name="basic_connector",
@@ -473,7 +477,7 @@ class Command(BaseCommand):
 
         hrmc_composite_stage, _ = models.Stage.objects.get_or_create(name="hrmc_connector",
             description="Encapsultes HRMC smart connector workflow",
-            package=self.parallel_package,
+            package=self.hrmc_parallel_package,
             order=100)
         # FIXME: tasks.progress_context does not load up composite stage settings
         hrmc_composite_stage.update_settings({})
@@ -538,6 +542,7 @@ class Command(BaseCommand):
                 {
                     u'payload_source': 'file://127.0.0.1/local/testpayload_new',
                     u'payload_destination': 'celery_payload_2',
+                    u'payload_name': 'process_payload',
                 },
             })
         schedule_stage, _ = models.Stage.objects.get_or_create(name="schedule",
@@ -557,8 +562,8 @@ class Command(BaseCommand):
                     u'payload_cloud_dirname': 'AEAO_v1_1',
                     u'compile_file': 'HRMC',
                     u'retry_attempts': 3,
-                    u'max_seed_int': 1000,  # FIXME: should we use maxint here?
-                    u'random_numbers': 'file://127.0.0.1/randomnums.txt'
+                    #u'max_seed_int': 1000,  # FIXME: should we use maxint here?
+                    #u'random_numbers': 'file://127.0.0.1/randomnums.txt'
                 },
             })
         finished_stage, _ = models.Stage.objects.get_or_create(name="finished",

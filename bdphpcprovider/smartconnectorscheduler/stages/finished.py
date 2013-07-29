@@ -82,7 +82,7 @@ def packages_complete(fs, group_id, output_dir, settings):
     Indicates if all the package nodes have finished and generate
     any output as needed
     """
-    nodes = botocloudconnector.get_rego_nodes(group_id, settings)
+    nodes = botocloudconnector.get_rego_nodes(settings)
     error_nodes, finished_nodes = _status_of_nodeset(fs, nodes,
                                                      output_dir,
                                                      settings)
@@ -278,7 +278,7 @@ class Finished(Stage):
         self.boto_settings['nectar_private_key'] = key_file
 
         logger.debug("boto_settings=%s" % self.boto_settings)
-        self.nodes = botocloudconnector.get_rego_nodes(self.group_id, self.boto_settings)
+        self.nodes = botocloudconnector.get_rego_nodes(self.boto_settings)
 
         self.error_nodes = []
         # TODO: parse finished_nodes input

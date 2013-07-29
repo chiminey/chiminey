@@ -134,7 +134,7 @@ class Deploy(Stage):
             pass
             self.started = 1
         else:
-            self.nodes = botocloudconnector.get_rego_nodes(self.group_id,
+            self.nodes = botocloudconnector.get_rego_nodes(
                 self.boto_settings)
             self.error_nodes = []
             for node in self.nodes:
@@ -277,7 +277,7 @@ def start_multi_setup_task(group_id, settings, maketarget_nodegroup_pair={}):
     any output as needed
     """
 
-    nodes = botocloudconnector.get_rego_nodes(group_id, settings)
+    nodes = botocloudconnector.get_rego_nodes(settings)
     logger.debug("nodes=%s" % nodes)
     requested_nodes = 0
 
