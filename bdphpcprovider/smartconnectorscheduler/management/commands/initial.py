@@ -251,6 +251,7 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/stages/setup':
                 [u'the create stage of the smartconnector1',
                 {
+                u'filename_for_PIDs': (models.ParameterName.STRING, '', 5),
                 u'setup_finished': (models.ParameterName.NUMERIC, '', 4),
                 u'payload_name': (models.ParameterName.STRING, '', 3),
                 u'payload_source': (models.ParameterName.STRING, '', 2),
@@ -275,6 +276,9 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/stages/schedule':
                 [u'the schedule stage of the smartconnector1',
                 {
+                u'schedule_index': (models.ParameterName.NUMERIC, '', 4),
+                u'current_processes': (models.ParameterName.STRING, '', 6),
+                u'all_processes': (models.ParameterName.STRING, '', 5),
                 u'schedule_started': (models.ParameterName.NUMERIC, '', 4),
                 u'total_processes': (models.ParameterName.NUMERIC, '', 3),
                 u'scheduled_nodes': (models.ParameterName.STRING, '', 2),
@@ -583,6 +587,7 @@ class Command(BaseCommand):
                     u'payload_source': 'file://127.0.0.1/local/testpayload_new',
                     u'payload_destination': 'celery_payload_2',
                     u'payload_name': 'process_payload',
+                    u'filename_for_PIDs': 'PIDs_collections',
                 },
             })
         schedule_stage, _ = models.Stage.objects.get_or_create(name="schedule",
@@ -590,6 +595,14 @@ class Command(BaseCommand):
             parent=hrmc_composite_stage,
             package=self.schedule_package,
             order=25)
+
+        schedule_stage.update_settings(
+            {
+            u'http://rmit.edu.au/schemas/stages/schedule':
+                {
+                    u'schedule_index': 0,
+                },
+            })
         run_stage, _ = models.Stage.objects.get_or_create(name="run",
             description="This is run stage of HRMC smart connector",
             parent=hrmc_composite_stage,
