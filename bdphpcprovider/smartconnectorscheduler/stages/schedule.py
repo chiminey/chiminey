@@ -46,13 +46,15 @@ class Schedule(Stage):
         try:
             bootstrap_done = int(smartconnector.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/stages/bootstrap/bootstrap_done'))
-            self.group_id = smartconnector.get_existing_key(run_settings,
-                'http://rmit.edu.au/schemas/stages/create/group_id')
+            #FIXme comment group id in bootstrap.py and execute.py
+            #self.group_id = smartconnector.get_existing_key(run_settings,
+            #    'http://rmit.edu.au/schemas/stages/create/group_id')
+            if not bootstrap_done:
+                return False
         except KeyError, e:
             logger.error(e)
             return False
-        if not bootstrap_done:
-            return False
+
         bootstrapped_str = run_settings['http://rmit.edu.au/schemas/stages/bootstrap'][u'bootstrapped_nodes']
         self.bootstrapped_nodes = ast.literal_eval(bootstrapped_str)
         try:
@@ -79,6 +81,7 @@ class Schedule(Stage):
                 self.boto_settings, node_type='bootstrapped_nodes')
 
         if not self.started:
+            #FIXme replace with hrmcstage.get_parent_stage()
             schedule_package = "bdphpcprovider.smartconnectorscheduler.stages.schedule.Schedule"
             parent_obj = models.Stage.objects.get(package=schedule_package)
             parent_stage = parent_obj.parent
@@ -192,7 +195,9 @@ class Schedule(Stage):
 
 def retrieve_boto_settings(run_settings, boto_settings, user_settings):
     smartconnector.copy_settings(boto_settings, run_settings,
-        'http://rmit.edu.au/schemas/stages/setup/payload_source')
+        'http://rmit.edu.au/schemas/hrmc/number_vm_instances')
+    #smartconnector.copy_settings(boto_settings, run_settings,
+    #    'http://rmit.edu.au/schemas/stages/setup/payload_source')
     smartconnector.copy_settings(boto_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/setup/payload_destination')
     smartconnector.copy_settings(boto_settings, run_settings,
