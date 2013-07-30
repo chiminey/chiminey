@@ -285,6 +285,12 @@ class Command(BaseCommand):
                 u'schedule_completed': (models.ParameterName.NUMERIC, '', 1)
                 }
                 ],
+            u'http://rmit.edu.au/schemas/stages/execute':
+                [u'the bootstrap stage of the smartconnector1',
+                {
+                u'executed_procs': (models.ParameterName.STRING, '', 1)
+                }
+                ],
             u'http://rmit.edu.au/schemas/stages/run':
                 [u'the create stage of the smartconnector1',
                 {
@@ -474,6 +480,7 @@ class Command(BaseCommand):
         self.bootstrap_package = "bdphpcprovider.smartconnectorscheduler.stages.bootstrap.Bootstrap"
         self.schedule_package = "bdphpcprovider.smartconnectorscheduler.stages.schedule.Schedule"
         self.run_package = "bdphpcprovider.smartconnectorscheduler.stages.run.Run"
+        self.execute_package = "bdphpcprovider.smartconnectorscheduler.stages.execute.Execute"
         self.finished_package = "bdphpcprovider.smartconnectorscheduler.stages.finished.Finished"
         self.transform_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc2.transform.Transform"
         self.converge_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc2.converge.Converge"
@@ -555,6 +562,22 @@ class Command(BaseCommand):
             parent=hrmc_composite_stage,
             package=self.schedule_package,
             order=25)
+        execute_stage, _ = models.Stage.objects.get_or_create(name="execute",
+            description="This is execute stage of this smart connector",
+            parent=hrmc_composite_stage,
+            package=self.execute_package,
+            order=28)
+        execute_stage.update_settings(
+            {
+            u'http://rmit.edu.au/schemas/stages/run':
+                {
+                    u'payload_cloud_dirname': 'AEAO_v1_1',
+                    u'compile_file': 'HRMC',
+                    u'retry_attempts': 3,
+                    #u'max_seed_int': 1000,  # FIXME: should we use maxint here?
+                    #u'random_numbers': 'file://127.0.0.1/randomnums.txt'
+                },
+            })
         run_stage, _ = models.Stage.objects.get_or_create(name="run",
             description="This is run stage of HRMC smart connector",
             parent=hrmc_composite_stage,
