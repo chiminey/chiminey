@@ -38,9 +38,9 @@ class Schedule(Stage):
     """
 
     def __init__(self, user_settings=None):
-        logger.debug('Schedule Initialised')
         self.user_settings = user_settings.copy()
         self.boto_settings = user_settings.copy()
+        logger.debug('Schedule stage initialised')
 
     def triggered(self, run_settings):
         try:
@@ -99,8 +99,15 @@ class Schedule(Stage):
             logger.debug('map=%s' % self.run_map)
             self.total_processes = stage.get_total_templates([self.run_map])
             logger.debug('total_processes=%d' % self.total_processes)
+            try:
+                self.schedule_index = int(smartconnector.get_existing_key(run_settings,
+                'http://rmit.edu.au/schemas/stages/schedule/schedule_index'))
+            except KeyError:
+                self.schedule_index = 0
+
             self.schedule_index, self.current_processes = \
                 start_round_robin_schedule(self.nodes, self.total_processes,
+                                           self.schedule_index,
                                            self.boto_settings)
             try:
                 all_processes_str = smartconnector.get_existing_key(run_settings,
@@ -108,6 +115,7 @@ class Schedule(Stage):
                 self.all_processes = ast.literal_eval(all_processes_str)
             except KeyError:
                 self.all_processes = []
+
 
             self.all_processes = update_lookup_table(
                 self.current_processes, self.all_processes)
@@ -196,8 +204,6 @@ def retrieve_boto_settings(run_settings, boto_settings, user_settings):
     smartconnector.copy_settings(boto_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/bootstrap/bootstrapped_nodes')
     smartconnector.copy_settings(boto_settings, run_settings,
-        'http://rmit.edu.au/schemas/stages/schedule/schedule_index')
-    smartconnector.copy_settings(boto_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/create/custom_prompt')
     smartconnector.copy_settings(boto_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/create/nectar_username')
@@ -214,13 +220,13 @@ def retrieve_boto_settings(run_settings, boto_settings, user_settings):
     boto_settings['nectar_private_key'] = key_file
 
 
-def start_round_robin_schedule(nodes, processes, settings):
+def start_round_robin_schedule(nodes, processes, schedule_index, settings):
     total_nodes = len(nodes)
     if total_nodes > processes:
         total_nodes = processes
     proc_per_node = processes / total_nodes
     remaining_procs = processes % total_nodes
-    index = int(settings['schedule_index'])
+    index = schedule_index
     new_processes = []
     for cur_node in nodes:
         ip_address = cur_node.ip_address
@@ -320,30 +326,5 @@ def job_finished(ip, settings, destination):
             if 'All processes are scheduled' in line:
                 return True
     return False
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 

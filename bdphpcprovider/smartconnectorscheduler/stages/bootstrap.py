@@ -39,6 +39,7 @@ class Bootstrap(Stage):
     def __init__(self, user_settings=None):
         self.user_settings = user_settings.copy()
         self.boto_settings = user_settings.copy()
+        logger.debug('Bootstrap stage initialised')
 
     def triggered(self, run_settings):
         try:
