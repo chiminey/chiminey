@@ -51,6 +51,7 @@ from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 logger = logging.getLogger(__name__)
 
 
+#FIXme: understand how absolute path are extracted
 def get_make_path(destination):
     destination = get_http_url(destination)
     url = urlparse(destination)
@@ -1386,3 +1387,15 @@ def get_dataset_name_for_output(settings, url, path):
     logger.debug("dataset_name=%s" % dataset_name)
     return dataset_name
 
+def get_parent_stage(child_package, settings):
+    parent_obj = models.Stage.objects.get(package=child_package)
+    parent_stage = parent_obj.parent
+    try:
+        logger.debug('parent_package=%s' % (parent_stage.package))
+        stage = safe_import(parent_stage.package, [],
+                                       {'user_settings': settings})
+    except ImproperlyConfigured, e:
+        logger.debug(e)
+        return (False, "Except in import of stage: %s: %s"
+            % (parent_stage.name, e))
+    return stage

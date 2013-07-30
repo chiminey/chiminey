@@ -22,15 +22,8 @@ schedulestart:
 scheduledone:
 	@sh ./schedule_done $(IDS)
 
-startrun: psd_run_setup run_hrmc
-
-run_hrmc:
-	@echo running hrmc
-	@cd $(HRMC_PACKAGE) ; ./HRMC >& output &  echo "$$!" > "run.pid"
-
-psd_run_setup:
-	echo setting up psd
-	rm -f $(PSD_PACKAGE)/run.pid
+startrun:
+	@sh ./start_run $(IDS)
 
 running:
 	@echo checking for running
