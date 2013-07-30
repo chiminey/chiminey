@@ -92,7 +92,11 @@ class ParallelStage(Stage):
             map_keys = template_map.keys()
             logger.debug("map_keys %s" % map_keys)
             map_ranges = [list(template_map[x]) for x in map_keys]
-            for z in product(*map_ranges):
-                total_templates += 1
+            product = 1
+            for i in map_ranges:
+                product = product* len(i)
+            total_templates = product
+            #for z in product(*map_ranges):
+            #    total_templates += 1
             logger.debug("total_templates=%d" % (total_templates))
         return total_templates
