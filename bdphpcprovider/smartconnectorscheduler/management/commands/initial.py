@@ -595,14 +595,6 @@ class Command(BaseCommand):
             parent=hrmc_composite_stage,
             package=self.schedule_package,
             order=25)
-
-        schedule_stage.update_settings(
-            {
-            u'http://rmit.edu.au/schemas/stages/schedule':
-                {
-                    u'schedule_index': 0,
-                },
-            })
         run_stage, _ = models.Stage.objects.get_or_create(name="run",
             description="This is run stage of HRMC smart connector",
             parent=hrmc_composite_stage,
