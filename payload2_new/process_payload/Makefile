@@ -6,19 +6,21 @@ HRMC_PACKAGE=HRMC2
 
 
 schedulestart:
-	@sh ./process_schedulestart.sh $(PAYLOAD_NAME) $(IDS)
+	@sh ./process_schedulestart.sh
 
 scheduledone:
-	@sh ./process_scheduledone.sh $(IDS)
+	@sh ./process_scheduledone.sh
 
 startrun: psd_run_setup run_hrmc
 
 run_hrmc:
 	@echo running hrmc
 	@sh ./start_run.sh
-	@cd $(HRMC_PACKAGE) ; ./HRMC >& output &  echo "$$!" > "run.pid"
 
 psd_run_setup:
 	echo setting up psd
 	rm -f $(PSD_PACKAGE)/run.pid
 
+running:
+	@echo checking for running
+	@sh ./running.sh
