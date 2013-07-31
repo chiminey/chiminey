@@ -286,7 +286,7 @@ class Command(BaseCommand):
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/execute':
-                [u'the bootstrap stage of the smartconnector1',
+                [u'the execute stage of the smartconnector1',
                 {
                 u'executed_procs': (models.ParameterName.STRING, '', 1)
                 }
@@ -482,6 +482,7 @@ class Command(BaseCommand):
         self.run_package = "bdphpcprovider.smartconnectorscheduler.stages.run.Run"
         self.execute_package = "bdphpcprovider.smartconnectorscheduler.stages.execute.Execute"
         self.finished_package = "bdphpcprovider.smartconnectorscheduler.stages.finished.Finished"
+        self.wait_package = "bdphpcprovider.smartconnectorscheduler.stages.wait.Wait"
         self.transform_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc2.transform.Transform"
         self.converge_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc2.converge.Converge"
         self.teardown_package = "bdphpcprovider.smartconnectorscheduler.stages.teardown.Teardown"
@@ -571,7 +572,7 @@ class Command(BaseCommand):
             {
             u'http://rmit.edu.au/schemas/stages/run':
                 {
-                    u'payload_cloud_dirname': 'AEAO_v1_1',
+                    u'payload_cloud_dirname': 'HRMC2',
                     u'compile_file': 'HRMC',
                     u'retry_attempts': 3,
                     #u'max_seed_int': 1000,  # FIXME: should we use maxint here?
@@ -594,12 +595,20 @@ class Command(BaseCommand):
                     #u'random_numbers': 'file://127.0.0.1/randomnums.txt'
                 },
             })
-        finished_stage, _ = models.Stage.objects.get_or_create(name="finished",
-            description="This is finished stage of HRMC smart connector",
+        #finished_stage, _ = models.Stage.objects.get_or_create(name="finished",
+        #    description="This is finished stage of HRMC smart connector",
+        #    parent=hrmc_composite_stage,
+        #    package=self.finished_package,
+        #    order=40)
+        #finished_stage.update_settings({})
+
+        wait_stage, _ = models.Stage.objects.get_or_create(name="wait",
+            description="This is wait stage of HRMC smart connector",
             parent=hrmc_composite_stage,
-            package=self.finished_package,
+            package=self.wait_package,
             order=40)
-        finished_stage.update_settings({})
+        wait_stage.update_settings({})
+
         transform_stage, _ = models.Stage.objects.get_or_create(name="transform",
             description="This is transform stage of HRMC smart connector",
             parent=hrmc_composite_stage,
