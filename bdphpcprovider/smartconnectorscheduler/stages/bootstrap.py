@@ -51,6 +51,8 @@ class Bootstrap(Stage):
             return False
         created_str = run_settings['http://rmit.edu.au/schemas/stages/create'][u'created_nodes']
         self.created_nodes = ast.literal_eval(created_str)
+        if len(self.created_nodes) == 0:
+            return False
         try:
             bootstrapped_str = smartconnector.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/stages/bootstrap/bootstrapped_nodes')

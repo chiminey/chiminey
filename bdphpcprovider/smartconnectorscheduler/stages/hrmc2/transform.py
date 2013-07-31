@@ -162,7 +162,7 @@ class Transform(Stage):
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/run/payload_cloud_dirname')
         smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/stages/run/max_seed_int')
+            'http://rmit.edu.au/schemas/hrmc/max_seed_int')
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/run/compile_file')
         smartconnector.copy_settings(self.boto_settings, run_settings,
@@ -345,7 +345,7 @@ class Transform(Stage):
         # psd = os.path.join(globalFileSystem,
         #                    self.output_dir, node_output_dir,
         #                    "PSD_output/psd.dat")
-
+        #Fixme replace all reference to files by parameters, e.g PSDCode
         psd_url = smartconnector.get_url_with_pkey(self.boto_settings,
                         os.path.join(self.output_dir,
                             node_output_dir, "PSD_output", "psd.dat"), is_relative_path=False)

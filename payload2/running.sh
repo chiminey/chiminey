@@ -32,7 +32,7 @@ else
     rm -f $PSD_PACKAGE/psd.dat
     rm -f $PSD_PACKAGE/psd_output
     cp -f $HRMC_PACKAGE/xyz_final.xyz $PSD_PACKAGE/
-    cd $PSD_PACKAGE; ./PSD >& psd_output &  echo "$!" > "run.pid"
+    cd $PSD_PACKAGE; ./PSD >& psd_output &  echo "$$!" > "run.pid"
     echo stillrunning
 
 fi

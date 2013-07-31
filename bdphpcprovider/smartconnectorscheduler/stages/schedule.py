@@ -57,6 +57,8 @@ class Schedule(Stage):
 
         bootstrapped_str = run_settings['http://rmit.edu.au/schemas/stages/bootstrap'][u'bootstrapped_nodes']
         self.bootstrapped_nodes = ast.literal_eval(bootstrapped_str)
+        if len(self.bootstrapped_nodes) == 0:
+            return False
         try:
             scheduled_str = smartconnector.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/stages/schedule/scheduled_nodes')
