@@ -187,7 +187,7 @@ class Converge(Stage):
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/run/payload_cloud_dirname')
         smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/stages/run/max_seed_int')
+            'http://rmit.edu.au/schemas/hrmc/max_seed_int')
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/run/compile_file')
         smartconnector.copy_settings(self.boto_settings, run_settings,

@@ -61,6 +61,8 @@ class Execute(Stage):
                 'http://rmit.edu.au/schemas/stages/schedule/schedule_completed'))
             self.group_id = smartconnector.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/stages/create/group_id')
+            self.all_processes = ast.literal_eval(smartconnector.get_existing_key(run_settings,
+                'http://rmit.edu.au/schemas/stages/schedule/all_processes'))
         except KeyError, e:
             logger.error(e)
             return False
@@ -69,6 +71,8 @@ class Execute(Stage):
 
         scheduled_procs_str = run_settings['http://rmit.edu.au/schemas/stages/schedule'][u'current_processes']
         self.schedule_procs = ast.literal_eval(scheduled_procs_str)
+        if len(self.schedule_procs) == 0:
+            return False
         try:
             exec_procs_str = smartconnector.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/stages/execute/executed_procs')
@@ -150,19 +154,29 @@ class Execute(Stage):
         """
         Assume that no nodes have finished yet and indicate to future stages
         """
-        nodes = botocloudconnector.get_rego_nodes(self.boto_settings)
-        logger.debug("nodes = %s" % nodes)
+        #nodes = botocloudconnector.get_rego_nodes(self.boto_settings)
+        #logger.debug("nodes = %s" % nodes)
+        run_settings.setdefault(
+            'http://rmit.edu.au/schemas/stages/execute',
+            {})[u'executed_procs'] = str(self.exec_procs)
+        run_settings.setdefault(
+            'http://rmit.edu.au/schemas/stages/schedule',
+            {})[u'current_processes'] = str(self.exec_procs)
+
+        run_settings.setdefault(
+            'http://rmit.edu.au/schemas/stages/schedule',
+            {})[u'all_processes'] = str(self.all_processes)
 
         if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run'):
             run_settings['http://rmit.edu.au/schemas/stages/run'] = {}
-        run_settings['http://rmit.edu.au/schemas/stages/run'][u'runs_left'] = len(nodes)
+        run_settings['http://rmit.edu.au/schemas/stages/run'][u'runs_left'] = len(self.exec_procs)
         run_settings['http://rmit.edu.au/schemas/stages/run'][u'initial_numbfile'] = self.initial_numbfile
         run_settings['http://rmit.edu.au/schemas/stages/run'][u'rand_index'] = self.rand_index
         run_settings['http://rmit.edu.au/schemas/hrmc']['experiment_id'] = str(self.experiment_id)
         return run_settings
 
 
-    def run_task(self, ip_address, settings):
+    def run_task(self, ip_address, process_id, settings):
         """
             Start the task on the instance, then hang and
             periodically check its state.
@@ -177,7 +191,7 @@ class Execute(Stage):
         #                                    settings=settings)
         # settings['username'] = curr_username
 
-        relative_path = settings['platform'] + '@' + settings['payload_destination']
+        relative_path = settings['platform'] + '@' + settings['payload_destination'] + "/" + process_id
         destination = smartconnector.get_url_with_pkey(settings,
             relative_path,
             is_relative_path=True,
@@ -235,8 +249,15 @@ class Execute(Stage):
         for proc in self.schedule_procs:
             #instance_id = node.id
             ip_address = proc['ip_address']
+            process_id = proc['id']
             try:
-                pids_for_task = self.run_task(ip_address, settings)
+                pids_for_task = self.run_task(ip_address, process_id, settings)
+                proc['status'] = 'running'
+                self.exec_procs.append(proc)
+                for iterator, process in enumerate(self.all_processes):
+                    if int(process['id']) == int(process_id):
+                        self.all_processes[iterator]['status'] = 'running'
+                        break
             except PackageFailedError, e:
                 logger.error(e)
                 logger.error("unable to start package on node %s" % ip_address)
@@ -451,8 +472,9 @@ class Execute(Stage):
 
                 dest_files_location = self.boto_settings['platform'] + "@"\
                                       + os.path.join(self.boto_settings['payload_destination'],
-                                                     #self.boto_settings['payload_cloud_dirname'],
-                                                     proc['id'])
+                                                     proc['id'],
+                                                     self.boto_settings['payload_cloud_dirname']
+                                                     )
                 logger.debug('dest_files_location=%s' % dest_files_location)
 
                 dest_files_url = smartconnector.get_url_with_pkey(self.boto_settings, dest_files_location,
@@ -467,7 +489,7 @@ class Execute(Stage):
                               'PSD', 'PSD.f', 'PSD_exp.dat', 'PSD.inp',
                               'Makefile', 'running.sh',
                               'process_scheduledone.sh', 'process_schedulestart.sh']
-                hrmcstages.delete_files(dest_files_url, exceptions=exceptions)
+                #hrmcstages.delete_files(dest_files_url, exceptions=exceptions) #FIXme: uncomment as needed
                 hrmcstages.copy_directories(source_files_url, dest_files_url)
 
                 # # then create template variated file
@@ -516,8 +538,8 @@ class Execute(Stage):
                 # and overwrite on the remote
                 var_fname_remote = self.boto_settings['platform']\
                     + "@" + os.path.join(self.boto_settings['payload_destination'],
-                                         #self.boto_settings['payload_cloud_dirname'],
                                          proc['id'],
+                                         self.boto_settings['payload_cloud_dirname'],
                                          var_fname)
                 var_fname_pkey = smartconnector.get_url_with_pkey(self.boto_settings, var_fname_remote,
                                                         is_relative_path=True, ip_address=ip)
@@ -637,3 +659,5 @@ def _get_dataset_name_for_input(settings, url, path):
         run_counter)
     logger.debug("dataset_name=%s" % dataset_name)
     return dataset_name
+
+
