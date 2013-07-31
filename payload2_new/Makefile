@@ -27,5 +27,5 @@ startrun:
 
 running:
 	@echo checking for running
-	@sh ./running.sh
+	@sh ./running.sh $(IDS)
 
