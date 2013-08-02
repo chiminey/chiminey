@@ -646,7 +646,7 @@ class Command(BaseCommand):
             {
                 'http://rmit.edu.au/schemas/remotemake/config':
                 {
-                    u'payload_destination': 'iet595'
+                    u'payload_destination': 'iet595/remotemake'
                 }
             })
         # executes make with run target

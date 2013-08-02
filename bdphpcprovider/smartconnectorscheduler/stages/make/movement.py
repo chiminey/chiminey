@@ -59,11 +59,13 @@ class MakeUploadStage(Stage):
         settings = setup_settings(run_settings)
         encoded_s_url = get_url_with_pkey(settings, settings['input_location'])
         logger.debug("encoded_s_url=%s" % encoded_s_url)
-        relative_path = "%s@%s" % ("nci", settings['payload_destination'])
-        logger.debug("Relative path %s" % relative_path)
+        remote_path = "%s@%s_%s" % ("nci",
+                                     settings['payload_destination'],
+                                     settings['contextid'])
+        logger.debug("Relative path %s" % remote_path)
         encoded_d_url = smartconnector.get_url_with_pkey(
             settings,
-            relative_path,
+            remote_path,
             is_relative_path=True,
             ip_address=run_settings[
                 models.UserProfile.PROFILE_SCHEMA_NS]['nci_host'])
