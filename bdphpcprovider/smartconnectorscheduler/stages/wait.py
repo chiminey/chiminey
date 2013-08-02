@@ -57,8 +57,12 @@ class Wait(Stage):
         """
             Checks whether there is a non-zero number of runs still going.
         """
-        executed_procs_str = run_settings['http://rmit.edu.au/schemas/stages/execute'][u'executed_procs']
-        self.executed_procs = ast.literal_eval(executed_procs_str)
+        try:
+            executed_procs_str = run_settings['http://rmit.edu.au/schemas/stages/execute'][u'executed_procs']
+            self.executed_procs = ast.literal_eval(executed_procs_str)
+        except KeyError, e:
+            logger.debug(e)
+            return False
 
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/create', u'group_id'):
             self.group_id = run_settings['http://rmit.edu.au/schemas/stages/create'][u'group_id']

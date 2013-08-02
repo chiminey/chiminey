@@ -379,6 +379,26 @@ class Converge(Stage):
             # trigger first of iteration stages
             logger.debug("nonconvergence")
 
+            run_settings.setdefault(
+                'http://rmit.edu.au/schemas/stages/schedule', {})[u'scheduled_nodes'] = '[]'
+
+            run_settings.setdefault(
+                'http://rmit.edu.au/schemas/stages/execute', {})[u'executed_procs'] = '[]'
+
+            run_settings.setdefault(
+                'http://rmit.edu.au/schemas/stages/schedule',
+                {})[u'current_processes'] = '[]'
+
+            run_settings.setdefault(
+                'http://rmit.edu.au/schemas/stages/schedule',
+                {})[u'schedule_completed'] = 0
+
+            run_settings.setdefault(
+                'http://rmit.edu.au/schemas/stages/schedule',
+                {})[u'schedule_started'] = 0
+
+            logger.debug('scheduled_nodes=%s' % run_settings['http://rmit.edu.au/schemas/stages/schedule'][u'scheduled_nodes'])
+
             run = run_settings['http://rmit.edu.au/schemas/stages/run']
             del run['runs_left']
 
