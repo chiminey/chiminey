@@ -1326,7 +1326,6 @@ def retrieve_private_key(settings, private_key_url):
     return private_key_file
 
 
-
 def generate_rands(settings, start_range,  end_range, num_required, start_index):
     # FIXME: there must be an third party library that does this more
     # effectively.
