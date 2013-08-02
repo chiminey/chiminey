@@ -28,7 +28,6 @@ import re
 from itertools import product
 from django.template import Context, Template
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
-from bdphpcprovider.smartconnectorscheduler import botocloudconnector
 from bdphpcprovider.smartconnectorscheduler.errors import PackageFailedError
 from bdphpcprovider.smartconnectorscheduler import sshconnector
 from bdphpcprovider.smartconnectorscheduler import smartconnector
@@ -96,43 +95,37 @@ class Execute(Stage):
 
         # TODO: we assume initial input is in "%s/input_0" % self.job_dir
         # in configure stage we could copy initial data in 'input_location' into this location
-        if self._exists(run_settings, 'http://rmit.edu.au/schemas/system/misc', u'id'):
-            self.id = run_settings['http://rmit.edu.au/schemas/system/misc'][u'id']
+        try:
+            self.id = int(smartconnector.get_existing_key(run_settings,
+                'http://rmit.edu.au/schemas/system/misc/id'))
             self.iter_inputdir = os.path.join(self.job_dir, "input_%s" % self.id)
-        else:
-            # FIXME: not fully tested
+        except KeyError,e:
             self.id = 0
             self.iter_inputdir = os.path.join(self.job_dir, "input_location")
-
-        # if 'id' in self.boto_settings:
-        #     self.id = self.boto_settings['id']
-        #     #self.iter_inputdir = "input_%s" % self.id
-        #     self.iter_inputdir = self.boto_settings['input_location'] + "_%s" % self.id
-        # else:
-        #     self.id = 0
-        #     #self.iter_inputdir = "input"
-        #     self.iter_inputdir = self.boto_settings['input_location']
         logger.debug("id = %s" % self.id)
 
-        if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run', u'initial_numbfile'):
-            self.initial_numbfile = run_settings['http://rmit.edu.au/schemas/stages/run'][u'initial_numbfile']
-        else:
+        try:
+            self.initial_numbfile = int(smartconnector.get_existing_key(run_settings,
+                'http://rmit.edu.au/schemas/stages/run/initial_numbfile'))
+        except KeyError:
             logger.warn("setting initial_numbfile for first iteration")
             self.initial_numbfile = 1
 
-        if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run', u'rand_index'):
-            self.rand_index = run_settings['http://rmit.edu.au/schemas/stages/run'][u'rand_index']
-        else:
+        try:
+            self.rand_index = int(smartconnector.get_existing_key(run_settings,
+                'http://rmit.edu.au/schemas/stages/run/rand_index'))
+        except KeyError:
             logger.warn("setting rand_index for first iteration")
-            self.rand_index = run_settings['http://rmit.edu.au/schemas/hrmc']['iseed']
+            self.rand_index = int(smartconnector.get_existing_key(run_settings,
+                'http://rmit.edu.au/schemas/hrmc/iseed'))
         logger.debug("rand_index=%s" % self.rand_index)
 
-        if self._exists(run_settings, 'http://rmit.edu.au/schemas/hrmc', u'experiment_id'):
-            try:
-                self.experiment_id = int(run_settings['http://rmit.edu.au/schemas/hrmc'][u'experiment_id'])
-            except ValueError, e:
-                self.experiment_id = 0
-        else:
+        try:
+            self.experiment_id = int(smartconnector.get_existing_key(run_settings,
+                'http://rmit.edu.au/schemas/hrmc/experiment_id'))
+        except KeyError:
+            self.experiment_id = 0
+        except ValueError:
             self.experiment_id = 0
 
         logger.debug("run_settings=%s" % run_settings)
@@ -154,11 +147,10 @@ class Execute(Stage):
         """
         Assume that no nodes have finished yet and indicate to future stages
         """
-        #nodes = botocloudconnector.get_rego_nodes(self.boto_settings)
-        #logger.debug("nodes = %s" % nodes)
         run_settings.setdefault(
             'http://rmit.edu.au/schemas/stages/execute',
             {})[u'executed_procs'] = str(self.exec_procs)
+
         run_settings.setdefault(
             'http://rmit.edu.au/schemas/stages/schedule',
             {})[u'current_processes'] = str(self.exec_procs)
@@ -169,10 +161,12 @@ class Execute(Stage):
 
         if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run'):
             run_settings['http://rmit.edu.au/schemas/stages/run'] = {}
+
         run_settings['http://rmit.edu.au/schemas/stages/run'][u'runs_left'] = len(self.exec_procs)
         run_settings['http://rmit.edu.au/schemas/stages/run'][u'initial_numbfile'] = self.initial_numbfile
         run_settings['http://rmit.edu.au/schemas/stages/run'][u'rand_index'] = self.rand_index
         run_settings['http://rmit.edu.au/schemas/hrmc']['experiment_id'] = str(self.experiment_id)
+
         return run_settings
 
 
@@ -214,37 +208,12 @@ class Execute(Stage):
                 ssh.close()
         logger.debug("command_out2=(%s, %s)" % (command_out, errs))
 
-        # #sshconnector.run_sudo_command_with_status(ssh, command, settings, instance_id)
-
-        # command_out, _ = sshconnector.run_command_with_status(ssh, command)
-
-        # # run_command(ssh, "cd %s; ./%s >& %s &\
-        # # " % (os.path.join(settings['PAYLOAD_DESTINATION'],
-        # #                   settings['PAYLOAD_CLOUD_DIRNAME']),
-        # #      settings['COMPILE_FILE'], "output"))
-
-        # attempts = settings['retry_attempts']
-        # logger.debug("checking for package start")
-        # #FIXME: remove following and instead use a specific MakeFile target to return pid
-        # for x in range(0, attempts):
-        #     time.sleep(5)  # to give process enough time to start
-        #     pids = sshconnector.get_package_pids(ssh, settings['compile_file'])
-        #     logger.debug("pids=%s" % pids)
-        #     if pids:
-        #         break
-        # else:
-        #     raise PackageFailedError("package did not start")
-        #     # pids should have maximum of one element
-        # return pids
-
-
 
     def run_multi_task(self, settings):
         """
         Run the package on each of the nodes in the group and grab
         any output as needed
         """
-        #nodes = botocloudconnector.get_rego_nodes(settings)
         pids = []
         for proc in self.schedule_procs:
             #instance_id = node.id
@@ -278,23 +247,8 @@ class Execute(Stage):
             Upload all input files for this run
             """
             logger.debug("preparing inputs")
-
-
             # TODO: to ensure reproducability, may want to precalculate all random numbers and
             # store rather than rely on canonical execution of rest of this funciton.
-            # seeds = {}
-            # for node in nodes:
-            #     # FIXME: is the random supposed to be positive or negative?
-            #     seeds[node] = random.randrange(0, self.settings['MAX_SEED_INT'])
-            # if seed:
-            #     print ("seed for full package run = %s" % seed)
-            # else:
-            #     print ("seeds for each node in group %s = %s"
-            #            % (self.group_id, [(x.name, seeds[x])
-            #                  for x in seeds.keys()]))
-            # logger.debug("seeds = %s" % seeds)
-
-            #nodes = sorted(botocloudconnector.get_rego_nodes(self.boto_settings))
             processes = self.schedule_procs
             self.node_ind = 0
             logger.debug("Iteration Input dir %s" % self.iter_inputdir)
@@ -327,11 +281,9 @@ class Execute(Stage):
         child_package = "bdphpcprovider.smartconnectorscheduler.stages.execute.Execute"
         parent_stage= hrmcstages.get_parent_stage(child_package, self.boto_settings)
 
-
         for fname in input_files:
             logger.debug("trying %s/%s/%s" % (self.iter_inputdir, input_dir,
                                               fname))
-
             template_mat = template_pat.match(fname)
             if template_mat:
                 # get the template
@@ -340,11 +292,10 @@ class Execute(Stage):
                     os.path.join(self.iter_inputdir, input_dir, fname),
                     is_relative_path=True)
                 template = hrmcstages.get_file(basename_url_with_pkey)
-
                 base_fname = template_mat.group(1)
                 logger.debug("base_fname=%s" % base_fname)
 
-                # find assocaited values file and generator_counter
+                # find associated values file and generator_counter
                 values_map = {}
                 try:
                     values_url_with_pkey = smartconnector.get_url_with_pkey(
@@ -359,9 +310,6 @@ class Execute(Stage):
                 except IOError:
                     logger.warn("no values file found")
                 else:
-
-                    #logger.debug("values_file=%s" % values_url_with_pkey)
-                    #values_content = hrmcstages.get_file(values_url_with_pkey)
                     logger.debug("values_content = %s" % values_content)
                     values_map = dict(json.loads(values_content))
 
@@ -438,9 +386,6 @@ class Execute(Stage):
         '''
         Create input packages for each variation and upload the vms
         '''
-        #logger.debug("variations = %s" % variations)
-        # generate variations for the input_dir
-
         source_files_url = smartconnector.get_url_with_pkey(self.boto_settings,
                                                   os.path.join(self.iter_inputdir,
                                                                input_dir), is_relative_path=True)
@@ -492,15 +437,6 @@ class Execute(Stage):
                 #hrmcstages.delete_files(dest_files_url, exceptions=exceptions) #FIXme: uncomment as needed
                 hrmcstages.copy_directories(source_files_url, dest_files_url)
 
-                # # then create template variated file
-                # from bdphpcprovider.smartconnectorscheduler import models
-                # platform_object = models.Platform.objects.get(name='local')
-                # root_path = platform_object.root_path
-
-                # sysTemp = tempfile.gettempdir()
-                # myTemp = os.path.join(sysTemp, root_path, self.job_dir)
-                # varied_fdir = tempfile.mkdtemp(suffix='foo', prefix='bar', dir=myTemp)
-
                 # Why do we need to create a tempory file to make this copy?
                 import uuid
                 randsuffix = unicode(uuid.uuid4())  # should use some job id here
@@ -514,27 +450,6 @@ class Execute(Stage):
                     is_relative_path=True)
                 logger.debug("value_url=%s" % value_url)
                 hrmcstages.put_file(value_url, json.dumps(values))
-
-                # #varied_fdir = tempfile.mkdtemp()
-                # logger.debug("varied_fdir=%s" % varied_fdir)
-                # fpath = os.path.join(varied_fdir, var_fname)
-                # f = open(fpath, "w")
-                # f.write(var_content)
-                # f.close()
-
-                # # plus store used val in substitution incase next iter needs them.
-                #values_fname = "%s_values" % var_fname
-                # vpath = os.path.join(varied_fdir, values_fname)
-                # v = open(vpath, "w")
-                # v.write(json.dumps(values))
-                # v.close()
-
-                # tmp_dir_basename = os.path.basename(varied_fdir)
-                # var_url = 'file://localhost/%s/%s?root_path=%s' % (tmp_dir_basename, var_fname, root_path)
-                # var_content = hrmcstages.get_file(var_url)
-                # values_url = 'file://localhost/%s/%s?root_path=%s' % (tmp_dir_basename, values_fname, root_path)
-                # values_content = hrmcstages.get_file(values_url)
-
                 # and overwrite on the remote
                 var_fname_remote = self.boto_settings['platform']\
                     + "@" + os.path.join(self.boto_settings['payload_destination'],
@@ -562,22 +477,14 @@ class Execute(Stage):
 
 
 def retrieve_boto_settings(run_settings, boto_settings, user_settings):
-    #smartconnector.copy_settings(boto_settings, run_settings,
-    #        'http://rmit.edu.au/schemas/stages/setup/payload_source')
     smartconnector.copy_settings(boto_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/setup/payload_destination')
     smartconnector.copy_settings(boto_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/setup/filename_for_PIDs')
     smartconnector.copy_settings(boto_settings, run_settings,
         'http://rmit.edu.au/schemas/system/platform')
-    #smartconnector.copy_settings(boto_settings, run_settings,
-    #    'http://rmit.edu.au/schemas/stages/create/group_id_dir')
     smartconnector.copy_settings(boto_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/create/custom_prompt')
-    #smartconnector.copy_settings(boto_settings, run_settings,
-    #    'http://rmit.edu.au/schemas/stages/create/cloud_sleep_interval')
-    #smartconnector.copy_settings(boto_settings, run_settings,
-    #    'http://rmit.edu.au/schemas/stages/create/created_nodes')
     smartconnector.copy_settings(boto_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/run/payload_cloud_dirname')
     smartconnector.copy_settings(boto_settings, run_settings,
@@ -609,10 +516,6 @@ def retrieve_boto_settings(run_settings, boto_settings, user_settings):
     key_file = hrmcstages.retrieve_private_key(boto_settings, user_settings['nectar_private_key'])
     boto_settings['private_key'] = key_file
     boto_settings['nectar_private_key'] = key_file
-
-
-
-
 
 
 

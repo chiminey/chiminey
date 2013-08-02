@@ -43,13 +43,6 @@ class Schedule(Stage):
         logger.debug('Schedule stage initialised')
 
     def triggered(self, run_settings):
-        '''
-        try:
-            self.id = smartconnector.get_existing_key(run_settings,
-                'http://rmit.edu.au/schemas/system/misc/id')
-        except KeyError, e:
-            self.id = 0
-        '''
         try:
             bootstrap_done = int(smartconnector.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/stages/bootstrap/bootstrap_done'))
@@ -67,7 +60,8 @@ class Schedule(Stage):
         if len(self.bootstrapped_nodes) == 0:
             return False
         try:
-            scheduled_str = smartconnector.get_existing_key(run_settings,
+            scheduled_str = smartconnector.get_existing_key(
+                run_settings,
                 'http://rmit.edu.au/schemas/stages/schedule/scheduled_nodes')
             self.scheduled_nodes = ast.literal_eval(scheduled_str)
             logger.debug('scheduled_nodes=%s' % self.scheduled_nodes)
@@ -204,30 +198,12 @@ class Schedule(Stage):
                 'http://rmit.edu.au/schemas/stages/schedule',
                 {})[u'schedule_completed'] = 1
 
-            '''
-            run_settings.setdefault(
-                'http://rmit.edu.au/schemas/stages/schedule',
-                {})[u'scheduled_nodes'] = '[]'
-
-            run_settings.setdefault(
-                'http://rmit.edu.au/schemas/system/misc',
-                {})[u'id'] = self.id + 1
-
-            run_settings.setdefault(
-                'http://rmit.edu.au/schemas/stages/schedule',
-                {})[u'schedule_started'] = 0
-            '''
-
         return run_settings
-
-
 
 
 def retrieve_boto_settings(run_settings, boto_settings, user_settings):
     smartconnector.copy_settings(boto_settings, run_settings,
         'http://rmit.edu.au/schemas/hrmc/number_vm_instances')
-    #smartconnector.copy_settings(boto_settings, run_settings,
-    #    'http://rmit.edu.au/schemas/stages/setup/payload_source')
     smartconnector.copy_settings(boto_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/setup/payload_destination')
     smartconnector.copy_settings(boto_settings, run_settings,
