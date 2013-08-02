@@ -15,7 +15,7 @@ from bdphpcprovider.smartconnectorscheduler.stages.run import Run
 from bdphpcprovider.smartconnectorscheduler.stages.finished import Finished
 from bdphpcprovider.smartconnectorscheduler.stages.hrmc.transform import Transform
 from bdphpcprovider.smartconnectorscheduler.stages.hrmc.converge import Converge
-from bdphpcprovider.smartconnectorscheduler.stages.teardown import Teardown
+from bdphpcprovider.smartconnectorscheduler.stages.destroy import Destroy
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import SmartConnector
 
