@@ -84,7 +84,7 @@ class ParallelStage(Stage):
     def get_run_map(self, settings, **kwargs):
         return {}, kwargs
 
-    def get_total_templates(self, maps):
+    def get_total_templates(self, maps, **kwargs):
         for iter, template_map in enumerate(maps):
             logger.debug("template_map=%s" % template_map)
             total_templates = 0
@@ -94,7 +94,7 @@ class ParallelStage(Stage):
             map_ranges = [list(template_map[x]) for x in map_keys]
             product = 1
             for i in map_ranges:
-                product = product* len(i)
+                product = product * len(i)
             total_templates = product
             #for z in product(*map_ranges):
             #    total_templates += 1

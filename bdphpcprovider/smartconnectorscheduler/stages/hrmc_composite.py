@@ -21,6 +21,7 @@
 
 import logging
 import ast
+import os
 
 from bdphpcprovider.smartconnectorscheduler.stages.composite import ParallelStage
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadSpecificationError
@@ -61,10 +62,10 @@ class HRMCParallelStage(ParallelStage):
         except KeyError, e:
             logger.debug(e)
         try:
-            self.id = smartconnector.get_existing_key(run_settings,
+            id = smartconnector.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/system/misc/id')
         except KeyError, e:
-            self.id = 0
+            id = 0
         # variations map spectification
         if 'pottype' in self.settings:
             logger.debug("pottype=%s" % self.settings['pottype'])
@@ -87,15 +88,15 @@ class HRMCParallelStage(ParallelStage):
             map = {
                 'temp': [300],
                 'iseed': rand_nums,
-                'istart': [1 if self.id > 0 else 2],
+                'istart': [1 if id > 0 else 2],
                 'pottype': [pottype]
             }
         elif num_dim == 2:
-            self.threshold = self.settings['threshold']
-            logger.debug("threshold=%s" % self.threshold)
-            N = int(ast.literal_eval(self.threshold)[0])
+            threshold = self.settings['threshold']
+            logger.debug("threshold=%s" % threshold)
+            N = int(ast.literal_eval(threshold)[0])
             logger.debug("N=%s" % N)
-            if not self.id:
+            if not id:
                 rand_nums = hrmcstages.generate_rands(
                     self.settings,
                     0, self.settings['max_seed_int'],
@@ -111,10 +112,10 @@ class HRMCParallelStage(ParallelStage):
                 rand_nums = hrmcstages.generate_rands(
                     self.settings,
                     0, self.settings['max_seed_int'],
-                    1, self.rand_index)
-                self.rand_index += N
+                    1, rand_index)
+                rand_index += N
                 map = {
-                    'temp': [i for i in [300, 700, 1100, 1500]],
+                    'temp': [i for i in [300, 700, 1100, 1500]], #Fixme: temp should be hrmc parameter
                     'iseed': rand_nums,
                     'istart': [1],
                     'pottype': [pottype],
@@ -125,3 +126,28 @@ class HRMCParallelStage(ParallelStage):
             raise BadSpecificationError(message)
         logger.debug('map=%s' % map)
         return map, rand_index
+
+    def get_total_templates(self, maps, **kwargs):
+        run_settings = kwargs['run_settings']
+        auth_settings = kwargs['auth_settings']
+        job_dir = run_settings['http://rmit.edu.au/schemas/system/misc'][u'output_location']
+        try:
+            id = smartconnector.get_existing_key(
+                run_settings, 'http://rmit.edu.au/schemas/system/misc/id')
+        except KeyError, e:
+            id = 0
+        iter_inputdir = os.path.join(job_dir, "input_%s" % id)
+        url_with_pkey = smartconnector.get_url_with_pkey(
+            auth_settings, iter_inputdir, is_relative_path=True)
+        input_dirs = hrmcstages.list_dirs(url_with_pkey)
+        for iter, template_map in enumerate(maps):
+            logger.debug("template_map=%s" % template_map)
+            map_keys = template_map.keys()
+            logger.debug("map_keys %s" % map_keys)
+            map_ranges = [list(template_map[x]) for x in map_keys]
+            product = 1
+            for i in map_ranges:
+                product = product * len(i)
+            total_templates = product * len(input_dirs)
+            logger.debug("total_templates=%d" % (total_templates))
+        return total_templates
