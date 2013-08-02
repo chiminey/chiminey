@@ -57,5 +57,7 @@ def setup_settings(run_settings):
                 run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nci_private_key'])
     settings['private_key'] = key_file
     settings['nci_private_key'] = key_file
+    settings['contextid'] = run_settings[
+        'http://rmit.edu.au/schemas/system']['contextid']
 
     return settings

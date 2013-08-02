@@ -53,8 +53,9 @@ class MakeFinishedStage(Stage):
         return False
 
     def _job_finished(self, settings):
-        remote_path = "%s@%s" % ("nci",
-            settings['payload_destination'])
+        remote_path = "%s@%s_%s" % ("nci",
+                                     settings['payload_destination'],
+                                     settings['contextid'])
         logger.debug("Relative path %s" % remote_path)
         remote_ip = settings['nci_host']
 
@@ -112,8 +113,9 @@ class MakeFinishedStage(Stage):
         """
             Retrieve the output from the task on the node
         """
-        remote_path = "%s@%s" % ("nci",
-            settings['payload_destination'])
+        remote_path = "%s@%s_%s" % ("nci",
+                                     settings['payload_destination'],
+                                     settings['contextid'])
         logger.debug("Relative path %s" % remote_path)
 
         remote_ip = settings['nci_host']

@@ -63,8 +63,10 @@ class MakeRunStage(Stage):
 
     def process(self, run_settings):
         settings = setup_settings(run_settings)
-        remote_path = "%s@%s" % ("nci",
-            settings['payload_destination'])
+
+        remote_path = "%s@%s_%s" % ("nci",
+                                   settings['payload_destination'],
+                                   settings['contextid'])
         logger.debug("Relative path %s" % remote_path)
         encoded_d_url = smartconnector.get_url_with_pkey(
             settings,

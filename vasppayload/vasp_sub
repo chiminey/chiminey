@@ -1,0 +1,17 @@
+#!/bin/bash
+#PBS -P h72
+#PBS -N BDP-Si
+#PBS -q normal
+#PBS -l walltime=00:10:00
+#PBS -l vmem=3GB
+#PBS -l other=ccdomain
+# 1 cpu MPI jobs need set request -lother=mpi, i.e.
+# PBS -l other=mpi
+# if you uese >8 cpus ncpus= multiples of 8
+#PBS -l ncpus=1
+#PBS -l software=vasp
+#PBS -wd
+#  MAKE SURE YOU USE NPAR=1 IN INCAR FILE
+module load vasp/5.3.3
+
+mpirun vasp > output
