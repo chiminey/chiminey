@@ -1,4 +1,11 @@
 #!/bin/bash
+#PBS -P h72
+#PBS -N BDP-VASP
+#PBS -q normal
+#PBS -l walltime=00:01:00
+#PBS -l vmem=3GB
+#PBS -l ncpus=1
+#PBS -wd
 echo "starting up"
 sleep 30
 echo "shutting down"
