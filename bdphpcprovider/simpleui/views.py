@@ -339,7 +339,7 @@ class MakeSubmitFormView(FormView):
     success_url = '/jobs'
 
     initial = {
-        'input_location': 'file://127.0.0.1/myfiles/makepayload',
+        'input_location': 'file://local@127.0.0.1/myfiles/makepayload',
         'output_location': 'file://local@127.0.0.1/myfiles/makeoutput'
     }
 
