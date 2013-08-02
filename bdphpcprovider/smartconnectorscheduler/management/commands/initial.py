@@ -318,8 +318,16 @@ class Command(BaseCommand):
                 u'criterion': (models.ParameterName.STRING, '', 1),  # Use STRING as float not implemented
                 }
                 ],
+
             u'http://rmit.edu.au/schemas/stages/teardown':
                 [u'the teardown stage of the smartconnector1',
+                {
+                u'run_finished': (models.ParameterName.NUMERIC, '', 1),
+                }
+                ],
+
+            u'http://rmit.edu.au/schemas/stages/destroy':
+                [u'the destroy stage of the smartconnector1',
                 {
                 u'run_finished': (models.ParameterName.NUMERIC, '', 1),
                 }
@@ -525,7 +533,8 @@ class Command(BaseCommand):
         self.wait_package = "bdphpcprovider.smartconnectorscheduler.stages.wait.Wait"
         self.transform_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc2.transform.Transform"
         self.converge_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc2.converge.Converge"
-        self.teardown_package = "bdphpcprovider.smartconnectorscheduler.stages.teardown.Teardown"
+        #self.teardown_package = "bdphpcprovider.smartconnectorscheduler.stages.teardown.Teardown"
+        self.destroy_package = "bdphpcprovider.smartconnectorscheduler.stages.destroy.Destroy"
 
         hrmc_composite_stage, _ = models.Stage.objects.get_or_create(name="hrmc_connector",
             description="Encapsultes HRMC smart connector workflow",
@@ -607,7 +616,7 @@ class Command(BaseCommand):
             description="This is execute stage of this smart connector",
             parent=hrmc_composite_stage,
             package=self.execute_package,
-            order=28)
+            order=30)
         execute_stage.update_settings(
             {
             u'http://rmit.edu.au/schemas/stages/run':
@@ -619,6 +628,7 @@ class Command(BaseCommand):
                     #u'random_numbers': 'file://127.0.0.1/randomnums.txt'
                 },
             })
+        '''
         run_stage, _ = models.Stage.objects.get_or_create(name="run",
             description="This is run stage of HRMC smart connector",
             parent=hrmc_composite_stage,
@@ -635,6 +645,7 @@ class Command(BaseCommand):
                     #u'random_numbers': 'file://127.0.0.1/randomnums.txt'
                 },
             })
+        '''
         #finished_stage, _ = models.Stage.objects.get_or_create(name="finished",
         #    description="This is finished stage of HRMC smart connector",
         #    parent=hrmc_composite_stage,
@@ -661,12 +672,21 @@ class Command(BaseCommand):
             package=self.converge_package,
             order=60)
         converge_stage.update_settings({})
+        '''
         teardown_stage, _ = models.Stage.objects.get_or_create(name="teardown",
             description="This is teardown stage of HRMC smart connector",
             parent=hrmc_composite_stage,
             package=self.teardown_package,
             order=70)
         teardown_stage.update_settings({})
+        '''
+        destroy_stage, _ = models.Stage.objects.get_or_create(name="destroy",
+            description="This is destroy stage of HRMC smart connector",
+            parent=hrmc_composite_stage,
+            package=self.destroy_package,
+            order=70)
+        destroy_stage.update_settings({})
+
         comm, _ = models.Command.objects.get_or_create(platform=nectar_platform,
             directive=hrmc_smart_dir, stage=hrmc_composite_stage)
         print "done"
