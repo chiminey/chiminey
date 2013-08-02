@@ -379,7 +379,7 @@ class Command(BaseCommand):
 
         logger.debug("stages=%s" % models.Stage.objects.all())
         local_filesys_rootpath = '/var/cloudenabling/remotesys'
-        nci_filesys_root_path = '/home/centos/bdp'
+        nci_filesys_root_path = '/short/h72/BDP/BDP_payload'
         local_platform, _ = models.Platform.objects.get_or_create(name='local',
             root_path=local_filesys_rootpath)
         nectar_platform, _ = models.Platform.objects.get_or_create(
@@ -646,7 +646,7 @@ class Command(BaseCommand):
             {
                 'http://rmit.edu.au/schemas/remotemake/config':
                 {
-                    u'payload_destination': 'bdp_payload'
+                    u'payload_destination': 'iet595'
                 }
             })
         # executes make with run target

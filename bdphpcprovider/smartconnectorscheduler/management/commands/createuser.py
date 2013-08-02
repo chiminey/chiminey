@@ -172,9 +172,9 @@ class Command(BaseCommand):
         self.PARAMS = {
             'userinfo1': 'param1val',
             'userinfo2': 42,
-            'nci_user': 'root',
+            'nci_user': 'iet595',
             'nci_password': 'changemepassword',  # NB: change this password
-            'nci_host': '127.0.0.1',
+            'nci_host': 'vayu.nci.org.au',
             'nci_private_key': '',
             'nectar_private_key': 'file://local@127.0.0.1/mynectarkey.pem',
             'nectar_private_key_name': '',
