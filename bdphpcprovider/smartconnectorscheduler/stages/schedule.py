@@ -43,6 +43,13 @@ class Schedule(Stage):
         logger.debug('Schedule stage initialised')
 
     def triggered(self, run_settings):
+        '''
+        try:
+            self.id = smartconnector.get_existing_key(run_settings,
+                'http://rmit.edu.au/schemas/system/misc/id')
+        except KeyError, e:
+            self.id = 0
+        '''
         try:
             bootstrap_done = int(smartconnector.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/stages/bootstrap/bootstrap_done'))
@@ -63,6 +70,7 @@ class Schedule(Stage):
             scheduled_str = smartconnector.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/stages/schedule/scheduled_nodes')
             self.scheduled_nodes = ast.literal_eval(scheduled_str)
+            logger.debug('scheduled_nodes=%s' % self.scheduled_nodes)
             logger.debug('scheduled nodes=%d, boostrapped nodes = %d'
                          % (len(self.scheduled_nodes), len(self.bootstrapped_nodes)))
             return len(self.scheduled_nodes) < len(self.bootstrapped_nodes)
@@ -102,7 +110,9 @@ class Schedule(Stage):
             except TypeError:
                 self.run_map = map
             logger.debug('map=%s' % self.run_map)
-            self.total_processes = stage.get_total_templates([self.run_map])
+            self.total_processes = stage.get_total_templates(
+                [self.run_map], run_settings=run_settings,
+                auth_settings=self.boto_settings)
             logger.debug('total_processes=%d' % self.total_processes)
             try:
                 self.schedule_index = int(smartconnector.get_existing_key(run_settings,
@@ -110,6 +120,7 @@ class Schedule(Stage):
             except KeyError:
                 self.schedule_index = 0
 
+            self.current_processes = []
             self.schedule_index, self.current_processes = \
                 start_round_robin_schedule(self.nodes, self.total_processes,
                                            self.schedule_index,
@@ -192,7 +203,24 @@ class Schedule(Stage):
             run_settings.setdefault(
                 'http://rmit.edu.au/schemas/stages/schedule',
                 {})[u'schedule_completed'] = 1
+
+            '''
+            run_settings.setdefault(
+                'http://rmit.edu.au/schemas/stages/schedule',
+                {})[u'scheduled_nodes'] = '[]'
+
+            run_settings.setdefault(
+                'http://rmit.edu.au/schemas/system/misc',
+                {})[u'id'] = self.id + 1
+
+            run_settings.setdefault(
+                'http://rmit.edu.au/schemas/stages/schedule',
+                {})[u'schedule_started'] = 0
+            '''
+
         return run_settings
+
+
 
 
 def retrieve_boto_settings(run_settings, boto_settings, user_settings):
