@@ -2,6 +2,7 @@ import json
 from django.core.validators import ValidationError
 
 def validate_sweep_map(value):
+    # FIXME: more detailed validation required here
     sweep_map = value
     try:
         map = json.loads(sweep_map)
@@ -12,6 +13,7 @@ def validate_sweep_map(value):
 
 
 def validate_run_map(value):
+    # FIXME: more detailed validation required here
     run_map = value
     try:
         map = json.loads(run_map)

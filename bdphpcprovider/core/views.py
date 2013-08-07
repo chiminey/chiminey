@@ -208,7 +208,9 @@ class ContextResource(ModelResource):
         elif bundle.data['smart_connector'] == 'copydir':
             (platform, directive_name,
              directive_args, system_settings) = self._post_to_copy(bundle)
-
+        elif bundle.data['smart_connector'] == 'remotemake':
+                (platform, directive_name,
+                 directive_args, system_settings) = self._post_to_remotemake(bundle)
         location = []
         try:
             (run_settings, command_args, run_context) \
@@ -217,7 +219,7 @@ class ContextResource(ModelResource):
                  directive_name,
                  directive_args, system_settings, request.user.username)
 
-        except InvalidInputError,e:
+        except InvalidInputError, e:
             bundle.obj = None
             logger.error(e)
         else:
@@ -289,6 +291,32 @@ class ContextResource(ModelResource):
                     ('run_map', bundle.data['run_map'])
                 ]
             ])
+
+        logger.debug("directive_args=%s" % pformat(directive_args))
+        # make the system settings, available to initial stage and merged with run_settings
+
+        system_dict = {
+            u'system': u'settings',
+            u'output_location': bundle.data['output_location']}
+        system_settings = {u'http://rmit.edu.au/schemas/system/misc': system_dict}
+
+        logger.debug("directive_name=%s" % directive_name)
+        logger.debug("directive_args=%s" % directive_args)
+
+        return (platform, directive_name, directive_args, system_settings)
+
+    def _post_to_remotemake(self, bundle):
+        platform = 'local'
+        directive_name = "remotemake"
+        logger.debug("%s" % directive_name)
+        directive_args = []
+
+        directive_args.append(
+            ['',
+                ['http://rmit.edu.au/schemas/remotemake',
+                    ('input_location',  bundle.data['input_location'])],
+                ['http://rmit.edu.au/schemas/stages/make',
+                    ('sweep_map', bundle.data['sweep_map'])]])
 
         logger.debug("directive_args=%s" % pformat(directive_args))
         # make the system settings, available to initial stage and merged with run_settings

@@ -20,6 +20,7 @@
 
 import os
 import logging
+import ast
 import logging.config
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
@@ -64,41 +65,56 @@ class MakeRunStage(Stage):
     def process(self, run_settings):
         settings = setup_settings(run_settings)
 
-        remote_path = "%s@%s_%s" % ("nci",
-                                   settings['payload_destination'],
-                                   settings['contextid'])
-        logger.debug("Relative path %s" % remote_path)
-        encoded_d_url = smartconnector.get_url_with_pkey(
-            settings,
-            remote_path,
-            is_relative_path=True,
-            ip_address=settings['ip'])
-        (scheme, host, mypath, location, query_settings) = \
-            hrmcstages.parse_bdpurl(encoded_d_url)
-        command = "cd %s; make %s" % (os.path.join(
-                query_settings['root_path'],
-                mypath),
-            'startrun')
-        command_out = ''
-        errs = ''
-        try:
-            ssh = sshconnector.open_connection(
-                ip_address=settings['ip'],
-                settings=settings)
-            command_out, errs = sshconnector.run_command_with_status(
-                ssh,
-                command)
-        except Exception, e:
-            logger.error(e)
-        finally:
-            if ssh:
-                ssh.close()
-        logger.debug("command_out2=(%s, %s)" % (command_out, errs))
-        if not errs:
-            self.program_success = 1
+        logger.debug("settings=%s" % settings)
+        if self._exists(run_settings,
+            'http://rmit.edu.au/schemas/stages/make',
+            u'runs_left'):
+            self.runs_left = ast.literal_eval(str(
+                run_settings['http://rmit.edu.au/schemas/stages/make'][u'runs_left']))
         else:
-            self.program_success = 0
-        logger.debug("program_success =%s" % self.program_success)
+            self.runs_left = []
+
+        base_tasks_url = "%s@%s" % ('nci', os.path.join(
+                settings['payload_destination'],
+                str(settings['contextid']))
+            )
+        # base_task_e_url = smartconnector.get_url_with_pkey(settings,
+        #     base_tasks_url, is_relative_path=True, ip_address=settings['ip'])
+
+        for run_counter in self.runs_left:
+            remote_path = os.path.join(base_tasks_url, str(run_counter))
+            logger.debug("remote_path=%s" % remote_path)
+            encoded_d_url = smartconnector.get_url_with_pkey(
+                settings,
+                remote_path,
+                is_relative_path=True,
+                ip_address=settings['ip'])
+            (scheme, host, mypath, location, query_settings) = \
+                hrmcstages.parse_bdpurl(encoded_d_url)
+            command = "cd %s; make %s" % (os.path.join(
+                    query_settings['root_path'],
+                    mypath),
+                'startrun')
+            command_out = ''
+            errs = ''
+            try:
+                ssh = sshconnector.open_connection(
+                    ip_address=settings['ip'],
+                    settings=settings)
+                command_out, errs = sshconnector.run_command_with_status(
+                    ssh,
+                    command)
+            except Exception, e:
+                logger.error(e)
+            finally:
+                if ssh:
+                    ssh.close()
+            logger.debug("command_out2=(%s, %s)" % (command_out, errs))
+            if not errs:
+                self.program_success = 1
+            else:
+                self.program_success = 0
+            logger.debug("program_success =%s" % self.program_success)
 
     def output(self, run_settings):
         run_settings.setdefault(

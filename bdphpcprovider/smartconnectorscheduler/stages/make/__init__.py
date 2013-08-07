@@ -60,4 +60,6 @@ def setup_settings(run_settings):
     settings['contextid'] = run_settings[
         'http://rmit.edu.au/schemas/system']['contextid']
 
+    settings['sweep_map'] = run_settings[
+            'http://rmit.edu.au/schemas/stages/make']['sweep_map']
     return settings

@@ -20,6 +20,7 @@
 
 import os
 import logging
+import ast
 import logging.config
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
@@ -44,26 +45,31 @@ class MakeFinishedStage(Stage):
 
     def triggered(self, run_settings):
 
+        # if self._exists(
+        #         run_settings,
+        #         'http://rmit.edu.au/schemas/stages/make',
+        #         u'running'):
+        #     return run_settings['http://rmit.edu.au/schemas/stages/make'][
+        #         u'running']
+
+        # if we have no runs_left then we must have finished all the runs
         if self._exists(
                 run_settings,
                 'http://rmit.edu.au/schemas/stages/make',
-                u'running'):
-            return run_settings['http://rmit.edu.au/schemas/stages/make'][
-                u'running']
+                u'runs_left'):
+            return len(ast.literal_eval(run_settings[
+                'http://rmit.edu.au/schemas/stages/make'][
+                u'runs_left']))
+
         return False
 
-    def _job_finished(self, settings):
-        remote_path = "%s@%s_%s" % ("nci",
-                                     settings['payload_destination'],
-                                     settings['contextid'])
-        logger.debug("Relative path %s" % remote_path)
-        remote_ip = settings['nci_host']
+    def _job_finished(self, settings, remote_path):
 
         encoded_d_url = smartconnector.get_url_with_pkey(
-            settings,
-            remote_path,
+            settings=settings,
+            url_or_relative_path=remote_path,
             is_relative_path=True,
-            ip_address=remote_ip)
+            ip_address=settings['ip'])
         (scheme, host, mypath, location, query_settings) = \
             hrmcstages.parse_bdpurl(encoded_d_url)
         command = "cd %s; make %s" % (os.path.join(
@@ -71,9 +77,9 @@ class MakeFinishedStage(Stage):
             'running')
         command_out = ''
         errs = ''
-        logger.debug("starting command %s for %s" % (command, remote_ip))
+        logger.debug("starting command %s for %s" % (command, host))
         try:
-            ssh = sshconnector.open_connection(ip_address=remote_ip,
+            ssh = sshconnector.open_connection(ip_address=host,
                                                 settings=settings)
             command_out, errs = sshconnector.run_command_with_status(ssh, command)
         except Exception, e:
@@ -102,23 +108,43 @@ class MakeFinishedStage(Stage):
 
     def process(self, run_settings):
         settings = setup_settings(run_settings)
-        job_finished = self._job_finished(settings)
-        if job_finished:
-            self._get_output(settings)
-            self.still_running = 0
+        logger.debug("settings=%s" % settings)
+        if self._exists(run_settings,
+            'http://rmit.edu.au/schemas/stages/make',
+            u'runs_left'):
+            self.runs_left = ast.literal_eval(
+                run_settings['http://rmit.edu.au/schemas/stages/make'][u'runs_left'])
         else:
-            self.still_running = 1
+            self.runs_left = []
 
-    def _get_output(self, settings):
+        base_tasks_url = "%s@%s" % ('nci', os.path.join(
+                settings['payload_destination'],
+                str(settings['contextid']))
+            )
+
+        for run_counter in self.runs_left:
+            remote_path = os.path.join(base_tasks_url, str(run_counter))
+            logger.debug("remote_path= %s" % remote_path)
+
+            job_finished = self._job_finished(
+                settings=settings,
+                remote_path=remote_path)
+            if job_finished:
+                self._get_output(settings, run_counter)
+                self.runs_left.remove(run_counter)
+
+    def _get_output(self, settings, run_counter):
         """
             Retrieve the output from the task on the node
         """
-        remote_path = "%s@%s_%s" % ("nci",
-                                     settings['payload_destination'],
-                                     settings['contextid'])
+        remote_path = "%s@%s" % (
+            "nci",
+            os.path.join(settings['payload_destination'],
+                         str(settings['contextid']), str(run_counter)))
+
         logger.debug("Relative path %s" % remote_path)
 
-        remote_ip = settings['nci_host']
+        remote_ip = settings['ip']
         encoded_s_url = smartconnector.get_url_with_pkey(
             settings,
             remote_path,
@@ -129,22 +155,27 @@ class MakeFinishedStage(Stage):
         make_path = os.path.join(query_settings['root_path'], mypath)
         logger.debug("make_path=%s" % make_path)
 
-        dest_url = settings[
-            'output_location']
+        dest_url = os.path.join(
+            settings['output_location'],
+            str(run_counter))
 
         logger.debug("Transferring output from %s to %s" % (remote_path,
             dest_url))
         logger.debug("dest_url=%s" % dest_url)
         encoded_d_url = smartconnector.get_url_with_pkey(
             settings,
-            dest_url, is_relative_path=False)
+            dest_url, is_relative_path=False, ip_address=settings['ip'])
         logger.debug("encoded_d_url=%s" % encoded_d_url)
 
-        hrmcstages.delete_files(encoded_d_url, exceptions=[])
+        #hrmcstages.delete_files(encoded_d_url, exceptions=[])
+
         # FIXME: might want to turn on paramiko compress function
         # to speed up this transfer
         hrmcstages.copy_directories(encoded_s_url, encoded_d_url)
 
     def output(self, run_settings):
-        run_settings['http://rmit.edu.au/schemas/stages/make']['running'] = self.still_running
+        run_settings['http://rmit.edu.au/schemas/stages/make']['runs_left']  \
+            = str(self.runs_left)
+        # run_settings['http://rmit.edu.au/schemas/stages/make']['running'] = \
+        #     self.still_running
         return run_settings

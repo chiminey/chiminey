@@ -20,6 +20,10 @@ class MakeSubmitForm(forms.Form):
         #widget=forms.Textarea(attrs={'cols': 80, 'rows': 1})
         )
 
+    sweep_map = forms.CharField(label="Sweep Map JSON",
+        widget=forms.Textarea(attrs={'cols': 80, 'rows': 10}
+        ))
 
     def __init__(self, *args, **kwargs):
         super(MakeSubmitForm, self).__init__(*args, **kwargs)
+        self.fields["sweep_map"].validators.append(validators.validate_sweep_map)
