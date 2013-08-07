@@ -345,7 +345,10 @@ class Command(BaseCommand):
                 [u'',
                 {
                 u'running': (models.ParameterName.NUMERIC, '',1),
-                u'program_success': (models.ParameterName.NUMERIC, '', 2)
+                u'program_success': (models.ParameterName.NUMERIC, '', 2),
+                u'runs_left': (models.ParameterName.STRING, '', 3),
+                u'sweep_map': (models.ParameterName.STRING, '', 4)
+
                 }
                 ]
         }

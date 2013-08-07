@@ -340,49 +340,89 @@ class MakeSubmitFormView(FormView):
 
     initial = {
         'input_location': 'file://local@127.0.0.1/myfiles/makepayload',
-        'output_location': 'file://local@127.0.0.1/myfiles/makeoutput'
+        'output_location': 'file://local@127.0.0.1/myfiles/makeoutput',
+        'sweep_map': '{"a": [1, 2]}'
     }
 
+    # This method is called when valid form data has been POSTed.
+    # It should return an HttpResponse.
     def form_valid(self, form):
-        # This method is called when valid form data has been POSTed.
-        # It should return an HttpResponse.
-        platform = 'local'
-        directive_name = "remotemake"
-        logger.debug("%s" % directive_name)
-        directive_args = []
+        #FIXME: consider using non-locahost URL for api_host
+        api_host = "http://127.0.0.1"
+        url = "%s/api/v1/context/?format=json" % api_host
 
-        directive_args.append(
-            ['',
-                ['http://rmit.edu.au/schemas/remotemake',
-                    ('input_location',  form.cleaned_data['input_location'])]])
+        logger.debug("self.request.user.username=%s" % self.request.user.username)
+        logger.debug("self.request.user.username=%s" % self.request.user.password)
 
-        logger.debug("form=%s" % pformat(form.cleaned_data))
+        # pass the sessionid cookie through to the internal API
+        cookies = dict(self.request.COOKIES)
+        logger.debug("cookies=%s" % cookies)
+        headers = {'content-type': 'application/json'}
 
-        logger.debug("directive_args=%s" % directive_args)
+        data = json.dumps({'smart_connector': 'remotemake',
+                    'input_location':  form.cleaned_data['input_location'],
+                    'sweep_map': form.cleaned_data['sweep_map'],
+                    'output_location': form.cleaned_data['output_location']})
 
-        # make the system settings, available to initial stage and merged with run_settings
-        system_dict = {
-            u'system': u'settings',
-            u'output_location': form.cleaned_data['output_location']}
-        system_settings = {u'http://rmit.edu.au/schemas/system/misc': system_dict}
+        r = requests.post(url,
+            data=data,
+            headers=headers,
+            cookies=cookies)
 
-        logger.debug("directive_name=%s" % directive_name)
-        logger.debug("directive_args=%s" % directive_args)
+         # TODO: need to check for status_code and handle failures.
 
-        # FIXME: we should be sending this request to scheduler API using
-        # POST, to keep separation of concerns.  See sweep for example.
-
-        try:
-            (run_settings, command_args, run_context) \
-                = hrmcstages.make_runcontext_for_directive(
-                platform,
-                directive_name,
-                directive_args, system_settings, self.request.user.username)
-
-        except InvalidInputError, e:
-            return HttpResponse(str(e))
+        logger.debug("r.json=%s" % r.json)
+        logger.debug("r.text=%s" % r.text)
+        logger.debug("r.headers=%s" % r.headers)
+        header_location = r.headers['location']
+        logger.debug("header_location=%s" % header_location)
+        new_context_uri = header_location[len(api_host):]
+        logger.debug("new_context_uri=%s" % new_context_uri)
 
         return super(MakeSubmitFormView, self).form_valid(form)
+
+
+
+    # def form_valid(self, form):
+    #     # This method is called when valid form data has been POSTed.
+    #     # It should return an HttpResponse.
+    #     platform = 'local'
+    #     directive_name = "remotemake"
+    #     logger.debug("%s" % directive_name)
+    #     directive_args = []
+
+    #     directive_args.append(
+    #         ['',
+    #             ['http://rmit.edu.au/schemas/remotemake',
+    #                 ('input_location',  form.cleaned_data['input_location'])]])
+
+    #     logger.debug("form=%s" % pformat(form.cleaned_data))
+
+    #     logger.debug("directive_args=%s" % directive_args)
+
+    #     # make the system settings, available to initial stage and merged with run_settings
+    #     system_dict = {
+    #         u'system': u'settings',
+    #         u'output_location': form.cleaned_data['output_location']}
+    #     system_settings = {u'http://rmit.edu.au/schemas/system/misc': system_dict}
+
+    #     logger.debug("directive_name=%s" % directive_name)
+    #     logger.debug("directive_args=%s" % directive_args)
+
+    #     # FIXME: we should be sending this request to scheduler API using
+    #     # POST, to keep separation of concerns.  See sweep for example.
+
+    #     try:
+    #         (run_settings, command_args, run_context) \
+    #             = hrmcstages.make_runcontext_for_directive(
+    #             platform,
+    #             directive_name,
+    #             directive_args, system_settings, self.request.user.username)
+
+    #     except InvalidInputError, e:
+    #         return HttpResponse(str(e))
+
+    #     return super(MakeSubmitFormView, self).form_valid(form)
 
 
 
