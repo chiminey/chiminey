@@ -138,7 +138,7 @@ class HRMCParallelStage(ParallelStage):
             id = 0
         iter_inputdir = os.path.join(job_dir, "input_%s" % id)
         url_with_pkey = smartconnector.get_url_with_pkey(
-            auth_settings, iter_inputdir, is_relative_path=True)
+            auth_settings, iter_inputdir, is_relative_path=False)
         input_dirs = hrmcstages.list_dirs(url_with_pkey)
         for iter, template_map in enumerate(maps):
             logger.debug("template_map=%s" % template_map)

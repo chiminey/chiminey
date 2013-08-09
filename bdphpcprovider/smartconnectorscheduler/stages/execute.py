@@ -29,11 +29,9 @@ from itertools import product
 from django.template import Context, Template
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler.errors import PackageFailedError
-from bdphpcprovider.smartconnectorscheduler import sshconnector
-from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
-from bdphpcprovider.smartconnectorscheduler import hrmcstages
-from bdphpcprovider.smartconnectorscheduler import mytardis
+from bdphpcprovider.smartconnectorscheduler \
+    import mytardis, models, hrmcstages, sshconnector, smartconnector
 
 
 logger = logging.getLogger(__name__)
@@ -44,8 +42,6 @@ class Execute(Stage):
     Start application on nodes and return status
     """
     def __init__(self, user_settings=None):
-        self.user_settings = user_settings.copy()
-        self.boto_settings = user_settings.copy()
         self.numbfile = 0
         self.job_dir = "hrmcrun"
         logger.debug("Run stage initialized")
@@ -85,7 +81,6 @@ class Execute(Stage):
         return False
 
     def process(self, run_settings):
-
         logger.debug("processing run stage")
 
         self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
@@ -129,8 +124,8 @@ class Execute(Stage):
             self.experiment_id = 0
 
         logger.debug("run_settings=%s" % run_settings)
-
-        retrieve_boto_settings(run_settings, self.boto_settings, self.user_settings)
+        self.boto_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
+        retrieve_boto_settings(run_settings, self.boto_settings)
 
         self._prepare_inputs()
         try:
@@ -239,9 +234,6 @@ class Execute(Stage):
         return all_pids
 
 
-
-
-
     def _prepare_inputs(self):
             """
             Upload all input files for this run
@@ -252,7 +244,8 @@ class Execute(Stage):
             processes = self.schedule_procs
             self.node_ind = 0
             logger.debug("Iteration Input dir %s" % self.iter_inputdir)
-            url_with_pkey = smartconnector.get_url_with_pkey(self.boto_settings, self.iter_inputdir, is_relative_path=True)
+            url_with_pkey = smartconnector.get_url_with_pkey(
+                self.boto_settings, self.iter_inputdir, is_relative_path=False)
             logger.debug("url_with_pkey=%s" % url_with_pkey)
             input_dirs = hrmcstages.list_dirs(url_with_pkey)
             if not input_dirs:
@@ -272,7 +265,7 @@ class Execute(Stage):
         fname_url_with_pkey = smartconnector.get_url_with_pkey(
             self.boto_settings,
             os.path.join(self.iter_inputdir, input_dir),
-            is_relative_path=True)
+            is_relative_path=False)
         input_files = hrmcstages.list_dirs(fname_url_with_pkey,
             list_files=True)
 
@@ -290,7 +283,7 @@ class Execute(Stage):
                 basename_url_with_pkey = smartconnector.get_url_with_pkey(
                     self.boto_settings,
                     os.path.join(self.iter_inputdir, input_dir, fname),
-                    is_relative_path=True)
+                    is_relative_path=False)
                 template = hrmcstages.get_file(basename_url_with_pkey)
                 base_fname = template_mat.group(1)
                 logger.debug("base_fname=%s" % base_fname)
@@ -303,7 +296,7 @@ class Execute(Stage):
                         os.path.join(self.iter_inputdir,
                             input_dir,
                             '%s_values' % base_fname),
-                        is_relative_path=True)
+                        is_relative_path=False)
 
                     logger.debug("values_file=%s" % values_url_with_pkey)
                     values_content = hrmcstages.get_file(values_url_with_pkey)
@@ -386,9 +379,10 @@ class Execute(Stage):
         '''
         Create input packages for each variation and upload the vms
         '''
-        source_files_url = smartconnector.get_url_with_pkey(self.boto_settings,
-                                                  os.path.join(self.iter_inputdir,
-                                                               input_dir), is_relative_path=True)
+        source_files_url = smartconnector.get_url_with_pkey(
+            self.boto_settings, os.path.join(
+                self.iter_inputdir, input_dir),
+            is_relative_path=False)
         logger.debug('source_files_url=%s' % source_files_url)
 
         # Copy input directory to mytardis only after saving locally, so if
@@ -473,10 +467,11 @@ class Execute(Stage):
                 tmp_url = smartconnector.get_url_with_pkey(self.boto_settings, os.path.join("tmp%s" % randsuffix),
                     is_relative_path=True)
                 logger.debug("deleting %s" % tmp_url)
-                #hrmcstages.delete_files(url)
+                #hrmcstages.delete_files(u
 
 
-def retrieve_boto_settings(run_settings, boto_settings, user_settings):
+
+def retrieve_boto_settings(run_settings, boto_settings):
     smartconnector.copy_settings(boto_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/setup/payload_destination')
     smartconnector.copy_settings(boto_settings, run_settings,
@@ -513,7 +508,8 @@ def retrieve_boto_settings(run_settings, boto_settings, user_settings):
     boto_settings['username'] = 'root'  # FIXME: schema value is ignored
 
     boto_settings['password'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
-    key_file = hrmcstages.retrieve_private_key(boto_settings, user_settings['nectar_private_key'])
+    key_file = hrmcstages.retrieve_private_key(boto_settings,
+            run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nectar_private_key'])
     boto_settings['private_key'] = key_file
     boto_settings['nectar_private_key'] = key_file
 

@@ -67,9 +67,10 @@ class IterationConverge(Stage):
             return self.transformed
         return False
 
-    def process(self, context):
+    def process(self, run_settings):
         """
         """
+        self.boto_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
         self.number_of_remaining_iterations -= 1
         print "Number of Iterations Left %d" \
             % self.number_of_remaining_iterations

@@ -24,7 +24,7 @@ import ast
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
-from bdphpcprovider.smartconnectorscheduler import sshconnector, botocloudconnector
+from bdphpcprovider.smartconnectorscheduler import sshconnector, botocloudconnector, models
 from bdphpcprovider.smartconnectorscheduler.errors import PackageFailedError
 from bdphpcprovider.smartconnectorscheduler.stages.errors import InsufficientResourceError
 
@@ -37,8 +37,8 @@ class Bootstrap(Stage):
     """
 
     def __init__(self, user_settings=None):
-        self.user_settings = user_settings.copy()
-        self.boto_settings = user_settings.copy()
+        #self.user_settings = user_settings.copy()
+        #self.boto_settings = user_settings.copy()
         logger.debug('Bootstrap stage initialised')
 
     def triggered(self, run_settings):
@@ -72,8 +72,8 @@ class Bootstrap(Stage):
         except KeyError:
             self.started = 0
         logger.debug('self.started=%d' % self.started)
-        retrieve_boto_settings(run_settings, self.boto_settings,
-                               self.user_settings)
+        self.boto_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
+        retrieve_boto_settings(run_settings, self.boto_settings)
         if not self.started:
             try:
                 _ = start_multi_setup_task(self.group_id,
@@ -137,7 +137,7 @@ class Bootstrap(Stage):
         return run_settings
 
 
-def retrieve_boto_settings(run_settings, boto_settings, user_settings):
+def retrieve_boto_settings(run_settings, boto_settings):
     smartconnector.copy_settings(boto_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/setup/payload_source')
     smartconnector.copy_settings(boto_settings, run_settings,
@@ -157,8 +157,8 @@ def retrieve_boto_settings(run_settings, boto_settings, user_settings):
     boto_settings['username'] = 'root'  # FIXME: schema value is ignored
     boto_settings['password'] = \
         run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
-    key_file = hrmcstages.retrieve_private_key(
-        boto_settings, user_settings['nectar_private_key'])
+    key_file = hrmcstages.retrieve_private_key(boto_settings,
+            run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nectar_private_key'])
     boto_settings['private_key'] = key_file
     boto_settings['nectar_private_key'] = key_file
 

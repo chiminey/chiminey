@@ -38,8 +38,8 @@ class Schedule(Stage):
     """
 
     def __init__(self, user_settings=None):
-        self.user_settings = user_settings.copy()
-        self.boto_settings = user_settings.copy()
+        #self.user_settings = user_settings.copy()
+        #self.boto_settings = user_settings.copy()
         logger.debug('Schedule stage initialised')
 
     def triggered(self, run_settings):
@@ -79,8 +79,8 @@ class Schedule(Stage):
                 'http://rmit.edu.au/schemas/stages/schedule/schedule_started'))
         except KeyError:
             self.started = 0
-        retrieve_boto_settings(run_settings, self.boto_settings,
-                               self.user_settings)
+        self.boto_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
+        retrieve_boto_settings(run_settings, self.boto_settings)
         self.nodes = botocloudconnector.get_rego_nodes(
                 self.boto_settings, node_type='bootstrapped_nodes')
 
@@ -201,7 +201,7 @@ class Schedule(Stage):
         return run_settings
 
 
-def retrieve_boto_settings(run_settings, boto_settings, user_settings):
+def retrieve_boto_settings(run_settings, boto_settings):
     smartconnector.copy_settings(boto_settings, run_settings,
         'http://rmit.edu.au/schemas/hrmc/number_vm_instances')
     smartconnector.copy_settings(boto_settings, run_settings,
@@ -216,6 +216,7 @@ def retrieve_boto_settings(run_settings, boto_settings, user_settings):
         'http://rmit.edu.au/schemas/stages/bootstrap/bootstrapped_nodes')
     smartconnector.copy_settings(boto_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/create/custom_prompt')
+
     smartconnector.copy_settings(boto_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/create/nectar_username')
     smartconnector.copy_settings(boto_settings, run_settings,
@@ -225,10 +226,11 @@ def retrieve_boto_settings(run_settings, boto_settings, user_settings):
     boto_settings['username'] = 'root'  # FIXME: schema value is ignored
     boto_settings['password'] = \
         run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
-    key_file = hrmcstages.retrieve_private_key(
-        boto_settings, user_settings['nectar_private_key'])
+    key_file = hrmcstages.retrieve_private_key(boto_settings,
+            run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nectar_private_key'])
     boto_settings['private_key'] = key_file
     boto_settings['nectar_private_key'] = key_file
+
 
 
 def start_round_robin_schedule(nodes, processes, schedule_index, settings):
