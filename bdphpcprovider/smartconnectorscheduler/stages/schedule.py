@@ -46,9 +46,6 @@ class Schedule(Stage):
         try:
             bootstrap_done = int(smartconnector.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/stages/bootstrap/bootstrap_done'))
-            #FIXme comment group id in bootstrap.py and execute.py
-            #self.group_id = smartconnector.get_existing_key(run_settings,
-            #    'http://rmit.edu.au/schemas/stages/create/group_id')
             if not bootstrap_done:
                 return False
         except KeyError, e:

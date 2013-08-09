@@ -115,6 +115,7 @@ def create_VM_instances(number_vm_instances, settings):
         for instance in reservation.instances:
             all_instances.append(instance)
     except EC2ResponseError as e:
+        logger.debug('error_code=%s' % e.error_code)
         if 'TooManyInstances' not in e.error_code:
             raise
     logger.debug('%d of %d requested VM(s) created'
@@ -208,11 +209,13 @@ def _generate_group_id(all_instances):
     return group_id
 
 
-def collect_instances(settings, group_id=None, instance_id=None, all_VM=False):
+def collect_instances(settings, group_id=None,
+                      instance_id=None, all_VM=False,
+                      registered=False):
     all_instances = []
     if all_VM:
         all_instances = get_running_instances(settings)
-    elif group_id:
+    elif group_id or registered:
         all_instances = get_rego_nodes(settings)
 
 #    elif instance_id:

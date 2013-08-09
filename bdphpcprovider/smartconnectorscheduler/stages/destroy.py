@@ -35,15 +35,6 @@ class Destroy(smartconnector.Stage):
 
     def triggered(self, run_settings):
         if self._exists(run_settings,
-            'http://rmit.edu.au/schemas/stages/create',
-             u'group_id'):
-            self.group_id = run_settings[
-            'http://rmit.edu.au/schemas/stages/create'][u'group_id']
-        else:
-            logger.warn("no group_id found when expected")
-            return False
-        logger.debug("group_id = %s" % self.group_id)
-        if self._exists(run_settings,
             'http://rmit.edu.au/schemas/stages/converge',
             u'converged'):
             converged = int(run_settings['http://rmit.edu.au/schemas/stages/converge'][u'converged'])
@@ -73,7 +64,7 @@ class Destroy(smartconnector.Stage):
             'http://rmit.edu.au/schemas/stages/create/cloud_sleep_interval')
 
         all_instances = collect_instances(self.boto_settings,
-            group_id=self.group_id)
+            registered=True)
         logger.debug('all_instance=%s' % all_instances)
         if all_instances:
             destroy_environ(self.boto_settings, all_instances)

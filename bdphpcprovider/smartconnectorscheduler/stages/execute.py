@@ -44,7 +44,7 @@ class Execute(Stage):
     def __init__(self, user_settings=None):
         self.numbfile = 0
         self.job_dir = "hrmcrun"
-        logger.debug("Run stage initialized")
+        logger.debug("Execute stage initialized")
 
     def triggered(self, run_settings):
         """
@@ -54,8 +54,6 @@ class Execute(Stage):
         try:
             schedule_completed = int(smartconnector.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/stages/schedule/schedule_completed'))
-            self.group_id = smartconnector.get_existing_key(run_settings,
-                'http://rmit.edu.au/schemas/stages/create/group_id')
             self.all_processes = ast.literal_eval(smartconnector.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/stages/schedule/all_processes'))
         except KeyError, e:

@@ -48,14 +48,6 @@ class Transform(Stage):
         pass
 
     def triggered(self, run_settings):
-
-        if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/create', u'group_id'):
-            self.group_id = run_settings['http://rmit.edu.au/schemas/stages/create'][u'group_id']
-        else:
-            logger.warn("no group_id found when expected")
-            return False
-        logger.debug("group_id = %s" % self.group_id)
-
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/hrmc', u'threshold'):
             # FIXME: need to validate this output to make sure list of int
             self.threshold = ast.literal_eval(run_settings['http://rmit.edu.au/schemas/hrmc'][u'threshold'])
@@ -151,8 +143,6 @@ class Transform(Stage):
             'http://rmit.edu.au/schemas/stages/setup/payload_destination')
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/system/platform')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/stages/create/group_id_dir')
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/create/custom_prompt')
         smartconnector.copy_settings(self.boto_settings, run_settings,
