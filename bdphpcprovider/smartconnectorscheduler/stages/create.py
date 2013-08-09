@@ -99,18 +99,21 @@ class Create(Stage):
             number_vm_instances,
             self.boto_settings)
 
-        self.nodes = botocloudconnector.get_ssh_ready_instances(self.nodes, self.boto_settings)
-        self.group_id, self.nodes = botocloudconnector.brand_instances(
-            self.nodes, self.boto_settings)
+        if self.nodes:
+            self.nodes = botocloudconnector.get_ssh_ready_instances(
+                self.nodes, self.boto_settings)
+
+        if self.nodes:
+            self.group_id, self.nodes = botocloudconnector.brand_instances(
+                self.nodes, self.boto_settings)
 
         botocloudconnector.print_all_information(self.boto_settings,
                                                  all_instances=self.nodes)
-
+        #Fixme: the following should transfer power to FT managers
         if not self.group_id:
-            self.group_id = ''  # FIXME: do we we mean '' or None here?
+            self.group_id = 'UNKNOWN'  # FIXME: do we we mean '' or None here?
             logger.debug("No new VM instance can be created for this computation. Retry later.")
             #clear_temp_files(run_settings)
-            #sys.exit()
 
     def output(self, run_settings):
         """
@@ -119,8 +122,13 @@ class Create(Stage):
         run_settings.setdefault(
             'http://rmit.edu.au/schemas/stages/create', {})[u'group_id'] \
             = self.group_id
-        run_settings.setdefault(
-            'http://rmit.edu.au/schemas/stages/create', {})[u'created_nodes'] \
-            = [(x.id, x.ip_address, unicode(x.region)) for x in self.nodes]
+
+        if not self.nodes:
+            run_settings.setdefault(
+            'http://rmit.edu.au/schemas/stages/create', {})[u'created_nodes'] = []
+        else:
+            run_settings.setdefault(
+                'http://rmit.edu.au/schemas/stages/create', {})[u'created_nodes'] \
+                = [(x.id, x.ip_address, unicode(x.region)) for x in self.nodes]
         logger.debug("Updated run settings %s" % run_settings)
         return run_settings

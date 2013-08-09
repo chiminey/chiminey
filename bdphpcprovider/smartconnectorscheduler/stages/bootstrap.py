@@ -42,13 +42,6 @@ class Bootstrap(Stage):
         logger.debug('Bootstrap stage initialised')
 
     def triggered(self, run_settings):
-        try:
-            self.group_id = smartconnector.get_existing_key(run_settings,
-                'http://rmit.edu.au/schemas/stages/create/group_id')
-            logger.debug('group_id=%s' % self.group_id)
-        except KeyError:
-            logger.warn("no group_id found in context")
-            return False
         created_str = run_settings['http://rmit.edu.au/schemas/stages/create'][u'created_nodes']
         self.created_nodes = ast.literal_eval(created_str)
         if len(self.created_nodes) == 0:
@@ -76,8 +69,7 @@ class Bootstrap(Stage):
         retrieve_boto_settings(run_settings, self.boto_settings)
         if not self.started:
             try:
-                _ = start_multi_setup_task(self.group_id,
-                                           self.boto_settings)
+                _ = start_multi_setup_task(self.boto_settings)
             except PackageFailedError, e:
                 logger.error("unable to start setup of packages: %s" % e)
             pass
@@ -163,7 +155,7 @@ def retrieve_boto_settings(run_settings, boto_settings):
     boto_settings['nectar_private_key'] = key_file
 
 
-def start_multi_setup_task(group_id, settings, maketarget_nodegroup_pair={}):
+def start_multi_setup_task(settings, maketarget_nodegroup_pair={}):
     """
     Run the package on each of the nodes in the group and grab
     any output as needed

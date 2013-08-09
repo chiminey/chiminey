@@ -52,13 +52,6 @@ class Wait(Stage):
             logger.debug(e)
             return False
 
-        if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/create', u'group_id'):
-            self.group_id = run_settings['http://rmit.edu.au/schemas/stages/create'][u'group_id']
-        else:
-            logger.warn("no group_id found when expected")
-            return False
-        logger.debug("group_id = %s" % self.group_id)
-
         self.all_processes = ast.literal_eval(smartconnector.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/stages/schedule/all_processes'))
 

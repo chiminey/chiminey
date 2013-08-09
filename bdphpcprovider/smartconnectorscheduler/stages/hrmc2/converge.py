@@ -180,8 +180,6 @@ class Converge(Stage):
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/system/platform')
         smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/stages/create/group_id_dir')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/create/custom_prompt')
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/create/cloud_sleep_interval')
