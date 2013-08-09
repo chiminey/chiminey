@@ -259,6 +259,8 @@ class ContextResource(ModelResource):
         # make the system settings, available to initial stage and merged with run_settings
         system_dict = {u'system': u'settings', u'output_location': bundle.data['output_location']}
 
+        logger.debug('post_to_hrmc output_location = %s' % bundle.data['output_location'])
+
         system_settings = {u'http://rmit.edu.au/schemas/system/misc': system_dict}
 
         logger.debug("directive_name=%s" % directive_name)

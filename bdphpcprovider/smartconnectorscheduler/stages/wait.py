@@ -22,21 +22,12 @@ import logging
 import ast
 import os
 
-
-#from bdphpcprovider.smartconnectorscheduler.sshconnector import open_connection
-#from bdphpcprovider.smartconnectorscheduler import botocloudconnector
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
-from bdphpcprovider.smartconnectorscheduler import sshconnector
-from bdphpcprovider.smartconnectorscheduler import smartconnector
-#from bdphpcprovider.smartconnectorscheduler import hrmcimpl
-from bdphpcprovider.smartconnectorscheduler import hrmcstages
-#from bdphpcprovider.smartconnectorscheduler import mytardis
+from bdphpcprovider.smartconnectorscheduler \
+    import hrmcstages, models, smartconnector, sshconnector
+
 
 logger = logging.getLogger(__name__)
-
-
-
-
 
 
 class Wait(Stage):
@@ -45,11 +36,9 @@ class Wait(Stage):
     """
 
     def __init__(self, user_settings=None):
-        self.user_settings = user_settings.copy()
         self.runs_left = 0
         self.error_nodes = 0
         self.job_dir = "hrmcrun"  # TODO: make a stageparameter + suffix on real job number
-        self.boto_settings = user_settings.copy()
         logger.debug("Wait stage initialised")
 
     def triggered(self, run_settings):
@@ -151,7 +140,7 @@ class Wait(Stage):
         dest_files_url = smartconnector.get_url_with_pkey(
             self.boto_settings, os.path.join(
                 self.job_dir, self.output_dir, process_id),
-            is_relative_path=True)
+            is_relative_path=False)
         logger.debug('dest_files_url=%s' % dest_files_url)
         #hrmcstages.delete_files(dest_files_url, exceptions=[]) #FIXme: uncomment as needed
         # FIXME: might want to turn on paramiko compress function
@@ -185,12 +174,11 @@ class Wait(Stage):
             self.output_dir = "output"
 
         logger.debug("output_dir=%s" % self.output_dir)
-
         logger.debug("run_settings=%s" % run_settings)
         logger.debug("Wait stage process began")
 
-        retrieve_boto_settings(run_settings, self.boto_settings,
-                               self.user_settings)
+        self.boto_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
+        retrieve_boto_settings(run_settings, self.boto_settings)
 
         logger.debug("boto_settings=%s" % self.boto_settings)
         #self.nodes = botocloudconnector.get_rego_nodes(self.boto_settings)
@@ -303,8 +291,7 @@ class Wait(Stage):
         return run_settings
 
 
-def retrieve_boto_settings(run_settings, boto_settings,
-                               user_settings):
+def retrieve_boto_settings(run_settings, boto_settings):
     smartconnector.copy_settings(boto_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/setup/payload_destination')
     smartconnector.copy_settings(boto_settings, run_settings,
@@ -318,7 +305,8 @@ def retrieve_boto_settings(run_settings, boto_settings,
     boto_settings['username'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_username']
     boto_settings['username'] = 'root'  # FIXME: schema value is ignored
     boto_settings['password'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
-    key_file = hrmcstages.retrieve_private_key(boto_settings, user_settings['nectar_private_key'])
+    key_file = hrmcstages.retrieve_private_key(boto_settings,
+            run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nectar_private_key'])
     boto_settings['private_key'] = key_file
     boto_settings['nectar_private_key'] = key_file
 

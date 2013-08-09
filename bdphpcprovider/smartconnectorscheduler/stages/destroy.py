@@ -21,8 +21,9 @@
 
 import logging
 
-from bdphpcprovider.smartconnectorscheduler import smartconnector
-from bdphpcprovider.smartconnectorscheduler.botocloudconnector import collect_instances, destroy_environ
+from bdphpcprovider.smartconnectorscheduler import smartconnector, models
+from bdphpcprovider.smartconnectorscheduler.botocloudconnector \
+    import collect_instances, destroy_environ
 
 logger = logging.getLogger(__name__)
 
@@ -30,8 +31,7 @@ logger = logging.getLogger(__name__)
 class Destroy(smartconnector.Stage):
 
     def __init__(self, user_settings=None):
-        self.user_settings = user_settings
-        self.boto_settings = user_settings.copy()
+        logger.debug('Destroy stage initialised')
 
     def triggered(self, run_settings):
         if self._exists(run_settings,
@@ -64,6 +64,7 @@ class Destroy(smartconnector.Stage):
         # return False
 
     def process(self, run_settings):
+        self.boto_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/system/platform')
         smartconnector.copy_settings(self.boto_settings, run_settings,
