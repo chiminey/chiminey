@@ -312,7 +312,7 @@ class ContextResource(ModelResource):
         return (platform, directive_name, directive_args, system_settings)
 
     def _post_to_remotemake(self, bundle):
-        platform = 'local'
+        platform = 'nci'
         directive_name = "remotemake"
         logger.debug("%s" % directive_name)
         directive_args = []

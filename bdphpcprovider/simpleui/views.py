@@ -374,6 +374,7 @@ class MakeSubmitFormView(FormView):
         logger.debug("r.json=%s" % r.json)
         logger.debug("r.text=%s" % r.text)
         logger.debug("r.headers=%s" % r.headers)
+        logger.debug("data=%s" % data)
         header_location = r.headers['location']
         logger.debug("header_location=%s" % header_location)
         new_context_uri = header_location[len(api_host):]

@@ -753,18 +753,20 @@ class Command(BaseCommand):
         remote_make_stage, _ = models.Stage.objects.get_or_create(
             name="make",
             description="Makefile execution stage",
-            package=self.remotemake_stage,
+            package=self.remote_make_stage,
             parent=remote_make_composite_stage,
             order=2)
+
         remote_make_stage.update_settings({})
 
         # executes make with finished target and repeats until finished.
-        make_finished_stage = models.Stage.objects.get_or_create(
+        make_finished_stage, _ = models.Stage.objects.get_or_create(
             name="makefinished",
             description="Makefile execution stage",
             package=self.make_finished_stage,
             parent=remote_make_composite_stage,
             order=3)
+        logger.debug('make_finished_stage=%s' % str(make_finished_stage))
         make_finished_stage.update_settings({})
 
         # # copies input files + makefile to remote system
