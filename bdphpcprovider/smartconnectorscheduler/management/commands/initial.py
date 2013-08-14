@@ -212,7 +212,6 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/hrmc':
                 [u'the hrmc smart connector input values',
                 {
-                u'random_numbers': (models.ParameterName.STRING, '', 10),
                 u'max_seed_int': (models.ParameterName.NUMERIC, '', 9),
                 u'number_vm_instances': (models.ParameterName.NUMERIC, '', 8),
                 u'iseed': (models.ParameterName.NUMERIC, '', 7),
@@ -294,6 +293,7 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/stages/run':
                 [u'the create stage of the smartconnector1',
                 {
+                u'random_numbers': (models.ParameterName.STRING, '', 9),
                 u'runs_left': (models.ParameterName.NUMERIC, '', 8),
                 u'payload_cloud_dirname': (models.ParameterName.STRING, '', 7),
                 u'compile_file': (models.ParameterName.STRING, '', 6),
@@ -625,7 +625,7 @@ class Command(BaseCommand):
                     u'compile_file': 'HRMC',
                     u'retry_attempts': 3,
                     #u'max_seed_int': 1000,  # FIXME: should we use maxint here?
-                    #u'random_numbers': 'file://127.0.0.1/randomnums.txt'
+                    u'random_numbers': 'file://127.0.0.1/randomnums.txt'
                 },
             })
         '''
@@ -722,7 +722,7 @@ class Command(BaseCommand):
         smartpack = "bdphpcprovider.smartconnectorscheduler.stages"
         self.upload_makefile = smartpack + ".make.movement.MakeUploadStage"
         self.download_makefile = smartpack + ".make.movement.MakeDownloadStage"
-        self.remote_make_stage = smartpack + ".make.remotemake.MakeRunStage"
+        self.remotemake_stage = smartpack + ".make.remotemake.MakeRunStage"
         self.make_finished_stage = smartpack + ".make.makefinished.MakeFinishedStage"
 
         remote_make_composite_stage, _ = models.Stage.objects.get_or_create(
@@ -750,14 +750,14 @@ class Command(BaseCommand):
                 }
             })
         # executes make with run target
-        remote_make_stage, _ = models.Stage.objects.get_or_create(
+        remotemake_stage, _ = models.Stage.objects.get_or_create(
             name="make",
             description="Makefile execution stage",
-            package=self.remote_make_stage,
+            package=self.remotemake_stage,
             parent=remote_make_composite_stage,
             order=2)
 
-        remote_make_stage.update_settings({})
+        remotemake_stage.update_settings({})
 
         # executes make with finished target and repeats until finished.
         make_finished_stage, _ = models.Stage.objects.get_or_create(

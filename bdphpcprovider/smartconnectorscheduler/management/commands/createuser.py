@@ -175,7 +175,7 @@ class Command(BaseCommand):
             'nci_user': 'iet595',
             'nci_password': 'changemepassword',  # NB: change this password
             'nci_host': 'vayu.nci.org.au',
-            'nci_private_key': '',
+            'nci_private_key': 'mynectarkey',
             'nectar_private_key': 'file://local@127.0.0.1/mynectarkey.pem',
             'nectar_private_key_name': '',
             'nectar_ec2_access_key': '',

@@ -57,6 +57,7 @@ class MakeRunStage(Stage):
                         'program_success'):
                     program_success = int(run_settings[
                         'http://rmit.edu.au/schemas/stages/make'][u'program_success'])
+                    logger.debug("program_success")
                     return not program_success
                 else:
                     return True
