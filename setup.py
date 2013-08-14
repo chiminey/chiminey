@@ -18,7 +18,7 @@ setup(
     namespace_packages=['bdphpcprovider'],
     install_requires=[
         'setuptools',
-        'django==1.4.1',
+        'django==1.4.5',
         'django-registration',
         'django-extensions',
         'django-form-utils',
