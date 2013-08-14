@@ -42,6 +42,8 @@ class Bootstrap(Stage):
         logger.debug('Bootstrap stage initialised')
 
     def triggered(self, run_settings):
+        if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/create', u'created_nodes'):
+            return False
         created_str = run_settings['http://rmit.edu.au/schemas/stages/create'][u'created_nodes']
         self.created_nodes = ast.literal_eval(created_str)
         if len(self.created_nodes) == 0:

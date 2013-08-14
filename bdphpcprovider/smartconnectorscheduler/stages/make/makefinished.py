@@ -45,21 +45,20 @@ class MakeFinishedStage(Stage):
 
     def triggered(self, run_settings):
 
-        # if self._exists(
-        #         run_settings,
-        #         'http://rmit.edu.au/schemas/stages/make',
-        #         u'running'):
-        #     return run_settings['http://rmit.edu.au/schemas/stages/make'][
-        #         u'running']
-
         # if we have no runs_left then we must have finished all the runs
         if self._exists(
                 run_settings,
                 'http://rmit.edu.au/schemas/stages/make',
                 u'runs_left'):
-            return len(ast.literal_eval(run_settings[
+            if len(ast.literal_eval(run_settings[
                 'http://rmit.edu.au/schemas/stages/make'][
-                u'runs_left']))
+                u'runs_left'])):
+                if self._exists(
+                        run_settings,
+                        'http://rmit.edu.au/schemas/stages/make',
+                        u'running'):
+                    return run_settings['http://rmit.edu.au/schemas/stages/make'][
+                        u'running']
 
         return False
 
