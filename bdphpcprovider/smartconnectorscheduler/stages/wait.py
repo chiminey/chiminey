@@ -206,7 +206,9 @@ class Wait(Stage):
                 #we cannot tell whether we have prevous retrieved this output before and finished_nodes
                 # is not maintained between triggerings...
 
-                if not (int(process_id) in [int(x['id']) for x in self.finished_nodes]):
+                if not (int(process_id) in [int(x['id'])
+                                            for x in self.finished_nodes
+                                            if int(process_id) == int(x['id'])]):
                     self.get_output(ip_address, process_id, self.output_dir, self.boto_settings)
 
                     audit_url = smartconnector.get_url_with_pkey(
