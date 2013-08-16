@@ -390,6 +390,10 @@ class Converge(Stage):
 
             run_settings.setdefault(
                 'http://rmit.edu.au/schemas/stages/schedule',
+                {})[u'total_scheduled_procs'] = 0
+
+            run_settings.setdefault(
+                'http://rmit.edu.au/schemas/stages/schedule',
                 {})[u'schedule_completed'] = 0
 
             run_settings.setdefault(
