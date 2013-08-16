@@ -276,7 +276,8 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/stages/schedule':
                 [u'the schedule stage of the smartconnector1',
                 {
-                u'schedule_index': (models.ParameterName.NUMERIC, '', 4),
+                u'total_scheduled_procs': (models.ParameterName.NUMERIC, '', 8),
+                u'schedule_index': (models.ParameterName.NUMERIC, '', 7),
                 u'current_processes': (models.ParameterName.STRING, '', 6),
                 u'all_processes': (models.ParameterName.STRING, '', 5),
                 u'schedule_started': (models.ParameterName.NUMERIC, '', 4),

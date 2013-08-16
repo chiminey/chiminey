@@ -56,19 +56,31 @@ class Schedule(Stage):
         self.bootstrapped_nodes = ast.literal_eval(bootstrapped_str)
         if len(self.bootstrapped_nodes) == 0:
             return False
+
+        try:
+            self.total_scheduled_procs = run_settings['http://rmit.edu.au/schemas/stages/schedule'][u'total_scheduled_procs']
+        except KeyError:
+            self.total_scheduled_procs = 0
+
         try:
             scheduled_str = smartconnector.get_existing_key(
                 run_settings,
                 'http://rmit.edu.au/schemas/stages/schedule/scheduled_nodes')
             self.scheduled_nodes = ast.literal_eval(scheduled_str)
-            logger.debug('scheduled_nodes=%s' % self.scheduled_nodes)
-            logger.debug('scheduled nodes=%d, boostrapped nodes = %d'
-                         % (len(self.scheduled_nodes), len(self.bootstrapped_nodes)))
-            return len(self.scheduled_nodes) < len(self.bootstrapped_nodes)
+            current_processes_str = run_settings['http://rmit.edu.au/schemas/stages/schedule'][u'current_processes']
+            self.current_processes =  ast.literal_eval(current_processes_str)
         except KeyError, e:
             self.scheduled_nodes = []
-            return True
-        return False
+
+        try:
+            total_procs = int(run_settings['http://rmit.edu.au/schemas/stages/schedule'][u'total_processes'])
+            if total_procs:
+                if total_procs == self.total_scheduled_procs:
+                    return False
+        except KeyError, e:
+            logger.debug(e)
+
+        return True
 
     def process(self, run_settings):
         try:
@@ -123,7 +135,6 @@ class Schedule(Stage):
             except KeyError:
                 self.all_processes = []
 
-
             self.all_processes = update_lookup_table(
                 self.current_processes, self.all_processes)
             logger.debug('all_processes=%s' % self.all_processes)
@@ -151,23 +162,33 @@ class Schedule(Stage):
                 fin = job_finished(node_ip, self.boto_settings, destination)
                 logger.debug("fin=%s" % fin)
                 if fin:
-                    print "done."
-                    logger.debug("node=%s" % str(node))
-                    logger.debug("scheduled_nodes=%s" % self.bootstrapped_nodes)
-                    if not (node.ip_address in [x[1] for x in self.scheduled_nodes]):
-                        logger.debug('new ip = %s' % node.ip_address)
+                    logger.debug("done.")
+                    if not (node.ip_address in [x[1]
+                                                for x in self.scheduled_nodes
+                                                if x[1] == node.ip_address]):
                         self.scheduled_nodes.append((node.id, node.ip_address,
                                                     unicode(node.region)))
+                        scheduled_procs = [x['ip_address']
+                                           for x in self.current_processes
+                                           if x['ip_address'] == node.ip_address]
+                        self.total_scheduled_procs = self.total_scheduled_procs + len(scheduled_procs)
+                        if self.total_scheduled_procs == len(self.current_processes):
+                            break
                     else:
                         logger.info("We have already "
                             + "scheduled process on node %s" % node.ip_address)
                 else:
                     print "job still running on %s" % node.ip_address
+        logger.debug('exit total_scheduled_procs=%d' % self.total_scheduled_procs)
 
     def output(self, run_settings):
         run_settings.setdefault(
             'http://rmit.edu.au/schemas/stages/schedule',
             {})[u'scheduled_nodes'] = str(self.scheduled_nodes)
+
+        run_settings.setdefault(
+            'http://rmit.edu.au/schemas/stages/schedule',
+            {})[u'total_scheduled_procs'] = self.total_scheduled_procs
 
         if not self.started:
             run_settings.setdefault(
@@ -190,7 +211,7 @@ class Schedule(Stage):
                 'http://rmit.edu.au/schemas/stages/schedule',
                 {})[u'current_processes'] = str(self.current_processes)
 
-        if len(self.scheduled_nodes) == len(self.bootstrapped_nodes):
+        if self.total_scheduled_procs == len(self.current_processes):
             run_settings.setdefault(
                 'http://rmit.edu.au/schemas/stages/schedule',
                 {})[u'schedule_completed'] = 1
@@ -232,13 +253,16 @@ def retrieve_boto_settings(run_settings, boto_settings):
 
 def start_round_robin_schedule(nodes, processes, schedule_index, settings):
     total_nodes = len(nodes)
+    all_nodes = list(nodes)
     if total_nodes > processes:
         total_nodes = processes
+        all_nodes = nodes[:total_nodes]
     proc_per_node = processes / total_nodes
     remaining_procs = processes % total_nodes
     index = schedule_index
     new_processes = []
-    for cur_node in nodes:
+
+    for cur_node in all_nodes:
         ip_address = cur_node.ip_address
         logger.debug('ip_address=%s' % ip_address)
         relative_path = settings['platform'] + '@' + settings['payload_destination']
