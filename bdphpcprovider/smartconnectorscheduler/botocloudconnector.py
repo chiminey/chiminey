@@ -104,7 +104,7 @@ def create_VM_instances(number_vm_instances, settings):
     logger.info("Creating %d VM(s)" % number_vm_instances)
     try:
         reservation = connection.run_instances(
-                    placement='monash',
+                    placement='qld',
                     image_id=settings['vm_image'],
                     min_count=1,
                     max_count=number_vm_instances,
@@ -302,14 +302,26 @@ def _wait_for_instance_to_start_running(all_instances, settings):
     while all_instances:
         for instance in all_instances:
             logger.debug("this instance %s" % instance)
-            if is_instance_running(instance):
-                all_running_instances.append(instance)
+            if does_instance_exist(instance):
+                if is_instance_running(instance):
+                    all_running_instances.append(instance)
+                    all_instances.remove(instance)
+            else:
                 all_instances.remove(instance)
             logger.debug('Current status of %s: %s' % (instance.ip_address, instance.state))
         time.sleep(settings['cloud_sleep_interval'])
     return all_running_instances
 
 
+def does_instance_exist(instance):
+    try:
+        instance.update()
+    except boto.exception.EC2ResponseError as e:
+        if 'InstanceNotFound' in e.error_code:
+            return False
+    return True
+
+#fixme consider using does_instance_exist(instance)
 def is_instance_terminated(instance):
     """
         Checks whether an instance with @instance_id
