@@ -186,7 +186,7 @@ class ContextResource(ModelResource):
         return models.Context.objects.filter(owner__user=request.user)
 
     def post_list(self, request, **kwargs):
-        #curl --user user2 --dump-header - -H "Content-Type: application/json" -X POST --data ' {"number_vm_instances": 8, "iseed": 42, "input_location": "file://127.0.0.1/myfiles/input", "number_dimensions": 2, "threshold": "[2]", "error_threshold": "0.03", "max_iteration": 10}' http://115.146.86.247/api/v1/context/?format=json
+        #curl --user user2 --dump-header - -H "Content-Type: application/json" -X POST --data ' {"number_vm_instances": 8, "minimum_number_vm_instances": 8, "iseed": 42, "input_location": "file://127.0.0.1/myfiles/input", "number_dimensions": 2, "threshold": "[2]", "error_threshold": "0.03", "max_iteration": 10}' http://115.146.86.247/api/v1/context/?format=json
 
         if django.VERSION >= (1, 4):
             body = request.body
@@ -243,6 +243,8 @@ class ContextResource(ModelResource):
              ['http://rmit.edu.au/schemas/hrmc',
                  ('number_vm_instances',
                      bundle.data['number_vm_instances']),
+                 ('minimum_number_vm_instances',
+                     bundle.data['minimum_number_vm_instances']),
                  (u'iseed', bundle.data['iseed']),
                  ('max_seed_int', 1000),
                  (u'random_numbers', 'file://127.0.0.1/randomnums.txt'),
@@ -279,6 +281,8 @@ class ContextResource(ModelResource):
                 ['http://rmit.edu.au/schemas/hrmc',
                     ('number_vm_instances',
                         bundle.data['number_vm_instances']),
+                    ('minimum_number_vm_instances',
+                        bundle.data['minimum_number_vm_instances']),
                     (u'iseed', bundle.data['iseed']),
                     ('fanout_per_kept_result', bundle.data['fanout_per_kept_result']),
                     ('max_seed_int', 1000),
