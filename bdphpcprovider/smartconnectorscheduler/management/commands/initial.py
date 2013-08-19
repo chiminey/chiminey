@@ -524,17 +524,12 @@ class Command(BaseCommand):
         hrmc_smart_dir, _ = models.Directive.objects.get_or_create(name="smartconnector_hrmc")
         self.configure_package = "bdphpcprovider.smartconnectorscheduler.stages.configure.Configure"
         self.create_package = "bdphpcprovider.smartconnectorscheduler.stages.create.Create"
-        self.setup_package = "bdphpcprovider.smartconnectorscheduler.stages.setup.Setup"
-        #self.deploy_package = "bdphpcprovider.smartconnectorscheduler.stages.deploy.Deploy"
         self.bootstrap_package = "bdphpcprovider.smartconnectorscheduler.stages.bootstrap.Bootstrap"
         self.schedule_package = "bdphpcprovider.smartconnectorscheduler.stages.schedule.Schedule"
-        self.run_package = "bdphpcprovider.smartconnectorscheduler.stages.run.Run"
         self.execute_package = "bdphpcprovider.smartconnectorscheduler.stages.execute.Execute"
-        self.finished_package = "bdphpcprovider.smartconnectorscheduler.stages.finished.Finished"
         self.wait_package = "bdphpcprovider.smartconnectorscheduler.stages.wait.Wait"
         self.transform_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc2.transform.Transform"
         self.converge_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc2.converge.Converge"
-        #self.teardown_package = "bdphpcprovider.smartconnectorscheduler.stages.teardown.Teardown"
         self.destroy_package = "bdphpcprovider.smartconnectorscheduler.stages.destroy.Destroy"
 
         hrmc_composite_stage, _ = models.Stage.objects.get_or_create(name="hrmc_connector",
@@ -571,33 +566,6 @@ class Command(BaseCommand):
                     u'nectar_username': 'root',
                     u'nectar_password': ''
                 }})
-        # setup_stage, _ = models.Stage.objects.get_or_create(name="setup",
-        #     description="This is setup stage of HRMC smart connector",
-        #     parent=hrmc_composite_stage,
-        #     package=self.setup_package,
-        #     order=2)
-        # setup_stage.update_settings(
-        #     {
-        #     u'http://rmit.edu.au/schemas/stages/setup':
-        #         {
-        #             u'payload_source': 'file://127.0.0.1/local/testpayload',
-        #             u'payload_destination': 'celery_payload_2',
-        #         },
-        #     })
-
-        #deploy_stage, _ = models.Stage.objects.get_or_create(name="deploy",
-        #    description="This is setup stage of HRMC smart connector",
-        #    parent=hrmc_composite_stage,
-        #    package=self.deploy_package,
-        #    order=2)
-        #deploy_stage.update_settings(
-        #    {
-        #    u'http://rmit.edu.au/schemas/stages/setup':
-        #        {
-        #            u'payload_source': 'file://127.0.0.1/local/testpayload',
-        #            u'payload_destination': 'celery_payload_2',
-        #        },
-        #    })
         bootstrap_stage, _ = models.Stage.objects.get_or_create(name="bootstrap",
             description="This is bootstrap stage of this smart connector",
             parent=hrmc_composite_stage,
@@ -634,31 +602,6 @@ class Command(BaseCommand):
                     #u'random_numbers': 'file://127.0.0.1/randomnums.txt'
                 },
             })
-        '''
-        run_stage, _ = models.Stage.objects.get_or_create(name="run",
-            description="This is run stage of HRMC smart connector",
-            parent=hrmc_composite_stage,
-            package=self.run_package,
-            order=30)
-        run_stage.update_settings(
-            {
-            u'http://rmit.edu.au/schemas/stages/run':
-                {
-                    u'payload_cloud_dirname': 'AEAO_v1_1',
-                    u'compile_file': 'HRMC',
-                    u'retry_attempts': 3,
-                    #u'max_seed_int': 1000,  # FIXME: should we use maxint here?
-                    #u'random_numbers': 'file://127.0.0.1/randomnums.txt'
-                },
-            })
-        '''
-        #finished_stage, _ = models.Stage.objects.get_or_create(name="finished",
-        #    description="This is finished stage of HRMC smart connector",
-        #    parent=hrmc_composite_stage,
-        #    package=self.finished_package,
-        #    order=40)
-        #finished_stage.update_settings({})
-
         wait_stage, _ = models.Stage.objects.get_or_create(name="wait",
             description="This is wait stage of HRMC smart connector",
             parent=hrmc_composite_stage,
@@ -678,14 +621,6 @@ class Command(BaseCommand):
             package=self.converge_package,
             order=60)
         converge_stage.update_settings({})
-        '''
-        teardown_stage, _ = models.Stage.objects.get_or_create(name="teardown",
-            description="This is teardown stage of HRMC smart connector",
-            parent=hrmc_composite_stage,
-            package=self.teardown_package,
-            order=70)
-        teardown_stage.update_settings({})
-        '''
         destroy_stage, _ = models.Stage.objects.get_or_create(name="destroy",
             description="This is destroy stage of HRMC smart connector",
             parent=hrmc_composite_stage,
@@ -709,7 +644,7 @@ class Command(BaseCommand):
                 u'template_name': 'HRMC.inp'
             },
             # FIXME: move random_numbers into system schema
-            u'http://rmit.edu.au/schemas/stages/run':
+            u'http://rmit.edu.au/schemas/hrmc':
             {
                 u'random_numbers': 'file://127.0.0.1/randomnums.txt'
             },
