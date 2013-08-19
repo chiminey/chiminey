@@ -8,6 +8,8 @@ class SweepSubmitForm(forms.Form):
 
     number_vm_instances = forms.IntegerField(
         help_text="Ensure tenancy has sufficient resources")
+    minimum_number_vm_instances = forms.IntegerField(
+        help_text="Ensure tenancy has sufficient resources", label=("Minimum No. VMs"))
     input_location = forms.CharField(label=_("Input Location"),
         max_length=255,
         help_text="A BDPUrl Directory",
@@ -39,12 +41,12 @@ class SweepSubmitForm(forms.Form):
         widget=forms.Textarea(attrs={'cols': 80, 'rows': 10}
         ))
 
-
     def __init__(self, *args, **kwargs):
         super(SweepSubmitForm, self).__init__(*args, **kwargs)
         self.fields["sweep_map"].validators.append(validators.validate_sweep_map)
         self.fields["run_map"].validators.append(validators.validate_run_map)
         self.fields["number_vm_instances"].validators.append(validators.validate_number_vm_instances)
+        self.fields["minimum_number_vm_instances"].validators.append(validators.validate_minimum_number_vm_instances)
         self.fields["number_dimensions"].validators.append(validators.validate_number_dimensions)
         self.fields["threshold"].validators.append(validators.validate_threshold)
         self.fields["iseed"].validators.append(validators.validate_iseed)
