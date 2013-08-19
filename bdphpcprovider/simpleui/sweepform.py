@@ -39,9 +39,11 @@ class SweepSubmitForm(forms.Form):
     sweep_map = forms.CharField(label="Values to sweep over", help_text="Dictionary of values to sweep over. e.g {'var1': [3, 7], 'var2': [1, 2]} would result in 4 HRMC Jobs: [3,1] [3,2] [7,1] [7,2] ",
         widget=forms.Textarea(attrs={'cols': 30, 'rows': 5}
         ))
+
     #run_map = forms.CharField(label="Run Map JSON",
     #    widget=forms.Textarea(attrs={'cols': 80, 'rows': 10}
     #    ))
+
 
     def __init__(self, *args, **kwargs):
         super(SweepSubmitForm, self).__init__(*args, **kwargs)
