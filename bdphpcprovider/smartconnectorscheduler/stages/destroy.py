@@ -20,6 +20,7 @@
 
 
 import logging
+import ast
 
 from bdphpcprovider.smartconnectorscheduler import smartconnector, models
 from bdphpcprovider.smartconnectorscheduler.botocloudconnector \
@@ -34,6 +35,15 @@ class Destroy(smartconnector.Stage):
         logger.debug('Destroy stage initialised')
 
     def triggered(self, run_settings):
+        try:
+            cleanup_nodes_str = smartconnector.get_existing_key(run_settings,
+                'http://rmit.edu.au/schemas/reliability/cleanup_nodes')
+            self.cleanup_nodes = ast.literal_eval(cleanup_nodes_str)
+            if self.cleanup_nodes:
+                return True
+        except KeyError, e:
+            logger.debug(e)
+
         if self._exists(run_settings,
             'http://rmit.edu.au/schemas/stages/converge',
             u'converged'):
@@ -59,12 +69,21 @@ class Destroy(smartconnector.Stage):
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/system/platform')
         smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/stages/create/created_nodes')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/create/cloud_sleep_interval')
+        if self.cleanup_nodes:
+            smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/reliability/cleanup_nodes')
+        else:
+            smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/stages/create/created_nodes')
+
+        if self.cleanup_nodes:
+            node_type = 'cleanup_nodes'
+        else:
+            node_type = 'created_nodes'
 
         all_instances = collect_instances(self.boto_settings,
-            registered=True)
+            registered=True, node_type=node_type)
         logger.debug('all_instance=%s' % all_instances)
         if all_instances:
             destroy_environ(self.boto_settings, all_instances)
@@ -77,4 +96,9 @@ class Destroy(smartconnector.Stage):
         run_settings.setdefault(
             'http://rmit.edu.au/schemas/stages/destroy',
             {})[u'run_finished'] = 1
+
+        if self.cleanup_nodes:
+            run_settings.setdefault(
+            'http://rmit.edu.au/schemas/reliability', {})[u'cleanup_nodes'] = []
+
         return run_settings
