@@ -273,7 +273,6 @@ class SweepSubmitFormView(FormView):
     form_class = SweepSubmitForm
     success_url = '/jobs'
 
-
     initial = {'number_vm_instances': 8,
                'minimum_number_vm_instances': 4,
         'iseed': 42,
