@@ -211,12 +211,12 @@ def _generate_group_id(all_instances):
 
 def collect_instances(settings, group_id=None,
                       instance_id=None, all_VM=False,
-                      registered=False):
+                      registered=False, node_type='created_nodes'):
     all_instances = []
     if all_VM:
         all_instances = get_running_instances(settings)
     elif group_id or registered:
-        all_instances = get_rego_nodes(settings)
+        all_instances = get_rego_nodes(settings, node_type=node_type)
 
 #    elif instance_id:
 #        if is_instance_running(instance_id, settings):

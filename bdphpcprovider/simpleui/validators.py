@@ -38,6 +38,21 @@ def validate_number_vm_instances(value):
     return number_vm_instances
 
 
+def validate_minimum_number_vm_instances(value):
+    minimum_number_vm_instances = value
+
+    msg = u'minimum number of vm instances should be a positive integer'
+    try:
+        vms = int(minimum_number_vm_instances)
+    except ValueError:
+        raise ValidationError(msg)
+
+    if vms <= 0:
+        raise ValidationError(msg)
+
+    return minimum_number_vm_instances
+
+
 def validate_number_dimensions(value):
     number_dimensions = value
 
