@@ -239,7 +239,6 @@ class HRMCSubmitFormView(FormView):
         cookies = dict(self.request.COOKIES)
         logger.debug("cookies=%s" % cookies)
         headers = {'content-type': 'application/json'}
-
         data = json.dumps({'smart_connector': 'hrmc',
                     self.hrmc_schema + 'number_vm_instances': form.cleaned_data['number_vm_instances'],
                     self.hrmc_schema + 'minimum_number_vm_instances': form.cleaned_data['minimum_number_vm_instances'],
@@ -252,7 +251,6 @@ class HRMCSubmitFormView(FormView):
                     self.hrmc_schema + 'pottype': form.cleaned_data['pottype'],
                     self.hrmc_schema + 'experiment_id': form.cleaned_data['experiment_id'],
                     self.system_schema + 'output_location': form.cleaned_data['output_location']})
-
         r = requests.post(url,
             data=data,
             headers=headers,
@@ -276,14 +274,11 @@ class SweepSubmitFormView(FormView):
     form_class = SweepSubmitForm
     success_url = '/jobs'
 
-<<<<<<< HEAD
     hrmc_schema = "http://rmit.edu.au/schemas/hrmc/"
     system_schema = "http://rmit.edu.au/schemas/system/misc/"
     run_schema = "http://rmit.edu.au/schemas/stages/run/"
     sweep_schema = "http://rmit.edu.au/schemas/stages/sweep/"
 
-=======
->>>>>>> inufficient vm failure can be handled
     initial = {'number_vm_instances': 8,
                'minimum_number_vm_instances': 4,
         'iseed': 42,
