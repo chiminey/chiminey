@@ -28,5 +28,5 @@ logger = logging.getLogger(__name__)
 
 class FailureRecovery(FTManager):
     def recovered_insufficient_vms_failure(self):
-        logger.debug()
+        logger.debug('no recovery action executed')
         return False

@@ -209,9 +209,16 @@ class Command(BaseCommand):
                 u'salutation': (models.ParameterName.STRING, '', 1),
                 }
                 ],
+            u'http://rmit.edu.au/schemas/reliability':
+                [u'the schema for reliability framework',
+                {
+                u'cleanup_nodes': (models.ParameterName.STRING, '', 1),
+                }
+                ],
             u'http://rmit.edu.au/schemas/hrmc':
                 [u'the hrmc smart connector input values',
                 {
+                u'minimum_number_vm_instances': (models.ParameterName.NUMERIC, '', 11),
                 u'random_numbers': (models.ParameterName.STRING, '', 10),
                 u'max_seed_int': (models.ParameterName.NUMERIC, '', 9),
                 u'number_vm_instances': (models.ParameterName.NUMERIC, '', 8),
