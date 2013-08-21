@@ -386,6 +386,10 @@ class Execute(Stage):
         # Copy input directory to mytardis only after saving locally, so if
         # something goes wrong we still have the results
         if self.boto_settings['mytardis_host']:
+            value_keys = []
+
+            exp_value_keys = [["hrmcdset%s/step" % x, "hrmcdset%s/err" % x] for x in range(len(processes))]
+            logger.debug("exp_value_keys=%s" % exp_value_keys)
 
             self.experiment_id = mytardis.post_dataset(
                 settings=self.boto_settings,
@@ -393,7 +397,58 @@ class Execute(Stage):
                 exp_id=self.experiment_id,
                 exp_name=_get_exp_name_for_input,
                 dataset_name=_get_dataset_name_for_input,
-                dataset_schema="http://rmit.edu.au/schemas/hrmcdataset/input")
+                experiment_paramset=[{
+                    "schema": "http://rmit.edu.au/schemas/hrmcexp",
+                    "parameters": []
+                },
+                {
+                     "schema": "http://rmit.edu.au/schemas/expgraph",
+                     "parameters": [
+                     {
+                         "name": "graph_info",
+                         "string_value": '{"axes":["iteration","criterion"], "legends":["criterion"]}'
+                     },
+                     {
+                         "name": "name",
+                         "string_value": 'hrmcexp'
+                     },
+                     {
+                         "name": "value_dict",
+                         "string_value": '{}'
+                     },
+                     {
+                         "name": "value_keys",
+                         "string_value": '[["hrmcdset/it", "hrmcdset/crit"]]'
+                     },
+                     ]
+                },
+                {
+                     "schema": "http://rmit.edu.au/schemas/expgraph",
+                     "parameters": [
+                     {
+                         "name": "graph_info",
+                         "string_value": '{"axes":["step","ERRGr*wf"]}'
+                     },
+                     {
+                         "name": "name",
+                         "string_value": 'hrmcexp2'
+                     },
+                     {
+                         "name": "value_dict",
+                         "string_value": '{}'
+                     },
+                     {
+                         "name": "value_keys",
+                         "string_value": json.dumps(exp_value_keys)
+                     },
+                     ]
+                }],
+                dataset_paramset=[{
+                    "schema": "http://rmit.edu.au/schemas/hrmcdataset/input",
+                    "parameters": []
+                }])
+            # TODO: dataset_paramset should be criterion and it as result is
+            # pruned
         else:
             logger.warn("no mytardis host specified")
 

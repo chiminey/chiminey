@@ -84,7 +84,8 @@ def post_dataset(settings,
         exp_id,
         exp_name=_get_exp_name,
         dataset_name=_get_dataset_name,
-        dataset_schema=None):
+        experiment_paramset=[],
+        dataset_paramset=[]):
     """
     POST to mytardis_host REST API with mytardis_user and mytardis_password
     credentials to create or update experiment for a new dataset containing
@@ -134,10 +135,14 @@ def post_dataset(settings,
                     "schema": "http://rmit.edu.au/schemas/hrmcexp",
                     "parameters": []
                    }]
+
+        schemas = experiment_paramset
+
         data = json.dumps({
             'title': exp_name(settings, source_url, source_path),
             'description': 'some test repo',
-            "parameter_sets": schemas})
+            "parameter_sets": schemas
+            })
         logger.debug("data=%s" % data)
         r = requests.post(url,
             data=data,
@@ -175,16 +180,19 @@ def post_dataset(settings,
     url = "%s/api/v1/dataset/?format=json" % tardis_host_url
     headers = {'content-type': 'application/json'}
 
-    # FIXME: schema should be a parameter
-    schemas = [{
-               "schema": "http://rmit.edu.au/schemas/hrmcdataset",
-               "parameters": []
-              }]
-    if dataset_schema:
-       schemas.append({
-           "schema": dataset_schema,
-           "parameters": []
-           })
+    # # FIXME: schema should be a parameter
+    # schemas = [{
+    #            "schema": "http://rmit.edu.au/schemas/hrmcdataset",
+    #            "parameters": []
+    #           }]
+    # if dataset_schema:
+    #    schemas.append({
+    #        "schema": dataset_schema,
+    #        "parameters": []
+    #        })
+
+    schemas = dataset_paramset
+
     logger.debug("schemas=%s" % schemas)
     data = json.dumps({
        'experiments': [new_experiment_uri],

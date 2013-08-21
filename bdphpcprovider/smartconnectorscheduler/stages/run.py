@@ -279,7 +279,14 @@ class Run(Stage):
                 exp_id=self.experiment_id,
                 exp_name=_get_exp_name_for_input,
                 dataset_name=_get_dataset_name_for_input,
-                dataset_schema="http://rmit.edu.au/schemas/hrmcdataset/input")
+                experiment_paramset=[{
+                    "schema": "http://rmit.edu.au/schemas/hrmcexp",
+                    "parameters": []
+                }],
+                dataset_paramset=[{
+                    "schema": "http://rmit.edu.au/schemas/hrmcdataset/input",
+                    "parameters": []
+                }])
         else:
             logger.warn("no mytardis host specified")
 
