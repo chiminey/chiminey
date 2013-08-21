@@ -350,7 +350,7 @@ class Stage(models.Model):
                     pn = ParameterName.objects.get(schema=sch,
                         name=k)
                 except ParameterName.DoesNotExist:
-                    msg = "Unknown parameter '%s' for context '%s'" % (k, run_settings)
+                    msg = "Unknown parameter '%s' for context '%s'" % (k, stage_settings)
                     logger.exception(msg)
                     raise InvalidInputError(msg)
                 try:

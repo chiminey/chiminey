@@ -221,18 +221,83 @@ class Transform(Stage):
 
         if self.boto_settings['mytardis_host']:
 
-            for node_output_dir in node_output_dirs:
-
+            for i, node_output_dir in enumerate(node_output_dirs):
+                crit = None  # is there an infinity criterion
+                for ni in outputs:
+                    if ni.dir == node_output_dir:
+                        crit = ni.criterion
+                        break
+                else:
+                    logger.debug("criterion not found")
+                    continue
+                logger.debug("crit=%s" % crit)
                 source_url = smartconnector.get_url_with_pkey(self.boto_settings,
                     os.path.join(self.output_dir, node_output_dir), is_relative_path=False)
                 logger.debug("source_url=%s" % source_url)
+                graph_params = []
+                #TODO: hrmcexp graph should be tagged to input directories (not output directories)
+                #because we want the result after pruning.
                 self.experiment_id = mytardis.post_dataset(
                     settings=self.boto_settings,
                     source_url=source_url,
                     exp_id=self.experiment_id,
                    exp_name=hrmcstages.get_exp_name_for_output,
                    dataset_name=hrmcstages.get_dataset_name_for_output,
-                    dataset_schema="http://rmit.edu.au/schemas/hrmcdataset/output")
+                   experiment_paramset=[{
+                       "schema": "http://rmit.edu.au/schemas/hrmcexp",
+                       "parameters": []
+                   },
+                   {
+                        "schema": "http://rmit.edu.au/schemas/expgraph",
+                        "parameters": [
+                        {
+                            "name": "graph_info",
+                            "string_value": '{"axes":["iteration","criterion"], "legends":["criterion"]}'
+                        },
+                        {
+                            "name": "name",
+                            "string_value": 'hrmcexp'
+                        },
+                        {
+                            "name": "value_dict",
+                            "string_value": '{}'
+                        },
+                        {
+                            "name": "value_keys",
+                            "string_value": '[["hrmcdset/it", "hrmcdset/crit"]]'
+                        },
+                        ]
+                   }
+                   ],
+                   dataset_paramset=[{
+                       "schema": "http://rmit.edu.au/schemas/hrmcdataset/output",
+                       "parameters": [],
+
+                   },
+                   {
+                        "schema": "http://rmit.edu.au/schemas/dsetgraph",
+                        "parameters": [
+                        {
+                            "name": "graph_info",
+                            "string_value": '{}'
+                        },
+                        {
+                            "name": "name",
+                            "string_value": 'hrmcdset'
+                        },
+                        {
+                            "name": "value_dict",
+                            "string_value": '{"hrmcdset/it": %s, "hrmcdset/crit": %s}' % (self.id, crit)
+                        },
+                        {
+                            "name": "value_keys",
+                            "string_value": '[]'
+                        },
+                        ]
+                   }
+
+                   ]
+                   )
         else:
             logger.warn("no mytardis host specified")
 
