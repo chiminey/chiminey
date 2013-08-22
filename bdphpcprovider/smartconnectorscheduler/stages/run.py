@@ -273,16 +273,13 @@ class Run(Stage):
         # something goes wrong we still have the results
         if self.boto_settings['mytardis_host']:
 
+            # TODO: 
             self.experiment_id = mytardis.post_dataset(
                 settings=self.boto_settings,
                 source_url=source_files_url,
                 exp_id=self.experiment_id,
                 exp_name=_get_exp_name_for_input,
                 dataset_name=_get_dataset_name_for_input,
-                experiment_paramset=[{
-                    "schema": "http://rmit.edu.au/schemas/hrmcexp",
-                    "parameters": []
-                }],
                 dataset_paramset=[{
                     "schema": "http://rmit.edu.au/schemas/hrmcdataset/input",
                     "parameters": []

@@ -391,6 +391,9 @@ class Execute(Stage):
             exp_value_keys = [["hrmcdset%s/step" % x, "hrmcdset%s/err" % x] for x in range(len(processes))]
             logger.debug("exp_value_keys=%s" % exp_value_keys)
 
+            # FIXME: better to create experiment_paramsets
+            # later closer to when corresponding datasets are created, but
+            # would required PUT of paramerset data to existing experiment.
             self.experiment_id = mytardis.post_dataset(
                 settings=self.boto_settings,
                 source_url=source_files_url,

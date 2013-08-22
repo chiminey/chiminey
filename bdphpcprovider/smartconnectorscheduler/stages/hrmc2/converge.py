@@ -401,32 +401,6 @@ class Converge(Stage):
                     exp_name=hrmcstages.get_exp_name_for_output,
                     dataset_name=hrmcstages.get_dataset_name_for_output,
                     exp_id=self.experiment_id,
-                    experiment_paramset=[{
-                        "schema": "http://rmit.edu.au/schemas/hrmcexp",
-                        "parameters": []
-                    },
-                    {
-                         "schema": "http://rmit.edu.au/schemas/expgraph",
-                         "parameters": [
-                         {
-                             "name": "graph_info",
-                             "string_value": '{"axes":["iteration","criterion"], "legends":["criterion"]}'
-                         },
-                         {
-                             "name": "name",
-                             "string_value": 'hrmcexp'
-                         },
-                         {
-                             "name": "value_dict",
-                             "string_value": '{}'
-                         },
-                         {
-                             "name": "value_keys",
-                             "string_value": '[["hrmcdset/it", "hrmcdset/crit"]]'
-                         },
-                         ]
-                    }
-                    ],
                     dataset_paramset=[{
                         "schema": "http://rmit.edu.au/schemas/hrmcdataset/output",
                         "parameters": []
