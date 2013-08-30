@@ -85,7 +85,9 @@ def post_dataset(settings,
         exp_name=_get_exp_name,
         dataset_name=_get_dataset_name,
         experiment_paramset=[],
-        dataset_paramset=[]):
+        dataset_paramset=[],
+        datafile_paramset=[],
+        dfile_extract_func=None):
     """
     POST to mytardis_host REST API with mytardis_user and mytardis_password
     credentials to create or update experiment for a new dataset containing
@@ -220,8 +222,64 @@ def post_dataset(settings,
         file_path = os.path.join(root_path, file_location)
         logger.debug("file_path=%s" % file_path)
         #logger.debug("content=%s" % open(file_path,'rb').read())
+
+        new_datafile_paramset = []
+        logger.debug("datafile_paramset=%s" % datafile_paramset)
+        for paramset in datafile_paramset:
+            new_paramset = {}
+            logger.debug("paramset=%s" % paramset)
+            new_paramset['schema'] = paramset['schema']
+
+            has_value = False
+            has_keys = False
+            new_param_vals = []
+            for param in paramset['parameters']:
+                new_param = {}
+                for param_key, v in param.items():
+
+                    if param_key == 'name' and v == "value_dict":
+                        new_param['name'] = 'value_dict'
+                        new_value = {}
+
+                        found_func_match = False
+                        for fname, func in dfile_extract_func.items():
+                            logger.debug("fname=%s,func=%s" % (fname, func))
+                            if fname == os.path.basename(file_location):
+                                new_value.update(func(open(file_path, 'r')))
+                                found_func_match = True  # FIXME: can multiple funcs match?
+
+                        logger.debug("new_value=%s" % new_value)
+
+                        if found_func_match:
+                            new_param['string_value'] = json.dumps(new_value)
+                        else:
+                            new_param['string_value'] = param['string_value']
+                        break
+                    else:
+                        # incase string_value is processed first
+                        new_param[param_key] = v
+
+                if new_param['name'] == "value_dict" and len(json.loads(new_param['string_value'])):
+                    has_value = True
+                if new_param['name'] == "value_keys" and len(json.loads(new_param['string_value'])):
+                    has_keys = True
+                new_param_vals.append(new_param)
+
+            new_paramset['parameters'] = new_param_vals
+
+            logger.debug("has_value=%s" % has_value)
+            logger.debug("has_keys=%s" % has_keys)
+
+            if has_value or has_keys:
+                new_datafile_paramset.append(new_paramset)
+            else:
+                logger.debug("not adding %s" % new_paramset)
+
+        logger.debug("new_datafile_paramset=%s" % new_datafile_paramset)
+
         data = json.dumps({
             'dataset': str(new_dataset_uri),
+            "parameter_sets": new_datafile_paramset,
             'filename': os.path.basename(file_path),
             'size': os.stat(file_path).st_size,
             'mimetype': 'text/plain',
