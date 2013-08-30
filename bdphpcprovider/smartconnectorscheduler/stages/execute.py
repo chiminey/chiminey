@@ -449,7 +449,8 @@ class Execute(Stage):
                 dataset_paramset=[{
                     "schema": "http://rmit.edu.au/schemas/hrmcdataset/input",
                     "parameters": []
-                }])
+                }
+                ])
             # TODO: dataset_paramset should be criterion and it as result is
             # pruned
         else:

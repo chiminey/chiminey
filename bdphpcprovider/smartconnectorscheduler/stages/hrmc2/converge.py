@@ -390,10 +390,86 @@ class Converge(Stage):
                 logger.debug("xs=%s" % xs)
                 logger.debug("ys=%s" % ys)
 
+                crit_url = smartconnector.get_url_with_pkey(self.boto_settings,
+                    os.path.join(new_output_dir, node_dir, "criterion.txt"), is_relative_path=False)
+                try:
+                    crit = hrmcstages.get_file(crit_url)
+                except ValueError:
+                    crit = None
+                except IOError:
+                    crit = None
+                # FIXME: can crit be zero?
+                if crit:
+                    hrmcdset_val = '{"hrmcdset/it": %s, "hrmcdset/crit": %s}' % (self.id, crit)
+                else:
+                    hrmcdset_val = '{}'
 
                 source_url = smartconnector.get_url_with_pkey(self.boto_settings,
                     os.path.join(new_output_dir, node_dir), is_relative_path=False)
                 logger.debug("source_url=%s" % source_url)
+
+                # TODO: move into utiltiy function for reuse
+                def extract_psd_func(fp):
+                    res = []
+                    xs = []
+                    ys = []
+                    for i, line in enumerate(fp):
+                        columns = line.split()
+                        xs.append(float(columns[0]))
+                        ys.append(float(columns[1]))
+                    res = {"hrmcdfile/r1": xs, "hrmcdfile/g1": ys}
+                    return res
+
+                def extract_psdexp_func(fp):
+                    res = []
+                    xs = []
+                    ys = []
+                    for i, line in enumerate(fp):
+                        columns = line.split()
+                        xs.append(float(columns[0]))
+                        ys.append(float(columns[1]))
+                    res = {"hrmcdfile/r2": xs, "hrmcdfile/g2": ys}
+                    return res
+
+                def extract_grfinal_func(fp):
+                    res = []
+                    xs = []
+                    ys = []
+                    for i, line in enumerate(fp):
+                        columns = line.split()
+                        xs.append(float(columns[0]))
+                        ys.append(float(columns[1]))
+                    #FIXME: len(xs) == len(ys) for this to work.
+                    #TODO: hack to handle when xs and ys are too
+                    # large to fit in Parameter with db_index.
+                    # solved by function call at destination
+                    cut_xs = [xs[i] for i, x in enumerate(xs)
+                        if (i % (len(xs) / 20) == 0)]
+                    cut_ys = [ys[i] for i, x in enumerate(ys)
+                        if (i % (len(ys) / 20) == 0)]
+
+                    res = {"hrmcdfile/r3": cut_xs, "hrmcdfile/g3": cut_ys}
+                    return res
+
+                def extract_inputgr_func(fp):
+                    res = []
+                    xs = []
+                    ys = []
+                    for i, line in enumerate(fp):
+                        columns = line.split()
+                        xs.append(float(columns[0]))
+                        ys.append(float(columns[1]))
+                    #FIXME: len(xs) == len(ys) for this to work.
+                    #TODO: hack to handle when xs and ys are too
+                    # large to fit in Parameter with db_index.
+                    # solved by function call at destination
+                    cut_xs = [xs[i] for i, x in enumerate(xs)
+                        if (i % (len(xs) / 20) == 0)]
+                    cut_ys = [ys[i] for i, x in enumerate(ys)
+                        if (i % (len(ys) / 20) == 0)]
+
+                    res = {"hrmcdfile/r4": cut_xs, "hrmcdfile/g4": cut_ys}
+                    return res
 
                 self.experiment_id = mytardis.post_dataset(
                     settings=self.boto_settings,
@@ -403,14 +479,57 @@ class Converge(Stage):
                     exp_id=self.experiment_id,
                     dataset_paramset=[{
                         "schema": "http://rmit.edu.au/schemas/hrmcdataset/output",
-                        "parameters": []
+                        "parameters": [],
+
+                    },
+                    {
+                         "schema": "http://rmit.edu.au/schemas/dsetgraph",
+                         "parameters": [
+                         {
+                             "name": "graph_info",
+                             "string_value": '{"axes":["r (Angstroms)","g(r)"], "legends":["psd", "PSD_exp"],  "type":"line"}'
+                         },
+                         {
+                             "name": "name",
+                             "string_value": 'hrmcdset'
+                         },
+                         {
+                             "name": "value_dict",
+                             "string_value": hrmcdset_val
+                         },
+                         {
+                             "name": "value_keys",
+                             "string_value": '[["hrmcdfile/r1", "hrmcdfile/g1"],["hrmcdfile/r2","hrmcdfile/g2"]]'
+                         },
+                         ]
+                    },
+                    {
+                         "schema": "http://rmit.edu.au/schemas/dsetgraph",
+                         "parameters": [
+                         {
+                             "name": "graph_info",
+                             "string_value": '{"axes":["r (Angstroms)","g(r)"], "legends":["data_grfinal", "input_gr"], "type":"line"}'
+                         },
+                         {
+                             "name": "name",
+                             "string_value": 'hrmcdset2'
+                         },
+                         {
+                             "name": "value_dict",
+                             "string_value": '{}',
+                         },
+                         {
+                             "name": "value_keys",
+                             "string_value": '[["hrmcdfile/r3", "hrmcdfile/g3"],["hrmcdfile/r4","hrmcdfile/g4"]]'
+                         },
+                         ]
                     },
                     {
                         "schema": "http://rmit.edu.au/schemas/dsetgraph",
                         "parameters": [
                         {
                             "name": "graph_info",
-                            "string_value": '{}'
+                            "string_value": "{}"
                         },
                         {
                             "name": "name",
@@ -425,7 +544,36 @@ class Converge(Stage):
                         "string_value": '[]'
                         },
                         ]
-                    }]
+                    }],
+                    datafile_paramset=[
+                    {
+                         "schema": "http://rmit.edu.au/schemas/dfilegraph",
+                         "parameters": [
+                         {
+                             "name": "graph_info",
+                             "string_value": '{}'
+                         },
+                         {
+                             "name": "name",
+                             "string_value": 'hrmcdfile'
+                         },
+                         {
+                             "name": "value_dict",
+                             "string_value": '{}'
+                         },
+                         {
+                             "name": "value_keys",
+                             "string_value": '[]'
+                         },
+                         ]
+                    },
+                    ],
+                    # TODO: move extract function into paramset structure
+                    dfile_extract_func={'psd.dat': extract_psd_func,
+                         'PSD_exp.dat': extract_psdexp_func,
+                         'data_grfinal.dat': extract_grfinal_func,
+                         'input_gr.dat': extract_inputgr_func}
+
                     )
         else:
             logger.warn("no mytardis host specified")

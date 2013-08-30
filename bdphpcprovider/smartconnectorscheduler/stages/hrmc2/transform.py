@@ -235,6 +235,69 @@ class Transform(Stage):
                     os.path.join(self.output_dir, node_output_dir), is_relative_path=False)
                 logger.debug("source_url=%s" % source_url)
                 graph_params = []
+
+                def extract_psd_func(fp):
+                    res = []
+                    xs = []
+                    ys = []
+                    for i, line in enumerate(fp):
+                        columns = line.split()
+                        xs.append(float(columns[0]))
+                        ys.append(float(columns[1]))
+                    res = {"hrmcdfile/r1": xs, "hrmcdfile/g1": ys}
+                    return res
+
+                def extract_psdexp_func(fp):
+                    res = []
+                    xs = []
+                    ys = []
+                    for i, line in enumerate(fp):
+                        columns = line.split()
+                        xs.append(float(columns[0]))
+                        ys.append(float(columns[1]))
+                    res = {"hrmcdfile/r2": xs, "hrmcdfile/g2": ys}
+                    return res
+
+                def extract_grfinal_func(fp):
+                    res = []
+                    xs = []
+                    ys = []
+                    for i, line in enumerate(fp):
+                        columns = line.split()
+                        xs.append(float(columns[0]))
+                        ys.append(float(columns[1]))
+                    #FIXME: len(xs) == len(ys) for this to work.
+                    #TODO: hack to handle when xs and ys are too
+                    # large to fit in Parameter with db_index.
+                    # solved by function call at destination
+                    cut_xs = [xs[i] for i, x in enumerate(xs)
+                        if (i % (len(xs) / 20) == 0)]
+                    cut_ys = [ys[i] for i, x in enumerate(ys)
+                        if (i % (len(ys) / 20) == 0)]
+
+                    res = {"hrmcdfile/r3": cut_xs, "hrmcdfile/g3": cut_ys}
+                    return res
+
+                def extract_inputgr_func(fp):
+                    res = []
+                    xs = []
+                    ys = []
+                    for i, line in enumerate(fp):
+                        columns = line.split()
+                        xs.append(float(columns[0]))
+                        ys.append(float(columns[1]))
+                    #FIXME: len(xs) == len(ys) for this to work.
+                    #TODO: hack to handle when xs and ys are too
+                    # large to fit in Parameter with db_index.
+                    # solved by function call at destination
+                    cut_xs = [xs[i] for i, x in enumerate(xs)
+                        if (i % (len(xs) / 20) == 0)]
+                    cut_ys = [ys[i] for i, x in enumerate(ys)
+                        if (i % (len(ys) / 20) == 0)]
+
+                    res = {"hrmcdfile/r4": cut_xs, "hrmcdfile/g4": cut_ys}
+                    return res
+
                 #TODO: hrmcexp graph should be tagged to input directories (not output directories)
                 #because we want the result after pruning.
                 self.experiment_id = mytardis.post_dataset(
@@ -253,7 +316,7 @@ class Transform(Stage):
                         "parameters": [
                         {
                             "name": "graph_info",
-                            "string_value": '{}'
+                            "string_value": '{"axes":["r (Angstroms)","g(r)"], "legends":["psd", "PSD_exp"],  "type":"line"}'
                         },
                         {
                             "name": "name",
@@ -265,12 +328,82 @@ class Transform(Stage):
                         },
                         {
                             "name": "value_keys",
+                            "string_value": '[["hrmcdfile/r1", "hrmcdfile/g1"],["hrmcdfile/r2","hrmcdfile/g2"]]'
+                        },
+                        ]
+                   },
+                   {
+                        "schema": "http://rmit.edu.au/schemas/dsetgraph",
+                        "parameters": [
+                        {
+                            "name": "graph_info",
+                            "string_value": '{"axes":["r (Angstroms)","g(r)"], "legends":["data_grfinal", "input_gr"],  "type":"line"}'
+                        },
+                        {
+                            "name": "name",
+                            "string_value": 'hrmcdset2'
+                        },
+                        {
+                            "name": "value_dict",
+                            "string_value": '{}',
+                        },
+                        {
+                            "name": "value_keys",
+                            "string_value": '[["hrmcdfile/r3", "hrmcdfile/g3"],["hrmcdfile/r4","hrmcdfile/g4"]]'
+                        },
+                        ]
+                   }
+                   ],
+                   datafile_paramset=[
+                   {
+                        "schema": "http://rmit.edu.au/schemas/dfilegraph",
+                        "parameters": [
+                        {
+                            "name": "graph_info",
+                            "string_value": '{"axes":["step","ERRGr*wf"]}',
+                        },
+                        {
+                            "name": "name",
+                            "string_value": 'hrmcdfile'
+                        },
+                        {
+                            "name": "value_dict",
+                            "string_value": '{}'
+                        },
+                        {
+                            "name": "value_keys",
                             "string_value": '[]'
                         },
                         ]
                    }
+                   # {
+                   #      "schema": "http://rmit.edu.au/schemas/dfilegraph",
+                   #      "parameters": [
+                   #      {
+                   #          "name": "graph_info",
+                   #          "string_value": '{}'
+                   #      },
+                   #      {
+                   #          "name": "name",
+                   #          "string_value": 'hrmcdfile2'
+                   #      },
+                   #      {
+                   #          "name": "value_dict",
+                   #          "string_value": ''
+                   #      },
+                   #      {
+                   #          "name": "value_keys",
+                   #          "string_value": '[]'
+                   #      },
+                   #      ]
+                   # }
+                   ],
+                   # TODO: move extract function into paramset structure
+                   dfile_extract_func={'psd.dat': extract_psd_func,
+                        'PSD_exp.dat': extract_psdexp_func,
+                        'data_grfinal.dat': extract_grfinal_func,
+                        'input_gr.dat': extract_inputgr_func}
 
-                   ]
                    )
         else:
             logger.warn("no mytardis host specified")
