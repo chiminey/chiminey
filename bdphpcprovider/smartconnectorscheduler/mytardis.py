@@ -133,17 +133,11 @@ def post_dataset(settings,
 
         url = "%s/api/v1/experiment/?format=json" % tardis_host_url
         headers = {'content-type': 'application/json'}
-        schemas = [{
-                    "schema": "http://rmit.edu.au/schemas/hrmcexp",
-                    "parameters": []
-                   }]
-
-        schemas = experiment_paramset
 
         data = json.dumps({
             'title': exp_name(settings, source_url, source_path),
             'description': 'some test repo',
-            "parameter_sets": schemas
+            "parameter_sets": experiment_paramset,
             })
         logger.debug("data=%s" % data)
         r = requests.post(url,
@@ -241,12 +235,17 @@ def post_dataset(settings,
                         new_param['name'] = 'value_dict'
                         new_value = {}
 
-                        found_func_match = False
-                        for fname, func in dfile_extract_func.items():
-                            logger.debug("fname=%s,func=%s" % (fname, func))
-                            if fname == os.path.basename(file_location):
-                                new_value.update(func(open(file_path, 'r')))
-                                found_func_match = True  # FIXME: can multiple funcs match?
+                        val = param['string_value']
+
+                        if not isinstance(val, basestring):
+                            dfile_extract_func = val
+
+                            found_func_match = False
+                            for fname, func in dfile_extract_func.items():
+                                logger.debug("fname=%s,func=%s" % (fname, func))
+                                if fname == os.path.basename(file_location):
+                                    new_value.update(func(open(file_path, 'r')))
+                                    found_func_match = True  # FIXME: can multiple funcs match?
 
                         logger.debug("new_value=%s" % new_value)
 
