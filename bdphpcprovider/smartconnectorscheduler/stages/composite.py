@@ -100,3 +100,34 @@ class ParallelStage(Stage):
             #    total_templates += 1
             logger.debug("total_templates=%d" % (total_templates))
         return total_templates
+
+
+
+
+    def make_graph_paramset(schema_ns,
+        name, graph_info, value_dict, value_keys):
+
+        res = {}
+        res['schema'] = "http://rmit.edu.au/schemas/%s" % schema_ns
+        paramset = []
+        param = {}
+        for x, y in (
+            ("graph_info", graph_info),
+            ("name", name),
+            ("value_dict", value_dict),
+            ("value_keys", value_keys)):
+
+            param = {}
+            param['name'] = x
+            param['string_value'] = y
+            paramset.append(param)
+
+        res['parmeters'] = paramset
+
+        return res
+
+    def make_paramset(schema_ns, parameters):
+        res = {}
+        res['schema'] = 'http://rmit.edu.au/schemas/%s" % schemas_ns'
+        res['parameters'] = json.dumps(parameters)
+        return res

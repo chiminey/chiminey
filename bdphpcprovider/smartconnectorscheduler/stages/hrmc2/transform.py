@@ -31,6 +31,10 @@ from bdphpcprovider.smartconnectorscheduler import mytardis
 from bdphpcprovider.smartconnectorscheduler import models
 
 
+from bdphpcprovider.smartconnectorscheduler.stages.hrmc_composite import (make_graph_paramset, make_paramset)
+
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -304,100 +308,37 @@ class Transform(Stage):
                     settings=self.boto_settings,
                     source_url=source_url,
                     exp_id=self.experiment_id,
-                   exp_name=hrmcstages.get_exp_name_for_output,
-                   dataset_name=hrmcstages.get_dataset_name_for_output,
-                   dataset_paramset=[{
-                       "schema": "http://rmit.edu.au/schemas/hrmcdataset/output",
-                       "parameters": [],
+                    exp_name=hrmcstages.get_exp_name_for_output,
+                    dataset_name=hrmcstages.get_dataset_name_for_output,
+                    dataset_paramset=[
+                        make_paramset("hrmcdataset/output", []),
+                        make_graph_paramset("dsetgraph",
+                            name="hrmcdset",
+                            graph_info={"axes":["r (Angstroms)", "g(r)"],
+                                "legends":["psd", "PSD_exp"], "type":"line"},
+                            value_dict={"hrmcdset/it": self.id,
+                                 "hrmcdset/crit": crit},
+                            value_keys=[["hrmcdfile/r1", "hrmcdfile/g1"],
+                                ["hrmcdfile/r2", "hrmcdfile/g2"]]
+                            ),
+                        make_graph_paramset("dsetgraph",
+                            name="hrmcdset2",
+                            graph_info={"axes":["r (Angstroms)", "g(r)"],
+                                "legends":["data_grfinal", "input_gr"],
+                                "type":"line"},
+                            value_dict={},
+                            value_keys=[["hrmcdfile/r3", "hrmcdfile/g3"],
+                                ["hrmcdfile/r4", "hrmcdfile/g4"]]
+                            ),
 
-                   },
-                   {
-                        "schema": "http://rmit.edu.au/schemas/dsetgraph",
-                        "parameters": [
-                        {
-                            "name": "graph_info",
-                            "string_value": '{"axes":["r (Angstroms)","g(r)"], "legends":["psd", "PSD_exp"],  "type":"line"}'
-                        },
-                        {
-                            "name": "name",
-                            "string_value": 'hrmcdset'
-                        },
-                        {
-                            "name": "value_dict",
-                            "string_value": '{"hrmcdset/it": %s, "hrmcdset/crit": %s}' % (self.id, crit)
-                        },
-                        {
-                            "name": "value_keys",
-                            "string_value": '[["hrmcdfile/r1", "hrmcdfile/g1"],["hrmcdfile/r2","hrmcdfile/g2"]]'
-                        },
-                        ]
-                   },
-                   {
-                        "schema": "http://rmit.edu.au/schemas/dsetgraph",
-                        "parameters": [
-                        {
-                            "name": "graph_info",
-                            "string_value": '{"axes":["r (Angstroms)","g(r)"], "legends":["data_grfinal", "input_gr"],  "type":"line"}'
-                        },
-                        {
-                            "name": "name",
-                            "string_value": 'hrmcdset2'
-                        },
-                        {
-                            "name": "value_dict",
-                            "string_value": '{}',
-                        },
-                        {
-                            "name": "value_keys",
-                            "string_value": '[["hrmcdfile/r3", "hrmcdfile/g3"],["hrmcdfile/r4","hrmcdfile/g4"]]'
-                        },
-                        ]
-                   }
-                   ],
+                        ],
                    datafile_paramset=[
-                   {
-                        "schema": "http://rmit.edu.au/schemas/dfilegraph",
-                        "parameters": [
-                        {
-                            "name": "graph_info",
-                            "string_value": '{"axes":["step","ERRGr*wf"]}',
-                        },
-                        {
-                            "name": "name",
-                            "string_value": 'hrmcdfile'
-                        },
-                        {
-                            "name": "value_dict",
-                            "string_value": '{}'
-                        },
-                        {
-                            "name": "value_keys",
-                            "string_value": '[]'
-                        },
-                        ]
-                   }
-                   # {
-                   #      "schema": "http://rmit.edu.au/schemas/dfilegraph",
-                   #      "parameters": [
-                   #      {
-                   #          "name": "graph_info",
-                   #          "string_value": '{}'
-                   #      },
-                   #      {
-                   #          "name": "name",
-                   #          "string_value": 'hrmcdfile2'
-                   #      },
-                   #      {
-                   #          "name": "value_dict",
-                   #          "string_value": ''
-                   #      },
-                   #      {
-                   #          "name": "value_keys",
-                   #          "string_value": '[]'
-                   #      },
-                   #      ]
-                   # }
-                   ],
+                        make_graph_paramset("dfilegraph",
+                            name="hrmcdfile",
+                            graph_info={},
+                            value_dict={},
+                            value_keys=[])
+                        ],
                    # TODO: move extract function into paramset structure
                    dfile_extract_func={'psd.dat': extract_psd_func,
                         'PSD_exp.dat': extract_psdexp_func,

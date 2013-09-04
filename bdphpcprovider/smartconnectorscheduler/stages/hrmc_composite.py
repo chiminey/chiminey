@@ -22,6 +22,7 @@
 import logging
 import ast
 import os
+import json
 
 from bdphpcprovider.smartconnectorscheduler.stages.composite import ParallelStage
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadSpecificationError
@@ -151,3 +152,39 @@ class HRMCParallelStage(ParallelStage):
             total_templates = product * len(input_dirs)
             logger.debug("total_templates=%d" % (total_templates))
         return total_templates
+
+
+def make_graph_paramset(schema_ns,
+    name, graph_info, value_dict, value_keys):
+
+    res = {}
+    res['schema'] = "http://rmit.edu.au/schemas/%s" % schema_ns
+    paramset = []
+
+    def _make_param(x):
+        param = {}
+        param['name'] = x
+        param['string_value'] = y
+        return param
+
+    for x, y in (
+        ("graph_info", graph_info),
+        ("name", name),
+        ('value_dict', value_dict),
+        ("value_keys", value_keys)):
+
+        paramset.append(_make_param(x, json.dumps(y)))
+
+    res['parmeters'] = paramset
+
+    return res
+
+
+def make_paramset(schema_ns, parameters):
+    res = {}
+    res['schema'] = 'http://rmit.edu.au/schemas/%s" % schemas_ns'
+    res['parameters'] = json.dumps(parameters)
+    return res
+
+
+

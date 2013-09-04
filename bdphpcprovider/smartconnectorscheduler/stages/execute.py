@@ -33,6 +33,8 @@ from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputExcepti
 from bdphpcprovider.smartconnectorscheduler \
     import mytardis, models, hrmcstages, sshconnector, smartconnector
 
+from bdphpcprovider.smartconnectorscheduler.stages.hrmc_composite import (make_graph_paramset, make_paramset)
+
 
 logger = logging.getLogger(__name__)
 EXP_DATASET_NAME_SPLIT = 2
@@ -391,6 +393,7 @@ class Execute(Stage):
             exp_value_keys = [["hrmcdset%s/step" % x, "hrmcdset%s/err" % x] for x in range(len(processes))]
             logger.debug("exp_value_keys=%s" % exp_value_keys)
 
+
             # FIXME: better to create experiment_paramsets
             # later closer to when corresponding datasets are created, but
             # would required PUT of paramerset data to existing experiment.
@@ -400,59 +403,22 @@ class Execute(Stage):
                 exp_id=self.experiment_id,
                 exp_name=_get_exp_name_for_input,
                 dataset_name=_get_dataset_name_for_input,
-                experiment_paramset=[{
-                    "schema": "http://rmit.edu.au/schemas/hrmcexp",
-                    "parameters": []
-                },
-                {
-                     "schema": "http://rmit.edu.au/schemas/expgraph",
-                     "parameters": [
-                     {
-                         "name": "graph_info",
-                         "string_value": '{"axes":["iteration","criterion"], "legends":["criterion"]}'
-                     },
-                     {
-                         "name": "name",
-                         "string_value": 'hrmcexp'
-                     },
-                     {
-                         "name": "value_dict",
-                         "string_value": '{}'
-                     },
-                     {
-                         "name": "value_keys",
-                         "string_value": '[["hrmcdset/it", "hrmcdset/crit"]]'
-                     },
-                     ]
-                },
-                {
-                     "schema": "http://rmit.edu.au/schemas/expgraph",
-                     "parameters": [
-                     {
-                         "name": "graph_info",
-                         "string_value": '{"axes":["step","ERRGr*wf"]}'
-                     },
-                     {
-                         "name": "name",
-                         "string_value": 'hrmcexp2'
-                     },
-                     {
-                         "name": "value_dict",
-                         "string_value": '{}'
-                     },
-                     {
-                         "name": "value_keys",
-                         "string_value": json.dumps(exp_value_keys)
-                     },
-                     ]
-                }],
-                dataset_paramset=[{
-                    "schema": "http://rmit.edu.au/schemas/hrmcdataset/input",
-                    "parameters": []
-                }
-                ])
-            # TODO: dataset_paramset should be criterion and it as result is
-            # pruned
+                experiment_paramset=[
+                make_paramset("hrmcexp", []),
+                make_graph_paramset("expgraph",
+                    name="hrmcexp",
+                    graph_info={"axes":["iteration", "criterion"], "legends":["criterion"]},
+                    value_dict={},
+                    value_keys=[["hrmcdset/it", "hrmcdset/crit"]]),
+
+                make_graph_paramset("expgraph",
+                    name="hrmcexp2",
+                    graph_info={"axes":["step", "ERRGr*wf"]},
+                    value_dict={},
+                    value_keys=exp_value_keys),
+               ],
+                dataset_paramset=[
+                    make_paramset('hrmcdataset/input', [])])
         else:
             logger.warn("no mytardis host specified")
 
