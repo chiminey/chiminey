@@ -128,6 +128,6 @@ class ParallelStage(Stage):
 
     def make_paramset(schema_ns, parameters):
         res = {}
-        res['schema'] = 'http://rmit.edu.au/schemas/%s" % schemas_ns'
+        res['schema'] = 'http://rmit.edu.au/schemas/%s' % schema_ns
         res['parameters'] = json.dumps(parameters)
         return res
