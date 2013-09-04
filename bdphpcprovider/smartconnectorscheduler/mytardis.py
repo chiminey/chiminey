@@ -235,17 +235,17 @@ def post_dataset(settings,
                         new_param['name'] = 'value_dict'
                         new_value = {}
 
-                        val = param['string_value']
+                        #val = param['string_value']
 
-                        if not isinstance(val, basestring):
-                            dfile_extract_func = val
+                        # if not isinstance(val, basestring):
+                        #     dfile_extract_func = val
 
-                            found_func_match = False
-                            for fname, func in dfile_extract_func.items():
-                                logger.debug("fname=%s,func=%s" % (fname, func))
-                                if fname == os.path.basename(file_location):
-                                    new_value.update(func(open(file_path, 'r')))
-                                    found_func_match = True  # FIXME: can multiple funcs match?
+                        found_func_match = False
+                        for fname, func in dfile_extract_func.items():
+                            logger.debug("fname=%s,func=%s" % (fname, func))
+                            if fname == os.path.basename(file_location):
+                                new_value.update(func(open(file_path, 'r')))
+                                found_func_match = True  # FIXME: can multiple funcs match?
 
                         logger.debug("new_value=%s" % new_value)
 
