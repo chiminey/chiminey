@@ -287,14 +287,17 @@ class ContextResource(ModelResource):
                     ('threshold', str(bundle.data['threshold'])),
                     ('error_threshold', str(bundle.data['error_threshold'])),
                     ('max_iteration', bundle.data['max_iteration']),
-                    ('experiment_id', bundle.data['experiment_id']),
+                    #('experiment_id', bundle.data['experiment_id']),
+                    ('experiment_id', 0),
                     ('pottype', bundle.data['pottype'])],
                 ['http://rmit.edu.au/schemas/stages/sweep',
                     ('input_location', bundle.data['input_location']),
                     ('sweep_map', bundle.data['sweep_map']),
                 ],
                 ['http://rmit.edu.au/schemas/stages/run',
-                    ('run_map', bundle.data['run_map'])
+                    #('run_map', bundle.data['run_map'])
+                    ('run_map', "{}")
+
                 ]
             ])
 

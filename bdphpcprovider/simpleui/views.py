@@ -310,9 +310,10 @@ class SweepSubmitFormView(FormView):
                     'error_threshold': str(form.cleaned_data['error_threshold']),
                     'max_iteration': form.cleaned_data['max_iteration'],
                     'pottype': form.cleaned_data['pottype'],
-                    'experiment_id': form.cleaned_data['experiment_id'],
+                    #'experiment_id': form.cleaned_data['experiment_id'],
                     'sweep_map': form.cleaned_data['sweep_map'],
-                    'run_map': form.cleaned_data['run_map'],
+                    #'run_map': form.cleaned_data['run_map'],
+                    'run_map': "{}",
                     'output_location': form.cleaned_data['output_location']})
 
         r = requests.post(url,

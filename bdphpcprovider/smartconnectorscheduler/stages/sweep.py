@@ -115,7 +115,7 @@ class Sweep(Stage):
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/hrmc/max_iteration')
         smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/stages/run/random_numbers')
+            'http://rmit.edu.au/schemas/hrmc/random_numbers')
 
         contextid = int(run_settings['http://rmit.edu.au/schemas/system'][
             u'contextid'])
@@ -241,6 +241,7 @@ class Sweep(Stage):
                     ['http://rmit.edu.au/schemas/hrmc',
                         ('number_vm_instances', self.boto_settings['number_vm_instances']),
                         (u'iseed', rands[i]),
+                        ('max_seed_int', 1000),
                         ('input_location',  new_input_location),
                         ('number_dimensions', self.boto_settings['number_dimensions']),
                         ('threshold', self.boto_settings['threshold']),
