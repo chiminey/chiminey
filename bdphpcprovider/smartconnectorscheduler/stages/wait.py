@@ -99,8 +99,8 @@ class Wait(Stage):
         except Exception, e:
             logger.error(e)
         finally:
-            if ssh:
-                ssh.close()
+            #if ssh:
+            ssh.close()
         logger.debug("command_out2=(%s, %s)" % (command_out, errs))
 
         if command_out:

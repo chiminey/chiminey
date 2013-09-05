@@ -104,7 +104,7 @@ def create_VM_instances(number_vm_instances, settings):
     logger.info("Creating %d VM(s)" % number_vm_instances)
     try:
         reservation = connection.run_instances(
-                    placement='qld',
+                    placement='monash',
                     image_id=settings['vm_image'],
                     min_count=1,
                     max_count=number_vm_instances,
@@ -309,6 +309,8 @@ def _wait_for_instance_to_start_running(all_instances, settings):
             else:
                 all_instances.remove(instance)
             logger.debug('Current status of %s: %s' % (instance.ip_address, instance.state))
+            if instance.state in 'error':
+                all_instances.remove(instance)
         time.sleep(settings['cloud_sleep_interval'])
     return all_running_instances
 
@@ -390,6 +392,10 @@ def print_all_information(settings, all_instances=None):
         except AuthError:
             logger.debug("Trying to access VMs that "
                          "are not created with the provided private key")
+        except  Exception, e:
+            logger.error(e)
+            pass
+
 
 
 @deprecated
