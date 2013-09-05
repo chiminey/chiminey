@@ -52,7 +52,7 @@ def is_ssh_ready(settings, ip_address):
             elif 'Authentication failed' in ex:
                 pass
             else:
-                raise
+                pass
             sleep(settings['cloud_sleep_interval'])
     logger.debug("Connecting to %s completed" % ip_address)
     # TODO: need way of exiting polling loop if vm connection is borked.
