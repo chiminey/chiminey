@@ -29,6 +29,14 @@ def setup_settings(run_settings):
         run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nci_user']
     settings['password'] = \
         run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nci_password']
+    settings['mytardis_host'] = \
+        run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['mytardis_host']
+    settings['mytardis_user'] = \
+        run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['mytardis_user']
+    settings['mytardis_password'] = \
+        run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['mytardis_password']
+
+
     # settings['private_key'] = \
     #         run_settings[
     #             models.UserProfile.PROFILE_SCHEMA_NS]['nci_private_key']
@@ -49,6 +57,13 @@ def setup_settings(run_settings):
             run_settings[
                 'http://rmit.edu.au/schemas/system/misc'][
                 'output_location']
+
+    experiment_id = 0
+    try:
+        experiment_id = int(run_settings['http://rmit.edu.au/schemas/remotemake'][u'experiment_id'])
+    except ValueError:
+        experiment_id = 0
+    settings['experiment_id'] = experiment_id
 
     key_file = ""
     if 'nci_private' in run_settings[models.UserProfile.PROFILE_SCHEMA_NS]:

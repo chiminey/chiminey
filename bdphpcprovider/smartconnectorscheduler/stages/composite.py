@@ -20,7 +20,7 @@
 
 
 import logging
-
+import json
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from itertools import product
 
@@ -102,32 +102,36 @@ class ParallelStage(Stage):
         return total_templates
 
 
+def make_graph_paramset(schema_ns,
+    name, graph_info, value_dict, value_keys):
 
+    res = {}
+    res['schema'] = "http://rmit.edu.au/schemas/%s" % schema_ns
+    paramset = []
 
-    def make_graph_paramset(schema_ns,
-        name, graph_info, value_dict, value_keys):
-
-        res = {}
-        res['schema'] = "http://rmit.edu.au/schemas/%s" % schema_ns
-        paramset = []
+    def _make_param(x, y):
         param = {}
-        for x, y in (
-            ("graph_info", graph_info),
-            ("name", name),
-            ("value_dict", value_dict),
-            ("value_keys", value_keys)):
+        param['name'] = x
+        param['string_value'] = y
+        return param
 
-            param = {}
-            param['name'] = x
-            param['string_value'] = y
-            paramset.append(param)
+    for x, y in (
+        ("graph_info", json.dumps(graph_info)),
+        ("name", name),
+        ('value_dict', json.dumps(value_dict)),
+        ("value_keys", json.dumps(value_keys))):
 
-        res['parmeters'] = paramset
+        paramset.append(_make_param(x, y))
+    res['parameters'] = paramset
 
-        return res
+    return res
 
-    def make_paramset(schema_ns, parameters):
-        res = {}
-        res['schema'] = 'http://rmit.edu.au/schemas/%s' % schema_ns
-        res['parameters'] = json.dumps(parameters)
-        return res
+
+def make_paramset(schema_ns, parameters):
+    res = {}
+    res['schema'] = 'http://rmit.edu.au/schemas/%s' % schema_ns
+    res['parameters'] = parameters
+    return res
+
+
+

@@ -98,7 +98,11 @@ class Bootstrap(Stage):
                     ip_address=node_ip)
                 logger.debug("Relative path %s" % relative_path)
                 logger.debug("Destination %s" % destination)
-                fin = job_finished(node_ip, self.boto_settings, destination)
+                try:
+                    fin = job_finished(node_ip, self.boto_settings, destination)
+                except IOError, e:
+                    logger.error(e)
+                    fin = False
                 logger.debug("fin=%s" % fin)
                 if fin:
                     print "done."

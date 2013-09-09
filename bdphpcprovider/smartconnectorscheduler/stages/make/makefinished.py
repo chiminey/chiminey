@@ -19,6 +19,7 @@
 # IN THE SOFTWARE.
 
 import os
+import json
 import logging
 import ast
 import logging.config
@@ -27,9 +28,34 @@ from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import sshconnector
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
+
+
+from bdphpcprovider.smartconnectorscheduler import mytardis
+from bdphpcprovider.smartconnectorscheduler.stages.composite import (make_graph_paramset, make_paramset)
+
+
 from . import setup_settings
 
 logger = logging.getLogger(__name__)
+
+
+EXP_DATASET_NAME_SPLIT = 1
+OUTCAR_FILE = "OUTCAR"
+VALUES_FILE = "values"
+
+
+def _get_exp_name_for_make(settings, url, path):
+    """
+    Break path based on EXP_DATASET_NAME_SPLIT
+    """
+    return str(os.sep.join(path.split(os.sep)[-(EXP_DATASET_NAME_SPLIT + 1):-EXP_DATASET_NAME_SPLIT]))
+
+
+def _get_dataset_name_for_make(settings, url, path):
+    """
+    Break path based on EXP_DATASET_NAME_SPLIT
+    """
+    return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
 
 
 class MakeFinishedStage(Stage):
@@ -106,6 +132,7 @@ class MakeFinishedStage(Stage):
         return True
 
     def process(self, run_settings):
+        self.experiment_id = 0
         settings = setup_settings(run_settings)
         logger.debug("settings=%s" % settings)
         if self._exists(run_settings,
@@ -172,9 +199,116 @@ class MakeFinishedStage(Stage):
         # to speed up this transfer
         hrmcstages.copy_directories(encoded_s_url, encoded_d_url)
 
+        # TODO: this is very domain specific
+        if settings['mytardis_host']:
+
+            outcar_url = smartconnector.get_url_with_pkey(settings,
+                os.path.join(dest_url, OUTCAR_FILE), is_relative_path=False)
+            logger.debug("outcar_url=%s" % outcar_url)
+
+            try:
+                outcar_content = hrmcstages.get_file(outcar_url)
+            except IOError, e:
+                logger.error(e)
+                toten = None
+            else:
+                toten = None
+                for line in outcar_content.split('\n'):
+                    logger.debug("line=%s" % line)
+                    if 'e  en' in line:
+                        logger.debug("found")
+                        try:
+                            toten = float(line.rsplit(' ', 2)[-2])
+                        except ValueError, e:
+                            logger.error(e)
+                            pass
+                        break
+
+            logger.debug("toten=%s" % toten)
+
+            values_url = smartconnector.get_url_with_pkey(settings,
+                os.path.join(dest_url, VALUES_FILE), is_relative_path=False)
+            logger.debug("values_url=%s" % values_url)
+            try:
+                values_content = hrmcstages.get_file(values_url)
+            except IOError, e:
+                logger.error(e)
+                values = None
+            else:
+                values = None
+                try:
+                    values = dict(json.loads(values_content))
+                except Exception, e:
+                    logger.error(e)
+                    pass
+
+            logger.debug("values=%s" % values)
+
+            # FIXME: all values from map are strings initially, so need to know
+            # type to coerce.
+            num_kp = None
+            try:
+                num_kp = int(values['num_kp'])
+            except IndexError:
+                pass
+            except ValueError:
+                pass
+
+            logger.debug("num_kp=%s" % num_kp)
+
+            encut = None
+            try:
+                encut = int(values['encut'])
+            except IndexError:
+                pass
+            except ValueError:
+                pass
+            logger.debug("encut=%s" % encut)
+
+            # TODO: THIS IS
+            self.experiment_id = mytardis.post_dataset(
+                settings=settings,
+                source_url=encoded_d_url,
+                exp_id=settings['experiment_id'],
+                exp_name=_get_exp_name_for_make,
+                dataset_name=_get_dataset_name_for_make,
+                experiment_paramset=[
+                    make_paramset("remotemake", []),
+                    make_graph_paramset("expgraph",
+                        name="makeexp1",
+                        graph_info={"axes":["num_kp", "energy"], "legends":["TOTEN"]},
+                        value_dict={},
+                        value_keys=[["makedset/num_kp", "makedset/toten"]]),
+                    make_graph_paramset("expgraph",
+                        name="makeexp2",
+                        graph_info={"axes":["encut", "energy"], "legends":["TOTEN"]},
+                        value_dict={},
+                        value_keys=[["makedset/encut", "makedset/toten"]]),
+                    make_graph_paramset("expgraph",
+                        name="makeexp3",
+                        graph_info={"axes":["num_kp", "encut", "TOTEN"], "legends":["TOTEN"]},
+                        value_dict={},
+                        value_keys=[["makedset/num_kp", "makedset/encut", "makedset/toten"]]),
+                ],
+                dataset_paramset=[
+                    make_paramset("remotemake/output", []),
+                    make_graph_paramset("dsetgraph",
+                        name="makedset",
+                        graph_info={},
+                        value_dict={"makedset/num_kp": num_kp, "makedset/encut": encut, "makedset/toten": toten}
+                            if (num_kp is not None)
+                                and (encut is not None)
+                                and (toten is not None) else {},
+                        value_keys=[]
+                        ),
+                    ]
+               )
+
     def output(self, run_settings):
         run_settings['http://rmit.edu.au/schemas/stages/make']['runs_left']  \
             = str(self.runs_left)
+        run_settings['http://rmit.edu.au/schemas/remotemake']['experiment_id'] \
+            = self.experiment_id
         # run_settings['http://rmit.edu.au/schemas/stages/make']['running'] = \
         #     self.still_running
         return run_settings

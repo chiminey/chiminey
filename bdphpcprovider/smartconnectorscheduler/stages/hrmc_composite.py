@@ -60,20 +60,26 @@ class HRMCParallelStage(ParallelStage):
                 'http://rmit.edu.au/schemas/hrmc/max_seed_int')
             smartconnector.copy_settings(self.settings, run_settings,
                 'http://rmit.edu.au/schemas/hrmc/random_numbers')
-        except KeyError, e:
-            logger.debug(e)
-        try:
-            id = smartconnector.get_existing_key(run_settings,
+            smartconnector.copy_settings(self.settings, run_settings,
                 'http://rmit.edu.au/schemas/system/misc/id')
         except KeyError, e:
+            logger.debug(e)
+        logger.debug("self.settings=%s" % self.settings)
+        try:
+            id = self.settings['id']
+            #id = smartconnector.get_existing_key(run_settings,
+            #    'http://rmit.edu.au/schemas/system/misc/id')
+        except KeyError, e:
+            logger.error(e)
             id = 0
+        logger.debug("id=%s" % id)
         # variations map spectification
         if 'pottype' in self.settings:
             logger.debug("pottype=%s" % self.settings['pottype'])
             try:
                 pottype = int(self.settings['pottype'])
             except ValueError:
-                logger.error("cannot convert %s to pottype" %self.settings['pottype'])
+                logger.error("cannot convert %s to pottype" % self.settings['pottype'])
                 pottype = 0
         else:
             pottype = 0
@@ -136,6 +142,7 @@ class HRMCParallelStage(ParallelStage):
             id = smartconnector.get_existing_key(
                 run_settings, 'http://rmit.edu.au/schemas/system/misc/id')
         except KeyError, e:
+            logger.error(e)
             id = 0
         iter_inputdir = os.path.join(job_dir, "input_%s" % id)
         url_with_pkey = smartconnector.get_url_with_pkey(

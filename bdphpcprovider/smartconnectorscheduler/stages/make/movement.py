@@ -33,6 +33,7 @@ from bdphpcprovider.smartconnectorscheduler.smartconnector import (
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 
+from django.template import TemplateSyntaxError
 from django.template import Context, Template
 
 
@@ -162,8 +163,16 @@ def _instantiate_context(source_url, settings, context):
                 is_relative_path=False)
             logger.debug("basename_url_with_pkey=%s" % basename_url_with_pkey)
             cont = hrmcstages.get_file(basename_url_with_pkey)
-            t = Template(cont)
+            try:
+                t = Template(cont)
+            except TemplateSyntaxError, e:
+                logger.error(e)
+                #FIXME: should detect this during submission of job,
+                #as no sensible way to recover here.
+                #TODO: signal error conditions in job status
+                continue
             con = Context(context)
+            logger.debug("context=%s" % context)
             new_content[base_fname] = t.render(con)
     return new_content
 

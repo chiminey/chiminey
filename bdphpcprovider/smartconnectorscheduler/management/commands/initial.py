@@ -358,6 +358,7 @@ class Command(BaseCommand):
                 [u'',
                 {
                 u'input_location': (models.ParameterName.STRING, '', 1),
+                u'experiment_id': (models.ParameterName.NUMERIC, '', 2)
                 }
                 ],
             u'http://rmit.edu.au/schemas/remotemake/files':

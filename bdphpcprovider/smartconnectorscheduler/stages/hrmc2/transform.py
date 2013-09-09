@@ -31,7 +31,7 @@ from bdphpcprovider.smartconnectorscheduler import mytardis
 from bdphpcprovider.smartconnectorscheduler import models
 
 
-from bdphpcprovider.smartconnectorscheduler.stages.hrmc_composite import (make_graph_paramset, make_paramset)
+from bdphpcprovider.smartconnectorscheduler.stages.composite import (make_graph_paramset, make_paramset)
 
 
 
@@ -212,7 +212,9 @@ class Transform(Stage):
                 logger.debug("values_file=%s" % values_url)
             except IOError:
                 logger.warn("no values file found")
-            values_map = dict(json.loads(values_content))
+                values_map = {}
+            else:
+                values_map = dict(json.loads(values_content))
             criterion = self.compute_psd_criterion(node_output_dir, fsys)
             #criterion = self.compute_hrmc_criterion(values_map['run_counter'], node_output_dir, fs)
             logger.debug("criterion=%s" % criterion)
