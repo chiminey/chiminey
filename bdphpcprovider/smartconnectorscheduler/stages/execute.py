@@ -33,7 +33,7 @@ from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputExcepti
 from bdphpcprovider.smartconnectorscheduler \
     import mytardis, models, hrmcstages, sshconnector, smartconnector
 
-from bdphpcprovider.smartconnectorscheduler.stages.hrmc_composite import (make_graph_paramset, make_paramset)
+from bdphpcprovider.smartconnectorscheduler.stages.composite import (make_graph_paramset, make_paramset)
 
 
 logger = logging.getLogger(__name__)
@@ -127,7 +127,7 @@ class Execute(Stage):
         self.boto_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
         retrieve_boto_settings(run_settings, self.boto_settings)
 
-        self._prepare_inputs()
+        self._prepare_inputs(run_settings)
         try:
             pids = self.run_multi_task(self.boto_settings)
         except PackageFailedError, e:
@@ -234,7 +234,7 @@ class Execute(Stage):
         return all_pids
 
 
-    def _prepare_inputs(self):
+    def _prepare_inputs(self, run_settings):
             """
             Upload all input files for this run
             """
@@ -252,7 +252,7 @@ class Execute(Stage):
                 raise BadInputException("require an initial subdirectory of input directory")
             for input_dir in sorted(input_dirs):
                 logger.debug("Input dir %s" % input_dir)
-                self._upload_variation_inputs(self._generate_variations(input_dir, self.boto_settings),
+                self._upload_variation_inputs(self._generate_variations(input_dir, run_settings),
                                               processes, input_dir)
 
 

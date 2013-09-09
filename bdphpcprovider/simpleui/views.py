@@ -340,9 +340,10 @@ class MakeSubmitFormView(FormView):
     success_url = '/jobs'
 
     initial = {
-        'input_location': 'file://local@127.0.0.1/myfiles/makepayload',
-        'output_location': 'file://local@127.0.0.1/myfiles/makeoutput',
-        'sweep_map': '{"a": [1, 2]}'
+        'input_location': 'file://local@127.0.0.1/myfiles/vasppayload',
+        'output_location': 'file://local@127.0.0.1/myfiles/vaspoutput',
+        'experiment_id': 0,
+        'sweep_map': '{"num_kp": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], "encut": [50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600, 650, 700]}'
     }
 
     # This method is called when valid form data has been POSTed.
@@ -362,6 +363,7 @@ class MakeSubmitFormView(FormView):
 
         data = json.dumps({'smart_connector': 'remotemake',
                     'input_location':  form.cleaned_data['input_location'],
+                    'experiment_id': form.cleaned_data['experiment_id'],
                     'sweep_map': form.cleaned_data['sweep_map'],
                     'output_location': form.cleaned_data['output_location']})
 

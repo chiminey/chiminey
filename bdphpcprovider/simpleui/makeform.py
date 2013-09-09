@@ -20,6 +20,8 @@ class MakeSubmitForm(forms.Form):
         #widget=forms.Textarea(attrs={'cols': 80, 'rows': 1})
         )
 
+    experiment_id = forms.IntegerField(required=False, help_text="MyTardis experiment number.  0 for new experiment")
+
     sweep_map = forms.CharField(label="Sweep Map JSON",
         widget=forms.Textarea(attrs={'cols': 80, 'rows': 10}
         ))
@@ -27,3 +29,5 @@ class MakeSubmitForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(MakeSubmitForm, self).__init__(*args, **kwargs)
         self.fields["sweep_map"].validators.append(validators.validate_sweep_map)
+        self.fields["experiment_id"].validators.append(validators.validate_experiment_id)
+

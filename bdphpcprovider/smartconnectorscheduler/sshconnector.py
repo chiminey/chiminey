@@ -48,6 +48,7 @@ def is_ssh_ready(settings, ip_address):
         except Exception as ex:
             logger.debug("[%s] Exception: %s" % (ip_address, ex))
             if 'Connection refused' in ex:
+                # FIXME: this doesn't always work.
                 pass
             elif 'Authentication failed' in ex:
                 pass

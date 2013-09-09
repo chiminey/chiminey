@@ -323,7 +323,8 @@ class ContextResource(ModelResource):
         directive_args.append(
             ['',
                 ['http://rmit.edu.au/schemas/remotemake',
-                    ('input_location',  bundle.data['input_location'])],
+                    ('input_location',  bundle.data['input_location']),
+                    ('experiment_id', bundle.data['experiment_id'])],
                 ['http://rmit.edu.au/schemas/stages/make',
                     ('sweep_map', bundle.data['sweep_map'])]])
 

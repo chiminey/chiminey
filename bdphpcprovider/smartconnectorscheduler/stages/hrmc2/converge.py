@@ -32,7 +32,7 @@ from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputExcepti
 from bdphpcprovider.smartconnectorscheduler import mytardis
 from bdphpcprovider.smartconnectorscheduler import models
 
-from bdphpcprovider.smartconnectorscheduler.stages.hrmc_composite import (make_graph_paramset, make_paramset)
+from bdphpcprovider.smartconnectorscheduler.stages.composite import (make_graph_paramset, make_paramset)
 
 
 logger = logging.getLogger(__name__)
