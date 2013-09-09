@@ -276,25 +276,31 @@ def post_dataset(settings,
 
         logger.debug("new_datafile_paramset=%s" % new_datafile_paramset)
 
-        data = json.dumps({
-            'dataset': str(new_dataset_uri),
-            "parameter_sets": new_datafile_paramset,
-            'filename': os.path.basename(file_path),
-            'size': os.stat(file_path).st_size,
-            'mimetype': 'text/plain',
-            'md5sum': hashlib.md5(open(file_path, 'r').read()).hexdigest()
-            })
-        logger.debug("data=%s" % data)
+        file_size = os.stat(file_path).st_size
+        logger.debug("file_size=%s" % file_size)
+        if file_size > 0:
+            data = json.dumps({
+                'dataset': str(new_dataset_uri),
+                "parameter_sets": new_datafile_paramset,
+                'filename': os.path.basename(file_path),
+                'size': file_size,
+                'mimetype': 'text/plain',
+                'md5sum': hashlib.md5(open(file_path, 'r').read()).hexdigest()
+                })
+            logger.debug("data=%s" % data)
 
-        r = requests.post(url, data={'json_data': data}, headers=headers,
-            files={'attached_file': open(file_path, 'rb')},
-            auth=HTTPBasicAuth(tardis_user, tardis_pass)
-            )
-        # FIXME: need to check for status_code and handle failures.
+            r = requests.post(url, data={'json_data': data}, headers=headers,
+                files={'attached_file': open(file_path, 'rb')},
+                auth=HTTPBasicAuth(tardis_user, tardis_pass)
+                )
+            # FIXME: need to check for status_code and handle failures.
 
-        logger.debug("r.js=%s" % r.json)
-        logger.debug("r.te=%s" % r.text)
-        logger.debug("r.he=%s" % r.headers)
+            logger.debug("r.js=%s" % r.json)
+            logger.debug("r.te=%s" % r.text)
+            logger.debug("r.he=%s" % r.headers)
+        else:
+            logger.warn("not transferring empty file %s" % file_path)
+            #TODO: check whether mytardis api can accept zero length files
 
     return new_exp_id
 

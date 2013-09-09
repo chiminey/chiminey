@@ -134,6 +134,7 @@ class MakeFinishedStage(Stage):
     def process(self, run_settings):
         self.experiment_id = 0
         settings = setup_settings(run_settings)
+        self.experiment_id = settings['experiment_id']
         logger.debug("settings=%s" % settings)
         if self._exists(run_settings,
             'http://rmit.edu.au/schemas/stages/make',
@@ -214,7 +215,7 @@ class MakeFinishedStage(Stage):
             else:
                 toten = None
                 for line in outcar_content.split('\n'):
-                    logger.debug("line=%s" % line)
+                    #logger.debug("line=%s" % line)
                     if 'e  en' in line:
                         logger.debug("found")
                         try:
@@ -269,7 +270,7 @@ class MakeFinishedStage(Stage):
             self.experiment_id = mytardis.post_dataset(
                 settings=settings,
                 source_url=encoded_d_url,
-                exp_id=settings['experiment_id'],
+                exp_id=self.experiment_id,
                 exp_name=_get_exp_name_for_make,
                 dataset_name=_get_dataset_name_for_make,
                 experiment_paramset=[
