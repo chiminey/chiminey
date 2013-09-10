@@ -32,31 +32,12 @@ from bdphpcprovider.smartconnectorscheduler import hrmcstages
 
 from bdphpcprovider.smartconnectorscheduler import mytardis
 from bdphpcprovider.smartconnectorscheduler.stages.composite import (make_graph_paramset, make_paramset)
+from paramiko.ssh_exception import SSHException
 
 
 from . import setup_settings
 
 logger = logging.getLogger(__name__)
-
-
-EXP_DATASET_NAME_SPLIT = 1
-OUTCAR_FILE = "OUTCAR"
-VALUES_FILE = "values"
-
-
-def _get_exp_name_for_make(settings, url, path):
-    """
-    Break path based on EXP_DATASET_NAME_SPLIT
-    """
-    return str(os.sep.join(path.split(os.sep)[-(EXP_DATASET_NAME_SPLIT + 1):-EXP_DATASET_NAME_SPLIT]))
-
-
-def _get_dataset_name_for_make(settings, url, path):
-    """
-    Break path based on EXP_DATASET_NAME_SPLIT
-    """
-    return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
-
 
 class MakeFinishedStage(Stage):
     """
@@ -198,10 +179,19 @@ class MakeFinishedStage(Stage):
 
         # FIXME: might want to turn on paramiko compress function
         # to speed up this transfer
-        hrmcstages.copy_directories(encoded_s_url, encoded_d_url)
+        try:
+            hrmcstages.copy_directories(encoded_s_url, encoded_d_url)
+        except SSHException, e:
+            logger.error(e)
+            # FIXME: Could just exit, but need to flag that this data has not
+            # been transferred.
+            raise
 
         # TODO: this is very domain specific
         if settings['mytardis_host']:
+
+            OUTCAR_FILE = "OUTCAR"
+            VALUES_FILE = "values"
 
             outcar_url = smartconnector.get_url_with_pkey(settings,
                 os.path.join(dest_url, OUTCAR_FILE), is_relative_path=False)
@@ -266,6 +256,27 @@ class MakeFinishedStage(Stage):
                 pass
             logger.debug("encut=%s" % encut)
 
+            EXP_DATASET_NAME_SPLIT = 1
+
+            def _get_exp_name_for_make(settings, url, path):
+                """
+                Break path based on EXP_DATASET_NAME_SPLIT
+                """
+                return str(os.sep.join(path.split(os.sep)[-(EXP_DATASET_NAME_SPLIT + 1):-EXP_DATASET_NAME_SPLIT]))
+
+            def _get_dataset_name_for_make(settings, url, path):
+                """
+                Break path based on EXP_DATASET_NAME_SPLIT
+                """
+                encut = settings['ENCUT']
+                numkp = settings['NUMKP']
+                runcounter = settings['RUNCOUNTER']
+                return "%s:encut=%s,num_kp=%s" % (runcounter, encut, numkp)
+                #return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
+
+            settings['ENCUT'] = encut
+            settings['NUMKP'] = num_kp
+            settings['RUNCOUNTER'] = run_counter
             # TODO: THIS IS
             self.experiment_id = mytardis.post_dataset(
                 settings=settings,

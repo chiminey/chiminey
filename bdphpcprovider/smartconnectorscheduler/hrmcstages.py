@@ -24,6 +24,7 @@ import os
 import logging
 import logging.config
 import json
+import time
 import collections
 from pprint import pformat
 import paramiko
@@ -37,6 +38,8 @@ from django.core.files.base import ContentFile
 from django.contrib.auth.models import User
 from django.core.files.storage import FileSystemStorage
 from storages.backends.sftpstorage import SFTPStorage
+
+from paramiko.ssh_exception import SSHException
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, UI, SmartConnector, get_url_with_pkey
 from bdphpcprovider.smartconnectorscheduler.filesystem import FileSystem, DataObject
@@ -818,7 +821,28 @@ def copy_directories(source_url, destination_url):
             curr_source_url = os.path.join(source_prefix, updated_file_path) \
                 + source_suffix
             logger.debug("Current source url %s" % curr_source_url)
-            content = get_file(curr_source_url)
+
+            fail = False
+            delay = 1
+            for i in xrange(1, 10):
+                try:
+                    content = get_file(curr_source_url)
+                except SSHException, e:
+                    logger.error(e)
+                    fail = True
+                except Exception, e:
+                    logger.error(e)
+                    fail = True
+                else:
+                    fail = False
+                if not fail:
+                    break
+                logger.warn("problem with getfile, sleeping %s" % delay)
+                time.sleep(delay)
+                delay += delay
+            if fail:
+                raise e
+
             # FIXME: file_path is a relative path from fs.  Is that compabible with myTardis?
             #content = fs.open(file_path).read()  # Can't we just call get_file ?
             logger.debug("content loaded")
