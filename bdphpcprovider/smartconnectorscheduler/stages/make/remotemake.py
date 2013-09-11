@@ -27,6 +27,7 @@ from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import sshconnector
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
+from bdphpcprovider.smartconnectorscheduler.smartconnector import multilevel_key_exists, get_existing_key
 from . import setup_settings
 
 logger = logging.getLogger(__name__)
@@ -44,12 +45,22 @@ class MakeRunStage(Stage):
             return (True, "ok")
 
     def triggered(self, run_settings):
-        if self._exists(
-                run_settings,
-                'http://rmit.edu.au/schemas/stages/upload_makefile',
-                'done'):
-            upload_makefile_done = int(run_settings[
-                'http://rmit.edu.au/schemas/stages/upload_makefile'][u'done'])
+        if multilevel_key_exists(
+            run_settings,
+            'http://rmit.edu.au/schemas/stages/upload_makefile',
+            'done'):
+            try:
+                upload_makefile_done = int(get_existing_key(run_settings,
+                    'http://rmit.edu.au/schemas/stages/upload_makefile/done'))
+            except ValueError, e:
+                logger.error(e)
+                return False
+        # # if self._exists(
+        # #         run_settings,
+        # #         'http://rmit.edu.au/schemas/stages/upload_makefile',
+        # #         'done'):
+        #     upload_makefile_done = int(run_settings[
+        #         'http://rmit.edu.au/schemas/stages/upload_makefile'][u'done'])
             if upload_makefile_done:
                 if self._exists(
                         run_settings,

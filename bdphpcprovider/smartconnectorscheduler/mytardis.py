@@ -171,6 +171,9 @@ def post_dataset(settings,
 
     new_experiment_uri = "/api/v1/experiment/%s/" % new_exp_id
 
+
+    # TODO: check that we do not alreay have a dataset with
+    # the same name and overwrite or don't move.
     # save dataset
     logger.debug("saving dataset in experiment at %s" % new_exp_id)
     url = "%s/api/v1/dataset/?format=json" % tardis_host_url
