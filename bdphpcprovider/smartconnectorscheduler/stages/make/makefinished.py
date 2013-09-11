@@ -84,6 +84,8 @@ class MakeFinishedStage(Stage):
         command_out = ''
         errs = ''
         logger.debug("starting command %s for %s" % (command, host))
+        # TODO: need to try this command a few times if fails.
+        ssh = None
         try:
             ssh = sshconnector.open_connection(ip_address=host,
                                                 settings=settings)
@@ -101,9 +103,10 @@ class MakeFinishedStage(Stage):
 
         logger.debug("program_success =%s" % self.program_success)
 
-        # FIXME: Assume are done, then prove otherwise with "stillrunning"
-        # but if remote has crashed, get no response, which should indicate
-        # stopped running but in error stage?
+        if not self.program_success:
+            logger.debug("command failed, so assuming job still running")
+            return False
+
         self.still_running = 0
         if command_out:
             logger.debug("command_out = %s" % command_out)
@@ -130,16 +133,21 @@ class MakeFinishedStage(Stage):
                 str(settings['contextid']))
             )
 
-        for run_counter in self.runs_left:
+        new_runs_left = []
+        for run_counter in sorted(self.runs_left):
             remote_path = os.path.join(base_tasks_url, str(run_counter))
             logger.debug("remote_path= %s" % remote_path)
 
             job_finished = self._job_finished(
                 settings=settings,
                 remote_path=remote_path)
-            if job_finished:
+            if job_finished and run_counter in self.runs_left:
                 self._get_output(settings, run_counter)
-                self.runs_left.remove(run_counter)
+            else:
+                new_runs_left.append(run_counter)
+
+        self.runs_left = new_runs_left
+        logger.debug("processing finished")
 
     def _get_output(self, settings, run_counter):
         """

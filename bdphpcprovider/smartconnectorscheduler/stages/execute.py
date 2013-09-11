@@ -37,7 +37,7 @@ from bdphpcprovider.smartconnectorscheduler.stages.composite import (make_graph_
 
 
 logger = logging.getLogger(__name__)
-EXP_DATASET_NAME_SPLIT = 2
+
 
 class Execute(Stage):
     """
@@ -94,7 +94,7 @@ class Execute(Stage):
             self.id = int(smartconnector.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/system/misc/id'))
             self.iter_inputdir = os.path.join(self.job_dir, "input_%s" % self.id)
-        except KeyError,e:
+        except KeyError, e:
             self.id = 0
             self.iter_inputdir = os.path.join(self.job_dir, "input_location")
         logger.debug("id = %s" % self.id)
@@ -164,7 +164,6 @@ class Execute(Stage):
 
         return run_settings
 
-
     def run_task(self, ip_address, process_id, settings):
         """
             Start the task on the instance, then hang and
@@ -203,7 +202,6 @@ class Execute(Stage):
                 ssh.close()
         logger.debug("command_out2=(%s, %s)" % (command_out, errs))
 
-
     def run_multi_task(self, settings):
         """
         Run the package on each of the nodes in the group and grab
@@ -233,7 +231,6 @@ class Execute(Stage):
         logger.debug('all_pids=%s' % all_pids)
         return all_pids
 
-
     def _prepare_inputs(self, run_settings):
             """
             Upload all input files for this run
@@ -255,7 +252,6 @@ class Execute(Stage):
                 self._upload_variation_inputs(self._generate_variations(input_dir, run_settings),
                                               processes, input_dir)
 
-
     def _generate_variations(self, input_dir, run_settings):
         """
         For each templated file in input_dir, generate all variations
@@ -272,7 +268,7 @@ class Execute(Stage):
         variations = {}
         # TODO: only tested with single template file per input
         child_package = "bdphpcprovider.smartconnectorscheduler.stages.execute.Execute"
-        parent_stage= hrmcstages.get_parent_stage(child_package, self.boto_settings)
+        parent_stage = hrmcstages.get_parent_stage(child_package, self.boto_settings)
 
         for fname in input_files:
             logger.debug("trying %s/%s/%s" % (self.iter_inputdir, input_dir,
@@ -335,7 +331,6 @@ class Execute(Stage):
         logger.debug("Variations items %d" % len(variations.items()))
         return variations
 
-
     def _expand_variations(self, template, maps, values, initial_numbfile):
             """
             Based on maps, generate all range variations from the template
@@ -374,7 +369,6 @@ class Execute(Stage):
                 logger.debug("%d files created" % (temp_num))
             return res
 
-
     def _upload_variation_inputs(self, variations, processes, input_dir):
         '''
         Create input packages for each variation and upload the vms
@@ -388,11 +382,54 @@ class Execute(Stage):
         # Copy input directory to mytardis only after saving locally, so if
         # something goes wrong we still have the results
         if self.boto_settings['mytardis_host']:
-            value_keys = []
+
+            EXP_DATASET_NAME_SPLIT = 2
+
+            def _get_exp_name_for_input(settings, url, path):
+                return str(os.sep.join(path.split(os.sep)[:-EXP_DATASET_NAME_SPLIT]))
+
+            def _get_dataset_name_for_input(settings, url, path):
+                logger.debug("path=%s" % path)
+
+                source_url = smartconnector.get_url_with_pkey(
+                    settings, os.path.join(path, "HRMC.inp_values"),
+                    is_relative_path=True)
+                logger.debug("source_url=%s" % source_url)
+                try:
+                    content = hrmcstages.get_file(source_url)
+                except IOError:
+                    return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
+
+                logger.debug("content=%s" % content)
+                try:
+                    values_map = dict(json.loads(str(content)))
+                except Exception, e:
+                    logger.warn("cannot load %s: %s" % (content, e))
+                    return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
+
+                try:
+                    iteration = str(path.split(os.sep)[-2:-1][0])
+                except Exception, e:
+                    logger.error(e)
+                    iteration = ""
+
+                if "_" in iteration:
+                    iteration = iteration.split("_")[1]
+                else:
+                    iteration = "initial"
+
+                if 'run_counter' in values_map:
+                    run_counter = values_map['run_counter']
+                else:
+                    run_counter = 0
+
+                dataset_name = "%s_%s" % (iteration,
+                    run_counter)
+                logger.debug("dataset_name=%s" % dataset_name)
+                return dataset_name
 
             exp_value_keys = [["hrmcdset%s/step" % x, "hrmcdset%s/err" % x] for x in range(len(processes))]
             logger.debug("exp_value_keys=%s" % exp_value_keys)
-
 
             # FIXME: better to create experiment_paramsets
             # later closer to when corresponding datasets are created, but
@@ -493,7 +530,6 @@ class Execute(Stage):
                 #hrmcstages.delete_files(u
 
 
-
 def retrieve_boto_settings(run_settings, boto_settings):
     smartconnector.copy_settings(boto_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/setup/payload_destination')
@@ -535,51 +571,3 @@ def retrieve_boto_settings(run_settings, boto_settings):
             run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nectar_private_key'])
     boto_settings['private_key'] = key_file
     boto_settings['nectar_private_key'] = key_file
-
-
-
-def _get_exp_name_for_input(settings, url, path):
-    return str(os.sep.join(path.split(os.sep)[:-EXP_DATASET_NAME_SPLIT]))
-
-
-def _get_dataset_name_for_input(settings, url, path):
-    logger.debug("path=%s" % path)
-
-    source_url = smartconnector.get_url_with_pkey(
-        settings, os.path.join(path, "HRMC.inp_values"),
-        is_relative_path=True)
-    logger.debug("source_url=%s" % source_url)
-    try:
-        content = hrmcstages.get_file(source_url)
-    except IOError:
-        return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
-
-    logger.debug("content=%s" % content)
-    try:
-        values_map = dict(json.loads(str(content)))
-    except Exception, e:
-        logger.warn("cannot load %s: %s" % (content, e))
-        return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
-
-    try:
-        iteration = str(path.split(os.sep)[-2:-1][0])
-    except Exception, e:
-        logger.error(e)
-        iteration = ""
-
-    if "_" in iteration:
-        iteration = iteration.split("_")[1]
-    else:
-        iteration = "initial"
-
-    if 'run_counter' in values_map:
-        run_counter = values_map['run_counter']
-    else:
-        run_counter = 0
-
-    dataset_name = "%s_%s" % (iteration,
-        run_counter)
-    logger.debug("dataset_name=%s" % dataset_name)
-    return dataset_name
-
-
