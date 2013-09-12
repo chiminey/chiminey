@@ -271,13 +271,14 @@ class SweepSubmitFormView(FormView):
     form_class = SweepSubmitForm
     success_url = '/jobs'
 
-    initial = {'number_vm_instances': 1,
+    initial = {'number_vm_instances': 4,
         'iseed': 42,
         'input_location': 'file://127.0.0.1/myfiles/input',
         'number_dimensions': 1,
         'threshold': "[1]",
         'error_threshold': "0.03",
         'max_iteration': 2,
+        'fanout_per_kept_result': 4,
         'pottype': 1,
         'sweep_map': '{"var1": [3, 7], "var2": [1, 2]}',
         'run_map': '{}',
@@ -306,6 +307,7 @@ class SweepSubmitFormView(FormView):
                     u'iseed': form.cleaned_data['iseed'],
                     'input_location':  form.cleaned_data['input_location'],
                     'number_dimensions': form.cleaned_data['number_dimensions'],
+                    'fanout_per_kept_result': form.cleaned_data['fanout_per_kept_result'],
                     'threshold': str(form.cleaned_data['threshold']),
                     'error_threshold': str(form.cleaned_data['error_threshold']),
                     'max_iteration': form.cleaned_data['max_iteration'],

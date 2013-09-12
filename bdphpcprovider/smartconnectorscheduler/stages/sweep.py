@@ -116,6 +116,8 @@ class Sweep(Stage):
             'http://rmit.edu.au/schemas/hrmc/max_iteration')
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/hrmc/random_numbers')
+        smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/hrmc/fanout_per_kept_result')
 
         contextid = int(run_settings['http://rmit.edu.au/schemas/system'][
             u'contextid'])
@@ -246,6 +248,7 @@ class Sweep(Stage):
                         ('number_dimensions', self.boto_settings['number_dimensions']),
                         ('threshold', self.boto_settings['threshold']),
                         ('error_threshold', self.boto_settings['error_threshold']),
+                        ('fanout_per_kept_result', self.boto_settings['fanout_per_kept_result']),
                         ('max_iteration', self.boto_settings['max_iteration']),
                         # We assume that each subtask puts results into same mytardis experiment
                         ('experiment_id', self.boto_settings['experiment_id']),

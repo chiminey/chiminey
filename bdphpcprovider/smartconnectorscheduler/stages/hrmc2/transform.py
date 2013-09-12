@@ -350,7 +350,7 @@ class Transform(Stage):
                    )
         else:
             logger.warn("no mytardis host specified")
-
+        logger.debug('threshold=%s' % self.threshold)
         total_picks = 1
         if len(self.threshold) > 1:
             for i in self.threshold:

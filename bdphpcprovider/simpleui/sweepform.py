@@ -7,7 +7,7 @@ from bdphpcprovider.simpleui import validators
 class SweepSubmitForm(forms.Form):
 
     number_vm_instances = forms.IntegerField(
-        help_text="Ensure tenancy has sufficient resources")
+        help_text="No VMs created")
     input_location = forms.CharField(label=_("Input Location"),
         max_length=255,
         help_text="A BDPUrl Directory",
@@ -16,24 +16,27 @@ class SweepSubmitForm(forms.Form):
         )
     output_location = forms.CharField(label=_("Output Location"),
         max_length=255,
-        help_text="A BDPUrl Directory",
+        help_text="A BDPUrl Directory. Note: The results will also go to MyTardis",
         widget=forms.TextInput
         #widget=forms.Textarea(attrs={'cols': 80, 'rows': 1})
         )
     number_dimensions = forms.IntegerField(min_value=0,
-        label=_("Degrees of Variation"), help_text="1 = iseed variation, 2 = iseed/temp variation")
-    threshold = forms.CharField(label=_("Threshold"),
+        label=_("No. varying parameters"), help_text="Number of parameters to vary, e.g. 1 = iseed only, 2 = iseed and temp")
+    max_iteration = forms.IntegerField(label=("Maximum no. iterations"),min_value=1, help_text="Computation ends when either convergence or maximum iteration reached")
+    threshold = forms.CharField(label=_("No. results kept per iteration"),
             max_length=255,
-            help_text="Number of outputs to keep between iterations"
+            help_text="Number of outputs to keep between iterations. eg. 2 would keep the top 2 results."
         )
+    fanout_per_kept_result = forms.IntegerField(min_value=1,
+        label=_("No. fan out per kept result"))
     iseed = forms.IntegerField(min_value=0, help_text="Initial seed for random numbers")
-    error_threshold = forms.DecimalField(help_text="Delta for interation convergence")
+    error_threshold = forms.DecimalField(help_text="Delta for iteration convergence")
 
-    max_iteration = forms.IntegerField(min_value=1, help_text="Force convergence")
+
     pottype = forms.IntegerField(min_value=0)
     #experiment_id = forms.IntegerField(required=False, help_text="MyTardis experiment number.  Zero for new experiment")
-    sweep_map = forms.CharField(label="Sweep Map JSON", help_text="Dictionary of values to sweep over",
-        widget=forms.Textarea(attrs={'cols': 80, 'rows': 10}
+    sweep_map = forms.CharField(label="Values to sweep over", help_text="Dictionary of values to sweep over. e.g {'var1': [3, 7], 'var2': [1, 2]} would result in 4 HRMC Jobs: [3,1] [3,2] [7,1] [7,2] ",
+        widget=forms.Textarea(attrs={'cols': 30, 'rows': 5}
         ))
     #run_map = forms.CharField(label="Run Map JSON",
     #    widget=forms.Textarea(attrs={'cols': 80, 'rows': 10}
@@ -51,4 +54,5 @@ class SweepSubmitForm(forms.Form):
         self.fields["pottype"].validators.append(validators.validate_pottype)
         self.fields["max_iteration"].validators.append(validators.validate_max_iteration)
         self.fields["error_threshold"].validators.append(validators.validate_error_threshold)
+        self.fields["fanout_per_kept_result"].validators.append(validators.validate_fanout_per_kept_result)
         #self.fields["experiment_id"].validators.append(validators.validate_experiment_id)

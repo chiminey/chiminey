@@ -49,7 +49,9 @@ class HRMCParallelStage(ParallelStage):
             logger.debug(e)
         try:
             run_settings = kwargs['run_settings']
-            logger.debug(run_settings)
+            logger.debug('run_settings=%s' % run_settings)
+            smartconnector.copy_settings(self.settings, run_settings,
+                'http://rmit.edu.au/schemas/hrmc/fanout_per_kept_result')
             smartconnector.copy_settings(self.settings, run_settings,
             'http://rmit.edu.au/schemas/hrmc/number_dimensions')
             smartconnector.copy_settings(self.settings, run_settings,
@@ -86,7 +88,7 @@ class HRMCParallelStage(ParallelStage):
 
         num_dim = self.settings['number_dimensions']
         if num_dim == 1:
-            N = self.settings['number_vm_instances']
+            N = self.settings['fanout_per_kept_result']
             rand_nums = hrmcstages.generate_rands(self.settings,
                 0, self.settings['max_seed_int'],
                 N, rand_index)

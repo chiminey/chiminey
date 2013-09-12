@@ -280,6 +280,7 @@ class ContextResource(ModelResource):
                     ('number_vm_instances',
                         bundle.data['number_vm_instances']),
                     (u'iseed', bundle.data['iseed']),
+                    ('fanout_per_kept_result', bundle.data['fanout_per_kept_result']),
                     ('max_seed_int', 1000),
                     (u'random_numbers', 'file://127.0.0.1/randomnums.txt'),
                     ('input_location',  ''),
