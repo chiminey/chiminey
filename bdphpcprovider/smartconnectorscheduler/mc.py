@@ -10,9 +10,9 @@ from bdphpcprovider.smartconnectorscheduler.botocloudconnector import create_env
 from bdphpcprovider.smartconnectorscheduler.stages.configure import Configure
 from bdphpcprovider.smartconnectorscheduler.stages.create import Create
 from bdphpcprovider.smartconnectorscheduler.stages.schedule_old import Schedule
-from bdphpcprovider.smartconnectorscheduler.stages.setup import Setup
-from bdphpcprovider.smartconnectorscheduler.stages.run import Run
-from bdphpcprovider.smartconnectorscheduler.stages.finished import Finished
+#from bdphpcprovider.smartconnectorscheduler.stages.setup import Setup
+#from bdphpcprovider.smartconnectorscheduler.stages.run import Run
+#from bdphpcprovider.smartconnectorscheduler.stages.finished import Finished
 from bdphpcprovider.smartconnectorscheduler.stages.hrmc.transform import Transform
 from bdphpcprovider.smartconnectorscheduler.stages.hrmc.converge import Converge
 from bdphpcprovider.smartconnectorscheduler.stages.destroy import Destroy
@@ -179,7 +179,7 @@ def start(args):
     elif 'setup' in args:
         if options.group_id:
             group_id = options.group_id
-            Setup().setup(settings, group_id)
+            #Setup().setup(settings, group_id)
 
             #setup_multi_task(group_id, settings)
         else:
@@ -190,7 +190,7 @@ def start(args):
 
     elif 'run' in args:
         if options.group_id:
-
+            '''
             run_stage = Run()
 
             if not options.output_dir:
@@ -230,12 +230,14 @@ def start(args):
             # We fake run_stage triggered() and don't need to signal other stages, so skip output()
             run_stage.process(context)
 
+
             while (not Finished.packages_complete(options.group_id,
                                          options.output_dir,
                                          settings)):
                 print("job is running.  Wait or CTRL-C to exit here. \
                  run 'check' command to poll again")
                 time.sleep(settings['SLEEP_TIME'])
+            '''
 
         else:
             logging.error("enter group id of the run")
@@ -250,14 +252,14 @@ def start(args):
                 sys.exit(1)
 
             group_id = options.group_id
-            is_finished = Finished.packages_complete(group_id,
-                                            options.output_dir,
-                                            settings)
+            #is_finished = Finished.packages_complete(group_id,
+            #                                options.output_dir,
+            #                                settings)
 
-            if is_finished:
-                print "done. output is available at %s" % options.output_dir
-            else:
-                print "job still running"
+            #if is_finished:
+            #    print "done. output is available at %s" % options.output_dir
+            #else:
+            #    print "job still running"
         else:
             logger.error("enter group id of the run")
             parser.print_help()
