@@ -212,6 +212,7 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/hrmc':
                 [u'the hrmc smart connector input values',
                 {
+                u'fanout_per_kept_result': (models.ParameterName.NUMERIC, '', 11),
                 u'random_numbers': (models.ParameterName.STRING, '', 10),
                 u'max_seed_int': (models.ParameterName.NUMERIC, '', 9),
                 u'number_vm_instances': (models.ParameterName.NUMERIC, '', 8),

@@ -51,6 +51,19 @@ def validate_number_dimensions(value):
     return number_dimensions
 
 
+def validate_fanout_per_kept_result(value):
+    fanout_per_kept_result = value
+    msg = u'No. fan out is an integer that is  greater than 0'
+    try:
+        nd = int(fanout_per_kept_result)
+    except ValueError:
+        raise ValidationError(msg)
+    if nd < 1:
+        raise ValidationError(msg)
+    return fanout_per_kept_result
+
+
+
 def validate_threshold(value):
     threshold = value
 
