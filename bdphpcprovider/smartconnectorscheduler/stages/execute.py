@@ -231,6 +231,7 @@ class Execute(Stage):
         logger.debug('all_pids=%s' % all_pids)
         return all_pids
 
+
     def _prepare_inputs(self, run_settings):
             """
             Upload all input files for this run
