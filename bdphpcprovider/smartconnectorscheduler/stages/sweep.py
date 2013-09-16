@@ -101,6 +101,8 @@ class Sweep(Stage):
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/hrmc/number_vm_instances')
         smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/hrmc/minimum_number_vm_instances')
+        smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/hrmc/experiment_id')
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/hrmc/iseed')
@@ -118,6 +120,7 @@ class Sweep(Stage):
             'http://rmit.edu.au/schemas/hrmc/random_numbers')
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/hrmc/fanout_per_kept_result')
+
 
         contextid = int(run_settings['http://rmit.edu.au/schemas/system'][
             u'contextid'])
@@ -242,6 +245,7 @@ class Sweep(Stage):
                 ['',
                     ['http://rmit.edu.au/schemas/hrmc',
                         ('number_vm_instances', self.boto_settings['number_vm_instances']),
+                        ('minimum_number_vm_instances', self.boto_settings['minimum_number_vm_instances']),
                         (u'iseed', rands[i]),
                         ('max_seed_int', 1000),
                         ('input_location',  new_input_location),
