@@ -207,7 +207,7 @@ class HRMCSubmitFormView(FormView):
     success_url = '/jobs'
 
     initial = {'number_vm_instances': 8,
-               'minimum_number_vm_instances': 4,
+               'minimum_number_vm_instances': 1,
         'iseed': 42,
         'input_location': 'file://127.0.0.1/myfiles/input',
         'number_dimensions': 2,

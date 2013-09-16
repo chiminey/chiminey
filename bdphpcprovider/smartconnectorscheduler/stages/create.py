@@ -108,9 +108,7 @@ class Create(Stage):
 
         if not failure_detection.sufficient_vms(len(self.nodes), min_number_vms):
             if not failure_recovery.recovered_insufficient_vms_failure():
-                #fixme: cleanup() terminate vms that are created
                 self.group_id = 'UNKNOWN'  # FIXME: do we we mean '' or None here?
-                #self.nodes = []
                 logger.info("Sufficient number VMs cannot be created for this computation."
                             "Increase your quota or decrease your minimum requirement")
                 return
