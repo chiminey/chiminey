@@ -1,7 +1,7 @@
 #Generated from Chef, do not modify
 from bdphpcprovider.settings_changeme import *
 
-Debug=True
+Debug = True
 
 DATABASES = {
     'default': {
@@ -40,3 +40,13 @@ LOGGING = {
         },
 }
 
+CELERYBEAT_SCHEDULE = {
+    #"test": {
+    #    "task": "smartconnectorscheduler.test",
+    #    "schedule": timedelta(seconds=15),
+    #},
+    "run_contexts": {
+        "task": "smartconnectorscheduler.run_contexts",
+        "schedule": timedelta(seconds=15)
+      },
+    }
