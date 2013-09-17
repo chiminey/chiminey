@@ -42,6 +42,7 @@ class Destroy(smartconnector.Stage):
             if self.cleanup_nodes:
                 return True
         except KeyError, e:
+            self.cleanup_nodes = []
             logger.debug(e)
 
         if self._exists(run_settings,
