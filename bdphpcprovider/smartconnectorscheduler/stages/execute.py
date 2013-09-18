@@ -429,9 +429,6 @@ class Execute(Stage):
                 logger.debug("dataset_name=%s" % dataset_name)
                 return dataset_name
 
-            exp_value_keys = [["hrmcdset%s/step" % x, "hrmcdset%s/err" % x] for x in range(len(processes))]
-            logger.debug("exp_value_keys=%s" % exp_value_keys)
-
             # FIXME: better to create experiment_paramsets
             # later closer to when corresponding datasets are created, but
             # would required PUT of paramerset data to existing experiment.
@@ -441,20 +438,7 @@ class Execute(Stage):
                 exp_id=self.experiment_id,
                 exp_name=_get_exp_name_for_input,
                 dataset_name=_get_dataset_name_for_input,
-                experiment_paramset=[
-                make_paramset("hrmcexp", []),
-                make_graph_paramset("expgraph",
-                    name="hrmcexp",
-                    graph_info={"axes":["iteration", "criterion"], "legends":["criterion"]},
-                    value_dict={},
-                    value_keys=[["hrmcdset/it", "hrmcdset/crit"]]),
-
-                make_graph_paramset("expgraph",
-                    name="hrmcexp2",
-                    graph_info={"axes":["step", "ERRGr*wf"]},
-                    value_dict={},
-                    value_keys=exp_value_keys),
-               ],
+                experiment_paramset=[],
                 dataset_paramset=[
                     make_paramset('hrmcdataset/input', [])])
         else:

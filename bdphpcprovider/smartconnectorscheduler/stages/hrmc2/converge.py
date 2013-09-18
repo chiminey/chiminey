@@ -361,6 +361,31 @@ class Converge(Stage):
 
             re_dbl_fort = re.compile(r'(\d*\.\d+)[dD]([-+]?\d+)')
 
+            logger.debug("new_output_dir=%s" % new_output_dir)
+            exp_value_keys = []
+            legends = []
+            for m, node_dir in enumerate(node_dirs):
+                exp_value_keys.append(["hrmcdset%s/step" % m, "hrmcdset%s/err" % m])
+
+                source_url = smartconnector.get_url_with_pkey(self.boto_settings,
+                    os.path.join(new_output_dir, node_dir), is_relative_path=False)
+
+                (source_scheme, source_location, source_path, source_location,
+                    query_settings) = hrmcstages.parse_bdpurl(source_url)
+                logger.debug("source_url=%s" % source_url)
+                legends.append(
+                    hrmcstages.get_dataset_name_for_output(
+                        self.boto_settings, "", source_path))
+
+            logger.debug("exp_value_keys=%s" % exp_value_keys)
+            logger.debug("legends=%s" % legends)
+
+            graph_paramset = [make_graph_paramset("expgraph",
+                name="hrmcexp2",
+                graph_info={"axes": ["step", "ERRGr*wf"], "precision": [0, 2], "legends": legends},
+                value_dict={},
+                value_keys=exp_value_keys)]
+
             for m, node_dir in enumerate(node_dirs):
 
                 dataerrors_url = smartconnector.get_url_with_pkey(self.boto_settings,
@@ -479,23 +504,24 @@ class Converge(Stage):
                     exp_name=hrmcstages.get_exp_name_for_output,
                     dataset_name=hrmcstages.get_dataset_name_for_output,
                     exp_id=self.experiment_id,
+                    experiment_paramset=graph_paramset,
                     dataset_paramset=[
                         make_paramset('hrmcdataset/output', []),
                         make_graph_paramset('dsetgraph',
                             name="hrmcdset",
-                            graph_info={"axes":["r (Angstroms)","g(r)"],
+                            graph_info={"axes":["r (Angstroms)", "g(r)"],
                                 "legends":["psd", "PSD_exp"],  "type":"line"},
                             value_dict=hrmcdset_val,
                             value_keys=[["hrmcdfile/r1", "hrmcdfile/g1"],
-                                ["hrmcdfile/r2","hrmcdfile/g2"]]),
+                                ["hrmcdfile/r2", "hrmcdfile/g2"]]),
                         make_graph_paramset('dsetgraph',
                             name='hrmcdset2',
-                            graph_info={"axes":["r (Angstroms)","g(r)"],
+                            graph_info={"axes":["r (Angstroms)", "g(r)"],
                                 "legends":["data_grfinal", "input_gr"],
                                 "type":"line"},
                             value_dict={},
-                            value_keys= [["hrmcdfile/r3", "hrmcdfile/g3"],
-                                ["hrmcdfile/r4","hrmcdfile/g4"]]),
+                            value_keys=[["hrmcdfile/r3", "hrmcdfile/g3"],
+                                ["hrmcdfile/r4", "hrmcdfile/g4"]]),
                         make_graph_paramset('dsetgraph',
                             name='hrmcdset%s' % m,
                             graph_info={},
@@ -517,6 +543,7 @@ class Converge(Stage):
                          'input_gr.dat': extract_inputgr_func}
 
                     )
+                graph_paramset = []
         else:
             logger.warn("no mytardis host specified")
 

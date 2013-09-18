@@ -1422,7 +1422,8 @@ def get_dataset_name_for_output(settings, url, path):
     logger.debug("source_url=%s" % source_url)
     try:
         content = get_file(source_url)
-    except IOError:
+    except IOError, e:
+        logger.warn(e)
         return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
 
     logger.debug("content=%s" % content)

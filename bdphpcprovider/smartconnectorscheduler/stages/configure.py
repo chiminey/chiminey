@@ -28,6 +28,10 @@ from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 
 
+from bdphpcprovider.smartconnectorscheduler import mytardis
+from bdphpcprovider.smartconnectorscheduler.stages.composite import (make_graph_paramset, make_paramset)
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -71,6 +75,14 @@ class Configure(Stage, UI):
             'http://rmit.edu.au/schemas/hrmc']['input_location']
         logger.debug("input_location=%s" % input_location)
 
+        try:
+            self.experiment_id = int(smartconnector.get_existing_key(run_settings,
+                'http://rmit.edu.au/schemas/hrmc/experiment_id'))
+        except KeyError:
+            self.experiment_id = 0
+        except ValueError:
+            self.experiment_id = 0
+
         #prefix = "%s%s" % (self.job_dir, self.contextid)
         prefix = self.job_dir
         logger.debug("prefix=%s" % prefix)
@@ -84,11 +96,36 @@ class Configure(Stage, UI):
         logger.debug("destination_url=%s" % destination_url)
         hrmcstages.copy_directories(source_url, destination_url)
 
+        output_location = run_settings['http://rmit.edu.au/schemas/system/misc'][u'output_location']
+
+        if self.boto_settings['mytardis_host']:
+            EXP_DATASET_NAME_SPLIT = 2
+
+            def _get_exp_name_for_input(path):
+                return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
+
+            ename = _get_exp_name_for_input(output_location)
+            logger.debug("ename=%s" % ename)
+            self.experiment_id = mytardis.post_experiment(
+                settings=self.boto_settings,
+                exp_id=self.experiment_id,
+                expname=ename,
+                experiment_paramset=[
+                    make_paramset("hrmcexp", []),
+                    make_graph_paramset("expgraph",
+                        name="hrmcexp",
+                        graph_info={"axes":["iteration", "criterion"], "legends":["criterion"], "precision":[0, 2]},
+                        value_dict={},
+                        value_keys=[["hrmcdset/it", "hrmcdset/crit"]])
+            ])
+
     def output(self, run_settings):
 
         run_settings.setdefault(
             'http://rmit.edu.au/schemas/stages/configure',
             {})[u'configure_done'] = 1
+        run_settings['http://rmit.edu.au/schemas/hrmc']['experiment_id'] = str(self.experiment_id)
+
         # if not self._exists(run_settings,
         #         'http://rmit.edu.au/schemas/stages/configure'):
         #     run_settings['http://rmit.edu.au/schemas/stages/configure'] = {}

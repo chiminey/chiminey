@@ -20,6 +20,7 @@
 
 import logging
 import ast
+import os
 
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
@@ -67,6 +68,8 @@ class Bootstrap(Stage):
         except KeyError:
             self.started = 0
         logger.debug('self.started=%d' % self.started)
+
+
         self.boto_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
         retrieve_boto_settings(run_settings, self.boto_settings)
         if not self.started:
@@ -76,6 +79,7 @@ class Bootstrap(Stage):
                 logger.error("unable to start setup of packages: %s" % e)
             pass
             self.started = 1
+
         else:
             self.nodes = botocloudconnector.get_rego_nodes(self.boto_settings)
             self.error_nodes = []
@@ -134,6 +138,7 @@ class Bootstrap(Stage):
         if len(self.bootstrapped_nodes) == len(self.created_nodes):
             run_settings.setdefault('http://rmit.edu.au/schemas/stages/bootstrap',
             {})[u'bootstrap_done'] = 1
+
         return run_settings
 
 

@@ -34,6 +34,7 @@ from bdphpcprovider.smartconnectorscheduler import hrmcstages
 
 EXP_DATASET_NAME_SPLIT = 2
 
+
 def _get_exp_name(settings, url, path):
     """
     Break path based on EXP_DATASET_NAME_SPLIT
@@ -79,6 +80,89 @@ def _get_dataset_name(settings, url, path):
 #     logger.debug(r.text)
 #     logger.debug(r.headers)
 
+def post_experiment(settings,
+    exp_id,
+    expname,
+    experiment_paramset=[]):
+    # get existing experiment or create new
+    new_exp_id = exp_id
+    tardis_user = settings["mytardis_user"]
+    tardis_pass = settings["mytardis_password"]
+    tardis_host_url = "http://%s" % settings["mytardis_host"]
+    logger.debug("experiment_paramset=%s" % experiment_paramset)
+
+    exp_id_pat = re.compile(".*/([0-9]+)/$")
+    if not new_exp_id:
+        logger.debug("creating new experiment")
+
+        url = "%s/api/v1/experiment/?format=json" % tardis_host_url
+        headers = {'content-type': 'application/json'}
+
+        data = json.dumps({
+        'title': expname,
+        'description': 'some test repo',
+        "parameter_sets": experiment_paramset,
+        })
+        logger.debug("data=%s" % data)
+        r = requests.post(url,
+        data=data,
+        headers=headers,
+        auth=(tardis_user, tardis_pass))
+
+        # FIXME: need to check for status_code and handle failures such
+        # as 500 - lack of disk space at mytardis
+
+        logger.debug('URL=%s' % url)
+        logger.debug('r.json=%s' % r.json)
+        logger.debug('r.text=%s' % r.text)
+        logger.debug('r.headers=%s' % r.headers)
+
+        new_experiment_location = r.headers['location']
+        logger.debug("new_experiment_location=%s" % new_experiment_location)
+        exp_id_mat = exp_id_pat.match(new_experiment_location)
+        if exp_id_mat:
+            exp_id_str = exp_id_mat.group(1)
+            try:
+                new_exp_id = int(exp_id_str)
+            except ValueError:
+                logger.error("cannot create mytardis experiment")
+                new_exp_id = 0
+            # cannot create experiment, but could try next time
+            logger.debug("new_exp_id=%s" % new_exp_id)
+        else:
+            logger.warn("could not match experiment_id pattern")
+    else:
+        logger.debug("using existing experiment at %s" % new_exp_id)
+        if experiment_paramset:
+            logger.debug("updating metadata from existing experiment")
+
+            url = "%s/api/v1/experimentparameterset/?format=json" % tardis_host_url
+            headers = {'content-type': 'application/json'}
+
+            for pset in experiment_paramset:
+                logger.debug("pset=%s" % pset)
+                data = json.dumps(
+                   {
+                   'experiment': "/api/v1/experiment/%s/" % new_exp_id,
+                   'schema': pset['schema'],
+                   'parameters': pset['parameters']
+                   })
+                logger.debug("data=%s" % data)
+                r = requests.post(url,
+                   data=data,
+                   headers=headers,
+                   auth=(tardis_user, tardis_pass))
+
+                # FIXME: need to check for status_code and handle failures such
+                # as 500 - lack of disk space at mytardis
+
+                logger.debug('URL=%s' % url)
+                logger.debug('r.json=%s' % r.json)
+                logger.debug('r.text=%s' % r.text)
+                logger.debug('r.headers=%s' % r.headers)
+    return new_exp_id
+
+
 def post_dataset(settings,
         source_url,
         exp_id,
@@ -119,58 +203,16 @@ def post_dataset(settings,
         query_settings) = hrmcstages.parse_bdpurl(source_url)
 
     logger.debug("source_path=%s" % source_path)
+
     if source_scheme == "file":
         root_path = hrmcstages.get_value('root_path', query_settings)
     else:
         raise InvalidInputError("only file source_schema supported for source of mytardis transfer")
 
-    # get existing experiment or create new
-    new_exp_id = exp_id
-
-    exp_id_pat = re.compile(".*/([0-9]+)/$")
-    if not new_exp_id:
-        logger.debug("creating new experiment")
-
-        url = "%s/api/v1/experiment/?format=json" % tardis_host_url
-        headers = {'content-type': 'application/json'}
-
-        data = json.dumps({
-            'title': exp_name(settings, source_url, source_path),
-            'description': 'some test repo',
-            "parameter_sets": experiment_paramset,
-            })
-        logger.debug("data=%s" % data)
-        r = requests.post(url,
-            data=data,
-            headers=headers,
-            auth=(tardis_user, tardis_pass))
-
-        # FIXME: need to check for status_code and handle failures.
-
-        logger.debug('URL=%s' % url)
-        logger.debug('r.json=%s' % r.json)
-        logger.debug('r.text=%s' % r.text)
-        logger.debug('r.headers=%s' % r.headers)
-
-        new_experiment_location = r.headers['location']
-        logger.debug("new_experiment_location=%s" % new_experiment_location)
-        exp_id_mat = exp_id_pat.match(new_experiment_location)
-        if exp_id_mat:
-            exp_id_str = exp_id_mat.group(1)
-            try:
-                new_exp_id = int(exp_id_str)
-            except ValueError:
-                logger.error("cannot create mytardis experiment")
-                new_exp_id = 0
-                # cannot create experiment, but could try next time
-            logger.debug("new_exp_id=%s" % new_exp_id)
-        else:
-            logger.warn("could not match experiment_id pattern")
-    else:
-        logger.debug("using existing experiment at %s" % new_exp_id)
+    expname = exp_name(settings, source_url, source_path)
+    new_exp_id = post_experiment(settings, exp_id, expname, experiment_paramset)
 
     new_experiment_uri = "/api/v1/experiment/%s/" % new_exp_id
-
 
     # TODO: check that we do not alreay have a dataset with
     # the same name and overwrite or don't move.
