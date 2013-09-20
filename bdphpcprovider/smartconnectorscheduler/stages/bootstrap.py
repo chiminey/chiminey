@@ -80,6 +80,10 @@ class Bootstrap(Stage):
             self.nodes = botocloudconnector.get_rego_nodes(self.boto_settings)
             self.error_nodes = []
             for node in self.nodes:
+                if (node.ip_address in [x[1]
+                                        for x in self.bootstrapped_nodes
+                                        if x[1] == node.ip_address]):
+                    continue
                 if not botocloudconnector.is_instance_running(node):
                     # An unlikely situation where the node crashed after is was
                     # detected as registered.
