@@ -24,7 +24,7 @@ import os
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler \
-    import hrmcstages, models, smartconnector, sshconnector
+    import hrmcstages, models, smartconnector, sshconnector, botocloudconnector
 from bdphpcprovider.reliabilityframework.ftmanager import FTManager
 
 
@@ -48,7 +48,7 @@ class Wait(Stage):
             Checks whether there is a non-zero number of runs still going.
         """
         self.ftmanager = FTManager()
-        self.cleanup_nodes = self.ftmanager.get_cleanup_nodes(run_settings, smartconnector)
+        #self.cleanup_nodes = self.ftmanager.get_cleanup_nodes(run_settings, smartconnector)
 
         try:
             failed_str = run_settings['http://rmit.edu.au/schemas/stages/create'][u'failed_nodes']
@@ -56,7 +56,14 @@ class Wait(Stage):
         except KeyError, e:
             logger.debug(e)
             self.failed_nodes = []
-
+        '''
+        try:
+            failed_procs_str = run_settings['http://rmit.edu.au/schemas/stages/execute'][u'failed_procs']
+            self.failed_processes = ast.literal_eval(failed_procs_str)
+        except KeyError, e:
+            logger.debug(e)
+            self.failed_processes = 0
+        '''
         try:
             executed_procs_str = run_settings['http://rmit.edu.au/schemas/stages/execute'][u'executed_procs']
             self.executed_procs = ast.literal_eval(executed_procs_str)
@@ -79,6 +86,8 @@ class Wait(Stage):
 
         # if we have no runs_left then we must have finished all the runs
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run', u'runs_left'):
+            created_str = run_settings['http://rmit.edu.au/schemas/stages/create'][u'created_nodes']
+            self.created_nodes = ast.literal_eval(created_str)
             return run_settings['http://rmit.edu.au/schemas/stages/run'][u'runs_left']
 
         return False
@@ -109,24 +118,37 @@ class Wait(Stage):
         try:
             ssh = sshconnector.open_connection(ip_address=ip, settings=settings)
             command_out, errs = sshconnector.run_command_with_status(ssh, command)
+            ssh.close()
         except Exception, e:
             logger.error("ip=%s %s " % (ip_address, e))
+            instance = ''
+            self.executed_procs, self.failed_processes = self.ftmanager.flag_failed_processes(
+                            ip_address, self.executed_procs)
             if not (ip_address in [x[1]
-                                   for x in self.cleanup_nodes
-                                   if x[1] == ip_address]):
-                failed_node = ('unknown', ip_address, unicode('NeCTAR'))
-                self.cleanup_nodes.append(failed_node)
-                self.failed_nodes.append(failed_node)
-                self.executed_procs, self.failed_processes = self.ftmanager.flag_failed_processes(
-                    ip_address, self.executed_procs)
-                self.current_processes, _ = self.ftmanager.flag_failed_processes(
-                        ip_address, self.current_processes)
-                self.all_processes, _ = self.ftmanager.flag_failed_processes(
-                        ip_address, self.all_processes)
-
-        finally:
-            if ssh:
-                ssh.close()
+                                       for x in self.failed_nodes
+                                       if x[1] == ip_address]):
+                #fixme move to failure_detection
+                for node in self.created_nodes:
+                    if node[1] == ip_address:
+                        instance = botocloudconnector.get_this_instance(node[0], settings)
+                        break
+                if not instance:
+                    logger.debug('instance [%s:%s] not found' % (node[0], node[1]))
+                    failed_node = ('unknown', ip_address, unicode('NeCTAR'))
+                    #self.cleanup_nodes.append(failed_node)
+                    self.failed_nodes.append(failed_node)
+                    self.executed_procs, self.failed_processes = self.ftmanager.flag_failed_processes(
+                        ip_address, self.executed_procs)
+                    self.current_processes, _ = self.ftmanager.flag_failed_processes(
+                            ip_address, self.current_processes)
+                    self.all_processes, _ = self.ftmanager.flag_failed_processes(
+                            ip_address, self.all_processes)
+                else:
+                    if ssh:
+                        ssh.close()
+        #finally:
+        #    if ssh:
+        #        ssh.close()
 
         logger.debug("command_out2=(%s, %s)" % (command_out, errs))
 
@@ -263,7 +285,7 @@ class Wait(Stage):
                     logger.info("We have already "
                         + "processed output of %s on node %s" % (process_id, ip_address))
             else:
-                print "job %s still running on %s" % (process_id, ip_address)
+                print "job %s at %s not completed" % (process_id, ip_address)
 
 
     def output(self, run_settings):
@@ -272,6 +294,8 @@ class Wait(Stage):
         """
         logger.debug("finished stage output")
         nodes_working = len(self.executed_procs) - (len(self.finished_nodes) + self.failed_processes)
+        #if len(self.finished_nodes) == 0 and self.failed_processes == 0:
+        #    nodes_working = 0
         logger.debug("%d %d " %(len(self.finished_nodes), self.failed_processes))
         logger.debug("self.executed_procs=%s" % self.executed_procs)
         logger.debug("self.finished_nodes=%s" % self.finished_nodes)
@@ -312,9 +336,9 @@ class Wait(Stage):
             'http://rmit.edu.au/schemas/stages/execute',
             {})[u'executed_procs'] = str(self.executed_procs)
 
-        if self.cleanup_nodes:
-            run_settings.setdefault(
-            'http://rmit.edu.au/schemas/reliability', {})[u'cleanup_nodes'] = self.cleanup_nodes
+        #if self.cleanup_nodes:
+        #    run_settings.setdefault(
+        #    'http://rmit.edu.au/schemas/reliability', {})[u'cleanup_nodes'] = self.cleanup_nodes
 
         if self.failed_nodes:
             run_settings.setdefault(

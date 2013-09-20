@@ -43,7 +43,7 @@ class Schedule(Stage):
         logger.debug('Schedule stage initialised')
 
     def triggered(self, run_settings):
-        created_nodes = []
+
         try:
             failed_str = run_settings['http://rmit.edu.au/schemas/stages/create'][u'failed_nodes']
             failed_nodes = ast.literal_eval(failed_str)
