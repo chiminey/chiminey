@@ -37,7 +37,11 @@ LOGGING = {
             'handlers': ['file'],
             'level': 'DEBUG',
             },
-        },
+        'bdphpcprovider.reliabilityframework': {
+                'handlers': ['file'],
+                'level': 'DEBUG',
+            },
+        }
 }
 
 CELERYBEAT_SCHEDULE = {

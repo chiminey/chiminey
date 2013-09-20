@@ -43,6 +43,16 @@ class Schedule(Stage):
         logger.debug('Schedule stage initialised')
 
     def triggered(self, run_settings):
+        created_nodes = []
+        try:
+            failed_str = run_settings['http://rmit.edu.au/schemas/stages/create'][u'failed_nodes']
+            failed_nodes = ast.literal_eval(failed_str)
+            created_str = run_settings['http://rmit.edu.au/schemas/stages/create'][u'created_nodes']
+            created_nodes = ast.literal_eval(created_str)
+            if len(failed_nodes) == len(created_nodes) or len(created_nodes) == 0:
+                return False
+        except KeyError, e:
+            logger.debug(e)
         try:
             bootstrap_done = int(smartconnector.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/stages/bootstrap/bootstrap_done'))
@@ -141,6 +151,10 @@ class Schedule(Stage):
             logger.debug('schedule_index=%d' % self.schedule_index)
         else:
             for node in self.nodes:
+                if (node.ip_address in [x[1]
+                                        for x in self.scheduled_nodes
+                                        if x[1] == node.ip_address]):
+                    continue
                 if not botocloudconnector.is_instance_running(node):
                     # An unlikely situation where the node crashed after is was
                     # detected as registered.
@@ -257,6 +271,8 @@ def start_round_robin_schedule(nodes, processes, schedule_index, settings):
     if total_nodes > processes:
         total_nodes = processes
         all_nodes = nodes[:total_nodes]
+    if total_nodes == 0:
+        return
     proc_per_node = processes / total_nodes
     remaining_procs = processes % total_nodes
     index = schedule_index
