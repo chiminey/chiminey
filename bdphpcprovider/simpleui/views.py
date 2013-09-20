@@ -206,14 +206,14 @@ class HRMCSubmitFormView(FormView):
     form_class = HRMCSubmitForm
     success_url = '/jobs'
 
-    initial = {'number_vm_instances': 8,
+    initial = {'number_vm_instances': 2,
                'minimum_number_vm_instances': 1,
         'iseed': 42,
         'input_location': 'file://127.0.0.1/myfiles/input',
         'number_dimensions': 2,
         'threshold': "[2]",
         'error_threshold': "0.03",
-        'max_iteration': 10,
+        'max_iteration': 2,
         'pottype': 1,
         'experiment_id': 0,
         'output_location': 'file://local@127.0.0.1/hrmcrun'
@@ -273,15 +273,15 @@ class SweepSubmitFormView(FormView):
     form_class = SweepSubmitForm
     success_url = '/jobs'
 
-    initial = {'number_vm_instances': 8,
-               'minimum_number_vm_instances': 4,
+    initial = {'number_vm_instances': 2,
+               'minimum_number_vm_instances': 1,
         'iseed': 42,
         'input_location': 'file://127.0.0.1/myfiles/input',
         'number_dimensions': 1,
         'threshold': "[1]",
         'error_threshold': "0.03",
         'max_iteration': 2,
-        'fanout_per_kept_result': 4,
+        'fanout_per_kept_result': 2,
         'pottype': 1,
         'sweep_map': '{"var1": [3, 7], "var2": [1, 2]}',
         'run_map': '{}',

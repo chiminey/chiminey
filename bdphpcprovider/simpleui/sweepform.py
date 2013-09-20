@@ -45,6 +45,7 @@ class SweepSubmitForm(forms.Form):
     #    ))
 
 
+
     def __init__(self, *args, **kwargs):
         super(SweepSubmitForm, self).__init__(*args, **kwargs)
         self.fields["sweep_map"].validators.append(validators.validate_sweep_map)
