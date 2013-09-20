@@ -474,7 +474,7 @@ def get_rego_nodes(settings, node_type='created_nodes'):
         requested_nodes = settings[node_type]
     except KeyError:
         logger.debug("settings=%s" % settings)
-        logger.error("created_nodes missing from context")
+        logger.error("%s missing from context" % node_type)
         raise
     try:
         nodes = ast.literal_eval(requested_nodes)
