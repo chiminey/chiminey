@@ -183,6 +183,7 @@ class Command(BaseCommand):
                  u'file2': (models.ParameterName.STRING, '', 1),
                  }
                  ],
+
             u'http://rmit.edu.au/schemas/stages/copy/testing':
                 [u'the copy stage internal testing',
                 {
@@ -242,6 +243,7 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/stages/create':
                 [u'the create state of the smartconnector1',
                 {
+                u'failed_nodes': (models.ParameterName.STRING, '', 11),
                 u'group_id': (models.ParameterName.STRING, '', 10),
                 u'vm_size': (models.ParameterName.STRING, '', 9),
                 u'vm_image': (models.ParameterName.STRING, '', 8),
