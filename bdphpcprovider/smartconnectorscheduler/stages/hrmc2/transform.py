@@ -52,6 +52,16 @@ class Transform(Stage):
         pass
 
     def triggered(self, run_settings):
+        try:
+            failed_str = run_settings['http://rmit.edu.au/schemas/stages/create'][u'failed_nodes']
+            failed_nodes = ast.literal_eval(failed_str)
+            created_str = run_settings['http://rmit.edu.au/schemas/stages/create'][u'created_nodes']
+            created_nodes = ast.literal_eval(created_str)
+            if len(failed_nodes) == len(created_nodes) or len(created_nodes) == 0:
+                return False
+        except KeyError, e:
+            logger.debug(e)
+
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/hrmc', u'threshold'):
             # FIXME: need to validate this output to make sure list of int
             self.threshold = ast.literal_eval(run_settings['http://rmit.edu.au/schemas/hrmc'][u'threshold'])

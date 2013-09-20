@@ -299,6 +299,7 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/stages/execute':
                 [u'the execute stage of the smartconnector1',
                 {
+                #u'failed_procs': (models.ParameterName.STRING, '', 2),
                 u'executed_procs': (models.ParameterName.STRING, '', 1)
                 }
                 ],
