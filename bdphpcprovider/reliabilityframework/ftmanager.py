@@ -43,3 +43,9 @@ class FTManager():
                 process_list[iterator]['status'] = 'failed'
                 no_failed_procs += 1
         return process_list, no_failed_procs
+
+    def collect_failed_processes(self, source, destination):
+        for iterator, process in enumerate(source):
+            if process['status'] == 'failed':
+                destination.append(process)
+        return destination

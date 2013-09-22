@@ -84,6 +84,13 @@ class Wait(Stage):
         if len(self.current_processes) == 0:
             return False
 
+        try:
+            reschedule_str = run_settings['http://rmit.edu.au/schemas/stages/schedule'][u'procs_2b_rescheduled']
+            self.procs_2b_rescheduled = ast.literal_eval(reschedule_str)
+        except KeyError, e:
+            logger.debug(e)
+            self.procs_2b_rescheduled = []
+
         # if we have no runs_left then we must have finished all the runs
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run', u'runs_left'):
             created_str = run_settings['http://rmit.edu.au/schemas/stages/create'][u'created_nodes']
@@ -114,16 +121,20 @@ class Wait(Stage):
         errs = ''
         logger.debug("starting command for %s" % ip)
         logger.debug('command=%s' % command)
-        ssh = []
+        ssh = None
         try:
             ssh = sshconnector.open_connection(ip_address=ip, settings=settings)
             command_out, errs = sshconnector.run_command_with_status(ssh, command)
             ssh.close()
         except Exception, e:
             logger.error("ip=%s %s " % (ip_address, e))
+            if ssh:
+                ssh.close()
+
             instance = ''
             self.executed_procs, self.failed_processes = self.ftmanager.flag_failed_processes(
                             ip_address, self.executed_procs)
+
             if not (ip_address in [x[1]
                                        for x in self.failed_nodes
                                        if x[1] == ip_address]):
@@ -143,9 +154,10 @@ class Wait(Stage):
                             ip_address, self.current_processes)
                     self.all_processes, _ = self.ftmanager.flag_failed_processes(
                             ip_address, self.all_processes)
-                else:
-                    if ssh:
-                        ssh.close()
+                    self.procs_2b_rescheduled = self.ftmanager.collect_failed_processes(
+                        self.executed_procs, self.procs_2b_rescheduled)
+
+
         #finally:
         #    if ssh:
         #        ssh.close()
@@ -344,6 +356,14 @@ class Wait(Stage):
             run_settings.setdefault(
             'http://rmit.edu.au/schemas/stages/create', {})[u'failed_nodes'] = self.failed_nodes
 
+
+        if self.procs_2b_rescheduled:
+            run_settings.setdefault(
+                'http://rmit.edu.au/schemas/stages/schedule',
+                {})[u'schedule_started'] = 0
+            run_settings.setdefault(
+                    'http://rmit.edu.au/schemas/stages/schedule',
+                    {})[u'procs_2b_rescheduled'] = self.procs_2b_rescheduled
         return run_settings
 
 
