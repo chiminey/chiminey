@@ -105,7 +105,7 @@ class Create(Stage):
         #check if sufficient no. node created
         failure_detection = FailureDetection()
         failure_recovery = FailureRecovery()
-
+        #fixme add no retries
         if not failure_detection.sufficient_vms(len(self.nodes), min_number_vms):
             if not failure_recovery.recovered_insufficient_vms_failure():
                 self.group_id = 'UNKNOWN'  # FIXME: do we we mean '' or None here?
