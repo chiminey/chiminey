@@ -334,6 +334,12 @@ class Schedule(Stage):
                     run_settings.setdefault(
                         'http://rmit.edu.au/schemas/stages/schedule',
                         {})[u'procs_2b_rescheduled'] = []
+                    run_settings.setdefault(
+                        'http://rmit.edu.au/schemas/stages/schedule',
+                        {})[u'total_rescheduled_procs'] = 0
+                    run_settings.setdefault(
+                        'http://rmit.edu.au/schemas/stages/schedule',
+                        {})[u'rescheduled_nodes'] = []
             else:
                 run_settings.setdefault(
                     'http://rmit.edu.au/schemas/stages/schedule',
