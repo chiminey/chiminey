@@ -283,6 +283,8 @@ class ContextResource(ModelResource):
                         bundle.data['number_vm_instances']),
                     ('minimum_number_vm_instances',
                         bundle.data['minimum_number_vm_instances']),
+                    ('reschedule_failed_processes',
+                        bundle.data['reschedule_failed_processes']),
                     (u'iseed', bundle.data['iseed']),
                     ('fanout_per_kept_result', bundle.data['fanout_per_kept_result']),
                     ('max_seed_int', 1000),

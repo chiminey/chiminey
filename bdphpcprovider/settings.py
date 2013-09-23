@@ -41,6 +41,10 @@ LOGGING = {
                 'handlers': ['file'],
                 'level': 'DEBUG',
             },
+        'bdphpcprovider.simpleui': {
+                'handlers': ['file'],
+                'level': 'DEBUG',
+            },
         }
 }
 

@@ -276,6 +276,7 @@ class SweepSubmitFormView(FormView):
     initial = {'number_vm_instances': 2,
                'minimum_number_vm_instances': 1,
         'iseed': 42,
+        'reschedule_failed_processes': 1,
         'input_location': 'file://127.0.0.1/myfiles/input',
         'number_dimensions': 1,
         'threshold': "[1]",
@@ -304,11 +305,11 @@ class SweepSubmitFormView(FormView):
         cookies = dict(self.request.COOKIES)
         logger.debug("cookies=%s" % cookies)
         headers = {'content-type': 'application/json'}
-
         data = json.dumps({'smart_connector': 'sweep',
                     'number_vm_instances': form.cleaned_data['number_vm_instances'],
                     'minimum_number_vm_instances': form.cleaned_data['minimum_number_vm_instances'],
                     u'iseed': form.cleaned_data['iseed'],
+                    'reschedule_failed_processes': form.cleaned_data['reschedule_failed_processes'],
                     'input_location':  form.cleaned_data['input_location'],
                     'number_dimensions': form.cleaned_data['number_dimensions'],
                     'fanout_per_kept_result': form.cleaned_data['fanout_per_kept_result'],

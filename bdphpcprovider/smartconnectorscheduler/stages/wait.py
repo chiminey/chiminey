@@ -49,7 +49,6 @@ class Wait(Stage):
         """
         self.ftmanager = FTManager()
         #self.cleanup_nodes = self.ftmanager.get_cleanup_nodes(run_settings, smartconnector)
-
         try:
             failed_str = run_settings['http://rmit.edu.au/schemas/stages/create'][u'failed_nodes']
             self.failed_nodes = ast.literal_eval(failed_str)
@@ -100,6 +99,8 @@ class Wait(Stage):
         except KeyError, e:
             logger.debug(e)
             self.procs_2b_rescheduled = []
+
+        self.reschedule_failed_procs = run_settings['http://rmit.edu.au/schemas/hrmc'][u'reschedule_failed_processes']
 
         # if we have no runs_left then we must have finished all the runs
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run', u'runs_left'):
@@ -164,8 +165,9 @@ class Wait(Stage):
                             ip_address, self.current_processes)
                     self.all_processes, _ = self.ftmanager.flag_failed_processes(
                             ip_address, self.all_processes)
-                    self.procs_2b_rescheduled = self.ftmanager.collect_failed_processes(
-                        self.executed_procs, self.procs_2b_rescheduled)
+                    if self.reschedule_failed_procs:
+                        self.procs_2b_rescheduled = self.ftmanager.collect_failed_processes(
+                            self.executed_procs, self.procs_2b_rescheduled)
 
 
         #finally:
