@@ -8,6 +8,9 @@ class SweepSubmitForm(forms.Form):
         help_text="Ensure tenancy has sufficient resources")
     minimum_number_vm_instances = forms.IntegerField(
         help_text="Ensure tenancy has sufficient resources", label=("Minimum No. VMs"))
+
+    reschedule_failed_processes = forms.BooleanField(initial=True, required=False)
+
     input_location = forms.CharField(label=_("Input Location"),
         max_length=255,
         help_text="A BDPUrl Directory",

@@ -219,6 +219,7 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/hrmc':
                 [u'the hrmc smart connector input values',
                 {
+                u'reschedule_failed_processes': (models.ParameterName.NUMERIC, '', 13),
                 u'fanout_per_kept_result': (models.ParameterName.NUMERIC, '', 12),
                 u'minimum_number_vm_instances': (models.ParameterName.NUMERIC, '', 11),
                 u'random_numbers': (models.ParameterName.STRING, '', 10),
