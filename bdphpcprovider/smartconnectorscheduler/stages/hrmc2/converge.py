@@ -509,7 +509,7 @@ class Converge(Stage):
                         make_paramset('hrmcdataset/output', []),
                         make_graph_paramset('dsetgraph',
                             name="hrmcdset",
-                            graph_info={"axes":["r (Angstroms)", "g(r)"],
+                            graph_info={"axes":["r (Angstroms)", "PSD"],
                                 "legends":["psd", "PSD_exp"],  "type":"line"},
                             value_dict=hrmcdset_val,
                             value_keys=[["hrmcdfile/r1", "hrmcdfile/g1"],
