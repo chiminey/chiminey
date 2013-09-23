@@ -68,6 +68,8 @@ class Execute(Stage):
         if len(self.schedule_procs) == 0:
             return False
 
+        self.reschedule_failed_procs = run_settings['http://rmit.edu.au/schemas/hrmc'][u'reschedule_failed_processes']
+
         try:
             exec_procs_str = smartconnector.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/stages/execute/executed_procs')
@@ -541,10 +543,12 @@ class Execute(Stage):
                               'process_scheduledone.sh', 'process_schedulestart.sh']
                 #hrmcstages.delete_files(dest_files_url, exceptions=exceptions) #FIXme: uncomment as needed
                 hrmcstages.copy_directories(source_files_url, dest_files_url)
-                input_backup = os.path.join(self.job_dir, "input_backup", proc['id'])
-                backup_url = smartconnector.get_url_with_pkey(self.boto_settings,
-                    input_backup, is_relative_path=False)
-                hrmcstages.copy_directories(source_files_url, backup_url)
+
+                if self.reschedule_failed_procs:
+                    input_backup = os.path.join(self.job_dir, "input_backup", proc['id'])
+                    backup_url = smartconnector.get_url_with_pkey(self.boto_settings,
+                        input_backup, is_relative_path=False)
+                    hrmcstages.copy_directories(source_files_url, backup_url)
 
 
                 # Why do we need to create a tempory file to make this copy?
@@ -591,18 +595,18 @@ class Execute(Stage):
 
 
                 #copying values and var_content to backup folder
-                value_url = smartconnector.get_url_with_pkey(
-                    self.boto_settings, os.path.join(input_backup, "%s_values" % var_fname),
-                    is_relative_path=False)
-                logger.debug("value_url=%s" % value_url)
-                hrmcstages.put_file(value_url, json.dumps(values))
+                if self.reschedule_failed_procs:
+                    value_url = smartconnector.get_url_with_pkey(
+                        self.boto_settings, os.path.join(input_backup, "%s_values" % var_fname),
+                        is_relative_path=False)
+                    logger.debug("value_url=%s" % value_url)
+                    hrmcstages.put_file(value_url, json.dumps(values))
 
-
-                var_fname_pkey = smartconnector.get_url_with_pkey(
-                    self.boto_settings, os.path.join(input_backup, var_fname),
-                    is_relative_path=False)
-                var_content = hrmcstages.get_file(var_url)
-                hrmcstages.put_file(var_fname_pkey, var_content)
+                    var_fname_pkey = smartconnector.get_url_with_pkey(
+                        self.boto_settings, os.path.join(input_backup, var_fname),
+                        is_relative_path=False)
+                    var_content = hrmcstages.get_file(var_url)
+                    hrmcstages.put_file(var_fname_pkey, var_content)
 
                 # cleanup
 
