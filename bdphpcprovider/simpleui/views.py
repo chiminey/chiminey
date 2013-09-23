@@ -283,7 +283,7 @@ class SweepSubmitFormView(FormView):
         'max_iteration': 2,
         'fanout_per_kept_result': 2,
         'pottype': 1,
-        'sweep_map': '{"var1": [3, 7], "var2": [1, 2]}',
+        'sweep_map': '{}', #"var1": [3, 7], "var2": [1, 2]}',
         'run_map': '{}',
         'experiment_id': 0,
         'output_location': 'file://local@127.0.0.1/sweephrmc'

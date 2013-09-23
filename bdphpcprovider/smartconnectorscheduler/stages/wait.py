@@ -84,9 +84,19 @@ class Wait(Stage):
         if len(self.current_processes) == 0:
             return False
 
+        executed_not_running = [x for x in self.current_processes if x['status'] == 'ready']
+        if executed_not_running:
+            logger.debug('executed_not_running=%s' % executed_not_running)
+            return False
+        else:
+            logger.debug('No ready: executed_not_running=%s' % executed_not_running)
+
+
         try:
             reschedule_str = run_settings['http://rmit.edu.au/schemas/stages/schedule'][u'procs_2b_rescheduled']
             self.procs_2b_rescheduled = ast.literal_eval(reschedule_str)
+            if self.procs_2b_rescheduled:
+                return False
         except KeyError, e:
             logger.debug(e)
             self.procs_2b_rescheduled = []
@@ -284,13 +294,13 @@ class Wait(Stage):
                     self.finished_nodes.append(process)
                     logger.debug('finished_processes=%s' % self.finished_nodes)
                     for iterator, p in enumerate(self.all_processes):
-                        if int(p['id']) == int(process_id):
+                        if int(p['id']) == int(process_id) and p['status'] == 'running':
                             self.all_processes[iterator]['status'] = 'completed'
                     for iterator, p in enumerate(self.executed_procs):
-                        if int(p['id']) == int(process_id):
+                        if int(p['id']) == int(process_id) and p['status'] == 'running':
                             self.executed_procs[iterator]['status'] = 'completed'
                     for iterator, p in enumerate(self.current_processes):
-                        if int(p['id']) == int(process_id):
+                        if int(p['id']) == int(process_id) and p['status'] == 'running':
                             self.current_processes[iterator]['status'] = 'completed'
 
                 else:

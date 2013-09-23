@@ -63,18 +63,22 @@ class Execute(Stage):
             return False
         if not schedule_completed:
             return False
-
         scheduled_procs_str = run_settings['http://rmit.edu.au/schemas/stages/schedule'][u'current_processes']
         self.schedule_procs = ast.literal_eval(scheduled_procs_str)
         if len(self.schedule_procs) == 0:
             return False
+
         try:
             exec_procs_str = smartconnector.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/stages/execute/executed_procs')
             self.exec_procs = ast.literal_eval(exec_procs_str)
             logger.debug('executed procs=%d, scheduled procs = %d'
                          % (len(self.exec_procs), len(self.schedule_procs)))
-            return len(self.exec_procs) < len(self.schedule_procs)
+            self.ready_processes = [x for x in self.schedule_procs if x['status'] == 'ready']
+            logger.debug('ready_processes= %s' % self.ready_processes)
+            logger.debug('total ready procs %d' % len(self.ready_processes))
+            return len(self.ready_processes)
+            #return len(self.exec_procs) < len(self.schedule_procs)
         except KeyError, e:
             self.exec_procs = []
             return True
@@ -98,7 +102,6 @@ class Execute(Stage):
             self.id = 0
             self.iter_inputdir = os.path.join(self.job_dir, "input_location")
         logger.debug("id = %s" % self.id)
-
         try:
             self.initial_numbfile = int(smartconnector.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/stages/run/initial_numbfile'))
@@ -127,7 +130,11 @@ class Execute(Stage):
         self.boto_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
         retrieve_boto_settings(run_settings, self.boto_settings)
 
-        self._prepare_inputs(run_settings)
+        failed_processes = [x for x in self.schedule_procs if x['status'] == 'failed']
+        if not failed_processes:
+            self._prepare_inputs(run_settings)
+        else:
+            self._copy_previous_inputs(run_settings)
         try:
             pids = self.run_multi_task(self.boto_settings)
         except PackageFailedError, e:
@@ -137,6 +144,24 @@ class Execute(Stage):
             sys.exit(1)
 
         return pids
+
+    def _copy_previous_inputs(self, run_settings):
+        for proc in self.ready_processes:
+            source_location = os.path.join(self.job_dir, "input_backup", proc['id'])
+            source_files_url = smartconnector.get_url_with_pkey(self.boto_settings,
+                    source_location, is_relative_path=False)
+
+            dest_files_location = self.boto_settings['platform'] + "@"\
+                                  + os.path.join(
+                self.boto_settings['payload_destination'],
+                proc['id'], self.boto_settings['payload_cloud_dirname'])
+            logger.debug('dest_files_location=%s' % dest_files_location)
+
+            dest_files_url = smartconnector.get_url_with_pkey(
+                self.boto_settings, dest_files_location,
+                is_relative_path=True, ip_address=proc['ip_address'])
+            logger.debug('dest_files_url=%s' % dest_files_url)
+            hrmcstages.copy_directories(source_files_url, dest_files_url)
 
     def output(self, run_settings):
         """
@@ -148,7 +173,7 @@ class Execute(Stage):
 
         run_settings.setdefault(
             'http://rmit.edu.au/schemas/stages/schedule',
-            {})[u'current_processes'] = str(self.exec_procs)
+            {})[u'current_processes'] = str(self.schedule_procs)
 
         run_settings.setdefault(
             'http://rmit.edu.au/schemas/stages/schedule',
@@ -157,7 +182,10 @@ class Execute(Stage):
         if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run'):
             run_settings['http://rmit.edu.au/schemas/stages/run'] = {}
 
-        run_settings['http://rmit.edu.au/schemas/stages/run'][u'runs_left'] = len(self.exec_procs)
+        completed_processes = [x for x in self.exec_procs if x['status'] == 'completed']
+        logger.debug('completed_processes=%d' % len(completed_processes))
+        run_settings['http://rmit.edu.au/schemas/stages/run'][u'runs_left'] =\
+            len(self.exec_procs) - len(completed_processes)
         run_settings['http://rmit.edu.au/schemas/stages/run'][u'initial_numbfile'] = self.initial_numbfile
         run_settings['http://rmit.edu.au/schemas/stages/run'][u'rand_index'] = self.rand_index
         run_settings['http://rmit.edu.au/schemas/hrmc']['experiment_id'] = str(self.experiment_id)
@@ -188,7 +216,7 @@ class Execute(Stage):
         #makefile_path = settings['payload_destination']
         command = "cd %s; make %s" % (makefile_path, 'startrun IDS=%s' % (
                                       settings['filename_for_PIDs']))
-
+        logger.debug('command_exec=%s' % command)
         command_out = ''
         errs = ''
         logger.debug("starting command for %s" % ip)
@@ -208,7 +236,19 @@ class Execute(Stage):
         any output as needed
         """
         pids = []
+        logger.debug('exec_procs=%s' % self.exec_procs)
+        tmp_exec_procs = []
+        for iterator, proc in enumerate(self.exec_procs):
+            if proc['status'] != 'failed':
+                tmp_exec_procs.append(proc)
+                logger.debug('adding=%s' % proc)
+            else:
+                logger.debug('not adding=%s' % proc)
+        self.exec_procs = tmp_exec_procs
+        logger.debug('exec_procs=%s' % self.exec_procs)
         for proc in self.schedule_procs:
+            if proc['status'] != 'ready':
+                continue
             #instance_id = node.id
             ip_address = proc['ip_address']
             process_id = proc['id']
@@ -217,7 +257,7 @@ class Execute(Stage):
                 proc['status'] = 'running'
                 self.exec_procs.append(proc)
                 for iterator, process in enumerate(self.all_processes):
-                    if int(process['id']) == int(process_id):
+                    if int(process['id']) == int(process_id) and process['status'] == 'ready':
                         self.all_processes[iterator]['status'] = 'running'
                         break
             except PackageFailedError, e:
@@ -239,7 +279,9 @@ class Execute(Stage):
             logger.debug("preparing inputs")
             # TODO: to ensure reproducability, may want to precalculate all random numbers and
             # store rather than rely on canonical execution of rest of this funciton.
-            processes = self.schedule_procs
+            #processes = self.schedule_procs
+            processes = [x for x in self.schedule_procs
+                        if x['status'] == 'ready']
             self.node_ind = 0
             logger.debug("Iteration Input dir %s" % self.iter_inputdir)
             url_with_pkey = smartconnector.get_url_with_pkey(
@@ -378,8 +420,10 @@ class Execute(Stage):
             self.boto_settings, os.path.join(
                 self.iter_inputdir, input_dir),
             is_relative_path=False)
-        logger.debug('source_files_url=%s' % source_files_url)
 
+        logger.debug('source_files_url=%s' % source_files_url)
+        #file://127.0.0.1/sweephrmc261/hrmcrun262/input_0/initial
+        #file://127.0.0.1/sweephrmc261/hrmcrun262/input_0/initial?root_path=/var/cloudenabling/remotesys
         # Copy input directory to mytardis only after saving locally, so if
         # something goes wrong we still have the results
         if self.boto_settings['mytardis_host']:
@@ -435,6 +479,8 @@ class Execute(Stage):
             # FIXME: better to create experiment_paramsets
             # later closer to when corresponding datasets are created, but
             # would required PUT of paramerset data to existing experiment.
+            #fixme uncomment later
+
             self.experiment_id = mytardis.post_dataset(
                 settings=self.boto_settings,
                 source_url=source_files_url,
@@ -457,14 +503,18 @@ class Execute(Stage):
                ],
                 dataset_paramset=[
                     make_paramset('hrmcdataset/input', [])])
+
         else:
             logger.warn("no mytardis host specified")
 
         proc_ind = 0
         for var_fname in variations.keys():
             logger.debug("var_fname=%s" % var_fname)
+            logger.debug('variations[var_fname]=%s' % variations[var_fname])
             for var_content, values in variations[var_fname]:
                 #logger.debug("var_content = %s" % var_content)
+                logger.debug('proc_ind=%d'  % proc_ind)
+                logger.debug('processes=%s' % processes)
                 proc = processes[proc_ind]
                 proc_ind += 1
                 #ip = botocloudconnector.get_instance_ip(var_node.id, self.boto_settings)
@@ -491,6 +541,11 @@ class Execute(Stage):
                               'process_scheduledone.sh', 'process_schedulestart.sh']
                 #hrmcstages.delete_files(dest_files_url, exceptions=exceptions) #FIXme: uncomment as needed
                 hrmcstages.copy_directories(source_files_url, dest_files_url)
+                input_backup = os.path.join(self.job_dir, "input_backup", proc['id'])
+                backup_url = smartconnector.get_url_with_pkey(self.boto_settings,
+                    input_backup, is_relative_path=False)
+                hrmcstages.copy_directories(source_files_url, backup_url)
+
 
                 # Why do we need to create a tempory file to make this copy?
                 import uuid
@@ -505,6 +560,12 @@ class Execute(Stage):
                     is_relative_path=True)
                 logger.debug("value_url=%s" % value_url)
                 hrmcstages.put_file(value_url, json.dumps(values))
+
+
+
+
+
+
                 # and overwrite on the remote
                 var_fname_remote = self.boto_settings['platform']\
                     + "@" + os.path.join(self.boto_settings['payload_destination'],
@@ -515,6 +576,10 @@ class Execute(Stage):
                                                         is_relative_path=True, ip_address=ip)
                 var_content = hrmcstages.get_file(var_url)
                 hrmcstages.put_file(var_fname_pkey, var_content)
+
+
+
+
                 logger.debug("var_fname_pkey=%s" % var_fname_pkey)
                 values_fname_pkey = smartconnector.get_url_with_pkey(self.boto_settings,
                                                            os.path.join(dest_files_location,
@@ -523,6 +588,22 @@ class Execute(Stage):
                 values_content = hrmcstages.get_file(value_url)
                 hrmcstages.put_file(values_fname_pkey, values_content)
                 logger.debug("values_fname_pkey=%s" % values_fname_pkey)
+
+
+                #copying values and var_content to backup folder
+                value_url = smartconnector.get_url_with_pkey(
+                    self.boto_settings, os.path.join(input_backup, "%s_values" % var_fname),
+                    is_relative_path=False)
+                logger.debug("value_url=%s" % value_url)
+                hrmcstages.put_file(value_url, json.dumps(values))
+
+
+                var_fname_pkey = smartconnector.get_url_with_pkey(
+                    self.boto_settings, os.path.join(input_backup, var_fname),
+                    is_relative_path=False)
+                var_content = hrmcstages.get_file(var_url)
+                hrmcstages.put_file(var_fname_pkey, var_content)
+
                 # cleanup
 
                 tmp_url = smartconnector.get_url_with_pkey(self.boto_settings, os.path.join("tmp%s" % randsuffix),
