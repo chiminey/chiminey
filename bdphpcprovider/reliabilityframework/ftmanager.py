@@ -48,3 +48,23 @@ class FTManager():
             if process['status'] == 'failed':
                 destination.append(process)
         return destination
+
+    def flag_all_processes(self, process_lists, ip_address):
+        for process_list in process_lists:
+            for process in process_list:
+                if process['ip_address'] == ip_address:
+                    process['status'] = 'failed'
+
+    def flag_this_process(self, process_lists, ip_address, process_id):
+        for process_list in process_lists:
+            for process in process_list:
+                if process['ip_address'] == ip_address \
+                    and process['id'] == process_id:
+                    process['status'] = 'failed'
+
+    def get_total_failed_processes(self, process_list):
+        no_failed_procs = 0
+        for process in process_list:
+            if process['status'] == 'failed':
+                no_failed_procs += 1
+        return no_failed_procs
