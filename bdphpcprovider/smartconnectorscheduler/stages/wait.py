@@ -137,7 +137,7 @@ class Wait(Stage):
             ssh = sshconnector.open_connection(ip_address=ip, settings=settings)
             command_out, errs = sshconnector.run_command_with_status(ssh, command)
             ssh.close()
-        except Exception, e:
+        except Exception, e:#IO, Network, ...
             logger.error("ip=%s %s " % (ip_address, e))
             if ssh:
                 ssh.close()
@@ -154,11 +154,12 @@ class Wait(Stage):
                     if node[1] == ip_address:
                         instance = botocloudconnector.get_this_instance(node[0], settings)
                         break
-                if not instance:
+                if not instance: #else == no break
                     logger.debug('instance [%s:%s] not found' % (node[0], node[1]))
                     failed_node = ('unknown', ip_address, unicode('NeCTAR'))
                     #self.cleanup_nodes.append(failed_node)
                     self.failed_nodes.append(failed_node)
+                    #fixme remove the following line. it is identical to the one at line 146
                     self.executed_procs, self.failed_processes = self.ftmanager.flag_failed_processes(
                         ip_address, self.executed_procs)
                     self.current_processes, _ = self.ftmanager.flag_failed_processes(

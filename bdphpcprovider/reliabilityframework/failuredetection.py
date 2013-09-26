@@ -21,7 +21,7 @@
 import logging
 
 from bdphpcprovider.reliabilityframework.ftmanager import FTManager
-
+from bdphpcprovider.smartconnectorscheduler botocloudconnector
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +34,17 @@ class FailureDetection(FTManager):
                         % (created_vms, min_number_vms))
             return False
         return True
+
+    def ssh_timed_out(self, error_message=None):
+        if 'Connection timed out' in error_message:
+            return True
+
+    def node_terminated(self, settings, node_id):
+        node = botocloudconnector.get_this_instance(node_id, settings)
+        if not node:
+            return True
+        return False
+
 
 
 
