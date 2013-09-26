@@ -824,6 +824,7 @@ def copy_directories(source_url, destination_url):
 
             fail = False
             delay = 1
+            #fixme move to ftmanager
             for i in xrange(1, 10):
                 try:
                     content = get_file(curr_source_url)
