@@ -26,7 +26,7 @@ from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler \
     import hrmcstages, models, smartconnector, sshconnector, botocloudconnector
 from bdphpcprovider.reliabilityframework.ftmanager import FTManager
-
+from bdphpcprovider.reliabilityframework.failuredetection import FailureDetection
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,6 @@ class Wait(Stage):
     def __init__(self, user_settings=None):
         self.runs_left = 0
         self.error_nodes = 0
-        self.failed_processes = 0
         self.job_dir = "hrmcrun"  # TODO: make a stageparameter + suffix on real job number
         logger.debug("Wait stage initialised")
 
@@ -48,6 +47,7 @@ class Wait(Stage):
             Checks whether there is a non-zero number of runs still going.
         """
         self.ftmanager = FTManager()
+        self.failure_detector = FailureDetection()
         #self.cleanup_nodes = self.ftmanager.get_cleanup_nodes(run_settings, smartconnector)
         try:
             failed_str = run_settings['http://rmit.edu.au/schemas/stages/create'][u'failed_nodes']
@@ -55,14 +55,6 @@ class Wait(Stage):
         except KeyError, e:
             logger.debug(e)
             self.failed_nodes = []
-        '''
-        try:
-            failed_procs_str = run_settings['http://rmit.edu.au/schemas/stages/execute'][u'failed_procs']
-            self.failed_processes = ast.literal_eval(failed_procs_str)
-        except KeyError, e:
-            logger.debug(e)
-            self.failed_processes = 0
-        '''
         try:
             executed_procs_str = run_settings['http://rmit.edu.au/schemas/stages/execute'][u'executed_procs']
             self.executed_procs = ast.literal_eval(executed_procs_str)
@@ -75,7 +67,6 @@ class Wait(Stage):
 
         self.current_processes = ast.literal_eval(smartconnector.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/stages/schedule/current_processes'))
-
 
         self.exec_procs = ast.literal_eval(smartconnector.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/stages/execute/executed_procs'))
@@ -101,6 +92,8 @@ class Wait(Stage):
             self.procs_2b_rescheduled = []
 
         self.reschedule_failed_procs = run_settings['http://rmit.edu.au/schemas/hrmc'][u'reschedule_failed_processes']
+        self.failed_processes = self.ftmanager.\
+                    get_total_failed_processes(self.executed_procs)
 
         # if we have no runs_left then we must have finished all the runs
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run', u'runs_left'):
@@ -137,46 +130,46 @@ class Wait(Stage):
             ssh = sshconnector.open_connection(ip_address=ip, settings=settings)
             command_out, errs = sshconnector.run_command_with_status(ssh, command)
             ssh.close()
-        except Exception, e:#IO, Network, ...
+        except Exception as e:#IO, Network, ...
             logger.error("ip=%s %s " % (ip_address, e))
             if ssh:
                 ssh.close()
-
-            instance = ''
-            self.executed_procs, self.failed_processes = self.ftmanager.flag_failed_processes(
-                            ip_address, self.executed_procs)
-
-            if not (ip_address in [x[1]
-                                       for x in self.failed_nodes
-                                       if x[1] == ip_address]):
-                #fixme move to failure_detection
-                for node in self.created_nodes:
-                    if node[1] == ip_address:
-                        instance = botocloudconnector.get_this_instance(node[0], settings)
-                        break
-                if not instance: #else == no break
-                    logger.debug('instance [%s:%s] not found' % (node[0], node[1]))
-                    failed_node = ('unknown', ip_address, unicode('NeCTAR'))
-                    #self.cleanup_nodes.append(failed_node)
-                    self.failed_nodes.append(failed_node)
-                    #fixme remove the following line. it is identical to the one at line 146
-                    self.executed_procs, self.failed_processes = self.ftmanager.flag_failed_processes(
-                        ip_address, self.executed_procs)
-                    self.current_processes, _ = self.ftmanager.flag_failed_processes(
-                            ip_address, self.current_processes)
-                    self.all_processes, _ = self.ftmanager.flag_failed_processes(
-                            ip_address, self.all_processes)
+            # Failure Detection and Management
+            logger.debug('error is = %s' % e)
+            if self.failure_detector.ssh_timed_out(e):
+                node = [x for x in self.created_nodes if x[1] == ip_address]
+                if self.failure_detector.node_terminated(settings, node[0][0]):
+                    if not self.failure_detector.recorded_failed_node(
+                            self.failed_nodes, ip_address):
+                        self.failed_nodes.append(node[0])
+                    node_failed = True
+                else:
+                    self.max_retry = 0 #fixme max_retry should be in context
+                    if not self.max_retry:
+                        process_failed = True
+                    else:
+                        self.max_retry -= 1
+                # Failure Management
+                if node_failed or process_failed:
+                    process_lists = [self.executed_procs,
+                                     self.current_processes, self.all_processes]
+                    if node_failed:
+                        self.ftmanager.flag_all_processes(process_lists, ip_address)
+                    elif process_failed:
+                        self.ftmanager.flag_this_process(
+                            process_lists, ip_address, process_id)
+                    self.failed_processes = self.ftmanager.\
+                        get_total_failed_processes(self.executed_procs)
                     if self.reschedule_failed_procs:
                         self.procs_2b_rescheduled = self.ftmanager.collect_failed_processes(
                             self.executed_procs, self.procs_2b_rescheduled)
-
-
+            else:
+                raise
         #finally:
         #    if ssh:
         #        ssh.close()
 
         logger.debug("command_out2=(%s, %s)" % (command_out, errs))
-
         if command_out:
             logger.debug("command_out = %s" % command_out)
             for line in command_out:
