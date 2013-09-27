@@ -262,15 +262,15 @@ def get_url_with_pkey(settings, url_or_relative_path,
 
 def multilevel_key_exists(context, *parts):
     """
-    Returns true if context contains all parts of the key, else warn
-    and false
+    Returns true if context contains all parts of the key, else
+    false
     """
     c = dict(context)
     for p in parts:
         if p in c:
             c = c[p]
         else:
-            logger.warn("%s not found in context" % p)
+            #logger.warn("%s not found in context" % p)
             return False
     return True
 

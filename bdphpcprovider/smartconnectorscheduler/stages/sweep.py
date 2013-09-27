@@ -49,6 +49,11 @@ logger = logging.getLogger(__name__)
 
 
 class Sweep(Stage):
+
+    hrmc_schema = "http://rmit.edu.au/schemas/hrmc/"
+    system_schema = "http://rmit.edu.au/schemas/system/misc/"
+    sweep_schema = 'http://rmit.edu.au/schemas/stages/sweep/'
+    
     def __init__(self, user_settings=None):
         self.numbfile = 0
 
@@ -62,35 +67,6 @@ class Sweep(Stage):
             configure_done = int(run_settings['http://rmit.edu.au/schemas/stages/sweep'][u'sweep_done'])
             return not configure_done
         return True
-
-    def _expand_variations(self, maps, values):
-        """
-        Based on maps, generate all range variations from the template
-        """
-        # FIXME: doesn't handle multipe template files together
-        res = []
-        numbfile = 0
-        for iter, template_map in enumerate(maps):
-            logger.debug("template_map=%s" % template_map)
-            logger.debug("iter #%d" % iter)
-            # ensure ordering of the template_map entries
-            map_keys = template_map.keys()
-            logger.debug("map_keys %s" % map_keys)
-            map_ranges = [list(template_map[x]) for x in map_keys]
-            logger.debug("map_ranges=%s" % map_ranges)
-            for z in product(*map_ranges):
-                logger.debug("len(z)=%s" % len(z))
-                context = dict(values)
-                for i, k in enumerate(map_keys):
-
-                    logger.debug("i=%s k=%s" % (i, k))
-                    logger.debug("z[i]=%s" % z[i])
-                    context[k] = str(z[i])  # str() so that 0 doesn't default value
-                    #logger.debug("context[%s] = %s" % (k, context[k]))
-                context['run_counter'] = numbfile
-                numbfile += 1
-                res.append(context)
-        return res
 
     def process(self, run_settings):
         self.boto_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
@@ -138,12 +114,10 @@ class Sweep(Stage):
             'sweep_map']
         map = json.loads(map_text)
         # # generate all variations
-        # map = {
-        #     'var1': [3, 7],
-        #     'var2': [1, 2]
-        # }
+
         logger.debug("map=%s" % pformat(map))
-        runs = self._expand_variations(maps=[map], values={})
+        runs = _expand_variations(maps=[map], values={})
+        logger.debug("runs=%s" % runs)
 
         # prep random seeds for each run based off original iseed
         # FIXME: inefficient for large random file
@@ -156,18 +130,15 @@ class Sweep(Stage):
             end_range=-1,
             num_required=len(runs),
             start_index=self.rand_index)
-
         logger.debug("rands=%s" % rands)
-        logger.debug("runs=%s" % runs)
 
         # For each of the generated runs, copy across and modify input directory
         # and then schedule subrun of hrmc connector
-        for i, run in enumerate(runs):
+        logger.debug("run_settings=%s" % run_settings)
+        for i, context in enumerate(runs):
             # Duplicate input directory into runX duplicates
-
-            logger.debug("run=%s" % run)
-            logger.debug("run_settings=%s" % run_settings)
-            run_counter = int(run['run_counter'])
+            logger.debug("run=%s" % context)
+            run_counter = int(context['run_counter'])
             logger.debug("run_counter=%s" % run_counter)
             input_location = run_settings[
                 'http://rmit.edu.au/schemas/stages/sweep'][
@@ -197,10 +168,7 @@ class Sweep(Stage):
 
             # Need to load up existing values, because original input_dir could
             # have contained values for the whole run
-            run_counter = int(run['run_counter'])
-            run_inputdir = os.path.join(self.job_dir,
-                "run%s" % run_counter,
-                "input_0")
+
             values_map = {}
             try:
                 values_url = smartconnector.get_url_with_pkey(
@@ -215,66 +183,188 @@ class Sweep(Stage):
                 values_map = dict(json.loads(values_content))
             except IOError:
                 logger.warn("no values file found")
+
+
             # include run variations into the values_map
-            values_map.update(run)
+            values_map.update(context)
             logger.debug("new values_map=%s" % values_map)
             hrmcstages.put_file(values_url, json.dumps(values_map))
 
-            # make run_context for hrmc with input_location pointing at runX
-            # and outputinto to suffix from job_dir (which will be given
-            #  contextid suffix)
+            data = dict([(k,v) for k,v in run_settings.items() if k.startswith(self.hrmc_schema)])
+            logger.debug("data=%s" % pformat(data))
 
-            system_dict = {
-            u'system': u'settings',
-            u'output_location': os.path.join(self.job_dir, 'hrmcrun')}
+            data[self.hrmc_schema+u'iseed']= rands[i]
+            data[self.hrmc_schema+'input_location'] = "%s/run%s/input_0" % (self.job_dir, run_counter)
+            data['smart_connector'] = 'smartconnector_hrmc'
+            data[self.system_schema+'output_location'] =  os.path.join(self.job_dir, 'hrmcrun')
+            logger.debug("data=%s" % pformat(data))
 
-            system_settings = {u'http://rmit.edu.au/schemas/system/misc': system_dict}
+            data2 = {'smart_connector': 'smartconnector_hrmc',
+                        self.hrmc_schema+'number_vm_instances': self.boto_settings['number_vm_instances'],
+                        self.hrmc_schema+'minimum_number_vm_instances': self.boto_settings['minimum_number_vm_instances'],
+                        self.hrmc_schema+u'iseed': rands[i],
+                        self.hrmc_schema+'max_seed_int': 1000,
+                        self.hrmc_schema+'input_location':  "%s/run%s/input_0" % (self.job_dir, run_counter),
+                        self.hrmc_schema+'number_dimensions': self.boto_settings['number_dimensions'],
+                        self.hrmc_schema+'threshold': str(self.boto_settings['threshold']),
+                        self.hrmc_schema+'fanout_per_kept_result': self.boto_settings['fanout_per_kept_result'],
+                        self.hrmc_schema+'error_threshold': str(self.boto_settings['error_threshold']),
+                        self.hrmc_schema+'max_iteration': self.boto_settings['max_iteration'],
+                        self.hrmc_schema+'pottype': self.boto_settings['pottype'],
+                        self.hrmc_schema+'experiment_id': self.boto_settings['experiment_id'],
+                        self.system_schema+'output_location': os.path.join(self.job_dir, 'hrmcrun') }
 
-            platform = "nectar"
-            directive_name = "smartconnector_hrmc"
-            directive_args = []
+            logger.debug("data2=%s" % pformat(data2))
 
-            run_inputdir = os.path.join(self.job_dir,
-                "run%s" % str(run_counter),
-                "input_0", "initial")
+            submit_subtask("nectar", "smartconnector_hrmc", [data2], user)
 
-            # this assumes all interim results kept in local storage
-            new_input_location = "%s/run%s/input_0" % (self.job_dir, run_counter)
+            # api_host = "http://127.0.0.1"
+            # url = "%s/api/v1/context/?format=json" % api_host
 
-            directive_args.append(
-                ['',
-                    ['http://rmit.edu.au/schemas/hrmc',
-                        ('number_vm_instances', self.boto_settings['number_vm_instances']),
-                        ('minimum_number_vm_instances', self.boto_settings['minimum_number_vm_instances']),
-                        (u'iseed', rands[i]),
-                        ('max_seed_int', 1000),
-                        ('input_location',  new_input_location),
-                        ('number_dimensions', self.boto_settings['number_dimensions']),
-                        ('threshold', self.boto_settings['threshold']),
-                        ('error_threshold', self.boto_settings['error_threshold']),
-                        ('fanout_per_kept_result', self.boto_settings['fanout_per_kept_result']),
-                        ('max_iteration', self.boto_settings['max_iteration']),
-                        # We assume that each subtask puts results into same mytardis experiment
-                        ('experiment_id', self.boto_settings['experiment_id']),
-                        ('pottype', self.boto_settings['pottype'])
-                    ]
-                ])
+            # # this assumes all interim results kept in local storage
+            # new_input_location = "%s/run%s/input_0" % (self.job_dir, run_counter)
 
-            logger.debug("directive_name=%s" % directive_name)
-            logger.debug("directive_args=%s" % directive_args)
-            try:
-                (task_run_settings, command_args, run_context) \
-                    = hrmcstages.make_runcontext_for_directive(
-                    platform,
-                    directive_name,
-                    directive_args, system_settings, user)
+            # # pass the sessionid cookie through to the internal API
+            # cookies = dict(self.request.COOKIES)
+            # logger.debug("cookies=%s" % cookies)
+            # headers = {'content-type': 'application/json'}
+            # data = json.dumps({'smart_connector': 'smartconnector_hrmc',
+            #             self.hrmc_schema+'number_vm_instances': self.boto_settings['number_vm_instances'],
+            #             self.hrmc_schema+'minimum_number_vm_instances': self.boto_settings['minimum_number_vm_instances'],
+            #             self.hrmc_schema+u'iseed': rands[i],
+            #             self.hrmc_schema+'max_seed_int': 1000,
+            #             self.hrmc_schema+'input_location':  new_input_location,
+            #             self.hrmc_schema+'number_dimensions': self.boto_settings['number_dimensions'],
+            #             self.hrmc_schema+'threshold': str(self.boto_settings['threshold']),
+            #             self.hrmc_schema+'fanout_per_kept_result': self.boto_settings['fanout_per_kept_result'],
+            #             self.hrmc_schema+'error_threshold': str(self.boto_settings['error_threshold']),
+            #             self.hrmc_schema+'max_iteration': self.boto_settings['max_iteration'],
+            #             self.hrmc_schema+'pottype': self.boto_settings['pottype'],
+            #             self.hrmc_schema+'experiment_id': self.boto_settings['experiment_id'],
+            #             self.system_schema+'output_location': os.path.join(self.job_dir, 'hrmcrun') })
 
-            except InvalidInputError, e:
-                logger.error(str(e))
-        logger.debug("sweep process done")
+            # r = requests.post(url,
+            #     data=data,
+            #     headers=headers,
+            #     cookies=cookies)
+
+            # # TODO: need to check for status_code and handle failures.
+
+            # logger.debug("r.json=%s" % r.json)
+            # logger.debug("r.text=%s" % r.text)
+            # logger.debug("r.headers=%s" % r.headers)
+            # header_location = r.headers['location']
+            # logger.debug("header_location=%s" % header_location)
+            # new_context_uri = header_location[len(api_host):]
+            # logger.debug("new_context_uri=%s" % new_context_uri)
 
     def output(self, run_settings):
         run_settings.setdefault(
             'http://rmit.edu.au/schemas/stages/sweep',
             {})[u'sweep_done'] = 1
         return run_settings
+
+
+def submit_subtask(platform, directive_name, data, user):
+    
+    directive_args = []
+    for metadata in data:
+        arg_metadata = {}
+        for schema,v in metadata.items():
+            ns, key = os.path.split(schema)
+            if ns:
+                d = arg_metadata.setdefault(ns,[])
+                d.append((key,v))
+        logger.debug("args=%s" % pformat(arg_metadata))
+        arg_meta = [[schema] + arg_metadata[schema] for schema in arg_metadata]
+        arg_meta.insert(0, "")
+        directive_args.append(arg_meta)
+
+    logger.debug("directive_args=%s" % pformat(directive_args))
+    try:
+        (task_run_settings, command_args, run_context) \
+            = hrmcstages.make_runcontext_for_directive(
+                platform,
+                directive_name,directive_args, {}, user)
+    except InvalidInputError, e:
+        logger.error(str(e))
+    logger.debug("sweep process done")
+        #     system_dict = {
+        #     u'system': u'settings',
+        #     u'output_location': os.path.join(self.job_dir, 'hrmcrun')}
+
+        #     system_settings = {u'http://rmit.edu.au/schemas/system/misc': system_dict}
+
+        #     platform = "nectar"
+        #     directive_name = "smartconnector_hrmc"
+        #     directive_args = []
+
+        #     run_inputdir = os.path.join(self.job_dir,
+        #         "run%s" % str(run_counter),
+        #         "input_0", "initial")
+
+        #     # this assumes all interim results kept in local storage
+        #     new_input_location = "%s/run%s/input_0" % (self.job_dir, run_counter)
+
+        #     directive_args.append(
+        #         ['',
+        #             ['http://rmit.edu.au/schemas/hrmc',
+        #                 ('number_vm_instances', self.boto_settings['number_vm_instances']),
+        #                 ('minimum_number_vm_instances', self.boto_settings['minimum_number_vm_instances']),
+        #                 (u'iseed', rands[i]),
+        #                 ('max_seed_int', 1000),
+        #                 ('input_location',  new_input_location),
+        #                 ('number_dimensions', self.boto_settings['number_dimensions']),
+        #                 ('threshold', self.boto_settings['threshold']),
+        #                 ('error_threshold', self.boto_settings['error_threshold']),
+        #                 ('fanout_per_kept_result', self.boto_settings['fanout_per_kept_result']),
+        #                 ('max_iteration', self.boto_settings['max_iteration']),
+        #                 # We assume that each subtask puts results into same mytardis experiment
+        #                 ('experiment_id', self.boto_settings['experiment_id']),
+        #                 ('pottype', self.boto_settings['pottype'])
+        #             ]
+        #         ])
+
+        #     logger.debug("directive_name=%s" % directive_name)
+        #     logger.debug("directive_args=%s" % directive_args)
+        #     try:
+        #         (task_run_settings, command_args, run_context) \
+        #             = hrmcstages.make_runcontext_for_directive(
+        #             platform,
+        #             directive_name,
+        #             directive_args, system_settings, user)
+
+        #     except InvalidInputError, e:
+        #         logger.error(str(e))
+        # logger.debug("sweep process done")
+
+
+def _expand_variations(maps, values):
+    """
+    Based on maps, generate all range variations from the template
+    """
+    # FIXME: doesn't handle multipe template files together
+    res = []
+    numbfile = 0
+    for iter, template_map in enumerate(maps):
+        logger.debug("template_map=%s" % template_map)
+        logger.debug("iter #%d" % iter)
+        # ensure ordering of the template_map entries
+        map_keys = template_map.keys()
+        logger.debug("map_keys %s" % map_keys)
+        map_ranges = [list(template_map[x]) for x in map_keys]
+        logger.debug("map_ranges=%s" % map_ranges)
+        for z in product(*map_ranges):
+            logger.debug("len(z)=%s" % len(z))
+            context = dict(values)
+            for i, k in enumerate(map_keys):
+
+                logger.debug("i=%s k=%s" % (i, k))
+                logger.debug("z[i]=%s" % z[i])
+                context[k] = str(z[i])  # str() so that 0 doesn't default value
+                #logger.debug("context[%s] = %s" % (k, context[k]))
+            context['run_counter'] = numbfile
+            numbfile += 1
+            res.append(context)
+    return res
+

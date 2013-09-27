@@ -205,6 +205,8 @@ class HRMCSubmitFormView(FormView):
     template_name = 'hrmc.html'
     form_class = HRMCSubmitForm
     success_url = '/jobs'
+    hrmc_schema = "http://rmit.edu.au/schemas/hrmc/"
+    system_schema = "http://rmit.edu.au/schemas/system/misc/"
 
     initial = {'number_vm_instances': 8,
                'minimum_number_vm_instances': 1,
@@ -238,17 +240,17 @@ class HRMCSubmitFormView(FormView):
         logger.debug("cookies=%s" % cookies)
         headers = {'content-type': 'application/json'}
         data = json.dumps({'smart_connector': 'smartconnector_hrmc',
-                    'number_vm_instances': form.cleaned_data['number_vm_instances'],
-                    'minimum_number_vm_instances': form.cleaned_data['minimum_number_vm_instances'],
-                    u'iseed': form.cleaned_data['iseed'],
-                    'input_location':  form.cleaned_data['input_location'],
-                    'number_dimensions': form.cleaned_data['number_dimensions'],
-                    'threshold': str(form.cleaned_data['threshold']),
-                    'error_threshold': str(form.cleaned_data['error_threshold']),
-                    'max_iteration': form.cleaned_data['max_iteration'],
-                    'pottype': form.cleaned_data['pottype'],
-                    'experiment_id': form.cleaned_data['experiment_id'],
-                    'output_location': form.cleaned_data['output_location']})
+                    self.hrmc_schema+'number_vm_instances': form.cleaned_data['number_vm_instances'],
+                    self.hrmc_schema+'minimum_number_vm_instances': form.cleaned_data['minimum_number_vm_instances'],
+                    self.hrmc_schema+u'iseed': form.cleaned_data['iseed'],
+                    self.hrmc_schema+'input_location':  form.cleaned_data['input_location'],
+                    self.hrmc_schema+'number_dimensions': form.cleaned_data['number_dimensions'],
+                    self.hrmc_schema+'threshold': str(form.cleaned_data['threshold']),
+                    self.hrmc_schema+'error_threshold': str(form.cleaned_data['error_threshold']),
+                    self.hrmc_schema+'max_iteration': form.cleaned_data['max_iteration'],
+                    self.hrmc_schema+'pottype': form.cleaned_data['pottype'],
+                    self.hrmc_schema+'experiment_id': form.cleaned_data['experiment_id'],
+                    self.system_schema+'output_location': form.cleaned_data['output_location']})
 
         r = requests.post(url,
             data=data,
@@ -272,6 +274,11 @@ class SweepSubmitFormView(FormView):
     template_name = 'sweep.html'
     form_class = SweepSubmitForm
     success_url = '/jobs'
+
+    hrmc_schema = "http://rmit.edu.au/schemas/hrmc/"
+    system_schema = "http://rmit.edu.au/schemas/system/misc/"
+    run_schema = "http://rmit.edu.au/schemas/stages/run/"
+    sweep_schema = "http://rmit.edu.au/schemas/stages/sweep/"
 
     initial = {'number_vm_instances': 8,
                'minimum_number_vm_instances': 4,
@@ -306,22 +313,23 @@ class SweepSubmitFormView(FormView):
         headers = {'content-type': 'application/json'}
 
         data = json.dumps({'smart_connector': 'sweep',
-                    'number_vm_instances': form.cleaned_data['number_vm_instances'],
-                    'minimum_number_vm_instances': form.cleaned_data['minimum_number_vm_instances'],
-                    u'iseed': form.cleaned_data['iseed'],
-                    'input_location':  form.cleaned_data['input_location'],
-                    'number_dimensions': form.cleaned_data['number_dimensions'],
-                    'fanout_per_kept_result': form.cleaned_data['fanout_per_kept_result'],
-                    'threshold': str(form.cleaned_data['threshold']),
-                    'error_threshold': str(form.cleaned_data['error_threshold']),
-                    'max_iteration': form.cleaned_data['max_iteration'],
-                    'pottype': form.cleaned_data['pottype'],
+                    self.hrmc_schema+'number_vm_instances': form.cleaned_data['number_vm_instances'],
+                    self.hrmc_schema+'minimum_number_vm_instances': form.cleaned_data['minimum_number_vm_instances'],
+                    self.hrmc_schema+u'iseed': form.cleaned_data['iseed'],
+                    self.sweep_schema+'input_location':  form.cleaned_data['input_location'],
+                    self.hrmc_schema+'number_dimensions': form.cleaned_data['number_dimensions'],
+                    self.hrmc_schema+'fanout_per_kept_result': form.cleaned_data['fanout_per_kept_result'],
+                    self.hrmc_schema+'threshold': str(form.cleaned_data['threshold']),
+                    self.hrmc_schema+'error_threshold': str(form.cleaned_data['error_threshold']),
+                    self.hrmc_schema+'max_iteration': form.cleaned_data['max_iteration'],
+                    self.hrmc_schema+'pottype': form.cleaned_data['pottype'],
                     #'experiment_id': form.cleaned_data['experiment_id'],
-                    'sweep_map': form.cleaned_data['sweep_map'],
+                    self.sweep_schema+'sweep_map': form.cleaned_data['sweep_map'],
                     #'run_map': form.cleaned_data['run_map'],
-                    'run_map': "{}",
-                    'output_location': form.cleaned_data['output_location']})
+                    self.run_schema+'run_map': "{}",
+                    self.system_schema+'output_location': form.cleaned_data['output_location']})
 
+        logger.debug("data=%s" % data)
         r = requests.post(url,
             data=data,
             headers=headers,
@@ -344,6 +352,8 @@ class MakeSubmitFormView(FormView):
     template_name = 'make.html'
     form_class = MakeSubmitForm
     success_url = '/jobs'
+    system_schema = "http://rmit.edu.au/schemas/system/misc/"
+
 
     initial = {
         'input_location': 'file://local@127.0.0.1/myfiles/vasppayload',
@@ -367,11 +377,13 @@ class MakeSubmitFormView(FormView):
         logger.debug("cookies=%s" % cookies)
         headers = {'content-type': 'application/json'}
 
+        remotemake_schema = "http://rmit.edu.au/schemas/remotemake/"
+        make_schema = "http://rmit.edu.au/schemas/stages/make/"
         data = json.dumps({'smart_connector': 'remotemake',
-                    'input_location':  form.cleaned_data['input_location'],
-                    'experiment_id': form.cleaned_data['experiment_id'],
-                    'sweep_map': form.cleaned_data['sweep_map'],
-                    'output_location': form.cleaned_data['output_location']})
+                    remotemake_schema+'input_location':  form.cleaned_data['input_location'],
+                    remotemake_schema+'experiment_id': form.cleaned_data['experiment_id'],
+                    make_schema+'sweep_map': form.cleaned_data['sweep_map'],
+                    self.system_schema+'output_location': form.cleaned_data['output_location']})
 
         r = requests.post(url,
             data=data,
