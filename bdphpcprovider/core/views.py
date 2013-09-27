@@ -164,6 +164,11 @@ class UserProfileParameterResource(ModelResource):
 
 
 class ContextResource(ModelResource):
+    hrmc_schema = "http://rmit.edu.au/schemas/hrmc/"
+    system_schema = "http://rmit.edu.au/schemas/system/misc/"
+    sweep_schema = 'http://rmit.edu.au/schemas/stages/sweep/'
+
+
 
     owner = fields.ForeignKey(UserProfileResource,
         attribute='owner')
@@ -242,26 +247,26 @@ class ContextResource(ModelResource):
          ['',
              ['http://rmit.edu.au/schemas/hrmc',
                  ('number_vm_instances',
-                     bundle.data['number_vm_instances']),
+                     bundle.data[self.hrmc_schema+'number_vm_instances']),
                  ('minimum_number_vm_instances',
-                     bundle.data['minimum_number_vm_instances']),
-                 (u'iseed', bundle.data['iseed']),
+                     bundle.data[self.hrmc_schema+'minimum_number_vm_instances']),
+                 (u'iseed', bundle.data[self.hrmc_schema+'iseed']),
                  ('max_seed_int', 1000),
                  (u'random_numbers', 'file://127.0.0.1/randomnums.txt'),
-                 ('input_location',  bundle.data['input_location']),
-                 ('number_dimensions', bundle.data['number_dimensions']),
-                 ('threshold', str(bundle.data['threshold'])),
-                 ('error_threshold', str(bundle.data['error_threshold'])),
-                 ('max_iteration', bundle.data['max_iteration']),
-                 ('pottype', bundle.data['pottype'])
+                 ('input_location',  bundle.data[self.hrmc_schema+'input_location']),
+                 ('number_dimensions', bundle.data[self.hrmc_schema+'number_dimensions']),
+                 ('threshold', str(bundle.data[self.hrmc_schema+'threshold'])),
+                 ('error_threshold', str(bundle.data[self.hrmc_schema+'error_threshold'])),
+                 ('max_iteration', bundle.data[self.hrmc_schema+'max_iteration']),
+                 ('pottype', bundle.data[self.hrmc_schema+'pottype'])
              ]
          ])
 
         logger.debug("directive_args=%s" % pformat(directive_args))
         # make the system settings, available to initial stage and merged with run_settings
-        system_dict = {u'system': u'settings', u'output_location': bundle.data['output_location']}
+        system_dict = {u'system': u'settings', u'output_location': bundle.data[self.system_schema+'output_location']}
 
-        logger.debug('post_to_hrmc output_location = %s' % bundle.data['output_location'])
+        logger.debug('post_to_hrmc output_location = %s' % bundle.data[self.system_schema+'output_location'])
 
         system_settings = {u'http://rmit.edu.au/schemas/system/misc': system_dict}
 
@@ -280,24 +285,24 @@ class ContextResource(ModelResource):
             ['',
                 ['http://rmit.edu.au/schemas/hrmc',
                     ('number_vm_instances',
-                        bundle.data['number_vm_instances']),
+                        bundle.data[self.hrmc_schema+'number_vm_instances']),
                     ('minimum_number_vm_instances',
-                        bundle.data['minimum_number_vm_instances']),
-                    (u'iseed', bundle.data['iseed']),
-                    ('fanout_per_kept_result', bundle.data['fanout_per_kept_result']),
+                        bundle.data[self.hrmc_schema+'minimum_number_vm_instances']),
+                    (u'iseed', bundle.data[self.hrmc_schema+'iseed']),
+                    ('fanout_per_kept_result', bundle.data[self.hrmc_schema+'fanout_per_kept_result']),
                     ('max_seed_int', 1000),
                     (u'random_numbers', 'file://127.0.0.1/randomnums.txt'),
                     ('input_location',  ''),
-                    ('number_dimensions', bundle.data['number_dimensions']),
-                    ('threshold', str(bundle.data['threshold'])),
-                    ('error_threshold', str(bundle.data['error_threshold'])),
-                    ('max_iteration', bundle.data['max_iteration']),
-                    #('experiment_id', bundle.data['experiment_id']),
+                    ('number_dimensions', bundle.data[self.hrmc_schema+'number_dimensions']),
+                    ('threshold', str(bundle.data[self.hrmc_schema+'threshold'])),
+                    ('error_threshold', str(bundle.data[self.hrmc_schema+'error_threshold'])),
+                    ('max_iteration', bundle.data[self.hrmc_schema+'max_iteration']),
+                    #('experiment_id', bundle.data[self.hrmc_schema+'experiment_id']),
                     ('experiment_id', 0),
-                    ('pottype', bundle.data['pottype'])],
+                    ('pottype', bundle.data[self.hrmc_schema+'pottype'])],
                 ['http://rmit.edu.au/schemas/stages/sweep',
-                    ('input_location', bundle.data['input_location']),
-                    ('sweep_map', bundle.data['sweep_map']),
+                    ('input_location', bundle.data[self.sweep_schema+'input_location']),
+                    ('sweep_map', bundle.data[self.sweep_schema+'sweep_map']),
                 ],
                 ['http://rmit.edu.au/schemas/stages/run',
                     #('run_map', bundle.data['run_map'])
@@ -311,7 +316,7 @@ class ContextResource(ModelResource):
 
         system_dict = {
             u'system': u'settings',
-            u'output_location': bundle.data['output_location']}
+            u'output_location': bundle.data[self.system_schema+'output_location']}
         system_settings = {u'http://rmit.edu.au/schemas/system/misc': system_dict}
 
         logger.debug("directive_name=%s" % directive_name)
@@ -325,20 +330,21 @@ class ContextResource(ModelResource):
         logger.debug("%s" % directive_name)
         directive_args = []
 
+        remotemake_schema = "http://rmit.edu.au/schemas/remotemake`"
         directive_args.append(
             ['',
                 ['http://rmit.edu.au/schemas/remotemake',
-                    ('input_location',  bundle.data['input_location']),
-                    ('experiment_id', bundle.data['experiment_id'])],
+                    ('input_location',  bundle.data[remotemake_schema+'input_location']),
+                    ('experiment_id', bundle.data[remotemake_schema+'experiment_id'])],
                 ['http://rmit.edu.au/schemas/stages/make',
-                    ('sweep_map', bundle.data['sweep_map'])]])
+                    ('sweep_map', bundle.data[self.sweep_schema+'sweep_map'])]])
 
         logger.debug("directive_args=%s" % pformat(directive_args))
         # make the system settings, available to initial stage and merged with run_settings
 
         system_dict = {
             u'system': u'settings',
-            u'output_location': bundle.data['output_location']}
+            u'output_location': bundle.data[self.system_schema+'output_location']}
         system_settings = {u'http://rmit.edu.au/schemas/system/misc': system_dict}
 
         logger.debug("directive_name=%s" % directive_name)

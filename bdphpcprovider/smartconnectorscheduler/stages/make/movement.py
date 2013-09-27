@@ -41,6 +41,8 @@ from . import setup_settings
 
 logger = logging.getLogger(__name__)
 
+VALUES_FNAME = "values"
+
 
 class MakeUploadStage(Stage):
     """
@@ -112,7 +114,10 @@ def _upload_variations_inputs(settings, source_url):
     logger.debug("encoded_s_url=%s" % encoded_s_url)
     runs_left = []
 
-    for context in _create_variations(source_url, settings, variation_map):
+    values_map = _load_values_map(settings, url)
+    logger.debug("values_map=%s" % values_map)
+
+    for context in _create_variations(values_map, settings, variation_map):
         logger.debug("context=%s" % context)
         dest_url = _get_dest_url(settings, context['run_counter'])
         runs_left.append(context['run_counter'])
@@ -132,11 +137,16 @@ def _upload_variations_inputs(settings, source_url):
             logger.debug("content_url=%s" % content_url)
             hrmcstages.put_file(content_url, content.encode('utf-8'))
 
-        values_url = smartconnector.get_url_with_pkey(settings,
-            os.path.join(dest_url, "values"),
-            is_relative_path=True, ip_address=settings['ip'])
-        hrmcstages.put_file(values_url, json.dumps(context))
+            _save_values(settings, dest_url, context)
+
     return runs_left
+
+
+def _save_values(settings, url, context):
+    values_url = smartconnector.get_url_with_pkey(settings,
+        os.path.join(url, self.VALUES_FNAME),
+        is_relative_path=True, ip_address=settings['ip'])
+    hrmcstages.put_file(values_url, json.dumps(context))
 
 
 def _instantiate_context(source_url, settings, context):
@@ -184,20 +194,23 @@ def _get_dest_url(settings, run_counter):
                          str(settings['contextid']), str(run_counter)))
 
 
-def _create_variations(url, settings, variation_map):
-    values_map = {}
+def _load_values_map(settings, url):
+    values = {}
     try:
-        encoded_val_url = get_url_with_pkey(
+        enc_url = get_url_with_pkey(
             settings,
-            "%s/%s" % (url, "values"))
-        logger.debug("values_file=%s" % encoded_val_url)
-        values_content = hrmcstages.get_file(encoded_val_url)
+            "%s/%s" % (url, self.VALUES_FNAME))
+        logger.debug("values_file=%s" % enc_url)
+        values_content = hrmcstages.get_file(enc_url)
     except IOError:
         logger.warn("no values file found")
     else:
         logger.debug("values_content = %s" % values_content)
-        values_map = dict(json.loads(values_content))
-    logger.debug("values_map=%s" % values_map)
+        values = dict(json.loads(values_content))
+    return values
+
+
+def _create_variations(values_map, settings, variation_map):
     map_keys = variation_map.keys()
     map_ranges = [list(variation_map[x]) for x in map_keys]
     variations = []
