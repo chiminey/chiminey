@@ -76,6 +76,8 @@ class Sweep(Stage):
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/hrmc/number_vm_instances')
         smartconnector.copy_settings(self.boto_settings, run_settings,
+            'http://rmit.edu.au/schemas/hrmc/maximum_retry')
+        smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/hrmc/minimum_number_vm_instances')
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/hrmc/experiment_id')
