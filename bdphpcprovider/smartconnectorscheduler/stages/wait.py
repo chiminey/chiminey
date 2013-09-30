@@ -103,7 +103,7 @@ class Wait(Stage):
 
         return False
 
-    def job_finished(self, ip_address, process_id, settings):
+    def job_finished(self, ip_address, process_id, maximum_retry, settings):
         """
             Return True if package job on instance_id has job_finished
         """
@@ -134,8 +134,10 @@ class Wait(Stage):
             logger.error("ip=%s %s " % (ip_address, e))
             if ssh:
                 ssh.close()
-            # Failure Detection and Management
+            # Failure detection and then management
             logger.debug('error is = %s' % e)
+            process_failed = False
+            node_failed = False
             if self.failure_detector.ssh_timed_out(e):
                 node = [x for x in self.created_nodes if x[1] == ip_address]
                 if self.failure_detector.node_terminated(settings, node[0][0]):
@@ -144,12 +146,14 @@ class Wait(Stage):
                         self.failed_nodes.append(node[0])
                     node_failed = True
                 else:
-                    self.max_retry = 0 #fixme max_retry should be in context
-                    if not self.max_retry:
+                    if not maximum_retry:
                         process_failed = True
                     else:
-                        self.max_retry -= 1
-                # Failure Management
+                        process_lists = [self.executed_procs, self.current_processes,
+                                         self.all_processes]
+                        self.ftmanager.decrease_max_retry(
+                            process_lists, ip_address, process_id)
+                # Failure management
                 if node_failed or process_failed:
                     process_lists = [self.executed_procs,
                                      self.current_processes, self.all_processes]
@@ -168,7 +172,6 @@ class Wait(Stage):
         #finally:
         #    if ssh:
         #        ssh.close()
-
         logger.debug("command_out2=(%s, %s)" % (command_out, errs))
         if command_out:
             logger.debug("command_out = %s" % command_out)
@@ -252,6 +255,7 @@ class Wait(Stage):
             #instance_id = node.id
             ip_address = process['ip_address']
             process_id = process['id']
+            maximum_retry = process['maximum_retry']
             #ip = botocloudconnector.get_instance_ip(instance_id, self.boto_settings)
             #ssh = open_connection(ip_address=ip, settings=self.boto_settings)
             #if not botocloudconnector.is_instance_running(node):
@@ -261,7 +265,7 @@ class Wait(Stage):
             #    logging.error('Instance %s not running' % instance_id)
             #    self.error_nodes.append(node)
             #    continue
-            fin = self.job_finished(ip_address, process_id, self.boto_settings)
+            fin = self.job_finished(ip_address, process_id, maximum_retry, self.boto_settings)
             logger.debug("fin=%s" % fin)
             if fin:
                 print "done. output is available"
