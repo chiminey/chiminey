@@ -9,6 +9,8 @@ class SweepSubmitForm(forms.Form):
     minimum_number_vm_instances = forms.IntegerField(
         help_text="Ensure tenancy has sufficient resources", label=("Minimum No. VMs"))
 
+    maximum_retry = forms.IntegerField(min_value=0,
+        label=_("No. maximum retry after failure"))
     reschedule_failed_processes = forms.BooleanField(initial=True, required=False)
 
     input_location = forms.CharField(label=_("Input Location"),

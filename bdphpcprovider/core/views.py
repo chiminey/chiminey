@@ -288,6 +288,8 @@ class ContextResource(ModelResource):
                         bundle.data[self.hrmc_schema+'number_vm_instances']),
                     ('minimum_number_vm_instances',
                         bundle.data[self.hrmc_schema+'minimum_number_vm_instances']),
+                    ('maximum_retry',
+                        bundle.data[self.hrmc_schema+'maximum_retry']),
                     ('reschedule_failed_processes',
                         bundle.data[self.hrmc_schema+'reschedule_failed_processes']),
                     (u'iseed', bundle.data[self.hrmc_schema+'iseed']),
