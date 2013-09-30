@@ -356,6 +356,8 @@ def retrieve_boto_settings(run_settings, boto_settings):
     smartconnector.copy_settings(boto_settings, run_settings,
         'http://rmit.edu.au/schemas/hrmc/number_vm_instances')
     smartconnector.copy_settings(boto_settings, run_settings,
+        'http://rmit.edu.au/schemas/hrmc/maximum_retry')
+    smartconnector.copy_settings(boto_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/setup/payload_destination')
     smartconnector.copy_settings(boto_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/setup/filename_for_PIDs')
@@ -411,7 +413,8 @@ def start_round_robin_schedule(nodes, processes, schedule_index, settings):
         logger.debug('index=%d' % index)
         put_proc_ids(relative_path, ids, ip_address, settings)
         new_processes = construct_lookup_table(
-            ids, ip_address, new_processes)
+            ids, ip_address, new_processes,
+            maximum_retry=settings['maximum_retry'])
 
         destination = smartconnector.get_url_with_pkey(settings,
             relative_path,
@@ -468,7 +471,9 @@ def start_round_robin_reschedule(nodes, procs_2b_rescheduled, current_procs, set
         #logger.debug('index=%d' % index)
         put_proc_ids(relative_path, ids, ip_address, settings)
         new_processes = construct_lookup_table(
-            ids, ip_address, new_processes, status='reschedule_ready')
+            ids, ip_address, new_processes,
+            status='reschedule_ready',
+            maximum_retry=settings['maximum_retry'])
 
         destination = smartconnector.get_url_with_pkey(settings,
             relative_path,
@@ -534,10 +539,12 @@ def put_proc_ids(relative_path, ids, ip, settings):
     hrmcstages.put_file(destination, proc_ids.encode('utf-8'))
 
 
-def construct_lookup_table(ids, ip_address, new_processes, status='ready'):
+def construct_lookup_table(ids, ip_address, new_processes, maximum_retry=1, status='ready'):
     for id in ids:
         new_processes.append(
-            {'status': '%s' % status, 'id': '%s' % id, 'ip_address': '%s' % ip_address})
+            {'status': '%s' % status, 'id': '%s' % id,
+             'ip_address': '%s' % ip_address,
+             'maximum_retry': '%d' % maximum_retry})
     return new_processes
 
 

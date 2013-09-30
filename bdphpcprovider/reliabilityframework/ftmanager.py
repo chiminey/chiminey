@@ -61,4 +61,10 @@ class FTManager():
                 no_failed_procs += 1
         return no_failed_procs
 
-
+    def decrease_max_retry(self, process_lists, ip_address, process_id):
+        for process_list in process_lists:
+            for process in process_list:
+                if process['ip_address'] == ip_address \
+                    and process['id'] == process_id:
+                    retry = int(process['maximum_retry'])
+                    process['maximum_retry'] = retry - 1

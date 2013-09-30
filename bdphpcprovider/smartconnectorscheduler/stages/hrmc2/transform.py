@@ -53,6 +53,24 @@ class Transform(Stage):
 
     def triggered(self, run_settings):
         try:
+            reschedule_str = run_settings['http://rmit.edu.au/schemas/stages/schedule'][u'procs_2b_rescheduled']
+            self.procs_2b_rescheduled = ast.literal_eval(reschedule_str)
+            logger.debug('self.procs_2b_rescheduled=%s' % self.procs_2b_rescheduled)
+            if self.procs_2b_rescheduled:
+                return False
+        except KeyError, e:
+            logger.debug(e)
+
+        current_processes = ast.literal_eval(smartconnector.get_existing_key(run_settings,
+                'http://rmit.edu.au/schemas/stages/schedule/current_processes'))
+        executed_not_running = [x for x in current_processes if x['status'] == 'ready']
+        if executed_not_running:
+            logger.debug('executed_not_running=%s' % executed_not_running)
+            return False
+        else:
+            logger.debug('No ready: executed_not_running=%s' % executed_not_running)
+
+        try:
             failed_str = run_settings['http://rmit.edu.au/schemas/stages/create'][u'failed_nodes']
             failed_nodes = ast.literal_eval(failed_str)
             created_str = run_settings['http://rmit.edu.au/schemas/stages/create'][u'created_nodes']
