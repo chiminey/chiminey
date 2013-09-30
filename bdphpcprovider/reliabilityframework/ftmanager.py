@@ -19,38 +19,28 @@
 # IN THE SOFTWARE.
 
 import logging
-import ast
 
 logger = logging.getLogger(__name__)
 
 
 class FTManager():
-    def get_cleanup_nodes(self, run_settings, smartconnector):
-        try:
-            cleanup_nodes_str = smartconnector.get_existing_key(run_settings,
-                'http://rmit.edu.au/schemas/reliability/cleanup_nodes')
-            cleanup_nodes = ast.literal_eval(cleanup_nodes_str)
-        except KeyError, e:
-            cleanup_nodes = []
-            logger.debug(e)
-        return cleanup_nodes
-
     def collect_failed_processes(self, source, destination):
         for iterator, process in enumerate(source):
             if process['status'] == 'failed':
                 destination.append(process)
-        return destination
 
     def flag_all_processes(self, process_lists, ip_address):
         for process_list in process_lists:
             for process in process_list:
-                if process['ip_address'] == ip_address:
+                if process['ip_address'] == ip_address \
+                    and process['status'] == 'running':
                     process['status'] = 'failed'
 
     def flag_this_process(self, process_lists, ip_address, process_id):
         for process_list in process_lists:
             for process in process_list:
                 if process['ip_address'] == ip_address \
+                    and process['status'] == 'running' \
                     and process['id'] == process_id:
                     process['status'] = 'failed'
 
