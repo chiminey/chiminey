@@ -68,7 +68,7 @@ class Command(BaseCommand):
                  u'file2': (models.ParameterName.STRING, '', 1),
                  }
                  ],
-            u'http://rmit.edu.au/schemas/smartconnector_hrmc/files':
+            u'http://rmit.edu.au/schemas/hrmc/files':
                  [u'the smartconnector hrmc input files',
                  {
                  }
@@ -530,7 +530,7 @@ class Command(BaseCommand):
         local_fs.save("input/file.txt",
             ContentFile("foobar"))
 
-        hrmc_smart_dir, _ = models.Directive.objects.get_or_create(name="smartconnector_hrmc")
+        hrmc_smart_dir, _ = models.Directive.objects.get_or_create(name="hrmc")
         self.configure_package = "bdphpcprovider.smartconnectorscheduler.stages.configure.Configure"
         self.create_package = "bdphpcprovider.smartconnectorscheduler.stages.create.Create"
         self.bootstrap_package = "bdphpcprovider.smartconnectorscheduler.stages.bootstrap.Bootstrap"

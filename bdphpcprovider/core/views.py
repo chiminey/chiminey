@@ -204,7 +204,7 @@ class ContextResource(ModelResource):
         logger.debug('smart_connector=%s' % bundle.data['smart_connector'])
         logger.info('smart_connector=%s' % bundle.data['smart_connector'])
 
-        if bundle.data['smart_connector'] == 'smartconnector_hrmc':
+        if bundle.data['smart_connector'] == 'hrmc':
             (platform, directive_name,
              directive_args, system_settings) = self._post_to_hrmc(bundle)
         elif bundle.data['smart_connector'] == 'sweep':
@@ -303,6 +303,7 @@ class ContextResource(ModelResource):
                 ['http://rmit.edu.au/schemas/stages/sweep',
                     ('input_location', bundle.data[self.sweep_schema+'input_location']),
                     ('sweep_map', bundle.data[self.sweep_schema+'sweep_map']),
+                    ('directive', 'hrmc')
                 ],
                 ['http://rmit.edu.au/schemas/stages/run',
                     #('run_map', bundle.data['run_map'])

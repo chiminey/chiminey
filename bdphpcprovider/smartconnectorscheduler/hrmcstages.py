@@ -1147,6 +1147,7 @@ def make_runcontext_for_directive(platform_name, directive_name,
     Create a new runcontext with the commmand equivalent to the directive
     on the platform.
     """
+    logger.debug("directive_args=%s" % directive_args)
     logger.debug("Platform Name %s" % platform_name)
     user = User.objects.get(username=username)  # FIXME: pass in username
     logger.debug("user=%s" % user)

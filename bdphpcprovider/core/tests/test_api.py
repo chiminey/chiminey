@@ -20,7 +20,6 @@
 
 import os
 import tempfile
-import unittest
 import logging
 import logging.config
 import json
@@ -31,10 +30,8 @@ from tastypie.models import ApiKey
 from flexmock import flexmock
 from django.contrib.auth.models import User, Group
 from django.contrib.auth.models import User
-from django import test as djangotest
 from django.contrib.auth.models import Permission
 from django.core.urlresolvers import reverse
-from django.test.client import Client
 from django.db.models import Q
 
 from urlparse import urlparse

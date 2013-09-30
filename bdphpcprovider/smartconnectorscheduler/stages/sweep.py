@@ -53,7 +53,7 @@ class Sweep(Stage):
     hrmc_schema = "http://rmit.edu.au/schemas/hrmc/"
     system_schema = "http://rmit.edu.au/schemas/system/misc/"
     sweep_schema = 'http://rmit.edu.au/schemas/stages/sweep/'
-    
+
     def __init__(self, user_settings=None):
         self.numbfile = 0
 
@@ -70,7 +70,6 @@ class Sweep(Stage):
 
     def process(self, run_settings):
         self.boto_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
-
 
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/system/platform')
@@ -109,6 +108,9 @@ class Sweep(Stage):
         user = context.owner.user.username
         self.job_dir = run_settings['http://rmit.edu.au/schemas/system/misc'][
             u'output_location']
+
+        subdirective = run_settings['http://rmit.edu.au/schemas/stages/sweep']['directive']
+        subdirective_ns = "http://rmit.edu.au/schemas/%s" % subdirective
 
         map_text = run_settings['http://rmit.edu.au/schemas/stages/sweep'][
             'sweep_map']
@@ -184,39 +186,50 @@ class Sweep(Stage):
             except IOError:
                 logger.warn("no values file found")
 
-
             # include run variations into the values_map
             values_map.update(context)
             logger.debug("new values_map=%s" % values_map)
             hrmcstages.put_file(values_url, json.dumps(values_map))
+            data = {}
+            logger.debug("rs=%s" % pformat(run_settings))
+            # for param_name, params in run_settings.items():
+            #     logger.debug("param_name=%s params=%s" % (param_name, params))
+            #     if str(param_name).startswith(self.hrmc_schema[:-1]):
+            #         for key, value in params.items():
+            #             logger.debug("key=%s value=%s" % (key, value))
+            #             data['%s/%s' % (param_name, key)] = value
+            #     else:
+            #         logger.debug("no match to %s" % self.hrmc_schema)
 
-            data = dict([(k,v) for k,v in run_settings.items() if k.startswith(self.hrmc_schema)])
+            data = dict([('%s/%s' % (param_name, key), value)
+                for param_name, params in run_settings.items()
+                    for key, value in params.items()
+                        if str(param_name).startswith(subdirective_ns)])
+            logger.debug("data=%s" % pformat(data))
+            data[self.hrmc_schema + u'iseed'] = rands[i]
+            data[self.hrmc_schema + 'input_location'] = "%s/run%s/input_0" % (self.job_dir, run_counter)
+            data['smart_connector'] = subdirective
+            data[self.system_schema + 'output_location'] = os.path.join(self.job_dir, subdirective)
             logger.debug("data=%s" % pformat(data))
 
-            data[self.hrmc_schema+u'iseed']= rands[i]
-            data[self.hrmc_schema+'input_location'] = "%s/run%s/input_0" % (self.job_dir, run_counter)
-            data['smart_connector'] = 'smartconnector_hrmc'
-            data[self.system_schema+'output_location'] =  os.path.join(self.job_dir, 'hrmcrun')
-            logger.debug("data=%s" % pformat(data))
+            # data2 = {'smart_connector': 'hrmc',
+            #             self.hrmc_schema + 'number_vm_instances': self.boto_settings['number_vm_instances'],
+            #             self.hrmc_schema + 'minimum_number_vm_instances': self.boto_settings['minimum_number_vm_instances'],
+            #             self.hrmc_schema + u'iseed': rands[i],
+            #             self.hrmc_schema + 'max_seed_int': 1000,
+            #             self.hrmc_schema + 'input_location':  "%s/run%s/input_0" % (self.job_dir, run_counter),
+            #             self.hrmc_schema + 'number_dimensions': self.boto_settings['number_dimensions'],
+            #             self.hrmc_schema + 'threshold': str(self.boto_settings['threshold']),
+            #             self.hrmc_schema + 'fanout_per_kept_result': self.boto_settings['fanout_per_kept_result'],
+            #             self.hrmc_schema + 'error_threshold': str(self.boto_settings['error_threshold']),
+            #             self.hrmc_schema + 'max_iteration': self.boto_settings['max_iteration'],
+            #             self.hrmc_schema + 'pottype': self.boto_settings['pottype'],
+            #             self.hrmc_schema + 'experiment_id': self.boto_settings['experiment_id'],
+            #             self.system_schema + 'output_location': os.path.join(self.job_dir, 'hrmcrun')}
 
-            data2 = {'smart_connector': 'smartconnector_hrmc',
-                        self.hrmc_schema+'number_vm_instances': self.boto_settings['number_vm_instances'],
-                        self.hrmc_schema+'minimum_number_vm_instances': self.boto_settings['minimum_number_vm_instances'],
-                        self.hrmc_schema+u'iseed': rands[i],
-                        self.hrmc_schema+'max_seed_int': 1000,
-                        self.hrmc_schema+'input_location':  "%s/run%s/input_0" % (self.job_dir, run_counter),
-                        self.hrmc_schema+'number_dimensions': self.boto_settings['number_dimensions'],
-                        self.hrmc_schema+'threshold': str(self.boto_settings['threshold']),
-                        self.hrmc_schema+'fanout_per_kept_result': self.boto_settings['fanout_per_kept_result'],
-                        self.hrmc_schema+'error_threshold': str(self.boto_settings['error_threshold']),
-                        self.hrmc_schema+'max_iteration': self.boto_settings['max_iteration'],
-                        self.hrmc_schema+'pottype': self.boto_settings['pottype'],
-                        self.hrmc_schema+'experiment_id': self.boto_settings['experiment_id'],
-                        self.system_schema+'output_location': os.path.join(self.job_dir, 'hrmcrun') }
+            # logger.debug("data2=%s" % pformat(data2))
 
-            logger.debug("data2=%s" % pformat(data2))
-
-            submit_subtask("nectar", "smartconnector_hrmc", [data2], user)
+            submit_subtask("nectar", subdirective, [data], user)
 
             # api_host = "http://127.0.0.1"
             # url = "%s/api/v1/context/?format=json" % api_host
@@ -266,15 +279,15 @@ class Sweep(Stage):
 
 
 def submit_subtask(platform, directive_name, data, user):
-    
+
     directive_args = []
     for metadata in data:
         arg_metadata = {}
         for schema,v in metadata.items():
             ns, key = os.path.split(schema)
             if ns:
-                d = arg_metadata.setdefault(ns,[])
-                d.append((key,v))
+                d = arg_metadata.setdefault(ns, [])
+                d.append((key, v))
         logger.debug("args=%s" % pformat(arg_metadata))
         arg_meta = [[schema] + arg_metadata[schema] for schema in arg_metadata]
         arg_meta.insert(0, "")
@@ -285,7 +298,7 @@ def submit_subtask(platform, directive_name, data, user):
         (task_run_settings, command_args, run_context) \
             = hrmcstages.make_runcontext_for_directive(
                 platform,
-                directive_name,directive_args, {}, user)
+                directive_name, directive_args, {}, user)
     except InvalidInputError, e:
         logger.error(str(e))
     logger.debug("sweep process done")
