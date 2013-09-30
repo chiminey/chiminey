@@ -165,7 +165,7 @@ class Wait(Stage):
                     self.failed_processes = self.ftmanager.\
                         get_total_failed_processes(self.executed_procs)
                     if self.reschedule_failed_procs:
-                        self.procs_2b_rescheduled = self.ftmanager.collect_failed_processes(
+                        self.ftmanager.collect_failed_processes(
                             self.executed_procs, self.procs_2b_rescheduled)
             else:
                 raise
