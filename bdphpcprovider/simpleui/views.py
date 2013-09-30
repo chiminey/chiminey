@@ -239,18 +239,18 @@ class HRMCSubmitFormView(FormView):
         cookies = dict(self.request.COOKIES)
         logger.debug("cookies=%s" % cookies)
         headers = {'content-type': 'application/json'}
-        data = json.dumps({'smart_connector': 'smartconnector_hrmc',
-                    self.hrmc_schema+'number_vm_instances': form.cleaned_data['number_vm_instances'],
-                    self.hrmc_schema+'minimum_number_vm_instances': form.cleaned_data['minimum_number_vm_instances'],
-                    self.hrmc_schema+u'iseed': form.cleaned_data['iseed'],
-                    self.hrmc_schema+'input_location':  form.cleaned_data['input_location'],
-                    self.hrmc_schema+'number_dimensions': form.cleaned_data['number_dimensions'],
-                    self.hrmc_schema+'threshold': str(form.cleaned_data['threshold']),
-                    self.hrmc_schema+'error_threshold': str(form.cleaned_data['error_threshold']),
-                    self.hrmc_schema+'max_iteration': form.cleaned_data['max_iteration'],
-                    self.hrmc_schema+'pottype': form.cleaned_data['pottype'],
-                    self.hrmc_schema+'experiment_id': form.cleaned_data['experiment_id'],
-                    self.system_schema+'output_location': form.cleaned_data['output_location']})
+        data = json.dumps({'smart_connector': 'hrmc',
+                    self.hrmc_schema + 'number_vm_instances': form.cleaned_data['number_vm_instances'],
+                    self.hrmc_schema + 'minimum_number_vm_instances': form.cleaned_data['minimum_number_vm_instances'],
+                    self.hrmc_schema + u'iseed': form.cleaned_data['iseed'],
+                    self.hrmc_schema + 'input_location':  form.cleaned_data['input_location'],
+                    self.hrmc_schema + 'number_dimensions': form.cleaned_data['number_dimensions'],
+                    self.hrmc_schema + 'threshold': str(form.cleaned_data['threshold']),
+                    self.hrmc_schema + 'error_threshold': str(form.cleaned_data['error_threshold']),
+                    self.hrmc_schema + 'max_iteration': form.cleaned_data['max_iteration'],
+                    self.hrmc_schema + 'pottype': form.cleaned_data['pottype'],
+                    self.hrmc_schema + 'experiment_id': form.cleaned_data['experiment_id'],
+                    self.system_schema + 'output_location': form.cleaned_data['output_location']})
 
         r = requests.post(url,
             data=data,
@@ -293,7 +293,7 @@ class SweepSubmitFormView(FormView):
         'sweep_map': '{"var1": [3, 7], "var2": [1, 2]}',
         'run_map': '{}',
         'experiment_id': 0,
-        'output_location': 'file://local@127.0.0.1/sweephrmc'
+        'output_location': 'file://local@127.0.0.1/sweep'
 
         }
 
@@ -313,21 +313,22 @@ class SweepSubmitFormView(FormView):
         headers = {'content-type': 'application/json'}
 
         data = json.dumps({'smart_connector': 'sweep',
-                    self.hrmc_schema+'number_vm_instances': form.cleaned_data['number_vm_instances'],
-                    self.hrmc_schema+'minimum_number_vm_instances': form.cleaned_data['minimum_number_vm_instances'],
-                    self.hrmc_schema+u'iseed': form.cleaned_data['iseed'],
-                    self.sweep_schema+'input_location':  form.cleaned_data['input_location'],
-                    self.hrmc_schema+'number_dimensions': form.cleaned_data['number_dimensions'],
-                    self.hrmc_schema+'fanout_per_kept_result': form.cleaned_data['fanout_per_kept_result'],
-                    self.hrmc_schema+'threshold': str(form.cleaned_data['threshold']),
-                    self.hrmc_schema+'error_threshold': str(form.cleaned_data['error_threshold']),
-                    self.hrmc_schema+'max_iteration': form.cleaned_data['max_iteration'],
-                    self.hrmc_schema+'pottype': form.cleaned_data['pottype'],
+                    self.hrmc_schema + 'number_vm_instances': form.cleaned_data['number_vm_instances'],
+                    self.hrmc_schema + 'minimum_number_vm_instances': form.cleaned_data['minimum_number_vm_instances'],
+                    self.hrmc_schema + u'iseed': form.cleaned_data['iseed'],
+                    self.sweep_schema + 'input_location':  form.cleaned_data['input_location'],
+                    self.hrmc_schema + 'number_dimensions': form.cleaned_data['number_dimensions'],
+                    self.hrmc_schema + 'fanout_per_kept_result': form.cleaned_data['fanout_per_kept_result'],
+                    self.hrmc_schema + 'threshold': str(form.cleaned_data['threshold']),
+                    self.hrmc_schema + 'error_threshold': str(form.cleaned_data['error_threshold']),
+                    self.hrmc_schema + 'max_iteration': form.cleaned_data['max_iteration'],
+                    self.hrmc_schema + 'pottype': form.cleaned_data['pottype'],
                     #'experiment_id': form.cleaned_data['experiment_id'],
-                    self.sweep_schema+'sweep_map': form.cleaned_data['sweep_map'],
+                    self.sweep_schema + 'sweep_map': form.cleaned_data['sweep_map'],
+                    self.sweep_schema + 'directive': 'hrmc',
                     #'run_map': form.cleaned_data['run_map'],
-                    self.run_schema+'run_map': "{}",
-                    self.system_schema+'output_location': form.cleaned_data['output_location']})
+                    self.run_schema + 'run_map': "{}",
+                    self.system_schema + 'output_location': form.cleaned_data['output_location']})
 
         logger.debug("data=%s" % data)
         r = requests.post(url,
