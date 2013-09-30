@@ -20,6 +20,8 @@
 
 import unittest
 from bdphpcprovider.reliabilityframework.ftmanager import FTManager
+from bdphpcprovider.reliabilityframework.failuredetection import FailureDetection
+from bdphpcprovider.reliabilityframework.failurerecovery import FailureRecovery
 
 
 class TestFTManager(unittest.TestCase):
@@ -137,3 +139,59 @@ class TestFTManager(unittest.TestCase):
         self.assertEqual(self.all_procs, expected_all_procs)
         self.assertEqual(self.current_procs, expected_current_procs)
         self.assertEqual(self.executed_procs, expected_executed_procs)
+
+
+class TestFailureDetection(unittest.TestCase):
+    def setUp(self):
+        self.failuredetection = FailureDetection()
+
+    def tearDown(self):
+        pass
+
+    def test_sufficient_vms(self):
+        created_vms = 4
+        min_number_vms = 2
+        sufficient = self.failuredetection.sufficient_vms(
+            created_vms, min_number_vms)
+        self.assertTrue(sufficient)
+        created_vms = 1
+        min_number_vms = 2
+        sufficient = self.failuredetection.sufficient_vms(
+            created_vms, min_number_vms)
+        self.assertFalse(sufficient)
+
+    def test_ssh_timed_out(self):
+        error_message = 'Connection timed out'
+        time_out = self.failuredetection.ssh_timed_out(error_message)
+        self.assertTrue(time_out)
+        error_message = 'No route to host'
+        time_out = self.failuredetection.ssh_timed_out(error_message)
+        self.assertTrue(time_out)
+        error_message = 'Division by zero'
+        time_out = self.failuredetection.ssh_timed_out(error_message)
+        self.assertFalse(time_out)
+
+    def test_node_terminated(self):
+        #fixme requires mocking nodes
+        pass
+
+    def test_recorded_failed_node(self):
+        failed_nodes = [(u'i-0002dc07', u'118.138.242.25', u'RegionInfo:NeCTAR'),
+                        (u'i-0002dc0a', u'118.138.242.26', u'RegionInfo:NeCTAR')]
+        ip_address = '118.138.242.26'
+        recorded = self.failuredetection.recorded_failed_node(failed_nodes, ip_address)
+        self.assertTrue(recorded)
+        ip_address = '118.138.242.2'
+        recorded = self.failuredetection.recorded_failed_node(failed_nodes, ip_address)
+        self.assertFalse(recorded)
+
+class TestFailureRecovery(unittest.TestCase):
+    def setUp(self):
+        self.failurerecovery = FailureRecovery()
+
+    def tearDown(self):
+        pass
+
+    def test_recovered_insufficient_vms_failure(self):
+        recovered = self.failurerecovery.recovered_insufficient_vms_failure()
+        self.assertFalse(recovered)
