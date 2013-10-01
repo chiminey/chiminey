@@ -279,8 +279,8 @@ class SweepSubmitFormView(FormView):
     run_schema = "http://rmit.edu.au/schemas/stages/run/"
     sweep_schema = "http://rmit.edu.au/schemas/stages/sweep/"
 
-    initial = {'number_vm_instances': 8,
-               'minimum_number_vm_instances': 4,
+    initial = {'number_vm_instances': 2,
+               'minimum_number_vm_instances': 1,
         'iseed': 42,
         'maximum_retry': 1,
         'reschedule_failed_processes': 1,
@@ -289,7 +289,7 @@ class SweepSubmitFormView(FormView):
         'threshold': "[1]",
         'error_threshold': "0.03",
         'max_iteration': 2,
-        'fanout_per_kept_result': 4,
+        'fanout_per_kept_result': 2,
         'pottype': 1,
         'sweep_map': '{}', #"var1": [3, 7], "var2": [1, 2]}',
         'run_map': '{}',

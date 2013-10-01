@@ -103,7 +103,7 @@ class Wait(Stage):
 
         return False
 
-    def job_finished(self, ip_address, process_id, maximum_retry, settings):
+    def job_finished(self, ip_address, process_id, retry_left, settings):
         """
             Return True if package job on instance_id has job_finished
         """
@@ -146,7 +146,7 @@ class Wait(Stage):
                         self.failed_nodes.append(node[0])
                     node_failed = True
                 else:
-                    if not maximum_retry:
+                    if not retry_left:
                         process_failed = True
                     else:
                         process_lists = [self.executed_procs, self.current_processes,
@@ -255,7 +255,7 @@ class Wait(Stage):
             #instance_id = node.id
             ip_address = process['ip_address']
             process_id = process['id']
-            maximum_retry = process['maximum_retry']
+            retry_left = process['retry_left']
             #ip = botocloudconnector.get_instance_ip(instance_id, self.boto_settings)
             #ssh = open_connection(ip_address=ip, settings=self.boto_settings)
             #if not botocloudconnector.is_instance_running(node):
@@ -265,7 +265,7 @@ class Wait(Stage):
             #    logging.error('Instance %s not running' % instance_id)
             #    self.error_nodes.append(node)
             #    continue
-            fin = self.job_finished(ip_address, process_id, maximum_retry, self.boto_settings)
+            fin = self.job_finished(ip_address, process_id, retry_left, self.boto_settings)
             logger.debug("fin=%s" % fin)
             if fin:
                 print "done. output is available"
