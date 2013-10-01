@@ -56,5 +56,5 @@ class FTManager():
             for process in process_list:
                 if process['ip_address'] == ip_address \
                     and process['id'] == process_id:
-                    retry = int(process['maximum_retry'])
-                    process['maximum_retry'] = retry - 1
+                    retry = int(process['retry_left'])
+                    process['retry_left'] = retry - 1

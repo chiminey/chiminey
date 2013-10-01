@@ -298,6 +298,7 @@ def submit_subtask(platform, directive_name, data, user):
         directive_args.append(arg_meta)
 
     logger.debug("directive_args=%s" % pformat(directive_args))
+    logger.debug('directive_name=%s' % directive_name)
     try:
         (task_run_settings, command_args, run_context) \
             = hrmcstages.make_runcontext_for_directive(

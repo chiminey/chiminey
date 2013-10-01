@@ -29,57 +29,57 @@ class TestFTManager(unittest.TestCase):
     def setUp(self):
         self.ftmanager = FTManager()
 
-        self.all_procs = [{'status': 'failed', 'ip_address': u'118.138.242.25', 'maximum_retry': '1', 'id': '1'},
-                     {'status': 'completed', 'ip_address': u'118.138.242.26', 'maximum_retry': '1', 'id': '2'},
-                     {'status': 'completed', 'maximum_retry': '1', 'ip_address': u'118.138.242.27', 'id': '3'},
-                     {'status': 'running', 'maximum_retry': '1', 'ip_address': u'118.138.242.25', 'id': '4'},
-                     {'status': 'running', 'maximum_retry': '1', 'ip_address': u'118.138.242.26', 'id': '5'},
-                     {'status': 'failed', 'maximum_retry': '1', 'ip_address': u'118.138.242.26', 'id': '6'},
-                     {'status': 'failed', 'maximum_retry': '1', 'ip_address': u'118.138.242.27', 'id': '7'}]
+        self.all_procs = [{'status': 'failed', 'ip_address': u'118.138.242.25', 'retry_left': '1', 'id': '1'},
+                     {'status': 'completed', 'ip_address': u'118.138.242.26', 'retry_left': '1', 'id': '2'},
+                     {'status': 'completed', 'retry_left': '1', 'ip_address': u'118.138.242.27', 'id': '3'},
+                     {'status': 'running', 'retry_left': '1', 'ip_address': u'118.138.242.25', 'id': '4'},
+                     {'status': 'running', 'retry_left': '1', 'ip_address': u'118.138.242.26', 'id': '5'},
+                     {'status': 'failed', 'retry_left': '1', 'ip_address': u'118.138.242.26', 'id': '6'},
+                     {'status': 'failed', 'retry_left': '1', 'ip_address': u'118.138.242.27', 'id': '7'}]
 
-        self.current_procs = [{'status': 'running', 'maximum_retry': '1', 'ip_address': u'118.138.242.25', 'id': '4'},
-                     {'status': 'running', 'maximum_retry': '1', 'ip_address': u'118.138.242.26', 'id': '5'},
-                     {'status': 'failed', 'maximum_retry': '1', 'ip_address': u'118.138.242.26', 'id': '6'},
-                     {'status': 'failed', 'maximum_retry': '1', 'ip_address': u'118.138.242.27', 'id': '7'}]
+        self.current_procs = [{'status': 'running', 'retry_left': '1', 'ip_address': u'118.138.242.25', 'id': '4'},
+                     {'status': 'running', 'retry_left': '1', 'ip_address': u'118.138.242.26', 'id': '5'},
+                     {'status': 'failed', 'retry_left': '1', 'ip_address': u'118.138.242.26', 'id': '6'},
+                     {'status': 'failed', 'retry_left': '1', 'ip_address': u'118.138.242.27', 'id': '7'}]
 
-        self.executed_procs = [{'status': 'running', 'maximum_retry': '1', 'ip_address': u'118.138.242.25', 'id': '4'},
-                     {'status': 'running', 'maximum_retry': '1', 'ip_address': u'118.138.242.26', 'id': '5'},
-                     {'status': 'failed', 'maximum_retry': '1', 'ip_address': u'118.138.242.26', 'id': '6'},
-                     {'status': 'failed', 'maximum_retry': '1', 'ip_address': u'118.138.242.27', 'id': '7'}]
+        self.executed_procs = [{'status': 'running', 'retry_left': '1', 'ip_address': u'118.138.242.25', 'id': '4'},
+                     {'status': 'running', 'retry_left': '1', 'ip_address': u'118.138.242.26', 'id': '5'},
+                     {'status': 'failed', 'retry_left': '1', 'ip_address': u'118.138.242.26', 'id': '6'},
+                     {'status': 'failed', 'retry_left': '1', 'ip_address': u'118.138.242.27', 'id': '7'}]
         self.process_lists = [self.all_procs, self.current_procs, self.executed_procs]
 
     def tearDown(self):
         pass
 
     def test_collect_failed_processes(self):
-        source = [{'status': 'completed', 'ip_address': u'118.138.242.25', 'maximum_retry': '1', 'id': '1'},
-                  {'status': 'failed', 'ip_address': u'118.138.242.26', 'maximum_retry': 0, 'id': '2'},
-                  {'status': 'running', 'ip_address': u'118.138.242.25', 'maximum_retry': '1', 'id': '3'},
-                  {'status': 'failed', 'maximum_retry': '1', 'ip_address': u'118.138.242.25', 'id': '4'}]
+        source = [{'status': 'completed', 'ip_address': u'118.138.242.25', 'retry_left': '1', 'id': '1'},
+                  {'status': 'failed', 'ip_address': u'118.138.242.26', 'retry_left': 0, 'id': '2'},
+                  {'status': 'running', 'ip_address': u'118.138.242.25', 'retry_left': '1', 'id': '3'},
+                  {'status': 'failed', 'retry_left': '1', 'ip_address': u'118.138.242.25', 'id': '4'}]
         destination = []
         self.ftmanager.collect_failed_processes(source, destination)
-        expected_list = [{'status': 'failed', 'ip_address': u'118.138.242.26', 'maximum_retry': 0, 'id': '2'},
-                         {'status': 'failed', 'maximum_retry': '1', 'ip_address': u'118.138.242.25', 'id': '4'}]
+        expected_list = [{'status': 'failed', 'ip_address': u'118.138.242.26', 'retry_left': 0, 'id': '2'},
+                         {'status': 'failed', 'retry_left': '1', 'ip_address': u'118.138.242.25', 'id': '4'}]
         self.assertEqual(destination, expected_list)
 
     def test_flag_all_processes(self):
         ip_address = '118.138.242.25'
         self.ftmanager.flag_all_processes(self.process_lists, ip_address)
-        expected_all_procs = [{'status': 'failed', 'ip_address': u'118.138.242.25', 'maximum_retry': '1', 'id': '1'},
-                     {'status': 'completed', 'ip_address': u'118.138.242.26', 'maximum_retry': '1', 'id': '2'},
-                     {'status': 'completed', 'maximum_retry': '1', 'ip_address': u'118.138.242.27', 'id': '3'},
-                     {'status': 'failed', 'maximum_retry': '1', 'ip_address': u'118.138.242.25', 'id': '4'},
-                     {'status': 'running', 'maximum_retry': '1', 'ip_address': u'118.138.242.26', 'id': '5'},
-                     {'status': 'failed', 'maximum_retry': '1', 'ip_address': u'118.138.242.26', 'id': '6'},
-                     {'status': 'failed', 'maximum_retry': '1', 'ip_address': u'118.138.242.27', 'id': '7'}]
-        expected_current_procs = [{'status': 'failed', 'maximum_retry': '1', 'ip_address': u'118.138.242.25', 'id': '4'},
-                     {'status': 'running', 'maximum_retry': '1', 'ip_address': u'118.138.242.26', 'id': '5'},
-                     {'status': 'failed', 'maximum_retry': '1', 'ip_address': u'118.138.242.26', 'id': '6'},
-                     {'status': 'failed', 'maximum_retry': '1', 'ip_address': u'118.138.242.27', 'id': '7'}]
-        expected_executed_procs = [{'status': 'failed', 'maximum_retry': '1', 'ip_address': u'118.138.242.25', 'id': '4'},
-                     {'status': 'running', 'maximum_retry': '1', 'ip_address': u'118.138.242.26', 'id': '5'},
-                     {'status': 'failed', 'maximum_retry': '1', 'ip_address': u'118.138.242.26', 'id': '6'},
-                     {'status': 'failed', 'maximum_retry': '1', 'ip_address': u'118.138.242.27', 'id': '7'}]
+        expected_all_procs = [{'status': 'failed', 'ip_address': u'118.138.242.25', 'retry_left': '1', 'id': '1'},
+                     {'status': 'completed', 'ip_address': u'118.138.242.26', 'retry_left': '1', 'id': '2'},
+                     {'status': 'completed', 'retry_left': '1', 'ip_address': u'118.138.242.27', 'id': '3'},
+                     {'status': 'failed', 'retry_left': '1', 'ip_address': u'118.138.242.25', 'id': '4'},
+                     {'status': 'running', 'retry_left': '1', 'ip_address': u'118.138.242.26', 'id': '5'},
+                     {'status': 'failed', 'retry_left': '1', 'ip_address': u'118.138.242.26', 'id': '6'},
+                     {'status': 'failed', 'retry_left': '1', 'ip_address': u'118.138.242.27', 'id': '7'}]
+        expected_current_procs = [{'status': 'failed', 'retry_left': '1', 'ip_address': u'118.138.242.25', 'id': '4'},
+                     {'status': 'running', 'retry_left': '1', 'ip_address': u'118.138.242.26', 'id': '5'},
+                     {'status': 'failed', 'retry_left': '1', 'ip_address': u'118.138.242.26', 'id': '6'},
+                     {'status': 'failed', 'retry_left': '1', 'ip_address': u'118.138.242.27', 'id': '7'}]
+        expected_executed_procs = [{'status': 'failed', 'retry_left': '1', 'ip_address': u'118.138.242.25', 'id': '4'},
+                     {'status': 'running', 'retry_left': '1', 'ip_address': u'118.138.242.26', 'id': '5'},
+                     {'status': 'failed', 'retry_left': '1', 'ip_address': u'118.138.242.26', 'id': '6'},
+                     {'status': 'failed', 'retry_left': '1', 'ip_address': u'118.138.242.27', 'id': '7'}]
         self.assertEqual(self.all_procs, expected_all_procs)
         self.assertEqual(self.current_procs, expected_current_procs)
         self.assertEqual(self.executed_procs, expected_executed_procs)
@@ -88,23 +88,23 @@ class TestFTManager(unittest.TestCase):
         ip_address = '118.138.242.26'
         process_id = '5'
         self.ftmanager.flag_this_process(self.process_lists, ip_address, process_id)
-        expected_all_procs = [{'status': 'failed', 'ip_address': u'118.138.242.25', 'maximum_retry': '1', 'id': '1'},
-                     {'status': 'completed', 'ip_address': u'118.138.242.26', 'maximum_retry': '1', 'id': '2'},
-                     {'status': 'completed', 'maximum_retry': '1', 'ip_address': u'118.138.242.27', 'id': '3'},
-                     {'status': 'running', 'maximum_retry': '1', 'ip_address': u'118.138.242.25', 'id': '4'},
-                     {'status': 'failed', 'maximum_retry': '1', 'ip_address': u'118.138.242.26', 'id': '5'},
-                     {'status': 'failed', 'maximum_retry': '1', 'ip_address': u'118.138.242.26', 'id': '6'},
-                     {'status': 'failed', 'maximum_retry': '1', 'ip_address': u'118.138.242.27', 'id': '7'}]
+        expected_all_procs = [{'status': 'failed', 'ip_address': u'118.138.242.25', 'retry_left': '1', 'id': '1'},
+                     {'status': 'completed', 'ip_address': u'118.138.242.26', 'retry_left': '1', 'id': '2'},
+                     {'status': 'completed', 'retry_left': '1', 'ip_address': u'118.138.242.27', 'id': '3'},
+                     {'status': 'running', 'retry_left': '1', 'ip_address': u'118.138.242.25', 'id': '4'},
+                     {'status': 'failed', 'retry_left': '1', 'ip_address': u'118.138.242.26', 'id': '5'},
+                     {'status': 'failed', 'retry_left': '1', 'ip_address': u'118.138.242.26', 'id': '6'},
+                     {'status': 'failed', 'retry_left': '1', 'ip_address': u'118.138.242.27', 'id': '7'}]
 
-        expected_current_procs = [{'status': 'running', 'maximum_retry': '1', 'ip_address': u'118.138.242.25', 'id': '4'},
-                     {'status': 'failed', 'maximum_retry': '1', 'ip_address': u'118.138.242.26', 'id': '5'},
-                     {'status': 'failed', 'maximum_retry': '1', 'ip_address': u'118.138.242.26', 'id': '6'},
-                     {'status': 'failed', 'maximum_retry': '1', 'ip_address': u'118.138.242.27', 'id': '7'}]
+        expected_current_procs = [{'status': 'running', 'retry_left': '1', 'ip_address': u'118.138.242.25', 'id': '4'},
+                     {'status': 'failed', 'retry_left': '1', 'ip_address': u'118.138.242.26', 'id': '5'},
+                     {'status': 'failed', 'retry_left': '1', 'ip_address': u'118.138.242.26', 'id': '6'},
+                     {'status': 'failed', 'retry_left': '1', 'ip_address': u'118.138.242.27', 'id': '7'}]
 
-        expected_executed_procs = [{'status': 'running', 'maximum_retry': '1', 'ip_address': u'118.138.242.25', 'id': '4'},
-                     {'status': 'failed', 'maximum_retry': '1', 'ip_address': u'118.138.242.26', 'id': '5'},
-                     {'status': 'failed', 'maximum_retry': '1', 'ip_address': u'118.138.242.26', 'id': '6'},
-                     {'status': 'failed', 'maximum_retry': '1', 'ip_address': u'118.138.242.27', 'id': '7'}]
+        expected_executed_procs = [{'status': 'running', 'retry_left': '1', 'ip_address': u'118.138.242.25', 'id': '4'},
+                     {'status': 'failed', 'retry_left': '1', 'ip_address': u'118.138.242.26', 'id': '5'},
+                     {'status': 'failed', 'retry_left': '1', 'ip_address': u'118.138.242.26', 'id': '6'},
+                     {'status': 'failed', 'retry_left': '1', 'ip_address': u'118.138.242.27', 'id': '7'}]
         self.assertEqual(self.all_procs, expected_all_procs)
         self.assertEqual(self.current_procs, expected_current_procs)
         self.assertEqual(self.executed_procs, expected_executed_procs)
@@ -121,21 +121,21 @@ class TestFTManager(unittest.TestCase):
         process_id = '4'
         self.ftmanager.decrease_max_retry(self.process_lists, ip_address, process_id)
         print self.process_lists
-        expected_all_procs = [{'status': 'failed', 'ip_address': u'118.138.242.25', 'maximum_retry': '1', 'id': '1'},
-                     {'status': 'completed', 'ip_address': u'118.138.242.26', 'maximum_retry': '1', 'id': '2'},
-                     {'status': 'completed', 'maximum_retry': '1', 'ip_address': u'118.138.242.27', 'id': '3'},
-                     {'status': 'running', 'maximum_retry': 0, 'ip_address': u'118.138.242.25', 'id': '4'},
-                     {'status': 'running', 'maximum_retry': '1', 'ip_address': u'118.138.242.26', 'id': '5'},
-                     {'status': 'failed', 'maximum_retry': '1', 'ip_address': u'118.138.242.26', 'id': '6'},
-                     {'status': 'failed', 'maximum_retry': '1', 'ip_address': u'118.138.242.27', 'id': '7'}]
-        expected_current_procs = [{'status': 'running', 'maximum_retry': 0, 'ip_address': u'118.138.242.25', 'id': '4'},
-                     {'status': 'running', 'maximum_retry': '1', 'ip_address': u'118.138.242.26', 'id': '5'},
-                     {'status': 'failed', 'maximum_retry': '1', 'ip_address': u'118.138.242.26', 'id': '6'},
-                     {'status': 'failed', 'maximum_retry': '1', 'ip_address': u'118.138.242.27', 'id': '7'}]
-        expected_executed_procs = [{'status': 'running', 'maximum_retry': 0, 'ip_address': u'118.138.242.25', 'id': '4'},
-                     {'status': 'running', 'maximum_retry': '1', 'ip_address': u'118.138.242.26', 'id': '5'},
-                     {'status': 'failed', 'maximum_retry': '1', 'ip_address': u'118.138.242.26', 'id': '6'},
-                     {'status': 'failed', 'maximum_retry': '1', 'ip_address': u'118.138.242.27', 'id': '7'}]
+        expected_all_procs = [{'status': 'failed', 'ip_address': u'118.138.242.25', 'retry_left': '1', 'id': '1'},
+                     {'status': 'completed', 'ip_address': u'118.138.242.26', 'retry_left': '1', 'id': '2'},
+                     {'status': 'completed', 'retry_left': '1', 'ip_address': u'118.138.242.27', 'id': '3'},
+                     {'status': 'running', 'retry_left': 0, 'ip_address': u'118.138.242.25', 'id': '4'},
+                     {'status': 'running', 'retry_left': '1', 'ip_address': u'118.138.242.26', 'id': '5'},
+                     {'status': 'failed', 'retry_left': '1', 'ip_address': u'118.138.242.26', 'id': '6'},
+                     {'status': 'failed', 'retry_left': '1', 'ip_address': u'118.138.242.27', 'id': '7'}]
+        expected_current_procs = [{'status': 'running', 'retry_left': 0, 'ip_address': u'118.138.242.25', 'id': '4'},
+                     {'status': 'running', 'retry_left': '1', 'ip_address': u'118.138.242.26', 'id': '5'},
+                     {'status': 'failed', 'retry_left': '1', 'ip_address': u'118.138.242.26', 'id': '6'},
+                     {'status': 'failed', 'retry_left': '1', 'ip_address': u'118.138.242.27', 'id': '7'}]
+        expected_executed_procs = [{'status': 'running', 'retry_left': 0, 'ip_address': u'118.138.242.25', 'id': '4'},
+                     {'status': 'running', 'retry_left': '1', 'ip_address': u'118.138.242.26', 'id': '5'},
+                     {'status': 'failed', 'retry_left': '1', 'ip_address': u'118.138.242.26', 'id': '6'},
+                     {'status': 'failed', 'retry_left': '1', 'ip_address': u'118.138.242.27', 'id': '7'}]
         self.assertEqual(self.all_procs, expected_all_procs)
         self.assertEqual(self.current_procs, expected_current_procs)
         self.assertEqual(self.executed_procs, expected_executed_procs)
