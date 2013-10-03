@@ -64,6 +64,28 @@ class ContextParameterSetAdmin(admin.ModelAdmin):
         return obj.context.owner
 
 
+class PlatformInstanceParameterInline(admin.TabularInline):
+    model = models.PlatformInstanceParameter
+    extra = 0
+    # formfield_overrides = {
+    #   django.db.models.TextField: {'widget': TextInput},
+    # }
+
+
+class PlatformInstanceParameterSetAdmin(admin.ModelAdmin):
+    inlines = [PlatformInstanceParameterInline]
+    list_display = ('owner', 'schema_prefix', 'schema', )
+
+    def name(self, obj):
+        return obj.schema.name
+
+    def schema_prefix(self, obj):
+        return obj.platform.schema_namespace_prefix
+
+    def owner(self, obj):
+        return obj.platform.owner
+
+
 class UserProfileParameterInline(admin.TabularInline):
     model = models.UserProfileParameter
     extra = 0
@@ -203,3 +225,6 @@ admin.site.register(models.StageParameter)
 admin.site.register(models.Command)
 admin.site.register(models.Directive, DirectiveAdmin)
 admin.site.register(models.DirectiveArgSet)
+admin.site.register(models.PlatformInstance)
+admin.site.register(models.PlatformInstanceParameterSet, PlatformInstanceParameterSetAdmin)
+admin.site.register(models.PlatformInstanceParameter)
