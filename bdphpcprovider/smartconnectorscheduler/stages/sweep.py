@@ -283,18 +283,22 @@ class Sweep(Stage):
 
 
 def submit_subtask(platform, directive_name, data, user):
-
+    logger.debug('data=%s' % data)
     directive_args = []
     for metadata in data:
         arg_metadata = {}
-        for schema,v in metadata.items():
+        logger.debug('meta_data=%s' % metadata)
+        for schema, v in metadata.items():
             ns, key = os.path.split(schema)
+            logger.debug('schema=%s' % schema)
             if ns:
                 d = arg_metadata.setdefault(ns, [])
                 d.append((key, v))
+                logger.debug('key=%s, v=%s' % (key, v))
         logger.debug("args=%s" % pformat(arg_metadata))
         arg_meta = [[schema] + arg_metadata[schema] for schema in arg_metadata]
         arg_meta.insert(0, "")
+        logger.debug('arg_meta=%s' % arg_meta)
         directive_args.append(arg_meta)
 
     logger.debug("directive_args=%s" % pformat(directive_args))
