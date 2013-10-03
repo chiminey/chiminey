@@ -40,7 +40,6 @@ class UserProfile(models.Model):
     user = models.ForeignKey(User, unique=True, help_text="Information about the user")
     company = models.CharField(max_length=255, blank=True, help_text="Company of the user")
     nickname = models.CharField(max_length=255, blank=True, help_text="User's nickname")
-
     PROFILE_SCHEMA_NS = "http://rmit.edu.au/schemas/userprofile1"
 
     def __unicode__(self):
@@ -387,6 +386,107 @@ class Platform(models.Model):
 
     def __unicode__(self):
         return u"Platform:%s" % (self.name)
+
+
+class PlatformInstance(models.Model):
+    owner = models.ForeignKey(UserProfile)
+    schema_namespace_prefix = models.CharField(
+        max_length=512, default='http://rmit.edu.au/schemas/platform')
+
+    def __unicode__(self):
+        return u'Platform schema namespace: %s' \
+               % (self.schema_namespace_prefix)
+
+
+class PlatformInstanceParameterSet(models.Model):
+    platform = models.ForeignKey(PlatformInstance, verbose_name="Platform")
+    schema = models.ForeignKey(Schema, verbose_name="Schema")
+    ranking = models.IntegerField(default=0)
+
+    class Meta:
+        ordering = ["-ranking"]
+
+
+class PlatformInstanceParameter(models.Model):
+    """ The value for some metadata for a User Profile
+
+        :parameter name: the associated  :class:`bdphpcprovider.smartconnectorscheduler.models.ParameterName` that the value matches to
+        :parameter paramset: associated  :class:`bdphpcprovider.smartconnectorscheduler.models.PlatformInstanceParameterSet` and class:`bdphpcprovider.smartconnectorscheduler.models.Schema` for this value
+        :parameter value: the actual value
+    """
+    name = models.ForeignKey(ParameterName, verbose_name="Parameter Name")
+    paramset = models.ForeignKey(PlatformInstanceParameterSet, verbose_name="Parameter Set")
+    value = models.TextField(blank=True, verbose_name="Parameter Value", help_text="The Value of this parameter")
+    #ranking = models.IntegerField(default=0,help_text="Describes the relative ordering of parameters when displaying: the larger the number, the more prominent the results")
+
+    def __unicode__(self):
+        return u'%s %s %s' % (self.name, self.paramset, self.value)
+
+    def getValue(self,):
+        try:
+            val = self.name.get_value(self.value)
+        except ValueError:
+            logger.error("got bad value")
+            raise
+        return val
+
+    class Meta:
+        ordering = ("name",)
+
+
+'''
+class ComputationPlatform(models.Model):
+    """
+    The envioronment where directives will be executed.
+    """
+    owner = models.ForeignKey(UserProfile)
+
+    type = models.CharField(max_length=256)
+
+
+    ip_address = models.CharField(max_length=50)
+    root_path = models.CharField(max_length=512)
+    username = models.CharField(max_length=50)
+    password = models.CharField(max_length=50)
+    private_key_name = models.CharField(max_length=50)
+
+
+    def __unicode__(self):
+        return u'Platform: %s IP: %s' % (self.type, self.ip_address)
+
+class ComputationPlatformParameterSet(models.Model):
+    comp_platform = models.ForeignKey(ComputationPlatform, verbose_name="User Profile")
+    schema = models.ForeignKey(Schema, verbose_name="Schema")
+    #info = models.CharField(max_length=400, null=True)
+    ranking = models.IntegerField(default=0)
+
+
+class PlatformInstance(models.Model):
+    """
+    The envioronment where directives will be executed
+    or where inpt/ouput files are located.
+    """
+    owner = models.ForeignKey(UserProfile)
+    instance_type = models.CharField(max_length=256)
+
+    
+    ip_address = models.CharField(max_length=50)
+    root_path = models.CharField(max_length=512)
+    username = models.CharField(max_length=50)
+    password = models.CharField(max_length=50)
+    private_key_name = models.CharField(max_length=50)
+
+
+    def __unicode__(self):
+        return u'Platform: %s IP: %s' % (self.type, self.ip_address)
+
+
+class ComputationPlatformParameterSet(models.Model):
+    comp_platform = models.ForeignKey(ComputationPlatform, verbose_name="User Profile")
+    schema = models.ForeignKey(Schema, verbose_name="Schema")
+    #info = models.CharField(max_length=400, null=True)
+    ranking = models.IntegerField(default=0)
+'''
 
 
 class Directive(models.Model):
