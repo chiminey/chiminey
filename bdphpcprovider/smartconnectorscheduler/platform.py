@@ -30,12 +30,6 @@ logger = logging.getLogger(__name__)
 
 def create_platform_paramset(username, schema_namespace,
                              parameters, filter_field=None):
-    params_present, provided_params, required_params = \
-        all_params_present(schema_namespace, parameters)
-    if not params_present:
-        logger.debug('Cannot create platform. \n Required params= %s'
-                     ' \n Provided params= %s ' % (required_params, provided_params))
-        return False
     owner = get_owner(username)
     if not owner:
         logger.debug('username=%s unknown' % username)
@@ -45,8 +39,15 @@ def create_platform_paramset(username, schema_namespace,
     platform, _ = models.PlatformInstance.objects.get_or_create(
        owner=owner, schema_namespace_prefix=schema_namespace)
     schema, _ = models.Schema.objects.get_or_create(namespace=schema_namespace)
+    params_present, provided_params, required_params = \
+        all_params_present(schema, parameters)
+    if not params_present:
+        logger.debug('Cannot create platform parameter set.'
+                     '\n Required params= %s  \n Provided params= %s '
+                     % (required_params, provided_params))
+        return False
     unique = is_unique_platform_paramset(
-        username, schema_namespace, filter_field)
+        platform, schema, filter_field)
     logger.debug('unique parameter set %s' % unique)
     if unique:
          param_set = models.PlatformInstanceParameterSet.objects\
@@ -92,10 +93,6 @@ def delete_platform_paramsets(username, schema_namespace, filter_field):
         logger.debug('Filter field should not be empty. Exiting...')
         return
     platform, schema = get_platform_and_schema(username, schema_namespace)
-    if (not platform) or (not schema):
-        logger.debug('unknown username [%s] and/or schema namespace [%s]. Exiting...'
-                     % (username, schema_namespace))
-        return
     param_sets = filter_platform_paramsets(platform, schema, filter_field)
     for param_set in param_sets:
         logger.debug('deleting ... %s' % param_set)
@@ -104,8 +101,11 @@ def delete_platform_paramsets(username, schema_namespace, filter_field):
 
 def update_platform_paramsets(username, schema_namespace,
                               old_parameters, new_parameters):
-    if create_platform_paramset(username, schema_namespace, new_parameters):
-        delete_platform_paramsets(username, schema_namespace, old_parameters)
+    platform, schema = get_platform_and_schema(username, schema_namespace)
+    param_set = filter_platform_paramsets(platform, schema, old_parameters)
+    if param_set:
+        if create_platform_paramset(username, schema_namespace, new_parameters):
+            delete_platform_paramsets(username, schema_namespace, old_parameters)
 
 
 def is_unique_platform_paramset(platform, schema, filter_field):
@@ -121,6 +121,8 @@ def is_unique_platform_paramset(platform, schema, filter_field):
 
 def filter_platform_paramsets(platform, schema, filter_field):
     #unknown_filter_field = False
+    if not required_param_exists(schema, filter_field):
+        return []
     param_sets = models.PlatformInstanceParameterSet\
         .objects.filter(platform=platform)
     for k, v in filter_field.items():
@@ -155,7 +157,7 @@ def get_owner(username):
         user = User.objects.get(username=username)
         owner = models.UserProfile.objects.get(user=user)
     except ObjectDoesNotExist as e:
-        logger.exception(e)
+        logger.error(e)
     except Exception as e:
         logger.exception(e)
         raise
@@ -172,18 +174,26 @@ def get_platform_and_schema(username, schema_namespace):
                 owner=owner, schema_namespace_prefix=schema_namespace)
             schema = models.Schema.objects.get(namespace=schema_namespace)
         except ObjectDoesNotExist as e:
-            logger.exception(e)
+            logger.error(e)
         except Exception as e:
             logger.exception(e)
             raise
     return (platform, schema)
 
 
-def all_params_present(schema_namespace, parameters):
-    schema = models.Schema.objects.get(namespace=schema_namespace)
-    required_params= models.ParameterName.objects.filter(schema=schema)
-    required_params_names = [x.name for x in required_params]
-    provided_params_names = [x for x in required_params_names if x in parameters]
-    if len(provided_params_names) == len(required_params_names):
-        return True, provided_params_names, required_params_names
-    return False, provided_params_names, required_params_names
+def all_params_present(schema, parameters):
+    required_params = models.ParameterName.objects.filter(schema=schema)
+    if required_params:
+        required_params_names = [x.name for x in required_params]
+        provided_params_names = [x for x in required_params_names if x in parameters]
+        if len(provided_params_names) == len(required_params_names):
+            return True, provided_params_names, required_params_names
+        return False, provided_params_names, required_params_names
+    return False, [], []
+
+
+def required_param_exists(schema, parameters):
+    _, params, _ = all_params_present(schema, parameters)
+    if params:
+        return True
+    return False
