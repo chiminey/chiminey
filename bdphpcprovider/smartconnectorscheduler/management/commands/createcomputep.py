@@ -21,7 +21,8 @@
 import os.path
 from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth.models import User
-from bdphpcprovider.smartconnectorscheduler import models
+from bdphpcprovider.smartconnectorscheduler import models, platform
+from bdphpcprovider.smartconnectorscheduler.platform import retrieve_platform_paramsets, create_platform_paramset, delete_platform_paramsets
 from django.db.models import ObjectDoesNotExist
 
 
@@ -116,35 +117,6 @@ class Command(BaseCommand):
             #    print i.schema.namespace
 
 
-    def is_unique_platform_paramterset(self, filter_field, platform, schema):
-        param_sets = models.PlatformInstanceParameterSet\
-            .objects.filter(platform=platform)
-        print len(param_sets)
-        for k, v in filter_field.items():
-            print k, v
-            try:
-                param_name = models.ParameterName.objects.get(schema=schema,
-                            name=k)
-            except ObjectDoesNotExist as e:
-                return True
-            except Exception:
-                raise
-            potential_paramsets = []
-            for iterator, param_set in enumerate(param_sets):
-                print param_set.pk
-                try:
-                    models.PlatformInstanceParameter.objects\
-                        .get(name=param_name,\
-                        paramset=param_set, value=v)
-                    potential_paramsets.append(param_set)
-                except ObjectDoesNotExist as e:
-                    pass
-                except Exception:
-                    raise
-            param_sets = list(potential_paramsets)
-        if param_sets:
-            return False
-        return True
 
 
     def is_unique_platform(self, unique_key, parameterset):
@@ -154,12 +126,37 @@ class Command(BaseCommand):
 
     def create_platform(self, bdp_username,
                                     platform_settings):
+
+        self.PARAMS = {
+                'ec2_access_key': 'unique',
+                'ec2_secret_key': 'secret_key_test',
+                #'ec2_access_key': 'access_key_test114',
+                'private_key': 'file://local@127.0.0.1/schema.pem',
+                'private_key_iman': 'file://local@127.0.0.1/test.pem'
+            }
+
+        self.PARAMS_D = {
+                'username': 'nci',
+                }
+
+
+        create_platform_paramset(bdp_username, self.namespace, self.PARAMS)
+        delete_platform_paramsets(bdp_username, self.namespace, self.PARAMS_D)
+        '''
+        print'-----'
         user = User.objects.get(username=bdp_username)
         print 'user %s ' % user
         profile = models.UserProfile.objects.get(user=user)
         print('profile=%s' % profile)
+        '''
 
 
+        print 'x'
+        x= (retrieve_platform_paramsets(bdp_username, 'http://rmit.edu.au/schemas/platform/computation'))
+        for i in x:
+            print i
+
+        return
         try:
            platform, _ = models.PlatformInstance.objects\
                .get_or_create(owner=profile, schema_namespace_prefix=self.namespace)
@@ -180,12 +177,14 @@ class Command(BaseCommand):
 
 
         self.PARAMS = {
-                'ec2_access_key': '94ac519345a946bcafa01bc17dbd2466',
-                'ec2_secret_key': 'a05d660bb6f240679ab0f151bf764a68',
-                'private_key': 'file://local@127.0.0.1/new.pem'
+                'ec2_access_key': 'access_key_test12',
+                'ec2_secret_key': 'secret_key_test',
+                'ec2_access_key': 'access_key_test114',
+                'private_key': 'file://local@127.0.0.1/test.pem',
+                'private_key_iman': 'file://local@127.0.0.1/test.pem'
             }
 
-        self.PARAMS = {'username': 'nci', 'private_key_path': '/local/path'}
+        #self.PARAMS = {'username': 'nci', 'private_key_path': '/local/path'}
         filterlist = self.PARAMS
 
         unique = self.is_unique_platform_paramterset(
@@ -202,9 +201,12 @@ class Command(BaseCommand):
                 #print k
                 param_name = models.ParameterName.objects.get(schema=platform_schema,
                     name=k)
-                models.PlatformInstanceParameter.objects.get_or_create(name=param_name,
+                models.PlatformInstanceParameter.objects.create(name=param_name,
                     paramset=param_set,
                     value=v)
+        except ObjectDoesNotExist as e:
+            print e
+
         except Exception as e:
             #fixme move to reliability framework
             if isinstance(e, models.MultipleObjectsReturned):
