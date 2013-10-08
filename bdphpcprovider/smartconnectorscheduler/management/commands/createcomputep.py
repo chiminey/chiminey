@@ -22,6 +22,7 @@ import os.path
 from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth.models import User
 
+
 from bdphpcprovider.smartconnectorscheduler import models, platform
 from bdphpcprovider.smartconnectorscheduler.platform import retrieve_platform_paramsets, create_platform_paramset, delete_platform_paramsets
 
@@ -127,6 +128,10 @@ class Command(BaseCommand):
             #for i in param_set:
             #    print i.schema.namespace
 
+
+
+
+
     def is_unique_platform(self, unique_key, parameterset):
         for parameter in parameterset:
             print parameter
@@ -134,7 +139,6 @@ class Command(BaseCommand):
 
     def create_platform(self, bdp_username,
                                     platform_settings):
-
 
         self.PARAMS = {
                 'ec2_access_key': 'unique',
@@ -147,6 +151,7 @@ class Command(BaseCommand):
         self.PARAMS_D = {
                 'username': 'nci',
                 }
+
 
         self.name = 'HRMC_tenancy'
         self.private_key = 'bdp'
@@ -182,10 +187,12 @@ class Command(BaseCommand):
         '''
         print'-----'
         platform implementation in progress
+
         user = User.objects.get(username=bdp_username)
         print 'user %s ' % user
         profile = models.UserProfile.objects.get(user=user)
         print('profile=%s' % profile)
+
 
         '''
 
@@ -197,6 +204,12 @@ class Command(BaseCommand):
 
         return
 
+        print 'x'
+        x= (retrieve_platform_paramsets(bdp_username, 'http://rmit.edu.au/schemas/platform/computation'))
+        for i in x:
+            print i
+
+        return
         try:
            platform, _ = models.PlatformInstance.objects\
                .get_or_create(owner=profile, schema_namespace_prefix=self.namespace)
@@ -226,7 +239,6 @@ class Command(BaseCommand):
             }
 
         #self.PARAMS = {'username': 'nci', 'private_key_path': '/local/path'}
-
         filterlist = self.PARAMS
 
         unique = self.is_unique_platform_paramterset(
@@ -243,14 +255,11 @@ class Command(BaseCommand):
                 #print k
                 param_name = models.ParameterName.objects.get(schema=platform_schema,
                     name=k)
-
                 models.PlatformInstanceParameter.objects.create(name=param_name,
                     paramset=param_set,
                     value=v)
         except ObjectDoesNotExist as e:
             print e
-
-
         except Exception as e:
             #fixme move to reliability framework
             if isinstance(e, models.MultipleObjectsReturned):
