@@ -27,7 +27,7 @@ from django.template.defaultfilters import slugify
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler.platform \
     import create_platform_paramset, retrieve_platform_paramsets, delete_platform_paramsets,\
-    update_platform_paramsets, is_unique_platform_paramset, get_platform_and_schema,\
+    update_platform_paramset, is_unique_platform_paramset, get_platform_and_schema,\
     filter_platform_paramsets, get_owner, all_params_present, required_param_exists
 
 
@@ -264,26 +264,59 @@ class TestPlatform(unittest.TestCase):
         create_platform_paramset(self.username, self.nci_namespace, self.nci_parameters)
         self.nci_parameters['username'] = 'user2'
         create_platform_paramset(self.username, self.nci_namespace, self.nci_parameters)
-        new_parameters = dict(self.nci_parameters)
-        new_parameters['username'] = 'user3'
-        new_parameters['private_key_path'] = '/home/user3'
-        update_platform_paramsets(self.username, self.nci_namespace,
-                                  self.nci_parameters, new_parameters)
         platform_records = retrieve_platform_paramsets(
             self.username, 'http://rmit.edu.au/schemas/platform/computation/test/nci')
         expected = [{u'username': u'user1', u'private_key_path': u'/short/h72', 'type': u'nci'},
-                    {u'username': u'user3', u'private_key_path': u'/home/user3', 'type': u'nci'}]
+                    {u'username': u'user2', u'private_key_path': u'/short/h72', 'type': u'nci'}]
         self.assertEqual(sorted(platform_records), sorted(expected))
 
-        self.nci_parameters['username'] = 'user4'
-        new_parameters['username'] = 'user5'
-        update_platform_paramsets(self.username, self.nci_namespace,
+        new_parameters = dict(self.nci_parameters)
+        new_parameters['username'] = 'user3'
+        updated = update_platform_paramset(self.username, self.nci_namespace,
                                   self.nci_parameters, new_parameters)
         platform_records = retrieve_platform_paramsets(
             self.username, 'http://rmit.edu.au/schemas/platform/computation/test/nci')
         expected = [{u'username': u'user1', u'private_key_path': u'/short/h72', 'type': u'nci'},
-                    {u'username': u'user3', u'private_key_path': u'/home/user3', 'type': u'nci'}]
+                    {u'username': u'user3', u'private_key_path': u'/short/h72', 'type': u'nci'}]
         self.assertEqual(sorted(platform_records), sorted(expected))
+        self.assertTrue(updated)
+
+        filter_field = {'username': 'user1'}
+        new_parameters = dict(self.nci_parameters)
+        new_parameters['username'] = 'user4'
+        new_parameters['private_key_path'] = '/home/user4'
+        updated = update_platform_paramset(self.username, self.nci_namespace,
+                                  filter_field, new_parameters)
+        platform_records = retrieve_platform_paramsets(
+            self.username, 'http://rmit.edu.au/schemas/platform/computation/test/nci')
+        expected = [{u'username': u'user4', u'private_key_path': u'/home/user4', 'type': u'nci'},
+                    {u'username': u'user3', u'private_key_path': u'/short/h72', 'type': u'nci'}]
+        self.assertEqual(sorted(platform_records), sorted(expected))
+        self.assertTrue(updated)
+
+        filter_field = {'username': 'user3'}
+        new_parameters = dict(self.nci_parameters)
+        new_parameters['username'] = 'user4'
+        new_parameters['private_key_path'] = '/home/user4'
+        updated = update_platform_paramset(self.username, self.nci_namespace,
+                                  filter_field, new_parameters)
+        platform_records = retrieve_platform_paramsets(
+            self.username, 'http://rmit.edu.au/schemas/platform/computation/test/nci')
+        expected = [{u'username': u'user4', u'private_key_path': u'/home/user4', 'type': u'nci'},
+                    {u'username': u'user3', u'private_key_path': u'/short/h72', 'type': u'nci'}]
+        self.assertEqual(sorted(platform_records), sorted(expected))
+        self.assertFalse(updated)
+
+        filter_field = {'username': 'unknown'}
+        new_parameters['username'] = 'user5'
+        updated = update_platform_paramset(self.username, self.nci_namespace,
+                                  filter_field, new_parameters)
+        platform_records = retrieve_platform_paramsets(
+            self.username, 'http://rmit.edu.au/schemas/platform/computation/test/nci')
+        expected = [{u'username': u'user4', u'private_key_path': u'/home/user4', 'type': u'nci'},
+                    {u'username': u'user3', u'private_key_path': u'/short/h72', 'type': u'nci'}]
+        self.assertEqual(sorted(platform_records), sorted(expected))
+        self.assertFalse(updated)
 
 
     def test_is_unique_platform_paramset(self):
