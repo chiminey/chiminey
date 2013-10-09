@@ -99,13 +99,31 @@ def delete_platform_paramsets(username, schema_namespace, filter_field):
         param_set.delete()
 
 
-def update_platform_paramsets(username, schema_namespace,
-                              old_parameters, new_parameters):
+def update_platform_paramset(username, schema_namespace,
+                             filter_field, updated_params):
     platform, schema = get_platform_and_schema(username, schema_namespace)
-    param_set = filter_platform_paramsets(platform, schema, old_parameters)
-    if param_set:
-        if create_platform_paramset(username, schema_namespace, new_parameters):
-            delete_platform_paramsets(username, schema_namespace, old_parameters)
+    if not required_param_exists(schema, updated_params):
+        logger.debug('Parameters to be updated are unknown')
+        return False
+    new_filter_field = dict(filter_field)
+    new_filter_field.update(updated_params)
+    if not is_unique_platform_paramset(platform, schema, new_filter_field):
+        logger.debug('Record exists with the updated parameter')
+        return False
+    param_sets = filter_platform_paramsets(platform, schema, filter_field)
+    if len(param_sets) != 1:
+        logger.debug('Multiple records found. Add more parameters to the filter field')
+        return False
+    platform_parameters = models.PlatformInstanceParameter\
+        .objects.filter(paramset=param_sets[0])
+    keys = [k for k, v in updated_params.items()]
+    for platform_parameter in platform_parameters:
+        name = platform_parameter.name.name
+        if name in keys:
+            platform_parameter.value = updated_params[name]
+            platform_parameter.save()
+
+    return True
 
 
 def is_unique_platform_paramset(platform, schema, filter_field):
