@@ -20,6 +20,7 @@
 #
 #
 #
+
 import os
 import logging
 import logging.config
@@ -31,10 +32,17 @@ from tastypie.utils import dict_strip_unicode_keys
 from tastypie import http
 from tastypie.exceptions import ImmediateHttpResponse
 from tastypie.constants import ALL, ALL_WITH_RELATIONS
+
+
+import django
+import logging
+
+
 # FIXME,TODO: replace basic authentication with basic+SSL,
 # or better digest or oauth
 from tastypie.authentication import (BasicAuthentication)
 from tastypie.authorization import DjangoAuthorization, Authorization
+
 import django
 from django.contrib.auth.models import User
 from django.core.validators import ValidationError
@@ -43,6 +51,22 @@ from django import forms
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
+
+from tastypie import fields
+from tastypie.resources import ModelResource, ALL_WITH_RELATIONS
+from tastypie.utils import dict_strip_unicode_keys
+from tastypie import http
+
+from django.contrib.auth.models import User
+from pprint import pformat
+from bdphpcprovider.smartconnectorscheduler import models
+from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
+from bdphpcprovider.smartconnectorscheduler import hrmcstages, platform
+
+
+logger = logging.getLogger(__name__)
+
+
 
 # TODO: this code should be copied to maintain separation between api/ui
 from bdphpcprovider.simpleui import validators
@@ -474,3 +498,120 @@ class ContextResource(ModelResource):
         logger.debug("directive_args=%s" % directive_args)
 
         return (platform, directive_name, directive_args, system_settings)
+
+
+class PlatformInstanceResource(ModelResource):
+    class Meta:
+        queryset = models.PlatformInstance.objects.all()
+        resource_name = 'platform'
+        # TODO: FIXME: BasicAuth is horribly insecure without using SSL.
+        # Digest is better, but configuration proved tricky.
+        authentication = BasicAuthentication()
+        authentication = MyBasicAuthentication()
+        #authentication = DigestAuthentication()
+        authorization = DjangoAuthorization()
+        allowed_methods = ['get']
+
+    def apply_authorization_limits(self, request, object_list):
+        return object_list.filter(user=request.user)
+
+
+class PlatformInstanceParameterSetResource(ModelResource):
+    platform = fields.ForeignKey(PlatformInstanceResource, attribute='platform', full=True)
+    schema = fields.ForeignKey(SchemaResource, attribute='schema', full=True)
+
+    class Meta:
+        queryset = models.PlatformInstanceParameterSet.objects.all()
+        resource_name = 'platformparamset'
+        # TODO: FIXME: BasicAuth is horribly insecure without using SSL.
+        # Digest is better, but configuration proved tricky.
+        authentication = BasicAuthentication()
+        authentication = MyBasicAuthentication()
+        #authentication = DigestAuthentication()
+        authorization = DjangoAuthorization()
+        allowed_methods = ['get', 'post']
+        filtering = {
+            'platform': ALL_WITH_RELATIONS,
+            'schema': ALL_WITH_RELATIONS,
+        }
+
+    def apply_authorization_limits(self, request, object_list):
+        return object_list.filter(user=request.user)
+
+
+    def post_list(self, request, **kwargs):
+        if django.VERSION >= (1, 4):
+            body = request.body
+        else:
+            body = request.raw_post_data
+        deserialized = self.deserialize(request, body, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        deserialized = self.alter_deserialized_detail_data(request, deserialized)
+        bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
+        bundle.data['username'] = request.user.username
+        logger.debug('operation=%s' % bundle.data['operation'])
+        if bundle.data['operation'] == 'create':
+            self.create_platform(bundle)
+        elif bundle.data['operation'] == 'update':
+            self.update_platform(bundle)
+        elif bundle.data['operation'] == 'delete':
+            self.delete_platform(bundle)
+        location = self.get_resource_uri(bundle)
+        return http.HttpCreated(location=location)
+
+    def create_platform(self, bundle):
+        username = bundle.data['username']
+        schema = bundle.data['schema']
+        parameters = bundle.data['parameters']
+        created = platform.create_platform_paramset(username, schema, parameters)
+        logger.debug('created=%s' % created)
+
+    def update_platform(self, bundle):
+        username = bundle.data['username']
+        schema = bundle.data['schema']
+        filters = bundle.data['filters']
+        updated_parameters = bundle.data['updated_parameters']
+        updated = platform.update_platform_paramset(
+            username, schema, filters, updated_parameters)
+        logger.debug('updated=%s' % updated)
+
+    def delete_platform(self, bundle):
+        username = bundle.data['username']
+        schema = bundle.data['schema']
+        filters = bundle.data['filters']
+        deleted = platform.delete_platform_paramsets(username, schema, filters)
+        logger.debug('deleted=%s' % deleted)
+
+
+class PlatformInstanceParameterResource(ModelResource):
+    name = fields.ForeignKey(ParameterNameResource, attribute='name', full=True)
+    paramset = fields.ForeignKey(PlatformInstanceParameterSetResource, attribute='paramset', full=True)
+
+    class Meta:
+        queryset = models.PlatformInstanceParameter.objects.all()
+        resource_name = 'platformparameter'
+        # TODO: FIXME: BasicAuth is horribly insecure without using SSL.
+        # Digest is better, but configuration proved tricky.
+        authentication = BasicAuthentication()
+        authentication = MyBasicAuthentication()
+        #authentication = DigestAuthentication()
+        authorization = DjangoAuthorization()
+        allowed_methods = ['get']
+        filtering = {
+            'name': ALL_WITH_RELATIONS,
+            'paramset': ALL_WITH_RELATIONS,
+        }
+
+    def apply_authorization_limits(self, request, object_list):
+        return object_list.filter(user=request.user)
+
+
+    def get_object_list(self, request):
+        from urlparse import urlparse, parse_qsl
+        url = urlparse(request.META['REQUEST_URI'])
+        query = parse_qsl(url.query)
+        query_settings = dict(x[0:] for x in query)
+        logger.debug('query=%s' % query)
+        logger.debug('query_settings=%s' % query_settings)
+        schema = query_settings['schema']
+        return models.PlatformInstanceParameter.objects.filter(
+            paramset__schema__namespace__startswith=schema)

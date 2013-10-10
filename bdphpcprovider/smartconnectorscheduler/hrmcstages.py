@@ -31,6 +31,7 @@ import paramiko
 import getpass
 from urlparse import urlparse, parse_qsl
 
+
 from django.utils.importlib import import_module
 from django.core.exceptions import ImproperlyConfigured
 from django.template import Context, Template

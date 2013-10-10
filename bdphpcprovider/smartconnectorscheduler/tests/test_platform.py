@@ -32,14 +32,10 @@ from bdphpcprovider.smartconnectorscheduler.platform \
 
 
 class TestPlatform(unittest.TestCase):
-
     def setUp(self):
         self.username = 'test_user'
         self.create_user(self.username)
         self.create_platform_schema()
-
-
-
         self.name = 'HRMC_tenancy'
         self.private_key = 'bdp'
         self.private_key_path = '/home/bdp/.ssh/bdp.pem'
@@ -169,14 +165,15 @@ class TestPlatform(unittest.TestCase):
         self.assertTrue(created)
 
         self.nectar_parameters['name'] = 'HRMC_Tenancy_II'
-        filter_field = {'name': self.nectar_parameters['name']}
-        filter_field['unrecognized_field'] = 'unrecognized'
-        created = create_platform_paramset(self.username, self.nectar_namespace,
-                                           self.nectar_parameters, filter_field)
+        filter_keys = ('name', 'unrecognized_field')
+        created = create_platform_paramset(
+            self.username, self.nectar_namespace,
+            self.nectar_parameters, filter_keys=filter_keys)
         self.assertTrue(created)
 
-        recreated = create_platform_paramset(self.username, self.nectar_namespace,
-                                             self.nectar_parameters, filter_field)
+        recreated = create_platform_paramset(
+            self.username, self.nectar_namespace,
+            self.nectar_parameters, filter_keys=filter_keys)
         self.assertFalse(recreated)
 
         self.nectar_parameters = {
@@ -189,9 +186,10 @@ class TestPlatform(unittest.TestCase):
             'ec2_access_key': self.ec2_access_key,
             'ec2_secret_key': self.ec2_secret_key
         }
-        filter_field = self.nectar_parameters
-        created = create_platform_paramset(self.username, self.nectar_namespace,
-                                           self.nectar_parameters, filter_field)
+        filter_keys = [k for k, v in self.nectar_parameters.items()]
+        created = create_platform_paramset(
+            self.username, self.nectar_namespace,
+            self.nectar_parameters, filter_keys=filter_keys)
         self.assertTrue(created)
 
         created = create_platform_paramset(self.username, self.unknown_namespace, self.nectar_parameters)
