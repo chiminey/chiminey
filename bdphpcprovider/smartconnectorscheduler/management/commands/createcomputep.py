@@ -32,6 +32,14 @@ class Command(BaseCommand):
     namespace = 'http://rmit.edu.au/schemas/platform/computation/nci'
 
     def handle(self, *args, **kwargs):
+        #from celery.task.control import discard_all
+        #discard_all()
+
+        #contexts = models.Context.objects.all()
+        #for context in contexts:
+        #    context.deleted = True
+        #    context.save()
+
         #fixme: if http request is made, then
         #fixme bdp_username=request.user.username
         bdp_username = 'seid'
@@ -139,9 +147,37 @@ class Command(BaseCommand):
                 'username': 'nci',
                 }
 
+        self.name = 'HRMC_tenancy'
+        self.private_key = 'bdp'
+        self.private_key_path = '/home/bdp/.ssh/bdp.pem'
+        self.vm_image_size = 'm1.small'
+        self.ec2_access_key = 'EC2_ACCESS_KEY_1234'
+        self.ec2_secret_key = 'EC2_SECRET_KEY_5678'
+        self.nectar_parameters =  {
+            'name': self.name,
+            'private_key': self.private_key,
+            'private_key_path': self.private_key_path,
+            'vm_image_size': self.vm_image_size,
+            'ec2_access_key': self.ec2_access_key,
+            'ec2_secret_key': self.ec2_secret_key
+        }
+
+        self.PARAMS = self.nectar_parameters
+        self.namespace = 'http://rmit.edu.au/schemas/platform/computation/nectar'
 
         create_platform_paramset(bdp_username, self.namespace, self.PARAMS)
-        delete_platform_paramsets(bdp_username, self.namespace, self.PARAMS_D)
+
+        self.nci_parameters = {
+            'private_key_path': '/short/h72',
+            'username': 'user1'
+        }
+        self.namespace = 'http://rmit.edu.au/schemas/platform/computation/nci'
+        self.PARAMS = self.nci_parameters
+        create_platform_paramset(bdp_username, self.namespace, self.PARAMS)
+
+
+
+        #delete_platform_paramsets(bdp_username, self.namespace, self.PARAMS_D)
         '''
         print'-----'
         user = User.objects.get(username=bdp_username)

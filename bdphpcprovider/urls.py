@@ -16,7 +16,10 @@ from core.views import (
     UserProfileParameterResource,
     UserProfileParameterSetResource,
     ContextResource,
-    UserResource
+    UserResource,
+    PlatformInstanceResource,
+    PlatformInstanceParameterSetResource,
+    PlatformInstanceParameterResource
     )
 from tastypie.api import Api
 v1_api = Api(api_name='v1')
@@ -28,6 +31,9 @@ v1_api.register(UserProfileParameterResource())
 v1_api.register(UserProfileParameterSetResource())
 v1_api.register(ParameterNameResource())
 v1_api.register(ContextResource())
+v1_api.register(PlatformInstanceResource())
+v1_api.register(PlatformInstanceParameterSetResource())
+v1_api.register(PlatformInstanceParameterResource())
 
 
 urlpatterns = patterns('',

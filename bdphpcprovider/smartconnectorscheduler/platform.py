@@ -29,13 +29,18 @@ logger = logging.getLogger(__name__)
 
 
 def create_platform_paramset(username, schema_namespace,
-                             parameters, filter_field=None):
+                             parameters, filter_keys=None):
     owner = get_owner(username)
     if not owner:
         logger.debug('username=%s unknown' % username)
         return False
-    if not filter_field:
-        filter_field = parameters
+    if not filter_keys:
+        filters = parameters
+    else:
+        filters = {}
+        for k, v in parameters.items():
+            if k in filter_keys:
+                filters[k] = v
     platform, _ = models.PlatformInstance.objects.get_or_create(
        owner=owner, schema_namespace_prefix=schema_namespace)
     schema, _ = models.Schema.objects.get_or_create(namespace=schema_namespace)
@@ -47,7 +52,7 @@ def create_platform_paramset(username, schema_namespace,
                      % (required_params, provided_params))
         return False
     unique = is_unique_platform_paramset(
-        platform, schema, filter_field)
+        platform, schema, filters)
     logger.debug('unique parameter set %s' % unique)
     if unique:
          param_set = models.PlatformInstanceParameterSet.objects\
@@ -62,6 +67,7 @@ def create_platform_paramset(username, schema_namespace,
             models.PlatformInstanceParameter.objects\
                 .get_or_create(name=param_name, paramset=param_set, value=v)
          return True
+    logger.debug('Parameterset already exists')
     return False
 
 
@@ -88,31 +94,23 @@ def retrieve_platform_paramsets(username, schema_namespace):
     return recorded_platforms
 
 
-def delete_platform_paramsets(username, schema_namespace, filter_field):
-    if not filter_field:
-        logger.debug('Filter field should not be empty. Exiting...')
-        return
-    platform, schema = get_platform_and_schema(username, schema_namespace)
-    param_sets = filter_platform_paramsets(platform, schema, filter_field)
-    for param_set in param_sets:
-        logger.debug('deleting ... %s' % param_set)
-        param_set.delete()
-
-
 def update_platform_paramset(username, schema_namespace,
-                             filter_field, updated_params):
+                             filters, updated_params):
     platform, schema = get_platform_and_schema(username, schema_namespace)
     if not required_param_exists(schema, updated_params):
-        logger.debug('Parameters to be updated are unknown')
+        logger.debug('keys in updated_parameters are unknown')
         return False
-    new_filter_field = dict(filter_field)
-    new_filter_field.update(updated_params)
-    if not is_unique_platform_paramset(platform, schema, new_filter_field):
+    if not required_param_exists(schema, filters):
+        logger.debug('keys in filters are unknown')
+        return False
+    new_filters = dict(filters)
+    new_filters.update(updated_params)
+    if not is_unique_platform_paramset(platform, schema, new_filters):
         logger.debug('Record exists with the updated parameter')
         return False
-    param_sets = filter_platform_paramsets(platform, schema, filter_field)
+    param_sets = filter_platform_paramsets(platform, schema, filters)
     if len(param_sets) != 1:
-        logger.debug('Multiple records found. Add more parameters to the filter field')
+        logger.debug('Multiple records found. Add more parameters to filters')
         return False
     platform_parameters = models.PlatformInstanceParameter\
         .objects.filter(paramset=param_sets[0])
@@ -122,35 +120,44 @@ def update_platform_paramset(username, schema_namespace,
         if name in keys:
             platform_parameter.value = updated_params[name]
             platform_parameter.save()
-
     return True
 
 
-def is_unique_platform_paramset(platform, schema, filter_field):
-    if not filter_field:
+def delete_platform_paramsets(username, schema_namespace, filters):
+    if not filters:
+        logger.debug('Filter should not be empty. Exiting...')
+        return
+    platform, schema = get_platform_and_schema(username, schema_namespace)
+    param_sets = filter_platform_paramsets(platform, schema, filters)
+    for param_set in param_sets:
+        logger.debug('deleting ... %s' % param_set)
+        param_set.delete()
+    logger.debug("%d platforms are deleted" % len(param_sets))
+
+
+def is_unique_platform_paramset(platform, schema, filters):
+    if not filters:
         logger.debug('Filter field should not be empty. Exiting...')
         return False
     param_sets = filter_platform_paramsets(
-        platform, schema, filter_field)
+        platform, schema, filters)
     if param_sets:
         return False
     return True
 
 
-def filter_platform_paramsets(platform, schema, filter_field):
-    #unknown_filter_field = False
-    if not required_param_exists(schema, filter_field):
+def filter_platform_paramsets(platform, schema, filters):
+    if not required_param_exists(schema, filters):
         return []
     param_sets = models.PlatformInstanceParameterSet\
         .objects.filter(platform=platform)
-    for k, v in filter_field.items():
+    for k, v in filters.items():
         logger.debug('k=%s, v=%s' % (k, v))
         try:
             param_name = models.ParameterName.objects.get(
                 schema=schema, name=k)
         except ObjectDoesNotExist as e:
             logger.debug('Skipping unrecognized parametername: %s' % k)
-            #unknown_filter_field = True
             continue
         except Exception:
             raise
@@ -166,7 +173,7 @@ def filter_platform_paramsets(platform, schema, filter_field):
             except Exception:
                 raise
         param_sets = list(potential_paramsets)
-    return param_sets#, unknown_filter_field
+    return param_sets
 
 
 def get_owner(username):
