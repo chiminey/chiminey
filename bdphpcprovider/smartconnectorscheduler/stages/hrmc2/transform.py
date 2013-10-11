@@ -61,14 +61,17 @@ class Transform(Stage):
         except KeyError, e:
             logger.debug(e)
 
-        current_processes = ast.literal_eval(smartconnector.get_existing_key(run_settings,
-                'http://rmit.edu.au/schemas/stages/schedule/current_processes'))
-        executed_not_running = [x for x in current_processes if x['status'] == 'ready']
-        if executed_not_running:
-            logger.debug('executed_not_running=%s' % executed_not_running)
-            return False
-        else:
-            logger.debug('No ready: executed_not_running=%s' % executed_not_running)
+        try:
+            current_processes = ast.literal_eval(smartconnector.get_existing_key(run_settings,
+                    'http://rmit.edu.au/schemas/stages/schedule/current_processes'))
+            executed_not_running = [x for x in current_processes if x['status'] == 'ready']
+            if executed_not_running:
+                logger.debug('executed_not_running=%s' % executed_not_running)
+                return False
+            else:
+                logger.debug('No ready: executed_not_running=%s' % executed_not_running)
+        except KeyError, e:
+            logger.debug(e)
 
         try:
             failed_str = run_settings['http://rmit.edu.au/schemas/stages/create'][u'failed_nodes']
@@ -80,9 +83,9 @@ class Transform(Stage):
         except KeyError, e:
             logger.debug(e)
 
-        if self._exists(run_settings, 'http://rmit.edu.au/schemas/hrmc', u'threshold'):
+        if self._exists(run_settings, 'http://rmit.edu.au/schemas/input/hrmc', u'threshold'):
             # FIXME: need to validate this output to make sure list of int
-            self.threshold = ast.literal_eval(run_settings['http://rmit.edu.au/schemas/hrmc'][u'threshold'])
+            self.threshold = ast.literal_eval(run_settings['http://rmit.edu.au/schemas/input/hrmc'][u'threshold'])
         else:
             logger.warn("no threshold found when expected")
             return False
@@ -144,10 +147,10 @@ class Transform(Stage):
         self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
 
         #TODO: we assume relative path BDP_URL here, but could be made to work with non-relative (ie., remote paths)
-        self.job_dir = run_settings['http://rmit.edu.au/schemas/system/misc'][u'output_location']
+        self.job_dir = run_settings['http://rmit.edu.au/schemas/input/system'][u'output_location']
 
-        if self._exists(run_settings, 'http://rmit.edu.au/schemas/system/misc', u'id'):
-            self.id = run_settings['http://rmit.edu.au/schemas/system/misc'][u'id']
+        if self._exists(run_settings, 'http://rmit.edu.au/schemas/system', u'id'):
+            self.id = run_settings['http://rmit.edu.au/schemas/system'][u'id']
             self.output_dir = os.path.join(os.path.join(self.job_dir, "output_%s" % self.id))
             self.input_dir = os.path.join(os.path.join(self.job_dir, "input_%d" % self.id))
             self.new_input_dir = os.path.join(os.path.join(self.job_dir, "input_%d" % (self.id + 1)))
@@ -157,9 +160,9 @@ class Transform(Stage):
             self.output_dir = os.path.join(os.path.join(self.job_dir, "input"))
             self.new_input_dir = os.path.join(os.path.join(self.job_dir, "input_1"))
 
-        if self._exists(run_settings, 'http://rmit.edu.au/schemas/hrmc', u'experiment_id'):
+        if self._exists(run_settings, 'http://rmit.edu.au/schemas/input/mytardis', u'experiment_id'):
             try:
-                self.experiment_id = int(run_settings['http://rmit.edu.au/schemas/hrmc'][u'experiment_id'])
+                self.experiment_id = int(run_settings['http://rmit.edu.au/schemas/input/mytardis'][u'experiment_id'])
             except ValueError:
                 self.experiment_id = 0
         else:
@@ -184,19 +187,19 @@ class Transform(Stage):
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/run/payload_cloud_dirname')
         smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/hrmc/max_seed_int')
+            'http://rmit.edu.au/schemas/system/max_seed_int')
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/run/compile_file')
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/run/retry_attempts')
         smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/hrmc/number_vm_instances')
+            'http://rmit.edu.au/schemas/input/system/cloud/number_vm_instances')
         smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/hrmc/iseed')
+            'http://rmit.edu.au/schemas/input/hrmc/iseed')
         smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/hrmc/number_dimensions')
+            'http://rmit.edu.au/schemas/input/hrmc/number_dimensions')
         smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/hrmc/threshold')
+            'http://rmit.edu.au/schemas/input/hrmc/threshold')
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/create/nectar_username')
         smartconnector.copy_settings(self.boto_settings, run_settings,
@@ -445,7 +448,7 @@ class Transform(Stage):
         if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/transform'):
             run_settings['http://rmit.edu.au/schemas/stages/transform'] = {}
         run_settings['http://rmit.edu.au/schemas/stages/transform'][u'transformed'] = 1
-        run_settings['http://rmit.edu.au/schemas/hrmc']['experiment_id'] = str(self.experiment_id)
+        run_settings['http://rmit.edu.au/schemas/input/mytardis']['experiment_id'] = str(self.experiment_id)
 
         print "End of Transformation: \n %s" % self.audit
 

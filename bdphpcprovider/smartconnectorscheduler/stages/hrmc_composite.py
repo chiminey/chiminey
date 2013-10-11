@@ -41,7 +41,7 @@ class HRMCParallelStage(ParallelStage):
         return u"HRMCParallelStage"
 
     def get_run_map(self, settings, **kwargs):
-        self.settings = settings.copy()
+        local_settings = settings.copy()
         try:
             rand_index = kwargs['rand_index']
         except KeyError, e:
@@ -50,25 +50,25 @@ class HRMCParallelStage(ParallelStage):
         try:
             run_settings = kwargs['run_settings']
             logger.debug('run_settings=%s' % run_settings)
-            smartconnector.copy_settings(self.settings, run_settings,
-                'http://rmit.edu.au/schemas/hrmc/fanout_per_kept_result')
-            smartconnector.copy_settings(self.settings, run_settings,
-            'http://rmit.edu.au/schemas/hrmc/number_dimensions')
-            smartconnector.copy_settings(self.settings, run_settings,
-                'http://rmit.edu.au/schemas/hrmc/threshold')
-            smartconnector.copy_settings(self.settings, run_settings,
-                'http://rmit.edu.au/schemas/hrmc/pottype')
-            smartconnector.copy_settings(self.settings, run_settings,
-                'http://rmit.edu.au/schemas/hrmc/max_seed_int')
-            smartconnector.copy_settings(self.settings, run_settings,
-                'http://rmit.edu.au/schemas/hrmc/random_numbers')
-            smartconnector.copy_settings(self.settings, run_settings,
-                'http://rmit.edu.au/schemas/system/misc/id')
+            smartconnector.copy_settings(local_settings, run_settings,
+                'http://rmit.edu.au/schemas/input/hrmc/fanout_per_kept_result')
+            smartconnector.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/input/hrmc/number_dimensions')
+            smartconnector.copy_settings(local_settings, run_settings,
+                'http://rmit.edu.au/schemas/input/hrmc/threshold')
+            smartconnector.copy_settings(local_settings, run_settings,
+                'http://rmit.edu.au/schemas/input/hrmc/pottype')
+            smartconnector.copy_settings(local_settings, run_settings,
+                'http://rmit.edu.au/schemas/system/max_seed_int')
+            smartconnector.copy_settings(local_settings, run_settings,
+                'http://rmit.edu.au/schemas/system/random_numbers')
+            smartconnector.copy_settings(local_settings, run_settings,
+                'http://rmit.edu.au/schemas/system/id')
         except KeyError, e:
             logger.debug(e)
-        logger.debug("self.settings=%s" % self.settings)
+        logger.debug("local_settings=%s" % local_settings)
         try:
-            id = self.settings['id']
+            id = local_settings['id']
             #id = smartconnector.get_existing_key(run_settings,
             #    'http://rmit.edu.au/schemas/system/misc/id')
         except KeyError, e:
@@ -76,21 +76,21 @@ class HRMCParallelStage(ParallelStage):
             id = 0
         logger.debug("id=%s" % id)
         # variations map spectification
-        if 'pottype' in self.settings:
-            logger.debug("pottype=%s" % self.settings['pottype'])
+        if 'pottype' in local_settings:
+            logger.debug("pottype=%s" % local_settings['pottype'])
             try:
-                pottype = int(self.settings['pottype'])
+                pottype = int(local_settings['pottype'])
             except ValueError:
-                logger.error("cannot convert %s to pottype" % self.settings['pottype'])
+                logger.error("cannot convert %s to pottype" % local_settings['pottype'])
                 pottype = 0
         else:
             pottype = 0
 
-        num_dim = self.settings['number_dimensions']
+        num_dim = local_settings['number_dimensions']
         if num_dim == 1:
-            N = self.settings['fanout_per_kept_result']
-            rand_nums = hrmcstages.generate_rands(self.settings,
-                0, self.settings['max_seed_int'],
+            N = local_settings['fanout_per_kept_result']
+            rand_nums = hrmcstages.generate_rands(local_settings,
+                0, local_settings['max_seed_int'],
                 N, rand_index)
             rand_index += N
 
@@ -101,14 +101,14 @@ class HRMCParallelStage(ParallelStage):
                 'pottype': [pottype]
             }
         elif num_dim == 2:
-            threshold = self.settings['threshold']
+            threshold = local_settings['threshold']
             logger.debug("threshold=%s" % threshold)
             N = int(ast.literal_eval(threshold)[0])
             logger.debug("N=%s" % N)
             if not id:
                 rand_nums = hrmcstages.generate_rands(
-                    self.settings,
-                    0, self.settings['max_seed_int'],
+                    local_settings,
+                    0, local_settings['max_seed_int'],
                     4 * N, rand_index)
                 rand_index += N
                 map = {
@@ -119,8 +119,8 @@ class HRMCParallelStage(ParallelStage):
                 }
             else:
                 rand_nums = hrmcstages.generate_rands(
-                    self.settings,
-                    0, self.settings['max_seed_int'],
+                    local_settings,
+                    0, local_settings['max_seed_int'],
                     1, rand_index)
                 rand_index += N
                 map = {
@@ -139,10 +139,10 @@ class HRMCParallelStage(ParallelStage):
     def get_total_templates(self, maps, **kwargs):
         run_settings = kwargs['run_settings']
         auth_settings = kwargs['auth_settings']
-        job_dir = run_settings['http://rmit.edu.au/schemas/system/misc'][u'output_location']
+        job_dir = run_settings['http://rmit.edu.au/schemas/input/system'][u'output_location']
         try:
             id = smartconnector.get_existing_key(
-                run_settings, 'http://rmit.edu.au/schemas/system/misc/id')
+                run_settings, 'http://rmit.edu.au/schemas/system/id')
         except KeyError, e:
             logger.error(e)
             id = 0

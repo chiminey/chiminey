@@ -67,6 +67,9 @@ class Schema(models.Model):
     def __unicode__(self):
         return "%s" % self.name
 
+    def get_parameters(self):
+        return ParameterName.filter(schema=self)
+
 
 class ParameterName(models.Model):
     """ A parameter associated with a schema
@@ -80,7 +83,7 @@ class ParameterName(models.Model):
         :attribute help_text: text that appears in admin tool
         :attribute max_length: maximum length for STRING types
     """
-    schema = models.ForeignKey(Schema, help_text="Schema that contains this parameter")
+    schema = models.ForeignKey(Schema, help_text ="Schema that contains this parameter")
     name = models.CharField(max_length=50)
     # TODO: need to do this so that each paramter can appear only once
     # in each schema
@@ -126,6 +129,10 @@ class ParameterName(models.Model):
     max_length = models.IntegerField(default=255,
                                      verbose_name="Maximum number of "
                                      "characters in a parameter")
+    subtype = models.TextField(default="", blank=True,
+                                 verbose_name="Subtype for the parameter")
+    description = models.TextField(default="", blank=True,
+        verbose_name="Human readable name for the parameter")
 
     def __unicode__(self):
         return u'%s (%s)' % (self.name, self.schema.name)
@@ -387,6 +394,11 @@ class Directive(models.Model):
     Holds an platform independent operation provided by an API
     """
     name = models.CharField(max_length=256)
+    description = models.TextField(default="", blank=True,
+                               verbose_name="Description",
+                             help_text="Human Readable name for this directive")
+    hidden = models.BooleanField(default=False)
+
 
     def __unicode__(self):
         return u"Directive:%s" % (self.name)
@@ -412,7 +424,7 @@ class DirectiveArgSet(models.Model):
     as high level schemas
     which can then be checked against usage.
     """
-    directive = models.ForeignKey(Stage)
+    directive = models.ForeignKey(Directive)
     order = models.IntegerField()
     schema = models.ForeignKey(Schema)
 

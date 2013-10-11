@@ -505,7 +505,7 @@ class ContextResourceTest(ResourceTestCase):
             name='nectar', root_path='/home/centos')
 
         # Name our smart connector directive
-        directive = models.Directive(name="smartconnector_hrmc")
+        directive = models.Directive(name="hrmc")
         directive.save()
 
         composite_stage = models.Stage.objects.create(name="basic_connector",
@@ -559,7 +559,8 @@ class ContextResourceTest(ResourceTestCase):
                 'error_threshold': "0.03",
                 'max_iteration': 20,
                 'pottype': 1,
-                'output_location': 'foobar'}
+                'output_location': 'foobar',
+                'smart_connector': 'hrmc'}
 
         self.assertHttpCreated(self.api_client.post('/api/v1/context/?format=json',
             format='json', data=self.post_data,

@@ -45,7 +45,7 @@ def setup_settings(run_settings):
         'http://rmit.edu.au/schemas/remotemake/config'][
         'payload_destination']
     settings['input_location'] = run_settings[
-        'http://rmit.edu.au/schemas/remotemake']['input_location']
+        'http://rmit.edu.au/schemas/input/system']['input_location']
     for key in ['nci_user', 'nci_password']:
         settings[key] = \
             run_settings[models.UserProfile.PROFILE_SCHEMA_NS][key]
@@ -55,12 +55,12 @@ def setup_settings(run_settings):
             run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nci_host']
     settings['output_location'] = \
             run_settings[
-                'http://rmit.edu.au/schemas/system/misc'][
+                'http://rmit.edu.au/schemas/input/system'][
                 'output_location']
 
     experiment_id = 0
     try:
-        experiment_id = int(run_settings['http://rmit.edu.au/schemas/remotemake'][u'experiment_id'])
+        experiment_id = int(run_settings['http://rmit.edu.au/schemas/input/mytardis'][u'experiment_id'])
     except ValueError:
         experiment_id = 0
     settings['experiment_id'] = experiment_id
@@ -76,5 +76,5 @@ def setup_settings(run_settings):
         'http://rmit.edu.au/schemas/system']['contextid']
 
     settings['sweep_map'] = run_settings[
-            'http://rmit.edu.au/schemas/stages/make']['sweep_map']
+            'http://rmit.edu.au/schemas/input/sweep']['sweep_map']
     return settings

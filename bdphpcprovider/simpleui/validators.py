@@ -1,5 +1,9 @@
 import json
+import logging
 from django.core.validators import ValidationError
+
+logger = logging.getLogger(__name__)
+
 
 def validate_sweep_map(value):
     # FIXME: more detailed validation required here
@@ -167,8 +171,6 @@ def validate_error_threshold(value):
     #     ('error_threshold', "0.03"),
     #     ('max_iteration', 20)
 
-
-
 def validate_experiment_id(value):
     experiment_id = value
 
@@ -178,7 +180,101 @@ def validate_experiment_id(value):
     except ValueError:
         raise ValidationError(msg)
 
-    if vms < 0 :
+    if vms < 0:
         raise ValidationError(msg)
 
     return experiment_id
+
+
+def validate_natural_number(value):
+    msg = u'natural number'
+    try:
+        v = int(value)
+    except ValueError:
+        raise ValidationError(msg)
+    if v < 0:
+        raise ValidationError(msg)
+    return value
+
+
+def validate_whole_number(value):
+    msg = u'whole number'
+    logger.debug("checking whole number %s" % value)
+
+    try:
+        v = int(value)
+    except ValueError:
+        raise ValidationError(msg)
+    if v < 1:
+        raise ValidationError(msg)
+    return value
+
+def validate_float_number(value):
+    msg = u'real number'
+    try:
+        v = float(value)
+
+    except ValueError, e:
+        raise ValidationError(msg)
+    return value
+
+def validate_even_number(value):
+    msg = u'even number'
+    try:
+        v = int(value)
+    except ValueError:
+        raise ValidationError(msg)
+    if not v % 2 == 0:
+        raise ValidationError(msg)
+    return value
+
+
+def validate_string(value):
+    msg = u'string'
+    return str(value)
+
+
+def validate_BDP_url(value):
+    logger.debug("checking bdpurl %s" % value)
+    if not len(str(value)):
+        raise ValidationError("BDP url is empty")
+    return str(value)
+
+
+def validate_bool(value):
+    logger.debug("checking bool %s" % value)
+    msg = u'boolean not valid'
+    try:
+        v = bool(value)
+    except ValueError:
+        raise ValidationError(msg)
+    return int(value)
+
+
+def validate_jsondict(value):
+    logger.debug("checking jsondict")
+    try:
+        map = json.loads(value)
+    except Exception:
+        msg = u'JSON is invalid'
+        raise ValidationError(msg)
+    return str(value)
+
+
+def check_addition(cleaned_data):
+    arg1 = cleaned_data.get("http://rmit.edu.au/schemas/input2/arg1", 0)
+    arg2 = cleaned_data.get("http://rmit.edu.au/schemas/input2/arg1", 0)
+    arg3 = cleaned_data.get("http://rmit.edu.au/schemas/input2/arg3", 0)
+    logger.debug("arg1=%s" % arg1)
+    logger.debug("arg2=%s" % arg2)
+    logger.debug("arg3=%s" % arg3)
+    msg = u"arg3 must be arg1 + arg2"
+    if arg1 + arg2 != arg3:
+        raise ValidationError(msg)
+    else:
+        logger.debug("okay")
+
+
+
+
+

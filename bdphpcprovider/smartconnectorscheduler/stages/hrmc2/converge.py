@@ -62,8 +62,8 @@ class IterationConverge(Stage):
     def triggered(self, run_settings):
         """
         """
-        if self._exists(run_settings, 'http://rmit.edu.au/schemas/system/misc', u'id'):
-            self.id = run_settings['http://rmit.edu.au/schemas/system/misc'][u'id']
+        if self._exists(run_settings, 'http://rmit.edu.au/schemas/system', u'id'):
+            self.id = run_settings['http://rmit.edu.au/schemas/system'][u'id']
         else:
             logger.warn("Cannot retrieve id. Maybe first iteration?")
             self.id = 0
@@ -114,7 +114,7 @@ class IterationConverge(Stage):
 
         self.id += 1
         #update_key('id', self.id, context)
-        run_settings['http://rmit.edu.au/schemas/system/misc'][u'id'] = self.id
+        run_settings['http://rmit.edu.au/schemas/system'][u'id'] = self.id
 
         return run_settings
 
@@ -136,12 +136,12 @@ class Converge(Stage):
     def triggered(self, run_settings):
         """
         """
-        if self._exists(run_settings, 'http://rmit.edu.au/schemas/hrmc', u'error_threshold'):
-            self.error_threshold = float(run_settings['http://rmit.edu.au/schemas/hrmc'][u'error_threshold'])
+        if self._exists(run_settings, 'http://rmit.edu.au/schemas/input/hrmc', u'error_threshold'):
+            self.error_threshold = float(run_settings['http://rmit.edu.au/schemas/input/hrmc'][u'error_threshold'])
+            logger.debug("error_threshold=%s" % self.error_threshold)
         else:
             pass  # FIXME: is this an error condition?
 
-        logger.debug("error_threshold=%s" % self.error_threshold)
 
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/transform', u'transformed'):
             self.transformed = int(run_settings['http://rmit.edu.au/schemas/stages/transform'][u'transformed'])
@@ -160,10 +160,10 @@ class Converge(Stage):
         self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
 
         #TODO: we assume relative path BDP_URL here, but could be made to work with non-relative (ie., remote paths)
-        self.job_dir = run_settings['http://rmit.edu.au/schemas/system/misc'][u'output_location']
+        self.job_dir = run_settings['http://rmit.edu.au/schemas/input/system'][u'output_location']
 
-        if self._exists(run_settings, 'http://rmit.edu.au/schemas/system/misc', u'id'):
-            self.id = run_settings['http://rmit.edu.au/schemas/system/misc'][u'id']
+        if self._exists(run_settings, 'http://rmit.edu.au/schemas/system', u'id'):
+            self.id = run_settings['http://rmit.edu.au/schemas/system'][u'id']
             self.output_dir = os.path.join(self.job_dir, "output_%d" % self.id)
             self.iter_inputdir = os.path.join(self.job_dir, "input_%d" % (self.id + 1))
             #self.new_iter_inputdir = "input_%d" % (self.id + 1)
@@ -172,9 +172,9 @@ class Converge(Stage):
             self.iter_inputdir = os.path.join(self.job_dir, "input")
             self.id = 0
 
-        if self._exists(run_settings, 'http://rmit.edu.au/schemas/hrmc', u'experiment_id'):
+        if self._exists(run_settings, 'http://rmit.edu.au/schemas/input/mytardis', u'experiment_id'):
             try:
-                self.experiment_id = int(run_settings['http://rmit.edu.au/schemas/hrmc'][u'experiment_id'])
+                self.experiment_id = int(run_settings['http://rmit.edu.au/schemas/input/mytardis'][u'experiment_id'])
             except ValueError, e:
                 self.experiment_id = 0
         else:
@@ -195,19 +195,19 @@ class Converge(Stage):
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/run/payload_cloud_dirname')
         smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/hrmc/max_seed_int')
+            'http://rmit.edu.au/schemas/system/max_seed_int')
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/run/compile_file')
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/run/retry_attempts')
         smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/hrmc/number_vm_instances')
+            'http://rmit.edu.au/schemas/input/system/cloud/number_vm_instances')
         smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/hrmc/iseed')
+            'http://rmit.edu.au/schemas/input/hrmc/iseed')
         smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/hrmc/number_dimensions')
+            'http://rmit.edu.au/schemas/input/hrmc/number_dimensions')
         smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/hrmc/threshold')
+            'http://rmit.edu.au/schemas/input/hrmc/threshold')
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/create/nectar_username')
         smartconnector.copy_settings(self.boto_settings, run_settings,
@@ -296,8 +296,8 @@ class Converge(Stage):
         difference = self.prev_criterion - min_crit
         logger.debug("Difference %f" % difference)
 
-        if self._exists(run_settings, 'http://rmit.edu.au/schemas/hrmc', u'max_iteration'):
-            max_iteration = int(run_settings['http://rmit.edu.au/schemas/hrmc'][u'max_iteration'])
+        if self._exists(run_settings, 'http://rmit.edu.au/schemas/input/hrmc', u'max_iteration'):
+            max_iteration = int(run_settings['http://rmit.edu.au/schemas/input/hrmc'][u'max_iteration'])
         else:
             raise BadInputException("unknown max_iteration")
         logger.debug("max_iteration=%s" % max_iteration)
@@ -552,7 +552,7 @@ class Converge(Stage):
         if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/converge'):
             run_settings['http://rmit.edu.au/schemas/stages/converge'] = {}
 
-        run_settings['http://rmit.edu.au/schemas/hrmc']['experiment_id'] = str(self.experiment_id)
+        run_settings['http://rmit.edu.au/schemas/input/mytardis']['experiment_id'] = str(self.experiment_id)
 
         if not self.done_iterating:
             # trigger first of iteration stages
@@ -610,7 +610,7 @@ class Converge(Stage):
 
         self.id += 1
         # update_key('id', self.id, context)
-        run_settings['http://rmit.edu.au/schemas/system/misc'][u'id'] = self.id
+        run_settings['http://rmit.edu.au/schemas/system'][u'id'] = self.id
 
         return run_settings
 

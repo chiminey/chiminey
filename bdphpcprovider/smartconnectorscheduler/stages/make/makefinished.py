@@ -327,7 +327,7 @@ class MakeFinishedStage(Stage):
     def output(self, run_settings):
         run_settings['http://rmit.edu.au/schemas/stages/make']['runs_left']  \
             = str(self.runs_left)
-        run_settings['http://rmit.edu.au/schemas/remotemake']['experiment_id'] \
+        run_settings['http://rmit.edu.au/schemas/input/mytardis']['experiment_id'] \
             = self.experiment_id
         # run_settings['http://rmit.edu.au/schemas/stages/make']['running'] = \
         #     self.still_running

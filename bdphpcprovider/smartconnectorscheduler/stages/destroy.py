@@ -66,31 +66,30 @@ class Destroy(smartconnector.Stage):
         # return False
 
     def process(self, run_settings):
-        self.boto_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
-        smartconnector.copy_settings(self.boto_settings, run_settings,
+        local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
+        smartconnector.copy_settings(local_settings, run_settings,
             'http://rmit.edu.au/schemas/system/platform')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
+        smartconnector.copy_settings(local_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/create/cloud_sleep_interval')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
+        smartconnector.copy_settings(local_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/create/created_nodes')
 
         node_type = 'created_nodes'
-        all_instances = collect_instances(self.boto_settings,
+        all_instances = collect_instances(local_settings,
             registered=True, node_type=node_type)
         if self.cleanup_nodes:
-            smartconnector.copy_settings(self.boto_settings, run_settings,
+            smartconnector.copy_settings(local_settings, run_settings,
             'http://rmit.edu.au/schemas/reliability/cleanup_nodes')
             node_type = 'cleanup_nodes'
-            all_instances.extend(collect_instances(self.boto_settings,
+            all_instances.extend(collect_instances(local_settings,
             registered=True, node_type=node_type))
 
         logger.debug('all_instance=%s' % all_instances)
         if all_instances:
-            destroy_environ(self.boto_settings, all_instances)
+            destroy_environ(local_settings, all_instances)
         else:
             logger.debug('No running VM instances in this context')
             logger.info('Destroy stage completed')
-
 
     def output(self, run_settings):
         run_settings.setdefault(

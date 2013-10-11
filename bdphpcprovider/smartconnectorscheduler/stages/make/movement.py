@@ -114,7 +114,7 @@ def _upload_variations_inputs(settings, source_url):
     logger.debug("encoded_s_url=%s" % encoded_s_url)
     runs_left = []
 
-    values_map = _load_values_map(settings, url)
+    values_map = _load_values_map(settings, source_url)
     logger.debug("values_map=%s" % values_map)
 
     for context in _create_variations(values_map, settings, variation_map):
@@ -144,7 +144,7 @@ def _upload_variations_inputs(settings, source_url):
 
 def _save_values(settings, url, context):
     values_url = smartconnector.get_url_with_pkey(settings,
-        os.path.join(url, self.VALUES_FNAME),
+        os.path.join(url, VALUES_FNAME),
         is_relative_path=True, ip_address=settings['ip'])
     hrmcstages.put_file(values_url, json.dumps(context))
 
@@ -199,7 +199,7 @@ def _load_values_map(settings, url):
     try:
         enc_url = get_url_with_pkey(
             settings,
-            "%s/%s" % (url, self.VALUES_FNAME))
+            "%s/%s" % (url, VALUES_FNAME))
         logger.debug("values_file=%s" % enc_url)
         values_content = hrmcstages.get_file(enc_url)
     except IOError:

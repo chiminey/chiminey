@@ -91,7 +91,7 @@ class Wait(Stage):
             logger.debug(e)
             self.procs_2b_rescheduled = []
 
-        self.reschedule_failed_procs = run_settings['http://rmit.edu.au/schemas/hrmc'][u'reschedule_failed_processes']
+        self.reschedule_failed_procs = run_settings['http://rmit.edu.au/schemas/input/reliability'][u'reschedule_failed_processes']
         self.failed_processes = self.ftmanager.\
                     get_total_failed_processes(self.executed_procs)
 
@@ -181,27 +181,27 @@ class Wait(Stage):
         #return True  # FIXME: this may be undesirable
         return False
 
-    def get_output(self, ip_address, process_id, output_dir, settings):
+    def get_output(self, ip_address, process_id, output_dir, local_settings):
         """
             Retrieve the output from the task on the node
         """
         logger.info("get_output of process %s on %s" % (process_id, ip_address))
 
-        cloud_path = os.path.join(self.boto_settings['payload_destination'],
+        cloud_path = os.path.join(local_settings['payload_destination'],
                                   process_id,
-                                  self.boto_settings['payload_cloud_dirname']
+                                  local_settings['payload_cloud_dirname']
                                   )
         logger.debug("cloud_path=%s" % cloud_path)
         logger.debug("Transferring output from %s to %s" % (cloud_path, output_dir))
         ip = ip_address#botocloudconnector.get_instance_ip(instance_id, settings)
         #ssh = open_connection(ip_address=ip, settings=settings)
-        source_files_location = "%s@%s" % (self.boto_settings['platform'], cloud_path)
-        source_files_url = smartconnector.get_url_with_pkey(self.boto_settings, source_files_location,
+        source_files_location = "%s@%s" % (local_settings['platform'], cloud_path)
+        source_files_url = smartconnector.get_url_with_pkey(local_settings, source_files_location,
             is_relative_path=True, ip_address=ip)
         logger.debug('source_files_url=%s' % source_files_url)
 
         dest_files_url = smartconnector.get_url_with_pkey(
-            self.boto_settings, os.path.join(
+            local_settings, os.path.join(
                 self.job_dir, self.output_dir, process_id),
             is_relative_path=False)
         logger.debug('dest_files_url=%s' % dest_files_url)
@@ -220,7 +220,7 @@ class Wait(Stage):
         self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
 
         #TODO: we assume relative path BDP_URL here, but could be made to work with non-relative (ie., remote paths)
-        self.job_dir = run_settings['http://rmit.edu.au/schemas/system/misc'][u'output_location']
+        self.job_dir = run_settings['http://rmit.edu.au/schemas/input/system'][u'output_location']
 
         try:
             self.finished_nodes = smartconnector.get_existing_key(run_settings,
@@ -230,7 +230,7 @@ class Wait(Stage):
 
         try:
             self.id = int(smartconnector.get_existing_key(run_settings,
-                'http://rmit.edu.au/schemas/system/misc/id'))
+                'http://rmit.edu.au/schemas/system/id'))
             self.output_dir = "output_%s" % self.id
         except KeyError, e:
             self.id = 0
@@ -240,11 +240,11 @@ class Wait(Stage):
         logger.debug("run_settings=%s" % run_settings)
         logger.debug("Wait stage process began")
 
-        self.boto_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
-        retrieve_boto_settings(run_settings, self.boto_settings)
+        local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
+        retrieve_local_settings(run_settings, local_settings)
 
-        logger.debug("boto_settings=%s" % self.boto_settings)
-        #self.nodes = botocloudconnector.get_rego_nodes(self.boto_settings)
+        logger.debug("local_settings=%s" % local_settings)
+        #self.nodes = botocloudconnector.get_rego_nodes(local_settings)
         processes = self.executed_procs
         self.error_nodes = []
         # TODO: parse finished_nodes input
@@ -265,7 +265,8 @@ class Wait(Stage):
             #    logging.error('Instance %s not running' % instance_id)
             #    self.error_nodes.append(node)
             #    continue
-            fin = self.job_finished(ip_address, process_id, retry_left, self.boto_settings)
+            fin = self.job_finished(ip_address, process_id, retry_left, local_settings)
+
             logger.debug("fin=%s" % fin)
             if fin:
                 print "done. output is available"
@@ -280,10 +281,10 @@ class Wait(Stage):
                 if not (int(process_id) in [int(x['id'])
                                             for x in self.finished_nodes
                                             if int(process_id) == int(x['id'])]):
-                    self.get_output(ip_address, process_id, self.output_dir, self.boto_settings)
+                    self.get_output(ip_address, process_id, self.output_dir, local_settings)
 
                     audit_url = smartconnector.get_url_with_pkey(
-                        self.boto_settings, os.path.join(
+                        local_settings, os.path.join(
                             self.output_dir, process_id, "audit.txt"),
                         is_relative_path=True)
 
@@ -377,22 +378,22 @@ class Wait(Stage):
         return run_settings
 
 
-def retrieve_boto_settings(run_settings, boto_settings):
-    smartconnector.copy_settings(boto_settings, run_settings,
+def retrieve_local_settings(run_settings, local_settings):
+    smartconnector.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/setup/payload_destination')
-    smartconnector.copy_settings(boto_settings, run_settings,
+    smartconnector.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/system/platform')
-    smartconnector.copy_settings(boto_settings, run_settings,
+    smartconnector.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/run/payload_cloud_dirname')
-    smartconnector.copy_settings(boto_settings, run_settings,
+    smartconnector.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/create/nectar_username')
-    smartconnector.copy_settings(boto_settings, run_settings,
+    smartconnector.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/create/nectar_password')
-    boto_settings['username'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_username']
-    boto_settings['username'] = 'root'  # FIXME: schema value is ignored
-    boto_settings['password'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
-    key_file = hrmcstages.retrieve_private_key(boto_settings,
+    local_settings['username'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_username']
+    local_settings['username'] = 'root'  # FIXME: schema value is ignored
+    local_settings['password'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
+    key_file = hrmcstages.retrieve_private_key(local_settings,
             run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nectar_private_key'])
-    boto_settings['private_key'] = key_file
-    boto_settings['nectar_private_key'] = key_file
+    local_settings['private_key'] = key_file
+    local_settings['nectar_private_key'] = key_file
 

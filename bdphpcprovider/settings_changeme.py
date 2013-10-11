@@ -15,7 +15,7 @@ ADMINS = (
     # ('Your Name', 'your_email@domain.com'),
 )
 
-SUB_SITE = "bdphpcprovider"
+#SUB_SITE = "bdphpcprovider"
 
 MANAGERS = ADMINS
 
@@ -160,11 +160,12 @@ INSTALLED_APPS = (
     'django.contrib.markup',
     'django.contrib.staticfiles',
     'south',
-    'django_nose',
     'storages',
     'djcelery',
     'djkombu',
     'tastypie',
+    'django_nose',
+    'widget_tweaks'
 
 ) + OUR_APPS
 

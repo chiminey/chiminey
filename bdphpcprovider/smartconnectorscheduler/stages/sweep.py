@@ -50,9 +50,9 @@ logger = logging.getLogger(__name__)
 
 class Sweep(Stage):
 
-    hrmc_schema = "http://rmit.edu.au/schemas/hrmc/"
-    system_schema = "http://rmit.edu.au/schemas/system/misc/"
-    sweep_schema = 'http://rmit.edu.au/schemas/stages/sweep/'
+    # hrmc_schema = "http://rmit.edu.au/schemas/hrmc/"
+    # system_schema = "http://rmit.edu.au/schemas/system/misc/"
+    # sweep_schema = 'http://rmit.edu.au/schemas/stages/sweep/'
 
     def __init__(self, user_settings=None):
         self.numbfile = 0
@@ -69,54 +69,56 @@ class Sweep(Stage):
         return True
 
     def process(self, run_settings):
-        self.boto_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
+        # Need to make copy because we pass on run_settings to sub connector
+        # so any changes we make to run_settings will be inherited
+        from copy import deepcopy
+        local_settings = deepcopy(run_settings[models.UserProfile.PROFILE_SCHEMA_NS])
 
-        smartconnector.copy_settings(self.boto_settings, run_settings,
+        smartconnector.copy_settings(local_settings, run_settings,
             'http://rmit.edu.au/schemas/system/platform')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/hrmc/number_vm_instances')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/hrmc/maximum_retry')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/hrmc/minimum_number_vm_instances')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/hrmc/experiment_id')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/hrmc/iseed')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/hrmc/number_dimensions')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/hrmc/threshold')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/hrmc/pottype')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/hrmc/error_threshold')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/hrmc/max_iteration')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/hrmc/reschedule_failed_processes')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/hrmc/random_numbers')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/hrmc/fanout_per_kept_result')
-
+        smartconnector.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/input/reliability/reschedule_failed_processes')
+        smartconnector.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/input/reliability/maximum_retry')
+        smartconnector.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/input/system/cloud/number_vm_instances')
+        smartconnector.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/input/system/cloud/minimum_number_vm_instances')
+        smartconnector.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/input/mytardis/experiment_id')
+        smartconnector.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/input/hrmc/iseed')
+        smartconnector.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/input/hrmc/number_dimensions')
+        smartconnector.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/input/hrmc/threshold')
+        smartconnector.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/input/hrmc/pottype')
+        smartconnector.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/input/hrmc/error_threshold')
+        smartconnector.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/input/hrmc/max_iteration')
+        smartconnector.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/system/random_numbers')
+        smartconnector.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/input/hrmc/fanout_per_kept_result')
 
         contextid = int(run_settings['http://rmit.edu.au/schemas/system'][
             u'contextid'])
         logger.debug("contextid=%s" % contextid)
 
-        self.rand_index = run_settings['http://rmit.edu.au/schemas/hrmc']['iseed']
+        self.rand_index = run_settings['http://rmit.edu.au/schemas/input/hrmc']['iseed']
         logger.debug("rand_index=%s" % self.rand_index)
 
         context = models.Context.objects.get(id=contextid)
         user = context.owner.user.username
-        self.job_dir = run_settings['http://rmit.edu.au/schemas/system/misc'][
+        self.job_dir = run_settings['http://rmit.edu.au/schemas/input/system'][
             u'output_location']
 
         subdirective = run_settings['http://rmit.edu.au/schemas/stages/sweep']['directive']
-        subdirective_ns = "http://rmit.edu.au/schemas/%s" % subdirective
+        subdirective_ns = "http://rmit.edu.au/schemas/input/%s" % subdirective
 
-        map_text = run_settings['http://rmit.edu.au/schemas/stages/sweep'][
+        map_text = run_settings['http://rmit.edu.au/schemas/input/sweep'][
             'sweep_map']
         map = json.loads(map_text)
         # # generate all variations
@@ -131,7 +133,7 @@ class Sweep(Stage):
         # runs end up overlapping in the random numbers they utilise.
         # solution is to have separate random files per run or partition
         # big file up.
-        rands = hrmcstages.generate_rands(settings=self.boto_settings,
+        rands = hrmcstages.generate_rands(settings=local_settings,
             start_range=0,
             end_range=-1,
             num_required=len(runs),
@@ -146,10 +148,10 @@ class Sweep(Stage):
             logger.debug("run=%s" % context)
             run_counter = int(context['run_counter'])
             logger.debug("run_counter=%s" % run_counter)
+            logger.debug("systemsetttings=%s" % pformat(run_settings['http://rmit.edu.au/schemas/input/system']))
             input_location = run_settings[
-                'http://rmit.edu.au/schemas/stages/sweep'][
-                u'input_location']
-            input_url = smartconnector.get_url_with_pkey(self.boto_settings,
+                'http://rmit.edu.au/schemas/input/system'][u'input_location']
+            input_url = smartconnector.get_url_with_pkey(local_settings,
                 input_location, is_relative_path=False)
             logger.debug("input_url=%s" % input_url)
             # job_dir contains some overriding context that this run is situated under
@@ -160,7 +162,7 @@ class Sweep(Stage):
                 "run%s" % str(run_counter),
                 "input_0",)
             logger.debug("run_inputdir=%s" % run_inputdir)
-            run_iter_url = smartconnector.get_url_with_pkey(self.boto_settings,
+            run_iter_url = smartconnector.get_url_with_pkey(local_settings,
                 run_inputdir, is_relative_path=False)
             logger.debug("run_iter_url=%s" % run_iter_url)
             hrmcstages.copy_directories(input_url, run_iter_url)
@@ -178,7 +180,7 @@ class Sweep(Stage):
             values_map = {}
             try:
                 values_url = smartconnector.get_url_with_pkey(
-                    self.boto_settings,
+                    local_settings,
                     os.path.join(run_inputdir, "initial",
                         '%s_values' % template_name),
                     is_relative_path=False)
@@ -205,35 +207,36 @@ class Sweep(Stage):
             #     else:
             #         logger.debug("no match to %s" % self.hrmc_schema)
 
-            data = dict([('%s/%s' % (param_name, key), value)
-                for param_name, params in run_settings.items()
-                    for key, value in params.items()
-                        if str(param_name).startswith(subdirective_ns)])
+            # data = dict([('%s/%s' % (param_name, key), value)
+            #     for param_name, params in run_settings.items()
+            #         for key, value in params.items()
+            #             if str(param_name).startswith(subdirective_ns)])
+            data = run_settings
             logger.debug("data=%s" % pformat(data))
-            data[self.hrmc_schema + u'iseed'] = rands[i]
-            data[self.hrmc_schema + 'input_location'] = "%s/run%s/input_0" % (self.job_dir, run_counter)
-            data['smart_connector'] = subdirective
-            data[self.system_schema + 'output_location'] = os.path.join(self.job_dir, subdirective)
+            data["http://rmit.edu.au/schemas/input/hrmc"][u'iseed'] = rands[i]
+            data["http://rmit.edu.au/schemas/input/system"]['input_location'] = "%s/run%s/input_0" % (self.job_dir, run_counter)
+            #data['smart_connector'] = subdirective
+            data["http://rmit.edu.au/schemas/input/system"]['output_location'] = os.path.join(self.job_dir, subdirective)
             logger.debug("data=%s" % pformat(data))
 
             # data2 = {'smart_connector': 'hrmc',
-            #             self.hrmc_schema + 'number_vm_instances': self.boto_settings['number_vm_instances'],
-            #             self.hrmc_schema + 'minimum_number_vm_instances': self.boto_settings['minimum_number_vm_instances'],
+            #             self.hrmc_schema + 'number_vm_instances': local_settings['number_vm_instances'],
+            #             self.hrmc_schema + 'minimum_number_vm_instances': local_settings['minimum_number_vm_instances'],
             #             self.hrmc_schema + u'iseed': rands[i],
             #             self.hrmc_schema + 'max_seed_int': 1000,
             #             self.hrmc_schema + 'input_location':  "%s/run%s/input_0" % (self.job_dir, run_counter),
-            #             self.hrmc_schema + 'number_dimensions': self.boto_settings['number_dimensions'],
-            #             self.hrmc_schema + 'threshold': str(self.boto_settings['threshold']),
-            #             self.hrmc_schema + 'fanout_per_kept_result': self.boto_settings['fanout_per_kept_result'],
-            #             self.hrmc_schema + 'error_threshold': str(self.boto_settings['error_threshold']),
-            #             self.hrmc_schema + 'max_iteration': self.boto_settings['max_iteration'],
-            #             self.hrmc_schema + 'pottype': self.boto_settings['pottype'],
-            #             self.hrmc_schema + 'experiment_id': self.boto_settings['experiment_id'],
+            #             self.hrmc_schema + 'number_dimensions': local_settings['number_dimensions'],
+            #             self.hrmc_schema + 'threshold': str(local_settings['threshold']),
+            #             self.hrmc_schema + 'fanout_per_kept_result': local_settings['fanout_per_kept_result'],
+            #             self.hrmc_schema + 'error_threshold': str(local_settings['error_threshold']),
+            #             self.hrmc_schema + 'max_iteration': local_settings['max_iteration'],
+            #             self.hrmc_schema + 'pottype': local_settings['pottype'],
+            #             self.hrmc_schema + 'experiment_id': local_settings['experiment_id'],
             #             self.system_schema + 'output_location': os.path.join(self.job_dir, 'hrmcrun')}
 
             # logger.debug("data2=%s" % pformat(data2))
 
-            submit_subtask("nectar", subdirective, [data], user)
+            submit_subtask("nectar", subdirective, data, user)
 
             # api_host = "http://127.0.0.1"
             # url = "%s/api/v1/context/?format=json" % api_host
@@ -246,18 +249,18 @@ class Sweep(Stage):
             # logger.debug("cookies=%s" % cookies)
             # headers = {'content-type': 'application/json'}
             # data = json.dumps({'smart_connector': 'smartconnector_hrmc',
-            #             self.hrmc_schema+'number_vm_instances': self.boto_settings['number_vm_instances'],
-            #             self.hrmc_schema+'minimum_number_vm_instances': self.boto_settings['minimum_number_vm_instances'],
+            #             self.hrmc_schema+'number_vm_instances': local_settings['number_vm_instances'],
+            #             self.hrmc_schema+'minimum_number_vm_instances': local_settings['minimum_number_vm_instances'],
             #             self.hrmc_schema+u'iseed': rands[i],
             #             self.hrmc_schema+'max_seed_int': 1000,
             #             self.hrmc_schema+'input_location':  new_input_location,
-            #             self.hrmc_schema+'number_dimensions': self.boto_settings['number_dimensions'],
-            #             self.hrmc_schema+'threshold': str(self.boto_settings['threshold']),
-            #             self.hrmc_schema+'fanout_per_kept_result': self.boto_settings['fanout_per_kept_result'],
-            #             self.hrmc_schema+'error_threshold': str(self.boto_settings['error_threshold']),
-            #             self.hrmc_schema+'max_iteration': self.boto_settings['max_iteration'],
-            #             self.hrmc_schema+'pottype': self.boto_settings['pottype'],
-            #             self.hrmc_schema+'experiment_id': self.boto_settings['experiment_id'],
+            #             self.hrmc_schema+'number_dimensions': local_settings['number_dimensions'],
+            #             self.hrmc_schema+'threshold': str(local_settings['threshold']),
+            #             self.hrmc_schema+'fanout_per_kept_result': local_settings['fanout_per_kept_result'],
+            #             self.hrmc_schema+'error_threshold': str(local_settings['error_threshold']),
+            #             self.hrmc_schema+'max_iteration': local_settings['max_iteration'],
+            #             self.hrmc_schema+'pottype': local_settings['pottype'],
+            #             self.hrmc_schema+'experiment_id': local_settings['experiment_id'],
             #             self.system_schema+'output_location': os.path.join(self.job_dir, 'hrmcrun') })
 
             # r = requests.post(url,
@@ -283,20 +286,30 @@ class Sweep(Stage):
 
 
 def submit_subtask(platform, directive_name, data, user):
-
+    # directive_args = []
+    # for metadata in data:
+    #     arg_metadata = {}
+    #     for schema,v in metadata.items():
+    #         ns, key = os.path.split(schema)
+    #         if ns:
+    #             d = arg_metadata.setdefault(ns, [])
+    #             d.append((key, v))
+    #     logger.debug("args=%s" % pformat(arg_metadata))
+    #     arg_meta = [[schema] + arg_metadata[schema] for schema in arg_metadata]
+    #     arg_meta.insert(0, "")
+    #     directive_args.append(arg_meta)
     directive_args = []
-    for metadata in data:
-        arg_metadata = {}
-        for schema,v in metadata.items():
-            ns, key = os.path.split(schema)
-            if ns:
-                d = arg_metadata.setdefault(ns, [])
-                d.append((key, v))
-        logger.debug("args=%s" % pformat(arg_metadata))
-        arg_meta = [[schema] + arg_metadata[schema] for schema in arg_metadata]
-        arg_meta.insert(0, "")
-        directive_args.append(arg_meta)
+    for schema in data.keys():
+        keys = data[schema]
+        d = []
+        logger.debug("keys=%s" % keys)
+        for k, v in keys.items():
+            d.append((k, v))
+        d.insert(0, schema)
+        directive_args.append(d)
 
+    directive_args.insert(0, '')
+    directive_args = [directive_args]
     logger.debug("directive_args=%s" % pformat(directive_args))
     logger.debug('directive_name=%s' % directive_name)
     try:
@@ -327,19 +340,19 @@ def submit_subtask(platform, directive_name, data, user):
         #     directive_args.append(
         #         ['',
         #             ['http://rmit.edu.au/schemas/hrmc',
-        #                 ('number_vm_instances', self.boto_settings['number_vm_instances']),
-        #                 ('minimum_number_vm_instances', self.boto_settings['minimum_number_vm_instances']),
+        #                 ('number_vm_instances', local_settings['number_vm_instances']),
+        #                 ('minimum_number_vm_instances', local_settings['minimum_number_vm_instances']),
         #                 (u'iseed', rands[i]),
         #                 ('max_seed_int', 1000),
         #                 ('input_location',  new_input_location),
-        #                 ('number_dimensions', self.boto_settings['number_dimensions']),
-        #                 ('threshold', self.boto_settings['threshold']),
-        #                 ('error_threshold', self.boto_settings['error_threshold']),
-        #                 ('fanout_per_kept_result', self.boto_settings['fanout_per_kept_result']),
-        #                 ('max_iteration', self.boto_settings['max_iteration']),
+        #                 ('number_dimensions', local_settings['number_dimensions']),
+        #                 ('threshold', local_settings['threshold']),
+        #                 ('error_threshold', local_settings['error_threshold']),
+        #                 ('fanout_per_kept_result', local_settings['fanout_per_kept_result']),
+        #                 ('max_iteration', local_settings['max_iteration']),
         #                 # We assume that each subtask puts results into same mytardis experiment
-        #                 ('experiment_id', self.boto_settings['experiment_id']),
-        #                 ('pottype', self.boto_settings['pottype'])
+        #                 ('experiment_id', local_settings['experiment_id']),
+        #                 ('pottype', local_settings['pottype'])
         #             ]
         #         ])
 

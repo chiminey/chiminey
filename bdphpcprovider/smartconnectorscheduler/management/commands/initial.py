@@ -50,9 +50,9 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas//files':
                 [u'general input files for directive',
                 {
-                u'file0': (models.ParameterName.STRING, '', 3),
-                u'file1': (models.ParameterName.STRING, '', 2),
-                u'file2': (models.ParameterName.STRING, '', 1),
+                u'file0': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':3, 'help_text':''},
+                u'file1': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':2, 'help_text':''},
+                u'file2': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''},
                 }
                 ],
              # Note that file schema ns must match regex
@@ -63,9 +63,9 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/smartconnector1/files':
                  [u'the smartconnector1 input files',
                  {
-                 u'file0': (models.ParameterName.STRING, '', 3),
-                 u'file1': (models.ParameterName.STRING, '', 2),
-                 u'file2': (models.ParameterName.STRING, '', 1),
+                 u'file0': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':3, 'help_text':''},
+                 u'file1': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':2, 'help_text':''},
+                 u'file2': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''},
                  }
                  ],
             u'http://rmit.edu.au/schemas/hrmc/files':
@@ -76,10 +76,10 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/smartconnector1/create':
                 [u'the smartconnector1 create stage config',
                 {
-                u'iseed': (models.ParameterName.NUMERIC, '', 4),
-                u'num_nodes': (models.ParameterName.NUMERIC, '', 3),
-                u'null_number': (models.ParameterName.NUMERIC, '', 2),
-                u'parallel_number': (models.ParameterName.NUMERIC, '', 1),
+                u'iseed': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':4, 'help_text':''},
+                u'num_nodes': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':3, 'help_text':''},
+                u'null_number': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':2, 'help_text':''},
+                u'parallel_number': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''},
                 }
                 ],
             # we might want to reuse schemas in muliple contextsets
@@ -89,274 +89,288 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/stages/null/testing':
                 [u'the null stage internal testing',
                 {
-                u'output': (models.ParameterName.NUMERIC, '', 2),
-                u'index': (models.ParameterName.NUMERIC, '', 1),
+                u'output': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':2, 'help_text':''},
+                u'index': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''},
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/parallel/testing':
                 [u'the parallel stage internal testing',
                 {
 
-                u'output': (models.ParameterName.NUMERIC, '', 2),
-                u'index': (models.ParameterName.NUMERIC, '', 1),
+                u'output': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':2, 'help_text':''},
+                u'index': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''},
                 }
                 ],
             u'http://nci.org.au/schemas/smartconnector1/custom':
                 [u'the smartconnector1 custom command',
                 {
-                u'command': (models.ParameterName.STRING, '', 2),
-                }
-                ],
-            u'http://rmit.edu.au/schemas/system/misc':
-                [u'system level misc values',
-                {
-                u'transitions': (models.ParameterName.STRING, '', 4),  # deprecated
-                u'system': (models.ParameterName.STRING, '', 3),
-                u'id': (models.ParameterName.NUMERIC, '', 2),
-                u'output_location': (models.ParameterName.STRING, '', 1)
+                u'command': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':2, 'help_text':''},
                 }
                 ],
             u'http://rmit.edu.au/schemas/system':
-                [u'Information about the deployment platform',
+                [u'Internal System',
                 {
-                u'platform': (models.ParameterName.STRING, '', 2),
-                u'contextid': (models.ParameterName.NUMERIC, '', 1)                }
+                u'platform': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':2, 'help_text':''},
+                u'contextid': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''},
+                u'random_numbers': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':0, 'help_text':''},
+                u'system': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':3, 'help_text':''},
+                u'id': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':2, 'help_text':''},
+                u'max_seed_int': {'type':models.ParameterName.NUMERIC, 'subtype':'natural', 'description':'', 'ranking':1, 'help_text':''},
+                }
                 ],
             u'http://tardis.edu.au/schemas/hrmc/dfmeta':
                 ["datafile",
                 {
-                u"a": (models.ParameterName.NUMERIC, '', 2),
-                u'b': (models.ParameterName.NUMERIC, '', 1),
+                u"a": {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':2, 'help_text':''},
+                u'b': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''},
                 }
                 ],
             u'http://tardis.edu.au/schemas/hrmc/dfmeta2':
                 ["datafile2",
                 {
-                u'c': (models.ParameterName.STRING, '', 1),
+                u'c': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''},
                 }
                 ],
             models.UserProfile.PROFILE_SCHEMA_NS:
                 [u'user profile',
                 {
-                    u'userinfo1': (models.ParameterName.STRING,
-                        'test parameter1', 13),
-                    u'userinfo2': (models.ParameterName.NUMERIC,
-                        'test parameter2', 12),
-                    u'nci_private_key': (models.ParameterName.STRING,
-                        'location of NCI private key', 11),
-                    u'nci_user': (models.ParameterName.STRING,
-                        'username for NCI access', 10),
-                    u'nci_password': (models.ParameterName.STRING,
-                        'password for NCI access', 9),
-                    u'nci_host': (models.ParameterName.STRING,
-                        'hostname for NCI', 8),
-                    u'flag': (models.ParameterName.NUMERIC,
-                        'not used?', 7),
-                    u'nectar_private_key_name': (models.ParameterName.STRING,
-                        'name of the key for nectar', 6),
-                    u'nectar_private_key': (models.ParameterName.STRING,
-                        'location of NeCTAR private key', 5),
-                    u'nectar_ec2_access_key': (models.ParameterName.STRING,
-                        'NeCTAR EC2 Access Key', 4),
-                    u'nectar_ec2_secret_key': (models.ParameterName.STRING,
-                        'NeCTAR EC2 Secret Key', 3),
-                    u'mytardis_host': (models.ParameterName.STRING,
-                        'hostname for tardis (leave blank to not archive to mytardis)', 2),
-                    u'mytardis_user': (models.ParameterName.STRING,
-                        'hostname for tardis', 1),
-                    u'mytardis_password': (models.ParameterName.STRING,
-                        'hostname for tardis', 0),
+                    u'nci_private_key': {'type':models.ParameterName.STRING, 'subtype':'',
+                        'description':'location of NCI private key', 'ranking':11, 'help_text':''},
+                    u'nci_user': {'type':models.ParameterName.STRING, 'subtype':'',
+                        'description':'username for NCI access', 'ranking':10, 'help_text':''},
+                    u'nci_password': {'type':models.ParameterName.STRING, 'subtype':'',
+                        'description':'password for NCI access', 'ranking':9, 'help_text':''},
+                    u'nci_host': {'type':models.ParameterName.STRING, 'subtype':'',
+                        'description':'hostname for NCI', 'ranking':8, 'help_text':''},
+                    u'flag': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'not used?', 'ranking':7, 'help_text':''},
+                    u'nectar_private_key_name': {'type':models.ParameterName.STRING, 'subtype':'',
+                        'description':'name of the key for nectar', 'ranking':6, 'help_text':''},
+                    u'nectar_private_key': {'type':models.ParameterName.STRING, 'subtype':'',
+                        'description':'location of NeCTAR private key', 'ranking':5, 'help_text':''},
+                    u'nectar_ec2_access_key': {'type':models.ParameterName.STRING, 'subtype':'',
+                        'description':'NeCTAR EC2 Access Key', 'ranking':4, 'help_text':''},
+                    u'nectar_ec2_secret_key': {'type':models.ParameterName.STRING, 'subtype':'',
+                        'description':'NeCTAR EC2 Secret Key', 'ranking':3, 'help_text':''},
+                    u'mytardis_host': {'type':models.ParameterName.STRING, 'subtype':'',
+                        'description':'hostname for tardis (leave blank to not archive to mytardis)', 'ranking':2, 'help_text':''},
+                    u'mytardis_user': {'type':models.ParameterName.STRING, 'subtype':'',
+                        'description':'hostname for tardis', 'ranking':1, 'help_text':''},
+                    u'mytardis_password': {'type':models.ParameterName.STRING, 'subtype':'',
+                        'description':'hostname for tardis', 'ranking':0, 'help_text':''},
                 }
                 ],
             u'http://rmit.edu.au/schemas/copy/files':
                  [u'the copy input files',
                  {
-                 u'file0': (models.ParameterName.STRING, '', 2),
-                 u'file1': (models.ParameterName.STRING, '', 1),
+                 u'file0': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':2, 'help_text':''},
+                 u'file1': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''},
                  }
                  ],
             u'http://rmit.edu.au/schemas/program/files':
                  [u'the copy input files',
                  {
-                 u'file0': (models.ParameterName.STRING, '', 3),
-                 u'file1': (models.ParameterName.STRING, '', 2),
-                 u'file2': (models.ParameterName.STRING, '', 1),
+                 u'file0': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':3, 'help_text':''},
+                 u'file1': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':2, 'help_text':''},
+                 u'file2': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''},
                  }
                  ],
 
             u'http://rmit.edu.au/schemas/stages/copy/testing':
                 [u'the copy stage internal testing',
                 {
-                u'output': (models.ParameterName.NUMERIC, '', 1),
+                u'output': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''},
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/program/testing':
                 [u'the program stage internal testing',
                 {
-                u'output': (models.ParameterName.NUMERIC, '', 1),
+                u'output': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''},
                 }
                 ],
             u'http://rmit.edu.au/schemas/program/config':
                 [u'the program command internal config',
                 {
-                u'program': (models.ParameterName.STRING, '', 3),
-                u'remotehost': (models.ParameterName.STRING, '', 2),
-                u'program_success': (models.ParameterName.STRING, '', 1),
+                u'program': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':3, 'help_text':''},
+                u'remotehost': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':2, 'help_text':''},
+                u'program_success': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''},
                 }
                 ],
             u'http://rmit.edu.au/schemas/greeting/salutation':
                 [u'salute',
                 {
-                u'salutation': (models.ParameterName.STRING, '', 1),
+                u'salutation': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''},
                 }
                 ],
             u'http://rmit.edu.au/schemas/reliability':
                 [u'the schema for reliability framework',
                 {
-                u'cleanup_nodes': (models.ParameterName.STRING, '', 1),
+                u'cleanup_nodes': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''},
                 }
                 ],
-            u'http://rmit.edu.au/schemas/hrmc':
-                [u'the hrmc smart connector input values',
+            u'http://rmit.edu.au/schemas/input/reliability':
+                [u'Reliability',
                 {
-                u'maximum_retry': (models.ParameterName.NUMERIC, '', 14),
-                u'reschedule_failed_processes': (models.ParameterName.NUMERIC, '', 13),
-                u'fanout_per_kept_result': (models.ParameterName.NUMERIC, '', 12),
-                u'minimum_number_vm_instances': (models.ParameterName.NUMERIC, '', 11),
-                u'random_numbers': (models.ParameterName.STRING, '', 10),
-                u'max_seed_int': (models.ParameterName.NUMERIC, '', 9),
-                u'number_vm_instances': (models.ParameterName.NUMERIC, '', 8),
-                u'iseed': (models.ParameterName.NUMERIC, '', 7),
-                u'input_location': (models.ParameterName.STRING, '', 6),
-                u'number_dimensions': (models.ParameterName.NUMERIC, '', 5),
-                u'threshold': (models.ParameterName.STRING, '', 4),  # FIXME: should be list of ints
-                u'error_threshold': (models.ParameterName.STRING, '', 3),  # FIXME: should use float here
-                u'max_iteration': (models.ParameterName.NUMERIC, '', 2),
-                u'pottype': (models.ParameterName.NUMERIC, '', 1),
-                u'experiment_id': (models.ParameterName.NUMERIC, '', 0)
+                u'maximum_retry': {'type':models.ParameterName.NUMERIC, 'subtype':'natural', 'ranking':1, 'description': 'Maximum Retries', 'help_text':'Enter the maximum number of retries'},
+                u'reschedule_failed_processes': {'type':models.ParameterName.NUMERIC, 'subtype':'bool', 'ranking':2, 'description': 'Reschedule failed processes', 'help_text': 'Select to reschedule any failed processes'},
                 }
                 ],
+            u'http://rmit.edu.au/schemas/input/system':
+                [u'Locations',
+                {
+                u'input_location': {'type':models.ParameterName.STRING, 'subtype':'bdpurl', 'initial':'file://127.0.0.1/myfiles/input', 'description':'Input Location', 'ranking':1,  'help_text': 'A BDP Url'},
+                u'output_location': {'type':models.ParameterName.STRING, 'subtype':'bdpurl', 'initial':'file://local@127.0.0.1/sweep', 'description':'Output Location', 'ranking': 2, 'help_text': 'A BDP Url'}
+                }
+                ],
+            u'http://rmit.edu.au/schemas/input/system/cloud':
+                [u'Cloud Resources',
+                {
+                u'number_vm_instances': {'type':models.ParameterName.NUMERIC, 'subtype':'whole', 'initial':8, 'description':'Number of VM instances', 'ranking':1, 'help_text':''},
+                u'minimum_number_vm_instances': {'type':models.ParameterName.NUMERIC, 'subtype':'whole', 'initial':4, 'description':'Minimum No. VMs', 'ranking':2, 'help_text':''},
+                }
+                ],
+            u'http://rmit.edu.au/schemas/input/mytardis':
+                [u'MyTardis',
+                {
+                u'experiment_id': {'type':models.ParameterName.NUMERIC, 'subtype':'natural', 'description':'MyTardis experiment ID', 'ranking':0, 'help_text':'Use 0 for new experiment'},
+                }
+                ],
+            u'http://rmit.edu.au/schemas/input/hrmc':
+                [u'HRMC Smart Connector',
+                {
+                u'pottype': {'type':models.ParameterName.NUMERIC, 'subtype':'natural', 'description':'Pottype', 'ranking':1, 'help_text':'', 'initial':1},
+                u'max_iteration': {'type':models.ParameterName.NUMERIC, 'subtype':'whole', 'description':'Maximum no. iterations', 'ranking':2, 'initial': 2, 'help_text':'Computation ends when either convergence or maximum iteration reached'},
+                u'error_threshold': {'type':models.ParameterName.STRING, 'subtype':'float', 'description':'Error Threshold', 'ranking':3, 'initial':'0.03', 'help_text':'Delta for iteration convergence'},  # FIXME: should use float here
+                u'threshold': {'type':models.ParameterName.STRING, 'subtype':'string', 'description':'No. results kept per iteration', 'ranking':4, 'initial':'[1]', 'help_text':'Number of outputs to keep between iterations. eg. [2] would keep the top 2 results.'},  # FIXME: should be list of ints
+                u'number_dimensions': {'type':models.ParameterName.NUMERIC, 'subtype':'natural', 'description':'No. varying parameters', 'ranking':5, 'initial': 1, 'help_text':'Number of parameters to vary, e.g. 0 = iseed only, 1 = iseed and temp'},
+                u'iseed': {'type':models.ParameterName.NUMERIC, 'subtype':'natural', 'description':'Random Number Seed', 'ranking':7, 'initial': 42, 'help_text':'Initial seed for random numbers'},
+                u'fanout_per_kept_result': {'type':models.ParameterName.NUMERIC, 'subtype':'whole', 'description':'No. fanout kept per result', 'initial': 4, 'ranking':12, 'help_text':''},
+                }
+                ],
+            u'http://rmit.edu.au/schemas/input/sweep':
+                [u'Parameter Sweep',
+                {
+                u'sweep_map': {'type':models.ParameterName.STRING, 'subtype':'jsondict', 'initial': '{"var1": [3, 7], "var2": [1, 2]}', 'description':'Values to sweep over', 'ranking':1, 'help_text':'Dictionary of values to sweep over. e.g {\'var1\': [3, 7], \'var2\': [1, 2]} would result in 4 HRMC Jobs: [3,1] [3,2] [7,1] [7,2]'}
+                }
+                ],
+
             u'http://rmit.edu.au/schemas/stages/configure':
                 [u'the configure state of the hrmc smart connector',
                 {
-                u'configure_done': (models.ParameterName.NUMERIC, '', 1),
+                u'configure_done': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''},
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/create':
                 [u'the create state of the smartconnector1',
                 {
-                u'failed_nodes': (models.ParameterName.STRING, '', 11),
-                u'group_id': (models.ParameterName.STRING, '', 10),
-                u'vm_size': (models.ParameterName.STRING, '', 9),
-                u'vm_image': (models.ParameterName.STRING, '', 8),
-                u'security_group': (models.ParameterName.STRLIST, '', 7),
-                u'group_id_dir': (models.ParameterName.STRING, '', 6),
-                u'cloud_sleep_interval': (models.ParameterName.NUMERIC, '', 5),
-                u'custom_prompt': (models.ParameterName.STRING, '', 4),
-                u'nectar_username': (models.ParameterName.STRING,
-                    'name of username for accessing nectar', 3),
-                u'nectar_password': (models.ParameterName.STRING,
-                    'password of username for accessing nectar', 2),
-                u'created_nodes': (models.ParameterName.STRING, '', 1)
+                u'failed_nodes': {'type':models.ParameterName.STRING, 'subtype':'', 'ranking':11, 'help_text': ''},
+                u'group_id': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':10, 'help_text':''},
+                u'vm_size': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':9, 'help_text':''},
+                u'vm_image': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':8, 'help_text':''},
+                u'security_group': {'type':models.ParameterName.STRLIST, 'subtype':'', 'description':'', 'ranking':7, 'help_text':''},
+                u'group_id_dir': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':6, 'help_text':''},
+                u'cloud_sleep_interval': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':5, 'help_text':''},
+                u'custom_prompt': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':4, 'help_text':''},
+                u'nectar_username': {'type':models.ParameterName.STRING, 'subtype':'',
+                    'description':'name of username for accessing nectar', 'ranking':3, 'help_text':''},
+                u'nectar_password': {'type':models.ParameterName.STRING, 'subtype':'',
+                    'description':'password of username for accessing nectar', 'ranking':2, 'help_text':''},
+                u'created_nodes': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''}
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/setup':
                 [u'the create stage of the smartconnector1',
                 {
-                u'filename_for_PIDs': (models.ParameterName.STRING, '', 5),
-                u'setup_finished': (models.ParameterName.NUMERIC, '', 4),
-                u'payload_name': (models.ParameterName.STRING, '', 3),
-                u'payload_source': (models.ParameterName.STRING, '', 2),
-                u'payload_destination': (models.ParameterName.STRING, '', 1),
+                u'filename_for_PIDs': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':5, 'help_text':''},
+                u'setup_finished': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':4, 'help_text':''},
+                u'payload_name': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':3, 'help_text':''},
+                u'payload_source': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':2, 'help_text':''},
+                u'payload_destination': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''},
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/deploy':
                 [u'the deploy stage of the smartconnector1',
                 {
-                u'started': (models.ParameterName.NUMERIC, '', 2),
-                u'deployed_nodes': (models.ParameterName.STRING, '', 1)
+                u'started': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':2, 'help_text':''},
+                u'deployed_nodes': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''}
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/bootstrap':
                 [u'the bootstrap stage of the smartconnector1',
                 {
-                u'started': (models.ParameterName.NUMERIC, '', 3),
-                u'bootstrapped_nodes': (models.ParameterName.STRING, '', 2),
-                u'bootstrap_done': (models.ParameterName.NUMERIC, '', 1)
+                u'started': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':3, 'help_text':''},
+                u'bootstrapped_nodes': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':2, 'help_text':''},
+                u'bootstrap_done': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''}
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/schedule':
                 [u'the schedule stage of the smartconnector1',
                 {
-                u'rescheduled_nodes': (models.ParameterName.STRING, '', 11),
-                u'procs_2b_rescheduled': (models.ParameterName.STRING, '', 10),
-                u'total_rescheduled_procs': (models.ParameterName.NUMERIC, '', 9),
-                u'total_scheduled_procs': (models.ParameterName.NUMERIC, '', 8),
-                u'schedule_index': (models.ParameterName.NUMERIC, '', 7),
-                u'current_processes': (models.ParameterName.STRING, '', 6),
-                u'all_processes': (models.ParameterName.STRING, '', 5),
-                u'schedule_started': (models.ParameterName.NUMERIC, '', 4),
-                u'total_processes': (models.ParameterName.NUMERIC, '', 3),
-                u'scheduled_nodes': (models.ParameterName.STRING, '', 2),
-                u'schedule_completed': (models.ParameterName.NUMERIC, '', 1)
+                u'rescheduled_nodes': {'type':models.ParameterName.STRING, 'subtype':'', 'ranking':11},
+                u'procs_2b_rescheduled': {'type':models.ParameterName.STRING, 'subtype':'', 'ranking':10},
+                u'total_rescheduled_procs': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'ranking':9},
+                u'total_scheduled_procs': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':8, 'help_text':''},
+                u'schedule_index': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':7, 'help_text':''},
+                u'current_processes': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':6, 'help_text':''},
+                u'all_processes': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':5, 'help_text':''},
+                u'schedule_started': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':4, 'help_text':''},
+                u'total_processes': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':3, 'help_text':''},
+                u'scheduled_nodes': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':2, 'help_text':''},
+                u'schedule_completed': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''}
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/execute':
                 [u'the execute stage of the smartconnector1',
                 {
-                #u'failed_procs': (models.ParameterName.STRING, '', 2),
-                u'executed_procs': (models.ParameterName.STRING, '', 1)
+                u'executed_procs': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''}
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/run':
                 [u'the create stage of the smartconnector1',
                 {
-                u'runs_left': (models.ParameterName.NUMERIC, '', 8),
-                u'payload_cloud_dirname': (models.ParameterName.STRING, '', 7),
-                u'compile_file': (models.ParameterName.STRING, '', 6),
-                u'retry_attempts': (models.ParameterName.NUMERIC, '', 5),
-                u'error_nodes': (models.ParameterName.NUMERIC, '', 4),
-                u'initial_numbfile': (models.ParameterName.NUMERIC, '', 3),
-                u'rand_index': (models.ParameterName.NUMERIC, '', 2),
-                u'finished_nodes': (models.ParameterName.STRING, '', 1),
-                u'run_map': (models.ParameterName.STRING, '', 0)
+                u'runs_left': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':8, 'help_text':''},
+                u'payload_cloud_dirname': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':7, 'help_text':''},
+                u'compile_file': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':6, 'help_text':''},
+                u'retry_attempts': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':5, 'help_text':''},
+                u'error_nodes': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':4, 'help_text':''},
+                u'initial_numbfile': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':3, 'help_text':''},
+                u'rand_index': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':2, 'help_text':''},
+                u'finished_nodes': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''},
+                u'run_map': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':0, 'help_text':''}
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/transform':
                 [u'the transform stage of the smartconnector1',
                 {
-                u'transformed': (models.ParameterName.NUMERIC, '', 1),
+                u'transformed': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''},
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/converge':
                 [u'the converge stage of the smartconnector1',
                 {
-                u'converged': (models.ParameterName.NUMERIC, '', 2),
-                u'criterion': (models.ParameterName.STRING, '', 1),  # Use STRING as float not implemented
+                u'converged': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':2, 'help_text':''},
+                u'criterion': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''},  # Use STRING as float not implemented
                 }
                 ],
 
             u'http://rmit.edu.au/schemas/stages/teardown':
                 [u'the teardown stage of the smartconnector1',
                 {
-                u'run_finished': (models.ParameterName.NUMERIC, '', 1),
+                u'run_finished': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''},
                 }
                 ],
 
             u'http://rmit.edu.au/schemas/stages/destroy':
                 [u'the destroy stage of the smartconnector1',
                 {
-                u'run_finished': (models.ParameterName.NUMERIC, '', 1),
+                u'run_finished': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''},
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/sweep':
                 [u'the sweep stage',
                 {
-                u'input_location': (models.ParameterName.STRING, '', 5),
-                u'directive': (models.ParameterName.STRING, '', 4),
-                u'template_name': (models.ParameterName.STRING, '', 3),
-                u'sweep_done': (models.ParameterName.NUMERIC, '',2),
-                u'sweep_map': (models.ParameterName.STRING, '', 1)
+                u'directive': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':4, 'help_text':''},
+                u'template_name': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':3, 'help_text':''},
+                u'sweep_done': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':2, 'help_text':''},
                 }
                 ],
             u'http://rmit.edu.au/schemas/hrmc/config':
@@ -369,40 +383,29 @@ class Command(BaseCommand):
                 {
                 }
                 ],
-
-            u'http://rmit.edu.au/schemas/remotemake':
-                [u'',
-                {
-                u'input_location': (models.ParameterName.STRING, '', 1),
-                u'experiment_id': (models.ParameterName.NUMERIC, '', 2)
-                }
-                ],
             u'http://rmit.edu.au/schemas/remotemake/files':
                 [u'',
                 {
                 }
                 ],
-
             u'http://rmit.edu.au/schemas/remotemake/config':
                 [u'',
                 {
-                u'payload_destination': (models.ParameterName.STRING, '', 2)
+                u'payload_destination': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':2, 'help_text':''}
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/upload_makefile':
                 [u'the smartconnector hrmc input files',
                 {
-                u'done': (models.ParameterName.NUMERIC, '',1)
+                u'done': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''}
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/make':
                 [u'',
                 {
-                u'running': (models.ParameterName.NUMERIC, '',1),
-                u'program_success': (models.ParameterName.NUMERIC, '', 2),
-                u'runs_left': (models.ParameterName.STRING, '', 3),
-                u'sweep_map': (models.ParameterName.STRING, '', 4)
-
+                u'running': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''},
+                u'program_success': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':2, 'help_text':''},
+                u'runs_left': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':3, 'help_text':''},
                 }
                 ]
         }
@@ -426,13 +429,10 @@ class Command(BaseCommand):
                     'description': desc})
 
             for k, v in kv.items():
-                val, help_text, ranking = (v[0], v[1], v[2])
                 models.ParameterName.objects.get_or_create(
                     schema=context_schema,
                     name=k,
-                    defaults={
-                        'type': val, 'help_text': help_text,
-                        'ranking': ranking})
+                    defaults=dict(v))
 
         logger.debug("stages=%s" % models.Stage.objects.all())
         local_filesys_rootpath = '/var/cloudenabling/remotesys'
@@ -447,8 +447,8 @@ class Command(BaseCommand):
         logger.debug("local_filesys_rootpath=%s" % local_filesys_rootpath)
         local_fs = FileSystemStorage(location=local_filesys_rootpath)
 
-        copy_dir, _ = models.Directive.objects.get_or_create(name="copydir")
-        program_dir, _ = models.Directive.objects.get_or_create(name="program")
+        copy_dir, _ = models.Directive.objects.get_or_create(name="copydir", hidden=True)
+        program_dir, _ = models.Directive.objects.get_or_create(name="program", hidden=True)
         self.copy_dir_stage = "bdphpcprovider.smartconnectorscheduler.stages.movement.CopyDirectoryStage"
         self.program_stage = "bdphpcprovider.smartconnectorscheduler.stages.program.LocalProgramStage"
         # Define all the stages that will make up the command.  This structure
@@ -470,7 +470,7 @@ class Command(BaseCommand):
         local_fs.save("remote/greetaddon.txt",
             ContentFile("(remotely)"))
 
-        copy_dir, _ = models.Directive.objects.get_or_create(name="copyfile")
+        copy_dir, _ = models.Directive.objects.get_or_create(name="copyfile", hidden=True)
         self.copy_file_stage = "bdphpcprovider.smartconnectorscheduler.stages.movement.CopyFileStage"
         # Define all the stages that will make up the command.  This structure
         # has two layers of composition
@@ -481,7 +481,7 @@ class Command(BaseCommand):
         copy_stage.update_settings({})
         comm, _ = models.Command.objects.get_or_create(platform=nci_platform, directive=copy_dir, stage=copy_stage)
 
-        smart_dir, _ = models.Directive.objects.get_or_create(name="smartconnector1")
+        smart_dir, _ = models.Directive.objects.get_or_create(name="smartconnector1", hidden=True)
         self.null_package = "bdphpcprovider.smartconnectorscheduler.stages.nullstage.NullStage"
         self.parallel_package = "bdphpcprovider.smartconnectorscheduler.stages.composite.ParallelStage"
         self.hrmc_parallel_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc_composite.HRMCParallelStage"
@@ -538,7 +538,7 @@ class Command(BaseCommand):
         local_fs.save("input/file.txt",
             ContentFile("foobar"))
 
-        hrmc_smart_dir, _ = models.Directive.objects.get_or_create(name="hrmc")
+        hrmc_smart_dir, _ = models.Directive.objects.get_or_create(name="hrmc", description="A Hybrid Reverse Monte Carlo Smart Connector", hidden=True)
         self.configure_package = "bdphpcprovider.smartconnectorscheduler.stages.configure.Configure"
         self.create_package = "bdphpcprovider.smartconnectorscheduler.stages.create.Create"
         self.bootstrap_package = "bdphpcprovider.smartconnectorscheduler.stages.bootstrap.Bootstrap"
@@ -562,7 +562,7 @@ class Command(BaseCommand):
             package=self.configure_package,
             order=0)
         configure_stage.update_settings({
-            u'http://rmit.edu.au/schemas/hrmc':
+            u'http://rmit.edu.au/schemas/system':
                 {
                     u'random_numbers': 'file://127.0.0.1/randomnums.txt'
                 },
@@ -649,7 +649,8 @@ class Command(BaseCommand):
             directive=hrmc_smart_dir, stage=hrmc_composite_stage)
         print "done"
 
-        sweep, _ = models.Directive.objects.get_or_create(name="sweep")
+        sweep, _ = models.Directive.objects.get_or_create(name="sweep",
+            description="Parameter Sweep Connector")
 
         sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep",
             description="Sweep Test",
@@ -661,7 +662,7 @@ class Command(BaseCommand):
                 u'template_name': 'HRMC.inp'
             },
             # FIXME: move random_numbers into system schema
-            u'http://rmit.edu.au/schemas/hrmc':
+            u'http://rmit.edu.au/schemas/system':
             {
                 u'random_numbers': 'file://127.0.0.1/randomnums.txt'
             },
@@ -673,10 +674,27 @@ class Command(BaseCommand):
             directive=sweep, stage=sweep_stage)
 
         self.define_remote_make(nci_platform)
+
+        self.setup_directive_args()
         print "done"
 
+    def setup_directive_args(self):
+        sweep, _ = models.Directive.objects.get_or_create(name="sweep")
+
+        RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+        for i, sch in enumerate([
+                RMIT_SCHEMA+"/input/system/cloud",
+                RMIT_SCHEMA+"/input/reliability",
+                RMIT_SCHEMA+"/input/system",
+                RMIT_SCHEMA+"/input/hrmc",
+                RMIT_SCHEMA+"/input/mytardis",
+                RMIT_SCHEMA+"/input/sweep"
+                ]):
+            schema = models.Schema.objects.get(namespace=sch)
+            das, _ = models.DirectiveArgSet.objects.get_or_create(directive=sweep, order=i, schema=schema)
+
     def define_remote_make(self, nci_platform):
-        remote_make, _ = models.Directive.objects.get_or_create(name="remotemake")
+        remote_make, _ = models.Directive.objects.get_or_create(name="remotemake", description="Remote execution of a Makefile")
         smartpack = "bdphpcprovider.smartconnectorscheduler.stages"
         self.upload_makefile = smartpack + ".make.movement.MakeUploadStage"
         self.download_makefile = smartpack + ".make.movement.MakeDownloadStage"
@@ -742,6 +760,15 @@ class Command(BaseCommand):
             platform=nci_platform,
             directive=remote_make,
             stage=remote_make_composite_stage)
+
+        RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+        for i, sch in enumerate([
+                RMIT_SCHEMA + "/input/system",
+                RMIT_SCHEMA + "/input/mytardis",
+                RMIT_SCHEMA + "/input/sweep"
+                ]):
+            schema = models.Schema.objects.get(namespace=sch)
+            das, _ = models.DirectiveArgSet.objects.get_or_create(directive=remote_make, order=i, schema=schema)
 
     def handle(self, *args, **options):
         self.setup()
