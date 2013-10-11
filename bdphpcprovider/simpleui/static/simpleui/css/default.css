@@ -35,7 +35,7 @@ a {
 }*/
 
 .navbar .nav .active > a, .navbar .nav .active > a:hover {
-    color: white;
+    color: black;
     text-decoration: none;
     background-color: #304f3c;
 }
@@ -43,6 +43,7 @@ a {
 .navbar .nav > li > a {
   color: #d6d69f;
 }
+
 
 .btn-info {
   background-color: #a2a350;
@@ -123,3 +124,9 @@ h2 small, blockquote small {
 #id_destination_bdp_url {
     width: 900px;
 }
+
+body { padding-top: 40px; }
+@media screen and (max-width: 768px) {
+    body { padding-top: 0px; }
+}
+

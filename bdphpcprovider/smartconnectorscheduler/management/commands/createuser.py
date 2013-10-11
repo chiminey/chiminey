@@ -170,11 +170,9 @@ class Command(BaseCommand):
 
         # Setup the schema for user configuration information (kept in profile)
         self.PARAMS = {
-            'userinfo1': 'param1val',
-            'userinfo2': 42,
             'nci_user': 'iet595',
             'nci_password': 'changemepassword',  # NB: change this password
-            'nci_host': 'vayu.nci.org.au',
+            'nci_host': 'raijin.nci.org.au',
             'nci_private_key': 'mynectarkey',
             'nectar_private_key': 'file://local@127.0.0.1/mynectarkey.pem',
             'nectar_private_key_name': '',

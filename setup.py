@@ -32,7 +32,8 @@ setup(
         'decisiontree',
         'django-mptt',
         'django-storages',
-        'requests'
+        'requests',
+        'django-widget-tweaks'
         ],
     dependency_links = [
         'https://github.com/dahlia/wand/tarball/warning-bugfix#egg=Wand-0.1.10',

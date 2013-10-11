@@ -21,6 +21,8 @@
 
 import os
 import logging
+from pprint import pformat
+
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, UI
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
@@ -35,6 +37,8 @@ from bdphpcprovider.smartconnectorscheduler.stages.composite import (make_graph_
 logger = logging.getLogger(__name__)
 
 
+RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+
 class Configure(Stage, UI):
     """
         - Setups up remote file system
@@ -46,38 +50,39 @@ class Configure(Stage, UI):
 
     def triggered(self, run_settings):
         if self._exists(run_settings,
-            'http://rmit.edu.au/schemas/stages/configure',
+            RMIT_SCHEMA + '/stages/configure',
             'configure_done'):
             configure_done = int(run_settings[
-                'http://rmit.edu.au/schemas/stages/configure'][u'configure_done'])
+                RMIT_SCHEMA + '/stages/configure'][u'configure_done'])
             return not configure_done
         return True
 
     def process(self, run_settings):
-        self.boto_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
+        local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
 
         self.contextid = int(run_settings[
-            'http://rmit.edu.au/schemas/system'][u'contextid'])
+            RMIT_SCHEMA + '/system'][u'contextid'])
         logger.debug("self.contextid=%s" % self.contextid)
         #TODO: we assume relative path BDP_URL here, but could be made to work
         # with non-relative (ie., remote paths)
         self.job_dir = run_settings[
-            'http://rmit.edu.au/schemas/system/misc'][u'output_location']
+            RMIT_SCHEMA + '/input/system'][u'output_location']
 
-        smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/system/platform')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/hrmc/number_dimensions')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/hrmc/threshold')
+        logger.debug("settings=%s" % pformat(run_settings))
+        smartconnector.copy_settings(local_settings, run_settings,
+            RMIT_SCHEMA + '/system/platform')
+        smartconnector.copy_settings(local_settings, run_settings,
+            RMIT_SCHEMA + '/input/hrmc/number_dimensions')
+        smartconnector.copy_settings(local_settings, run_settings,
+            RMIT_SCHEMA + '/input/hrmc/threshold')
 
         input_location = run_settings[
-            'http://rmit.edu.au/schemas/hrmc']['input_location']
+            RMIT_SCHEMA + '/input/system']['input_location']
         logger.debug("input_location=%s" % input_location)
 
         try:
             self.experiment_id = int(smartconnector.get_existing_key(run_settings,
-                'http://rmit.edu.au/schemas/hrmc/experiment_id'))
+                RMIT_SCHEMA + '/input/mytardis/experiment_id'))
         except KeyError:
             self.experiment_id = 0
         except ValueError:
@@ -88,17 +93,17 @@ class Configure(Stage, UI):
         logger.debug("prefix=%s" % prefix)
         iter_inputdir = os.path.join(prefix, "input_0")
         logger.debug("iter_inputdir=%s" % iter_inputdir)
-        source_url = smartconnector.get_url_with_pkey(self.boto_settings,
+        source_url = smartconnector.get_url_with_pkey(local_settings,
             input_location)
         logger.debug("source_url=%s" % source_url)
-        destination_url = smartconnector.get_url_with_pkey(self.boto_settings,
+        destination_url = smartconnector.get_url_with_pkey(local_settings,
             iter_inputdir, is_relative_path=False)
         logger.debug("destination_url=%s" % destination_url)
         hrmcstages.copy_directories(source_url, destination_url)
 
-        output_location = run_settings['http://rmit.edu.au/schemas/system/misc'][u'output_location']
+        output_location = run_settings[RMIT_SCHEMA + '/input/system'][u'output_location']
 
-        if self.boto_settings['mytardis_host']:
+        if local_settings['mytardis_host']:
             EXP_DATASET_NAME_SPLIT = 2
 
             def _get_exp_name_for_input(path):
@@ -107,7 +112,7 @@ class Configure(Stage, UI):
             ename = _get_exp_name_for_input(output_location)
             logger.debug("ename=%s" % ename)
             self.experiment_id = mytardis.post_experiment(
-                settings=self.boto_settings,
+                settings=local_settings,
                 exp_id=self.experiment_id,
                 expname=ename,
                 experiment_paramset=[
@@ -122,14 +127,14 @@ class Configure(Stage, UI):
     def output(self, run_settings):
 
         run_settings.setdefault(
-            'http://rmit.edu.au/schemas/stages/configure',
+            RMIT_SCHEMA + '/stages/configure',
             {})[u'configure_done'] = 1
-        run_settings['http://rmit.edu.au/schemas/hrmc']['experiment_id'] = str(self.experiment_id)
+        run_settings[RMIT_SCHEMA + '/input/mytardis']['experiment_id'] = str(self.experiment_id)
 
         # if not self._exists(run_settings,
-        #         'http://rmit.edu.au/schemas/stages/configure'):
-        #     run_settings['http://rmit.edu.au/schemas/stages/configure'] = {}
-        # run_settings['http://rmit.edu.au/schemas/stages/configure']
+        #         RMIT_SCHEMA + '/stages/configure'):
+        #     run_settings[RMIT_SCHEMA + '/stages/configure'] = {}
+        # run_settings[RMIT_SCHEMA + '/stages/configure']
         # [u'configure_done'] = True
 
         return run_settings

@@ -1171,7 +1171,7 @@ def make_runcontext_for_directive(platform_name, directive_name,
 
     command_args = _get_command_actual_args(
         directive_args, user_settings)
-    logger.debug("command_args=%s" % command_args)
+    logger.debug("command_args=%s" % pformat(command_args))
 
     run_settings = _make_run_settings_for_command(command_for_directive,
         command_args, run_settings)
@@ -1183,8 +1183,8 @@ def make_runcontext_for_directive(platform_name, directive_name,
     if not settings_valid:
         raise InvalidInputError(problem)
 
-    system = {u'platform': platform_name, u'contextid': 0}
-    run_settings[u'http://rmit.edu.au/schemas/system'] = system
+    run_settings[u'http://rmit.edu.au/schemas/system'][u'platform'] = platform_name
+    run_settings[u'http://rmit.edu.au/schemas/system'][u'contextid'] =  0
 
     run_context = _make_new_run_context(command_for_directive.stage,
         profile, run_settings)
@@ -1195,8 +1195,8 @@ def make_runcontext_for_directive(platform_name, directive_name,
     run_settings[u'http://rmit.edu.au/schemas/system'][u'contextid'] = run_context.id
 
     # Add the run_context id as suffix to the current output_location
-    output_location = run_settings['http://rmit.edu.au/schemas/system/misc']['output_location']
-    run_settings[u'http://rmit.edu.au/schemas/system/misc']['output_location'] \
+    output_location = run_settings['http://rmit.edu.au/schemas/input/system']['output_location']
+    run_settings[u'http://rmit.edu.au/schemas/input/system']['output_location'] \
         = "%s%s" % (output_location, run_context.id)
 
     # Add User settings to context, so we get set values when context executed
@@ -1295,11 +1295,11 @@ def _make_run_settings_for_command(command, command_args, run_settings):
     else:
         misc = {}
 
-    if u'transitions' in misc:
-        curr_trans = json.loads(misc[u'transitions'])
-        logger.debug("curr_trans = %s" % curr_trans)
-    else:
-        curr_trans = {}
+    # if u'transitions' in misc:
+    #     curr_trans = json.loads(misc[u'transitions'])
+    #     logger.debug("curr_trans = %s" % curr_trans)
+    # else:
+    #     curr_trans = {}
 
     #context = {}
     arg_num = 0
@@ -1317,16 +1317,16 @@ def _make_run_settings_for_command(command, command_args, run_settings):
     run_settings.update(config_args)
 
     logger.debug("run_settings=%s" % run_settings)
-    transitions = models.make_stage_transitions(command.stage)
-    logger.debug("transitions=%s" % transitions)
-    transitions.update(curr_trans)
+    # transitions = models.make_stage_transitions(command.stage)
+    # logger.debug("transitions=%s" % transitions)
+    # transitions.update(curr_trans)
 
-    if u'http://rmit.edu.au/schemas/system/misc' in run_settings:
-        misc = run_settings[u'http://rmit.edu.au/schemas/system/misc']
-    else:
-        misc = {}
-        run_settings[u'http://rmit.edu.au/schemas/system/misc'] = misc
-    misc[u'transitions'] = json.dumps(transitions, ensure_ascii=True)
+    # if u'http://rmit.edu.au/schemas/system/misc' in run_settings:
+    #     misc = run_settings[u'http://rmit.edu.au/schemas/system/misc']
+    # else:
+    #     misc = {}
+    #     run_settings[u'http://rmit.edu.au/schemas/system/misc'] = misc
+    # misc[u'transitions'] = json.dumps(transitions, ensure_ascii=True)
 
     logger.debug("run_settings =  %s" % run_settings)
     return run_settings

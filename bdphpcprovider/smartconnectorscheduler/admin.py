@@ -33,6 +33,18 @@ class SchemaAdmin(admin.ModelAdmin):
     ordering = ('namespace', 'name')
 
 
+class DirectiveArgSetInline(admin.TabularInline):
+    model = models.DirectiveArgSet
+    extra = 0
+    # formfield_overrides = {
+    #   django.db.models.TextField: {'widget': TextInput},
+    # }
+
+class DirectiveAdmin(admin.ModelAdmin):
+    inlines = [DirectiveArgSetInline]
+
+
+
 class ContextParameterInline(admin.TabularInline):
     model = models.ContextParameter
     extra = 0
@@ -189,5 +201,5 @@ admin.site.register(models.ContextParameter)
 admin.site.register(models.StageParameterSet, StageParameterSetAdmin)
 admin.site.register(models.StageParameter)
 admin.site.register(models.Command)
-admin.site.register(models.Directive)
+admin.site.register(models.Directive, DirectiveAdmin)
 admin.site.register(models.DirectiveArgSet)

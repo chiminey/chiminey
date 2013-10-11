@@ -16,7 +16,9 @@ from core.views import (
     UserProfileParameterResource,
     UserProfileParameterSetResource,
     ContextResource,
-    UserResource
+    UserResource,
+    DirectiveResource,
+    DirectiveArgSetResource
     )
 from tastypie.api import Api
 v1_api = Api(api_name='v1')
@@ -28,6 +30,8 @@ v1_api.register(UserProfileParameterResource())
 v1_api.register(UserProfileParameterSetResource())
 v1_api.register(ParameterNameResource())
 v1_api.register(ContextResource())
+v1_api.register(DirectiveResource())
+v1_api.register(DirectiveArgSetResource())
 
 
 urlpatterns = patterns('',
@@ -58,6 +62,9 @@ urlpatterns = patterns('',
         name='sweepjob-new',),
     url(r'^jobs/pbs/new/$', login_required(uiviews.MakeSubmitFormView.as_view()),
         name='makejob-new',),
+
+    url(r'^jobs/directive/(?P<directive_id>\d+)/$', login_required(uiviews.submit_directive),
+        name='makedirective',),
 
     url(r'^jobs/copy/new/$', login_required(uiviews.CopyFormView.as_view()),
         name='copyjob-new',),

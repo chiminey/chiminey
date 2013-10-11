@@ -31,6 +31,7 @@ from bdphpcprovider.smartconnectorscheduler.stages.errors import InsufficientRes
 
 logger = logging.getLogger(__name__)
 
+RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
 class Bootstrap(Stage):
     """
@@ -38,20 +39,18 @@ class Bootstrap(Stage):
     """
 
     def __init__(self, user_settings=None):
-        #self.user_settings = user_settings.copy()
-        #self.boto_settings = user_settings.copy()
         logger.debug('Bootstrap stage initialised')
 
     def triggered(self, run_settings):
-        if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/create', u'created_nodes'):
+        if not self._exists(run_settings, RMIT_SCHEMA+'/stages/create', u'created_nodes'):
             return False
-        created_str = run_settings['http://rmit.edu.au/schemas/stages/create'][u'created_nodes']
+        created_str = run_settings[RMIT_SCHEMA+'/stages/create'][u'created_nodes']
         self.created_nodes = ast.literal_eval(created_str)
         if len(self.created_nodes) == 0:
             return False
         try:
             bootstrapped_str = smartconnector.get_existing_key(run_settings,
-                'http://rmit.edu.au/schemas/stages/bootstrap/bootstrapped_nodes')
+                RMIT_SCHEMA+'/stages/bootstrap/bootstrapped_nodes')
             self.bootstrapped_nodes = ast.literal_eval(bootstrapped_str)
             logger.debug('bootstrapped nodes=%d, created nodes = %d'
                          % (len(self.bootstrapped_nodes), len(self.created_nodes)))
@@ -64,24 +63,24 @@ class Bootstrap(Stage):
     def process(self, run_settings):
         try:
             self.started = int(smartconnector.get_existing_key(run_settings,
-                'http://rmit.edu.au/schemas/stages/bootstrap/started'))
+                RMIT_SCHEMA+'/stages/bootstrap/started'))
         except KeyError:
             self.started = 0
         logger.debug('self.started=%d' % self.started)
 
 
-        self.boto_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
-        retrieve_boto_settings(run_settings, self.boto_settings)
+        local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
+        retrieve_local_settings(run_settings, local_settings)
         if not self.started:
             try:
-                _ = start_multi_setup_task(self.boto_settings)
+                _ = start_multi_setup_task(local_settings)
             except PackageFailedError, e:
                 logger.error("unable to start setup of packages: %s" % e)
             pass
             self.started = 1
 
         else:
-            self.nodes = botocloudconnector.get_rego_nodes(self.boto_settings)
+            self.nodes = botocloudconnector.get_rego_nodes(local_settings)
             self.error_nodes = []
             for node in self.nodes:
                 if (node.ip_address in [x[1]
@@ -98,16 +97,16 @@ class Bootstrap(Stage):
                                             unicode(node.region)))
                     continue
                 node_ip = node.ip_address
-                relative_path = "%s@%s" % (self.boto_settings['platform'],
-                    self.boto_settings['payload_destination'])
-                destination = smartconnector.get_url_with_pkey(self.boto_settings,
+                relative_path = "%s@%s" % (local_settings['platform'],
+                    local_settings['payload_destination'])
+                destination = smartconnector.get_url_with_pkey(local_settings,
                     relative_path,
                     is_relative_path=True,
                     ip_address=node_ip)
                 logger.debug("Relative path %s" % relative_path)
                 logger.debug("Destination %s" % destination)
                 try:
-                    fin = job_finished(node_ip, self.boto_settings, destination)
+                    fin = job_finished(node_ip, local_settings, destination)
                 except IOError, e:
                     logger.error(e)
                     fin = False
@@ -130,46 +129,46 @@ class Bootstrap(Stage):
 
     def output(self, run_settings):
         run_settings.setdefault(
-            'http://rmit.edu.au/schemas/stages/bootstrap',
+            RMIT_SCHEMA+'/stages/bootstrap',
             {})[u'started'] = self.started
         run_settings.setdefault(
-            'http://rmit.edu.au/schemas/stages/bootstrap',
+            RMIT_SCHEMA+'/stages/bootstrap',
             {})[u'bootstrapped_nodes'] = str(self.bootstrapped_nodes)
         run_settings.setdefault(
-            'http://rmit.edu.au/schemas/system/misc',
+            RMIT_SCHEMA+'/system',
             {})[u'id'] = 0
         logger.debug('created_nodes=%s' % self.created_nodes)
         if len(self.bootstrapped_nodes) == len(self.created_nodes):
-            run_settings.setdefault('http://rmit.edu.au/schemas/stages/bootstrap',
+            run_settings.setdefault(RMIT_SCHEMA+'/stages/bootstrap',
             {})[u'bootstrap_done'] = 1
 
         return run_settings
 
 
-def retrieve_boto_settings(run_settings, boto_settings):
-    smartconnector.copy_settings(boto_settings, run_settings,
-        'http://rmit.edu.au/schemas/stages/setup/payload_source')
-    smartconnector.copy_settings(boto_settings, run_settings,
-        'http://rmit.edu.au/schemas/stages/setup/payload_destination')
-    smartconnector.copy_settings(boto_settings, run_settings,
-        'http://rmit.edu.au/schemas/system/platform')
-    smartconnector.copy_settings(boto_settings, run_settings,
-        'http://rmit.edu.au/schemas/stages/create/created_nodes')
-    smartconnector.copy_settings(boto_settings, run_settings,
-        'http://rmit.edu.au/schemas/stages/create/custom_prompt')
-    smartconnector.copy_settings(boto_settings, run_settings,
-        'http://rmit.edu.au/schemas/stages/create/nectar_username')
-    smartconnector.copy_settings(boto_settings, run_settings,
-        'http://rmit.edu.au/schemas/stages/create/nectar_password')
-    boto_settings['username'] = \
-        run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_username']
-    boto_settings['username'] = 'root'  # FIXME: schema value is ignored
-    boto_settings['password'] = \
-        run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
-    key_file = hrmcstages.retrieve_private_key(boto_settings,
+def retrieve_local_settings(run_settings, local_settings):
+    smartconnector.copy_settings(local_settings, run_settings,
+        RMIT_SCHEMA+'/stages/setup/payload_source')
+    smartconnector.copy_settings(local_settings, run_settings,
+        RMIT_SCHEMA+'/stages/setup/payload_destination')
+    smartconnector.copy_settings(local_settings, run_settings,
+        RMIT_SCHEMA+'/system/platform')
+    smartconnector.copy_settings(local_settings, run_settings,
+        RMIT_SCHEMA+'/stages/create/created_nodes')
+    smartconnector.copy_settings(local_settings, run_settings,
+        RMIT_SCHEMA+'/stages/create/custom_prompt')
+    smartconnector.copy_settings(local_settings, run_settings,
+        RMIT_SCHEMA+'/stages/create/nectar_username')
+    smartconnector.copy_settings(local_settings, run_settings,
+        RMIT_SCHEMA+'/stages/create/nectar_password')
+    local_settings['username'] = \
+        run_settings[RMIT_SCHEMA+'/stages/create']['nectar_username']
+    local_settings['username'] = 'root'  # FIXME: schema value is ignored
+    local_settings['password'] = \
+        run_settings[RMIT_SCHEMA+'/stages/create']['nectar_password']
+    key_file = hrmcstages.retrieve_private_key(local_settings,
             run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nectar_private_key'])
-    boto_settings['private_key'] = key_file
-    boto_settings['nectar_private_key'] = key_file
+    local_settings['private_key'] = key_file
+    local_settings['nectar_private_key'] = key_file
 
 
 def start_multi_setup_task(settings, maketarget_nodegroup_pair={}):

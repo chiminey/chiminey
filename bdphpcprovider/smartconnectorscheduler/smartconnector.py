@@ -43,10 +43,14 @@ class PackageFailedError(Error):
 def copy_settings(dest_context, context, key):
     """
     """
-    # Note that all run_settings and user_settings are flattened
-    res = context[os.path.dirname(key)][os.path.basename(key)]
-    dest_context[os.path.basename(key)] = res
-    logger.debug("dest_contxt[%s] = %s" % (os.path.basename(key), dest_context[os.path.basename(key)]))
+    try:
+        # Note that all run_settings and user_settings are flattened
+        res = context[os.path.dirname(key)][os.path.basename(key)]
+        dest_context[os.path.basename(key)] = res
+        logger.debug("dest_contxt[%s] = %s" % (os.path.basename(key), dest_context[os.path.basename(key)]))
+    except KeyError, e:
+        logger.error("error on key %s" % key)
+        raise
 
 
 def get_url_with_pkey(settings, url_or_relative_path,

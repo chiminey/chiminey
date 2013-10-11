@@ -32,6 +32,12 @@ from django.http import HttpResponse
 
 from django.contrib.auth import logout
 from django.http import HttpResponseRedirect
+from django.template import Context, RequestContext, loader
+from django.shortcuts import redirect
+
+from django.shortcuts import render_to_response
+
+from django.contrib import messages
 
 
 from bdphpcprovider.simpleui.hrmc.hrmcsubmit import HRMCSubmitForm
@@ -47,6 +53,11 @@ from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
 
+from django.utils.datastructures import SortedDict
+from django import forms
+
+from bdphpcprovider.simpleui import validators
+from django.core.validators import ValidationError
 
 from django.http import Http404
 from django.views.generic.edit import FormView
@@ -274,10 +285,6 @@ class SweepSubmitFormView(FormView):
     form_class = SweepSubmitForm
     success_url = '/jobs'
 
-    hrmc_schema = "http://rmit.edu.au/schemas/hrmc/"
-    system_schema = "http://rmit.edu.au/schemas/system/misc/"
-    run_schema = "http://rmit.edu.au/schemas/stages/run/"
-    sweep_schema = "http://rmit.edu.au/schemas/stages/sweep/"
 
     initial = {'number_vm_instances': 2,
                'minimum_number_vm_instances': 1,
@@ -301,54 +308,64 @@ class SweepSubmitFormView(FormView):
     # This method is called when valid form data has been POSTed.
     # It should return an HttpResponse.
     def form_valid(self, form):
-        #FIXME: consider using non-locahost URL for api_host
-        api_host = "http://127.0.0.1"
-        url = "%s/api/v1/context/?format=json" % api_host
 
-        logger.debug("self.request.user.username=%s" % self.request.user.username)
-        logger.debug("self.request.user.username=%s" % self.request.user.password)
-
-        # pass the sessionid cookie through to the internal API
-        cookies = dict(self.request.COOKIES)
-        logger.debug("cookies=%s" % cookies)
-        headers = {'content-type': 'application/json'}
-        data = json.dumps({'smart_connector': 'sweep',
-                    self.hrmc_schema + 'number_vm_instances': form.cleaned_data['number_vm_instances'],
-                    self.hrmc_schema + 'minimum_number_vm_instances': form.cleaned_data['minimum_number_vm_instances'],
-                    self.hrmc_schema + u'iseed': form.cleaned_data['iseed'],
-                    self.hrmc_schema + 'maximum_retry': form.cleaned_data['maximum_retry'],
-                    self.hrmc_schema + 'reschedule_failed_processes': form.cleaned_data['reschedule_failed_processes'],
-                    self.sweep_schema + 'input_location':  form.cleaned_data['input_location'],
-                    self.hrmc_schema + 'number_dimensions': form.cleaned_data['number_dimensions'],
-                    self.hrmc_schema + 'fanout_per_kept_result': form.cleaned_data['fanout_per_kept_result'],
-                    self.hrmc_schema + 'threshold': str(form.cleaned_data['threshold']),
-                    self.hrmc_schema + 'error_threshold': str(form.cleaned_data['error_threshold']),
-                    self.hrmc_schema + 'max_iteration': form.cleaned_data['max_iteration'],
-                    self.hrmc_schema + 'pottype': form.cleaned_data['pottype'],
-                    #'experiment_id': form.cleaned_data['experiment_id'],
-                    self.sweep_schema + 'sweep_map': form.cleaned_data['sweep_map'],
-                    self.sweep_schema + 'directive': 'hrmc',
-                    #'run_map': form.cleaned_data['run_map'],
-                    self.run_schema + 'run_map': "{}",
-                    self.system_schema + 'output_location': form.cleaned_data['output_location']})
-
-        logger.debug("data=%s" % data)
-        r = requests.post(url,
-            data=data,
-            headers=headers,
-            cookies=cookies)
-
-         # TODO: need to check for status_code and handle failures.
-
-        logger.debug("r.json=%s" % r.json)
-        logger.debug("r.text=%s" % r.text)
-        logger.debug("r.headers=%s" % r.headers)
-        header_location = r.headers['location']
-        logger.debug("header_location=%s" % header_location)
-        new_context_uri = header_location[len(api_host):]
-        logger.debug("new_context_uri=%s" % new_context_uri)
-
+        schemas={
+        'hrmc_schema':"http://rmit.edu.au/schemas/hrmc/",
+        'system_schema':"http://rmit.edu.au/schemas/system/misc/",
+        'run_schema':"http://rmit.edu.au/schemas/stages/run/",
+        'sweep_schema':"http://rmit.edu.au/schemas/stages/sweep/",
+        }
+        submit_sweep_job(self.request, form, schemas)
         return super(SweepSubmitFormView, self).form_valid(form)
+
+
+def submit_sweep_job(request, form, schemas):
+
+    #FIXME: consider using non-locahost URL for api_host
+    api_host = "http://127.0.0.1"
+    url = "%s/api/v1/context/?format=json" % api_host
+
+    logger.debug("request.user.username=%s" % request.user.username)
+    logger.debug("request.user.username=%s" % request.user.password)
+
+    # pass the sessionid cookie through to the internal API
+    cookies = dict(request.COOKIES)
+    logger.debug("cookies=%s" % cookies)
+    headers = {'content-type': 'application/json'}
+
+    data = json.dumps({'smart_connector': 'sweep',
+                schemas['hrmc_schema'] + 'number_vm_instances': form.cleaned_data['number_vm_instances'],
+                schemas['hrmc_schema'] + 'minimum_number_vm_instances': form.cleaned_data['minimum_number_vm_instances'],
+                schemas['hrmc_schema'] + u'iseed': form.cleaned_data['iseed'],
+                schemas['sweep_schema'] + 'input_location':  form.cleaned_data['input_location'],
+                schemas['hrmc_schema'] + 'number_dimensions': form.cleaned_data['number_dimensions'],
+                schemas['hrmc_schema'] + 'fanout_per_kept_result': form.cleaned_data['fanout_per_kept_result'],
+                schemas['hrmc_schema'] + 'threshold': str(form.cleaned_data['threshold']),
+                schemas['hrmc_schema'] + 'error_threshold': str(form.cleaned_data['error_threshold']),
+                schemas['hrmc_schema'] + 'max_iteration': form.cleaned_data['max_iteration'],
+                schemas['hrmc_schema'] + 'pottype': form.cleaned_data['pottype'],
+                #'experiment_id': form.cleaned_data['experiment_id'],
+                schemas['sweep_schema'] + 'sweep_map': form.cleaned_data['sweep_map'],
+                schemas['sweep_schema'] + 'directive': 'hrmc',
+                #'run_map': form.cleaned_data['run_map'],
+                schemas['run_schema'] + 'run_map': "{}",
+                schemas['system_schema'] + 'output_location': form.cleaned_data['output_location']})
+
+    logger.debug("data=%s" % data)
+    r = requests.post(url,
+        data=data,
+        headers=headers,
+        cookies=cookies)
+
+     # TODO: need to check for status_code and handle failures.
+
+    logger.debug("r.json=%s" % r.json)
+    logger.debug("r.text=%s" % r.text)
+    logger.debug("r.headers=%s" % r.headers)
+    header_location = r.headers['location']
+    logger.debug("header_location=%s" % header_location)
+    new_context_uri = header_location[len(api_host):]
+    logger.debug("new_context_uri=%s" % new_context_uri)
 
 
 class MakeSubmitFormView(FormView):
@@ -356,7 +373,6 @@ class MakeSubmitFormView(FormView):
     form_class = MakeSubmitForm
     success_url = '/jobs'
     system_schema = "http://rmit.edu.au/schemas/system/misc/"
-
 
     initial = {
         'input_location': 'file://local@127.0.0.1/myfiles/vasppayload',
@@ -450,8 +466,6 @@ class MakeSubmitFormView(FormView):
     #     return super(MakeSubmitFormView, self).form_valid(form)
 
 
-
-
 class CopyFormView(FormView):
     template_name = 'copy.html'
     form_class = CopyForm
@@ -497,3 +511,402 @@ class CopyFormView(FormView):
         logger.debug("new_context_uri=%s" % new_context_uri)
 
         return super(CopyFormView, self).form_valid(form)
+
+subtype_validation = {
+    'natural': ('natural number', validators.validate_natural_number, None, None),
+    'string': ('string', validators.validate_string, None, None),
+    'whole': ('whole number', validators.validate_whole_number, None, None),
+    'even': ('even number', validators.validate_even_number, None, None),
+    'bdpurl': ('BDP url', validators.validate_BDP_url, forms.TextInput, 255),
+    'float': ('floading point number', validators.validate_float_number, None, None),
+    'jsondict': ('JSON Dictionary', validators.validate_jsondict, forms.Textarea(attrs={'cols':30, 'rows': 5}), None),
+    'float': ('floading point number', validators.validate_float_number, None, None),
+    'bool': ('On/Off', validators.validate_bool, None,  None),
+
+}
+
+clean_rules = {
+    'addition': validators.check_addition
+}
+
+
+def make_dynamic_field(parameter):
+
+    if 'subtype' in parameter and parameter['subtype']:
+        help_text = "%s (%s)" % (parameter['help_text'],
+            subtype_validation[parameter['subtype']][0])
+    else:
+        help_text = parameter['help_text']
+    # TODO: finish all types
+    # TODO: requires knowledge of how ParameterNames represent types.
+    # TODO: handle specifying different widgets (using subtype?)
+    field_params = {
+        'required': False,
+        'label': parameter['description'],
+        'help_text': help_text
+    }
+
+    if parameter['subtype'] in  ['bdpurl', 'jsondict']:
+        field_params['widget'] = subtype_validation[parameter['subtype']][2]
+        field_params['max_length'] = subtype_validation[parameter['subtype']][3]
+
+    if parameter['type'] == 2:
+        if  parameter['initial']:
+            field_params['initial'] = int(parameter['initial'])
+        else:
+            field_params['initial'] = 0
+
+        if parameter['subtype'] == 'bool':
+            field_params['initial'] = bool(parameter['initial'])
+            field = forms.BooleanField(**field_params)
+        else:
+            field = forms.IntegerField(**field_params)
+    else:
+        field_params['initial'] = str(parameter['initial'])
+        field = forms.CharField(**field_params)
+    if 'subtype' in parameter and parameter['subtype']:
+        field.validators.append(subtype_validation[parameter['subtype']][1])
+    return field
+
+
+def check_clean_rules(self, cleaned_data):
+    for clean_rule_name, clean_rule in clean_rules.items():
+        try:
+            clean_rule(cleaned_data)
+        except ValidationError, e:
+            msg = "%s: %s" % (clean_rule_name, unicode(e))
+            raise ValidationError(msg)
+    return cleaned_data
+
+
+def make_directive_form(**kwargs):
+    fields = SortedDict()
+    form_data = []
+    if 'directive_params' in kwargs:
+        for i, schema_data in enumerate(kwargs['directive_params']):
+            logger.debug("schemadata=%s" % pformat(schema_data))
+            for j, parameter in enumerate(schema_data['parameters']):
+                logger.debug("parameter=%s" % parameter)
+                # TODO: handle all possible types
+                field_key = "%s/%s" % (schema_data['namespace'], parameter['name'])
+                form_data.append((field_key, schema_data['description'] if not j else "", parameter['subtype']))
+                fields[field_key] = make_dynamic_field(parameter)
+                logger.debug("field=%s" % fields[field_key].validators)
+    logger.debug("fields = %s" % fields)
+    #http://www.b-list.org/weblog/2008/nov/09/dynamic-forms/
+    ParamSetForm = type('ParamSetForm', (forms.BaseForm,),
+                         {'base_fields': fields})
+    #TODO: handle the initial values
+    if 'request' in kwargs:
+        pset_form = ParamSetForm(kwargs['request'], initial={})
+    else:
+        pset_form = ParamSetForm(initial={})
+
+    def myclean(self):
+        cleaned_data = super(ParamSetForm, self).clean()
+        logger.debug("cleaning")
+        return self.clean_rules(cleaned_data)
+    import types
+    pset_form.clean = types.MethodType(myclean, pset_form)
+    pset_form.clean_rules = types.MethodType(check_clean_rules, pset_form)
+    pset_form_data = zip(form_data, pset_form)
+    logger.debug("pset_form_data = %s" % pformat(pset_form_data))
+    return (pset_form, pset_form_data)
+
+
+def get_test_schemas(direcive_id):
+
+    return [
+        {
+        'description': 'desc of input1',
+        'hidden': False,
+        'id': 1,
+        'name': 'input1',
+        'namespace': 'http://rmit.edu.au/schemas/input1',
+        'parameters': [
+            {'pk': 1, 'name': 'arg1', 'help_text':'help for arg1', 'type': 1, 'initial': 1, 'subtype': 'natural'},
+            {'pk': 2, 'name': 'arg2', 'help_text':'help for arg2', 'type': 2, 'initial': 'a', 'subtype': 'string'},
+            {'pk': 3, 'name': 'arg3', 'help_text':'help for arg3','type': 2, 'initial': 'b', 'subtype': 'string'},
+            {'pk': 4, 'name': 'arg4', 'help_text':'help for arg4','type': 1, 'initial': 3, 'subtype': 'whole'},
+        ]},
+        {
+        'description': 'desc of input2',
+        'hidden': False,
+        'id': 2,
+        'name': 'input2',
+        'namespace': 'http://rmit.edu.au/schemas/input2',
+        'parameters': [
+            {'pk': 1, 'name': 'arg1', 'help_text':'help for arg1', 'type': 1, 'initial': 1, 'subtype': 'even'},
+          {'pk': 2, 'name': 'arg2', 'help_text':'help for arg2', 'type': 1, 'initial': 2},
+          {'pk': 3, 'name': 'arg3', 'help_text':'arg1+arg2', 'type': 1, 'initial': 2},
+
+        ]}
+
+        ]
+
+
+def get_schema_info(request, schema_id):
+    headers = {'content-type': 'application/json'}
+    host_ip = "127.0.0.1"
+    api_host = "http://%s" % host_ip
+    url = "%s/api/v1/schema/%s/?format=json" % (api_host, schema_id)
+    cookies = dict(request.COOKIES)
+    logger.debug("cookies=%s" % cookies)
+    r = requests.get(url, headers=headers, cookies=cookies)
+    # FIXME: need to check for status_code and handle failures such
+    # as 500 - lack of disk space at mytardis
+    logger.debug('URL=%s' % url)
+    logger.debug('r.json=%s' % r.json)
+    logger.debug('r.text=%s' % r.text)
+    logger.debug('r.headers=%s' % r.headers)
+    return r.json()
+
+
+def get_directive(request, directive_id):
+    host_ip = "127.0.0.1"
+    headers = {'content-type': 'application/json'}
+    api_host = "http://%s" % host_ip
+    url = "%s/api/v1/directive/%s?format=json" % (api_host, directive_id)
+    cookies = dict(request.COOKIES)
+    logger.debug("cookies=%s" % cookies)
+    r = requests.get(url, headers=headers, cookies=cookies)
+    # FIXME: need to check for status_code and handle failures such
+    # as 500 - lack of disk space at mytardis
+    logger.debug('URL=%s' % url)
+    logger.debug('r.json=%s' % r.json)
+    logger.debug('r.text=%s' % r.text)
+    logger.debug('r.headers=%s' % r.headers)
+    return r.json()
+
+
+def get_directives(request):
+    host_ip = "127.0.0.1"
+    headers = {'content-type': 'application/json'}
+    api_host = "http://%s" % host_ip
+    url = "%s/api/v1/directive/?format=json" % (api_host)
+    cookies = dict(request.COOKIES)
+    logger.debug("cookies=%s" % cookies)
+    r = requests.get(url, headers=headers, cookies=cookies)
+    # FIXME: need to check for status_code and handle failures such
+    # as 500 - lack of disk space at mytardis
+    logger.debug('URL=%s' % url)
+    logger.debug("r.status_code=%s" % r.status_code)
+    # logger.debug('r.json=%s' % r.json)
+    # logger.debug('r.text=%s' % r.text)
+    # logger.debug('r.headers=%s' % r.headers)
+    return [ x for x in r.json()['objects'] ]
+
+
+def get_directive_schemas(request, directive_id):
+    host_ip = "127.0.0.1"
+    headers = {'content-type': 'application/json'}
+    api_host = "http://%s" % host_ip
+    url = "%s/api/v1/directiveargset/?directive=%s&format=json" % (api_host,
+        directive_id)
+    cookies = dict(request.COOKIES)
+    logger.debug("cookies=%s" % cookies)
+    r = requests.get(url, headers=headers, cookies=cookies)
+    # FIXME: need to check for status_code and handle failures such
+    # as 500 - lack of disk space at mytardis
+    logger.debug('URL=%s' % url)
+    logger.debug('r.json=%s' % r.json)
+    logger.debug('r.text=%s' % r.text)
+    logger.debug('r.headers=%s' % r.headers)
+    schemas = [x['schema'] for x in sorted(r.json()['objects'],
+                            key=lambda argset: int(argset['order']))]
+    logger.debug("directiveargs= %s" % schemas)
+    return schemas
+
+
+def get_parameters(request, schema_id):
+    host_ip = "127.0.0.1"
+    headers = {'content-type': 'application/json'}
+    api_host = "http://%s" % host_ip
+    url = "%s/api/v1/parametername/?schema=%s&format=json" % (api_host,
+        schema_id)
+    cookies = dict(request.COOKIES)
+    logger.debug("cookies=%s" % cookies)
+    r = requests.get(url, headers=headers, cookies=cookies)
+    # FIXME: need to check for status_code and handle failures such
+    # as 500 - lack of disk space at mytardis
+    logger.debug('URL=%s' % url)
+    logger.debug('r.json=%s' % r.json)
+    logger.debug('r.text=%s' % pformat(r.text))
+    logger.debug('r.headers=%s' % r.headers)
+    schemas = [x for x in sorted(r.json()['objects'],
+                                key=lambda ranking: ranking['ranking'])]
+    return schemas
+
+
+def get_directive_params(request, directive):
+    directive_params = []
+    for directive_schema in get_directive_schemas(request, directive['id']):
+        logger.debug("directive_schema=%s" % directive_schema)
+        schema_id = int([i for i in str(directive_schema).split('/') if i][-1])
+        logger.debug("schema_id=%s" % schema_id)
+        schema_info = get_schema_info(request, schema_id)
+        logger.debug("schema_info=%s" % schema_info)
+        parameters = get_parameters(request, schema_id)
+        logger.debug("parameters=%s" % pformat(parameters))
+        directive_params.append((schema_info, parameters))
+
+    return directive_params
+
+
+def add_form_fields(request, paramnameset):
+    form_field_info = []
+    for schema, paramnames in paramnameset:
+        s = {}
+        s['description'] = schema['description']
+        s['name'] = schema['name']
+        s['namespace'] = schema['namespace']
+        p = []
+        for pname  in paramnames:
+            x = {}
+            x['pk'] = pname['id']
+            x['name'] = pname['name']
+            x['description'] = pname['description']
+            x['help_text'] = pname['help_text']
+            x['type'] = pname['type']
+            # TODO: initial values come from server initially,
+            # but later may use values stored in the client to override these
+            # to create different user preferences for different uses of the
+            # schema
+            x['initial'] = pname['initial']
+            x['subtype'] = pname['subtype']
+            p.append(x)
+        s['parameters'] = p
+        form_field_info.append(s)
+    return form_field_info
+
+
+
+def submit_job(request, form, directive):
+
+    #FIXME: consider using non-locahost URL for api_host
+    api_host = "http://127.0.0.1"
+    url = "%s/api/v1/context/?format=json" % api_host
+
+    logger.debug("request.user.username=%s" % request.user.username)
+    logger.debug("request.user.username=%s" % request.user.password)
+
+    # pass the sessionid cookie through to the internal API
+    cookies = dict(request.COOKIES)
+    logger.debug("cookies=%s" % cookies)
+    headers = {'content-type': 'application/json'}
+    logger.debug("form.cleaned_data=%s" % pformat(form.cleaned_data))
+
+    data = json.dumps(dict(form.cleaned_data.items() + [('smart_connector',directive)]))
+
+
+    # data = json.dumps({'smart_connector': 'sweep',
+    #             schemas['hrmc_schema'] + 'number_vm_instances': form.cleaned_data['number_vm_instances'],
+    #             schemas['hrmc_schema'] + 'minimum_number_vm_instances': form.cleaned_data['minimum_number_vm_instances'],
+    #             schemas['hrmc_schema'] + u'iseed': form.cleaned_data['iseed'],
+    #             schemas['sweep_schema'] + 'input_location':  form.cleaned_data['input_location'],
+    #             schemas['hrmc_schema'] + 'number_dimensions': form.cleaned_data['number_dimensions'],
+    #             schemas['hrmc_schema'] + 'fanout_per_kept_result': form.cleaned_data['fanout_per_kept_result'],
+    #             schemas['hrmc_schema'] + 'threshold': str(form.cleaned_data['threshold']),
+    #             schemas['hrmc_schema'] + 'error_threshold': str(form.cleaned_data['error_threshold']),
+    #             schemas['hrmc_schema'] + 'max_iteration': form.cleaned_data['max_iteration'],
+    #             schemas['hrmc_schema'] + 'pottype': form.cleaned_data['pottype'],
+    #             #'experiment_id': form.cleaned_data['experiment_id'],
+    #             schemas['sweep_schema'] + 'sweep_map': form.cleaned_data['sweep_map'],
+    #             schemas['sweep_schema'] + 'directive': 'hrmc',
+    #             #'run_map': form.cleaned_data['run_map'],
+    #             schemas['run_schema'] + 'run_map': "{}",
+    #             schemas['system_schema'] + 'output_location': form.cleaned_data['output_location']})
+
+    logger.debug("data=%s" % data)
+    r = requests.post(url,
+        data=data,
+        headers=headers,
+        cookies=cookies)
+
+    logger.debug("r.status_code=%s" % r.status_code)
+    logger.debug("r.text=%s" % r.text)
+    logger.debug("r.headers=%s" % r.headers)
+
+    if r.status_code != 201:
+        error_message = ''
+        messages.error(request, "Task Failed with status code %s: %s" % (r.status_code, r.text))
+        return False
+    else:
+        messages.success(request, 'Job Created')
+
+        logger.debug("r.json=%s" % r.json)
+
+    logger.debug("r.status_code=%s" % r.status_code)
+    logger.debug("r.text=%s" % r.text)
+    logger.debug("r.headers=%s" % r.headers)
+    if 'location' in r.headers:
+        header_location = r.headers['location']
+        logger.debug("header_location=%s" % header_location)
+        new_context_uri = header_location[len(api_host):]
+        logger.debug("new_context_uri=%s" % new_context_uri)
+    return True
+
+
+def submit_directive(request, directive_id):
+    try:
+        directive_id = int(directive_id)
+    except ValueError:
+        return redirect("makedirective")
+    logger.debug("directive_id=%s" % directive_id)
+    directives = get_directives(request)
+    try:
+        directive = [x for x in directives if x['id'] == directive_id ][0]
+    except IndexError:
+        return redirect("makedirective")
+        # TODO: handle
+        raise
+
+    directive_params = get_directive_params(request, directive)
+    logger.debug("directive_params=%s" % pformat(directive_params))
+    directive_params = add_form_fields(request, directive_params)
+    logger.debug("directive_params=%s" % pformat(directive_params))
+    if request.method == 'POST':
+        form, form_data = make_directive_form(
+            request=request.POST,
+            directive_params=directive_params)
+        logger.debug("form=%s" % pformat(form))
+        logger.debug("form_data=%s" % pformat(form_data))
+        if form.is_valid():
+            logger.debug("form result =%s" % form.cleaned_data)
+            # schemas={
+            # 'hrmc_schema': "http://rmit.edu.au/schemas/input/hrmc/",
+            # 'system_schema': "http://rmit.edu.au/schemas/input/system",
+            # 'run_schema': "http://rmit.edu.au/schemas/stages/run/",
+            # 'sweep_schema': "http://rmit.edu.au/schemas/input/sweep/",
+            # }
+            valid = submit_job(request, form, directive['name'])
+            if valid:
+                return redirect("hrmcjob-list")
+            else:
+                logger.debug("invalid")
+                redirect("makedirective", directive_id=directive_id)
+        else:
+            messages.error(request, "Job Failed because of validation errors. See below")
+    else:
+        form, form_data = make_directive_form(directive_params=directive_params)
+
+    # TODO: generalise
+    if directive['name'] == "sweep":
+        for d in directives:
+            if d['name'] == "hrmc":
+                directive['name'] = d['name']
+                directive['description'] = d['description']
+                break
+
+    return render_to_response(
+                       'parameters.html',
+                       {
+                           'directives': [ x for x in directives if not x['hidden']],
+                           'directive': directive,
+                           'form': form,
+                           'formdata': form_data,
+                           'longfield': [ x for (x,y) in subtype_validation.items() if y[2] is not None]
+                        },
+                       context_instance=RequestContext(request))
+
+

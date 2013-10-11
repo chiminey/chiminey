@@ -10,12 +10,12 @@
 <link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap-responsive.css" %}">
 <link rel="stylesheet" type="text/css" href="{% static "simpleui/css/default.css" %}">
 
+    <script type="text/javascript" src="{% static 'bootstrap/js/lib/jquery-1.7.1.min.js' %}"></script>
+    <script type="text/javascript" src="{% static "bootstrap/js/bootstrap.min.js" %}"></script>
 
 </head>
 
     <body>
-    <script type="text/javascript" src="{% static 'bootstrap/js/lib/jquery-1.7.1.min.js' %}"></script>
-    <script type="text/javascript" src="{% static "bootstrap/js/bootstrap.min.js" %}"></script>
         <div class="navbar navbar-fixed-top">
           <div class="navbar-inner">
             <div class="container-fluid">
@@ -32,13 +32,14 @@
 
                     <li><a  href="{% url login %}">login</a></li>
                     <li><a  href="{% url logout %}">logout</a></li>
+                    <!-- <li><a  href="{% url hrmcjob-new %}">Create HRMC Job</a></li> -->
+                    <li><a  href="{% url makedirective 6 %}">New Job</a></li>
+                <!--   <li><a  href="{% url sweepjob-new %}">Create SWEEP Job</a></li> -->
                     <li><a  href="{% url hrmcjob-list %}">Retrieve Jobs</a></li>
-                    <li><a  href="{% url hrmcjob-new %}">Create HRMC Job</a></li>
-                    <li><a  href="{% url sweepjob-new %}">Create SWEEP Job</a></li>
-                    <li><a  href="{% url makejob-new %}">Create RemoteMake Job</a></li>
+<!--                    <li><a  href="{% url makejob-new %}">Create RemoteMake Job</a></li> -->
                     <li><a  href="{% url userprofileparameter-list %}">User Settings</a></li>
-                    <li><a  href="{% url listdir-list %}">Directory</a></li>
-                    <li><a  href="{% url copyjob-new %}">Copy Data</a></li>
+<!--                    <li><a  href="{% url listdir-list %}">Directory</a></li> -->
+<!--                    <li><a  href="{% url copyjob-new %}">Copy Data</a></li> -->
                     <li><a  href="/admin">Admin</a></li>
                 </ul>
                 <ul class="login-nav nav pull-right">
@@ -46,16 +47,23 @@
             </div>
           </div>
         </div>
-<div class="container">
-    <div class="row-fluid" style="margin-bottom: 0px; margin-top: 40px">
-        <div align="right"><a class="btn" href="#">Log in with AAF</a> (soon!)</div>
-        {% block content %}
+        {% if messages %}
+        <div class="row-fluid">
+            {% for message in messages %}
+            {% if message.tags %} <div class="span10 offset1 alert alert-{{ message.tags}}">
+            {% else %} <div>
+            {% endif %}{{message}} </div>
+            {% endfor %}
+        </div>
+            {% endif %}
+
+               {% block content %}
          {% endblock %}
     <hr>
         <footer>
             <div class="pull-left"><img src="http://nectar.org.au/sites/default/files/logo-small.png">
                 <small><p>The Bioscience Data Platform acknowledges funding from the <a href="http://www.nectar.org.au">NeCTAR project</a>.</p></small></div>
-            <div class="pull-right"><a href="x">Link 1</a> · <a href="y">Link 2</a></div>
+
         </footer>
     </div>
 

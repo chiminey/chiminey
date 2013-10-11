@@ -38,8 +38,6 @@ class Schedule(Stage):
     """
 
     def __init__(self, user_settings=None):
-        #self.user_settings = user_settings.copy()
-        #self.boto_settings = user_settings.copy()
         logger.debug('Schedule stage initialised')
 
     def triggered(self, run_settings):
@@ -164,10 +162,10 @@ class Schedule(Stage):
                 'http://rmit.edu.au/schemas/stages/schedule/schedule_started'))
         except KeyError:
             self.started = 0
-        self.boto_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
-        retrieve_boto_settings(run_settings, self.boto_settings)
+        local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
+        retrieve_local_settings(run_settings, local_settings)
         self.nodes = botocloudconnector.get_rego_nodes(
-                self.boto_settings, node_type='bootstrapped_nodes')
+                local_settings, node_type='bootstrapped_nodes')
 
         if not self.started:
             try:
@@ -179,8 +177,7 @@ class Schedule(Stage):
             if self.procs_2b_rescheduled:
                 self.start_reschedule(run_settings)
             else:
-                self.start_schedule(run_settings)
-
+                self.start_schedule(run_settings, local_settings)
 
             #self.current_processes = []
             logger.debug('schedule_index=%d' % self.schedule_index)
@@ -207,15 +204,15 @@ class Schedule(Stage):
                                             unicode(node.region)))
                     continue
                 node_ip = node.ip_address
-                relative_path = "%s@%s" % (self.boto_settings['platform'],
-                    self.boto_settings['payload_destination'])
-                destination = smartconnector.get_url_with_pkey(self.boto_settings,
+                relative_path = "%s@%s" % (local_settings['platform'],
+                    local_settings['payload_destination'])
+                destination = smartconnector.get_url_with_pkey(local_settings,
                     relative_path,
                     is_relative_path=True,
                     ip_address=node_ip)
                 logger.debug("Relative path %s" % relative_path)
                 logger.debug("Destination %s" % destination)
-                fin = job_finished(node_ip, self.boto_settings, destination)
+                fin = job_finished(node_ip, local_settings, destination)
                 logger.debug("fin=%s" % fin)
                 if fin:
                     logger.debug("done.")
@@ -252,7 +249,7 @@ class Schedule(Stage):
                     print "job still running on %s" % node.ip_address
         #logger.debug('exit total_scheduled_procs=%d' % self.total_scheduled_procs)
 
-    def start_schedule(self, run_settings):
+    def start_schedule(self, run_settings, local_settings):
         #FIXme replace with hrmcstage.get_parent_stage()
         schedule_package = "bdphpcprovider.smartconnectorscheduler.stages.schedule.Schedule"
         parent_obj = models.Stage.objects.get(package=schedule_package)
@@ -260,12 +257,12 @@ class Schedule(Stage):
         try:
             logger.debug('parent_package=%s' % (parent_stage.package))
             stage = hrmcstages.safe_import(parent_stage.package, [],
-                                           {'user_settings': self.boto_settings})
+                                           {'user_settings': local_settings})
         except ImproperlyConfigured, e:
             logger.debug(e)
             return (False, "Except in import of stage: %s: %s"
                 % (parent_stage.name, e))
-        map = stage.get_run_map(self.boto_settings, run_settings=run_settings)
+        map = stage.get_run_map(local_settings, run_settings=run_settings)
         try:
             isinstance(map, tuple)
             self.run_map = map[0]
@@ -274,23 +271,23 @@ class Schedule(Stage):
         logger.debug('map=%s' % self.run_map)
         self.total_processes = stage.get_total_templates(
             [self.run_map], run_settings=run_settings,
-            auth_settings=self.boto_settings)
+            auth_settings=local_settings)
         logger.debug('total_processes=%d' % self.total_processes)
         self.current_processes = []
         self.schedule_index, self.current_processes = \
                 start_round_robin_schedule(self.nodes, self.total_processes,
                                            self.schedule_index,
-                                           self.boto_settings)
+                                           local_settings)
         self.all_processes = update_lookup_table(
                  self.all_processes, new_processes=self.current_processes)
         logger.debug('all_processes=%s' % self.all_processes)
 
 
 
-    def start_reschedule(self, run_settings):
+    def start_reschedule(self, local_settings):
         _, self.current_processes = \
         start_round_robin_reschedule(self.nodes, self.procs_2b_rescheduled,
-                                     self.current_processes, self.boto_settings)
+                                     self.current_processes, local_settings)
         self.all_processes = update_lookup_table(
                  self.all_processes,
                  new_processes=self.current_processes, reschedule=True)
@@ -353,38 +350,42 @@ class Schedule(Stage):
         return run_settings
 
 
-def retrieve_boto_settings(run_settings, boto_settings):
-    smartconnector.copy_settings(boto_settings, run_settings,
-        'http://rmit.edu.au/schemas/hrmc/number_vm_instances')
-    smartconnector.copy_settings(boto_settings, run_settings,
-        'http://rmit.edu.au/schemas/hrmc/maximum_retry')
-    smartconnector.copy_settings(boto_settings, run_settings,
+def retrieve_local_settings(run_settings, local_settings):
+    smartconnector.copy_settings(local_settings, run_settings,
+        'http://rmit.edu.au/schemas/input/system/cloud/number_vm_instances')
+    smartconnector.copy_settings(local_settings, run_settings,
+        'http://rmit.edu.au/schemas/input/reliability/maximum_retry')
+    smartconnector.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/setup/payload_destination')
-    smartconnector.copy_settings(boto_settings, run_settings,
+    smartconnector.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/setup/filename_for_PIDs')
-    smartconnector.copy_settings(boto_settings, run_settings,
+    smartconnector.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/setup/payload_name')
-    smartconnector.copy_settings(boto_settings, run_settings,
+    smartconnector.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/system/platform')
-    smartconnector.copy_settings(boto_settings, run_settings,
+    smartconnector.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/bootstrap/bootstrapped_nodes')
-    smartconnector.copy_settings(boto_settings, run_settings,
+    smartconnector.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/create/custom_prompt')
-
-    smartconnector.copy_settings(boto_settings, run_settings,
+    smartconnector.copy_settings(local_settings, run_settings,
+        'http://rmit.edu.au/schemas/system/max_seed_int')
+    smartconnector.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/create/nectar_username')
-    smartconnector.copy_settings(boto_settings, run_settings,
+    smartconnector.copy_settings(local_settings, run_settings,
+        'http://rmit.edu.au/schemas/input/hrmc/number_dimensions')
+    smartconnector.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/create/nectar_password')
-    boto_settings['username'] = \
+    smartconnector.copy_settings(local_settings, run_settings,
+        'http://rmit.edu.au/schemas/input/hrmc/fanout_per_kept_result')
+    local_settings['username'] = \
         run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_username']
-    boto_settings['username'] = 'root'  # FIXME: schema value is ignored
-    boto_settings['password'] = \
+    local_settings['username'] = 'root'  # FIXME: schema value is ignored
+    local_settings['password'] = \
         run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
-    key_file = hrmcstages.retrieve_private_key(boto_settings,
+    key_file = hrmcstages.retrieve_private_key(local_settings,
             run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nectar_private_key'])
-    boto_settings['private_key'] = key_file
-    boto_settings['nectar_private_key'] = key_file
-
+    local_settings['private_key'] = key_file
+    local_settings['nectar_private_key'] = key_file
 
 
 def start_round_robin_schedule(nodes, processes, schedule_index, settings):
