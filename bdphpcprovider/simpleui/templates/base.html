@@ -9,6 +9,47 @@
 <link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap.min.css" %}">
 <link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap-responsive.css" %}">
 <link rel="stylesheet" type="text/css" href="{% static "simpleui/css/default.css" %}">
+<style>
+    .modal-backdrop {background-color: #DCDCDC;}
+</style>
+
+<script>
+
+			$(document).ready(function() {
+
+				$('#myModal').bind('show', function () {
+
+					});
+				});
+			function closeDialog () {
+				$('#myModal').modal('hide');
+				};
+			function okClicked () {
+                var form = $( "#frm1" );
+                form.validate();
+                if (form.valid()){
+                    form.submit();
+                    }
+                else{
+                    alert( "Valid: " + form.valid() );
+                }
+
+                /***$("#frm1").validate({
+                    submitHandler: function(form) {
+                    form.submit();
+                    }
+            });**/
+            //$('#frm1')[0].reset();
+    //          $( "#frm1" ).submit();
+
+				};
+
+
+
+
+
+
+</script>
 
 
 </head>
@@ -28,6 +69,10 @@
               <span class="brand"><a href="/">BDPHPC Alpha</a></span>
 
               <div class="nav-collapse">
+                   <p class="navbar-text pull-right">
+                        <!--Logged in as <a href="#" class="navbar-link">Username</a-->
+                       <a href="{% url account-settings %}" class="navbar-link">Settings</a>
+                   </p>
                 <ul class="nav">
 
                     <li><a  href="{% url login %}">login</a></li>
@@ -48,7 +93,7 @@
         </div>
 <div class="container">
     <div class="row-fluid" style="margin-bottom: 0px; margin-top: 40px">
-        <div align="right"><a class="btn" href="#">Log in with AAF</a> (soon!)</div>
+        <!--div align="right"><a class="btn" href="#">Log in with AAF</a> (soon!)</div-->
         {% block content %}
          {% endblock %}
     <hr>

@@ -1,6 +1,17 @@
 import json
 from django.core.validators import ValidationError
 
+
+def validate_not_null(value):
+    msg = u'Enter value'
+    if not value:
+        raise ValidationError(msg)
+
+    return value
+
+
+
+
 def validate_sweep_map(value):
     # FIXME: more detailed validation required here
     sweep_map = value
