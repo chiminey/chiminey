@@ -15,8 +15,6 @@
                 <div class="tab-pane active" id="nectar">
                     <form class="form-horizontal" action="{{ action }}" method="POST" id="frm1"> {% csrf_token %}
                         {{ nectar_form.as_p }}
-
-
                         <button type="submit" class="btn btn-primary" onclick="submitForm('create');">Add</button>
                     </form>
                 </div>
