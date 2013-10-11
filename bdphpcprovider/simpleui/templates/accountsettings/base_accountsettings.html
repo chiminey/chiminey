@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+    <div class="page-header" style="padding-top: 40px;"><h1>Account Settings</h1></div>
+     <!-- Modal -->
+                  <form class="form-horizontal" action="{{ action }}" method="POST" id="frm1"> {% csrf_token %}>
+
+        <div class="modal hide fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                {%  block account-settings-modal %}
+                {%  endblock %}
+            </div><!-- /.modal-dialog -->
+        </div><!-- /.modal -->
+</form>
+        <div class="container-fluid">
+            <div class="row-fluid">
+                <div class="span3">
+                    <div>
+                        <ul class="nav nav-list">
+                            {% url account-settings as computation_platform %}
+                            <li {% if request.path == computation_platform %} class="active"{% endif %}>
+                                <a href="{{ computation_platform }}">Computation Platform</a>
+                            </li>
+                            <li><a href="a.html">Storage Platform</a></li>
+                            <li><a href="b.htm">Account</a></li>
+                        </ul>
+                    </div><!--/.well -->
+                </div><!--/span-->
+            <div class="span6"  style="padding-left:20px; border-left: 2px solid #ccc;">
+                {% block account-settings-content %}
+                {% endblock %}
+            </div>
+        </div><!--/row-->
+    </div>
+
+{% endblock %}
+

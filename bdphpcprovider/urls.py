@@ -71,6 +71,9 @@ urlpatterns = patterns('',
     url(r'^list/$', login_required(uiviews.ListDirList.as_view()),
         name='listdir-list',),
 
+    url(r'^accounts/settings/$', login_required(uiviews.AccountSettingsView.as_view()),
+        name='account-settings',),
+
     url(r'^output/(?P<group_id>\w+)/(?P<file_id>[\w.]+)/$', scsviews.getoutput, name="getoutput"),
     url(r'^directive/(?P<directive_id>\d+)/$', scsviews.test_directive),
 
