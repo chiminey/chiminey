@@ -9,6 +9,47 @@
 <link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap.min.css" %}">
 <link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap-responsive.css" %}">
 <link rel="stylesheet" type="text/css" href="{% static "simpleui/css/default.css" %}">
+<style>
+    .modal-backdrop {background-color: #DCDCDC;}
+</style>
+
+<script>
+
+			$(document).ready(function() {
+
+				$('#myModal').bind('show', function () {
+
+					});
+				});
+			function closeDialog () {
+				$('#myModal').modal('hide');
+				};
+			function okClicked () {
+                var form = $( "#frm1" );
+                form.validate();
+                if (form.valid()){
+                    form.submit();
+                    }
+                else{
+                    alert( "Valid: " + form.valid() );
+                }
+
+                /***$("#frm1").validate({
+                    submitHandler: function(form) {
+                    form.submit();
+                    }
+            });**/
+            //$('#frm1')[0].reset();
+    //          $( "#frm1" ).submit();
+
+				};
+
+
+
+
+
+
+</script>
 
     <script type="text/javascript" src="{% static 'bootstrap/js/lib/jquery-1.7.1.min.js' %}"></script>
     <script type="text/javascript" src="{% static "bootstrap/js/bootstrap.min.js" %}"></script>
@@ -28,6 +69,10 @@
               <span class="brand"><a href="/">BDPHPC Alpha</a></span>
 
               <div class="nav-collapse">
+                   <p class="navbar-text pull-right">
+                        <!--Logged in as <a href="#" class="navbar-link">Username</a-->
+                       <a href="{% url account-settings %}" class="navbar-link">Settings</a>
+                   </p>
                 <ul class="nav">
 
                     <li><a  href="{% url login %}">login</a></li>
@@ -47,6 +92,7 @@
             </div>
           </div>
         </div>
+
         {% if messages %}
         <div class="row-fluid">
             {% for message in messages %}
@@ -58,6 +104,7 @@
             {% endif %}
 
                {% block content %}
+
          {% endblock %}
     <hr>
         <footer>

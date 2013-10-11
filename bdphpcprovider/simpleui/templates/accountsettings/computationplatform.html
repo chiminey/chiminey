@@ -1,0 +1,55 @@
+{% extends "accountsettings/base_accountsettings.html" %}
+
+{%  block account-settings-modal %}
+    <div class="modal-content">
+        <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <h4 class="modal-title">Add Computation Platform</h4>
+        </div>
+        <div class="modal-body">
+
+            <ul class="nav nav-tabs" id="myTab">
+              <li class="active"><a href="#nectar" data-toggle="tab">NeCTAR</a></li>
+              <li><a href="#profile" data-toggle="tab">NCI</a></li>
+            </ul>
+
+            <div class="tab-content">
+              <div class="tab-pane active" id="nectar">NeCTAR...</div>
+              <div class="tab-pane" id="profile">
+                  <!--form class="form-horizontal" action="{{ action }}" method="POST" id="frm1"> {% csrf_token %}-->
+                    {{form.as_p}}
+
+                  <!--/form-->
+              </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            <button type="submit" class="btn btn-primary" onclick="okClicked();">Add</button>
+        </div>
+    </div><!-- /.modal-content -->
+{% endblock %}
+
+{% block account-settings-content %}
+    <a data-toggle="modal" href="#myModal" class="btn btn-primary">Add Computation Platform</a>
+    <div class="hero-unit">
+    <form class="form-horizontal" action="{{ action }}" method="POST"> {% csrf_token %}
+                    {{form.as_p}}
+                  </form>
+        <h1>A </h1>
+        <p>This is a template for a simple marketing or informational website.
+            It includes a large callout called the hero unit and three supporting </p>
+        <p><a href="#" class="btn btn-primary btn-large">Learn more &raquo;</a></p>
+    </div>
+
+    <div class="row-fluid">
+        <div class="span12">
+            <h2>Heading</h2>
+            <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, 'ut f
+            </p>
+            <p><a class="btn" href="#">View details &raquo;</a></p>
+        </div><!--/span-->
+
+    </div><!--/row-->
+
+{% endblock %}
