@@ -53,7 +53,7 @@ from django.views.generic.edit import FormView
 from django.views.generic import DetailView
 
 from django.http import HttpResponseRedirect
-from django.shortcuts import render_to_response
+from django.shortcuts import render_to_response, render
 
 def computation_platform_settings(request):
     nciform = NCIComputationPlatformForm()
@@ -62,13 +62,16 @@ def computation_platform_settings(request):
         nciform = NCIComputationPlatformForm(request.POST)
         nectarform = NeCTARComputationPlatformForm(request.POST)
         if nciform.is_valid():
-
-            return HttpResponseRedirect('/jobs/')
-
+            logger.debug('nci')
+            logger.debug('operation=%s' % nciform.cleaned_data['operation'])
+            return HttpResponseRedirect('/accounts/settings/')
         elif nectarform.is_valid():
+            logger.debug('nectar')
+            logger.debug('operation=%s' % nectarform.cleaned_data['operation'])
             return HttpResponseRedirect('/accounts/profile/')
-
-    return render_to_response('accountsettings/computationplatform.html',
+    logger.debug(nciform)
+    logger.debug(nectarform)
+    return render(request, 'accountsettings/computationplatform.html',
                               {'nci_form': nciform, 'nectar_form':nectarform})
 
 
