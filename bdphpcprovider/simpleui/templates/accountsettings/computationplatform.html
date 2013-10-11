@@ -14,12 +14,15 @@
             </ul>
 
             <div class="tab-content">
-              <div class="tab-pane active" id="nectar">NeCTAR...</div>
-              <div class="tab-pane" id="profile">
-                  <!--form class="form-horizontal" action="{{ action }}" method="POST" id="frm1"> {% csrf_token %}-->
-                    {{form.as_p}}
+              <div class="tab-pane active" id="nectar">NeCTAR...
 
-                  <!--/form-->
+                  {{ nectar_form.as_p }}
+
+
+
+              </div>
+              <div class="tab-pane" id="profile">
+                {{nci_form.as_p}}
               </div>
             </div>
         </div>
@@ -33,9 +36,6 @@
 {% block account-settings-content %}
     <a data-toggle="modal" href="#myModal" class="btn btn-primary">Add Computation Platform</a>
     <div class="hero-unit">
-    <form class="form-horizontal" action="{{ action }}" method="POST"> {% csrf_token %}
-                    {{form.as_p}}
-                  </form>
         <h1>A </h1>
         <p>This is a template for a simple marketing or informational website.
             It includes a large callout called the hero unit and three supporting </p>
