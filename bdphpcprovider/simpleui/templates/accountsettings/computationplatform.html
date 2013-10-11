@@ -1,54 +1,56 @@
 {% extends "accountsettings/base_accountsettings.html" %}
-{%  block create-modal %}
-    <div class="modal-content">
-        <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-            <h4 class="modal-title">Add Computation Platform</h4>
-        </div>
-        <div class="modal-body">
-            <ul class="nav nav-tabs" id="myTab">
-              <li class="active"><a href="#nectar" data-toggle="tab">NeCTAR</a></li>
-              <li><a href="#nci" data-toggle="tab">NCI</a></li>
-            </ul>
-
-            <div class="tab-content">
-                <div class="tab-pane active" id="nectar">
-                    <form class="form-horizontal" action="{{ action }}" method="POST" id="frm1"> {% csrf_token %}
-                        {{ nectar_form.as_p }}
-                        <button type="submit" class="btn btn-primary" onclick="submitForm('create');">Add</button>
-                    </form>
-                </div>
-                <div class="tab-pane" id="nci">
-                    <form class="form-horizontal" action="{{ action }}" method="POST" id="frm2"> {% csrf_token %}
-                        {{nci_form.as_p}}
-                        <button type="submit" class="btn btn-primary" onclick="submitForm('create');">Add</button>
-                    </form>
-                 </div>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-        </div>
-    </div><!-- /.modal-content -->
-{% endblock %}
-
 {% block account-settings-content %}
-    <a data-toggle="modal" href="#createModal" class="btn btn-primary">Add Computation Platform</a>
-    <div class="hero-unit">
-        <h1>A </h1>
-        <p>This is a template for a simple marketing or informational website.
-            It includes a large callout called the hero unit and three supporting </p>
-        <p><a href="#" class="btn btn-primary btn-large">Learn more &raquo;</a></p>
-    </div>
+<!--create modal -->
+<div class="modal hide fade" id="createModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title">Add Computation Platform</h4>
+            </div>
+            <div class="modal-body">
+                <ul class="nav nav-tabs" id="myTab">
+                  <li class="active"><a href="#nectar" data-toggle="tab">NeCTAR</a></li>
+                  <li><a href="#nci" data-toggle="tab">NCI</a></li>
+                </ul>
 
-    <div class="row-fluid">
-        <div class="span12">
-            <h2>Heading</h2>
-            <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, 'ut f
-            </p>
-            <p><a class="btn" href="#">View details &raquo;</a></p>
-        </div><!--/span-->
+                <div class="tab-content">
+                    <div class="tab-pane active" id="nectar">
+                        <form class="form-horizontal" action="{{ action }}" method="POST" id="frm1"> {% csrf_token %}
+                            {{ nectar_form.as_p }}
+                            <button type="submit" class="btn btn-primary" onclick="submitForm('create');">Add</button>
+                        </form>
+                    </div>
+                    <div class="tab-pane" id="nci">
+                        <form class="form-horizontal" action="{{ action }}" method="POST" id="frm2"> {% csrf_token %}
+                            {{nci_form.as_p}}
+                            <button type="submit" class="btn btn-primary" onclick="submitForm('create');">Add</button>
+                        </form>
+                     </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- end create modal -->
 
-    </div><!--/row-->
-
+<!--second column-->
+<p><a data-toggle="modal" href="#createModal" class="btn btn-primary">Add Computation Platform</a></p>
+<div class="hero-unit">
+    <h1>A </h1>
+    <p>This is a template for a simple marketing or informational website.
+        It includes a large callout called the hero unit and three supporting </p>
+    <p><a href="#" class="btn btn-primary btn-large">Learn more &raquo;</a></p>
+</div>
+<div class="row-fluid">
+    <div class="span12">
+        <h2>Heading</h2>
+        <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, 'ut f
+        </p>
+        <p><a class="btn" href="#">View details &raquo;</a></p>
+    </div><!--/span-->
+</div><!--/row-->
+<!--end second column-->
 {% endblock %}
