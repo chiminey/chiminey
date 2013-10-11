@@ -1,5 +1,4 @@
 {% extends "accountsettings/base_accountsettings.html" %}
-
 {%  block account-settings-modal %}
     <div class="modal-content">
         <div class="modal-header">
@@ -7,28 +6,28 @@
             <h4 class="modal-title">Add Computation Platform</h4>
         </div>
         <div class="modal-body">
-
             <ul class="nav nav-tabs" id="myTab">
               <li class="active"><a href="#nectar" data-toggle="tab">NeCTAR</a></li>
-              <li><a href="#profile" data-toggle="tab">NCI</a></li>
+              <li><a href="#nci" data-toggle="tab">NCI</a></li>
             </ul>
 
             <div class="tab-content">
-              <div class="tab-pane active" id="nectar">NeCTAR...
-
-                  {{ nectar_form.as_p }}
-
-
-
-              </div>
-              <div class="tab-pane" id="profile">
-                {{nci_form.as_p}}
-              </div>
+                <div class="tab-pane active" id="nectar">
+                    <form class="form-horizontal" action="{{ action }}" method="POST" id="frm1"> {% csrf_token %}
+                        {{ nectar_form.as_p }}
+                        <button type="submit" class="btn btn-primary" onclick="okClicked();">Add</button>
+                    </form>
+                </div>
+                <div class="tab-pane" id="nci">
+                    <form class="form-horizontal" action="{{ action }}" method="POST" id="frm2"> {% csrf_token %}
+                        {{nci_form.as_p}}
+                        <button type="submit" class="btn btn-primary" onclick="okClicked();">Add</button>
+                    </form>
+                 </div>
             </div>
         </div>
         <div class="modal-footer">
             <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-            <button type="submit" class="btn btn-primary" onclick="okClicked();">Add</button>
         </div>
     </div><!-- /.modal-content -->
 {% endblock %}

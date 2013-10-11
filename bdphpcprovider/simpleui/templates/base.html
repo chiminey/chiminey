@@ -16,14 +16,15 @@
 <script>
 
 $(document).ready(function() {
-    $('#myModal').bind('show', function () {
+
+     $('#myModal').bind('show', function () {
         });
      });
     function closeDialog () {
         $('#myModal').modal('hide');
         };
     function okClicked () {
-        var form = $( "#frm1" );
+        var form = $( "#frm2" );
         form.validate();
         if (form.valid()){
             form.submit();
