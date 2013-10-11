@@ -15,40 +15,20 @@
 
 <script>
 
-			$(document).ready(function() {
-
-				$('#myModal').bind('show', function () {
-
-					});
-				});
-			function closeDialog () {
-				$('#myModal').modal('hide');
-				};
-			function okClicked () {
-                var form = $( "#frm1" );
-                form.validate();
-                if (form.valid()){
-                    form.submit();
-                    }
-                else{
-                    alert( "Valid: " + form.valid() );
-                }
-
-                /***$("#frm1").validate({
-                    submitHandler: function(form) {
-                    form.submit();
-                    }
-            });**/
-            //$('#frm1')[0].reset();
-    //          $( "#frm1" ).submit();
-
-				};
-
-
-
-
-
-
+$(document).ready(function() {
+    $('#myModal').bind('show', function () {
+        });
+     });
+    function closeDialog () {
+        $('#myModal').modal('hide');
+        };
+    function okClicked () {
+        var form = $( "#frm1" );
+        form.validate();
+        if (form.valid()){
+            form.submit();
+            }
+        else{}
 </script>
 
     <script type="text/javascript" src="{% static 'bootstrap/js/lib/jquery-1.7.1.min.js' %}"></script>
