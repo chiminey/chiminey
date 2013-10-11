@@ -3,8 +3,8 @@ from bdphpcprovider.simpleui import validators
 
 
 class NeCTARComputationPlatformForm(forms.Form):
-    nectar_username = forms.CharField(required=True, widget=forms.TextInput(attrs={'required': 'true' }))
-    private_key_path = forms.CharField(required=True, widget=forms.TextInput(attrs={'required': 'true' }))
+    nectar_username = forms.CharField(required=True, widget=forms.TextInput(attrs={'required': 'true'}))
+    private_key_path = forms.CharField(required=True, widget=forms.TextInput(attrs={'required': 'true'}))
 
     #def __init__(self, *args, **kwargs):
     #    super(NeCTARComputationPlatformForm, self).__init__(*args, **kwargs)

@@ -60,7 +60,7 @@ def computation_platform_settings(request):
     nectarform = NeCTARComputationPlatformForm()
     if request.method == "POST":
         nciform = NCIComputationPlatformForm(request.POST)
-
+        nectarform = NeCTARComputationPlatformForm(request.POST)
         if nciform.is_valid():
 
             return HttpResponseRedirect('/jobs/')

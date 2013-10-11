@@ -2,15 +2,12 @@
 {% block content %}
     <div class="page-header" style="padding-top: 40px;"><h1>Account Settings</h1></div>
      <!-- Modal -->
-                  <form class="form-horizontal" action="{{ action }}" method="POST" id="frm1"> {% csrf_token %}>
-
         <div class="modal hide fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
             <div class="modal-dialog">
                 {%  block account-settings-modal %}
                 {%  endblock %}
             </div><!-- /.modal-dialog -->
         </div><!-- /.modal -->
-</form>
         <div class="container-fluid">
             <div class="row-fluid">
                 <div class="span3">
@@ -31,6 +28,5 @@
             </div>
         </div><!--/row-->
     </div>
-
 {% endblock %}
 
