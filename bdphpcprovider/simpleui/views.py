@@ -36,6 +36,7 @@ from bdphpcprovider.simpleui.makeform import MakeSubmitForm
 from bdphpcprovider.simpleui.sweepform import SweepSubmitForm
 from bdphpcprovider.simpleui.hrmc.copy import CopyForm
 from bdphpcprovider.simpleui.ncicomputationplatform import NCIComputationPlatformForm
+from bdphpcprovider.simpleui.nectarcomputationplatform import NeCTARComputationPlatformForm
 
 #TODO,FIXME: simpleui shouldn't refer to anything in smartconnectorscheduler
 #and should be using its own models and use the REST API for all information.
@@ -50,6 +51,26 @@ from django.http import Http404
 from django.views.generic.edit import FormView
 
 from django.views.generic import DetailView
+
+from django.http import HttpResponseRedirect
+from django.shortcuts import render_to_response
+
+def computation_platform_settings(request):
+    nciform = NCIComputationPlatformForm()
+    nectarform = NeCTARComputationPlatformForm()
+    if request.method == "POST":
+        nciform = NCIComputationPlatformForm(request.POST)
+
+        if nciform.is_valid():
+
+            return HttpResponseRedirect('/jobs/')
+
+        elif nectarform.is_valid():
+            return HttpResponseRedirect('/accounts/profile/')
+
+    return render_to_response('accountsettings/computationplatform.html',
+                              {'nci_form': nciform, 'nectar_form':nectarform})
+
 
 
 class UserProfileParameterListView(ListView):
@@ -123,7 +144,8 @@ class ContextList(ListView):
     def get_queryset(self):
         return models.Context.objects.filter(owner__user=self.request.user).order_by('-id')
 
-
+from django.shortcuts import get_object_or_404
+from django.db.models import Model
 class AccountSettingsView(FormView):
     template_name = "accountsettings/computationplatform.html"
     form_class = NCIComputationPlatformForm
@@ -131,13 +153,6 @@ class AccountSettingsView(FormView):
 
     def get_success_url(self):
         return reverse('hrmcjob-list')
-
-    #def form_valid(self, form):
-        # This method is called when valid form data has been POSTed.
-        # It should return an HttpResponse.
-
-    #    return super(AccountSettingsView, self).form_valid(form)
-
 
 
 class FinishedContextUpdateView(UpdateView):
