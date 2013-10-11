@@ -3,8 +3,9 @@ from bdphpcprovider.simpleui import validators
 
 
 class NCIComputationPlatformForm(forms.Form):
-    username = forms.CharField(required=True, widget=forms.TextInput(attrs={'required': 'true' }))
-    private_key_path = forms.CharField(required=True, widget=forms.TextInput(attrs={'required': 'true' }))
+    username = forms.CharField(initial="", required=True, widget=forms.TextInput(attrs={'required': 'true'}))
+    private_key_path = forms.CharField(required=True, widget=forms.TextInput(attrs={'required': 'true'}))
+    operation = forms.CharField(initial='update', widget=forms.HiddenInput(attrs={'required': 'false'}))
 
     def __init__(self, *args, **kwargs):
         super(NCIComputationPlatformForm, self).__init__(*args, **kwargs)
