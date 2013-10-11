@@ -27,11 +27,11 @@ import logging.config
 logger = logging.getLogger(__name__)
 
 from django.views.generic import ListView, UpdateView, CreateView, DeleteView
+from django.views.generic.base import TemplateView
 from django.core.urlresolvers import reverse
-from django.http import HttpResponse
-
 from django.contrib.auth import logout
 from django.http import HttpResponseRedirect
+
 from django.template import Context, RequestContext, loader
 from django.shortcuts import redirect
 
@@ -39,11 +39,11 @@ from django.shortcuts import render_to_response
 
 from django.contrib import messages
 
-
 from bdphpcprovider.simpleui.hrmc.hrmcsubmit import HRMCSubmitForm
 from bdphpcprovider.simpleui.makeform import MakeSubmitForm
 from bdphpcprovider.simpleui.sweepform import SweepSubmitForm
 from bdphpcprovider.simpleui.hrmc.copy import CopyForm
+from bdphpcprovider.simpleui.ncicomputationplatform import NCIComputationPlatformForm
 
 #TODO,FIXME: simpleui shouldn't refer to anything in smartconnectorscheduler
 #and should be using its own models and use the REST API for all information.
@@ -137,6 +137,22 @@ class ContextList(ListView):
         return models.Context.objects.filter(owner__user=self.request.user).order_by('-id')
 
 
+class AccountSettingsView(FormView):
+    template_name = "accountsettings/computationplatform.html"
+    form_class = NCIComputationPlatformForm
+    #success_url = '/accountsettings/computationplatform.html'
+
+    def get_success_url(self):
+        return reverse('hrmcjob-list')
+
+    #def form_valid(self, form):
+        # This method is called when valid form data has been POSTed.
+        # It should return an HttpResponse.
+
+    #    return super(AccountSettingsView, self).form_valid(form)
+
+
+
 class FinishedContextUpdateView(UpdateView):
     model = models.Context
     template_name = "edit_context.html"
@@ -155,9 +171,6 @@ class FinishedContextUpdateView(UpdateView):
             return object
         else:
             raise Http404
-
-
-from django.views.generic.base import TemplateView
 
 
 class ListDirList(TemplateView):
