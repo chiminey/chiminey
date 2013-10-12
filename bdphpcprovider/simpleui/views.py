@@ -85,7 +85,7 @@ def computation_platform_settings(request):
     elif request.method == "GET":
         #FIXME: consider using non-locahost URL for api_host
         api_host = "http://127.0.0.1"
-        url = "%s/api/v1/context/?format=json&schema=http://rmit.edu.au/schemas/platform/computation/nci" % api_host
+        url = "%s/api/v1/platformparameter/?format=json&schema=http://rmit.edu.au/schemas/platform/computation" % api_host
         cookies = dict(request.COOKIES)
         logger.debug("cookies=%s" % cookies)
         headers = {'content-type': 'application/json'}
@@ -102,11 +102,56 @@ def computation_platform_settings(request):
             logger.debug( 'Reason: ', e.reason)
         else:
             logger.debug('everything is fine')
-            logger.debug(r.text)
+            #logger.debug(r.text)
+            #logger.debug(r.json())
+            GET_data = r.json()
+            computation_platforms, all_headers = filter_computation_platforms(GET_data)
+            logger.debug(computation_platforms)
     return render(request, 'accountsettings/computationplatform.html',
-                              {'nci_form': nciform, 'nectar_form':nectarform})
+                              {'nci_form': nciform, 'nectar_form': nectarform,
+                               'computation_platforms': computation_platforms,
+                               'all_headers': all_headers})
+
+#fixme revise this method
+def filter_computation_platforms(GET_json_data):
+    platform_parameters_objects = GET_json_data['objects']
+    computation_platforms = {}
+    test={}
+
+    for i in platform_parameters_objects:
+        schema = i['paramset']['platform']['schema_namespace_prefix']
+        computation_platforms[schema] = {}
+
+    for i in platform_parameters_objects:
+        schema = i['paramset']['platform']['schema_namespace_prefix']
+        paramset_id = i['paramset']['id']
+        computation_platforms[schema][paramset_id] = {}
+
+    logger.debug(computation_platforms)
+    for i in platform_parameters_objects:
+        schema = i['paramset']['platform']['schema_namespace_prefix']
+        paramset_id = i['paramset']['id']
+        name = i['name']['name']
+        value = i['value']
+        computation_platforms[schema][paramset_id][name] = value
+
+    headers={}
+    all_headers={}
+    for i, j in computation_platforms.items():
+        headers[i] = []
+
+        params = []
+        for a, b in j.items():
+            for c, d in b.items():
+                params.append(c)
+            break
+        headers[i] = params
+        all_headers[tuple(params)] = j
+    logger.debug('----')
+    logger.debug(all_headers)
 
 
+    return computation_platforms, all_headers
 
 class UserProfileParameterListView(ListView):
     model = models.UserProfileParameter
