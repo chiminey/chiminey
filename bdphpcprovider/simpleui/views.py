@@ -19,11 +19,11 @@
 # IN THE SOFTWARE.
 
 import logging
-import os
-from pprint import pformat
 import json
 import requests
-import logging.config
+from urllib2 import URLError, HTTPError
+
+
 logger = logging.getLogger(__name__)
 
 from django.views.generic import ListView, UpdateView, CreateView, DeleteView
@@ -82,8 +82,27 @@ def computation_platform_settings(request):
             logger.debug('nectar')
             logger.debug('operation=%s' % nectarform.cleaned_data['operation'])
             return HttpResponseRedirect('/accounts/profile/')
-    logger.debug(nciform)
-    logger.debug(nectarform)
+    elif request.method == "GET":
+        #FIXME: consider using non-locahost URL for api_host
+        api_host = "http://127.0.0.1"
+        url = "%s/api/v1/context/?format=json&schema=http://rmit.edu.au/schemas/platform/computation/nci" % api_host
+        cookies = dict(request.COOKIES)
+        logger.debug("cookies=%s" % cookies)
+        headers = {'content-type': 'application/json'}
+        try:
+            #response = urlopen(req)
+            r = requests.get(url,
+            headers=headers,
+            cookies=cookies)
+        except HTTPError as e:
+            logger.debug( 'The server couldn\'t fulfill the request. %s' % e)
+            logger.debug( 'Error code: ', e.code)
+        except URLError as e:
+            logger.debug( 'We failed to reach a server. %s' % e)
+            logger.debug( 'Reason: ', e.reason)
+        else:
+            logger.debug('everything is fine')
+            logger.debug(r.text)
     return render(request, 'accountsettings/computationplatform.html',
                               {'nci_form': nciform, 'nectar_form':nectarform})
 
