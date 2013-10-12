@@ -38,19 +38,36 @@
 
 <!--second column-->
 <p><a data-toggle="modal" href="#createModal" class="btn btn-primary">Add Computation Platform</a></p>
-<div class="hero-unit">
-    <h1>A </h1>
-    <p>This is a template for a simple marketing or informational website.
-        It includes a large callout called the hero unit and three supporting </p>
-    <p><a href="#" class="btn btn-primary btn-large">Learn more &raquo;</a></p>
+<div>
+     {% for header, schema in all_headers.items %}
+        <!--Schema {{ schema  }}-->
+         <table class="table table-hover table-striped table-bordered">
+            <thead>
+                <tr>
+                    {% for h in header %}
+                        <td>
+                            <strong>{{ h }}</strong>
+                        </td>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for paramset_key, paramset in schema.items %}
+                <tr>
+                    {% for param_key, param in paramset.items %}
+                        <td>  {{ param }}</td>
+                    {% endfor %}
+                <td>
+                <div class="btn-group">
+                  <button onclick="window.location.href='#'" class="btn" >Edit</button>
+                  <button onclick="window.location.href='#'" class="btn">Delete</button>
+                </div>
+                </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+         </table>
+    {% endfor %}
 </div>
-<div class="row-fluid">
-    <div class="span12">
-        <h2>Heading</h2>
-        <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, 'ut f
-        </p>
-        <p><a class="btn" href="#">View details &raquo;</a></p>
-    </div><!--/span-->
-</div><!--/row-->
 <!--end second column-->
 {% endblock %}
