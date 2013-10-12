@@ -168,8 +168,8 @@ class Command(BaseCommand):
         create_platform_paramset(bdp_username, self.namespace, self.PARAMS)
 
         self.nci_parameters = {
-            'private_key_path': '/short/h72',
-            'username': 'user1'
+            'private_key_path': '/home/user2',
+            'username': 'user2'
         }
         self.namespace = 'http://rmit.edu.au/schemas/platform/computation/nci'
         self.PARAMS = self.nci_parameters
