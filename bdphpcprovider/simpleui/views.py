@@ -76,91 +76,91 @@ def computation_platform_settings(request):
         nciform = NCIComputationPlatformForm(request.POST)
         nectarform = NeCTARComputationPlatformForm(request.POST)
         if nciform.is_valid():
-            logger.debug('nci')
-            logger.debug('operation=%s' % nciform.cleaned_data['operation'])
-            # An example of using the REST API to control the system, rather than
-            # talking directly to the models in smartconnectorscheduler.
-            # TODO: do the same for other parts of UI, e.g., user settings form
-            # should call user_setttings API endpoint.
-            #FIXME: consider using non-locahost URL for api_host
-            api_host = "http://127.0.0.1"
-            url = "%s/api/v1/platformparamset/?format=json" % api_host
-
-            # pass the sessionid cookie through to the internal API
-            cookies = dict(request.COOKIES)
-            logger.debug("cookies=%s" % cookies)
-            headers = {'content-type': 'application/json'}
-            parameters = {}
-            filters = {}
-            for k, v in nciform.cleaned_data.items():
-                parameters[k] = v
-            for i in ast.literal_eval(nciform.cleaned_data['filters']):
-                logger.debug(i)
-                filters[i[0]] = i[1]
-            data = json.dumps({'operation': nciform.cleaned_data['operation'],
-                               'parameters': parameters,
-                               'schema': 'http://rmit.edu.au/schemas/platform/computation/nci',
-                               'filters': filters})
-            logger.debug('filters=%s' % nciform.cleaned_data['filters'])
-            logger.debug('filters=%s' % filters)
-            r = requests.post(url,
-                data=data,
-                headers=headers,
-                cookies=cookies)
-
-            # TODO: need to check for status_code and handle failures.
-
-
+            schema = 'http://rmit.edu.au/schemas/platform/computation/nci'
+            post_platform(schema, nciform.cleaned_data, request)
             return HttpResponseRedirect('/accounts/settings/')
         elif nectarform.is_valid():
-            logger.debug('nectar')
-            logger.debug('operation=%s' % nectarform.cleaned_data['operation'])
-            return HttpResponseRedirect('/accounts/profile/')
-    elif request.method == "GET":
-        #FIXME: consider using non-locahost URL for api_host
-        api_host = "http://127.0.0.1"
+            schema = 'http://rmit.edu.au/schemas/platform/computation/nectar'
+            post_platform(schema, nectarform.cleaned_data, request, type='nectar')
+            return HttpResponseRedirect('/accounts/settings/')
 
-        url = "%s/api/v1/platformparameter/?format=json&schema=http://rmit.edu.au/schemas/platform/computation" % api_host
-        cookies = dict(request.COOKIES)
-        logger.debug("cookies=%s" % cookies)
-        headers = {'content-type': 'application/json'}
-        try:
-            #response = urlopen(req)
-            r = requests.get(url,
-            headers=headers,
-            cookies=cookies)
-        except HTTPError as e:
-            logger.debug( 'The server couldn\'t fulfill the request. %s' % e)
-            logger.debug( 'Error code: ', e.code)
-        except URLError as e:
-            logger.debug( 'We failed to reach a server. %s' % e)
-            logger.debug( 'Reason: ', e.reason)
-        else:
-            logger.debug('everything is fine')
-            #logger.debug(r.text)
-            #logger.debug(r.json())
-            GET_data = r.json()
-            computation_platforms, all_headers = filter_computation_platforms(GET_data)
-            logger.debug(computation_platforms)
+    #FIXME: consider using non-locahost URL for api_host
+    api_host = "http://127.0.0.1"
+
+    url = "%s/api/v1/platformparameter/?format=json&limit=0&schema=http://rmit.edu.au/schemas/platform/computation" % api_host
+    cookies = dict(request.COOKIES)
+    logger.debug("cookies=%s" % cookies)
+    headers = {'content-type': 'application/json'}
+    try:
+        #response = urlopen(req)
+        r = requests.get(url,
+        headers=headers,
+        cookies=cookies)
+    except HTTPError as e:
+        logger.debug( 'The server couldn\'t fulfill the request. %s' % e)
+        logger.debug( 'Error code: ', e.code)
+    except URLError as e:
+        logger.debug( 'We failed to reach a server. %s' % e)
+        logger.debug( 'Reason: ', e.reason)
+    else:
+        logger.debug('everything is fine')
+        #logger.debug(r.text)
+        #logger.debug(r.json())
+        GET_data = r.json()
+        computation_platforms, all_headers = filter_computation_platforms(GET_data)
+        logger.debug(computation_platforms)
     return render(request, 'accountsettings/computationplatform.html',
                               {'nci_form': nciform, 'nectar_form': nectarform,
                                'computation_platforms': computation_platforms,
                                'all_headers': all_headers})
 
+def post_platform(schema, form_data, request, type=None):
+    logger.debug('operation=%s' % form_data['operation'])
+    api_host = "http://127.0.0.1"  #fixme: remove local host address
+    url = "%s/api/v1/platformparamset/?format=json" % api_host
+    # pass the sessionid cookie through to the internal API
+    cookies = dict(request.COOKIES)
+    logger.debug("cookies=%s" % cookies)
+    headers = {'content-type': 'application/json'}
+    parameters = {}
+    filters = {}
+    for k, v in form_data.items():
+        parameters[k] = v
+    for i in ast.literal_eval(form_data['filters']):
+        logger.debug(i)
+        filters[i[0]] = i[1]
+    if type == 'nectar':
+        if not parameters['vm_image_size']:
+            parameters['vm_image_size'] = 'm1.small'
+    data = json.dumps({'operation': form_data['operation'],
+                       'parameters': parameters,
+                       'schema': schema,
+                       'filters': filters})
+    logger.debug('filters=%s' % form_data['filters'])
+    logger.debug('filters=%s' % filters)
+    r = requests.post(url,
+        data=data,
+        headers=headers,
+        cookies=cookies)
+    # TODO: need to check for status_code and handle failures.
+
+
 #fixme revise this method
 def filter_computation_platforms(GET_json_data):
     platform_parameters_objects = GET_json_data['objects']
     computation_platforms = {}
-    test={}
+    logger.debug('json=%s' % platform_parameters_objects)
 
     for i in platform_parameters_objects:
         schema = i['paramset']['platform']['schema_namespace_prefix']
         computation_platforms[schema] = {}
 
+
     for i in platform_parameters_objects:
         schema = i['paramset']['platform']['schema_namespace_prefix']
         paramset_id = i['paramset']['id']
         computation_platforms[schema][paramset_id] = {}
+
 
     logger.debug(computation_platforms)
     for i in platform_parameters_objects:
@@ -169,10 +169,13 @@ def filter_computation_platforms(GET_json_data):
         name = i['name']['name']
         value = i['value']
         computation_platforms[schema][paramset_id][str(name)] = str(value)
+        logger.debug('%s=%s' %(name, value
+        ))
 
     headers={}
     all_headers={}
     import os
+    logger.debug('computation=%s' % computation_platforms)
     for i, j in computation_platforms.items():
         headers[i] = []
         platform_type = os.path.basename(i)
