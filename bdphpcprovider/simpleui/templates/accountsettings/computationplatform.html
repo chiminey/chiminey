@@ -61,12 +61,39 @@
 </div><!-- end update modal -->
 
 
+<!--delete modal: merge this with update model -->
+<div class="modal hide fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title">Delete Computation Platform</h4>
+            </div>
+            <div class="modal-body">
+                <form class="form-horizontal" action="{{ action }}" method="POST" id="nectar_form_delete"> {% csrf_token %}
+                    {{ nectar_form.as_p }}
+                    <button type="submit" class="btn btn-primary" onclick="submitForm('delete');">Delete</button>
+                </form>
+                <form class="form-horizontal" action="{{ action }}" method="POST" id="nci_form_delete"> {% csrf_token %}
+                    {{ nci_form.as_p }}
+                    <button type="submit" class="btn btn-primary" onclick="submitForm('delete');">Delete</button>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- end delete modal -->
+
+
+
+
 <!--second column-->
 <p><a data-toggle="modal" href="#createModal" class="btn btn-primary"  onclick="formreset();">Add Computation Platform</a></p>
 <div>
 {% for platform_type, platform_details in all_headers.items %}
      {% for header, schema in platform_details.items %}
-        <!--Schema {{ schema  }}-->
          {{ platform_type }}
          <table class="table table-hover table-striped table-bordered">
             <thead>
@@ -89,8 +116,8 @@
                     <a data-toggle="modal" href="#updateModal" class="btn btn-primary"
                        onclick="updatePlatform('{{ paramset.items|escapejs }}', '{{ platform_type|slugify }}');">
                                 Update </a>
-                  <!--button onclick="editPlatform('{{ paramset.items|escapejs }}');" class="btn" >Edit</button-->
-                  <button onclick="window.location.href='#'" class="btn">Delete</button>
+                  <button data-toggle="modal" href="#deleteModal" class="btn"
+                          onclick="deletePlatform('{{ paramset.items|escapejs }}', '{{ platform_type|slugify }}');">Delete</button>
                 </div>
                 </td>
                 </tr>
