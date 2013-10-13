@@ -137,8 +137,10 @@ def filter_computation_platforms(GET_json_data):
 
     headers={}
     all_headers={}
+    import os
     for i, j in computation_platforms.items():
         headers[i] = []
+        platform_type = os.path.basename(i)
 
         params = []
         for a, b in j.items():
@@ -146,7 +148,8 @@ def filter_computation_platforms(GET_json_data):
                 params.append(c)
             break
         headers[i] = params
-        all_headers[tuple(params)] = j
+        all_headers[platform_type] = {tuple(params): j}
+        logger.debug(platform_type)
     logger.debug('----')
     logger.debug(all_headers)
 

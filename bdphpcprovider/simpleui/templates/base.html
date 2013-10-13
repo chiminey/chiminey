@@ -15,7 +15,6 @@
     .modal-backdrop {background-color: #DCDCDC;}
 </style>
 
-
 <script>
 $(document).ready(function() {
      $('#createModal').bind('show', function () {
@@ -34,7 +33,17 @@ $(document).ready(function() {
         }
         else{}
     }
+    function updatePlatform(description, platform_type) {
+        $('form[id*="_form_update"]').hide();
+         //$("#update_nci").hide();
+        type = '#'+platform_type
+        form_id = type.concat('_form_update')
+        $(form_id).show();
+        alert(platform_type)
+        alert(description)
+    }
 </script>
+
 
 
     <script type="text/javascript" src="{% static 'bootstrap/js/lib/jquery-1.7.1.min.js' %}"></script>
@@ -60,7 +69,6 @@ $(document).ready(function() {
                        <a href="{% url account-settings %}" class="navbar-link">Settings</a>
                    </p>
                 <ul class="nav">
-
                     <li><a  href="{% url login %}">login</a></li>
                     <li><a  href="{% url logout %}">logout</a></li>
                     <!-- <li><a  href="{% url hrmcjob-new %}">Create HRMC Job</a></li> -->
@@ -99,7 +107,6 @@ $(document).ready(function() {
 
         </footer>
     </div>
-
 </body>
 </html>
 
