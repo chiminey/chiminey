@@ -569,7 +569,7 @@ class PlatformInstanceParameterSetResource(ModelResource):
         username = bundle.data['username']
         schema = bundle.data['schema']
         filters = bundle.data['filters']
-        updated_parameters = bundle.data['updated_parameters']
+        updated_parameters = bundle.data['parameters']
         updated = platform.update_platform_paramset(
             username, schema, filters, updated_parameters)
         logger.debug('updated=%s' % updated)

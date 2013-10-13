@@ -13,6 +13,7 @@
 
 <style>
     .modal-backdrop {background-color: #DCDCDC;}
+    .body {margin-left: 0}
 </style>
 
 <script>
@@ -33,14 +34,18 @@ $(document).ready(function() {
         }
         else{}
     }
-    function updatePlatform(description, platform_type) {
+    function updatePlatform(parameters, platform_type) {
         $('form[id*="_form_update"]').hide();
-         //$("#update_nci").hide();
-        type = '#'+platform_type
-        form_id = type.concat('_form_update')
+        form_id = '#' + platform_type + '_form_update'
         $(form_id).show();
-        alert(platform_type)
-        alert(description)
+        $('form #id_filters').val(parameters)
+        var current_params = parameters.replace(/[\]\(\)\[]/g, '');
+        var array = description.split(',');
+        //alert(description)
+        alert(s);
+        alert(array.length)
+
+
     }
 </script>
 
