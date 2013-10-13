@@ -33,7 +33,6 @@ function submitForm(description) {
     if (form.valid()){
         form.submit()
     }
-    else{}
 }
 function updatePlatform(parameters, platform_type) {
     $('form[id*="_form_update"]').hide();
@@ -50,7 +49,7 @@ function updatePlatform(parameters, platform_type) {
         $('form '+ param_id).val(value)
     };
 }
-
+//consider merging the ff method with updatePlatform
 function deletePlatform(parameters, platform_type) {
     $('form[id*="_form_delete"]').hide();
     form_id = '#' + platform_type + '_form_delete'
@@ -64,8 +63,7 @@ function deletePlatform(parameters, platform_type) {
         value = array_params[++i].replace(/^[ \t]+|[ \t]+$./, '');
         param_id =   '#id_' + key
         $('form '+ param_id).val(value)
-        $('form '+ param_id).attr('readonly', true);
-
+        //$('form '+ param_id).attr('readonly', true);
     };
 }
 
