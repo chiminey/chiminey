@@ -18,18 +18,17 @@
                         <form class="form-horizontal" action="{{ action }}" method="POST" id="nectar_form_create"> {% csrf_token %}
                             {{ nectar_form.as_p }}
                             <button type="submit" class="btn btn-primary" onclick="submitForm('create');">Add</button>
+                            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                         </form>
                     </div>
                     <div class="tab-pane" id="nci">
                         <form class="form-horizontal" action="{{ action }}" method="POST" id="nci_form_create"> {% csrf_token %}
                             {{nci_form.as_p}}
                             <button type="submit" class="btn btn-primary" onclick="submitForm('create');">Add</button>
+                            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                         </form>
                      </div>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
             </div>
         </div><!-- /.modal-content -->
     </div><!-- /.modal-dialog -->
@@ -47,14 +46,13 @@
                 <form class="form-horizontal" action="{{ action }}" method="POST" id="nectar_form_update"> {% csrf_token %}
                     {{ nectar_form.as_p }}
                     <button type="submit" class="btn btn-primary" onclick="submitForm('update');">Update</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                 </form>
                 <form class="form-horizontal" action="{{ action }}" method="POST" id="nci_form_update"> {% csrf_token %}
                     {{ nci_form.as_p }}
                     <button type="submit" class="btn btn-primary" onclick="submitForm('update');">Update</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                 </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
             </div>
         </div><!-- /.modal-content -->
     </div><!-- /.modal-dialog -->
@@ -73,14 +71,14 @@
                 <form class="form-horizontal" action="{{ action }}" method="POST" id="nectar_form_delete"> {% csrf_token %}
                     {{ nectar_form.as_p }}
                     <button type="submit" class="btn btn-primary" onclick="submitForm('delete');">Delete</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                 </form>
                 <form class="form-horizontal" action="{{ action }}" method="POST" id="nci_form_delete"> {% csrf_token %}
                     {{ nci_form.as_p }}
                     <button type="submit" class="btn btn-primary" onclick="submitForm('delete');">Delete</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+
                 </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
             </div>
         </div><!-- /.modal-content -->
     </div><!-- /.modal-dialog -->
