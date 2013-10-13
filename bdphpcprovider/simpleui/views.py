@@ -149,7 +149,6 @@ def post_platform(schema, form_data, request, type=None):
 def filter_computation_platforms(GET_json_data):
     platform_parameters_objects = GET_json_data['objects']
     computation_platforms = {}
-    logger.debug('json=%s' % platform_parameters_objects)
 
     for i in platform_parameters_objects:
         schema = i['paramset']['platform']['schema_namespace_prefix']
@@ -162,15 +161,12 @@ def filter_computation_platforms(GET_json_data):
         computation_platforms[schema][paramset_id] = {}
 
 
-    logger.debug(computation_platforms)
     for i in platform_parameters_objects:
         schema = i['paramset']['platform']['schema_namespace_prefix']
         paramset_id = i['paramset']['id']
         name = i['name']['name']
         value = i['value']
         computation_platforms[schema][paramset_id][str(name)] = str(value)
-        logger.debug('%s=%s' %(name, value
-        ))
 
     headers={}
     all_headers={}
