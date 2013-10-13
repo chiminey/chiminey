@@ -21,6 +21,7 @@
 import logging
 import json
 import requests
+import ast
 from urllib2 import URLError, HTTPError
 
 
@@ -77,6 +78,39 @@ def computation_platform_settings(request):
         if nciform.is_valid():
             logger.debug('nci')
             logger.debug('operation=%s' % nciform.cleaned_data['operation'])
+            # An example of using the REST API to control the system, rather than
+            # talking directly to the models in smartconnectorscheduler.
+            # TODO: do the same for other parts of UI, e.g., user settings form
+            # should call user_setttings API endpoint.
+            #FIXME: consider using non-locahost URL for api_host
+            api_host = "http://127.0.0.1"
+            url = "%s/api/v1/platformparamset/?format=json" % api_host
+
+            # pass the sessionid cookie through to the internal API
+            cookies = dict(request.COOKIES)
+            logger.debug("cookies=%s" % cookies)
+            headers = {'content-type': 'application/json'}
+            parameters = {}
+            filters = {}
+            for k, v in nciform.cleaned_data.items():
+                parameters[k] = v
+            for i in ast.literal_eval(nciform.cleaned_data['filters']):
+                logger.debug(i)
+                filters[i[0]] = i[1]
+            data = json.dumps({'operation': nciform.cleaned_data['operation'],
+                               'parameters': parameters,
+                               'schema': 'http://rmit.edu.au/schemas/platform/computation/nci',
+                               'filters': filters})
+            logger.debug('filters=%s' % nciform.cleaned_data['filters'])
+            logger.debug('filters=%s' % filters)
+            r = requests.post(url,
+                data=data,
+                headers=headers,
+                cookies=cookies)
+
+            # TODO: need to check for status_code and handle failures.
+
+
             return HttpResponseRedirect('/accounts/settings/')
         elif nectarform.is_valid():
             logger.debug('nectar')
@@ -85,6 +119,7 @@ def computation_platform_settings(request):
     elif request.method == "GET":
         #FIXME: consider using non-locahost URL for api_host
         api_host = "http://127.0.0.1"
+
         url = "%s/api/v1/platformparameter/?format=json&schema=http://rmit.edu.au/schemas/platform/computation" % api_host
         cookies = dict(request.COOKIES)
         logger.debug("cookies=%s" % cookies)
@@ -133,7 +168,7 @@ def filter_computation_platforms(GET_json_data):
         paramset_id = i['paramset']['id']
         name = i['name']['name']
         value = i['value']
-        computation_platforms[schema][paramset_id][name] = value
+        computation_platforms[schema][paramset_id][str(name)] = str(value)
 
     headers={}
     all_headers={}
