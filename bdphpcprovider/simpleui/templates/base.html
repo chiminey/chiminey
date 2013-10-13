@@ -39,13 +39,13 @@ $(document).ready(function() {
         form_id = '#' + platform_type + '_form_update'
         $(form_id).show();
         $('form #id_filters').val(parameters)
-        var current_params = parameters.replace(/[\]\(\)\[]/g, '');
-        var array = description.split(',');
-        //alert(description)
-        alert(s);
-        alert(array.length)
-
-
+        var current_params = parameters.replace(/[\]\(\)\['\s]/g, '');
+        var array_params = current_params.split(',');
+        for (var i=0;i<array_params.length;i++)
+        {
+            param_id =   '#id_' + array_params[i]
+            $('form '+ param_id).val(array_params[++i])
+        };
     }
 </script>
 
