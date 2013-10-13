@@ -21,32 +21,37 @@ $(document).ready(function() {
      $('#createModal').bind('show', function () {
         });
      });
-    function closeDialog () {
-        $('#createModal').modal('hide');
+function closeDialog () {
+    $('#createModal').modal('hide');
+};
+function submitForm(description) {
+    var form =  $(this).closest('form').attr("id");
+    var operation = $('form #id_operation');
+    operation.val(description);
+    form.validate();
+    if (form.valid()){
+        form.submit()
+    }
+    else{}
+}
+function updatePlatform(parameters, platform_type) {
+    $('form[id*="_form_update"]').hide();
+    form_id = '#' + platform_type + '_form_update'
+    $(form_id).show();
+    $('form #id_filters').val(parameters)
+    var current_params = parameters.replace(/[\]\(\)\[']/g, '');
+    var array_params = current_params.split(',');
+    for (var i=0;i<array_params.length;i++)
+    {
+        key = array_params[i].replace(/^[ \t]+|[ \t]+$./, '');
+        value = array_params[++i].replace(/^[ \t]+|[ \t]+$./, '');
+        param_id =   '#id_' + key
+        $('form '+ param_id).val(value)
     };
-    function submitForm(description) {
-        var form =  $(this).closest('form').attr("id");
-        var operation = $('form #id_operation');
-        operation.val(description);
-        form.validate();
-        if (form.valid()){
-            form.submit()
-        }
-        else{}
-    }
-    function updatePlatform(parameters, platform_type) {
-        $('form[id*="_form_update"]').hide();
-        form_id = '#' + platform_type + '_form_update'
-        $(form_id).show();
-        $('form #id_filters').val(parameters)
-        var current_params = parameters.replace(/[\]\(\)\['\s]/g, '');
-        var array_params = current_params.split(',');
-        for (var i=0;i<array_params.length;i++)
-        {
-            param_id =   '#id_' + array_params[i]
-            $('form '+ param_id).val(array_params[++i])
-        };
-    }
+}
+function formreset(){
+    $( "input[id][type='text']" ).val("");
+}
 </script>
 
 

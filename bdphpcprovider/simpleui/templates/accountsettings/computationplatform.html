@@ -15,13 +15,13 @@
                 </ul>
                 <div class="tab-content">
                     <div class="tab-pane active" id="nectar">
-                        <form class="form-horizontal" action="{{ action }}" method="POST" id="frm1"> {% csrf_token %}
+                        <form class="form-horizontal" action="{{ action }}" method="POST" id="nectar_form_create"> {% csrf_token %}
                             {{ nectar_form.as_p }}
                             <button type="submit" class="btn btn-primary" onclick="submitForm('create');">Add</button>
                         </form>
                     </div>
                     <div class="tab-pane" id="nci">
-                        <form class="form-horizontal" action="{{ action }}" method="POST" id="frm2"> {% csrf_token %}
+                        <form class="form-horizontal" action="{{ action }}" method="POST" id="nci_form_create"> {% csrf_token %}
                             {{nci_form.as_p}}
                             <button type="submit" class="btn btn-primary" onclick="submitForm('create');">Add</button>
                         </form>
@@ -62,7 +62,7 @@
 
 
 <!--second column-->
-<p><a data-toggle="modal" href="#createModal" class="btn btn-primary">Add Computation Platform</a></p>
+<p><a data-toggle="modal" href="#createModal" class="btn btn-primary"  onclick="formreset();">Add Computation Platform</a></p>
 <div>
 {% for platform_type, platform_details in all_headers.items %}
      {% for header, schema in platform_details.items %}
