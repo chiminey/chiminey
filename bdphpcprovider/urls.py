@@ -9,7 +9,7 @@ from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from bdphpcprovider.smartconnectorscheduler import views as scsviews
 from bdphpcprovider.simpleui import views as uiviews
 from bdphpcprovider.simpleui.views \
-    import computation_platform_settings, bdp_account_settings
+    import computation_platform_settings, bdp_account_settings, storage_platform_settings
 
 from core.views import (
     UserProfileResource,
@@ -85,6 +85,9 @@ urlpatterns = patterns('',
 
     url(r'^accounts/settings/platform/computation/$', login_required(computation_platform_settings),
         name='computation-platform-settings',),
+
+    url(r'^accounts/settings/platform/storage/$', login_required(storage_platform_settings),
+        name='storage-platform-settings',),
 
     url(r'^output/(?P<group_id>\w+)/(?P<file_id>[\w.]+)/$', scsviews.getoutput, name="getoutput"),
     url(r'^directive/(?P<directive_id>\d+)/$', scsviews.test_directive),
