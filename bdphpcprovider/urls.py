@@ -8,7 +8,8 @@ from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 
 from bdphpcprovider.smartconnectorscheduler import views as scsviews
 from bdphpcprovider.simpleui import views as uiviews
-from bdphpcprovider.simpleui.views import computation_platform_settings
+from bdphpcprovider.simpleui.views \
+    import computation_platform_settings, bdp_account_settings
 
 from core.views import (
     UserProfileResource,
@@ -72,8 +73,11 @@ urlpatterns = patterns('',
     url(r'^list/$', login_required(uiviews.ListDirList.as_view()),
         name='listdir-list',),
 
-    url(r'^accounts/settings/$', login_required(computation_platform_settings),
-        name='account-settings',),
+    url(r'^accounts/settings/bdp/$', login_required(bdp_account_settings),
+        name='bdp-account-settings',),
+
+    url(r'^accounts/settings/platform/computation/$', login_required(computation_platform_settings),
+        name='computation-platform-settings',),
 
     url(r'^output/(?P<group_id>\w+)/(?P<file_id>[\w.]+)/$', scsviews.getoutput, name="getoutput"),
     url(r'^directive/(?P<directive_id>\d+)/$', scsviews.test_directive),
