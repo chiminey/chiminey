@@ -21,4 +21,5 @@ class Command(BaseCommand):
         res = models.Stage.objects.all().delete()
         res = models.Platform.objects.all().delete()
         res = models.User.objects.filter(is_superuser=False).delete()
+        res = models.Directive.objects.all().delete()
         print "done"
