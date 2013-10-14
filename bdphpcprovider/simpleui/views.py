@@ -56,6 +56,11 @@ from django.views.generic import DetailView
 from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response, render
 
+
+def bdp_account_settings(request):
+    return render(request, 'accountsettings/bdpaccount.html', {})
+
+
 def computation_platform_settings(request):
     nciform = NCIComputationPlatformForm()
     nectarform = NeCTARComputationPlatformForm()
@@ -65,11 +70,11 @@ def computation_platform_settings(request):
         if nciform.is_valid():
             schema = 'http://rmit.edu.au/schemas/platform/computation/nci'
             post_platform(schema, nciform.cleaned_data, request)
-            return HttpResponseRedirect('/accounts/settings/')
+            return HttpResponseRedirect('/accounts/settings/platform/computation/')
         elif nectarform.is_valid():
             schema = 'http://rmit.edu.au/schemas/platform/computation/nectar'
             post_platform(schema, nectarform.cleaned_data, request, type='nectar')
-            return HttpResponseRedirect('/accounts/settings/')
+            return HttpResponseRedirect('/accounts/settings/platform/computation/')
 
     #FIXME: consider using non-locahost URL for api_host
     api_host = "http://127.0.0.1"

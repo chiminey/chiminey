@@ -91,7 +91,7 @@ function formreset(){
               <div class="nav-collapse">
                    <p class="navbar-text pull-right">
                         <!--Logged in as <a href="#" class="navbar-link">Username</a-->
-                       <a href="{% url account-settings %}" class="navbar-link">Settings</a>
+                       <a href="{% url computation-platform-settings %}" class="navbar-link">Settings</a>
                    </p>
                 <ul class="nav">
                     <li><a  href="{% url login %}">login</a></li>
@@ -110,7 +110,7 @@ function formreset(){
             </div>
           </div>
         </div>
-<div class="container">
+<div class="container-fluid">
     <div class="row-fluid" style="margin-bottom: 0px; margin-top: 40px">
         <!--div align="right"><a class="btn" href="#">Log in with AAF</a> (soon!)</div-->
         {% block content %}
@@ -122,6 +122,7 @@ function formreset(){
             <div class="pull-right"><a href="x">Link 1</a> · <a href="y">Link 2</a></div>
         </footer>
     </div>
+</div>
 </body>
 </html>
 
