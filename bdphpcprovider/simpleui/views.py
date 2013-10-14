@@ -22,6 +22,8 @@ import logging
 import json
 import requests
 import ast
+from pprint import pformat
+
 from urllib2 import URLError, HTTPError
 
 
@@ -1138,8 +1140,11 @@ def submit_directive(request, directive_id):
         return redirect("makedirective")
     logger.debug("directive_id=%s" % directive_id)
     directives = get_directives(request)
+    logger.debug('directives=%s' % directives)
+    for x in directives:
+        logger.debug(x['id'])
     try:
-        directive = [x for x in directives if x['id'] == directive_id ][0]
+        directive = [x for x in directives if x[u'id'] == directive_id][0]
     except IndexError:
         return redirect("makedirective")
         # TODO: handle
