@@ -219,6 +219,7 @@ class Wait(Stage):
 
         self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
 
+
         #TODO: we assume relative path BDP_URL here, but could be made to work with non-relative (ie., remote paths)
         self.job_dir = run_settings['http://rmit.edu.au/schemas/input/system'][u'output_location']
 
@@ -235,6 +236,8 @@ class Wait(Stage):
         except KeyError, e:
             self.id = 0
             self.output_dir = "output"
+
+        smartconnector.info(run_settings, "%s: wait" % (self.id + 1))
 
         logger.debug("output_dir=%s" % self.output_dir)
         logger.debug("run_settings=%s" % run_settings)

@@ -67,6 +67,8 @@ class Create(Stage):
         min_number_vms = run_settings[RMIT_SCHEMA+'/input/system/cloud'][u'minimum_number_vm_instances']
         logger.debug("VM instance %d" % number_vm_instances)
 
+        smartconnector.info(run_settings, "1: create")
+
         smartconnector.copy_settings(local_settings, run_settings,
             RMIT_SCHEMA+'/system/platform')
         smartconnector.copy_settings(local_settings, run_settings,

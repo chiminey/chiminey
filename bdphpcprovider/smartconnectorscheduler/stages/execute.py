@@ -103,6 +103,7 @@ class Execute(Stage):
         except KeyError, e:
             self.id = 0
             self.iter_inputdir = os.path.join(self.job_dir, "input_location")
+        smartconnector.info(run_settings, "%s: execute" % (self.id + 1))
         logger.debug("id = %s" % self.id)
         try:
             self.initial_numbfile = int(smartconnector.get_existing_key(run_settings,

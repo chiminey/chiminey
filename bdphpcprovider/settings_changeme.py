@@ -159,6 +159,7 @@ INSTALLED_APPS = (
     'django.contrib.admindocs',
     'django.contrib.markup',
     'django.contrib.staticfiles',
+    'django.contrib.humanize',
     'south',
     'storages',
     'djcelery',
@@ -216,7 +217,7 @@ LOGGING = {
         },
 }
 
-
+TASTYPIE_DEFAULT_FORMATS = ['json']
 
 FIXTURE_DIRS = (
                 path.join(path.dirname(__file__),
