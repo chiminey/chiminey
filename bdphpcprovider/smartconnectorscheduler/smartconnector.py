@@ -20,15 +20,19 @@
 
 import time
 import os
+import json
 import utility
 import logging
 import logging.config
+from pprint import pformat
 from abc import ABCMeta, abstractmethod
 
 from urlparse import urlparse
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
 from bdphpcprovider.smartconnectorscheduler.errors import deprecated
+
+from django.contrib import messages
 
 logger = logging.getLogger(__name__)
 
@@ -338,6 +342,44 @@ class Stage(object):
                     logger.warn("%s not found in context" % p)
                     return False
             return True
+
+
+def addMessage(run_settings, level, msg):
+    try:
+        context_id = get_existing_key(run_settings,
+            "http://rmit.edu.au/schemas/system/contextid")
+    except KeyError:
+        logger.error("unable to load contextid from run_settings")
+        logger.error(pformat(run_settings))
+        return
+    try:
+        context = models.Context.objects.get(id=context_id)
+    except context.ObjectDoesNotExist:
+        logger.erorr("unable to load context from contextid")
+        return
+
+    context.status = '%s,%s' % (level, msg)
+    context.save()
+
+
+def debug(run_settings, msg):
+    return addMessage(run_settings, 'debug', msg)
+
+
+def info(run_settings, msg):
+    return addMessage(run_settings, 'info', msg)
+
+
+def success(run_settings, msg):
+    return addMessage(run_settings, 'success', msg)
+
+
+def warn(run_settings, msg):
+    return addMessage(run_settings, 'warning', msg)
+
+
+def error(run_settings, msg):
+    return addMessage(run_settings, 'error', msg)
 
 
 class UI(object):

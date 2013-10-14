@@ -216,6 +216,9 @@ class UserProfileParameterResource(ModelResource):
         # TODO: validation on put value to correct type
 
 
+from tastypie.paginator import Paginator
+
+
 class ContextResource(ModelResource):
     hrmc_schema = "http://rmit.edu.au/schemas/input/hrmc/"
     system_schema = "http://rmit.edu.au/schemas/input/system"
@@ -223,6 +226,9 @@ class ContextResource(ModelResource):
 
     owner = fields.ForeignKey(UserProfileResource,
         attribute='owner')
+
+    directive = fields.ForeignKey(DirectiveResource,
+        attribute='directive', full=True, null=True)
 
     class Meta:
         queryset = models.Context.objects.all()
@@ -234,12 +240,13 @@ class ContextResource(ModelResource):
         #authentication = DigestAuthentication()
         authorization = DjangoAuthorization()
         allowed_methods = ['get', 'post']
+        paginator_class = Paginator
 
     def apply_authorization_limits(self, request, object_list):
         return object_list.filter(user=request.user)
 
     def get_object_list(self, request):
-        return models.Context.objects.filter(owner__user=request.user)
+        return models.Context.objects.filter(owner__user=request.user).order_by('-id')
 
     def post_list(self, request, **kwargs):
         #curl --user user2 --dump-header - -H "Content-Type: application/json" -X POST --data ' {"number_vm_instances": 8, "minimum_number_vm_instances": 8, "iseed": 42, "input_location": "file://127.0.0.1/myfiles/input", "number_dimensions": 2, "threshold": "[2]", "error_threshold": "0.03", "max_iteration": 10}' http://115.146.86.247/api/v1/context/?format=json

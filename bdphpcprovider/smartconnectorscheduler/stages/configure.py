@@ -60,6 +60,7 @@ class Configure(Stage, UI):
     def process(self, run_settings):
         local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
 
+        smartconnector.info(run_settings, "1: configure")
         self.contextid = int(run_settings[
             RMIT_SCHEMA + '/system'][u'contextid'])
         logger.debug("self.contextid=%s" % self.contextid)
