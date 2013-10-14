@@ -395,6 +395,16 @@ class ContextView(DetailView):
                 raise Http404
 
 
+
+
+class ContextList(ListView):
+    model = models.Context
+    template_name = "list_jobs.html"
+
+    def get_queryset(self):
+        return models.Context.objects.filter(owner__user=self.request.user).order_by('-id')
+
+
 class HRMCSubmitFormView(FormView):
     template_name = 'hrmc.html'
     form_class = HRMCSubmitForm
@@ -722,7 +732,6 @@ def make_dynamic_field(parameter):
         help_text = parameter['help_text']
     # TODO: finish all types
     # TODO: requires knowledge of how ParameterNames represent types.
-    # TODO: handle specifying different widgets (using subtype?)
     field_params = {
         'required': False,
         'label': parameter['description'],
@@ -866,7 +875,7 @@ def get_directives(request):
     host_ip = "127.0.0.1"
     headers = {'content-type': 'application/json'}
     api_host = "http://%s" % host_ip
-    url = "%s/api/v1/directive/?format=json" % (api_host)
+    url = "%s/api/v1/directive/?limit=0&format=json" % (api_host)
     cookies = dict(request.COOKIES)
     logger.debug("cookies=%s" % cookies)
     r = requests.get(url, headers=headers, cookies=cookies)
@@ -884,7 +893,7 @@ def get_directive_schemas(request, directive_id):
     host_ip = "127.0.0.1"
     headers = {'content-type': 'application/json'}
     api_host = "http://%s" % host_ip
-    url = "%s/api/v1/directiveargset/?directive=%s&format=json" % (api_host,
+    url = "%s/api/v1/directiveargset/?limit=0&directive=%s&format=json" % (api_host,
         directive_id)
     cookies = dict(request.COOKIES)
     logger.debug("cookies=%s" % cookies)
@@ -905,7 +914,7 @@ def get_parameters(request, schema_id):
     host_ip = "127.0.0.1"
     headers = {'content-type': 'application/json'}
     api_host = "http://%s" % host_ip
-    url = "%s/api/v1/parametername/?schema=%s&format=json" % (api_host,
+    url = "%s/api/v1/parametername/?limit=0&schema=%s&format=json" % (api_host,
         schema_id)
     cookies = dict(request.COOKIES)
     logger.debug("cookies=%s" % cookies)
@@ -1028,6 +1037,98 @@ def submit_job(request, form, directive):
         new_context_uri = header_location[len(api_host):]
         logger.debug("new_context_uri=%s" % new_context_uri)
     return True
+
+
+
+
+# class ContextList(ListView):
+#     model = models.Context
+#     template_name = "list_jobs.html"
+
+#     def get_queryset(self):
+#         return models.Context.objects.filter(owner__user=self.request.user).order_by('-id')
+
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+
+
+def get_contexts(request):
+
+    offset = 0
+    page_size = 20
+
+    if 'offset' in request.GET:
+        try:
+            offset = int(request.GET.get('offset'))
+        except ValueError:
+            pass
+    if offset < 0:
+        offset = 0
+
+    limit =page_size
+    #if 'limit' in request.GET:
+    #    try:
+    #         limit = int(request.GET.get('limit'))
+    #     except ValueError:
+    #         pass
+    logger.debug("offset=%s" % offset)
+    logger.debug("limit=%s" % limit)
+
+    host_ip = "127.0.0.1"
+    headers = {'content-type': 'application/json'}
+    api_host = "http://%s" % host_ip
+    url = "%s/api/v1/context/?limit=%s&offset=%s&format=json" % (api_host, limit, offset)
+    cookies = dict(request.COOKIES)
+    logger.debug("cookies=%s" % cookies)
+    r = requests.get(url, headers=headers, cookies=cookies)
+    # FIXME: need to check for status_code and handle failures such
+    # as 500 - lack of disk space at mytardis
+    logger.debug('URL=%s' % url)
+    logger.debug("r.status_code=%s" % r.status_code)
+    # logger.debug('r.json=%s' % r.json)
+    # logger.debug('r.text=%s' % r.text)
+    # logger.debug('r.headers=%s' % r.headers)
+
+    import dateutil.parser
+    object_list = []
+    logger.debug("r.json()=%s" % pformat(r.json()))
+    for x in r.json()['objects']:
+        logger.debug("x=%s" % pformat(x))
+        obj = []
+        obj.append(x['id'])
+        obj.append(x['deleted'])
+        obj.append(x['status'])
+        name = ''
+        desc = ''
+        if 'directive' in x and x['directive']:
+            if 'name' in x['directive']:
+                name = x['directive']['name']
+            if 'description' in x['directive']:
+                desc = x['directive']['description']
+        obj.append(name)
+        obj.append(dateutil.parser.parse(x['created']))
+        obj.append(desc)
+        object_list.append(obj)
+
+    meta = r.json()['meta']
+
+    # if offset > (meta['total_count'] - limit):
+    #     offset = 0
+
+    pages = []
+    number_pages = meta['total_count'] / page_size
+    for off in range(0, number_pages + 1):
+        pages.append(page_size * off)
+
+    logger.debug("pages=%s" % pages)
+
+    return render_to_response(
+                       'list_jobs.html',
+                       {'object_list': object_list,
+                       'limit': limit,
+                       'page_offsets': pages,
+                       'total_count': int(meta['total_count']),
+                       'offset': int(offset)},
+                       context_instance=RequestContext(request))
 
 
 def submit_directive(request, directive_id):
