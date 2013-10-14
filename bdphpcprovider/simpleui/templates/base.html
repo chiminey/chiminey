@@ -94,7 +94,7 @@ function formreset(){
               <div class="nav-collapse">
                    <p class="navbar-text pull-right">
                         <!--Logged in as <a href="#" class="navbar-link">Username</a-->
-                       <a href="{% url account-settings %}" class="navbar-link">Settings</a>
+                       <a href="{% url computation-platform-settings %}" class="navbar-link">Settings</a>
                    </p>
                 <ul class="nav">
                     <li><a  href="{% url login %}">login</a></li>
@@ -127,6 +127,7 @@ function formreset(){
 
                {% block content %}
 
+
          {% endblock %}
     <hr>
         <footer>
@@ -135,6 +136,7 @@ function formreset(){
 
         </footer>
     </div>
+</div>
 </body>
 </html>
 
