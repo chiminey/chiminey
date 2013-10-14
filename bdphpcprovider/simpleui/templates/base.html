@@ -33,11 +33,13 @@ function submitForm(description) {
     if (form.valid()){
         form.submit()
     }
+    formreset()
 }
 function updatePlatform(parameters, platform_type) {
     $('form[id*="_form_update"]').hide();
     form_id = '#' + platform_type + '_form_update'
     $(form_id).show();
+    $("form input[id][type='password']").val("");
     $('form #id_filters').val(parameters)
     var current_params = parameters.replace(/[\]\(\)\[']/g, '');
     var array_params = current_params.split(',');
@@ -54,6 +56,7 @@ function deletePlatform(parameters, platform_type) {
     $('form[id*="_form_delete"]').hide();
     form_id = '#' + platform_type + '_form_delete'
     $(form_id).show();
+    $("form input[id][type='password']").val("*****");
     $('form #id_filters').val(parameters)
     var current_params = parameters.replace(/[\]\(\)\[']/g, '');
     var array_params = current_params.split(',');
@@ -68,13 +71,11 @@ function deletePlatform(parameters, platform_type) {
 }
 
 function formreset(){
+    //var form =  $(this).closest('form').attr("id");
     $("input[id][type='text']").val("");
     $("input[id][type='password']").val("");
 }
 </script>
-
-
-
     <script type="text/javascript" src="{% static 'bootstrap/js/lib/jquery-1.7.1.min.js' %}"></script>
     <script type="text/javascript" src="{% static "bootstrap/js/bootstrap.min.js" %}"></script>
 
