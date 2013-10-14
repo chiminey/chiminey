@@ -71,7 +71,7 @@ $(document).ready(function () {
             {{field|add_class:"span2"}}
             {% endif %}
 
-              <a href="#" data-toggle="tooltip" data-placement="right" title="{{field.help_text}}" id='{{forloop.counter}}'><img src="#" class="icon-question-sign"></a>
+              <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{field.help_text}}" id='{{forloop.counter}}'><img src="#" class="icon-question-sign"></a>
               </div>
             </div>
           {% endif %}

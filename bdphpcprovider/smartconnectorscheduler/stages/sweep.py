@@ -277,6 +277,8 @@ class Sweep(Stage):
             # logger.debug("header_location=%s" % header_location)
             # new_context_uri = header_location[len(api_host):]
             # logger.debug("new_context_uri=%s" % new_context_uri)
+        smartconnector.success(run_settings, "0: finished")
+
 
     def output(self, run_settings):
         run_settings.setdefault(

@@ -445,6 +445,12 @@ class Context(models.Model):
     owner = models.ForeignKey(UserProfile)
     current_stage = models.ForeignKey(Stage)
     deleted = models.BooleanField(default=False)
+    status = models.TextField(default="", blank=True,
+                               verbose_name="Status of the Context",
+                             help_text="")
+    directive = models.ForeignKey(Directive, null=True)
+    created = models.DateTimeField(auto_now_add=True)
+
     CONTEXT_SCHEMA_NS = "http://rmit.edu.au/schemas/context1"
 
     def get_absolute_url(self):
