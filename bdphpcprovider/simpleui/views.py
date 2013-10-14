@@ -38,7 +38,7 @@ from bdphpcprovider.simpleui.sweepform import SweepSubmitForm
 from bdphpcprovider.simpleui.hrmc.copy import CopyForm
 from bdphpcprovider.simpleui.ncicomputationplatform import NCIComputationPlatformForm
 from bdphpcprovider.simpleui.nectarcomputationplatform import NeCTARComputationPlatformForm
-
+from bdphpcprovider.simpleui.sshstorageplatform import SSHStoragePlatformForm
 #TODO,FIXME: simpleui shouldn't refer to anything in smartconnectorscheduler
 #and should be using its own models and use the REST API for all information.
 
@@ -106,6 +106,46 @@ def computation_platform_settings(request):
                                'computation_platforms': computation_platforms,
                                'all_headers': all_headers})
 
+
+def storage_platform_settings(request):
+    ssh_form = SSHStoragePlatformForm()
+    if request.method == "POST":
+        ssh_form = SSHStoragePlatformForm(request.POST)
+        if ssh_form.is_valid():
+            schema = 'http://rmit.edu.au/schemas/platform/storage/ssh'
+            post_platform(schema, ssh_form.cleaned_data, request)
+            return HttpResponseRedirect('/accounts/settings/platform/storage')
+
+    #FIXME: consider using non-locahost URL for api_host
+    api_host = "http://127.0.0.1"
+
+    url = "%s/api/v1/platformparameter/?format=json&limit=0&schema=http://rmit.edu.au/schemas/platform/storage" % api_host
+    cookies = dict(request.COOKIES)
+    logger.debug("cookies=%s" % cookies)
+    headers = {'content-type': 'application/json'}
+    try:
+        #response = urlopen(req)
+        r = requests.get(url,
+        headers=headers,
+        cookies=cookies)
+    except HTTPError as e:
+        logger.debug( 'The server couldn\'t fulfill the request. %s' % e)
+        logger.debug( 'Error code: ', e.code)
+    except URLError as e:
+        logger.debug( 'We failed to reach a server. %s' % e)
+        logger.debug( 'Reason: ', e.reason)
+    else:
+        logger.debug('everything is fine')
+        #logger.debug(r.text)
+        #logger.debug(r.json())
+        GET_data = r.json()
+        storage_platforms, all_headers = filter_computation_platforms(GET_data)
+        logger.debug(storage_platforms)
+    return render(request, 'accountsettings/storageplatform.html',
+                              {'ssh_form': ssh_form,
+                               'all_headers': all_headers})
+
+
 def post_platform(schema, form_data, request, type=None):
     logger.debug('operation=%s' % form_data['operation'])
     api_host = "http://127.0.0.1"  #fixme: remove local host address
@@ -157,6 +197,12 @@ def filter_computation_platforms(GET_json_data):
         schema = i['paramset']['platform']['schema_namespace_prefix']
         paramset_id = i['paramset']['id']
         name = i['name']['name']
+        '''
+        if name == 'password':
+            value = '****'
+        else:
+            value = i['value']
+        '''
         value = i['value']
         computation_platforms[schema][paramset_id][str(name)] = str(value)
 
