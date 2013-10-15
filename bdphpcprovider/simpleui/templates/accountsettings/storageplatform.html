@@ -1,0 +1,109 @@
+{% extends "accountsettings/base_accountsettings.html" %}
+{% block account-settings-content %}
+<!--create modal -->
+<div class="modal hide fade" id="createModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title">Add Storage Platform</h4>
+            </div>
+            <div class="modal-body">
+                <ul class="nav nav-tabs" id="myTab">
+                  <li class="active"><a href="#ssh" data-toggle="tab">SSH</a></li>
+                </ul>
+                <div class="tab-content">
+                    <div class="tab-pane active" id="ssh">
+                        <form class="form-horizontal" action="{{ action }}" method="POST" id="ssh_form_create"> {% csrf_token %}
+                            {{ ssh_form.as_p }}
+                            <button type="submit" class="btn btn-primary" onclick="submitForm('create');">Add</button>
+                            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- end create modal -->
+
+<!--update modal -->
+<div class="modal hide fade" id="updateModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title">Update Storage Platform</h4>
+            </div>
+            <div class="modal-body">
+                <form class="form-horizontal" action="{{ action }}" method="POST" id="ssh_form_update"> {% csrf_token %}
+                    {{ ssh_form.as_p }}
+                    <button type="submit" class="btn btn-primary" onclick="submitForm('update');">Update</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                </form>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- end update modal -->
+
+
+<!--delete modal: merge this with update model -->
+<div class="modal hide fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title">Delete Storage Platform</h4>
+            </div>
+            <div class="modal-body">
+                <form class="form-horizontal" action="{{ action }}" method="POST" id="ssh_form_delete"> {% csrf_token %}
+                    {{ ssh_form.as_p }}
+                    <button type="submit" class="btn btn-primary" onclick="submitForm('delete');">Delete</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                </form>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- end delete modal -->
+
+
+<!--second column-->
+<p><a data-toggle="modal" href="#createModal" class="btn btn-primary"  onclick="formreset();">Add Storage Platform</a></p>
+<div>
+{% for platform_type, platform_details in all_headers.items %}
+     {% for header, schema in platform_details.items %}
+         {{ platform_type }}
+         <table class="table table-hover table-striped table-bordered">
+            <thead>
+                <tr>
+                    {% for h in header %}
+                        <td>
+                            <strong>{{ h }}</strong>
+                        </td>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for paramset_key, paramset in schema.items %}
+                <tr>
+
+                    {% for param_key, param in paramset.items %}
+                        <td>  {{ param }}</td>
+                    {% endfor %}
+                <td>
+                <div class="btn-group">
+                    <a data-toggle="modal" href="#updateModal" class="btn btn-primary"
+                       onclick="updatePlatform('{{ paramset.items|escapejs }}', '{{ platform_type|slugify }}');">
+                                Update </a>
+                  <button data-toggle="modal" href="#deleteModal" class="btn"
+                          onclick="deletePlatform('{{ paramset.items|escapejs }}', '{{ platform_type|slugify }}');">Delete</button>
+                </div>
+                </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+         </table>
+    {% endfor %}
+{% endfor %}
+</div>
+<!--end second column-->
+{% endblock %}
