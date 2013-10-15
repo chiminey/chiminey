@@ -81,7 +81,8 @@ function formreset(){
 </script>
     <script type="text/javascript" src="{% static 'bootstrap/js/lib/jquery-1.7.1.min.js' %}"></script>
     <script type="text/javascript" src="{% static "bootstrap/js/bootstrap.min.js" %}"></script>
-
+{% block head %}
+{% endblock head %}
 </head>
 
     <body>
@@ -94,7 +95,7 @@ function formreset(){
                 <span class="icon-bar"></span>
               </a>
 
-              <span class="brand"><a href="/">BDPHPC Alpha</a></span>
+              <span class="brand"><a href="/">BDPHPC Beta</a></span>
 
               <div class="nav-collapse">
                    <p class="navbar-text pull-right">

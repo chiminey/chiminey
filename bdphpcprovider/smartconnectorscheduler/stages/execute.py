@@ -363,11 +363,13 @@ class Execute(Stage):
                     logger.info("found odd template matching file %s" % fname)
                 else:
 
+                    logger.debug("self.initial_numbfile=%s" % self.initial_numbfile)
                     # generates a set of variations for the template fname
                     variation_set = self._expand_variations(template,
                                                             [map], values_map,  self.initial_numbfile)
                     self.initial_numbfile += len(variation_set)
                     logger.debug('variation_set=%d' % len(variation_set))
+                    logger.debug("self.initial_numbfile=%s" % self.initial_numbfile)
                     variations[base_fname] = variation_set
                 logger.debug("map=%s" % map)
         else:
@@ -405,11 +407,12 @@ class Execute(Stage):
                     #instance special variables into the template context
                     context['run_counter'] = numbfile
                     context['generator_counter'] = generator_counter  # FIXME: not needed?
-
+                    logger.debug("context=%s"% context)
                     numbfile += 1
                     #logger.debug(context)
                     t = Template(template)
                     con = Context(context)
+
                     res.append((t.render(con), context))
                     temp_num += 1
                 logger.debug("%d files created" % (temp_num))

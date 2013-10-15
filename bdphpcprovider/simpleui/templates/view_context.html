@@ -1,20 +1,38 @@
 {% extends "base.html" %}
 
 {% block content %}
+<script type="text/javascript">
+$(document).ready(function () {
+            {% for key,value in settings.items %}
+           {% for key2,value2 in value.items %}
+           $('#{{key|slugify}}_{{key2|slugify}}').tooltip();
+           {% endfor %}
+           {% endfor %}
+       });
+</script>
+<div class="container">
+<div class="row-fluid">
 <h1>Job {{ context.id}}: {{context.directive.name}} </h1>
-<table class="table table-striped table-hover">
+<table class="table table-striped table-hover table-bordered table-hover">
 
         <thead></thead>
         <tbody>
 {% for key, value in settings.items %}
-    <tr><td><strong>{{ key }}</strong></td></tr>
+    <thead><tr><td ><strong>{{ key }}</strong></td></tr></thead>
+    <tbody>
     {% for key2,value2 in value.items %}
     <tr>
-
-        <td>{{ key2 }}</td><td>{{value2.0}}</td><td><em>{{value2.1}}</em></td>
+        <td class="">{{ key2 }}
+        {% if value2.1 %}
+        <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{value2.1}}" id='{{key|slugify}}_{{key2|slugify}}'><img src="#" class="icon-question-sign"></a>
+        {% endif %}
+    </td>
+        <td class="">{{value2.0}}</td>
     </tr>
     {% endfor %}
-{% endfor %}
 </tbody>
+{% endfor %}
     </table>
+</div
+</div>
 {%endblock %}

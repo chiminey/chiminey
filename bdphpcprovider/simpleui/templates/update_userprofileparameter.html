@@ -1,11 +1,13 @@
 {% extends "base.html" %}
 
 {% block content %}
+<div class="container">
+<div class="row-fluid">
 <h1>User Profile</h1>
 <ul>
 
     <ul>
-            <table class="table table-hover">
+            <table class="table table-hover span12">
                 <thead>
                     <tr>
                     <td> JobID
@@ -33,5 +35,7 @@
 {% endfor %}
 <a href="{% url userprofileparameter-new %}">add user parameter</a>
 </ul>
+</div>
+</div>
 
 {% endblock %}
