@@ -22,31 +22,19 @@
 #
 import os
 import logging
-import logging.config
+import django
 from pprint import pformat
-
-from tastypie import fields
-from tastypie.resources import ModelResource
-from tastypie.utils import dict_strip_unicode_keys
-from tastypie import http
-from tastypie.exceptions import ImmediateHttpResponse
-from tastypie.constants import ALL, ALL_WITH_RELATIONS
-
-
-import django
-import logging
-
-
-import django
-import logging
 
 # FIXME,TODO: replace basic authentication with basic+SSL,
 # or better digest or oauth
 from tastypie.authentication import (BasicAuthentication)
 from tastypie.authorization import DjangoAuthorization, Authorization
-
-
-import django
+from tastypie import fields
+from tastypie.resources import ModelResource, ALL_WITH_RELATIONS, ALL
+from tastypie.utils import dict_strip_unicode_keys
+from tastypie import http
+from tastypie.exceptions import ImmediateHttpResponse
+from tastypie.paginator import Paginator
 from django.contrib.auth.models import User
 from django.core.validators import ValidationError
 from django import forms
@@ -54,22 +42,10 @@ from django import forms
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
-
-from tastypie import fields
-from tastypie.resources import ModelResource, ALL_WITH_RELATIONS
-from tastypie.utils import dict_strip_unicode_keys
-from tastypie import http
-
-
-from django.contrib.auth.models import User
-from pprint import pformat
-from bdphpcprovider.smartconnectorscheduler import models
-from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
-from bdphpcprovider.smartconnectorscheduler import hrmcstages, platform
+from bdphpcprovider.smartconnectorscheduler import platform
 
 
 logger = logging.getLogger(__name__)
-
 
 
 # TODO: this code should be copied to maintain separation between api/ui
@@ -219,9 +195,6 @@ class UserProfileParameterResource(ModelResource):
         # curl --digest --user user2 --dump-header - -H "Content-Type: application/json" -X PUT --data ' {"value": 44}' http://115.146.86.247/api/v1/userprofileparameter/48/?format=json
         allowed_methods = ['get', 'put']
         # TODO: validation on put value to correct type
-
-
-from tastypie.paginator import Paginator
 
 
 class ContextResource(ModelResource):
