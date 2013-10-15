@@ -22,6 +22,7 @@ import logging
 import json
 import requests
 import ast
+
 from pprint import pformat
 
 from urllib2 import URLError, HTTPError
@@ -34,6 +35,7 @@ from django.views.generic.base import TemplateView
 from django.core.urlresolvers import reverse
 from django.contrib.auth import logout
 from django.http import HttpResponseRedirect
+
 
 from django.template import Context, RequestContext, loader
 from django.shortcuts import redirect

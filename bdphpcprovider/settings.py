@@ -59,6 +59,6 @@ CELERYBEAT_SCHEDULE = {
     #},
     "run_contexts": {
         "task": "smartconnectorscheduler.run_contexts",
-        "schedule": timedelta(seconds=15)
+        "schedule": timedelta(seconds=2)
       },
     }
