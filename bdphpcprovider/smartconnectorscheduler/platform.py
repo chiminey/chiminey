@@ -40,42 +40,49 @@ def generate_key(username, parameters, platform_type):
     logger.debug('key_path=%s' % key_path)
     logger.debug('key_name=%s' % key_name)
     if platform_type == 'nectar':
-        region = RegionInfo(name="NeCTAR", endpoint="nova.rc.nectar.org.au")
-        logger.debug('region.name=%s' % region.name)
-        logger.debug('ec2 access key=%s' % parameters['ec2_access_key'])
-        logger.debug('ec2 secret key=%s' % parameters['ec2_secret_key'])
-        connection = boto.connect_ec2(
-            aws_access_key_id=parameters['ec2_access_key'],
-            aws_secret_access_key=parameters['ec2_secret_key'],
-            is_secure=True, region=region,
-            port=8773, path="/services/Cloud")
-        logger.debug('connection=%s' % connection)
-        key_absolute_path = os.path.join(key_path, '%s.pem' % key_name)
-        logger.debug(key_absolute_path)
-        if os.path.exists(key_absolute_path):
-            os.remove(key_absolute_path)
-            connection.delete_key_pair(key_name)
-            logger.debug('old key %s deleted' % key_absolute_path)
-        key_pair = connection.create_key_pair(key_name)
-        key_pair.save(key_path)
-        logger.debug('key_pair=%s' % key_pair)
-        security_group_name = 'bdp_ssh_group'
-        #logger.debug('key=%s' % connection.get_all_security_groups([security_group_name]))
         try:
+            region = RegionInfo(name="NeCTAR", endpoint="nova.rc.nectar.org.au")
+            logger.debug('region.name=%s' % region.name)
+            logger.debug('ec2 access key=%s' % parameters['ec2_access_key'])
+            logger.debug('ec2 secret key=%s' % parameters['ec2_secret_key'])
+            connection = boto.connect_ec2(
+                aws_access_key_id=parameters['ec2_access_key'],
+                aws_secret_access_key=parameters['ec2_secret_key'],
+                is_secure=True, region=region,
+                port=8773, path="/services/Cloud")
+            logger.debug('connection=%s' % connection)
+            key_absolute_path = os.path.join(key_path, '%s.pem' % key_name)
+            logger.debug(key_absolute_path)
+            if os.path.exists(key_absolute_path):
+                os.remove(key_absolute_path)
+                connection.delete_key_pair(key_name)
+                logger.debug('old key %s deleted' % key_absolute_path)
+            key_pair = connection.create_key_pair(key_name)
+            key_pair.save(key_path)
+            logger.debug('key_pair=%s' % key_pair)
+            security_group_name = 'bdp_ssh_group'
             connection.get_all_security_groups([security_group_name])
             logger.debug('ssh group exists')
         except EC2ResponseError as e:
-            security_group = connection.create_security_group(
-                    security_group_name, "SSH security group for the BDP Provider")
-            security_group.authorize('tcp', 22, 22, '0.0.0.0/0')
+            if 'Unauthorized' in e.error_code:
+                message = 'Unauthorized access to NeCTAR'
+                return False, [message]
+            elif 'SecurityGroupNotFoundForProject' in e.error_code:
+                security_group = connection.create_security_group(
+                        security_group_name, "SSH security group for the BDP Provider")
+                security_group.authorize('tcp', 22, 22, '0.0.0.0/0')
+                logger.debug('%s created' % security_group)
+            else:
+                logger.debug('=%s' % e.__dict__)
+                return False, e.error_code
         except Exception as e:
             logger.debug(e)
             raise
         key_relative_path = os.path.join(
             '.ssh', username, platform_type,
             '%s.pem' % key_name)
-        return key_name, key_relative_path, security_group_name
-    return False
+        return True, [key_name, key_relative_path, security_group_name]
+    return False, []
 
 
 #fixme deprecate this method. Now unique key exists
@@ -102,17 +109,20 @@ def create_platform_paramset(username, schema_namespace,
                      '\n Required params= %s  \n Provided params= %s '
                      % (required_params, provided_params))
         return False
+    platform_type = os.path.basename(schema_namespace)
+    if platform_type == 'nectar':
+        generated, response = generate_key(username, parameters, platform_type)
+        if generated:
+            parameters['private_key'] = response[0]
+            parameters['private_key_path'] = response[1]
+            parameters['security_group'] = response[2]
+            if not parameters['vm_image_size']:
+                parameters['vm_image_size'] = 'm1.small'
+        else:
+            return False, response[0]
     unique = is_unique_platform_paramset(
         platform, schema, filters)
     logger.debug('unique parameter set %s' % unique)
-    platform_type = os.path.basename(schema_namespace)
-    if platform_type == 'nectar':
-        key_name, key_relative_path, security_group_name = \
-            generate_key(username, parameters, platform_type)
-        parameters['security_group'] = security_group_name
-        parameters['private_key'] = key_name
-        parameters['private_key_path'] = key_relative_path
-        logger.debug('security_group=%s' % security_group_name)
     if unique:
          param_set = models.PlatformInstanceParameterSet.objects\
              .create(platform=platform, schema=schema)
@@ -125,9 +135,11 @@ def create_platform_paramset(username, schema_namespace,
                 continue
             models.PlatformInstanceParameter.objects\
                 .get_or_create(name=param_name, paramset=param_set, value=v)
-         return True
-    logger.debug('Parameterset already exists')
-    return False
+            message = 'Record created successfully'
+         return True, message
+    logger.debug('Record already exists')
+    message = 'Record already exists'
+    return False, message
 
 
 def retrieve_platform_paramsets(username, schema_namespace):
@@ -157,20 +169,24 @@ def update_platform_paramset(username, schema_namespace,
                              filters, updated_params):
     platform, schema = get_platform_and_schema(username, schema_namespace)
     if not required_param_exists(schema, updated_params):
-        logger.debug('keys in updated_parameters are unknown')
-        return False
+        message = 'Keys in updated_parameters are unknown'
+        logger.debug(message)
+        return False, message
     if not required_param_exists(schema, filters):
-        logger.debug('keys in filters are unknown')
-        return False
+        message = 'Keys in filters are unknown'
+        logger.debug(message)
+        return False, message
     new_filters = dict(filters)
     new_filters.update(updated_params)
     if not is_unique_platform_paramset(platform, schema, new_filters):
-        logger.debug('Record exists with the updated parameter')
-        return False
+        message = 'Record exists with the updated parameters'
+        logger.debug(message)
+        return False, message
     param_sets = filter_platform_paramsets(platform, schema, filters)
     if len(param_sets) != 1:
-        logger.debug('Multiple records found. Add more parameters to filters')
-        return False
+        message = 'Multiple records found. Add more parameters to filters'
+        logger.debug(message)
+        return False, message
     platform_parameters = models.PlatformInstanceParameter\
         .objects.filter(paramset=param_sets[0])
     keys = [k for k, v in updated_params.items()]
@@ -179,7 +195,8 @@ def update_platform_paramset(username, schema_namespace,
         if name in keys:
             platform_parameter.value = updated_params[name]
             platform_parameter.save()
-    return True
+    message = 'Record updated successfully'
+    return True, message
 
 
 def delete_platform_paramsets(username, schema_namespace, filters):
@@ -192,6 +209,12 @@ def delete_platform_paramsets(username, schema_namespace, filters):
         logger.debug('deleting ... %s' % param_set)
         param_set.delete()
     logger.debug("%d platforms are deleted" % len(param_sets))
+    if len(param_sets):
+        message = 'Record deleted successfully'
+        return True, message
+    else:
+        message = 'Record does not exist'
+        return False, message
 
 
 def is_unique_platform_paramset(platform, schema, filters):

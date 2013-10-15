@@ -305,7 +305,7 @@ class ContextResource(ModelResource):
                  ]
              ])
         except KeyError, e:
-            raise ImmediateHttpResponse(BadRequest(e))
+            raise ImmediateHttpResponse(http.BadRequest(e))
 
         logger.debug("directive_args=%s" % pformat(directive_args))
         # make the system settings, available to initial stage and merged with run_settings
@@ -533,38 +533,63 @@ class PlatformInstanceParameterSetResource(ModelResource):
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
         bundle.data['username'] = request.user.username
-        logger.debug('operation=%s' % bundle.data['operation'])
-        if bundle.data['operation'] == 'create':
-            self.create_platform(bundle)
-        elif bundle.data['operation'] == 'update':
-            self.update_platform(bundle)
-        elif bundle.data['operation'] == 'delete':
-            self.delete_platform(bundle)
-        location = self.get_resource_uri(bundle)
-        return http.HttpCreated(location=location)
+        try:
+            if 'operation' in bundle.data:
+                logger.debug('operation=%s' % bundle.data['operation'])
+                if bundle.data['operation'] == 'create':
+                    created, message = self.create_platform(bundle)
+                    if not created:
+                        response = http.HttpConflict()
+                        response['message'] = message
+                        return response
+                elif bundle.data['operation'] == 'update':
+                    updated, message  = self.update_platform(bundle)
+                    if not updated:
+                        response = http.HttpConflict()
+                        response['message'] = message
+                        return response
+                elif bundle.data['operation'] == 'delete':
+                    deleted, message = self.delete_platform(bundle)
+                    if not deleted:
+                        response = http.HttpConflict()
+                        response['message'] = message
+                        return response
+                location = self.get_resource_uri(bundle)
+            else:
+                return http.HttpBadRequest()
+        except Exception, e:
+            logger.error(e)
+            raise ImmediateHttpResponse(http.HttpBadRequest(e))
+        response = http.HttpCreated(location=location)
+        response['message'] = message
+        return response
 
     def create_platform(self, bundle):
         username = bundle.data['username']
         schema = bundle.data['schema']
         parameters = bundle.data['parameters']
-        created = platform.create_platform_paramset(username, schema, parameters)
+        created, message = platform.create_platform_paramset(
+            username, schema, parameters)
         logger.debug('created=%s' % created)
+        return created, message
 
     def update_platform(self, bundle):
         username = bundle.data['username']
         schema = bundle.data['schema']
         filters = bundle.data['filters']
         updated_parameters = bundle.data['parameters']
-        updated = platform.update_platform_paramset(
+        updated, message = platform.update_platform_paramset(
             username, schema, filters, updated_parameters)
         logger.debug('updated=%s' % updated)
+        return updated, message
 
     def delete_platform(self, bundle):
         username = bundle.data['username']
         schema = bundle.data['schema']
         filters = bundle.data['filters']
-        deleted = platform.delete_platform_paramsets(username, schema, filters)
+        deleted, message  = platform.delete_platform_paramsets(username, schema, filters)
         logger.debug('deleted=%s' % deleted)
+        return deleted, message
 
 
 class PlatformInstanceParameterResource(ModelResource):

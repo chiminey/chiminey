@@ -177,9 +177,6 @@ def post_platform(schema, form_data, request, type=None):
     for i in ast.literal_eval(form_data['filters']):
         logger.debug(i)
         filters[i[0]] = i[1]
-    if type == 'nectar':
-        if not parameters['vm_image_size']:
-            parameters['vm_image_size'] = 'm1.small'
     data = json.dumps({'operation': form_data['operation'],
                        'parameters': parameters,
                        'schema': schema,
@@ -190,6 +187,16 @@ def post_platform(schema, form_data, request, type=None):
         data=data,
         headers=headers,
         cookies=cookies)
+
+    if r.status_code != 201:
+        error_message = ''
+        if r.status_code == 409:
+            messages.error(request, "%s" % r.headers['message'])
+        else:
+            messages.error(request, "Task Failed with status code %s: %s" % (r.status_code, r.headers['message']))
+        return False
+    else:
+        messages.success(request, "%s" % r.headers['message'])
     # TODO: need to check for status_code and handle failures.
 
 
