@@ -17,11 +17,13 @@
 </style>
 
 <script>
-$(document).ready(function() {
+/**
+    $(document).ready(function() {
      $('#createModal').bind('show', function () {
         });
 
      });
+ **/
 function closeDialog () {
     $('#createModal').modal('hide');
 };
@@ -103,7 +105,7 @@ function formreset(){
                     <li><a  href="{% url login %}">login</a></li>
                     <li><a  href="{% url logout %}">logout</a></li>
                     <!-- <li><a  href="{% url hrmcjob-new %}">Create HRMC Job</a></li> -->
-                    <li><a  href="{% url makedirective 16 %}">New Job</a></li>
+                    <li><a  href="{% url makedirective 6 %}">New Job</a></li>
                 <!--   <li><a  href="{% url sweepjob-new %}">Create SWEEP Job</a></li> -->
                     <li><a  href="{% url hrmcjob-list %}">Retrieve Jobs</a></li>
 <!--                    <li><a  href="{% url makejob-new %}">Create RemoteMake Job</a></li> -->
