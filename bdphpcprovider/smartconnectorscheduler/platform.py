@@ -20,6 +20,10 @@
 
 import os
 import logging
+import boto
+
+from boto.ec2.regioninfo import RegionInfo
+from boto.exception import EC2ResponseError
 
 from django.contrib.auth.models import User
 from bdphpcprovider.smartconnectorscheduler import models
@@ -28,6 +32,53 @@ from django.db.models import ObjectDoesNotExist
 logger = logging.getLogger(__name__)
 
 
+def generate_key(username, parameters, platform_type):
+    bdp_root_path = '/var/cloudenabling/remotesys'
+    key_name = 'bdp_%s' % parameters['name']
+    key_path = os.path.join(bdp_root_path, '.ssh',
+                            username, platform_type)
+    logger.debug('key_path=%s' % key_path)
+    logger.debug('key_name=%s' % key_name)
+    if platform_type == 'nectar':
+        region = RegionInfo(name="NeCTAR", endpoint="nova.rc.nectar.org.au")
+        logger.debug('region.name=%s' % region.name)
+        logger.debug('ec2 access key=%s' % parameters['ec2_access_key'])
+        logger.debug('ec2 secret key=%s' % parameters['ec2_secret_key'])
+        connection = boto.connect_ec2(
+            aws_access_key_id=parameters['ec2_access_key'],
+            aws_secret_access_key=parameters['ec2_secret_key'],
+            is_secure=True, region=region,
+            port=8773, path="/services/Cloud")
+        logger.debug('connection=%s' % connection)
+        key_absolute_path = os.path.join(key_path, '%s.pem' % key_name)
+        logger.debug(key_absolute_path)
+        if os.path.exists(key_absolute_path):
+            os.remove(key_absolute_path)
+            connection.delete_key_pair(key_name)
+            logger.debug('old key %s deleted' % key_absolute_path)
+        key_pair = connection.create_key_pair(key_name)
+        key_pair.save(key_path)
+        logger.debug('key_pair=%s' % key_pair)
+        security_group_name = 'bdp_ssh_group'
+        #logger.debug('key=%s' % connection.get_all_security_groups([security_group_name]))
+        try:
+            connection.get_all_security_groups([security_group_name])
+            logger.debug('ssh group exists')
+        except EC2ResponseError as e:
+            security_group = connection.create_security_group(
+                    security_group_name, "SSH security group for the BDP Provider")
+            security_group.authorize('tcp', 22, 22, '0.0.0.0/0')
+        except Exception as e:
+            logger.debug(e)
+            raise
+        key_relative_path = os.path.join(
+            '.ssh', username, platform_type,
+            '%s.pem' % key_name)
+        return key_name, key_relative_path, security_group_name
+    return False
+
+
+#fixme deprecate this method. Now unique key exists
 def create_platform_paramset(username, schema_namespace,
                              parameters, filter_keys=None):
     owner = get_owner(username)
@@ -54,6 +105,14 @@ def create_platform_paramset(username, schema_namespace,
     unique = is_unique_platform_paramset(
         platform, schema, filters)
     logger.debug('unique parameter set %s' % unique)
+    platform_type = os.path.basename(schema_namespace)
+    if platform_type == 'nectar':
+        key_name, key_relative_path, security_group_name = \
+            generate_key(username, parameters, platform_type)
+        parameters['security_group'] = security_group_name
+        parameters['private_key'] = key_name
+        parameters['private_key_path'] = key_relative_path
+        logger.debug('security_group=%s' % security_group_name)
     if unique:
          param_set = models.PlatformInstanceParameterSet.objects\
              .create(platform=platform, schema=schema)
