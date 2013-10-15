@@ -38,6 +38,7 @@ from django.http import HttpResponseRedirect
 from django.template import Context, RequestContext, loader
 from django.shortcuts import redirect
 
+from django.core.urlresolvers import reverse
 from django.shortcuts import render_to_response
 
 from django.contrib import messages
@@ -381,7 +382,10 @@ class ContextView(DetailView):
             for cp in models.ContextParameter.objects.filter(paramset=cps):
                 res2[cp.name.name] = [cp.value, cp.name.help_text]
                 #res2[cp.name.name] = [cp.value, "hello"]
-            res[cps.schema.namespace] = res2
+            if cps.schema.name:
+                res["%s (%s) " % (cps.schema.name, cps.schema.namespace)] = res2
+            else:
+                res[cps.schema.namespace] = res2
         context['settings'] = res
         return context
 
@@ -1054,6 +1058,27 @@ def get_contexts(request):
     offset = 0
     page_size = 20
 
+    if request.method == 'POST':
+        contexts = []
+        logger.debug("POST=%s" % request.POST)
+        for key in request.POST:
+            logger.debug("key=%s"% key)
+            logger.debug("value=%s" %request.POST[key])
+            if key.startswith("delete_"):
+                try:
+                    val = int(key.split('_')[-1])
+                except ValueError, e:
+                    logger.error(e)
+                else:
+                    contexts.append(val)
+        logger.debug("contexts=%s" % contexts)
+        # TODO: schedule celery tasks to delete each context, as background
+        # process because stages may already have write lock on context.
+
+
+
+
+
     if 'offset' in request.GET:
         try:
             offset = int(request.GET.get('offset'))
@@ -1105,6 +1130,7 @@ def get_contexts(request):
         obj.append(name)
         obj.append(dateutil.parser.parse(x['created']))
         obj.append(desc)
+        obj.append(reverse('contextview', kwargs={'pk': x['id']} ))
         object_list.append(obj)
 
     meta = r.json()['meta']

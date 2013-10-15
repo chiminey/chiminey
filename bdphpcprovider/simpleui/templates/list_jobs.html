@@ -1,4 +1,8 @@
 {% extends "base.html" %}
+{% block head %}
+<meta http-equiv="refresh" content="60" >
+{% endblock head %}
+
 {% load split %}
 {% load humanize %}
 {% block content %}
@@ -9,12 +13,13 @@ $(document).ready(function () {
            {% endfor %}
        });
 </script>
+<div class="container">
 <div class="row-fluid">
-<div class="span11 offset1">
 <h1> Jobs</h1>
 </div>
-</div>
 <div class="row-fluid">
+    <form class="form-horizontal" action="" method="POST"> {% csrf_token %}
+
     <table class="table table-hover table-striped table-bordered">
         <thead>
             <tr>
@@ -29,6 +34,7 @@ $(document).ready(function () {
             <td>
                 <strong>Iteration:State</strong>
             </td>
+            <td></td>
 </tr>
         </thead>
         <tbody>
@@ -40,20 +46,31 @@ $(document).ready(function () {
 <td class="span3">{{ job.4|date}} {{ job.4|time}} ({{job.4|naturaltime}})</td>
 
 <td>{{job.2|split:"1"}}</td>
-<td class="span1">
+<td class="span2">
 <div class="btn-group">
-  <button onclick="window.location.href='{{ job.get_absolute_url }}'" class="btn" >Info</button>
+  <button onclick="window.location.href='{{ job.6 }}'" class="btn" >Info</button>
   <button onclick="window.location.href='{% url finishedcontext-edit job.0 %}'" class="btn">Edit</button>
+</div>
+<td class="span1">
+    <div class="control-group">
+  <label class="checkbox"><input id="delete_{{job.0}}"  type="checkbox" name="delete_{{job.0}}" class="checkbox" /></label>
+</div>
+</td>
+</div>
+</td>
 </div>
 </td>
 </tr>
 {% endfor %}
 </tbody>
 </table>
+<div class="controls">
+    <button type="submit" class="offset10 btn">Delete Selected Jobs</button>
 </div>
-</div>
-<div class="row-fluid">
+</form>
+
 <div class="pagination">
+<div class="row-fluid">
     <ul>
 
         {% if offset <= 0  %}
@@ -80,5 +97,8 @@ $(document).ready(function () {
 </ul>
 </div>
 </div>
+</div>
+</div>
+
 {% endblock %}
 

@@ -49,7 +49,7 @@ urlpatterns = patterns('',
     ('^accounts/', include('django.contrib.auth.urls')),
     #url(r'^login/$',  'django.contrib.auth.views.login', name="mylogin"),
     #url(r'^logout/$', 'django.contrib.auth.views.logout', name="mylogout"),
-    url(r'^$', 'django.views.generic.simple.redirect_to', {'url':  '/accounts/login'}, name='home'),
+    url(r'^$', 'django.views.generic.simple.redirect_to', {'url':  '/'}, name='home'),
 
     url(r'^accounts/profile/$', login_required(uiviews.UserProfileParameterListView.as_view()),
         name='userprofileparameter-list',),
