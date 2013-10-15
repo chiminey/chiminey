@@ -16,6 +16,7 @@
     .body {margin-left: 0}
 </style>
 
+
 <script>
 /**
     $(document).ready(function() {
@@ -118,7 +119,6 @@ function formreset(){
             </div>
           </div>
         </div>
-
         {% if messages %}
         <div class="row-fluid">
             {% for message in messages %}
@@ -130,7 +130,6 @@ function formreset(){
             {% endif %}
 
                {% block content %}
-
 
          {% endblock %}
     <hr>

@@ -21,6 +21,7 @@
 #
 #
 
+
 import os
 import logging
 import logging.config
@@ -38,10 +39,14 @@ import django
 import logging
 
 
+import django
+import logging
+
 # FIXME,TODO: replace basic authentication with basic+SSL,
 # or better digest or oauth
 from tastypie.authentication import (BasicAuthentication)
 from tastypie.authorization import DjangoAuthorization, Authorization
+
 
 import django
 from django.contrib.auth.models import User
@@ -52,10 +57,19 @@ from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
 
+
+from django.contrib.auth.models import User
+from pprint import pformat
+from bdphpcprovider.smartconnectorscheduler import models
+from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
+from bdphpcprovider.smartconnectorscheduler import hrmcstages, platform
+
+
 from tastypie import fields
 from tastypie.resources import ModelResource, ALL_WITH_RELATIONS
 from tastypie.utils import dict_strip_unicode_keys
 from tastypie import http
+
 
 from django.contrib.auth.models import User
 from pprint import pformat
@@ -72,6 +86,7 @@ logger = logging.getLogger(__name__)
 from bdphpcprovider.simpleui import validators
 
 logger = logging.getLogger(__name__)
+
 
 class MyBasicAuthentication(BasicAuthentication):
     def __init__(self, *args, **kwargs):
@@ -621,4 +636,8 @@ class PlatformInstanceParameterResource(ModelResource):
         logger.debug('query_settings=%s' % query_settings)
         schema = query_settings['schema']
         return models.PlatformInstanceParameter.objects.filter(
+<<<<<<< HEAD
             paramset__schema__namespace__startswith=schema)
+=======
+            paramset__schema__namespace__startswith=schema)
+>>>>>>> 0a24b9badc7d1d72d2463394489601beb5d0ddbb
