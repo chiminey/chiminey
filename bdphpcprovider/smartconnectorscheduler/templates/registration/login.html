@@ -1,11 +1,15 @@
 {% extends "base.html" %}
 
-{% if form.errors %}
-<p>Your username and password didn't match. Please try again.</p>
-{% endif %}
 
 {% block content %}
+<div class="container">
+    <div class="row-fluid">
+
 <h1> Please Login</h1>
+
+{% if form.errors %}
+<div>Your username and password didn't match. Please try again.</div>
+{% endif %}
 <form method="post" action="">
 {% csrf_token %}
 <form class="form-horizontal" action="" method="POST">{% csrf_token %}
@@ -29,5 +33,5 @@
 </div>
 <input type="hidden" name="next" value="{{ next }}" />
 </form>
-
+</div></div>
 {% endblock %}
