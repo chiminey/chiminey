@@ -106,7 +106,7 @@ function formreset(){
                     <li><a  href="{% url login %}">login</a></li>
                     <li><a  href="{% url logout %}">logout</a></li>
                     <!-- <li><a  href="{% url hrmcjob-new %}">Create HRMC Job</a></li> -->
-                    <li><a  href="{% url makedirective 6 %}">New Job</a></li>
+                    <li><a  href="{% url makedirective 0 %}">New Job</a></li>
                 <!--   <li><a  href="{% url sweepjob-new %}">Create SWEEP Job</a></li> -->
                     <li><a  href="{% url hrmcjob-list %}">Retrieve Jobs</a></li>
 <!--                    <li><a  href="{% url makejob-new %}">Create RemoteMake Job</a></li> -->
@@ -137,9 +137,12 @@ function formreset(){
          {% endblock %}
     <hr>
         <footer>
-            <div class="pull-left"><img src="http://nectar.org.au/sites/default/files/logo-small.png">
+            <div class="container">
+            <div class="row-fluid">
+            <div class=""><img src="http://nectar.org.au/sites/default/files/logo-small.png">
                 <small><p>The Bioscience Data Platform acknowledges funding from the <a href="http://www.nectar.org.au">NeCTAR project</a>.</p></small></div>
-
+            </div>
+        </div>
         </footer>
     </div>
 </div>

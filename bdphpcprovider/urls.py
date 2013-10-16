@@ -42,6 +42,7 @@ v1_api.register(PlatformInstanceParameterSetResource())
 v1_api.register(PlatformInstanceParameterResource())
 
 
+
 urlpatterns = patterns('',
 
     url(r'^admin/', include(admin.site.urls)),
@@ -49,6 +50,8 @@ urlpatterns = patterns('',
     ('^accounts/', include('django.contrib.auth.urls')),
     #url(r'^login/$',  'django.contrib.auth.views.login', name="mylogin"),
     #url(r'^logout/$', 'django.contrib.auth.views.logout', name="mylogout"),
+    url(r'^$', uiviews.AboutView.as_view(), name="home"),
+
     url(r'^$', 'django.views.generic.simple.redirect_to', {'url':  '/'}, name='home'),
 
     url(r'^accounts/profile/$', login_required(uiviews.UserProfileParameterListView.as_view()),
