@@ -21,7 +21,8 @@
 import os
 import logging
 import boto
-
+import paramiko
+import socket
 from boto.ec2.regioninfo import RegionInfo
 from boto.exception import EC2ResponseError
 
@@ -29,17 +30,19 @@ from django.contrib.auth.models import User
 from bdphpcprovider.smartconnectorscheduler import models
 from django.db.models import ObjectDoesNotExist
 
+from bdphpcprovider.smartconnectorscheduler import sshconnector
+
 logger = logging.getLogger(__name__)
 
-
-def generate_key(username, parameters, platform_type):
-    bdp_root_path = '/var/cloudenabling/remotesys'
-    key_name = 'bdp_%s' % parameters['name']
-    key_path = os.path.join(bdp_root_path, '.ssh',
-                            username, platform_type)
-    logger.debug('key_path=%s' % key_path)
+import sys, traceback
+#fixme refactor this code
+def generate_key(parameters, platform_type, **kwargs):
+    key_name = kwargs['key_name'].lower()
+    key_dir = kwargs['key_dir']
+    logger.debug('key_dir=%s' % key_dir)
     logger.debug('key_name=%s' % key_name)
     if platform_type == 'nectar':
+        security_group_name = kwargs['security_group_name']
         try:
             region = RegionInfo(name="NeCTAR", endpoint="nova.rc.nectar.org.au")
             logger.debug('region.name=%s' % region.name)
@@ -51,22 +54,26 @@ def generate_key(username, parameters, platform_type):
                 is_secure=True, region=region,
                 port=8773, path="/services/Cloud")
             logger.debug('connection=%s' % connection)
-            key_absolute_path = os.path.join(key_path, '%s.pem' % key_name)
+            key_absolute_path = os.path.join(key_dir, '%s.pem' % key_name)
             logger.debug(key_absolute_path)
             if os.path.exists(key_absolute_path):
                 os.remove(key_absolute_path)
-                connection.delete_key_pair(key_name)
-                logger.debug('old key %s deleted' % key_absolute_path)
-            key_pair = connection.create_key_pair(key_name)
-            key_pair.save(key_path)
-            logger.debug('key_pair=%s' % key_pair)
-            security_group_name = 'bdp_ssh_group'
+            try:
+                key_pair = connection.create_key_pair(key_name)
+                key_pair.save(key_dir)
+                logger.debug('key_pair=%s' % key_pair)
+            except EC2ResponseError, e:
+                if 'InvalidKeyPair.Duplicate' in e.error_code:
+                    connection.delete_key_pair(key_name)
+                    logger.debug('old key %s deleted' % key_absolute_path)
+                    key_pair = connection.create_key_pair(key_name)
+                    key_pair.save(key_dir)
+                    logger.debug('key_pair=%s' % key_pair)
             connection.get_all_security_groups([security_group_name])
-            logger.debug('ssh group exists')
         except EC2ResponseError as e:
             if 'Unauthorized' in e.error_code:
                 message = 'Unauthorized access to NeCTAR'
-                return False, [message]
+                return False, message
             elif 'SecurityGroupNotFoundForProject' in e.error_code:
                 security_group = connection.create_security_group(
                         security_group_name, "SSH security group for the BDP Provider")
@@ -78,27 +85,49 @@ def generate_key(username, parameters, platform_type):
         except Exception as e:
             logger.debug(e)
             raise
-        key_relative_path = os.path.join(
-            '.ssh', username, platform_type,
-            '%s.pem' % key_name)
-        return True, [key_name, key_relative_path, security_group_name]
+        return True, 'Key generated successfully'
+    elif platform_type == 'nci' or platform_type == 'ssh':
+        try:
+            private_key_absolute_path = os.path.join(key_dir, key_name)
+            public_key_absolute_path = '%s.pub' % private_key_absolute_path
+            private_key = paramiko.RSAKey.generate(1024)
+            private_key.write_private_key_file(private_key_absolute_path)
+            public_key = paramiko.RSAKey(filename=private_key_absolute_path)
+            remote_path = os.path.join(parameters['home_path'], '.ssh', ('%s.pub' % key_name))
+            f = open(public_key_absolute_path, 'w')
+            f.write(public_key.__str__())
+            command = "echo %s " % (public_key.__str__())
+            ssh_client = sshconnector.open_connection(parameters['ip_address'], parameters)
+            sftp = ssh_client.open_sftp()
+            sftp.put(public_key_absolute_path, remote_path)
+            #command_out, errs = sshconnector.run_command_with_status(ssh_client, command)
+            #logger.debug(public_key)
+        except sshconnector.AuthError:
+            message = 'Unauthorized access to %s' % parameters['ip_address']
+            return False, message
+        except socket.gaierror, e:
+            logger.exception(e)
+            if 'Name or service not known' in e:
+                return False, 'Unknown IP address [%s]' % parameters['ip_address']
+        except IOError, e:
+            logger.exception(e)
+            return False, 'Home path [%s] does not exist' % parameters['home_path']
+        except Exception as e:
+            logger.exception(e)
+            raise
+        return True, 'Key generated successfully'
+    else:
+        return False, 'Unknown platform type [%s]' % platform_type
     return False, []
 
 
-#fixme deprecate this method. Now unique key exists
+#fixme deprecate this method. No need for filter; we have unique keys
+#fixme refactor this code
+#fixme call different create methods for different platforms
 def create_platform_paramset(username, schema_namespace,
                              parameters, filter_keys=None):
+    logger.debug('create platform')
     owner = get_owner(username)
-    if not owner:
-        logger.debug('username=%s unknown' % username)
-        return False
-    if not filter_keys:
-        filters = parameters
-    else:
-        filters = {}
-        for k, v in parameters.items():
-            if k in filter_keys:
-                filters[k] = v
     platform, _ = models.PlatformInstance.objects.get_or_create(
        owner=owner, schema_namespace_prefix=schema_namespace)
     schema, _ = models.Schema.objects.get_or_create(namespace=schema_namespace)
@@ -110,20 +139,41 @@ def create_platform_paramset(username, schema_namespace,
                      % (required_params, provided_params))
         return False
     platform_type = os.path.basename(schema_namespace)
+    bdp_root_path = '/var/cloudenabling/remotesys' #fixme replace by parameter
+    key_name = 'bdp_%s' % parameters['name']
+    key_dir = os.path.join(bdp_root_path, '.ssh',
+                            username, platform_type)
+    key_relative_path = os.path.join(
+            '.ssh', username, platform_type, key_name)
     if platform_type == 'nectar':
-        generated, response = generate_key(username, parameters, platform_type)
-        if generated:
-            parameters['private_key'] = response[0]
-            parameters['private_key_path'] = response[1]
-            parameters['security_group'] = response[2]
-            if not parameters['vm_image_size']:
-                parameters['vm_image_size'] = 'm1.small'
-        else:
-            return False, response[0]
+        security_group_name = 'bdp_ssh_group'
+        key_relative_path = '%s.pem' % key_relative_path
+        parameters['private_key'] = key_name
+        parameters['private_key_path'] = key_relative_path
+        parameters['security_group'] = security_group_name
+        if not parameters['vm_image_size']:
+            parameters['vm_image_size'] = 'm1.small'
+    elif platform_type == 'nci' or platform_type == 'ssh':
+        parameters['private_key_path'] = key_relative_path
+    filters = dict(parameters)
     unique = is_unique_platform_paramset(
-        platform, schema, filters)
+                platform, schema, filters)
     logger.debug('unique parameter set %s' % unique)
+    logger.debug('parameters=%s' % parameters)
+    key_generated = False
     if unique:
+        if platform_type == 'nectar':
+            key_generated, message = generate_key(
+                parameters, platform_type,
+                key_name=key_name, key_dir=key_dir,
+                security_group_name=security_group_name)
+        elif platform_type == 'nci' or platform_type == 'ssh':
+            key_generated, message = generate_key(
+                parameters, platform_type,
+                key_name=key_name, key_dir=key_dir)
+    else:
+        message = 'Record already exists'
+    if key_generated:
          param_set = models.PlatformInstanceParameterSet.objects\
              .create(platform=platform, schema=schema)
          for k, v in parameters.items():
@@ -137,8 +187,10 @@ def create_platform_paramset(username, schema_namespace,
                 .get_or_create(name=param_name, paramset=param_set, value=v)
             message = 'Record created successfully'
          return True, message
+    else:
+        return False, message
     logger.debug('Record already exists')
-    message = 'Record already exists'
+
     return False, message
 
 

@@ -9,7 +9,7 @@
 <script type="text/javascript">
 $(document).ready(function () {
            {% for job in object_list %}
-           $('#{{forloop.counter}}').tooltip();
+           $('#{{ forloop.counter }}').tooltip();
            {% endfor %}
             $('.footable').footable();
        });

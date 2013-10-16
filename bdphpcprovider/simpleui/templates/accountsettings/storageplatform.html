@@ -1,5 +1,10 @@
 {% extends "accountsettings/base_accountsettings.html" %}
 {% block account-settings-content %}
+    <script type="text/javascript">
+    $(document).ready(function () {
+          $('.footable').footable();
+       });
+    </script>
 <!--create modal -->
 <div class="modal hide fade" id="createModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -16,7 +21,7 @@
                     <div class="tab-pane active" id="ssh">
                         <form class="form-horizontal" action="{{ action }}" method="POST" id="ssh_form_create"> {% csrf_token %}
                             {{ ssh_form.as_p }}
-                            <button type="submit" class="btn btn-primary" onclick="submitForm('create');">Add</button>
+                            <button type="submit" class="btn btn-primary" onclick="submitForm('create', 'ssh_form_create');">Add</button>
                             <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                         </form>
                     </div>
@@ -37,7 +42,7 @@
             <div class="modal-body">
                 <form class="form-horizontal" action="{{ action }}" method="POST" id="ssh_form_update"> {% csrf_token %}
                     {{ ssh_form.as_p }}
-                    <button type="submit" class="btn btn-primary" onclick="submitForm('update');">Update</button>
+                    <button type="submit" class="btn btn-primary" onclick="submitForm('update', 'ssh_form_update');">Update</button>
                     <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                 </form>
             </div>
@@ -57,7 +62,7 @@
             <div class="modal-body">
                 <form class="form-horizontal" action="{{ action }}" method="POST" id="ssh_form_delete"> {% csrf_token %}
                     {{ ssh_form.as_p }}
-                    <button type="submit" class="btn btn-primary" onclick="submitForm('delete');">Delete</button>
+                    <button type="submit" class="btn btn-primary" onclick="submitForm('delete', 'ssh_form_delete');">Delete</button>
                     <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                 </form>
             </div>
@@ -72,13 +77,19 @@
 {% for platform_type, platform_details in all_headers.items %}
      {% for header, schema in platform_details.items %}
          {{ platform_type }}
-         <table class="table table-hover table-striped table-bordered">
+         <table class="footable table table-hover table-striped table-bordered">
             <thead>
                 <tr>
                     {% for h in header %}
-                        <td>
+                       {% if h == 'name' %}
+                        <th data-hide="">
                             <strong>{{ h }}</strong>
-                        </td>
+                        </th>
+                        {% else %}
+                        <th data-hide="phone, tablet">
+                            <strong>{{ h }}</strong>
+                        </th>
+                        {% endif %}
                     {% endfor %}
                 </tr>
             </thead>
