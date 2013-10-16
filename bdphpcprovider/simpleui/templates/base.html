@@ -110,8 +110,9 @@ function formreset(){
 
               <div class="nav-collapse">
                 <ul class="nav">
+                    {% if not user.is_authenticated %}
                     <li><a  href="{% url login %}">login</a></li>
-                    {% if user.is_authenticated %}
+                    {% else %}
                     <li><a  href="{% url logout %}">logout</a></li>
                     <!-- <li><a  href="{% url hrmcjob-new %}">Create HRMC Job</a></li> -->
                     <li><a  href="{% url makedirective 0 %}">New Job</a></li>
