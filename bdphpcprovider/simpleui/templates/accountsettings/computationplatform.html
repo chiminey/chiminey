@@ -1,5 +1,11 @@
 {% extends "accountsettings/base_accountsettings.html" %}
 {% block account-settings-content %}
+    <script type="text/javascript">
+$(document).ready(function () {
+          $('.footable').footable();
+       });
+</script>
+
 <!--create modal -->
 <div class="modal hide fade" id="createModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -91,13 +97,13 @@
 {% for platform_type, platform_details in all_headers.items %}
      {% for header, schema in platform_details.items %}
          {{ platform_type }}
-         <table class="table table-hover table-striped table-bordered">
+         <table class="footable table table-hover table-striped table-bordered">
             <thead>
                 <tr>
                     {% for h in header %}
-                        <td>
+                        <th data-hide="phone, tablet">
                             <strong>{{ h }}</strong>
-                        </td>
+                        </th>
                     {% endfor %}
                 </tr>
             </thead>
