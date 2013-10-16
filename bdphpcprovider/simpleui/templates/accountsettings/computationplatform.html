@@ -1,10 +1,10 @@
 {% extends "accountsettings/base_accountsettings.html" %}
 {% block account-settings-content %}
     <script type="text/javascript">
-$(document).ready(function () {
+    $(document).ready(function () {
           $('.footable').footable();
        });
-</script>
+    </script>
 
 <!--create modal -->
 <div class="modal hide fade" id="createModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
@@ -101,9 +101,15 @@ $(document).ready(function () {
             <thead>
                 <tr>
                     {% for h in header %}
+                        {% if h == 'name' %}
+                        <th data-hide="">
+                            <strong>{{ h }}</strong>
+                        </th>
+                        {% else %}
                         <th data-hide="phone, tablet">
                             <strong>{{ h }}</strong>
                         </th>
+                        {% endif %}
                     {% endfor %}
                 </tr>
             </thead>
