@@ -1,6 +1,7 @@
 import djcelery
 from datetime import timedelta
 
+DEBUG=True
 
 # Django settings for the SMRA project deployed under runserver
 
