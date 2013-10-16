@@ -87,7 +87,7 @@ class HRMCParallelStage(ParallelStage):
             pottype = 0
 
         num_dim = local_settings['number_dimensions']
-        if num_dim == 1:
+        if num_dim == 0:
             N = local_settings['fanout_per_kept_result']
             rand_nums = hrmcstages.generate_rands(local_settings,
                 0, local_settings['max_seed_int'],
@@ -100,7 +100,7 @@ class HRMCParallelStage(ParallelStage):
                 'istart': [1 if id > 0 else 2],
                 'pottype': [pottype]
             }
-        elif num_dim == 2:
+        elif num_dim == 1:
             threshold = local_settings['threshold']
             logger.debug("threshold=%s" % threshold)
             N = int(ast.literal_eval(threshold)[0])

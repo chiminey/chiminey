@@ -318,6 +318,8 @@ class Converge(Stage):
         if self.done_iterating:
             logger.debug("Total Iterations: %d" % self.id)
             self._ready_final_output(min_crit_node, min_crit_index)
+            smartconnector.success(run_settings, "%s: finished" % (self.id+1))
+
 
         logger.error('Current min criterion: %f, Prev '
                      'criterion: %f' % (min_crit, self.prev_criterion))
