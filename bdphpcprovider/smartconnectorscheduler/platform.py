@@ -113,6 +113,8 @@ def generate_key(parameters, platform_type, **kwargs):
             logger.exception(e)
             raise
         return True, 'Key generated successfully'
+    else:
+        return False, 'Unknown platform type [%s]' % platform_type
     return False, []
 
 
@@ -148,7 +150,7 @@ def create_platform_paramset(username, schema_namespace,
         parameters['security_group'] = security_group_name
         if not parameters['vm_image_size']:
             parameters['vm_image_size'] = 'm1.small'
-    elif platform == 'nci' or platform_type == 'ssh':
+    elif platform_type == 'nci' or platform_type == 'ssh':
         parameters['private_key_path'] = key_relative_path
     filters = dict(parameters)
     unique = is_unique_platform_paramset(
@@ -162,7 +164,7 @@ def create_platform_paramset(username, schema_namespace,
                 parameters, platform_type,
                 key_name=key_name, key_dir=key_dir,
                 security_group_name=security_group_name)
-        else:
+        elif platform_type == 'nci' or platform_type == 'ssh':
             key_generated, message = generate_key(
                 parameters, platform_type,
                 key_name=key_name, key_dir=key_dir)
