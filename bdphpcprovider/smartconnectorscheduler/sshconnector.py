@@ -66,11 +66,12 @@ def open_connection(ip_address, settings):
     credentials in settings
     """
     # open up the connection
+    logger.debug('in')
     ssh_client = paramiko.SSHClient()
     # autoaccess new keys
     # Cloud instances are continually reused so ip address likely
     # be reused
-
+    logger.debug('ssh_client=%s' % ssh_client)
     #TODO: check for existence of all settings values before going further.
     known_hosts_file = os.path.join("~", ".ssh", "known_hosts")
     ssh_client.load_system_host_keys(os.path.expanduser(known_hosts_file))
@@ -80,20 +81,23 @@ def open_connection(ip_address, settings):
     #TODO: handle exceptions if connection does not work.
     # use private key if exists
     try:
-        if os.path.exists(settings['private_key']):
-            logger.debug("Connecting as %s with key %s" % (settings['username'], settings['private_key']))
-            private_key_file = settings['private_key']
-            #privatekeyfile = os.path.expanduser(settings['private_key'])
-            #logger.debug("privatekeyfile=%s" % private_key_file)
-            mykey = paramiko.RSAKey.from_private_key_file(private_key_file)
-            ssh_client.connect(ip_address, username=settings['username'],
-                               timeout=60.0, pkey=mykey)
-        else:
+        if 'private_key' in settings and 'username' in settings:
+            if os.path.exists(settings['private_key']):
+                logger.debug("Connecting as %s with key %s" % (settings['username'], settings['private_key']))
+                private_key_file = settings['private_key']
+                #privatekeyfile = os.path.expanduser(settings['private_key'])
+                #logger.debug("privatekeyfile=%s" % private_key_file)
+                mykey = paramiko.RSAKey.from_private_key_file(private_key_file)
+                ssh_client.connect(ip_address, username=settings['username'],
+                                   timeout=60.0, pkey=mykey)
+        elif 'password' in settings and 'username' in settings :
             logger.debug("Connecting to %s as %s" % (ip_address,
                                 settings['username']))
             print(ssh_client)
             ssh_client.connect(ip_address, username=settings['username'],
                                password=settings['password'], timeout=60.0)
+        else:
+            raise KeyError
     except paramiko.AuthenticationException, e:
         raise AuthError(e)
     except Exception, e:
