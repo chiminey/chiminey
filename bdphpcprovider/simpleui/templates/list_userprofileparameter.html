@@ -1,15 +1,20 @@
 {% extends "base.html" %}
 {% block content %}
+<script type="text/javascript">
+$(document).ready(function () {
+            $('.footable').footable();
+       });
+</script>
 <div class="container">
     <div class="row-fluid">
 <h1>User Settings for {{ user }} </h1>
-            <table class="table table-hover table-striped table-bordered">
+            <table class="footable table table-hover table-striped table-bordered">
                 <thead>
                     <tr>
-                    <td> <strong>Key</strong></td>
-                    <td> <strong>Value</strong></td>
-                    <td> <strong>Notes</strong></td>
-                    <td></td>
+                    <th> <strong>Key</strong></th>
+                    <th data-hide="phone"> <strong>Value</strong></th>
+                    <th data-hide="phone, tablet"> <strong>Notes</strong></th>
+                    <th></td>
                     </tr>
                 </thead>
                 <tbody>

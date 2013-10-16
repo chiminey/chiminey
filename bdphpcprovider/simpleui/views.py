@@ -254,6 +254,10 @@ class UserProfileParameterListView(ListView):
     def get_queryset(self):
             return models.UserProfileParameter.objects.filter(paramset__user_profile__user=self.request.user)
 
+from django.views.generic import TemplateView
+
+class AboutView(TemplateView):
+    template_name = "home.html"
 
 class CreateUserProfileParameterView(CreateView):
     model = models.UserProfileParameter
@@ -1170,14 +1174,23 @@ def submit_directive(request, directive_id):
     logger.debug("directive_id=%s" % directive_id)
     directives = get_directives(request)
     logger.debug('directives=%s' % directives)
-    for x in directives:
-        logger.debug(x['id'])
-    try:
-        directive = [x for x in directives if x[u'id'] == directive_id][0]
-    except IndexError:
-        return redirect("makedirective")
-        # TODO: handle
-        raise
+    if directive_id == 0:
+        for x in directives:
+            if not x['hidden']:
+                directive = x
+                directive_id = x[u'id']
+                break
+        else:
+            return redirect("home")
+    else:
+        for x in directives:
+            logger.debug(x['id'])
+        try:
+            directive = [x for x in directives if x[u'id'] == directive_id][0]
+        except IndexError:
+            return redirect("home")
+            # TODO: handle
+            raise
 
     directive_params = get_directive_params(request, directive)
     logger.debug("directive_params=%s" % pformat(directive_params))
@@ -1219,11 +1232,11 @@ def submit_directive(request, directive_id):
     return render_to_response(
                        'parameters.html',
                        {
-                           'directives': [ x for x in directives if not x['hidden']],
+                           'directives': [x for x in directives if not x['hidden']],
                            'directive': directive,
                            'form': form,
                            'formdata': form_data,
-                           'longfield': [ x for (x,y) in subtype_validation.items() if y[2] is not None]
+                           'longfield': [x for (x,y) in subtype_validation.items() if y[2] is not None]
                         },
                        context_instance=RequestContext(request))
 

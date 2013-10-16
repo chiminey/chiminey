@@ -3,6 +3,11 @@
 {% block content %}
 <script type="text/javascript">
 $(document).ready(function () {
+            $('.footable').footable();
+       });
+</script>
+<script type="text/javascript">
+$(document).ready(function () {
             {% for key,value in settings.items %}
            {% for key2,value2 in value.items %}
            $('#{{key|slugify}}_{{key2|slugify}}').tooltip();
@@ -13,9 +18,11 @@ $(document).ready(function () {
 <div class="container">
 <div class="row-fluid">
 <h1>Job {{ context.id}}: {{context.directive.name}} </h1>
-<table class="table table-striped table-hover table-bordered table-hover">
+<table class="footable table table-striped table-hover table-bordered table-hover">
 
-        <thead></thead>
+        <thead>
+          <th></th>
+          <th data-hide="phone"></th></thead>
         <tbody>
 {% for key, value in settings.items %}
     <thead><tr><td ><strong>{{ key }}</strong></td></tr></thead>
