@@ -27,6 +27,22 @@
 function closeDialog () {
     $('#createModal').modal('hide');
 };
+/**
+function submitForm(description) {
+    //var form =  $(this).closest('form');
+    //console.log(form);
+    var bdp_form = $('#nci_form_update');
+    console.log($(bdp_form.id()));
+    var operation = bdp_form.find('#id_operation');
+    operation.val(description);
+    bdp_form.validate();
+    if (bdp_form.valid()){
+        bdp_form.submit()
+    }
+    formreset()
+}
+ **/
+
 function submitForm(description) {
     var form =  $(this).closest('form').attr("id");
     var operation = $('form #id_operation');
@@ -37,6 +53,7 @@ function submitForm(description) {
     }
     formreset()
 }
+
 function updatePlatform(parameters, platform_type) {
     $('form[id*="_form_update"]').hide();
     form_id = '#' + platform_type + '_form_update'

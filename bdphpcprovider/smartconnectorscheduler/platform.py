@@ -35,6 +35,7 @@ from bdphpcprovider.smartconnectorscheduler import sshconnector
 logger = logging.getLogger(__name__)
 
 import sys, traceback
+#fixme refactor this code
 def generate_key(parameters, platform_type, **kwargs):
     key_name = kwargs['key_name'].lower()
     key_dir = kwargs['key_dir']
@@ -59,13 +60,15 @@ def generate_key(parameters, platform_type, **kwargs):
                 os.remove(key_absolute_path)
             try:
                 key_pair = connection.create_key_pair(key_name)
+                key_pair.save(key_dir)
+                logger.debug('key_pair=%s' % key_pair)
             except EC2ResponseError, e:
                 if 'InvalidKeyPair.Duplicate' in e.error_code:
                     connection.delete_key_pair(key_name)
                     logger.debug('old key %s deleted' % key_absolute_path)
                     key_pair = connection.create_key_pair(key_name)
-            key_pair.save(key_dir)
-            logger.debug('key_pair=%s' % key_pair)
+                    key_pair.save(key_dir)
+                    logger.debug('key_pair=%s' % key_pair)
             connection.get_all_security_groups([security_group_name])
         except EC2ResponseError as e:
             if 'Unauthorized' in e.error_code:
@@ -97,7 +100,7 @@ def generate_key(parameters, platform_type, **kwargs):
             ssh_client = sshconnector.open_connection(parameters['ip_address'], parameters)
             sftp = ssh_client.open_sftp()
             sftp.put(public_key_absolute_path, remote_path)
-            command_out, errs = sshconnector.run_command_with_status(ssh_client, command)
+            #command_out, errs = sshconnector.run_command_with_status(ssh_client, command)
             #logger.debug(public_key)
         except sshconnector.AuthError:
             message = 'Unauthorized access to %s' % parameters['ip_address']
