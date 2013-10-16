@@ -34,12 +34,45 @@ from bdphpcprovider.smartconnectorscheduler import sshconnector
 
 logger = logging.getLogger(__name__)
 
-import sys, traceback
+
+def remote_path_exists(remote_path, parameters):
+    try:
+        ssh_client = sshconnector.open_connection(parameters['ip_address'], parameters)
+        sftp_client = ssh_client.open_sftp()
+        sftp_client.listdir_attr(remote_path)
+        sftp_client.close()
+    except IOError, e:
+        logger.exception(e)
+        return False, 'Remote path [%s] does not exist' % remote_path
+    except sshconnector.AuthError:
+            return False, 'Unauthorized access to %s' % parameters['ip_address']
+    except socket.gaierror as e:
+        if 'Name or service not known' in e:
+            return False, 'Unknown IP address [%s]' % parameters['ip_address']
+        else:
+            raise
+    return True, 'Remote path [%s] exists' % remote_path
+
+
+def private_key_authenticates(ip_address, username, private_key_path):
+    settings = {'private_key': private_key_path,
+                'username': username}
+    try:
+        sshconnector.open_connection(ip_address, settings)
+    except sshconnector.AuthError, e:
+        return False, 'Failed private key authentication with [%s]e' \
+                      % private_key_path
+    return True, 'Successful private key authentication'
+
+
 #fixme refactor this code
 #fixme change how files are uploaded, use NFS storage upload??
 def generate_key(parameters, platform_type, **kwargs):
     key_name = kwargs['key_name'].lower()
     key_dir = kwargs['key_dir']
+    if not os.path.exists(key_dir):
+        os.makedirs(key_dir)
+
     logger.debug('key_dir=%s' % key_dir)
     logger.debug('key_name=%s' % key_name)
     if platform_type == 'nectar':
@@ -103,6 +136,7 @@ def generate_key(parameters, platform_type, **kwargs):
             ssh_client = sshconnector.open_connection(parameters['ip_address'], parameters)
             sftp = ssh_client.open_sftp()
             sftp.put(public_key_absolute_path, remote_path)
+            sftp.close()
             command = "cat %s >> %s" % (remote_path, authorized_remote_path)
             command_out, errs = sshconnector.run_command_with_status(ssh_client, command)
             logger.debug('command_out=%s' % command_out)
@@ -113,6 +147,8 @@ def generate_key(parameters, platform_type, **kwargs):
             logger.exception(e)
             if 'Name or service not known' in e:
                 return False, 'Unknown IP address [%s]' % parameters['ip_address']
+            else:
+                raise
         except IOError, e:
             logger.exception(e)
             return False, 'Home path [%s] does not exist' % parameters['home_path']
@@ -164,7 +200,10 @@ def create_platform_paramset(username, schema_namespace,
                 platform, schema, filters)
     logger.debug('unique parameter set %s' % unique)
     logger.debug('parameters=%s' % parameters)
+
+
     key_generated = False
+
     if unique:
         if platform_type == 'nectar':
             key_generated, message = generate_key(
@@ -172,9 +211,15 @@ def create_platform_paramset(username, schema_namespace,
                 key_name=key_name, key_dir=key_dir,
                 security_group_name=security_group_name)
         elif platform_type == 'nci' or platform_type == 'ssh':
-            key_generated, message = generate_key(
-                parameters, platform_type,
-                key_name=key_name, key_dir=key_dir)
+            path_exists, message = remote_path_exists(parameters['root_path'], parameters)
+            if path_exists:
+                path_exists, message = remote_path_exists(parameters['home_path'], parameters)
+            if path_exists:
+                key_generated, message = generate_key(
+                    parameters, platform_type,
+                    key_name=key_name, key_dir=key_dir)
+            else:
+                return path_exists, message
     else:
         message = 'Record already exists'
     if key_generated:

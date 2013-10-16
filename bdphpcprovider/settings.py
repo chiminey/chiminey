@@ -2,7 +2,7 @@
 from bdphpcprovider.settings_changeme import *
 
 DEBUG = True
-
+Debug = True
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
@@ -50,15 +50,9 @@ LOGGING = {
                 'level': 'DEBUG',
             },
         }
+
 }
 
-CELERYBEAT_SCHEDULE = {
-    #"test": {
-    #    "task": "smartconnectorscheduler.test",
-    #    "schedule": timedelta(seconds=15),
-    #},
-    "run_contexts": {
-        "task": "smartconnectorscheduler.run_contexts",
-        "schedule": timedelta(seconds=15)
-      },
-    }
+#BROKER_TRANSPORT = 'django'
+BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
