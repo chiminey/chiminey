@@ -24,7 +24,7 @@ from django import forms
 
 class SSHStoragePlatformForm(forms.Form):
     name = forms.CharField(label='Platform Name', required=True, widget=forms.TextInput(attrs={'required': 'true'}))
-    ip_address = forms.CharField(label='IP address', required=True, widget=forms.TextInput(attrs={'required': 'true'}))
+    ip_address = forms.CharField(label='IP address or Hostname', required=True, widget=forms.TextInput(attrs={'required': 'true'}))
     username = forms.CharField(required=True, widget=forms.TextInput(attrs={'required': 'true'}))
     password = forms.CharField(required=True, widget=forms.PasswordInput(attrs={'required': 'true'}))
     root_path = forms.CharField(required=True, widget=forms.TextInput(attrs={'required': 'true'}))
