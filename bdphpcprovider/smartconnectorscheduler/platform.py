@@ -36,6 +36,7 @@ logger = logging.getLogger(__name__)
 
 import sys, traceback
 #fixme refactor this code
+#fixme change how files are uploaded, use NFS storage upload??
 def generate_key(parameters, platform_type, **kwargs):
     key_name = kwargs['key_name'].lower()
     key_dir = kwargs['key_dir']
@@ -94,14 +95,17 @@ def generate_key(parameters, platform_type, **kwargs):
             private_key.write_private_key_file(private_key_absolute_path)
             public_key = paramiko.RSAKey(filename=private_key_absolute_path)
             remote_path = os.path.join(parameters['home_path'], '.ssh', ('%s.pub' % key_name))
+            authorized_remote_path = os.path.join(parameters['home_path'], '.ssh', 'authorized_keys')
+            public_key_content = '%s %s' % (public_key.get_name(), public_key.get_base64())
             f = open(public_key_absolute_path, 'w')
-            f.write(public_key.__str__())
-            command = "echo %s " % (public_key.__str__())
+            f.write(public_key_content)
+            f.close()
             ssh_client = sshconnector.open_connection(parameters['ip_address'], parameters)
             sftp = ssh_client.open_sftp()
             sftp.put(public_key_absolute_path, remote_path)
-            #command_out, errs = sshconnector.run_command_with_status(ssh_client, command)
-            #logger.debug(public_key)
+            command = "cat %s >> %s" % (remote_path, authorized_remote_path)
+            command_out, errs = sshconnector.run_command_with_status(ssh_client, command)
+            logger.debug('command_out=%s' % command_out)
         except sshconnector.AuthError:
             message = 'Unauthorized access to %s' % parameters['ip_address']
             return False, message
