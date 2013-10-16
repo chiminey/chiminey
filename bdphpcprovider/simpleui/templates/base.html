@@ -105,12 +105,9 @@ function formreset(){
               <span class="brand"><a href="/">BDPHPC Beta</a></span>
 
               <div class="nav-collapse">
-                   <p class="navbar-text pull-right">
-                        <!--Logged in as <a href="#" class="navbar-link">Username</a-->
-                       <a href="{% url bdp-account-settings %}" class="navbar-link">Settings</a>
-                   </p>
                 <ul class="nav">
                     <li><a  href="{% url login %}">login</a></li>
+                    {% if user.is_authenticated %}
                     <li><a  href="{% url logout %}">logout</a></li>
                     <!-- <li><a  href="{% url hrmcjob-new %}">Create HRMC Job</a></li> -->
                     <li><a  href="{% url makedirective 0 %}">New Job</a></li>
@@ -121,6 +118,11 @@ function formreset(){
 <!--                    <li><a  href="{% url listdir-list %}">Directory</a></li> -->
 <!--                    <li><a  href="{% url copyjob-new %}">Copy Data</a></li> -->
                     <li><a  href="/admin">Admin</a></li>
+                    <li><a href="{% url bdp-account-settings %}">Settings</a></li>
+                  <!-- <p class="navbar-text pull-right">
+                       <a href="" class="navbar-link">Settings</a>
+                   </p> -->
+                    {% endif %}
                 </ul>
                 <ul class="login-nav nav pull-right"></ul>
               </div><!--/.nav-collapse -->

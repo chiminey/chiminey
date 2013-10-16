@@ -21,6 +21,7 @@
 import sys
 import os
 import ast
+from pprint import pformat
 import logging
 import json
 import re
@@ -497,16 +498,34 @@ class Execute(Stage):
         else:
             logger.warn("no mytardis host specified")
 
-        proc_ind = 0
+        #proc_ind = 0
         for var_fname in variations.keys():
             logger.debug("var_fname=%s" % var_fname)
             logger.debug('variations[var_fname]=%s' % variations[var_fname])
             for var_content, values in variations[var_fname]:
                 #logger.debug("var_content = %s" % var_content)
-                logger.debug('proc_ind=%d'  % proc_ind)
+                #logger.debug('proc_ind=%s' % proc_ind)
                 logger.debug('processes=%s' % processes)
-                proc = processes[proc_ind]
-                proc_ind += 1
+                run_counter = values['run_counter']
+                logger.debug("run_counter=%s" % run_counter)
+                proc = None
+                for p in processes:
+                    # TODO: how to handle invalid run_counter
+                    pid = int(p['id'])
+                    logger.debug("pid=%s" % pid)
+                    if pid == run_counter:
+                        proc = p
+                        break
+                else:
+                    logger.error("no process found matching run_counter")
+                    #smartconnector.error(run_settings, "%s: wait" % (self.id + 1))
+                    # TODO: catch this error and recover
+                    raise BadInputException()
+
+                logger.debug("proc=%s" % pformat(proc))
+
+                #proc = processes[proc_ind]
+                #proc_ind += 1
                 #ip = botocloudconnector.get_instance_ip(var_node.id, local_settings)
                 ip = proc['ip_address']
 
@@ -537,7 +556,6 @@ class Execute(Stage):
                     backup_url = smartconnector.get_url_with_pkey(local_settings,
                         input_backup, is_relative_path=False)
                     hrmcstages.copy_directories(source_files_url, backup_url)
-
 
                 # Why do we need to create a tempory file to make this copy?
                 import uuid
