@@ -8,7 +8,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <style type="text/css">body{padding-top:10px;padding-bottom:40px}</style>
 <link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap.min.css" %}">
-<link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap-responsive.css" %}">
+<link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap.min.theme.css" %}">
+<!--link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap-responsive.css" %}"-->
 <link rel="stylesheet" type="text/css" href="{% static "simpleui/css/default.css" %}">
 
 <style>
@@ -27,33 +28,14 @@
 function closeDialog () {
     $('#createModal').modal('hide');
 };
-/**
-function submitForm(description) {
-    //var form =  $(this).closest('form');
-    //console.log(form);
-    var bdp_form = $('#nci_form_update');
-    console.log($(bdp_form.id()));
-    var operation = bdp_form.find('#id_operation');
-    operation.val(description);
-    bdp_form.validate();
-    if (bdp_form.valid()){
-        bdp_form.submit()
-    }
-    formreset()
-}
- **/
 
-function submitForm(description) {
-    var form =  $(this).closest('form').attr("id");
-    var operation = $('form #id_operation');
+function submitForm(description, form_id) {
+    var operation = $('#' + form_id +' #id_operation');
     operation.val(description);
-    form.validate();
-    if (form.valid()){
-        form.submit()
-    }
-    formreset()
+    $('#' + form_id).submit();
 }
 
+//pass form_id as arg
 function updatePlatform(parameters, platform_type) {
     $('form[id*="_form_update"]').hide();
     form_id = '#' + platform_type + '_form_update'
@@ -72,6 +54,7 @@ function updatePlatform(parameters, platform_type) {
 }
 
 //consider merging the ff method with updatePlatform
+//pass form_id as arg
 function deletePlatform(parameters, platform_type) {
     $('form[id*="_form_delete"]').hide();
     form_id = '#' + platform_type + '_form_delete'
@@ -138,6 +121,8 @@ function formreset(){
           </div>
         </div>
 
+        <div class="container-fluid">
+
         {% if messages %}
         <div class="row-fluid">
             {% for message in messages %}
@@ -159,6 +144,7 @@ function formreset(){
 
         </footer>
     </div>
+        </div>
 </div>
 </body>
 </html>
