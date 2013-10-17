@@ -394,7 +394,7 @@ class ContextView(DetailView):
         for cps in cpset:
             res2 = {}
             for cp in models.ContextParameter.objects.filter(paramset=cps):
-                res2[cp.name.name] = [cp.value, cp.name.help_text]
+                res2[cp.name.name] = [cp.value, cp.name.help_text, cp.name.subtype]
                 #res2[cp.name.name] = [cp.value, "hello"]
             if cps.schema.name:
                 res["%s (%s) " % (cps.schema.name, cps.schema.namespace)] = res2
@@ -1088,10 +1088,6 @@ def get_contexts(request):
         logger.debug("contexts=%s" % contexts)
         # TODO: schedule celery tasks to delete each context, as background
         # process because stages may already have write lock on context.
-
-
-
-
 
     if 'offset' in request.GET:
         try:

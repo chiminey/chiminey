@@ -133,7 +133,9 @@ function formreset(){
                     <li><a  href="{% url userprofileparameter-list %}">User Settings</a></li>
 <!--                    <li><a  href="{% url listdir-list %}">Directory</a></li> -->
 <!--                    <li><a  href="{% url copyjob-new %}">Copy Data</a></li> -->
-                    <li><a  href="/admin">Admin</a></li>
+                    {% if user.is_superuser %}
+                     <li><a  href="/admin">Admin</a></li>
+                     {%endif %}
                     <li><a href="{% url bdp-account-settings %}">Settings</a></li>
                   <!-- <p class="navbar-text pull-right">
                        <a href="" class="navbar-link">Settings</a>
