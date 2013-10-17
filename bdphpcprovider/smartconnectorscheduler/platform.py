@@ -251,6 +251,8 @@ def create_platform_paramset(username, schema_namespace,
     if not key_generated:
         return key_generated, message
 
+    if 'password' in parameters:
+        parameters['password'] = ''
     param_set = models.PlatformInstanceParameterSet.objects\
         .create(platform=platform, schema=schema)
     for k, v in parameters.items():
