@@ -26,7 +26,7 @@ $(document).ready(function () {
                     <div class="tab-pane active" id="unix">
                         <form class="form-horizontal" action="{{ action }}" method="POST" id="unix_form_create"> {% csrf_token %}
                             {{ unix_form.as_p }}
-                            <button type="submit" class="btn btn-primary" onclick="submitForm('create', 'unix_form_create');">Add</button>
+                            <button type="submit" class="btn btn-primary" onclick="submitForm('create');">Add</button>
                             <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                         </form>
                     </div>
@@ -47,7 +47,7 @@ $(document).ready(function () {
             <div class="modal-body">
                 <form class="form-horizontal" action="{{ action }}" method="POST" id="unix_form_update"> {% csrf_token %}
                     {{ unix_form.as_p }}
-                    <button type="submit" class="btn btn-primary" onclick="submitForm('update', 'unix_form_update');">Update</button>
+                    <button type="submit" class="btn btn-primary" onclick="submitForm('update');">Update</button>
                     <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                 </form>
             </div>
@@ -67,7 +67,7 @@ $(document).ready(function () {
             <div class="modal-body">
                 <form class="form-horizontal" action="{{ action }}" method="POST" id="unix_form_delete"> {% csrf_token %}
                     {{ unix_form.as_p }}
-                    <button type="submit" class="btn btn-primary" onclick="submitForm('delete', 'unix_form_delete');">Delete</button>
+                    <button type="submit" class="btn btn-primary" onclick="submitForm('delete');">Delete</button>
                     <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                 </form>
             </div>
