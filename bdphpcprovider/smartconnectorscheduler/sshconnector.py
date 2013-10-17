@@ -66,7 +66,6 @@ def open_connection(ip_address, settings):
     credentials in settings
     """
     # open up the connection
-    logger.debug('in')
     ssh_client = paramiko.SSHClient()
     # autoaccess new keys
     # Cloud instances are continually reused so ip address likely

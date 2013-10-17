@@ -65,97 +65,107 @@ def private_key_authenticates(ip_address, username, private_key_path):
     return True, 'Successful private key authentication'
 
 
-#fixme refactor this code
-#fixme change how files are uploaded, use NFS storage upload??
-def generate_key(parameters, platform_type, **kwargs):
-    key_name = kwargs['key_name'].lower()
-    key_dir = kwargs['key_dir']
+#fixme change how files are manipulated, use NFS storage upload??
+def generate_nectar_key(bdp_root_path, parameters):
+    security_group_name = parameters['security_group']
+    key_name = parameters['private_key']
+    key_absolute_path = os.path.join(bdp_root_path, parameters['private_key_path'])
+    key_dir = os.path.dirname(key_absolute_path)
     if not os.path.exists(key_dir):
         os.makedirs(key_dir)
-
-    logger.debug('key_dir=%s' % key_dir)
-    logger.debug('key_name=%s' % key_name)
-    if platform_type == 'nectar':
-        security_group_name = kwargs['security_group_name']
+    try:
+        region = RegionInfo(name="NeCTAR", endpoint="nova.rc.nectar.org.au")
+        logger.debug('region.name=%s' % region.name)
+        logger.debug('ec2 access key=%s' % parameters['ec2_access_key'])
+        logger.debug('ec2 secret key=%s' % parameters['ec2_secret_key'])
+        connection = boto.connect_ec2(
+            aws_access_key_id=parameters['ec2_access_key'],
+            aws_secret_access_key=parameters['ec2_secret_key'],
+            is_secure=True, region=region,
+            port=8773, path="/services/Cloud")
+        logger.debug('connection=%s' % connection)
+        if os.path.exists(key_absolute_path):
+            os.remove(key_absolute_path)
         try:
-            region = RegionInfo(name="NeCTAR", endpoint="nova.rc.nectar.org.au")
-            logger.debug('region.name=%s' % region.name)
-            logger.debug('ec2 access key=%s' % parameters['ec2_access_key'])
-            logger.debug('ec2 secret key=%s' % parameters['ec2_secret_key'])
-            connection = boto.connect_ec2(
-                aws_access_key_id=parameters['ec2_access_key'],
-                aws_secret_access_key=parameters['ec2_secret_key'],
-                is_secure=True, region=region,
-                port=8773, path="/services/Cloud")
-            logger.debug('connection=%s' % connection)
-            key_absolute_path = os.path.join(key_dir, '%s.pem' % key_name)
-            logger.debug(key_absolute_path)
-            if os.path.exists(key_absolute_path):
-                os.remove(key_absolute_path)
-            try:
+            key_pair = connection.create_key_pair(key_name)
+            key_pair.save(key_dir)
+            logger.debug('key_pair=%s' % key_pair)
+        except EC2ResponseError, e:
+            if 'InvalidKeyPair.Duplicate' in e.error_code:
+                connection.delete_key_pair(key_name)
+                logger.debug('old key %s deleted' % key_absolute_path)
                 key_pair = connection.create_key_pair(key_name)
                 key_pair.save(key_dir)
                 logger.debug('key_pair=%s' % key_pair)
-            except EC2ResponseError, e:
-                if 'InvalidKeyPair.Duplicate' in e.error_code:
-                    connection.delete_key_pair(key_name)
-                    logger.debug('old key %s deleted' % key_absolute_path)
-                    key_pair = connection.create_key_pair(key_name)
-                    key_pair.save(key_dir)
-                    logger.debug('key_pair=%s' % key_pair)
-            connection.get_all_security_groups([security_group_name])
-        except EC2ResponseError as e:
-            if 'Unauthorized' in e.error_code:
-                message = 'Unauthorized access to NeCTAR'
-                return False, message
-            elif 'SecurityGroupNotFoundForProject' in e.error_code:
-                security_group = connection.create_security_group(
-                        security_group_name, "SSH security group for the BDP Provider")
-                security_group.authorize('tcp', 22, 22, '0.0.0.0/0')
-                logger.debug('%s created' % security_group)
-            else:
-                logger.debug('=%s' % e.__dict__)
-                return False, e.error_code
-        except Exception as e:
-            logger.debug(e)
-            raise
-        return True, 'Key generated successfully'
-    elif platform_type == 'nci' or platform_type == 'ssh':
-        try:
-            private_key_absolute_path = os.path.join(key_dir, key_name)
-            public_key_absolute_path = '%s.pub' % private_key_absolute_path
-            private_key = paramiko.RSAKey.generate(1024)
-            private_key.write_private_key_file(private_key_absolute_path)
-            public_key = paramiko.RSAKey(filename=private_key_absolute_path)
-            remote_path = os.path.join(parameters['home_path'], '.ssh', ('%s.pub' % key_name))
-            authorized_remote_path = os.path.join(parameters['home_path'], '.ssh', 'authorized_keys')
-            public_key_content = '%s %s' % (public_key.get_name(), public_key.get_base64())
-            f = open(public_key_absolute_path, 'w')
-            f.write(public_key_content)
-            f.close()
-            ssh_client = sshconnector.open_connection(parameters['ip_address'], parameters)
-            sftp = ssh_client.open_sftp()
-            sftp.put(public_key_absolute_path, remote_path)
-            sftp.close()
-            command = "cat %s >> %s" % (remote_path, authorized_remote_path)
-            command_out, errs = sshconnector.run_command_with_status(ssh_client, command)
-            logger.debug('command_out=%s' % command_out)
-        except sshconnector.AuthError:
-            message = 'Unauthorized access to %s' % parameters['ip_address']
+        connection.get_all_security_groups([security_group_name])
+    except EC2ResponseError as e:
+        if 'Unauthorized' in e.error_code:
+            message = 'Unauthorized access to NeCTAR'
             return False, message
-        except socket.gaierror, e:
-            logger.exception(e)
-            if 'Name or service not known' in e:
-                return False, 'Unknown IP address [%s]' % parameters['ip_address']
-            else:
-                raise
-        except IOError, e:
-            logger.exception(e)
-            return False, 'Home path [%s] does not exist' % parameters['home_path']
-        except Exception as e:
-            logger.exception(e)
+        elif 'SecurityGroupNotFoundForProject' in e.error_code:
+            security_group = connection.create_security_group(
+                    security_group_name, "SSH security group for the BDP Provider")
+            security_group.authorize('tcp', 22, 22, '0.0.0.0/0')
+            logger.debug('%s created' % security_group)
+        else:
+            logger.debug('=%s' % e.__dict__)
+            return False, e.error_code
+    except Exception as e:
+        logger.debug(e)
+        raise
+    return True, 'Key generated successfully'
+
+
+#fixme change how files are manipulated, use NFS storage upload??
+def generate_unix_key(bdp_root_path, parameters):
+    key_name = os.path.splitext(os.path.basename(parameters['private_key_path']))[0]
+    remote_key_path = os.path.join(parameters['home_path'], '.ssh', ('%s.pub' % key_name))
+    authorized_remote_path = os.path.join(parameters['home_path'], '.ssh', 'authorized_keys')
+    settings = {'username': parameters['username'],
+                'password': parameters['password']}
+    private_key_absolute_path = os.path.join(bdp_root_path, parameters['private_key_path'])
+    public_key_absolute_path = '%s.pub' % private_key_absolute_path
+    key_dir = os.path.dirname(private_key_absolute_path)
+    if not os.path.exists(key_dir):
+        os.makedirs(key_dir)
+    try:
+        private_key = paramiko.RSAKey.generate(1024)
+        private_key.write_private_key_file(private_key_absolute_path)
+        public_key = paramiko.RSAKey(filename=private_key_absolute_path)
+        public_key_content = '%s %s' % (public_key.get_name(), public_key.get_base64())
+        f = open(public_key_absolute_path, 'w')
+        f.write(public_key_content)
+        f.close()
+        ssh_client = sshconnector.open_connection(parameters['ip_address'], settings)
+        sftp = ssh_client.open_sftp()
+        sftp.put(public_key_absolute_path, remote_key_path)
+        sftp.close()
+        command = "cat %s >> %s" % (remote_key_path, authorized_remote_path)
+        command_out, errs = sshconnector.run_command_with_status(ssh_client, command)
+        logger.debug('command_out=%s' % command_out)
+    except sshconnector.AuthError:
+        message = 'Unauthorized access to %s' % parameters['ip_address']
+        return False, message
+    except socket.gaierror, e:
+        logger.exception(e)
+        if 'Name or service not known' in e:
+            return False, 'Unknown IP address [%s]' % parameters['ip_address']
+        else:
             raise
-        return True, 'Key generated successfully'
+    except IOError, e:
+        logger.exception(e)
+        return False, 'Home path [%s] does not exist' % parameters['home_path']
+    except Exception as e:
+        logger.exception(e)
+        raise
+    return True, 'Key generated successfully'
+
+
+def generate_key(platform_type, bdp_root_path, parameters):
+    if platform_type == 'nectar':
+        return generate_nectar_key(bdp_root_path, parameters)
+    elif platform_type == 'nci' or platform_type == 'ssh':
+        return generate_unix_key(bdp_root_path, parameters)
     else:
         return False, 'Unknown platform type [%s]' % platform_type
     return False, []
@@ -181,8 +191,6 @@ def create_platform_paramset(username, schema_namespace,
     platform_type = os.path.basename(schema_namespace)
     bdp_root_path = '/var/cloudenabling/remotesys' #fixme replace by parameter
     key_name = 'bdp_%s' % parameters['name']
-    key_dir = os.path.join(bdp_root_path, '.ssh',
-                            username, platform_type)
     key_relative_path = os.path.join(
             '.ssh', username, platform_type, key_name)
     if platform_type == 'nectar':
@@ -199,27 +207,16 @@ def create_platform_paramset(username, schema_namespace,
     unique = is_unique_platform_paramset(
                 platform, schema, filters)
     logger.debug('unique parameter set %s' % unique)
-    logger.debug('parameters=%s' % parameters)
-
-
     key_generated = False
-
     if unique:
-        if platform_type == 'nectar':
-            key_generated, message = generate_key(
-                parameters, platform_type,
-                key_name=key_name, key_dir=key_dir,
-                security_group_name=security_group_name)
-        elif platform_type == 'nci' or platform_type == 'ssh':
+        if platform_type == 'nci' or platform_type == 'ssh':
             path_exists, message = remote_path_exists(parameters['root_path'], parameters)
-            if path_exists:
-                path_exists, message = remote_path_exists(parameters['home_path'], parameters)
-            if path_exists:
-                key_generated, message = generate_key(
-                    parameters, platform_type,
-                    key_name=key_name, key_dir=key_dir)
-            else:
+            if not path_exists:
                 return path_exists, message
+            path_exists, message = remote_path_exists(parameters['home_path'], parameters)
+            if not path_exists:
+                return path_exists, message
+        key_generated, message = generate_key(platform_type, bdp_root_path, parameters)
     else:
         message = 'Record already exists'
     if key_generated:
@@ -238,8 +235,7 @@ def create_platform_paramset(username, schema_namespace,
          return True, message
     else:
         return False, message
-    logger.debug('Record already exists')
-
+    logger.debug(message)
     return False, message
 
 
