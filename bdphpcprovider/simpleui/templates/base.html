@@ -34,6 +34,11 @@ function submitForm(description) {
     var form =  $(this).closest('form').attr("id");
     var operation = $('form #id_operation');
     operation.val(description);
+    var password = $.trim($('form #id_password').val());
+    if(password.length == 0 && description == 'update')
+    {
+        $('form #id_password').val("****")
+    }
     form.validate();
     if (form.valid()){
         form.submit()
@@ -44,10 +49,9 @@ function submitForm(description) {
 function updatePlatform(parameters, platform_type) {
     $('form[id*="_form_update"]').hide();
     formreset()
-    form_id = '#' + platform_type + '_form_update'
+    form_id = '#' + platform_type + '_form_update';
     $(form_id).show();
-    /**$("form input[id][type='password']").val("");**/
-    $('form #id_filters').val(parameters)
+    $('form #id_filters').val(parameters);
     var current_params = parameters.replace(/[\]\(\)\[']/g, '');
     var array_params = current_params.split(',');
     for (var i=0;i<array_params.length;i++)
@@ -81,7 +85,6 @@ function deletePlatform(parameters, platform_type) {
 
 function fieldReadonly(){
     var form =  $(this).closest('form').attr("id");
-    //$("form input[id][type='text']").attr("disabled", "disabled");
     $("form input[id][type='text']").attr("readonly", "readonly")
 }
 
