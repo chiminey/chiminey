@@ -3,33 +3,40 @@
 
 {% block content %}
 
+<div class="container-fluid">
+<div class="row-fluid">
+    {% if form.errors %}
+    <div class="alert-error">Your username and password didn't match. Please try again.</div>
+</div>
+    {% endif %}
+    <div class="row-fluid">
+
 <h1> Please Login</h1>
 
-{% if form.errors %}
-<div>Your username and password didn't match. Please try again.</div>
-{% endif %}
-
 <form class="form-horizontal" action="" method="POST">{% csrf_token %}
+<fieldset>
 
-<div class="control-group">
+<div class="control-group span11">
 <div class="controls">
     <label class="control-label">{{ form.username.label_tag }}</label>
     <div class="controls">{{ form.username }}</div>
 </div>
 </div>
-
-<div class="control-group">
 <div class="controls">
     <label class="control-label">{{ form.password.label_tag }}</label>
     <div class="controls">{{ form.password }}</div>
 </div>
 </div>
-
-<div class="controls">
+</fieldset>
+<div class="row-fluid controls">
 <button type="submit" class="btn">Login</button>
+<input type="hidden" name="next" value="{{ next }}" />
+
+</div>
 </div>
 
-<input type="hidden" name="next" value="{{ next }}" />
 </form>
+</div>
+</div>
 
 {% endblock %}
