@@ -30,19 +30,28 @@ function closeDialog () {
     $('#createModal').modal('hide');
 };
 
-function submitForm(description, form_id) {
-    var operation = $('#' + form_id +' #id_operation');
+function submitForm(description) {
+    var form =  $(this).closest('form').attr("id");
+    var operation = $('form #id_operation');
     operation.val(description);
-    $('#' + form_id).submit();
+    var password = $.trim($('form #id_password').val());
+    if(password.length == 0 && description == 'update')
+    {
+        $('form #id_password').val("****")
+    }
+    form.validate();
+    if (form.valid()){
+        form.submit()
+    }
+    formreset()
 }
 
-//pass form_id as arg
 function updatePlatform(parameters, platform_type) {
     $('form[id*="_form_update"]').hide();
-    form_id = '#' + platform_type + '_form_update'
+    formreset()
+    form_id = '#' + platform_type + '_form_update';
     $(form_id).show();
-    $("form input[id][type='password']").val("");
-    $('form #id_filters').val(parameters)
+    $('form #id_filters').val(parameters);
     var current_params = parameters.replace(/[\]\(\)\[']/g, '');
     var array_params = current_params.split(',');
     for (var i=0;i<array_params.length;i++)
@@ -55,9 +64,9 @@ function updatePlatform(parameters, platform_type) {
 }
 
 //consider merging the ff method with updatePlatform
-//pass form_id as arg
 function deletePlatform(parameters, platform_type) {
     $('form[id*="_form_delete"]').hide();
+    fieldReadonly()
     form_id = '#' + platform_type + '_form_delete'
     $(form_id).show();
     $("form input[id][type='password']").val("*****");
@@ -74,15 +83,22 @@ function deletePlatform(parameters, platform_type) {
     };
 }
 
+function fieldReadonly(){
+    var form =  $(this).closest('form').attr("id");
+    $("form input[id][type='text']").attr("readonly", "readonly")
+}
+
 function formreset(){
-    //var form =  $(this).closest('form').attr("id");
-    $("input[id][type='text']").val("");
-    $("input[id][type='password']").val("");
+    var form =  $(this).closest('form').attr("id");
+    $("form input[id][type='text']").removeAttr("readonly");
+    $("form input[id][type='text']").val("");
+    $("form input[id][type='password']").val("");
 }
 
 </script>
 
     <script type="text/javascript" src="{% static 'bootstrap/js/lib/jquery-1.7.1.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'bootstrap/js/lib/jquery.validate.js' %}"></script>
     <script type="text/javascript" src="{% static "bootstrap/js/bootstrap.min.js" %}"></script>
     <script src="{% static "footable/footable.js" %}" type="text/javascript"></script>
 

@@ -36,27 +36,40 @@ logger = logging.getLogger(__name__)
 
 
 #fixme change how files are manipulated, use SFTPStorage storage, see hrmcstages.py
-def remote_path_exists(remote_path, parameters):
+def remote_path_exists(remote_path, parameters, passwd_auth=False):
+    settings = {'username': parameters['username']}
+    if 'password' in parameters:
+        settings['password'] = parameters['password']
+    if (not passwd_auth) and 'private_key_path' in parameters:
+        bdp_root_path = '/var/cloudenabling/remotesys' #fixme replace by parameter
+        settings['private_key'] = os.path.join(bdp_root_path, parameters['private_key_path'])
+    logger.debug('settings=%s' % settings)
+    logger.debug('parameters=%s' % parameters)
     try:
-        ssh_client = sshconnector.open_connection(parameters['ip_address'], parameters)
+        ssh_client = sshconnector.open_connection(
+            parameters['ip_address'], settings)
+        logger.debug("ssh_client=%s" % ssh_client)
         sftp_client = ssh_client.open_sftp()
         sftp_client.listdir_attr(remote_path)
         sftp_client.close()
-    except IOError, e:
-        logger.exception(e)
-        return False, 'Remote path [%s] does not exist' % remote_path
-    except sshconnector.AuthError:
-            return False, 'Unauthorized access to %s' % parameters['ip_address']
+    except sshconnector.AuthError, e:
+        logger.debug(e)
+        return False, 'Unauthorized access to %s' % parameters['ip_address']
     except socket.gaierror as e:
         if 'Name or service not known' in e:
             return False, 'Unknown IP address [%s]' % parameters['ip_address']
         else:
             raise
+    except IOError, e:
+        logger.exception(e)
+        return False, 'Remote path [%s] does not exist' % remote_path
+
     return True, 'Remote path [%s] exists' % remote_path
 
 
 def private_key_authenticates(ip_address, username, private_key_path):
-    settings = {'private_key': private_key_path,
+    bdp_root_path = '/var/cloudenabling/remotesys' #fixme replace by parameter
+    settings = {'private_key': os.path.join(bdp_root_path, private_key_path),
                 'username': username}
     try:
         sshconnector.open_connection(ip_address, settings)
@@ -84,19 +97,29 @@ def generate_nectar_key(bdp_root_path, parameters):
             is_secure=True, region=region,
             port=8773, path="/services/Cloud")
         logger.debug('connection=%s' % connection)
-        if os.path.exists(key_absolute_path):
-            os.remove(key_absolute_path)
-        try:
-            key_pair = connection.create_key_pair(key_name)
-            key_pair.save(key_dir)
-            logger.debug('key_pair=%s' % key_pair)
-        except EC2ResponseError, e:
-            if 'InvalidKeyPair.Duplicate' in e.error_code:
-                connection.delete_key_pair(key_name)
-                logger.debug('old key %s deleted' % key_absolute_path)
+        key_created = False
+        counter = 1
+        while not key_created:
+            try:
                 key_pair = connection.create_key_pair(key_name)
+                if os.path.exists(key_absolute_path):
+                    os.remove(key_absolute_path)
                 key_pair.save(key_dir)
+                key_created = True
                 logger.debug('key_pair=%s' % key_pair)
+            except EC2ResponseError, e:
+                if 'InvalidKeyPair.Duplicate' in e.error_code:
+                    #connection.delete_key_pair(key_name)
+                    logger.debug('old key %s deleted' % key_absolute_path)
+                    key_name = '%s_%d' % (parameters['private_key'], counter)
+                    counter += 1
+                else:
+                    logger.exception(e)
+                    raise
+        parameters['private_key'] = key_name
+        parameters['private_key_path'] = os.path.join(os.path.dirname(
+            parameters['private_key_path']), '%s.pem' % key_name)
+        logger.debug('private_key_path=%s' % parameters['private_key_path'])
         connection.get_all_security_groups([security_group_name])
     except EC2ResponseError as e:
         if 'Unauthorized' in e.error_code:
@@ -134,15 +157,15 @@ def generate_unix_key(bdp_root_path, parameters):
         public_key = paramiko.RSAKey(filename=private_key_absolute_path)
         public_key_content = '%s %s' % (public_key.get_name(), public_key.get_base64())
         f = open(public_key_absolute_path, 'w')
-        f.write(public_key_content)
+        f.write("\n%s\n" % public_key_content)
         f.close()
         ssh_client = sshconnector.open_connection(parameters['ip_address'], settings)
         sftp = ssh_client.open_sftp()
         sftp.put(public_key_absolute_path, remote_key_path)
         sftp.close()
-        command = "cat %s >> %s" % (remote_key_path, authorized_remote_path)
+        command = 'cat %s >> %s' % (remote_key_path, authorized_remote_path)
         command_out, errs = sshconnector.run_command_with_status(ssh_client, command)
-        logger.debug('command_out=%s' % command_out)
+        logger.debug('command=%s' % command)
     except sshconnector.AuthError:
         message = 'Unauthorized access to %s' % parameters['ip_address']
         return False, message
@@ -171,22 +194,23 @@ def generate_key(platform_type, bdp_root_path, parameters):
     return False, []
 
 
-def validate_parameters(platform_type, parameters):
+def validate_parameters(platform_type, parameters, passwd_auth=False):
     if platform_type == 'unix' or platform_type == 'nci':
             path_list = [parameters['root_path'], parameters['home_path']]
-            return validate_remote_path(path_list, parameters)
+            return validate_remote_path(path_list, parameters, passwd_auth)
     else:
         return True, 'All valid parameters'
 
 
-def validate_remote_path(path_list, parameters):
-    not_found_paths = []
+def validate_remote_path(path_list, parameters, passwd_auth=False):
+    error_messages = []
     for path in path_list:
-        found, _ = remote_path_exists(path, parameters)
+        found, message = remote_path_exists(path, parameters, passwd_auth)
         if not found:
-            not_found_paths.append(str(path))
-    if not_found_paths:
-        return False, 'Remote path %s does not exist' % not_found_paths
+            if message not in error_messages:
+                error_messages.append(str(message))
+    if error_messages:
+        return False, ', '.join(error_messages)
     else:
         return True, 'Remote path %s exists' % path_list
 
@@ -227,12 +251,13 @@ def create_platform_paramset(username, schema_namespace,
     schema, _ = models.Schema.objects.get_or_create(namespace=schema_namespace)
     params_present, provided_params, required_params = \
         all_params_present(schema, parameters)
+    failure_message = 'RECORD CREATE FAILURE:'
     if not params_present:
         message = 'Cannot create platform parameter set.' \
                   ' Required params= %s  Provided params= %s '\
                   % (required_params, provided_params)
         logger.debug(message)
-        return False, message
+        return False, '%s %s' % (failure_message, message)
 
     platform_type = os.path.basename(schema_namespace)
     configure_platform(platform_type, username, parameters)
@@ -240,16 +265,17 @@ def create_platform_paramset(username, schema_namespace,
     unique = is_unique_platform_paramset(
                 platform, schema, filters)
     if not unique:
-        return unique, 'Record already exists'
+        return unique, '%s Record already exists' % failure_message
 
-    valid_params, message = validate_parameters(platform_type, parameters)
+    valid_params, message = validate_parameters(
+        platform_type, parameters, passwd_auth=True)
     if not valid_params:
-        return valid_params, message
+        return valid_params, '%s %s' % (failure_message, message)
 
     bdp_root_path = '/var/cloudenabling/remotesys' #fixme replace by parameter
     key_generated, message = generate_key(platform_type, bdp_root_path, parameters)
     if not key_generated:
-        return key_generated, message
+        return key_generated, '%s %s' % (failure_message, message)
 
     if 'password' in parameters:
         parameters['password'] = ''
@@ -293,45 +319,72 @@ def retrieve_platform_paramsets(username, schema_namespace):
 def update_platform_paramset(username, schema_namespace,
                              filters, updated_params):
     platform, schema = get_platform_and_schema(username, schema_namespace)
+    failure_message = 'RECORD UPDATE FAILURE:'
     if not required_param_exists(schema, updated_params):
         message = 'Keys in updated_parameters are unknown'
         logger.debug(message)
-        return False, message
+        return False,'%s %s' % (failure_message, message)
     if not required_param_exists(schema, filters):
         message = 'Keys in filters are unknown'
         logger.debug(message)
-        return False, message
+        return False, '%s %s' % (failure_message, message)
     new_filters = dict(filters)
     new_filters.update(updated_params)
     if not is_unique_platform_paramset(platform, schema, new_filters):
-        message = 'Record exists with the updated parameters'
-        logger.debug(message)
-        return False, message
+        message = 'Record already exists with the updated parameters'
+        logger.debug(filters)
+        logger.debug(updated_params)
+
+        #fixme assumes filters n updated_params represent all params. works only with gui
+        for k, v in filters.items():
+            logger.debug('%s %s' % (k, v))
+            if updated_params[k] != filters[k] and k != 'password':
+                return False, '%s %s' % (failure_message, message)
+
+        return True, 'Record updated successfully'
+
     param_sets = filter_platform_paramsets(platform, schema, filters)
     if len(param_sets) != 1:
         message = 'Multiple records found. Add more parameters to filters'
         logger.debug(message)
-        return False, message
+        return False, '%s %s' % (failure_message, message)
     platform_parameters = models.PlatformInstanceParameter\
         .objects.filter(paramset=param_sets[0])
-    keys = [k for k, v in updated_params.items()]
-    expected_parameters = {}
+    #keys = [k for k, v in updated_params.items()]
+    existing_params = {}
+    expected_params = {}
     for platform_parameter in platform_parameters:
         name = platform_parameter.name.name
-        if name in keys:
+        existing_params[name] = platform_parameter.value
+        if name in updated_params.keys():
             platform_parameter.value = updated_params[name]
-            #platform_parameter.save()
-        expected_parameters[name] = platform_parameter.value
-    logger.debug('expected_parameters=%s' % expected_parameters)
-    platform_type = os.path.basename(schema_namespace)
-    valid_params, message = validate_parameters(platform_type, expected_parameters)
-    if not valid_params:
-        return valid_params, message
+        expected_params[name] = platform_parameter.value
+    logger.debug('existing_params=%s' % existing_params)
+    logger.debug('expected_params=%s' % expected_params)
 
-    bdp_root_path = '/var/cloudenabling/remotesys' #fixme replace by parameter
-    key_generated, message = generate_key(platform_type, bdp_root_path, expected_parameters)
-    if not key_generated:
-        return key_generated, message
+    platform_type = os.path.basename(schema_namespace)
+    regenerate_key = False
+    if platform_type == 'nectar':
+        if existing_params['ec2_access_key'] != expected_params['ec2_access_key']:
+            regenerate_key = True
+        if existing_params['ec2_secret_key'] != expected_params['ec2_secret_key']:
+            regenerate_key = True
+    elif platform_type == 'unix' or platform_type == 'nci':
+        if existing_params['ip_address'] != expected_params['ip_address']:
+            regenerate_key = True
+        if existing_params['username'] != expected_params['username']:
+            regenerate_key = True
+
+    if regenerate_key:
+        bdp_root_path = '/var/cloudenabling/remotesys' #fixme replace by parameter
+        key_generated, message = generate_key(platform_type, bdp_root_path, expected_params)
+        if not key_generated:
+            return key_generated,'%s %s' % (failure_message, message)
+
+    valid_params, message = validate_parameters(
+        platform_type, expected_params)
+    if not valid_params:
+        return valid_params,'%s %s' % (failure_message, message)
 
     for platform_parameter in platform_parameters:
         platform_parameter.save()
@@ -339,7 +392,9 @@ def update_platform_paramset(username, schema_namespace,
     return True, message
 
 
+#todo: delete all contents that are generated for this platform
 def delete_platform_paramsets(username, schema_namespace, filters):
+    failure_message = 'RECORD DELETE FAILURE:'
     if not filters:
         logger.debug('Filter should not be empty. Exiting...')
         return
@@ -354,7 +409,7 @@ def delete_platform_paramsets(username, schema_namespace, filters):
         return True, message
     else:
         message = 'Record does not exist'
-        return False, message
+        return False, '%s %s' % (failure_message, message) 
 
 
 def is_unique_platform_paramset(platform, schema, filters):
@@ -374,6 +429,8 @@ def filter_platform_paramsets(platform, schema, filters):
     param_sets = models.PlatformInstanceParameterSet\
         .objects.filter(platform=platform)
     for k, v in filters.items():
+        if k == 'password':
+            continue
         logger.debug('k=%s, v=%s' % (k, v))
         try:
             param_name = models.ParameterName.objects.get(
