@@ -30,8 +30,8 @@ function closeDialog () {
     $('#createModal').modal('hide');
 };
 
-function submitForm(description, form_id) {
-   var form =  $(this).closest('form').attr("id");
+function submitForm(description) {
+    var form =  $(this).closest('form').attr("id");
     var operation = $('form #id_operation');
     operation.val(description);
     form.validate();
@@ -41,10 +41,9 @@ function submitForm(description, form_id) {
     formreset()
 }
 
-
-//pass form_id as arg
 function updatePlatform(parameters, platform_type) {
     $('form[id*="_form_update"]').hide();
+    formreset()
     form_id = '#' + platform_type + '_form_update'
     $(form_id).show();
     /**$("form input[id][type='password']").val("");**/
@@ -61,9 +60,9 @@ function updatePlatform(parameters, platform_type) {
 }
 
 //consider merging the ff method with updatePlatform
-//pass form_id as arg
 function deletePlatform(parameters, platform_type) {
     $('form[id*="_form_delete"]').hide();
+    fieldReadonly()
     form_id = '#' + platform_type + '_form_delete'
     $(form_id).show();
     $("form input[id][type='password']").val("*****");
@@ -80,10 +79,17 @@ function deletePlatform(parameters, platform_type) {
     };
 }
 
+function fieldReadonly(){
+    var form =  $(this).closest('form').attr("id");
+    //$("form input[id][type='text']").attr("disabled", "disabled");
+    $("form input[id][type='text']").attr("readonly", "readonly")
+}
+
 function formreset(){
-    //var form =  $(this).closest('form').attr("id");
-    $("input[id][type='text']").val("");
-    $("input[id][type='password']").val("");
+    var form =  $(this).closest('form').attr("id");
+    $("form input[id][type='text']").removeAttr("readonly");
+    $("form input[id][type='text']").val("");
+    $("form input[id][type='password']").val("");
 }
 
 </script>
