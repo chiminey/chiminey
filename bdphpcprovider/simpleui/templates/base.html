@@ -32,17 +32,23 @@ function closeDialog () {
 };
 
 function submitForm(description, form_id) {
-    var operation = $('#' + form_id +' #id_operation');
+   var form =  $(this).closest('form').attr("id");
+    var operation = $('form #id_operation');
     operation.val(description);
-    $('#' + form_id).submit();
+    form.validate();
+    if (form.valid()){
+        form.submit()
+    }
+    formreset()
 }
+
 
 //pass form_id as arg
 function updatePlatform(parameters, platform_type) {
     $('form[id*="_form_update"]').hide();
     form_id = '#' + platform_type + '_form_update'
     $(form_id).show();
-    $("form input[id][type='password']").val("");
+    /**$("form input[id][type='password']").val("");**/
     $('form #id_filters').val(parameters)
     var current_params = parameters.replace(/[\]\(\)\[']/g, '');
     var array_params = current_params.split(',');
@@ -84,6 +90,7 @@ function formreset(){
 </script>
 
     <script type="text/javascript" src="{% static 'bootstrap/js/lib/jquery-1.7.1.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'bootstrap/js/lib/jquery.validate.js' %}"></script>
     <script type="text/javascript" src="{% static "bootstrap/js/bootstrap.min.js" %}"></script>
     <script src="{% static "footable/footable.js" %}" type="text/javascript"></script>
 

@@ -36,22 +36,30 @@ logger = logging.getLogger(__name__)
 
 
 #fixme change how files are manipulated, use SFTPStorage storage, see hrmcstages.py
-def remote_path_exists(remote_path, parameters):
+def remote_path_exists(remote_path, parameters, *args):
+    settings = {'username': parameters['username'],
+                'password': parameters['password']}
+    if 'passwd_auth' not in args:
+        settings['private_key'] = parameters['private_key_path']
+    logger.debug('settings=%s' % settings)
     try:
-        ssh_client = sshconnector.open_connection(parameters['ip_address'], parameters)
+        ssh_client = sshconnector.open_connection(
+            parameters['ip_address'], settings)
         sftp_client = ssh_client.open_sftp()
         sftp_client.listdir_attr(remote_path)
         sftp_client.close()
-    except IOError, e:
-        logger.exception(e)
-        return False, 'Remote path [%s] does not exist' % remote_path
-    except sshconnector.AuthError:
-            return False, 'Unauthorized access to %s' % parameters['ip_address']
+    except sshconnector.AuthError, e:
+        logger.debug(e)
+        return False, 'Unauthorized access to %s' % parameters['ip_address']
     except socket.gaierror as e:
         if 'Name or service not known' in e:
             return False, 'Unknown IP address [%s]' % parameters['ip_address']
         else:
             raise
+    except IOError, e:
+        logger.exception(e)
+        return False, 'Remote path [%s] does not exist' % remote_path
+
     return True, 'Remote path [%s] exists' % remote_path
 
 
@@ -171,22 +179,23 @@ def generate_key(platform_type, bdp_root_path, parameters):
     return False, []
 
 
-def validate_parameters(platform_type, parameters):
+def validate_parameters(platform_type, parameters, *args):
     if platform_type == 'unix' or platform_type == 'nci':
             path_list = [parameters['root_path'], parameters['home_path']]
-            return validate_remote_path(path_list, parameters)
+            return validate_remote_path(path_list, parameters, *args)
     else:
         return True, 'All valid parameters'
 
 
-def validate_remote_path(path_list, parameters):
-    not_found_paths = []
+def validate_remote_path(path_list, parameters, *args):
+    error_messages = []
     for path in path_list:
-        found, _ = remote_path_exists(path, parameters)
+        found, message = remote_path_exists(path, parameters, *args)
         if not found:
-            not_found_paths.append(str(path))
-    if not_found_paths:
-        return False, 'Remote path %s does not exist' % not_found_paths
+            if message not in error_messages:
+                error_messages.append(str(message))
+    if error_messages:
+        return False, ', '.join(error_messages)
     else:
         return True, 'Remote path %s exists' % path_list
 
@@ -242,7 +251,8 @@ def create_platform_paramset(username, schema_namespace,
     if not unique:
         return unique, 'Record already exists'
 
-    valid_params, message = validate_parameters(platform_type, parameters)
+    valid_params, message = validate_parameters(
+        platform_type, parameters, 'passwd_auth')
     if not valid_params:
         return valid_params, message
 
@@ -324,7 +334,8 @@ def update_platform_paramset(username, schema_namespace,
         expected_parameters[name] = platform_parameter.value
     logger.debug('expected_parameters=%s' % expected_parameters)
     platform_type = os.path.basename(schema_namespace)
-    valid_params, message = validate_parameters(platform_type, expected_parameters)
+    valid_params, message = validate_parameters(
+        platform_type, expected_parameters, 'passwd_auth')
     if not valid_params:
         return valid_params, message
 
