@@ -327,18 +327,27 @@ def update_platform_paramset(username, schema_namespace,
     if not required_param_exists(schema, filters):
         message = 'Keys in filters are unknown'
         logger.debug(message)
-        return False,'%s %s' % (failure_message, message)
+        return False, '%s %s' % (failure_message, message)
     new_filters = dict(filters)
     new_filters.update(updated_params)
     if not is_unique_platform_paramset(platform, schema, new_filters):
-        message = 'Record exists with the updated parameters'
-        logger.debug(message)
-        return False,'%s %s' % (failure_message, message)
+        message = 'Record already exists with the updated parameters'
+        logger.debug(filters)
+        logger.debug(updated_params)
+
+        #fixme assumes filters n updated_params represent all params. works only with gui
+        for k, v in filters.items():
+            logger.debug('%s %s' % (k, v))
+            if updated_params[k] != filters[k] and k != 'password':
+                return False, '%s %s' % (failure_message, message)
+
+        return True, 'Record updated successfully'
+
     param_sets = filter_platform_paramsets(platform, schema, filters)
     if len(param_sets) != 1:
         message = 'Multiple records found. Add more parameters to filters'
         logger.debug(message)
-        return False,'%s %s' % (failure_message, message)
+        return False, '%s %s' % (failure_message, message)
     platform_parameters = models.PlatformInstanceParameter\
         .objects.filter(paramset=param_sets[0])
     #keys = [k for k, v in updated_params.items()]
@@ -420,6 +429,8 @@ def filter_platform_paramsets(platform, schema, filters):
     param_sets = models.PlatformInstanceParameterSet\
         .objects.filter(platform=platform)
     for k, v in filters.items():
+        if k == 'password':
+            continue
         logger.debug('k=%s, v=%s' % (k, v))
         try:
             param_name = models.ParameterName.objects.get(
