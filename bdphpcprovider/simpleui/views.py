@@ -124,12 +124,12 @@ def computation_platform_settings(request):
 
 
 def storage_platform_settings(request):
-    ssh_form = SSHStoragePlatformForm()
+    unix_form = SSHStoragePlatformForm()
     if request.method == "POST":
-        ssh_form = SSHStoragePlatformForm(request.POST)
-        if ssh_form.is_valid():
-            schema = 'http://rmit.edu.au/schemas/platform/storage/ssh'
-            post_platform(schema, ssh_form.cleaned_data, request)
+        unix_form = SSHStoragePlatformForm(request.POST)
+        if unix_form.is_valid():
+            schema = 'http://rmit.edu.au/schemas/platform/storage/unix'
+            post_platform(schema, unix_form.cleaned_data, request)
             return HttpResponseRedirect('/accounts/settings/platform/storage')
 
     #FIXME: consider using non-locahost URL for api_host
@@ -158,7 +158,7 @@ def storage_platform_settings(request):
         storage_platforms, all_headers = filter_computation_platforms(GET_data)
         logger.debug(storage_platforms)
     return render(request, 'accountsettings/storageplatform.html',
-                              {'ssh_form': ssh_form,
+                              {'unix_form': unix_form,
                                'all_headers': all_headers})
 
 

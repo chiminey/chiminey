@@ -15,13 +15,13 @@
             </div>
             <div class="modal-body">
                 <ul class="nav nav-tabs" id="myTab">
-                  <li class="active"><a href="#ssh" data-toggle="tab">SSH</a></li>
+                  <li class="active"><a href="#unix" data-toggle="tab">Unix</a></li>
                 </ul>
                 <div class="tab-content">
-                    <div class="tab-pane active" id="ssh">
-                        <form class="form-horizontal" action="{{ action }}" method="POST" id="ssh_form_create"> {% csrf_token %}
-                            {{ ssh_form.as_p }}
-                            <button type="submit" class="btn btn-primary" onclick="submitForm('create', 'ssh_form_create');">Add</button>
+                    <div class="tab-pane active" id="unix">
+                        <form class="form-horizontal" action="{{ action }}" method="POST" id="unix_form_create"> {% csrf_token %}
+                            {{ unix_form.as_p }}
+                            <button type="submit" class="btn btn-primary" onclick="submitForm('create', 'unix_form_create');">Add</button>
                             <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                         </form>
                     </div>
@@ -40,9 +40,9 @@
                 <h4 class="modal-title">Update Storage Platform</h4>
             </div>
             <div class="modal-body">
-                <form class="form-horizontal" action="{{ action }}" method="POST" id="ssh_form_update"> {% csrf_token %}
-                    {{ ssh_form.as_p }}
-                    <button type="submit" class="btn btn-primary" onclick="submitForm('update', 'ssh_form_update');">Update</button>
+                <form class="form-horizontal" action="{{ action }}" method="POST" id="unix_form_update"> {% csrf_token %}
+                    {{ unix_form.as_p }}
+                    <button type="submit" class="btn btn-primary" onclick="submitForm('update', 'unix_form_update');">Update</button>
                     <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                 </form>
             </div>
@@ -60,9 +60,9 @@
                 <h4 class="modal-title">Delete Storage Platform</h4>
             </div>
             <div class="modal-body">
-                <form class="form-horizontal" action="{{ action }}" method="POST" id="ssh_form_delete"> {% csrf_token %}
-                    {{ ssh_form.as_p }}
-                    <button type="submit" class="btn btn-primary" onclick="submitForm('delete', 'ssh_form_delete');">Delete</button>
+                <form class="form-horizontal" action="{{ action }}" method="POST" id="unix_form_delete"> {% csrf_token %}
+                    {{ unix_form.as_p }}
+                    <button type="submit" class="btn btn-primary" onclick="submitForm('delete', 'unix_form_delete');">Delete</button>
                     <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                 </form>
             </div>
