@@ -21,9 +21,14 @@ $(document).ready(function () {
 {% for profileparameter in object_list %}
 <tr>
 <td>{{ profileparameter.name.name }}</td>
-<td>{{ profileparameter.value }}</td>
+<td>
+{% if profileparameter.name.subtype == "password" %}
+-----------
+{% else %}
+{{ profileparameter.value }}</td>
+{% endif %}
 <td><em>{{ profileparameter.name.help_text }}</em></td>
-
+</td>
 <td><button onclick="window.location.href='{% url userprofileparameter-edit pk=profileparameter.id %}'" class="btn">edit</button> </td>
 </tr>
 {% endfor %}
