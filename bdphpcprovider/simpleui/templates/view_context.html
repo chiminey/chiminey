@@ -34,7 +34,15 @@ $(document).ready(function () {
         <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{value2.1}}" id='{{key|slugify}}_{{key2|slugify}}'><img src="#" class="icon-question-sign"></a>
         {% endif %}
     </td>
-        <td class="">{{value2.0}}</td>
+<td class="">
+    {% if value2.2 == "password" %}
+    -----------
+    {% else %}
+        {{value2.0}}
+    {% endif %}
+
+    </td>
+
     </tr>
     {% endfor %}
 </tbody>
