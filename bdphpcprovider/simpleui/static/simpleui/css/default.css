@@ -215,7 +215,7 @@ h2 small, blockquote small {
     width: 900px;
 }
 
-body { padding-top: 40px; }
+body { padding-top: 80px; }
 @media screen and (max-width: 768px) {
     body { padding-top: 0px; }
 }
