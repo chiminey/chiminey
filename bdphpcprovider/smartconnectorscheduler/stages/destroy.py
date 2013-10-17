@@ -71,12 +71,17 @@ class Destroy(smartconnector.Stage):
             'http://rmit.edu.au/schemas/system/platform')
         smartconnector.copy_settings(local_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/create/cloud_sleep_interval')
-        smartconnector.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/stages/create/created_nodes')
-
         node_type = 'created_nodes'
-        all_instances = collect_instances(local_settings,
-            registered=True, node_type=node_type)
+        if self._exists(run_settings,
+            'http://rmit.edu.au/schemas/stages/create',
+            u'created_nodes'):
+            smartconnector.copy_settings(local_settings, run_settings,
+                'http://rmit.edu.au/schemas/stages/create/created_nodes')
+            all_instances = collect_instances(local_settings,
+                registered=True, node_type=node_type)
+        else:
+            all_instances = []
+
         if self.cleanup_nodes:
             smartconnector.copy_settings(local_settings, run_settings,
             'http://rmit.edu.au/schemas/reliability/cleanup_nodes')
