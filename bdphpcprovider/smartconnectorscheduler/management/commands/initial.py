@@ -43,7 +43,7 @@ class Command(BaseCommand):
                 codename="change_%s" % model_name)
             #delete_model = Permission.objects.get(codename="delete_%s" % model_name)
             #self.group.permissions.add(add_model)
-            self.group.permissions.add(change_model) 
+            self.group.permissions.add(change_model)
             #self.group.permissions.add(delete_model)
         schema_data = {
             u'http://rmit.edu.au/schemas/platform/storage/unix':
@@ -255,8 +255,8 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/input/reliability':
                 [u'Reliability',
                 {
-                u'maximum_retry': {'type':models.ParameterName.NUMERIC, 'subtype':'natural', 'ranking':1, 'description': 'Maximum Retries', 'help_text':'Enter the maximum number of retries'},
-                u'reschedule_failed_processes': {'type':models.ParameterName.NUMERIC, 'subtype':'bool', 'ranking':2, 'description': 'Reschedule failed processes', 'help_text': 'Select to reschedule any failed processes'},
+                u'maximum_retry': {'type':models.ParameterName.NUMERIC, 'subtype':'natural', 'initial':2, 'ranking':1, 'description': 'Maximum Retries', 'help_text':'Enter the maximum number of retries'},
+                u'reschedule_failed_processes': {'type':models.ParameterName.NUMERIC, 'subtype':'bool', 'ranking':2, 'initial':1, 'description': 'Reschedule failed processes', 'help_text': 'Select to reschedule any failed processes'},
                 }
                 ],
             u'http://rmit.edu.au/schemas/input/system':
@@ -269,8 +269,8 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/input/system/cloud':
                 [u'Cloud Resources',
                 {
-                u'number_vm_instances': {'type':models.ParameterName.NUMERIC, 'subtype':'whole', 'initial':8, 'description':'Number of VM instances', 'ranking':1, 'help_text':''},
-                u'minimum_number_vm_instances': {'type':models.ParameterName.NUMERIC, 'subtype':'whole', 'initial':4, 'description':'Minimum No. VMs', 'ranking':2, 'help_text':''},
+                u'number_vm_instances': {'type':models.ParameterName.NUMERIC, 'subtype':'whole', 'initial':4, 'description':'Number of VM instances', 'ranking':1, 'help_text':''},
+                u'minimum_number_vm_instances': {'type':models.ParameterName.NUMERIC, 'subtype':'whole', 'initial':1, 'description':'Minimum No. VMs', 'ranking':2, 'help_text':''},
                 }
                 ],
             u'http://rmit.edu.au/schemas/input/mytardis':
@@ -283,10 +283,10 @@ class Command(BaseCommand):
                 [u'HRMC Smart Connector',
                 {
                 u'pottype': {'type':models.ParameterName.NUMERIC, 'subtype':'natural', 'description':'Pottype', 'ranking':1, 'help_text':'', 'initial':1},
-                u'max_iteration': {'type':models.ParameterName.NUMERIC, 'subtype':'whole', 'description':'Maximum no. iterations', 'ranking':2, 'initial': 2, 'help_text':'Computation ends when either convergence or maximum iteration reached'},
+                u'max_iteration': {'type':models.ParameterName.NUMERIC, 'subtype':'whole', 'description':'Maximum no. iterations', 'ranking':2, 'initial': 10, 'help_text':'Computation ends when either convergence or maximum iteration reached'},
                 u'error_threshold': {'type':models.ParameterName.STRING, 'subtype':'float', 'description':'Error Threshold', 'ranking':3, 'initial':'0.03', 'help_text':'Delta for iteration convergence'},  # FIXME: should use float here
                 u'threshold': {'type':models.ParameterName.STRING, 'subtype':'string', 'description':'No. results kept per iteration', 'ranking':4, 'initial':'[1]', 'help_text':'Number of outputs to keep between iterations. eg. [2] would keep the top 2 results.'},  # FIXME: should be list of ints
-                u'number_dimensions': {'type':models.ParameterName.NUMERIC, 'subtype':'natural', 'description':'No. varying parameters', 'ranking':5, 'initial': 1, 'help_text':'Number of parameters to vary, e.g. 0 = iseed only, 1 = iseed and temp'},
+                u'number_dimensions': {'type':models.ParameterName.NUMERIC, 'subtype':'natural', 'description':'No. varying parameters', 'ranking':5, 'initial': 0, 'help_text':'Number of parameters to vary, e.g. 0 = iseed only, 1 = iseed and temp'},
                 u'iseed': {'type':models.ParameterName.NUMERIC, 'subtype':'natural', 'description':'Random Number Seed', 'ranking':7, 'initial': 42, 'help_text':'Initial seed for random numbers'},
                 u'fanout_per_kept_result': {'type':models.ParameterName.NUMERIC, 'subtype':'whole', 'description':'No. fanout kept per result', 'initial': 4, 'ranking':12, 'help_text':''},
                 }
@@ -294,7 +294,7 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/input/sweep':
                 [u'Parameter Sweep',
                 {
-                u'sweep_map': {'type':models.ParameterName.STRING, 'subtype':'jsondict', 'initial': '{"var1": [3, 7], "var2": [1, 2]}', 'description':'Values to sweep over', 'ranking':1, 'help_text':'Dictionary of values to sweep over. e.g {\'var1\': [3, 7], \'var2\': [1, 2]} would result in 4 HRMC Jobs: [3,1] [3,2] [7,1] [7,2]'}
+                u'sweep_map': {'type':models.ParameterName.STRING, 'subtype':'jsondict', 'initial': '{}', 'description':'Values to sweep over', 'ranking':1, 'help_text':'Dictionary of values to sweep over. e.g {\"var1\": [3, 7], \"var2\": [1, 2]} would result in 4 HRMC Jobs: [3,1] [3,2] [7,1] [7,2]'}
                 }
                 ],
 

@@ -1,10 +1,15 @@
 {% extends "accountsettings/base_accountsettings.html" %}
 {% block account-settings-content %}
-    <script type="text/javascript">
-    $(document).ready(function () {
-          $('.footable').footable();
-       });
-    </script>
+
+
+<script type="text/javascript">
+$(document).ready(function () {
+    {% for platform_type, platform_details in all_headers.items %}
+    $('.footable_{{platform_type}}').footable();
+    {% endfor %}
+   });
+</script>
+
 <!--create modal -->
 <div class="modal hide fade" id="createModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -76,8 +81,8 @@
 <div>
 {% for platform_type, platform_details in all_headers.items %}
      {% for header, schema in platform_details.items %}
-         {{ platform_type }}
-         <table class="footable table table-hover table-striped table-bordered">
+         <h2>{{ platform_type }}</h2>
+         <table class="footable_{{platform_type}} table table-hover table-striped table-bordered">
             <thead>
                 <tr>
                     {% for h in header %}
@@ -98,7 +103,7 @@
                 <tr>
 
                     {% for param_key, param in paramset.items %}
-                        <td>  {{ param }}</td>
+                        <td class="span1">  {{ param }}</td>
                     {% endfor %}
                 <td>
                 <div class="btn-group">
