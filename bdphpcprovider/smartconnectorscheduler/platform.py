@@ -35,6 +35,7 @@ from bdphpcprovider.smartconnectorscheduler import sshconnector
 logger = logging.getLogger(__name__)
 
 
+#fixme change how files are manipulated, use SFTPStorage storage, see hrmcstages.py
 def remote_path_exists(remote_path, parameters):
     try:
         ssh_client = sshconnector.open_connection(parameters['ip_address'], parameters)
@@ -65,7 +66,6 @@ def private_key_authenticates(ip_address, username, private_key_path):
     return True, 'Successful private key authentication'
 
 
-#fixme change how files are manipulated, use NFS storage upload??
 def generate_nectar_key(bdp_root_path, parameters):
     security_group_name = parameters['security_group']
     key_name = parameters['private_key']
@@ -116,7 +116,7 @@ def generate_nectar_key(bdp_root_path, parameters):
     return True, 'Key generated successfully'
 
 
-#fixme change how files are manipulated, use NFS storage upload??
+#fixme change how files are manipulated, use SFTPStorage storage, see hrmcstages.py
 def generate_unix_key(bdp_root_path, parameters):
     key_name = os.path.splitext(os.path.basename(parameters['private_key_path']))[0]
     remote_key_path = os.path.join(parameters['home_path'], '.ssh', ('%s.pub' % key_name))
@@ -164,11 +164,55 @@ def generate_unix_key(bdp_root_path, parameters):
 def generate_key(platform_type, bdp_root_path, parameters):
     if platform_type == 'nectar':
         return generate_nectar_key(bdp_root_path, parameters)
-    elif platform_type == 'nci' or platform_type == 'ssh':
+    elif platform_type == 'nci' or platform_type == 'unix':
         return generate_unix_key(bdp_root_path, parameters)
     else:
         return False, 'Unknown platform type [%s]' % platform_type
     return False, []
+
+
+def validate_parameters(platform_type, parameters):
+    if platform_type == 'unix' or platform_type == 'nci':
+            path_list = [parameters['root_path'], parameters['home_path']]
+            return validate_remote_path(path_list, parameters)
+    else:
+        return True, 'All valid parameters'
+
+
+def validate_remote_path(path_list, parameters):
+    not_found_paths = []
+    for path in path_list:
+        found, _ = remote_path_exists(path, parameters)
+        if not found:
+            not_found_paths.append(str(path))
+    if not_found_paths:
+        return False, 'Remote path %s does not exist' % not_found_paths
+    else:
+        return True, 'Remote path %s exists' % path_list
+
+
+def configure_platform(platform_type, username, parameters):
+    if platform_type == 'nectar':
+        configure_nectar_platform(platform_type, username, parameters)
+    elif platform_type == 'unix' or platform_type == 'nci':
+        configure_unix_platform(platform_type, username, parameters)
+
+
+def configure_nectar_platform(platform_type, username, parameters):
+    key_name = 'bdp_%s' % parameters['name']
+    key_relative_path = '%s.pem' % os.path.join(
+        '.ssh', username, platform_type, key_name)
+    parameters['private_key'] = key_name
+    parameters['private_key_path'] = key_relative_path
+    parameters['security_group'] = 'bdp_ssh_group'
+    if not parameters['vm_image_size']:
+        parameters['vm_image_size'] = 'm1.small'
+
+
+def configure_unix_platform(platform_type, username, parameters):
+    key_name = 'bdp_%s' % parameters['name']
+    parameters['private_key_path'] = os.path.join(
+        '.ssh', username, platform_type, key_name)
 
 
 #fixme deprecate this method. No need for filter; we have unique keys
@@ -184,59 +228,41 @@ def create_platform_paramset(username, schema_namespace,
     params_present, provided_params, required_params = \
         all_params_present(schema, parameters)
     if not params_present:
-        logger.debug('Cannot create platform parameter set.'
-                     '\n Required params= %s  \n Provided params= %s '
-                     % (required_params, provided_params))
-        return False
+        message = 'Cannot create platform parameter set.' \
+                  ' Required params= %s  Provided params= %s '\
+                  % (required_params, provided_params)
+        logger.debug(message)
+        return False, message
+
     platform_type = os.path.basename(schema_namespace)
-    bdp_root_path = '/var/cloudenabling/remotesys' #fixme replace by parameter
-    key_name = 'bdp_%s' % parameters['name']
-    key_relative_path = os.path.join(
-            '.ssh', username, platform_type, key_name)
-    if platform_type == 'nectar':
-        security_group_name = 'bdp_ssh_group'
-        key_relative_path = '%s.pem' % key_relative_path
-        parameters['private_key'] = key_name
-        parameters['private_key_path'] = key_relative_path
-        parameters['security_group'] = security_group_name
-        if not parameters['vm_image_size']:
-            parameters['vm_image_size'] = 'm1.small'
-    elif platform_type == 'nci' or platform_type == 'ssh':
-        parameters['private_key_path'] = key_relative_path
+    configure_platform(platform_type, username, parameters)
     filters = dict(parameters)
     unique = is_unique_platform_paramset(
                 platform, schema, filters)
-    logger.debug('unique parameter set %s' % unique)
-    key_generated = False
-    if unique:
-        if platform_type == 'nci' or platform_type == 'ssh':
-            path_exists, message = remote_path_exists(parameters['root_path'], parameters)
-            if not path_exists:
-                return path_exists, message
-            path_exists, message = remote_path_exists(parameters['home_path'], parameters)
-            if not path_exists:
-                return path_exists, message
-        key_generated, message = generate_key(platform_type, bdp_root_path, parameters)
-    else:
-        message = 'Record already exists'
-    if key_generated:
-         param_set = models.PlatformInstanceParameterSet.objects\
-             .create(platform=platform, schema=schema)
-         for k, v in parameters.items():
-            try:
-                param_name = models.ParameterName.objects\
-                    .get(schema=schema, name=k)
-            except ObjectDoesNotExist as e:
-                logger.debug('Skipping unrecognized parameter name: %s' % k)
-                continue
-            models.PlatformInstanceParameter.objects\
-                .get_or_create(name=param_name, paramset=param_set, value=v)
-            message = 'Record created successfully'
-         return True, message
-    else:
-        return False, message
-    logger.debug(message)
-    return False, message
+    if not unique:
+        return unique, 'Record already exists'
+
+    valid_params, message = validate_parameters(platform_type, parameters)
+    if not valid_params:
+        return valid_params, message
+
+    bdp_root_path = '/var/cloudenabling/remotesys' #fixme replace by parameter
+    key_generated, message = generate_key(platform_type, bdp_root_path, parameters)
+    if not key_generated:
+        return key_generated, message
+
+    param_set = models.PlatformInstanceParameterSet.objects\
+        .create(platform=platform, schema=schema)
+    for k, v in parameters.items():
+        try:
+            param_name = models.ParameterName.objects\
+                .get(schema=schema, name=k)
+        except ObjectDoesNotExist as e:
+            logger.debug('Skipping unrecognized parameter name: %s' % k)
+            continue
+        models.PlatformInstanceParameter.objects\
+            .get_or_create(name=param_name, paramset=param_set, value=v)
+    return True, 'Record created successfully'
 
 
 def retrieve_platform_paramsets(username, schema_namespace):
@@ -287,11 +313,26 @@ def update_platform_paramset(username, schema_namespace,
     platform_parameters = models.PlatformInstanceParameter\
         .objects.filter(paramset=param_sets[0])
     keys = [k for k, v in updated_params.items()]
+    expected_parameters = {}
     for platform_parameter in platform_parameters:
         name = platform_parameter.name.name
         if name in keys:
             platform_parameter.value = updated_params[name]
-            platform_parameter.save()
+            #platform_parameter.save()
+        expected_parameters[name] = platform_parameter.value
+    logger.debug('expected_parameters=%s' % expected_parameters)
+    platform_type = os.path.basename(schema_namespace)
+    valid_params, message = validate_parameters(platform_type, expected_parameters)
+    if not valid_params:
+        return valid_params, message
+
+    bdp_root_path = '/var/cloudenabling/remotesys' #fixme replace by parameter
+    key_generated, message = generate_key(platform_type, bdp_root_path, expected_parameters)
+    if not key_generated:
+        return key_generated, message
+
+    for platform_parameter in platform_parameters:
+        platform_parameter.save()
     message = 'Record updated successfully'
     return True, message
 
