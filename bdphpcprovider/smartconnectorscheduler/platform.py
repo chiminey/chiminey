@@ -523,22 +523,40 @@ def filter_platform_paramsets(platform, schema, filters):
     return all_param_sets
 
 
+def get_credentials(settings):
+    credentials = {}
+    try:
+        platform_type = settings['type']
+        credentials['type'] = platform_type
+        if platform_type == 'nectar':
+            credentials['username'] = 'root' #fixme acoid hardcoding
+            credentials['private_key'] = settings['private_key_path']
+            credentials['root_path'] = '/home/centos' #fixme avoid hardcoding
+            credentials['ec2_access_key'] = settings['ec2_access_key']
+            credentials['ec2_secret_key'] = settings['ec2_secret_key']
+    except KeyError, e:
+        logger.debug(e)
+        raise
+    return credentials
+
 def retrieve_platform(platform_name):
     filter = {'name': platform_name}
     param_sets = filter_platform_paramsets('', '', filter)
     record = {}
-    schema = ''
     if not len(param_sets):
-        return record, schema
+        return record
     if len(param_sets) > 1:
-        return record, schema
+        return record
     schema = param_sets[0].schema.namespace
+    platform_params = {}
     parameters = models.PlatformInstanceParameter\
         .objects.filter(paramset=param_sets[0])
     for param in parameters:
         name = param.name.name
-        record[name] = param.value
-    return record, schema
+        platform_params[name] = param.value
+    platform_params['type'] = os.path.basename(schema)
+    record = platform_params
+    return record
 
 
 def get_owner(username):

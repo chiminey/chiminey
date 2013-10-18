@@ -48,6 +48,9 @@ from bdphpcprovider.smartconnectorscheduler import models
 logger = logging.getLogger(__name__)
 
 
+RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+
+
 class Sweep(Stage):
 
     # hrmc_schema = "http://rmit.edu.au/schemas/hrmc/"
@@ -68,12 +71,24 @@ class Sweep(Stage):
             return not configure_done
         return True
 
+    #def generalise_platform_parameters(self, generic_schema, current_schema):
+    #    for k, v in current
+
     def process(self, run_settings):
+        logger.debug('here')
+
         computation_platform_name = run_settings['http://rmit.edu.au/schemas/input/system/cloud']['computation_platform']
-        computation_platform, computation_platform_schema = smartconnector.get_bdp_storage_url(computation_platform_name)
+        logger.debug('computation_platform_name=%s' % computation_platform_name)
+        computation_platform = smartconnector.get_bdp_storage_url(computation_platform_name)
         logger.debug('computation_platform=%s' % computation_platform)
-        logger.debug('computation_platform_schema=%s' % computation_platform_schema)
-        run_settings[computation_platform_schema] = computation_platform
+        generic_computation_schema = RMIT_SCHEMA + '/platform/computation'
+        #fixme: in the schema definition, change private_key to private_key_name
+        if 'private_key_path' in computation_platform.keys():
+            bdp_root_path = '/var/cloudenabling/remotesys' #fixme replace by parameter
+            absolute_path = os.path.join(bdp_root_path, computation_platform['private_key_path'])
+            computation_platform['private_key_path'] = absolute_path
+        run_settings[generic_computation_schema] = computation_platform
+        logger.debug('updated_run_settings=%s' % run_settings)
         # Need to make copy because we pass on run_settings to sub connector
         # so any changes we make to run_settings will be inherited
         from copy import deepcopy

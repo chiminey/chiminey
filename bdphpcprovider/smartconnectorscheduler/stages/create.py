@@ -45,9 +45,6 @@ class Create(Stage):
             Return True if there is a platform
             but not group_id
         """
-        computation_platform, self.computation_platform_schema = smartconnector.get_bdp_storage_url('nectar_home23')
-        logger.debug(computation_platform)
-        logger.debug('interesting %s' % run_settings)
         if self._exists(run_settings,
             RMIT_SCHEMA+'/stages/configure',
             'configure_done'):
@@ -70,7 +67,7 @@ class Create(Stage):
         min_number_vms = run_settings[RMIT_SCHEMA+'/input/system/cloud'][u'minimum_number_vm_instances']
         logger.debug("VM instance %d" % number_vm_instances)
 
-#http://rmit.edu.au/schemas/platform/computation/nectar
+#http://rmit.edu.au/schemas/platform/computation
 
         smartconnector.info(run_settings, "1: create")
 
@@ -79,7 +76,7 @@ class Create(Stage):
         smartconnector.copy_settings(local_settings, run_settings,
             RMIT_SCHEMA+'/stages/create/vm_image')
         smartconnector.copy_settings(local_settings, run_settings,
-            RMIT_SCHEMA+'/platform/computation/nectar/vm_image_size')
+            RMIT_SCHEMA+'/platform/computation/vm_image_size')
         #smartconnector.copy_settings(local_settings, run_settings,
         #    RMIT_SCHEMA+'/stages/create/security_group')
         smartconnector.copy_settings(local_settings, run_settings,
@@ -89,33 +86,33 @@ class Create(Stage):
         smartconnector.copy_settings(local_settings, run_settings,
             RMIT_SCHEMA+'/stages/create/cloud_sleep_interval')
         #smartconnector.copy_settings(local_settings, run_settings,
-        #    RMIT_SCHEMA+'/platform/computation/nectar/username')
+        #    RMIT_SCHEMA+'/platform/computation/username')
         #smartconnector.copy_settings(local_settings, run_settings,
-        #    RMIT_SCHEMA+'/platform/computation/nectar/password')
+        #    RMIT_SCHEMA+'/platform/computation/password')
         #smartconnector.copy_settings(local_settings, run_settings,
-        #    RMIT_SCHEMA+'/platform/computation/nectar/private_key')
+        #    RMIT_SCHEMA+'/platform/computation/private_key')
         smartconnector.copy_settings(local_settings, run_settings,
-            RMIT_SCHEMA+'/platform/computation/nectar/security_group')
+            RMIT_SCHEMA+'/platform/computation/security_group')
         smartconnector.copy_settings(local_settings, run_settings,
-            RMIT_SCHEMA+'/platform/computation/nectar/ec2_access_key')
+            RMIT_SCHEMA+'/platform/computation/ec2_access_key')
         smartconnector.copy_settings(local_settings, run_settings,
-            RMIT_SCHEMA+'/platform/computation/nectar/ec2_secret_key')
+            RMIT_SCHEMA+'/platform/computation/ec2_secret_key')
 
         bdp_root_path = '/var/cloudenabling/remotesys' #fixme replace by parameter
         #fixme: in the schema definition, change private_key to private_key_name, private_key_path to private_key
-        private_key_relative = run_settings[RMIT_SCHEMA+'/platform/computation/nectar']['private_key_path']
+        private_key_relative = run_settings[RMIT_SCHEMA+'/platform/computation']['private_key_path']
         logger.debug('private_key_relative=%s' % private_key_relative)
 
         local_settings['private_key'] = os.path.join(bdp_root_path, private_key_relative)
 
         logger.debug('private_key=%s' % local_settings['private_key'])
-        local_settings['private_key_name'] = run_settings[RMIT_SCHEMA+'/platform/computation/nectar']['private_key']
+        local_settings['private_key_name'] = run_settings[RMIT_SCHEMA+'/platform/computation']['private_key']
 
-        logger.debug(run_settings[RMIT_SCHEMA+'/platform/computation/nectar']['security_group'])
+        logger.debug(run_settings[RMIT_SCHEMA+'/platform/computation']['security_group'])
         #local_settings['username'] = run_settings[
-        #    RMIT_SCHEMA+'/platform/computation/nectar']['username']
+        #    RMIT_SCHEMA+'/platform/computation']['username']
         #local_settings['password'] = run_settings[
-        #    RMIT_SCHEMA+'/platform/computation/nectar']['password']
+        #    RMIT_SCHEMA+'/platform/computation']['password']
         local_settings['username'] = 'root'  # FIXME: schema value is ignored
 
         #key_file = hrmcstages.retrieve_private_key(local_settings,
@@ -123,7 +120,7 @@ class Create(Stage):
 
 
         key_file = os.path.join(bdp_root_path, private_key_relative)
-        #local_settings['private_key'] = run_settings[RMIT_SCHEMA+'/platform/computation/nectar']['private_key']
+        #local_settings['private_key'] = run_settings[RMIT_SCHEMA+'/platform/computation']['private_key']
         #local_settings['nectar_private_key'] = key_file
 
         logger.debug("botosettings=%s" % local_settings)

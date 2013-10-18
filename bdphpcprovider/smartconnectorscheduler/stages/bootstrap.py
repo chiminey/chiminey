@@ -24,7 +24,7 @@ import os
 
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
-from bdphpcprovider.smartconnectorscheduler import hrmcstages
+from bdphpcprovider.smartconnectorscheduler import hrmcstages, platform
 from bdphpcprovider.smartconnectorscheduler import sshconnector, botocloudconnector, models
 from bdphpcprovider.smartconnectorscheduler.errors import PackageFailedError
 from bdphpcprovider.smartconnectorscheduler.stages.errors import InsufficientResourceError
@@ -102,7 +102,7 @@ class Bootstrap(Stage):
                                             unicode(node.region)))
                     continue
                 node_ip = node.ip_address
-                relative_path = "%s@%s" % (local_settings['platform'],
+                relative_path = "%s@%s" % (local_settings['type'],
                     local_settings['payload_destination'])
                 destination = smartconnector.get_url_with_pkey(local_settings,
                     relative_path,
@@ -161,10 +161,10 @@ def retrieve_local_settings(run_settings, local_settings):
         RMIT_SCHEMA+'/stages/create/created_nodes')
     smartconnector.copy_settings(local_settings, run_settings,
         RMIT_SCHEMA+'/stages/create/custom_prompt')
-    smartconnector.copy_settings(local_settings, run_settings,
-        RMIT_SCHEMA+'/platform/computation/nectar/ec2_access_key')
-    smartconnector.copy_settings(local_settings, run_settings,
-        RMIT_SCHEMA+'/platform/computation/nectar/ec2_secret_key')
+    #smartconnector.copy_settings(local_settings, run_settings,
+    #    RMIT_SCHEMA+'/platform/computation/nectar/ec2_access_key')
+    #smartconnector.copy_settings(local_settings, run_settings,
+    #    RMIT_SCHEMA+'/platform/computation/nectar/ec2_secret_key')
     #smartconnector.copy_settings(local_settings, run_settings,
     #    RMIT_SCHEMA+'/platform/computation/nectar/root_path')
 
@@ -174,21 +174,25 @@ def retrieve_local_settings(run_settings, local_settings):
     #    RMIT_SCHEMA+'/stages/create/nectar_password')
     #local_settings['username'] = \
     #    run_settings[RMIT_SCHEMA+'/stages/create']['nectar_username']
-    local_settings['username'] = 'root'  # FIXME: schema value is ignored, avoid hard coding
+    #local_settings['username'] = 'root'  # FIXME: schema value is ignored, avoid hard coding
     #local_settings['password'] = \
     #    run_settings[RMIT_SCHEMA+'/stages/create']['nectar_password']
 
-    bdp_root_path = '/var/cloudenabling/remotesys' #fixme replace by parameter
-        #fixme: in the schema definition, change private_key to private_key_name, private_key_path to private_key
-    private_key_relative = run_settings[RMIT_SCHEMA+'/platform/computation/nectar']['private_key_path']
-    logger.debug('private_key_relative=%s' % private_key_relative)
-    local_settings['private_key'] = os.path.join(bdp_root_path, private_key_relative)
-    local_settings['root_path'] = '/home/centos' #fixme avoid hard coding
+    #bdp_root_path = '/var/cloudenabling/remotesys' #fixme replace by parameter
+    #    #fixme: in the schema definition, change private_key to private_key_name, private_key_path to private_key
+    #private_key_relative = run_settings[RMIT_SCHEMA+'/platform/computation/nectar']['private_key_path']
+    #logger.debug('private_key_relative=%s' % private_key_relative)
+    #local_settings['private_key'] = os.path.join(bdp_root_path, private_key_relative)
+    #local_settings['root_path'] = '/home/centos' #fixme avoid hard coding
 
     #key_file = hrmcstages.retrieve_private_key(local_settings,
     #        run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nectar_private_key'])
     #local_settings['private_key'] = key_file
     #local_settings['nectar_private_key'] = key_file
+
+    computation_platform = run_settings[RMIT_SCHEMA+'/platform/computation']
+    credentials = platform.get_credentials(computation_platform)
+    local_settings.update(credentials)
 
     logger.debug('retrieve completed')
 
@@ -227,7 +231,7 @@ def start_multi_setup_task(settings, maketarget_nodegroup_pair={}):
             logger.debug('constructing source')
             source = smartconnector.get_url_with_pkey(settings, settings['payload_source'])
             logger.debug('source=%s' % source)
-            relative_path = 'nectar@' + settings['payload_destination'] #fixme, calcualte platform type automatically
+            relative_path = '%s@%s' % (settings['type'], settings['payload_destination'])
             destination = smartconnector.get_url_with_pkey(settings, relative_path,
                                                  is_relative_path=True,
                                                  ip_address=node_ip)

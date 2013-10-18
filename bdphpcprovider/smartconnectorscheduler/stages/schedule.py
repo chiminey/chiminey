@@ -23,7 +23,7 @@ import ast
 import os
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
-from bdphpcprovider.smartconnectorscheduler import smartconnector, hrmcstages
+from bdphpcprovider.smartconnectorscheduler import smartconnector, hrmcstages, platform
 from bdphpcprovider.smartconnectorscheduler import botocloudconnector, sshconnector
 from bdphpcprovider.smartconnectorscheduler import models
 from django.core.exceptions import ImproperlyConfigured
@@ -208,7 +208,7 @@ class Schedule(Stage):
                 logger.debug('mynode=%s' % node_ip)
                 try:
                     #local_settings['platform'] should be replaced
-                    relative_path = "%s@%s" % (local_settings['platform'],
+                    relative_path = "%s@%s" % (local_settings['type'],
                         local_settings['payload_destination'])
                     destination = smartconnector.get_url_with_pkey(local_settings,
                         relative_path,
@@ -375,10 +375,10 @@ def retrieve_local_settings(run_settings, local_settings):
         'http://rmit.edu.au/schemas/stages/create/custom_prompt')
     smartconnector.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/system/max_seed_int')
-    smartconnector.copy_settings(local_settings, run_settings,
-        RMIT_SCHEMA+'/platform/computation/nectar/ec2_access_key')
-    smartconnector.copy_settings(local_settings, run_settings,
-        RMIT_SCHEMA+'/platform/computation/nectar/ec2_secret_key')
+    #smartconnector.copy_settings(local_settings, run_settings,
+    #    RMIT_SCHEMA+'/platform/computation/nectar/ec2_access_key')
+    #smartconnector.copy_settings(local_settings, run_settings,
+    #    RMIT_SCHEMA+'/platform/computation/nectar/ec2_secret_key')
 
     #smartconnector.copy_settings(local_settings, run_settings,
     #    'http://rmit.edu.au/schemas/stages/create/nectar_username')
@@ -390,22 +390,25 @@ def retrieve_local_settings(run_settings, local_settings):
         'http://rmit.edu.au/schemas/input/hrmc/fanout_per_kept_result')
     #local_settings['username'] = \
     #    run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_username']
-    local_settings['username'] = 'root'  # FIXME: schema value is ignored, avoid hardcoding
+    #local_settings['username'] = 'root'  # FIXME: schema value is ignored, avoid hardcoding
     #local_settings['password'] = \
     #    run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
 
-    bdp_root_path = '/var/cloudenabling/remotesys' #fixme replace by parameter
-        #fixme: in the schema definition, change private_key to private_key_name, private_key_path to private_key
-    private_key_relative = run_settings[RMIT_SCHEMA+'/platform/computation/nectar']['private_key_path']
-    logger.debug('private_key_relative=%s' % private_key_relative)
-    local_settings['private_key'] = os.path.join(bdp_root_path, private_key_relative)
-    local_settings['root_path'] = '/home/centos' #fixme avoid hard coding
+    #bdp_root_path = '/var/cloudenabling/remotesys' #fixme replace by parameter
+    #    #fixme: in the schema definition, change private_key to private_key_name, private_key_path to private_key
+    #private_key_relative = run_settings[RMIT_SCHEMA+'/platform/computation/nectar']['private_key_path']
+    #logger.debug('private_key_relative=%s' % private_key_relative)
+    #local_settings['private_key'] = os.path.join(bdp_root_path, private_key_relative)
+    #local_settings['root_path'] = '/home/centos' #fixme avoid hard coding
 
     #key_file = hrmcstages.retrieve_private_key(local_settings,
     #        run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nectar_private_key'])
     #local_settings['private_key'] = key_file
     #local_settings['nectar_private_key'] = key_file
 
+    computation_platform = run_settings[RMIT_SCHEMA+'/platform/computation']
+    credentials = platform.get_credentials(computation_platform)
+    local_settings.update(credentials)
 
     logger.debug('retrieve completed')
 
@@ -428,7 +431,7 @@ def start_round_robin_schedule(nodes, processes, schedule_index, settings):
     for cur_node in all_nodes:
         ip_address = cur_node.ip_address
         logger.debug('ip_address=%s' % ip_address)
-        relative_path = settings['platform'] + '@' + settings['payload_destination']
+        relative_path = settings['type'] + '@' + settings['payload_destination']
         procs_on_cur_node = proc_per_node
         if remaining_procs:
             procs_on_cur_node = proc_per_node + 1
@@ -485,7 +488,7 @@ def start_round_robin_reschedule(nodes, procs_2b_rescheduled, current_procs, set
     for cur_node in all_nodes:
         ip_address = cur_node.ip_address
         logger.debug('ip_address=%s' % ip_address)
-        relative_path = settings['platform'] + '@' + settings['payload_destination']
+        relative_path = settings['type'] + '@' + settings['payload_destination']
         procs_on_cur_node = proc_per_node
         if remaining_procs:
             procs_on_cur_node = proc_per_node + 1
