@@ -37,6 +37,8 @@ from bdphpcprovider.smartconnectorscheduler.stages.composite import (make_graph_
 
 logger = logging.getLogger(__name__)
 
+RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+
 
 class Transform(Stage):
     """
@@ -201,17 +203,29 @@ class Transform(Stage):
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/input/hrmc/threshold')
         smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/stages/create/nectar_username')
+            RMIT_SCHEMA + '/platform/computation/nectar/ec2_access_key')
         smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/stages/create/nectar_password')
-        self.boto_settings['username'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_username']
-        self.boto_settings['username'] = 'root'  # FIXME: schema value is ignored
-        self.boto_settings['password'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
+            RMIT_SCHEMA + '/platform/computation/nectar/ec2_secret_key')
 
-        key_file = hrmcstages.retrieve_private_key(self.boto_settings,
-            run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nectar_private_key'])
-        self.boto_settings['private_key'] = key_file
-        self.boto_settings['nectar_private_key'] = key_file
+        #smartconnector.copy_settings(self.boto_settings, run_settings,
+        #    'http://rmit.edu.au/schemas/stages/create/nectar_username')
+        #smartconnector.copy_settings(self.boto_settings, run_settings,
+        #    'http://rmit.edu.au/schemas/stages/create/nectar_password')
+        #self.boto_settings['username'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_username']
+        self.boto_settings['username'] = 'root'  # FIXME: schema value is ignored
+        #self.boto_settings['password'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
+
+        #key_file = hrmcstages.retrieve_private_key(self.boto_settings,
+        #    run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nectar_private_key'])
+        #self.boto_settings['private_key'] = key_file
+        #self.boto_settings['nectar_private_key'] = key_file
+
+        bdp_root_path = '/var/cloudenabling/remotesys' #fixme replace by parameter
+        #fixme: in the schema definition, change private_key to private_key_name, private_key_path to private_key
+        private_key_relative = run_settings[RMIT_SCHEMA+'/platform/computation/nectar']['private_key_path']
+        logger.debug('private_key_relative=%s' % private_key_relative)
+        self.boto_settings['private_key'] = os.path.join(bdp_root_path, private_key_relative)
+        self.boto_settings['root_path'] = '/home/centos' #fixme avoid hard coding
 
         logger.debug("boto_settings=%s" % self.boto_settings)
 
@@ -223,6 +237,7 @@ class Transform(Stage):
         fsys = hrmcstages.get_filesystem(output_url)
         logger.debug("fsys=%s" % fsys)
         logger.debug("mypath=%s" % mypath)
+
 
         node_output_dirs, _ = fsys.listdir(mypath)
         logger.debug("node_output_dirs=%s" % node_output_dirs)

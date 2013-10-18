@@ -271,6 +271,7 @@ class Command(BaseCommand):
                 {
                 u'number_vm_instances': {'type':models.ParameterName.NUMERIC, 'subtype':'whole', 'initial':4, 'description':'Number of VM instances', 'ranking':1, 'help_text':''},
                 u'minimum_number_vm_instances': {'type':models.ParameterName.NUMERIC, 'subtype':'whole', 'initial':1, 'description':'Minimum No. VMs', 'ranking':2, 'help_text':''},
+                u'computation_platform': {'type':models.ParameterName.STRING, 'subtype':'', 'initial': '', 'description':'Computation Platform Name', 'ranking':0, 'help_text':'The name of the computation platform to be used'},
                 }
                 ],
             u'http://rmit.edu.au/schemas/input/mytardis':

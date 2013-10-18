@@ -49,6 +49,7 @@ def copy_settings(dest_context, context, key):
     """
     try:
         # Note that all run_settings and user_settings are flattened
+        logger.debug('context=%s' % context[os.path.dirname(key)])
         res = context[os.path.dirname(key)][os.path.basename(key)]
         dest_context[os.path.basename(key)] = res
         logger.debug("dest_contxt[%s] = %s" % (os.path.basename(key), dest_context[os.path.basename(key)]))
@@ -56,11 +57,15 @@ def copy_settings(dest_context, context, key):
         logger.error("error on key %s" % key)
         raise
 
+def get_platform(platform_url):
+    return get_bdp_storage_url(platform_url)
+
+
 def get_bdp_storage_url(platform_url):
     platform_name = platform_url.split('/')[0]
-    record = platform.retrieve_platform(platform_name)
+    record, schema = platform.retrieve_platform(platform_name)
     logger.debug('record=%s' % record)
-    return record
+    return record, schema
     '''
     scheme = 'ssh'
     relative_path = parsed_url.path
@@ -114,13 +119,16 @@ def get_url_with_pkey(settings, url_or_relative_path,
     platform = parsed_url.username
     url_settings = {}
     if platform == 'nectar':
-        url_settings['username'] = settings['nectar_username']
-        url_settings['password'] = settings['nectar_password']
-        url_settings['key_file'] = settings['nectar_private_key']
+        url_settings['username'] = settings['username']
+        #url_settings['password'] = settings['nectar_password']
+        url_settings['key_file'] = settings['private_key']
         # key_file = settings['nectar_private_key']
         # username = settings['nectar_username']
         # password = settings['nectar_password']
+        url_settings['root_path'] = settings['root_path']
+        args = '&'.join(["%s=%s" % (k, v) for k, v in sorted(url_settings.items())])
         scheme = 'ssh'
+
     elif platform == 'nci':
         url_settings['username'] = settings['nci_user']
         url_settings['password'] = settings['nci_password']
@@ -128,6 +136,7 @@ def get_url_with_pkey(settings, url_or_relative_path,
         # key_file = settings['nci_private_key']
         # username = settings['nci_user']
         # password = settings['nci_password']
+
         scheme = 'ssh'
     elif platform == 'tardis':
         url_settings['mytardis_username'] = settings['mytardis_user']
@@ -171,8 +180,9 @@ def get_url_with_pkey(settings, url_or_relative_path,
         logger.error('compatible platform for %s not found' % platform)
 
     # FIXME: suffix root_path with username
-    root_path = platform_object.root_path
-    url_settings['root_path'] = root_path
+    if platform != 'nectar':
+        root_path = platform_object.root_path
+        url_settings['root_path'] = root_path
     # FIXME: URIs cannot contain unicode data, but IRI can. So need to convert IRI to URL
     # if parameters can be non-ascii
     # https://docs.djangoproject.com/en/dev/ref/unicode/#uri-and-iri-handling

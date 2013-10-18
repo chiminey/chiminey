@@ -85,6 +85,9 @@ def open_connection(ip_address, settings):
                 mykey = paramiko.RSAKey.from_private_key_file(private_key_file)
                 ssh_client.connect(ip_address, username=settings['username'],
                                    timeout=60.0, pkey=mykey)
+                logger.debug('private_keyfile_=%s' % private_key_file)
+            else:
+                raise IOError
         elif 'password' in settings and 'username' in settings:
             logger.debug("Connecting to %s as %s" % (ip_address,
                                 settings['username']))

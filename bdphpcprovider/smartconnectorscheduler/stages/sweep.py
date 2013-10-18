@@ -61,8 +61,6 @@ class Sweep(Stage):
         logger.debug("Run stage initialized")
 
     def triggered(self, run_settings):
-        smartconnector.get_bdp_storage_url('amun')
-
         if self._exists(run_settings,
             'http://rmit.edu.au/schemas/stages/sweep',
             'sweep_done'):
@@ -71,6 +69,10 @@ class Sweep(Stage):
         return True
 
     def process(self, run_settings):
+        computation_platform, computation_platform_schema = smartconnector.get_bdp_storage_url('nectar_home23')
+        logger.debug('computation_platform=%s' % computation_platform)
+        logger.debug('computation_platform_schema=%s' % computation_platform_schema)
+        run_settings[computation_platform_schema] = computation_platform
         # Need to make copy because we pass on run_settings to sub connector
         # so any changes we make to run_settings will be inherited
         from copy import deepcopy
@@ -135,12 +137,16 @@ class Sweep(Stage):
         # runs end up overlapping in the random numbers they utilise.
         # solution is to have separate random files per run or partition
         # big file up.
-        rands = hrmcstages.generate_rands(settings=local_settings,
+        try:
+            rands = hrmcstages.generate_rands(settings=local_settings,
             start_range=0,
             end_range=-1,
             num_required=len(runs),
             start_index=self.rand_index)
-        logger.debug("rands=%s" % rands)
+            logger.debug("rands=%s" % rands)
+        except Exception, e:
+            logger.debug(e)
+            raise
 
         # For each of the generated runs, copy across and modify input directory
         # and then schedule subrun of hrmc connector
@@ -286,6 +292,14 @@ class Sweep(Stage):
         run_settings.setdefault(
             'http://rmit.edu.au/schemas/stages/sweep',
             {})[u'sweep_done'] = 1
+        #run_settings[self.computation_platform_schema] = self.computation_platform
+        '''
+        for k, v in self.computation_platform.items():
+            run_settings.setdefault(self.computation_platform_schema,
+            {})[k] = v
+            #run_settings[k] = k
+        '''
+        logger.debug('interesting run_settings=%s' % run_settings)
         return run_settings
 
 
