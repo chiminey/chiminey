@@ -69,7 +69,8 @@ class Sweep(Stage):
         return True
 
     def process(self, run_settings):
-        computation_platform, computation_platform_schema = smartconnector.get_bdp_storage_url('nectar_home23')
+        computation_platform_name = run_settings['http://rmit.edu.au/schemas/input/system/cloud']['computation_platform']
+        computation_platform, computation_platform_schema = smartconnector.get_bdp_storage_url(computation_platform_name)
         logger.debug('computation_platform=%s' % computation_platform)
         logger.debug('computation_platform_schema=%s' % computation_platform_schema)
         run_settings[computation_platform_schema] = computation_platform
