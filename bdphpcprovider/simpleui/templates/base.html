@@ -13,6 +13,7 @@
 <link rel="stylesheet" type="text/css" href="{% static "simpleui/css/default.css" %}">
 <link href="{% static "footable/footable.core.css" %}" rel="stylesheet" type="text/css" />
 
+
 <style>
     .modal-backdrop {background-color: #DCDCDC;}
     .body {margin-left: 0}
@@ -126,9 +127,9 @@ function formreset(){
                     {% else %}
                     <li><a  href="{% url logout %}">logout</a></li>
                     <!-- <li><a  href="{% url hrmcjob-new %}">Create HRMC Job</a></li> -->
-                    <li><a  href="{% url makedirective 0 %}">New Job</a></li>
+                    <li><a  href="{% url makedirective 0 %}">Create Job</a></li>
                 <!--   <li><a  href="{% url sweepjob-new %}">Create SWEEP Job</a></li> -->
-                    <li><a  href="{% url hrmcjob-list %}">Retrieve Jobs</a></li>
+                    <li><a  href="{% url hrmcjob-list %}">Jobs</a></li>
 <!--                    <li><a  href="{% url makejob-new %}">Create RemoteMake Job</a></li> -->
                     <li><a  href="{% url userprofileparameter-list %}">User Settings</a></li>
 <!--                    <li><a  href="{% url listdir-list %}">Directory</a></li> -->
