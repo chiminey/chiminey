@@ -90,7 +90,7 @@ $(document).ready(function () {
                         <th data-hide="">
                             <strong>{{ h }}</strong>
                         </th>
-                        {% else %}
+                        {% elif h != 'password' %}
                         <th data-hide="phone, tablet">
                             <strong>{{ h }}</strong>
                         </th>
@@ -101,9 +101,10 @@ $(document).ready(function () {
             <tbody>
                 {% for paramset_key, paramset in schema.items %}
                 <tr>
-
                     {% for param_key, param in paramset.items %}
-                        <td class="span1">  {{ param }}</td>
+                        {% if param_key != 'password' %}
+                            <td class="span1">  {{ param }}</td>
+                        {% endif %}
                     {% endfor %}
                 <td>
                 <div class="btn-group">

@@ -220,8 +220,11 @@ def filter_computation_platforms(GET_json_data):
         schema = i['paramset']['platform']['schema_namespace_prefix']
         paramset_id = i['paramset']['id']
         name = i['name']['name']
+        '''
         if name == 'password':
-            continue
+            value = '****'
+        else:
+        '''
         value = i['value']
         computation_platforms[schema][paramset_id][str(name)] = str(value)
 
