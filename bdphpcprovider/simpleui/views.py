@@ -724,6 +724,7 @@ subtype_validation = {
     'natural': ('natural number', validators.validate_natural_number, None, None),
     'string': ('string', validators.validate_string, None, None),
     'whole': ('whole number', validators.validate_whole_number, None, None),
+    'nectar_platform': ('NeCTAR platform name', validators.validate_nectar_platform, None, None),
     'even': ('even number', validators.validate_even_number, None, None),
     'bdpurl': ('BDP url', validators.validate_BDP_url, forms.TextInput, 255),
     'float': ('floading point number', validators.validate_float_number, None, None),
@@ -770,7 +771,10 @@ def make_dynamic_field(parameter):
             field = forms.IntegerField(**field_params)
     else:
         field_params['initial'] = str(parameter['initial'])
+        if parameter['subtype'] == 'nectar_platform':
+            field_params['initial'] = 'nectar'
         field = forms.CharField(**field_params)
+
     if 'subtype' in parameter and parameter['subtype']:
         field.validators.append(subtype_validation[parameter['subtype']][1])
     return field

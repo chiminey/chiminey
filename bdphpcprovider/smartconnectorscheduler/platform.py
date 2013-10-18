@@ -527,8 +527,11 @@ def retrieve_platform(platform_name):
     filter = {'name': platform_name}
     param_sets = filter_platform_paramsets('', '', filter)
     record = {}
+    schema = ''
+    if not len(param_sets):
+        return record, schema
     if len(param_sets) > 1:
-        return False
+        return record, schema
     schema = param_sets[0].schema.namespace
     parameters = models.PlatformInstanceParameter\
         .objects.filter(paramset=param_sets[0])

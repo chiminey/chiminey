@@ -234,6 +234,15 @@ def validate_string(value):
     msg = u'string'
     return str(value)
 
+#fixme expand; use rest api to acceess objects
+def validate_nectar_platform(value):
+    from bdphpcprovider.smartconnectorscheduler.platform import retrieve_platform
+    record, _ = retrieve_platform(value)
+    if not record:
+        raise ValidationError('Registered NeCTAR platform name. All platforms are avail')
+    logger.debug('record=%s' % record)
+    return record
+
 
 def validate_BDP_url(value):
     logger.debug("checking bdpurl %s" % value)
