@@ -106,6 +106,7 @@ def generate_nectar_key(bdp_root_path, parameters):
         key_created = False
         counter = 1
         while not key_created:
+            logger.debug('hi%s' % counter)
             try:
                 if not os.path.exists(os.path.join(key_dir, key_name)):
                     key_pair = connection.create_key_pair(key_name)
@@ -528,12 +529,13 @@ def retrieve_platform(platform_name):
     record = {}
     if len(param_sets) > 1:
         return False
+    schema = param_sets[0].schema.namespace
     parameters = models.PlatformInstanceParameter\
         .objects.filter(paramset=param_sets[0])
     for param in parameters:
         name = param.name.name
         record[name] = param.value
-    return record
+    return record, schema
 
 
 def get_owner(username):

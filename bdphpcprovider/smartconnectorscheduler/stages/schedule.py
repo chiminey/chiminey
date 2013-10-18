@@ -31,6 +31,7 @@ from django.core.exceptions import ImproperlyConfigured
 
 logger = logging.getLogger(__name__)
 
+RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
 class Schedule(Stage):
     """
@@ -79,7 +80,7 @@ class Schedule(Stage):
             except KeyError:
                 self.total_rescheduled_procs = 0
             self.total_procs_2b_rescheduled = len(self.procs_2b_rescheduled)
-            if self.total_procs_2b_rescheduled == self.total_rescheduled_procs:
+            if (self.total_procs_2b_rescheduled == self.total_rescheduled_procs) and self.total_rescheduled_procs:
                 return False
         else:
             try:
@@ -204,12 +205,17 @@ class Schedule(Stage):
                                             unicode(node.region)))
                     continue
                 node_ip = node.ip_address
-                relative_path = "%s@%s" % (local_settings['platform'],
-                    local_settings['payload_destination'])
-                destination = smartconnector.get_url_with_pkey(local_settings,
-                    relative_path,
-                    is_relative_path=True,
-                    ip_address=node_ip)
+                logger.debug('mynode=%s' % node_ip)
+                try:
+                    #local_settings['platform'] should be replaced
+                    relative_path = "%s@%s" % (local_settings['platform'],
+                        local_settings['payload_destination'])
+                    destination = smartconnector.get_url_with_pkey(local_settings,
+                        relative_path,
+                        is_relative_path=True,
+                        ip_address=node_ip)
+                except Exception, e:
+                    logger.debug(e)
                 logger.debug("Relative path %s" % relative_path)
                 logger.debug("Destination %s" % destination)
                 fin = job_finished(node_ip, local_settings, destination)
@@ -370,22 +376,40 @@ def retrieve_local_settings(run_settings, local_settings):
     smartconnector.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/system/max_seed_int')
     smartconnector.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/stages/create/nectar_username')
+        RMIT_SCHEMA+'/platform/computation/nectar/ec2_access_key')
+    smartconnector.copy_settings(local_settings, run_settings,
+        RMIT_SCHEMA+'/platform/computation/nectar/ec2_secret_key')
+
+    #smartconnector.copy_settings(local_settings, run_settings,
+    #    'http://rmit.edu.au/schemas/stages/create/nectar_username')
     smartconnector.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/input/hrmc/number_dimensions')
-    smartconnector.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/stages/create/nectar_password')
+    #smartconnector.copy_settings(local_settings, run_settings,
+    #    'http://rmit.edu.au/schemas/stages/create/nectar_password')
     smartconnector.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/input/hrmc/fanout_per_kept_result')
-    local_settings['username'] = \
-        run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_username']
-    local_settings['username'] = 'root'  # FIXME: schema value is ignored
-    local_settings['password'] = \
-        run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
-    key_file = hrmcstages.retrieve_private_key(local_settings,
-            run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nectar_private_key'])
-    local_settings['private_key'] = key_file
-    local_settings['nectar_private_key'] = key_file
+    #local_settings['username'] = \
+    #    run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_username']
+    local_settings['username'] = 'root'  # FIXME: schema value is ignored, avoid hardcoding
+    #local_settings['password'] = \
+    #    run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
+
+    bdp_root_path = '/var/cloudenabling/remotesys' #fixme replace by parameter
+        #fixme: in the schema definition, change private_key to private_key_name, private_key_path to private_key
+    private_key_relative = run_settings[RMIT_SCHEMA+'/platform/computation/nectar']['private_key_path']
+    logger.debug('private_key_relative=%s' % private_key_relative)
+    local_settings['private_key'] = os.path.join(bdp_root_path, private_key_relative)
+    local_settings['root_path'] = '/home/centos' #fixme avoid hard coding
+
+    #key_file = hrmcstages.retrieve_private_key(local_settings,
+    #        run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nectar_private_key'])
+    #local_settings['private_key'] = key_file
+    #local_settings['nectar_private_key'] = key_file
+
+
+    logger.debug('retrieve completed')
+
+
 
 
 def start_round_robin_schedule(nodes, processes, schedule_index, settings):
@@ -528,10 +552,12 @@ def get_procs_ids(process, **kwargs):
 def put_proc_ids(relative_path, ids, ip, settings):
     relative_path = os.path.join(relative_path,
                                  settings['filename_for_PIDs'])
+    logger.debug('put_proc_ids=%s' % relative_path)
     destination = smartconnector.get_url_with_pkey(settings,
         relative_path,
         is_relative_path=True,
         ip_address=ip)
+    logger.debug('destination=%s' % destination)
     ids_str = []
     [ids_str.append(str(i)) for i in ids]
     proc_ids = ("\n".join(ids_str)) + "\n"

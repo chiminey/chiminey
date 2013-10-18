@@ -8,7 +8,8 @@ class SweepSubmitForm(forms.Form):
         help_text="Ensure tenancy has sufficient resources")
     minimum_number_vm_instances = forms.IntegerField(
         help_text="Ensure tenancy has sufficient resources", label=("Minimum No. VMs"))
-
+    computation_platform = forms.IntegerField(
+        help_text="Ensure tenancy has sufficient resources", label=("Minimum No. VMs"))
     maximum_retry = forms.IntegerField(min_value=0,
         label=_("No. maximum retry after failure"))
     reschedule_failed_processes = forms.BooleanField(initial=True, required=False)
@@ -25,6 +26,7 @@ class SweepSubmitForm(forms.Form):
         widget=forms.TextInput
         #widget=forms.Textarea(attrs={'cols': 80, 'rows': 1})
         )
+
     number_dimensions = forms.IntegerField(min_value=0,
         label=_("No. varying parameters"), help_text="Number of parameters to vary, e.g. 1 = iseed only, 2 = iseed and temp")
     max_iteration = forms.IntegerField(label=("Maximum no. iterations"),min_value=1, help_text="Computation ends when either convergence or maximum iteration reached")

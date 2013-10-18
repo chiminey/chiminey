@@ -32,7 +32,7 @@ from collections import namedtuple
 from boto.ec2.regioninfo import RegionInfo
 from boto.exception import EC2ResponseError
 from bdphpcprovider.smartconnectorscheduler.sshconnector import open_connection,\
-    run_command, is_ssh_ready, AuthError
+    run_command, is_ssh_ready, AuthError, run_command_with_status
 from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 
 
@@ -64,8 +64,8 @@ def _create_cloud_connection(settings):
 def _create_nectar_connection(settings):
     region = RegionInfo(name="NeCTAR", endpoint="nova.rc.nectar.org.au")
     connection = boto.connect_ec2(
-        aws_access_key_id=settings['nectar_ec2_access_key'],
-        aws_secret_access_key=settings['nectar_ec2_secret_key'],
+        aws_access_key_id=settings['ec2_access_key'],
+        aws_secret_access_key=settings['ec2_secret_key'],
         is_secure=True,
         region=region,
         port=8773,
@@ -102,15 +102,16 @@ def create_VM_instances(number_vm_instances, settings):
     connection = _create_cloud_connection(settings)
     all_instances = []
     logger.info("Creating %d VM(s)" % number_vm_instances)
+    logger.debug(settings['security_group'])
     try:
         reservation = connection.run_instances(
                     placement='monash',
                     image_id=settings['vm_image'],
                     min_count=1,
                     max_count=number_vm_instances,
-                    key_name=settings['nectar_private_key_name'],
-                    security_groups=settings['security_group'],
-                    instance_type=settings['vm_size'])
+                    key_name=settings['private_key_name'],
+                    security_groups=[settings['security_group']],
+                    instance_type=settings['vm_image_size'])
         logger.debug("Created Reservation %s" % reservation)
         for instance in reservation.instances:
             all_instances.append(instance)
@@ -170,6 +171,7 @@ def _store_md5_on_instances(all_instances, group_id, settings):
             logger.info("Group ID file created")
             instances_with_groupid.append(instance)
         except Exception as ex:
+            logger.debug(ex)
             logger.info("VM instance %s will not be registered to group '%s'\
             " % (ip_address, group_id))
             logger.deug(ex)
@@ -188,14 +190,16 @@ def _customize_prompt(all_instances, settings):
             command_csh = 'echo \'setenv PS1 "%s"\' >> .cshrc' % settings['custom_prompt']
             command = 'cd ~; %s; %s' % (command_bash, command_csh)
             logger.debug("Command Prompt %s" % command)
-            run_command(ssh_client, command)
+            stdout, err = run_command_with_status(ssh_client, command)
             logger.debug("Customized prompt for %s" % ip_address)
             customised_instances.append(instance)
         except Exception as ex:
+            logger.debug(err)
             logger.info("Unable to customize command " \
                   "prompt for VM instance %s" \
             % (ip_address))
             logger.debug(ex)
+            raise
     return customised_instances
 
 

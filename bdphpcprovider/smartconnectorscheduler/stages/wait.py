@@ -30,6 +30,7 @@ from bdphpcprovider.reliabilityframework.failuredetection import FailureDetectio
 
 logger = logging.getLogger(__name__)
 
+RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
 class Wait(Stage):
     """
@@ -388,15 +389,28 @@ def retrieve_local_settings(run_settings, local_settings):
         'http://rmit.edu.au/schemas/system/platform')
     smartconnector.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/run/payload_cloud_dirname')
+    #smartconnector.copy_settings(local_settings, run_settings,
+    #    'http://rmit.edu.au/schemas/stages/create/nectar_username')
+    #smartconnector.copy_settings(local_settings, run_settings,
+    #    'http://rmit.edu.au/schemas/stages/create/nectar_password')
     smartconnector.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/stages/create/nectar_username')
+        RMIT_SCHEMA+'/platform/computation/nectar/ec2_access_key')
     smartconnector.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/stages/create/nectar_password')
-    local_settings['username'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_username']
+        RMIT_SCHEMA+'/platform/computation/nectar/ec2_secret_key')
+
+    #local_settings['username'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_username']
     local_settings['username'] = 'root'  # FIXME: schema value is ignored
-    local_settings['password'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
-    key_file = hrmcstages.retrieve_private_key(local_settings,
-            run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nectar_private_key'])
-    local_settings['private_key'] = key_file
-    local_settings['nectar_private_key'] = key_file
+    #local_settings['password'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
+    #key_file = hrmcstages.retrieve_private_key(local_settings,
+    #        run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nectar_private_key'])
+    #local_settings['private_key'] = key_file
+    #local_settings['nectar_private_key'] = key_file
+
+    bdp_root_path = '/var/cloudenabling/remotesys' #fixme replace by parameter
+        #fixme: in the schema definition, change private_key to private_key_name, private_key_path to private_key
+    private_key_relative = run_settings[RMIT_SCHEMA+'/platform/computation/nectar']['private_key_path']
+    logger.debug('private_key_relative=%s' % private_key_relative)
+    local_settings['private_key'] = os.path.join(bdp_root_path, private_key_relative)
+    local_settings['root_path'] = '/home/centos' #fixme avoid hard coding
+
 

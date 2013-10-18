@@ -71,11 +71,16 @@ class Bootstrap(Stage):
 
         local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
         retrieve_local_settings(run_settings, local_settings)
+
         if not self.started:
             try:
+                logger.debug('process to start')
                 _ = start_multi_setup_task(local_settings)
             except PackageFailedError, e:
                 logger.error("unable to start setup of packages: %s" % e)
+            except Exception, e:
+                logger.debug(e)
+                raise
             pass
             self.started = 1
 
@@ -157,18 +162,35 @@ def retrieve_local_settings(run_settings, local_settings):
     smartconnector.copy_settings(local_settings, run_settings,
         RMIT_SCHEMA+'/stages/create/custom_prompt')
     smartconnector.copy_settings(local_settings, run_settings,
-        RMIT_SCHEMA+'/stages/create/nectar_username')
+        RMIT_SCHEMA+'/platform/computation/nectar/ec2_access_key')
     smartconnector.copy_settings(local_settings, run_settings,
-        RMIT_SCHEMA+'/stages/create/nectar_password')
-    local_settings['username'] = \
-        run_settings[RMIT_SCHEMA+'/stages/create']['nectar_username']
-    local_settings['username'] = 'root'  # FIXME: schema value is ignored
-    local_settings['password'] = \
-        run_settings[RMIT_SCHEMA+'/stages/create']['nectar_password']
-    key_file = hrmcstages.retrieve_private_key(local_settings,
-            run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nectar_private_key'])
-    local_settings['private_key'] = key_file
-    local_settings['nectar_private_key'] = key_file
+        RMIT_SCHEMA+'/platform/computation/nectar/ec2_secret_key')
+    #smartconnector.copy_settings(local_settings, run_settings,
+    #    RMIT_SCHEMA+'/platform/computation/nectar/root_path')
+
+    #smartconnector.copy_settings(local_settings, run_settings,
+    #    RMIT_SCHEMA+'/stages/create/nectar_username')
+    #smartconnector.copy_settings(local_settings, run_settings,
+    #    RMIT_SCHEMA+'/stages/create/nectar_password')
+    #local_settings['username'] = \
+    #    run_settings[RMIT_SCHEMA+'/stages/create']['nectar_username']
+    local_settings['username'] = 'root'  # FIXME: schema value is ignored, avoid hard coding
+    #local_settings['password'] = \
+    #    run_settings[RMIT_SCHEMA+'/stages/create']['nectar_password']
+
+    bdp_root_path = '/var/cloudenabling/remotesys' #fixme replace by parameter
+        #fixme: in the schema definition, change private_key to private_key_name, private_key_path to private_key
+    private_key_relative = run_settings[RMIT_SCHEMA+'/platform/computation/nectar']['private_key_path']
+    logger.debug('private_key_relative=%s' % private_key_relative)
+    local_settings['private_key'] = os.path.join(bdp_root_path, private_key_relative)
+    local_settings['root_path'] = '/home/centos' #fixme avoid hard coding
+
+    #key_file = hrmcstages.retrieve_private_key(local_settings,
+    #        run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nectar_private_key'])
+    #local_settings['private_key'] = key_file
+    #local_settings['nectar_private_key'] = key_file
+
+    logger.debug('retrieve completed')
 
 
 def start_multi_setup_task(settings, maketarget_nodegroup_pair={}):
@@ -196,13 +218,16 @@ def start_multi_setup_task(settings, maketarget_nodegroup_pair={}):
     logger.info("Requested nodes %d: \nAvailable nodes %s "
            % (requested_nodes, len(nodes)))
 
+    logger.debug('starting')
     for make_target in maketarget_nodegroup_pair:
         for i in range(0, maketarget_nodegroup_pair[make_target]):
             instance = nodes[0]
             node_ip = instance.ip_address
             logger.debug("node_ip=%s" % node_ip)
+            logger.debug('constructing source')
             source = smartconnector.get_url_with_pkey(settings, settings['payload_source'])
-            relative_path = settings['platform'] + '@' + settings['payload_destination']
+            logger.debug('source=%s' % source)
+            relative_path = 'nectar@' + settings['payload_destination'] #fixme, calcualte platform type automatically
             destination = smartconnector.get_url_with_pkey(settings, relative_path,
                                                  is_relative_path=True,
                                                  ip_address=node_ip)
