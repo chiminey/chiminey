@@ -403,6 +403,8 @@ def update_platform_paramset(username, schema_namespace,
         if name in updated_params.keys():
             if name != 'password':
                 platform_parameter.value = updated_params[name]
+            else:
+                platform_parameter.value = ''
         expected_params[name] = platform_parameter.value
     if 'password' in updated_params.keys():
         expected_params['password'] = updated_params['password']
@@ -454,7 +456,8 @@ def delete_platform_paramsets(username, schema_namespace, filters):
         logger.debug('Filter should not be empty. Exiting...')
         return
     platform, schema = get_platform_and_schema(username, schema_namespace)
-    param_sets = filter_platform_paramsets(platform, schema, filters)
+    current_record = {'name': filters['name']}
+    param_sets = filter_platform_paramsets(platform, schema, current_record)
     for param_set in param_sets:
         logger.debug('deleting ... %s' % param_set)
         param_set.delete()
@@ -464,7 +467,7 @@ def delete_platform_paramsets(username, schema_namespace, filters):
         return True, message
     else:
         message = 'Record does not exist'
-        return False, '%s %s' % (failure_message, message) 
+        return False, '%s %s' % (failure_message, message)
 
 
 def is_unique_platform_paramset(platform, schema, filters):
