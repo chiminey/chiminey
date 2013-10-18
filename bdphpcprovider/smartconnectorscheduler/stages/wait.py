@@ -24,7 +24,7 @@ import os
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler \
-    import hrmcstages, models, smartconnector, sshconnector, botocloudconnector
+    import hrmcstages, models, smartconnector, sshconnector, botocloudconnector, platform
 from bdphpcprovider.reliabilityframework.ftmanager import FTManager
 from bdphpcprovider.reliabilityframework.failuredetection import FailureDetection
 
@@ -112,7 +112,7 @@ class Wait(Stage):
         logger.debug("ip=%s" % ip)
         curr_username = settings['username']
         settings['username'] = 'root'
-        relative_path = settings['platform'] + '@' + settings['payload_destination'] + "/" + process_id
+        relative_path = settings['type'] + '@' + settings['payload_destination'] + "/" + process_id
         destination = smartconnector.get_url_with_pkey(settings,
             relative_path,
             is_relative_path=True,
@@ -196,7 +196,7 @@ class Wait(Stage):
         logger.debug("Transferring output from %s to %s" % (cloud_path, output_dir))
         ip = ip_address#botocloudconnector.get_instance_ip(instance_id, settings)
         #ssh = open_connection(ip_address=ip, settings=settings)
-        source_files_location = "%s@%s" % (local_settings['platform'], cloud_path)
+        source_files_location = "%s@%s" % (local_settings['type'], cloud_path)
         source_files_url = smartconnector.get_url_with_pkey(local_settings, source_files_location,
             is_relative_path=True, ip_address=ip)
         logger.debug('source_files_url=%s' % source_files_url)
@@ -393,24 +393,32 @@ def retrieve_local_settings(run_settings, local_settings):
     #    'http://rmit.edu.au/schemas/stages/create/nectar_username')
     #smartconnector.copy_settings(local_settings, run_settings,
     #    'http://rmit.edu.au/schemas/stages/create/nectar_password')
-    smartconnector.copy_settings(local_settings, run_settings,
-        RMIT_SCHEMA+'/platform/computation/nectar/ec2_access_key')
-    smartconnector.copy_settings(local_settings, run_settings,
-        RMIT_SCHEMA+'/platform/computation/nectar/ec2_secret_key')
+    #smartconnector.copy_settings(local_settings, run_settings,
+    #    RMIT_SCHEMA+'/platform/computation/nectar/ec2_access_key')
+    #smartconnector.copy_settings(local_settings, run_settings,
+    #    RMIT_SCHEMA+'/platform/computation/nectar/ec2_secret_key')
 
     #local_settings['username'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_username']
-    local_settings['username'] = 'root'  # FIXME: schema value is ignored
+    #local_settings['username'] = 'root'  # FIXME: schema value is ignored
     #local_settings['password'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
     #key_file = hrmcstages.retrieve_private_key(local_settings,
     #        run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nectar_private_key'])
     #local_settings['private_key'] = key_file
     #local_settings['nectar_private_key'] = key_file
 
-    bdp_root_path = '/var/cloudenabling/remotesys' #fixme replace by parameter
+    #bdp_root_path = '/var/cloudenabling/remotesys' #fixme replace by parameter
         #fixme: in the schema definition, change private_key to private_key_name, private_key_path to private_key
-    private_key_relative = run_settings[RMIT_SCHEMA+'/platform/computation/nectar']['private_key_path']
-    logger.debug('private_key_relative=%s' % private_key_relative)
-    local_settings['private_key'] = os.path.join(bdp_root_path, private_key_relative)
-    local_settings['root_path'] = '/home/centos' #fixme avoid hard coding
+    #private_key_relative = run_settings[RMIT_SCHEMA+'/platform/computation/nectar']['private_key_path']
+    #logger.debug('private_key_relative=%s' % private_key_relative)
+    #local_settings['private_key'] = os.path.join(bdp_root_path, private_key_relative)
+    #local_settings['root_path'] = '/home/centos' #fixme avoid hard coding
+
+    #fixme: this should be moved to appropriate location  after output storage platform is linked
+    computation_platform = run_settings[RMIT_SCHEMA+'/platform/computation']
+    credentials = platform.get_credentials(computation_platform)
+    local_settings.update(credentials)
+
+
+    logger.debug('retrieve completed')
 
 

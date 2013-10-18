@@ -22,7 +22,7 @@
 import logging
 import ast
 
-from bdphpcprovider.smartconnectorscheduler import smartconnector, models
+from bdphpcprovider.smartconnectorscheduler import smartconnector, models, platform
 from bdphpcprovider.smartconnectorscheduler.botocloudconnector \
     import collect_instances, destroy_environ
 
@@ -72,10 +72,15 @@ class Destroy(smartconnector.Stage):
             'http://rmit.edu.au/schemas/system/platform')
         smartconnector.copy_settings(local_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/create/cloud_sleep_interval')
-        smartconnector.copy_settings(local_settings, run_settings,
-            RMIT_SCHEMA+'/platform/computation/nectar/ec2_access_key')
-        smartconnector.copy_settings(local_settings, run_settings,
-            RMIT_SCHEMA+'/platform/computation/nectar/ec2_secret_key')
+        #smartconnector.copy_settings(local_settings, run_settings,
+        #    RMIT_SCHEMA+'/platform/computation/nectar/ec2_access_key')
+        #smartconnector.copy_settings(local_settings, run_settings,
+        #    RMIT_SCHEMA+'/platform/computation/nectar/ec2_secret_key')
+
+        computation_platform = run_settings[RMIT_SCHEMA + '/platform/computation']
+        credentials = platform.get_credentials(computation_platform)
+        local_settings.update(credentials)
+
         node_type = 'created_nodes'
         if self._exists(run_settings,
             'http://rmit.edu.au/schemas/stages/create',

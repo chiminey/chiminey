@@ -32,7 +32,7 @@ from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler.errors import PackageFailedError
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
 from bdphpcprovider.smartconnectorscheduler \
-    import mytardis, models, hrmcstages, sshconnector, smartconnector
+    import mytardis, models, hrmcstages, sshconnector, smartconnector, platform
 
 from bdphpcprovider.smartconnectorscheduler.stages.composite import (make_graph_paramset, make_paramset)
 
@@ -156,7 +156,7 @@ class Execute(Stage):
             source_files_url = smartconnector.get_url_with_pkey(local_settings,
                     source_location, is_relative_path=False)
 
-            dest_files_location = local_settings['platform'] + "@"\
+            dest_files_location = local_settings['type'] + "@"\
                                   + os.path.join(
                 local_settings['payload_destination'],
                 proc['id'], local_settings['payload_cloud_dirname'])
@@ -212,7 +212,7 @@ class Execute(Stage):
         #                                    settings=settings)
         # settings['username'] = curr_username
 
-        relative_path = settings['platform'] + '@' + settings['payload_destination'] + "/" + process_id
+        relative_path = settings['type'] + '@' + settings['payload_destination'] + "/" + process_id
         destination = smartconnector.get_url_with_pkey(settings,
             relative_path,
             is_relative_path=True,
@@ -530,7 +530,7 @@ class Execute(Stage):
                 #ip = botocloudconnector.get_instance_ip(var_node.id, local_settings)
                 ip = proc['ip_address']
 
-                dest_files_location = local_settings['platform'] + "@"\
+                dest_files_location = local_settings['type'] + "@"\
                                       + os.path.join(local_settings['payload_destination'],
                                                      proc['id'],
                                                      local_settings['payload_cloud_dirname']
@@ -578,7 +578,7 @@ class Execute(Stage):
 
                 #local_settings['platform'] should be replaced
                 # and overwrite on the remote
-                var_fname_remote = local_settings['platform']\
+                var_fname_remote = local_settings['type']\
                     + "@" + os.path.join(local_settings['payload_destination'],
                                          proc['id'],
                                          local_settings['payload_cloud_dirname'],
@@ -672,13 +672,13 @@ def retrieve_boto_settings(run_settings, local_settings):
     smartconnector.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/system/id')
 
-    smartconnector.copy_settings(local_settings, run_settings,
-        RMIT_SCHEMA+'/platform/computation/nectar/ec2_access_key')
-    smartconnector.copy_settings(local_settings, run_settings,
-        RMIT_SCHEMA+'/platform/computation/nectar/ec2_secret_key')
+    #smartconnector.copy_settings(local_settings, run_settings,
+    #    RMIT_SCHEMA+'/platform/computation/nectar/ec2_access_key')
+    #smartconnector.copy_settings(local_settings, run_settings,
+    #    RMIT_SCHEMA+'/platform/computation/nectar/ec2_secret_key')
 
     #local_settings['username'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_username']
-    local_settings['username'] = 'root'  # FIXME: schema value is ignored, avoid hardcoding
+    #local_settings['username'] = 'root'  # FIXME: schema value is ignored, avoid hardcoding
 
     #local_settings['password'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
     #key_file = hrmcstages.retrieve_private_key(local_settings,
@@ -686,17 +686,23 @@ def retrieve_boto_settings(run_settings, local_settings):
     #local_settings['private_key'] = key_file
     #local_settings['nectar_private_key'] = key_file
 
-    bdp_root_path = '/var/cloudenabling/remotesys' #fixme replace by parameter
+    #bdp_root_path = '/var/cloudenabling/remotesys' #fixme replace by parameter
         #fixme: in the schema definition, change private_key to private_key_name, private_key_path to private_key
-    private_key_relative = run_settings[RMIT_SCHEMA+'/platform/computation/nectar']['private_key_path']
-    logger.debug('private_key_relative=%s' % private_key_relative)
-    local_settings['private_key'] = os.path.join(bdp_root_path, private_key_relative)
-    local_settings['root_path'] = '/home/centos' #fixme avoid hard coding
+    #private_key_relative = run_settings[RMIT_SCHEMA+'/platform/computation/nectar']['private_key_path']
+    #logger.debug('private_key_relative=%s' % private_key_relative)
+    #local_settings['private_key'] = os.path.join(bdp_root_path, private_key_relative)
+    #local_settings['root_path'] = '/home/centos' #fixme avoid hard coding
 
     #key_file = hrmcstages.retrieve_private_key(local_settings,
     #        run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nectar_private_key'])
     #local_settings['private_key'] = key_file
     #local_settings['nectar_private_key'] = key_file
+
+    #fixme: this should be moved to appropriate location after mytardis platform type is defined,
+    # fixme: and after input storage platform is linked
+    computation_platform = run_settings[RMIT_SCHEMA+'/platform/computation']
+    credentials = platform.get_credentials(computation_platform)
+    local_settings.update(credentials)
 
 
     logger.debug('retrieve completed')

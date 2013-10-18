@@ -63,9 +63,9 @@ def get_platform(platform_url):
 
 def get_bdp_storage_url(platform_url):
     platform_name = platform_url.split('/')[0]
-    record, schema = platform.retrieve_platform(platform_name)
+    record = platform.retrieve_platform(platform_name)
     logger.debug('record=%s' % record)
-    return record, schema
+    return record
     '''
     scheme = 'ssh'
     relative_path = parsed_url.path

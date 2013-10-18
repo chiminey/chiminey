@@ -17,6 +17,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+
+
 import os
 import ast
 import json
@@ -26,11 +28,9 @@ import fnmatch
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import smartconnector
-from bdphpcprovider.smartconnectorscheduler import hrmcstages
+from bdphpcprovider.smartconnectorscheduler import hrmcstages, platform
 from bdphpcprovider.smartconnectorscheduler import mytardis
 from bdphpcprovider.smartconnectorscheduler import models
-
-
 from bdphpcprovider.smartconnectorscheduler.stages.composite import (make_graph_paramset, make_paramset)
 
 
@@ -202,17 +202,17 @@ class Transform(Stage):
             'http://rmit.edu.au/schemas/input/hrmc/number_dimensions')
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/input/hrmc/threshold')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
-            RMIT_SCHEMA + '/platform/computation/nectar/ec2_access_key')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
-            RMIT_SCHEMA + '/platform/computation/nectar/ec2_secret_key')
+        #smartconnector.copy_settings(self.boto_settings, run_settings,
+        #    RMIT_SCHEMA + '/platform/computation/nectar/ec2_access_key')
+        #smartconnector.copy_settings(self.boto_settings, run_settings,
+        #    RMIT_SCHEMA + '/platform/computation/nectar/ec2_secret_key')
 
         #smartconnector.copy_settings(self.boto_settings, run_settings,
         #    'http://rmit.edu.au/schemas/stages/create/nectar_username')
         #smartconnector.copy_settings(self.boto_settings, run_settings,
         #    'http://rmit.edu.au/schemas/stages/create/nectar_password')
         #self.boto_settings['username'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_username']
-        self.boto_settings['username'] = 'root'  # FIXME: schema value is ignored
+        #self.boto_settings['username'] = 'root'  # FIXME: schema value is ignored
         #self.boto_settings['password'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
 
         #key_file = hrmcstages.retrieve_private_key(self.boto_settings,
@@ -220,12 +220,19 @@ class Transform(Stage):
         #self.boto_settings['private_key'] = key_file
         #self.boto_settings['nectar_private_key'] = key_file
 
-        bdp_root_path = '/var/cloudenabling/remotesys' #fixme replace by parameter
+        #bdp_root_path = '/var/cloudenabling/remotesys' #fixme replace by parameter
         #fixme: in the schema definition, change private_key to private_key_name, private_key_path to private_key
-        private_key_relative = run_settings[RMIT_SCHEMA+'/platform/computation/nectar']['private_key_path']
-        logger.debug('private_key_relative=%s' % private_key_relative)
-        self.boto_settings['private_key'] = os.path.join(bdp_root_path, private_key_relative)
-        self.boto_settings['root_path'] = '/home/centos' #fixme avoid hard coding
+        #private_key_relative = run_settings[RMIT_SCHEMA+'/platform/computation/nectar']['private_key_path']
+        #logger.debug('private_key_relative=%s' % private_key_relative)
+        #self.boto_settings['private_key'] = os.path.join(bdp_root_path, private_key_relative)
+        #self.boto_settings['root_path'] = '/home/centos' #fixme avoid hard coding
+
+        #fixme: this should be moved to appropriate location after mytardis platform type is defined,
+        # fixme: and after input anf output storage platforms are linked
+        computation_platform = run_settings[RMIT_SCHEMA + '/platform/computation']
+        credentials = platform.get_credentials(computation_platform)
+        self.boto_settings.update(credentials)
+
 
         logger.debug("boto_settings=%s" % self.boto_settings)
 
