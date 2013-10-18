@@ -36,8 +36,9 @@ function submitForm(description) {
     var operation = $('form #id_operation');
     operation.val(description);
     var password = $.trim($('form #id_password').val());
-    if(password.length == 0 && description == 'update')
+    if(password.length == 0){}
     {
+        if(description=='delete' || description == 'update')
         $('form #id_password').val("****")
     }
     form.validate();
