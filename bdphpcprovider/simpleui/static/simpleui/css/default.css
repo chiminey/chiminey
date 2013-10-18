@@ -52,7 +52,7 @@ a {
 .nav-list > .active > a:hover,
 .nav-list > .active > a:focus {
   color: black;
-  background-color:white;
+  background-color:#abc9c;
 }
 
 
