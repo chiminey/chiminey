@@ -365,23 +365,30 @@ def update_platform_paramset(username, schema_namespace,
         message = 'Keys in filters are unknown'
         logger.debug(message)
         return False, '%s %s' % (failure_message, message)
-    new_filters = dict(filters)
-    new_filters.update(updated_params)
+    new_filters = {'name': updated_params['name']}
+    logger.debug(new_filters)
+    #new_filters.update(updated_params)
     if not is_unique_platform_paramset(platform, schema, new_filters):
         message = 'Record with platform name [%s] already exists' % updated_params['name']
         logger.debug(filters)
         logger.debug(updated_params)
 
+
+
         #fixme assumes filters n updated_params represent all params. works only with gui
-        for k, v in filters.items():
-            logger.debug('%s %s' % (k, v))
-            if updated_params[k] != filters[k] and k != 'password':
-                return False, '%s %s' % (failure_message, message)
+        if updated_params['name'] == filters['name']:
+            for k, v in filters.items():
+                if updated_params[k] != filters[k] and (k != 'password'):
+                    break
+            else:
+                return True, 'No change made to the record'
+        else:
+            return False, '%s %s' % (failure_message, message)
 
-        return True, 'Record updated successfully'
-
-    param_sets = filter_platform_paramsets(platform, schema, filters)
-    if len(param_sets) != 1:
+        #return True, 'Record updated successfully'
+    current_record = {'name': filters['name']}
+    param_sets = filter_platform_paramsets(platform, schema, current_record)
+    if len(param_sets) > 1:
         message = 'Multiple records found. Add more parameters to filters'
         logger.debug(message)
         return False, '%s %s' % (failure_message, message)
@@ -417,7 +424,7 @@ def update_platform_paramset(username, schema_namespace,
             #new_key_path = os.path.join(os.path.dirname(existing_params['private_key_path']),
             #                        expected_params['username'])
             regenerate_key = True
-    logger.debug(expected_params['password'])
+    #logger.debug(expected_params['password'])
     if regenerate_key:
         #if 'private_key_path' in expected_params:
         #    expected_params['private_key_path'] = new_key_path
@@ -472,8 +479,8 @@ def is_unique_platform_paramset(platform, schema, filters):
 
 
 def filter_platform_paramsets(platform, schema, filters):
-    if not required_param_exists(schema, filters):
-        return []
+    #if not required_param_exists(schema, filters):
+    #    return []
     all_param_sets = []
     #fixme temporary code to enter only unique parameter name
     platforms = models.PlatformInstance.objects.all()
@@ -510,6 +517,20 @@ def filter_platform_paramsets(platform, schema, filters):
             logger.debug('param_sets=%s' % param_sets)
             logger.debug('all_param_sets=%s' % all_param_sets)
     return all_param_sets
+
+
+def retrieve_platform(platform_name):
+    filter = {'name': platform_name}
+    param_sets = filter_platform_paramsets('', '', filter)
+    record = {}
+    if len(param_sets) > 1:
+        return False
+    parameters = models.PlatformInstanceParameter\
+        .objects.filter(paramset=param_sets[0])
+    for param in parameters:
+        name = param.name.name
+        record[name] = param.value
+    return record
 
 
 def get_owner(username):
