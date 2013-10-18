@@ -23,10 +23,6 @@ import paramiko
 import os
 import logging
 
-
-from bdphpcprovider.smartconnectorscheduler import smartconnector
-
-
 logger = logging.getLogger(__name__)
 
 
