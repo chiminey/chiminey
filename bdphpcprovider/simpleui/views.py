@@ -428,11 +428,11 @@ class HRMCSubmitFormView(FormView):
     hrmc_schema = "http://rmit.edu.au/schemas/hrmc/"
     system_schema = "http://rmit.edu.au/schemas/system/misc/"
 
-    initial = {'number_vm_instances': 8,
+    initial = {'number_vm_instances': 1,
                'minimum_number_vm_instances': 1,
         'iseed': 42,
         'input_location': 'file://127.0.0.1/myfiles/input',
-        'number_dimensions': 2,
+        'number_dimensions': 1,
         'threshold': "[2]",
         'error_threshold': "0.03",
         'max_iteration': 10,
@@ -495,8 +495,8 @@ class SweepSubmitFormView(FormView):
     success_url = '/jobs'
 
 
-    initial = {'number_vm_instances': 2,
-               'minimum_number_vm_instances': 1,
+    initial = {'number_vm_instances': 0,
+               'minimum_number_vm_instances': 0,
         'iseed': 42,
         'maximum_retry': 1,
         'reschedule_failed_processes': 1,

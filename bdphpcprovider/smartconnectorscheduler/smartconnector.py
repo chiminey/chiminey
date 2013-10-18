@@ -31,7 +31,7 @@ from urlparse import urlparse
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
 from bdphpcprovider.smartconnectorscheduler.errors import deprecated
-
+from bdphpcprovider.smartconnectorscheduler import platform
 from django.contrib import messages
 
 logger = logging.getLogger(__name__)
@@ -56,6 +56,22 @@ def copy_settings(dest_context, context, key):
         logger.error("error on key %s" % key)
         raise
 
+def get_bdp_storage_url(platform_url):
+    platform_name = platform_url.split('/')[0]
+    record = platform.retrieve_platform(platform_name)
+    logger.debug('record=%s' % record)
+    return record
+    '''
+    scheme = 'ssh'
+    relative_path = parsed_url.path
+    host = "%s://%s%s" % (scheme, ip_address, relative_path)
+    url_settings['root_path'] = root_path
+    args = '&'.join(["%s=%s" % (k, v) for k, v in sorted(url_settings.items())])
+    url_with_pkey = '%s://%s/%s?%s' % (scheme, ip_address,
+                                           relative_path,
+                                           args)
+    url_with_pkey = '%s?%s' % (host, args)
+    '''
 
 def get_url_with_pkey(settings, url_or_relative_path,
                       is_relative_path=False, ip_address='127.0.0.1'):

@@ -61,6 +61,8 @@ class Sweep(Stage):
         logger.debug("Run stage initialized")
 
     def triggered(self, run_settings):
+        smartconnector.get_bdp_storage_url('amun')
+
         if self._exists(run_settings,
             'http://rmit.edu.au/schemas/stages/sweep',
             'sweep_done'):
