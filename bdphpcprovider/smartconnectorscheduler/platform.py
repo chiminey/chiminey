@@ -522,7 +522,7 @@ def filter_platform_paramsets(platform, schema, filters):
             logger.debug('all_param_sets=%s' % all_param_sets)
     return all_param_sets
 
-
+#fixme rename to get_platform_credentials
 def get_credentials(settings):
     credentials = {}
     try:
@@ -539,6 +539,7 @@ def get_credentials(settings):
         raise
     return credentials
 
+#fixme rename to retrienve_platform_record
 def retrieve_platform(platform_name):
     filter = {'name': platform_name}
     param_sets = filter_platform_paramsets('', '', filter)
@@ -557,6 +558,24 @@ def retrieve_platform(platform_name):
     platform_params['type'] = os.path.basename(schema)
     record = platform_params
     return record
+
+#fixme rewrite this after a model with unique key, based on platform name, is implemented
+def get_platform_name(username, schema_namespace):
+    platform, schema = get_platform_and_schema(username, schema_namespace)
+    if not (platform and schema):
+        return ''
+    param_sets = models.PlatformInstanceParameterSet\
+            .objects.filter(platform=platform)
+    if not param_sets:
+        return ''
+    param_name = models.ParameterName.objects.get(
+                    schema=schema, name='name')
+    platform_param_instantce = \
+        models.PlatformInstanceParameter.objects.filter(
+                        name=param_name, paramset=param_sets[0])
+    if not platform_param_instantce:
+        return ''
+    return platform_param_instantce[0].value
 
 
 def get_owner(username):

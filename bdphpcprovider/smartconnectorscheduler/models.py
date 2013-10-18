@@ -377,6 +377,7 @@ class Stage(models.Model):
 
 
 #FIXME: We assume 1 private key per platform. Relax this assumption
+#fixme depreciate this model
 class Platform(models.Model):
     """
     The envioronment where directives will be executed.

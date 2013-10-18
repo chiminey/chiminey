@@ -54,7 +54,7 @@ from bdphpcprovider.simpleui.sshstorageplatform import SSHStoragePlatformForm
 #and should be using its own models and use the REST API for all information.
 
 from bdphpcprovider.smartconnectorscheduler import models
-from bdphpcprovider.smartconnectorscheduler import hrmcstages
+from bdphpcprovider.smartconnectorscheduler import hrmcstages, platform
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
 
@@ -739,7 +739,7 @@ clean_rules = {
 }
 
 
-def make_dynamic_field(parameter):
+def make_dynamic_field(parameter, **kwargs):
 
     if 'subtype' in parameter and parameter['subtype']:
         help_text = "%s (%s)" % (parameter['help_text'],
@@ -772,7 +772,8 @@ def make_dynamic_field(parameter):
     else:
         field_params['initial'] = str(parameter['initial'])
         if parameter['subtype'] == 'nectar_platform':
-            field_params['initial'] = 'nectar'
+            schema = 'http://rmit.edu.au/schemas/platform/computation/nectar'
+            field_params['initial'] = platform.get_platform_name(kwargs['username'], schema)
         field = forms.CharField(**field_params)
 
     if 'subtype' in parameter and parameter['subtype']:
@@ -801,7 +802,11 @@ def make_directive_form(**kwargs):
                 # TODO: handle all possible types
                 field_key = "%s/%s" % (schema_data['namespace'], parameter['name'])
                 form_data.append((field_key, schema_data['description'] if not j else "", parameter['subtype']))
-                fields[field_key] = make_dynamic_field(parameter)
+                #fixme replce if else by fields[field_key] = make_dynamic_field(parameter) after unique key platform model is developed
+                if parameter['subtype'] == 'nectar_platform':
+                    fields[field_key] = make_dynamic_field(parameter, username=kwargs['username'])
+                else:
+                    fields[field_key] = make_dynamic_field(parameter)
                 logger.debug("field=%s" % fields[field_key].validators)
     logger.debug("fields = %s" % fields)
     #http://www.b-list.org/weblog/2008/nov/09/dynamic-forms/
@@ -1206,7 +1211,8 @@ def submit_directive(request, directive_id):
     if request.method == 'POST':
         form, form_data = make_directive_form(
             request=request.POST,
-            directive_params=directive_params)
+            directive_params=directive_params,
+            username=request.user.username)
         logger.debug("form=%s" % pformat(form))
         logger.debug("form_data=%s" % pformat(form_data))
         if form.is_valid():
@@ -1226,7 +1232,7 @@ def submit_directive(request, directive_id):
         else:
             messages.error(request, "Job Failed because of validation errors. See below")
     else:
-        form, form_data = make_directive_form(directive_params=directive_params)
+        form, form_data = make_directive_form(directive_params=directive_params, username=request.user.username)
 
     # TODO: generalise
     if directive['name'] == "sweep":
