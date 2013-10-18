@@ -38,6 +38,32 @@ def test():
     print "Hello World"
 
 
+@task(name="smartconnectorscheduler.delete", time_limit=50000, ignore_result=True)
+def delete(context_id):
+    try:
+        try:
+            run_context = models.Context.objects.get(id=context_id, deleted=False)
+        except models.Context.DoesNotExist:
+            logger.warn("Context %s removed from other thread" % context_id)
+            return
+        logger.debug("delete context %s" % run_context)
+
+        test_info = []
+        with transaction.commit_on_success():
+            try:
+                run_context = models.Context.objects.select_for_update().get(id=run_context.id, deleted=False)
+            except DatabaseError:
+                logger.info("progress context for %s is already running.  exiting"
+                    % context_id)
+                return
+            else:
+                logger.info("deleting %s" % context_id)
+            run_context.deleted == True
+            run_context.save()
+    except SoftTimeLimitExceeded:
+        raise
+
+
 @task(name="smartconnectorscheduler.run_contexts", time_limit=50000, ignore_result=True)
 def run_contexts():
     # Collect all valid contexts and process all before getting new set. This
@@ -50,7 +76,6 @@ def run_contexts():
         logger.warn("Context removed from other thread")
     except SoftTimeLimitExceeded:
         raise
-
 
 @task(name="smartconnectorscheduler.progress_context", time_limit=50000, ignore_result=True)
 def progress_context(context_id):
