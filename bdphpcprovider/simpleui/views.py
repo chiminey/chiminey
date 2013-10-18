@@ -725,7 +725,7 @@ subtype_validation = {
     'even': ('even number', validators.validate_even_number, None, None),
     'bdpurl': ('BDP url', validators.validate_BDP_url, forms.TextInput, 255),
     'float': ('floading point number', validators.validate_float_number, None, None),
-    'jsondict': ('JSON Dictionary', validators.validate_jsondict, forms.Textarea(attrs={'cols':30, 'rows': 5}), None),
+    'jsondict': ('JSON Dictionary', validators.validate_jsondict, forms.Textarea(attrs={'cols': 30, 'rows': 5}), None),
     'float': ('floading point number', validators.validate_float_number, None, None),
     'bool': ('On/Off', validators.validate_bool, None,  None),
 
@@ -1085,6 +1085,11 @@ def get_contexts(request):
         logger.debug("contexts=%s" % contexts)
         # TODO: schedule celery tasks to delete each context, as background
         # process because stages may already have write lock on context.
+        from bdphpcprovider.smartconnectorscheduler import tasks
+        for context_id in contexts:
+            logger.debug("scheduling deletion of %s" % context_id)
+            tasks.delete.delay(context_id)
+        messages.info(request, "Deletion of contexts %s has been scheduled" % ','.join([str(x) for x in contexts]))
 
     if 'offset' in request.GET:
         try:
@@ -1137,7 +1142,7 @@ def get_contexts(request):
         obj.append(name)
         obj.append(dateutil.parser.parse(x['created']))
         obj.append(desc)
-        obj.append(reverse('contextview', kwargs={'pk': x['id']} ))
+        obj.append(reverse('contextview', kwargs={'pk': x['id']}))
         object_list.append(obj)
 
     meta = r.json()['meta']
