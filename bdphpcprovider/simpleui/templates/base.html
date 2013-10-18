@@ -87,11 +87,13 @@ function deletePlatform(parameters, platform_type) {
 function fieldReadonly(){
     var form =  $(this).closest('form').attr("id");
     $("form input[id][type='text']").attr("readonly", "readonly")
+    $("form input[id][type='password']").attr("readonly", "readonly")
 }
 
 function formreset(){
     var form =  $(this).closest('form').attr("id");
     $("form input[id][type='text']").removeAttr("readonly");
+    $("form input[id][type='password']").removeAttr("readonly");
     $("form input[id][type='text']").val("");
     $("form input[id][type='password']").val("");
 }
