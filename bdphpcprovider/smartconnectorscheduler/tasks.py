@@ -58,7 +58,7 @@ def delete(context_id):
                 return
             else:
                 logger.info("deleting %s" % context_id)
-            run_context.deleted == True
+            run_context.deleted = True
             run_context.save()
     except SoftTimeLimitExceeded:
         raise
