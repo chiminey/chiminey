@@ -123,8 +123,9 @@ def generate_nectar_key(bdp_root_path, parameters):
                 else:
                     logger.exception(e)
                     raise
-            key_name = '%s_%d' % (parameters['private_key'], counter)
-            counter += 1
+            if not key_created:
+                key_name = '%s_%d' % (parameters['private_key'], counter)
+                counter += 1
 
         parameters['private_key'] = key_name
         parameters['private_key_path'] = os.path.join(os.path.dirname(
