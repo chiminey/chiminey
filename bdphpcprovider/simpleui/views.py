@@ -105,11 +105,11 @@ def computation_platform_settings(request):
         headers=headers,
         cookies=cookies)
     except HTTPError as e:
-        logger.debug( 'The server couldn\'t fulfill the request. %s' % e)
-        logger.debug( 'Error code: ', e.code)
+        logger.debug('The server couldn\'t fulfill the request. %s' % e)
+        logger.debug('Error code: ', e.code)
     except URLError as e:
-        logger.debug( 'We failed to reach a server. %s' % e)
-        logger.debug( 'Reason: ', e.reason)
+        logger.debug('We failed to reach a server. %s' % e)
+        logger.debug('Reason: ', e.reason)
     else:
         logger.debug('everything is fine')
         #logger.debug(r.text)
@@ -117,6 +117,8 @@ def computation_platform_settings(request):
         GET_data = r.json()
         computation_platforms, all_headers = filter_computation_platforms(GET_data)
         logger.debug(computation_platforms)
+    # FIXME: schemas in all_headers must be sorted with "name" as first
+    # parameter so that footable will respond correctly.
     return render(request, 'accountsettings/computationplatform.html',
                               {'nci_form': nciform, 'nectar_form': nectarform,
                                'computation_platforms': computation_platforms,
@@ -145,11 +147,11 @@ def storage_platform_settings(request):
         headers=headers,
         cookies=cookies)
     except HTTPError as e:
-        logger.debug( 'The server couldn\'t fulfill the request. %s' % e)
-        logger.debug( 'Error code: ', e.code)
+        logger.debug('The server couldn\'t fulfill the request. %s' % e)
+        logger.debug('Error code: ', e.code)
     except URLError as e:
-        logger.debug( 'We failed to reach a server. %s' % e)
-        logger.debug( 'Reason: ', e.reason)
+        logger.debug('We failed to reach a server. %s' % e)
+        logger.debug('Reason: ', e.reason)
     else:
         logger.debug('everything is fine')
         #logger.debug(r.text)
@@ -164,7 +166,7 @@ def storage_platform_settings(request):
 
 def post_platform(schema, form_data, request, type=None):
     logger.debug('operation=%s' % form_data['operation'])
-    api_host = "http://127.0.0.1"  #fixme: remove local host address
+    api_host = "http://127.0.0.1"  # fixme: remove local host address
     url = "%s/api/v1/platformparamset/?format=json" % api_host
     # pass the sessionid cookie through to the internal API
     cookies = dict(request.COOKIES)
@@ -731,7 +733,7 @@ subtype_validation = {
     'jsondict': ('JSON Dictionary', validators.validate_jsondict, forms.Textarea(attrs={'cols': 30, 'rows': 5}), None),
     'float': ('floading point number', validators.validate_float_number, None, None),
     'bool': ('On/Off', validators.validate_bool, None,  None),
-
+    'computation_platform': ('computation_platform', validators.validate_string, None,  None),
 }
 
 clean_rules = {
@@ -769,6 +771,23 @@ def make_dynamic_field(parameter, **kwargs):
             field = forms.BooleanField(**field_params)
         else:
             field = forms.IntegerField(**field_params)
+    if parameter['type'] == 4:
+        if parameter['subtype'] == "computation_platform":
+            # TODO: make list of computation_platforms here
+            field_params['initial'] =""
+            field_params['choices'] = ""
+        else:
+
+            if parameter['initial']:
+                field_params['initial'] = str(parameter['initial'])
+            else:
+                field_params['initial'] = ""
+            if parameter['choices']:
+                field_params['choices'] = ast.literal_eval(str(parameter['choices']))
+            else:
+                field_params['choices'] = []
+
+        field = forms.MultipleChoiceField(**field_params)
     else:
         field_params['initial'] = str(parameter['initial'])
         if parameter['subtype'] == 'nectar_platform':
@@ -990,6 +1009,7 @@ def add_form_fields(request, paramnameset):
             # schema
             x['initial'] = pname['initial']
             x['subtype'] = pname['subtype']
+            x['choices'] = pname['choices']
             p.append(x)
         s['parameters'] = p
         form_field_info.append(s)
@@ -1084,8 +1104,8 @@ def get_contexts(request):
         contexts = []
         logger.debug("POST=%s" % request.POST)
         for key in request.POST:
-            logger.debug("key=%s"% key)
-            logger.debug("value=%s" %request.POST[key])
+            logger.debug("key=%s" % key)
+            logger.debug("value=%s" % request.POST[key])
             if key.startswith("delete_"):
                 try:
                     val = int(key.split('_')[-1])
@@ -1122,7 +1142,7 @@ def get_contexts(request):
     host_ip = "127.0.0.1"
     headers = {'content-type': 'application/json'}
     api_host = "http://%s" % host_ip
-    url = "%s/api/v1/context/?limit=%s&offset=%s&format=json" % (api_host, limit, offset)
+    url = "%s/api/v1/contextmessage/?limit=%s&offset=%s&format=json" % (api_host, limit, offset)
     cookies = dict(request.COOKIES)
     logger.debug("cookies=%s" % cookies)
     r = requests.get(url, headers=headers, cookies=cookies)
@@ -1139,21 +1159,29 @@ def get_contexts(request):
     logger.debug("r.json()=%s" % pformat(r.json()))
     for x in r.json()['objects']:
         logger.debug("x=%s" % pformat(x))
+        contextid = contextdeleted = contextcreated = ""
+        directive_name = directive_desc = ""
+        if 'context' in x and x['context']:
+            if 'id' in x['context']:
+                contextid = x['context']['id']
+            if 'deleted' in x['context']:
+                contextdeleted = x['context']['deleted']
+            if 'created' in x['context']:
+                    contextcreated = x['context']['created']
+            if 'directive' in x['context'] and x['context']['directive']:
+                if 'name' in x['context']['directive']:
+                    directive_name = x['context']['directive']['name']
+                if 'description' in x['context']['directive']:
+                    directive_desc = x['context']['directive']['description']
+
         obj = []
-        obj.append(x['id'])
-        obj.append(x['deleted'])
-        obj.append(x['status'])
-        name = ''
-        desc = ''
-        if 'directive' in x and x['directive']:
-            if 'name' in x['directive']:
-                name = x['directive']['name']
-            if 'description' in x['directive']:
-                desc = x['directive']['description']
-        obj.append(name)
-        obj.append(dateutil.parser.parse(x['created']))
-        obj.append(desc)
-        obj.append(reverse('contextview', kwargs={'pk': x['id']}))
+        obj.append(contextid)
+        obj.append(contextdeleted)
+        obj.append(dateutil.parser.parse(contextcreated))
+        obj.append(x['message'])
+        obj.append(directive_name)
+        obj.append(directive_desc)
+        obj.append(reverse('contextview', kwargs={'pk': contextid}))
         object_list.append(obj)
 
     meta = r.json()['meta']

@@ -197,6 +197,7 @@ class UserProfileParameterResource(ModelResource):
         # TODO: validation on put value to correct type
 
 
+
 class ContextResource(ModelResource):
     hrmc_schema = "http://rmit.edu.au/schemas/input/hrmc/"
     system_schema = "http://rmit.edu.au/schemas/input/system"
@@ -486,6 +487,25 @@ class ContextResource(ModelResource):
         logger.debug("directive_args=%s" % directive_args)
 
         return (platform, directive_name, directive_args, system_settings)
+
+
+
+class ContextMessageResource(ModelResource):
+    context = fields.ForeignKey(ContextResource,
+        attribute="context", full=True, null=True)
+
+    class Meta:
+        queryset = models.ContextMessage.objects.all()
+        resource_name  = "contextmessage"
+        authentication = BasicAuthentication()
+        authentication = MyBasicAuthentication()
+        #authentication = DigestAuthentication()
+        authorization = DjangoAuthorization()
+        allowed_methods = ['get']
+        paginator_class = Paginator
+
+    def get_object_list(self, request):
+        return models.ContextMessage.objects.filter(context__owner__user=request.user).order_by('-id')
 
 
 class PlatformInstanceResource(ModelResource):

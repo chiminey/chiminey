@@ -3,24 +3,24 @@ import datetime
 from south.db import db
 from south.v2 import SchemaMigration
 from django.db import models
-from django.utils import timezone
-
 
 
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        # Adding field 'Context.created'
-        db.add_column('smartconnectorscheduler_context', 'created',
-                      #self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, default=datetime.datetime(2013, 10, 14, 0, 0), blank=True),
-                      self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, default=timezone.now(), blank=True),
-                      keep_default=False)
+        # Adding model 'ContextMessage'
+        db.create_table('smartconnectorscheduler_contextmessage', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('context', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['smartconnectorscheduler.Context'])),
+            ('message', self.gf('django.db.models.fields.TextField')(blank=True)),
+        ))
+        db.send_create_signal('smartconnectorscheduler', ['ContextMessage'])
+
 
 
     def backwards(self, orm):
-        # Deleting field 'Context.created'
-        db.delete_column('smartconnectorscheduler_context', 'created')
-
+        # Deleting model 'ContextMessage'
+        db.delete_table('smartconnectorscheduler_contextmessage')
 
     models = {
         'auth.group': {
@@ -81,6 +81,12 @@ class Migration(SchemaMigration):
             'owner': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['smartconnectorscheduler.UserProfile']"}),
             'status': ('django.db.models.fields.TextField', [], {'default': "''", 'blank': 'True'})
         },
+        'smartconnectorscheduler.contextmessage': {
+            'Meta': {'object_name': 'ContextMessage'},
+            'context': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['smartconnectorscheduler.Context']"}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'message': ('django.db.models.fields.TextField', [], {'blank': 'True'})
+        },
         'smartconnectorscheduler.contextparameter': {
             'Meta': {'ordering': "('name',)", 'object_name': 'ContextParameter'},
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
@@ -128,6 +134,26 @@ class Migration(SchemaMigration):
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'default': "'nectar'", 'max_length': '256'}),
             'root_path': ('django.db.models.fields.CharField', [], {'default': "'/home/centos'", 'max_length': '512'})
+        },
+        'smartconnectorscheduler.platforminstance': {
+            'Meta': {'object_name': 'PlatformInstance'},
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'owner': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['smartconnectorscheduler.UserProfile']"}),
+            'schema_namespace_prefix': ('django.db.models.fields.CharField', [], {'default': "'http://rmit.edu.au/schemas/platform'", 'max_length': '512'})
+        },
+        'smartconnectorscheduler.platforminstanceparameter': {
+            'Meta': {'ordering': "('name',)", 'object_name': 'PlatformInstanceParameter'},
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'name': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['smartconnectorscheduler.ParameterName']"}),
+            'paramset': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['smartconnectorscheduler.PlatformInstanceParameterSet']"}),
+            'value': ('django.db.models.fields.TextField', [], {'blank': 'True'})
+        },
+        'smartconnectorscheduler.platforminstanceparameterset': {
+            'Meta': {'ordering': "['-ranking']", 'object_name': 'PlatformInstanceParameterSet'},
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'platform': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['smartconnectorscheduler.PlatformInstance']"}),
+            'ranking': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
+            'schema': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['smartconnectorscheduler.Schema']"})
         },
         'smartconnectorscheduler.schema': {
             'Meta': {'unique_together': "(('namespace', 'name'),)", 'object_name': 'Schema'},

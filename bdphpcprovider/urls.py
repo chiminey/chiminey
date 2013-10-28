@@ -18,6 +18,7 @@ from core.views import (
     UserProfileParameterResource,
     UserProfileParameterSetResource,
     ContextResource,
+    ContextMessageResource,
     UserResource,
     DirectiveResource,
     DirectiveArgSetResource,
@@ -35,6 +36,7 @@ v1_api.register(UserProfileParameterResource())
 v1_api.register(UserProfileParameterSetResource())
 v1_api.register(ParameterNameResource())
 v1_api.register(ContextResource())
+v1_api.register(ContextMessageResource())
 v1_api.register(DirectiveResource())
 v1_api.register(DirectiveArgSetResource())
 v1_api.register(PlatformInstanceResource())
