@@ -307,6 +307,7 @@ class Wait(Stage):
                     for iterator, p in enumerate(self.current_processes):
                         if int(p['id']) == int(process_id) and p['status'] == 'running':
                             self.current_processes[iterator]['status'] = 'completed'
+                    smartconnector.info(run_settings, "%s: waiting (%s process left)" % (self.id + 1, len(self.executed_procs) - (len(self.finished_nodes) + self.failed_processes)))
 
                 else:
                     logger.info("We have already "

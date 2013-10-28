@@ -470,7 +470,7 @@ class PlatformInstance(models.Model):
     owner = models.ForeignKey(UserProfile)
     instance_type = models.CharField(max_length=256)
 
-    
+
     ip_address = models.CharField(max_length=50)
     root_path = models.CharField(max_length=512)
     username = models.CharField(max_length=50)
@@ -699,6 +699,12 @@ class Context(models.Model):
         return u"RunCommand:owner=%s\nstage=%s\nparameters=%s\n" % (self.owner,
              res, [unicode(x) for x in res2]
             )
+
+
+class ContextMessage(models.Model):
+
+    context = models.ForeignKey(Context)
+    message = models.TextField(blank=True, verbose_name="Message", help_text="Status message for the context")
 
 
 class ContextParameterSet(models.Model):
