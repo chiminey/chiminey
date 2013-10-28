@@ -34,7 +34,6 @@ from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 from bdphpcprovider.smartconnectorscheduler import platform
 from django.contrib import messages
 
-from bdphpcprovider.smartconnectorscheduler import tasks
 
 
 
@@ -393,6 +392,9 @@ def addMessage(run_settings, level, msg):
     # within a stages at the end of the stages process
     # With celery task, then some other worker (if available)
     # can do the task ASAP.
+    # FIXME: this is circular import at global level
+    from bdphpcprovider.smartconnectorscheduler import tasks
+
     tasks.context_message.delay(context_id, mess)
 
 
