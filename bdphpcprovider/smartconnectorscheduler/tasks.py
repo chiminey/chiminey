@@ -80,7 +80,8 @@ def run_contexts():
 
 @task(name="smartconnectorscheduler.context_message", time_limit=50000, ignore_result=True)
 def context_message(context_id, mess):
-    logger.debug("trying to create message %s" % mess)
+    """ Add a message to context_id """
+    logger.debug("trying to create message %s for context %s" % (mess, context_id))
     try:
         with transaction.commit_on_success():
             try:
@@ -95,6 +96,13 @@ def context_message(context_id, mess):
             else:
                 logger.info("setting context message for  %s" % context_id)
             message.message = mess
+
+            try:
+                context = models.Context.objects.get(id=context_id)
+            except models.Context.DoesNotExist:
+                logger.error("cannot retrieve context %s" % context_id)
+                return
+            message.context = context
             message.save()
     except SoftTimeLimitExceeded:
         raise

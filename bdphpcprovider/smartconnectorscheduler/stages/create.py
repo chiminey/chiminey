@@ -69,7 +69,6 @@ class Create(Stage):
 
 #http://rmit.edu.au/schemas/platform/computation
 
-        smartconnector.info(run_settings, "1: create")
 
         smartconnector.copy_settings(local_settings, run_settings,
             RMIT_SCHEMA + '/system/platform')
@@ -153,6 +152,8 @@ class Create(Stage):
 
         botocloudconnector.print_all_information(local_settings,
                                                  all_instances=self.nodes)
+        smartconnector.info(run_settings, "1: create (% nodes created" % len(self.nodes))
+
         #Fixme: the following should transfer power to FT managers
         if not self.group_id:
             self.group_id = 'UNKNOWN'  # FIXME: do we we mean '' or None here?

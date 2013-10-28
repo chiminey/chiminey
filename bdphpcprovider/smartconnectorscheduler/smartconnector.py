@@ -34,6 +34,8 @@ from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 from bdphpcprovider.smartconnectorscheduler import platform
 from django.contrib import messages
 
+from bdphpcprovider.smartconnectorscheduler import tasks
+
 
 
 logger = logging.getLogger(__name__)
@@ -386,7 +388,11 @@ def addMessage(run_settings, level, msg):
         return
     mess = '%s,%s' % (level, msg)
     logger.debug("mess=%s" % mess)
-    from bdphpcprovider.smartconnectorscheduler import tasks
+    # Cannot write ContextMessage in same process as tasks.py
+    # holds lock on all tables, so would get all messages
+    # within a stages at the end of the stages process
+    # With celery task, then some other worker (if available)
+    # can do the task ASAP.
     tasks.context_message.delay(context_id, mess)
 
 

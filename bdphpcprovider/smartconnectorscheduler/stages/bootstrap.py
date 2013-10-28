@@ -68,6 +68,8 @@ class Bootstrap(Stage):
             self.started = 0
         logger.debug('self.started=%d' % self.started)
 
+        smartconnector.info(run_settings, "bootstrapping nodes")
+
 
         local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
         retrieve_local_settings(run_settings, local_settings)
@@ -131,6 +133,9 @@ class Bootstrap(Stage):
                             + "bootstrapped node %s" % node.ip_address)
                 else:
                     print "job still running on %s" % node.ip_address
+
+            smartconnector.info(run_settings, "bootstrapping nodes (%s nodes done)"
+                % len(self.bootstraped_nodes))
 
     def output(self, run_settings):
         run_settings.setdefault(
