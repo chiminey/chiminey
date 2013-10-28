@@ -238,8 +238,6 @@ class Wait(Stage):
             self.id = 0
             self.output_dir = "output"
 
-        smartconnector.info(run_settings, "%s: waiting (%s processes done)"
-            % (self.id + 1, len(self.finished_nodes)))
 
         logger.debug("output_dir=%s" % self.output_dir)
         logger.debug("run_settings=%s" % run_settings)
@@ -372,6 +370,9 @@ class Wait(Stage):
         if self.failed_nodes:
             run_settings.setdefault(
             'http://rmit.edu.au/schemas/stages/create', {})[u'failed_nodes'] = self.failed_nodes
+
+        smartconnector.info(run_settings, "%s: waiting (%s processes done)"
+            % (self.id + 1, len(self.finished_nodes)))
 
 
         if self.procs_2b_rescheduled:

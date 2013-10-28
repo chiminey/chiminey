@@ -152,7 +152,7 @@ class Create(Stage):
 
         botocloudconnector.print_all_information(local_settings,
                                                  all_instances=self.nodes)
-        smartconnector.info(run_settings, "1: create (% nodes created" % len(self.nodes))
+        smartconnector.info(run_settings, "1: create (%s nodes created)" % len(self.nodes))
 
         #Fixme: the following should transfer power to FT managers
         if not self.group_id:

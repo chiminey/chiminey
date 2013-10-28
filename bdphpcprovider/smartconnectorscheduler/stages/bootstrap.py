@@ -131,11 +131,11 @@ class Bootstrap(Stage):
                     else:
                         logger.info("We have already "
                             + "bootstrapped node %s" % node.ip_address)
+                    smartconnector.info(run_settings, "bootstrapping nodes (%s nodes done)"
+                        % len(self.bootstrapped_nodes))
                 else:
                     print "job still running on %s" % node.ip_address
 
-            smartconnector.info(run_settings, "bootstrapping nodes (%s nodes done)"
-                % len(self.bootstraped_nodes))
 
     def output(self, run_settings):
         run_settings.setdefault(
