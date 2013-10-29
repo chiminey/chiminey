@@ -338,10 +338,25 @@ class ContextResource(ModelResource):
         }
         directive = models.Directive.objects.get(name=directive_name)
         for das in models.DirectiveArgSet.objects.filter(directive=directive):
+            logger.debug("checking das=%s" % das)
             for param in models.ParameterName.objects.filter(schema=das.schema):
+                logger.debug("checking param=%s"  % param.name)
                 value = data[os.path.join(das.schema.namespace, param.name)]
+                # # FIXME: if a input field is blank, then may have been disabled.
+                # # Therefore, we pass in initial default value, with assumption
+                # # that it will be ignored anyway.  This might not be the best
+                # # idea, because user that leaves field blank will get default value
+                # # sent and not blank.  Therefore, fields cannot be blank.
+
+                # if str(value) == "":
+                #     logger.warn("skipping %s because disabled as input" % param.name)
+                #     data[os.path.join(das.schema.namespace, param.name)] = param.initial
+                #     logger.debug("data=%s" % data)
+                #     continue;
+
                 validator = subtype_validation[param.subtype][1]
                 value = validator(value)
+                data[os.path.join(das.schema.namespace, param.name)] = value
 
     def _post_to_sweep(self, bundle):
         platform = 'local'

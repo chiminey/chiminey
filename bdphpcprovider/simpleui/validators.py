@@ -188,6 +188,9 @@ def validate_experiment_id(value):
 
 
 def validate_natural_number(value):
+    # If the field is blank we assume zero
+    if value == "":
+        return 0
     msg = u'natural number'
     try:
         v = int(value)
@@ -195,6 +198,7 @@ def validate_natural_number(value):
         raise ValidationError(msg)
     if v < 0:
         raise ValidationError(msg)
+
     return value
 
 
