@@ -32,16 +32,8 @@
 </div>
 
 
-<script type="text/javascript">
-$(document).ready(function () {
-           $('.dropdown-toggle').dropdown();
-           {% for data, field in formdata %}
-           $('#{{forloop.counter}}').tooltip();
-           {% endfor %}
-       });
-</script>
 <div class="row-fluid">
-<form class="form-horizontal" action="" method="POST"> {% csrf_token %}
+<form class="form-horizontal" name="myform" action="" method="POST"> {% csrf_token %}
     {% if form.non_field_errors %}
    <div class="alert alert-error">
     {{ form.non_field_errors}}
@@ -66,9 +58,9 @@ $(document).ready(function () {
           <label class="control-label" for="id_{{field.html_name}}">{{field.label}}</label>
           <div class="controls">
             {% if data.2 in longfield %}
-              {{field|add_class:"span5"}}
+              {{field|add_class:"span5"|attr:"onchange:chfield(this);"}}
             {% else %}
-            {{field|add_class:"span2"}}
+            {{field|add_class:"span2"|attr:"onchange:chfield(this);"}}
             {% endif %}
 
               <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{field.help_text}}" id='{{forloop.counter}}'><img  class="icon-question-sign"></a>
@@ -85,6 +77,39 @@ $(document).ready(function () {
 
 </form>
 
+
+<script type="text/javascript">
+
+function chfield(f) {
+  {% for data, field in formdata %}
+  {% if data.3 %}
+  //{{data|safe}}
+  if (f.id == "id_{{data.0}}") {
+    var x = document.getElementById("id_{{data.3}}");
+    if (f.value {{data.4}}) {
+      x.disabled=true;
+      //e.attributes['disabled'] = true;
+  }
+  else {
+   x.disabled=false;
+   x.removeAttribute('disabled')
+ }
+
+  }
+  {% endif %}
+  {% endfor %}
+}
+$(document).ready(function () {
+           $('.dropdown-toggle').dropdown();
+           {% for data, field in formdata %}
+           $('#{{forloop.counter}}').tooltip();
+           {% if data.3 %}
+           var e = document.getElementById("id_{{data.0}}");
+           chfield(e);
+           {% endif %}
+           {% endfor %}
+       });
+</script>
 
 </div>
 
