@@ -797,6 +797,8 @@ def make_dynamic_field(parameter, **kwargs):
             else:
                 field_params['initial'] = ""
             if parameter['choices']:
+                # TODO: We load the dynamic choices rather than use the choices field
+                # in the model
                 field_params['choices'] = ast.literal_eval(str(parameter['choices']))
             else:
                 field_params['choices'] = []
