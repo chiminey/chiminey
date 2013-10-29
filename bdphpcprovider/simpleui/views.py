@@ -1099,10 +1099,8 @@ def submit_job(request, form, directive):
         error_message = ''
         messages.error(request, "Task Failed with status code %s: %s" % (r.status_code, r.text))
         return False
-    else:
-        messages.success(request, 'Job Created')
 
-        logger.debug("r.json=%s" % r.json)
+    logger.debug("r.json=%s" % r.json)
 
     logger.debug("r.status_code=%s" % r.status_code)
     logger.debug("r.text=%s" % r.text)
@@ -1112,6 +1110,16 @@ def submit_job(request, form, directive):
         logger.debug("header_location=%s" % header_location)
         new_context_uri = header_location[len(api_host):]
         logger.debug("new_context_uri=%s" % new_context_uri)
+        if str(new_context_uri)[-1] == '/':
+            job_id = str(new_context_uri).split('/')[-2:-1][0]
+        else:
+            job_id = str(new_context_uri).split('/')[-1]
+
+        logger.debug("job_id=%s" % job_id)
+        messages.success(request, 'Job %s Created' % job_id)
+    else:
+        messages.success(request, 'Job Created')
+
     return True
 
 
