@@ -282,13 +282,13 @@ class Command(BaseCommand):
                 {
                 u'number_vm_instances': {'type':models.ParameterName.NUMERIC, 'subtype':'whole', 'initial':4, 'description':'Number of VM instances', 'ranking':1, 'help_text':''},
                 u'minimum_number_vm_instances': {'type':models.ParameterName.NUMERIC, 'subtype':'whole', 'initial':1, 'description':'Minimum No. VMs', 'ranking':2, 'help_text':''},
-                u'computation_platform': {'type':models.ParameterName.STRING, 'subtype':'nectar_platform', 'initial': '', 'description':'Computation Platform Name', 'ranking':0, 'help_text':'The name of the computation platform to be used'},
+                u'computation_platform': {'type':models.ParameterName.STRLIST, 'subtype':'platform', 'initial': '', 'description':'Computation Platform Name', 'ranking':0, 'help_text':'The name of the computation platform to be used'},
                 }
                 ],
             u'http://rmit.edu.au/schemas/input/mytardis':
                 [u'MyTardis',
                 {
-                u'experiment_id': {'type':models.ParameterName.NUMERIC, 'subtype':'natural', 'description':'MyTardis experiment ID', 'ranking':0, 'help_text':'Use 0 for new experiment'},
+                u'experiment_id': {'type':models.ParameterName.NUMERIC, 'subtype':'natural', 'initial': 0, 'description':'MyTardis experiment ID', 'ranking':0, 'help_text':'Use 0 for new experiment'},
                 }
                 ],
             u'http://rmit.edu.au/schemas/input/hrmc':
