@@ -156,16 +156,17 @@ class ParameterName(models.Model):
             try:
                 res = int(val)
             except ValueError:
-                logger.debug("invalid type")
+                logger.debug("invalid numeric type")
                 raise
         elif self.type == self.STRLIST:
-            try:
-                import ast
-                res = ast.literal_eval(val)
-                logger.debug('STRLIST %s length %d' % (res, len(res)))
-            except ValueError:
-                logger.debug("invalid type")
-                raise
+            res = val
+            # try:
+            #     import ast
+            #     res = ast.literal_eval(val)
+            #     logger.debug('STRLIST %s length %d' % (res, len(res)))
+            # except ValueError:
+            #     logger.debug("invalid strlist type")
+            #     raise
         else:
             logger.debug("Unsupported Type")
             raise ValueError
@@ -210,7 +211,7 @@ class UserProfileParameter(models.Model):
         try:
             val = self.name.get_value(self.value)
         except ValueError:
-            logger.error("got bad value")
+            logger.error("up:got bad value %s" % self.value)
             raise
         return val
 
@@ -429,7 +430,7 @@ class PlatformInstanceParameter(models.Model):
         try:
             val = self.name.get_value(self.value)
         except ValueError:
-            logger.error("got bad value")
+            logger.error("pi:got bad value %s" % self.value)
             raise
         return val
 
@@ -748,7 +749,7 @@ class ContextParameter(models.Model):
         try:
             val = self.name.get_value(self.value)
         except ValueError:
-            logger.error("got bad value")
+            logger.error("cp:got bad value %s" % self.value)
             raise
         return val
 
@@ -787,7 +788,7 @@ class StageParameter(models.Model):
         try:
             val = self.name.get_value(self.value)
         except ValueError:
-            logger.error("got bad value")
+            logger.error("sp:got bad value %s" % self.value)
             raise
         return val
 
