@@ -245,7 +245,7 @@ def validate_nectar_platform(value):
     if not record:
         raise ValidationError('Enter a registered NeCTAR platform name. See Settings')
     logger.debug('record=%s' % record)
-    return record
+    return value
 
 
 def validate_BDP_url(value):
