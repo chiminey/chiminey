@@ -273,11 +273,19 @@ class ContextResource(ModelResource):
             logger.error(e)
         else:
             logger.debug("run_context=%s" % run_context)
+
+            # make success message for context.
+            mess = "info, job started"
+            message, was_created = models.ContextMessage.objects.get_or_create(context=run_context)
+            message.message = mess
+            message.save()
+
             bundle.obj.pk = run_context.id
             # We do not call obj_create because make_runcontext_for_directive()
             # has already created the object.
 
             location = self.get_resource_uri(bundle)
+
 
         return http.HttpCreated(location=location)
 
