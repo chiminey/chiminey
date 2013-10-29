@@ -132,6 +132,8 @@ class ParameterName(models.Model):
                                  verbose_name="Subtype for the parameter")
     description = models.TextField(default="", blank=True,
         verbose_name="Human readable name for the parameter")
+    hidefield = models.URLField(verify_exists=False, max_length=400, help_text="", blank=True, default="", null=True)
+    hidecondition = models.TextField(default="", blank=True)
 
     def __unicode__(self):
         return u'%s (%s)' % (self.name, self.schema.name)

@@ -139,6 +139,7 @@ class ParameterNameResource(ModelResource):
     schema = fields.ForeignKey(SchemaResource,
         attribute='schema')
 
+
     class Meta:
         queryset = models.ParameterName.objects.all()
         resource_name = 'parametername'

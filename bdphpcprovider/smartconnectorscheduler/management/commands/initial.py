@@ -298,7 +298,7 @@ class Command(BaseCommand):
                 u'max_iteration': {'type':models.ParameterName.NUMERIC, 'subtype':'whole', 'description':'Maximum no. iterations', 'ranking':2, 'initial': 10, 'help_text':'Computation ends when either convergence or maximum iteration reached'},
                 u'error_threshold': {'type':models.ParameterName.STRING, 'subtype':'float', 'description':'Error Threshold', 'ranking':3, 'initial':'0.03', 'help_text':'Delta for iteration convergence'},  # FIXME: should use float here
                 u'threshold': {'type':models.ParameterName.STRING, 'subtype':'string', 'description':'No. results kept per iteration', 'ranking':4, 'initial':'[1]', 'help_text':'Number of outputs to keep between iterations. eg. [2] would keep the top 2 results.'},  # FIXME: should be list of ints
-                u'number_dimensions': {'type':models.ParameterName.NUMERIC, 'subtype':'natural', 'description':'No. varying parameters', 'ranking':5, 'initial': 0, 'help_text':'Number of parameters to vary, e.g. 0 = iseed only, 1 = iseed and temp'},
+                u'number_dimensions': {'type':models.ParameterName.NUMERIC, 'subtype':'natural', 'description':'No. varying parameters', 'ranking':5, 'initial': 0, 'help_text':'Number of parameters to vary, e.g. 0 = iseed only, 1 = iseed and temp', 'hidefield': 'http://rmit.edu.au/schemas/input/hrmc/fanout_per_kept_result', 'hidecondition':'== 1'},
                 u'iseed': {'type':models.ParameterName.NUMERIC, 'subtype':'natural', 'description':'Random Number Seed', 'ranking':7, 'initial': 42, 'help_text':'Initial seed for random numbers'},
                 u'fanout_per_kept_result': {'type':models.ParameterName.NUMERIC, 'subtype':'whole', 'description':'No. fanout kept per result', 'initial': 4, 'ranking':12, 'help_text':''},
                 }
@@ -470,6 +470,7 @@ class Command(BaseCommand):
         from urlparse import urlparse
         from django.template.defaultfilters import slugify
 
+        # hidelinks = {}
         for ns in schema_data:
             l = schema_data[ns]
             logger.debug("l=%s" % l)
@@ -487,13 +488,29 @@ class Command(BaseCommand):
 
             for k, v in kv.items():
                 try:
-                    models.ParameterName.objects.get_or_create(
+                    model, _ = models.ParameterName.objects.get_or_create(
                         schema=context_schema,
                         name=k,
                         defaults=dict(v))
-                except TypeError, e:
+                except TypeError:
                     logger.debug('Parameters are added to a schema using old format.')
+                # if 'hidefield' in dict(v):
+                #     hidelinks[model.id] = dict(v)['hidefield']
 
+        # print ("hidelinks=%s" % hidelinks)
+        # for hidelink in hidelinks:
+        #     pn = models.ParameterName.objects.get(id=hidelink)
+        #     schema_ns, key_name = os.path.split(hidelinks[hidelink])
+        #     print schema_ns
+        #     try:
+        #         schema = models.Schema.objects.get(namespace=str(schema_ns))
+        #     except models.Schema.DoesNotExist, e:
+        #         logger.error(e)
+        #         logger.error(schema_ns)
+        #         raise
+        #     link_pn = models.ParameterName.objects.get(name=key_name, schema=str(schema))
+        #     pn.hidefield = link_pn
+        #     pn.save()
 
         logger.debug("stages=%s" % models.Stage.objects.all())
         local_filesys_rootpath = '/var/cloudenabling/remotesys'
