@@ -328,12 +328,12 @@ class ContextResource(ModelResource):
             'natural': ('natural number', validators.validate_natural_number, None, None),
             'string': ('string', validators.validate_string, None, None),
             'whole': ('whole number', validators.validate_whole_number, None, None),
-            'nectar_platform': ('NeCTAR platform name', validators.validate_nectar_platform, None, None),
             'even': ('even number', validators.validate_even_number, None, None),
             'bdpurl': ('BDP url', validators.validate_BDP_url, forms.TextInput, 255),
             'float': ('floading point number', validators.validate_float_number, None, None),
             'jsondict': ('JSON Dictionary', validators.validate_jsondict, forms.Textarea(attrs={'cols':30, 'rows': 5}), None),
             'bool': ('On/Off', validators.validate_bool, None,  None),
+            'platform': ('platform', validators.validate_nectar_platform, None,  None),
 
         }
         directive = models.Directive.objects.get(name=directive_name)

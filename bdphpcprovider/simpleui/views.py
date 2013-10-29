@@ -727,14 +727,13 @@ subtype_validation = {
     'natural': ('natural number', validators.validate_natural_number, None, None),
     'string': ('string', validators.validate_string, None, None),
     'whole': ('whole number', validators.validate_whole_number, None, None),
-    'nectar_platform': ('NeCTAR platform name', validators.validate_nectar_platform, None, None),
     'even': ('even number', validators.validate_even_number, None, None),
     'bdpurl': ('BDP url', validators.validate_BDP_url, forms.TextInput, 255),
     'float': ('floading point number', validators.validate_float_number, None, None),
     'jsondict': ('JSON Dictionary', validators.validate_jsondict, forms.Textarea(attrs={'cols': 30, 'rows': 5}), None),
     'float': ('floading point number', validators.validate_float_number, None, None),
     'bool': ('On/Off', validators.validate_bool, None,  None),
-    'computation_platform': ('computation_platform', validators.validate_string, None,  None),
+    'platform': ('platform', validators.validate_nectar_platform, None,  None),
 }
 
 clean_rules = {
@@ -773,12 +772,26 @@ def make_dynamic_field(parameter, **kwargs):
         else:
             field = forms.IntegerField(**field_params)
     if parameter['type'] == 4:
-        if parameter['subtype'] == "computation_platform":
-            # TODO: make list of computation_platforms here
-            field_params['initial'] =""
-            field_params['choices'] = ""
-        else:
+        logger.debug("found strlist")
+        if parameter['subtype'] == "platform":
 
+            field_params['initial'] = ""
+            field_params['choices'] = ""
+            # FIXME,TODO: compuation_ns value should be part of directive and
+            # passed in, as some directives will only work with particular computation/*
+            # categories.  Assume only nectar comp platforms ever allowed here.
+            computation_ns = 'http://rmit.edu.au/schemas/platform/computation/nectar'
+            if 'username' in kwargs:
+                field_params['initial'] = platform.get_platform_name(kwargs['username'],
+                 computation_ns)
+                logger.debug("initial=%s" % field_params['initial'])
+                # TODO: retrieve_platform_paramset should be an API call
+                platform_name_choices = [(x['name'], x['name'])
+                    for x in platform.retrieve_platform_paramsets(kwargs['username'],
+                        computation_ns)]
+                logger.debug("platform_name_choices=%s" % platform_name_choices)
+                field_params['choices'] = platform_name_choices
+        else:
             if parameter['initial']:
                 field_params['initial'] = str(parameter['initial'])
             else:
@@ -788,12 +801,9 @@ def make_dynamic_field(parameter, **kwargs):
             else:
                 field_params['choices'] = []
 
-        field = forms.MultipleChoiceField(**field_params)
+        field = forms.ChoiceField(**field_params)
     else:
         field_params['initial'] = str(parameter['initial'])
-        if parameter['subtype'] == 'nectar_platform':
-            schema = 'http://rmit.edu.au/schemas/platform/computation/nectar'
-            field_params['initial'] = platform.get_platform_name(kwargs['username'], schema)
         field = forms.CharField(**field_params)
 
     if 'subtype' in parameter and parameter['subtype']:
@@ -823,7 +833,7 @@ def make_directive_form(**kwargs):
                 field_key = "%s/%s" % (schema_data['namespace'], parameter['name'])
                 form_data.append((field_key, schema_data['description'] if not j else "", parameter['subtype'], parameter['hidefield'], parameter['hidecondition']))
                 #fixme replce if else by fields[field_key] = make_dynamic_field(parameter) after unique key platform model is developed
-                if parameter['subtype'] == 'nectar_platform':
+                if 'username' in kwargs:
                     fields[field_key] = make_dynamic_field(parameter, username=kwargs['username'])
                 else:
                     fields[field_key] = make_dynamic_field(parameter)
