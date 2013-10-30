@@ -24,7 +24,7 @@ $(document).ready(function () {
           <th></th>
           <th data-hide="phone"></th></thead>
         <tbody>
-{% for key, value in settings.items %}
+{% for key, value in settings %}
     <thead><tr><td ><strong>{{ key }}</strong></td></tr></thead>
     <tbody>
     {% for key2,value2 in value.items %}

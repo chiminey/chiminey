@@ -22,6 +22,8 @@ import logging
 import os
 import json
 import requests
+import itertools
+
 import ast
 from pprint import pformat
 
@@ -332,6 +334,7 @@ class ContextList(ListView):
 
 from django.shortcuts import get_object_or_404
 from django.db.models import Model
+
 class AccountSettingsView(FormView):
     template_name = "accountsettings/computationplatform.html"
     form_class = NCIComputationPlatformForm
@@ -378,34 +381,34 @@ class ContextView(DetailView):
     model = models.Context
     template_name = 'view_context.html'
 
-    def get_context_data_old(self, **kwargs):
+    def get_context_data(self, **kwargs):
         context = super(ContextView, self).get_context_data(**kwargs)
-        cpset = models.ContextParameterSet.objects.filter(context=self.object)
+
+        INPUT_SCHEMA_PREFIX = "http://rmit.edu.au/schemas/input"
+        context_ps = models.ContextParameterSet.objects.filter(context=self.object)
+        cpset = list(itertools.chain(
+               context_ps.filter(
+                   schema__namespace__startswith=INPUT_SCHEMA_PREFIX).order_by('-ranking'),
+               context_ps.exclude(
+                   schema__namespace__startswith=INPUT_SCHEMA_PREFIX)))
+        #cpset = models.ContextParameterSet.objects.filter(context=self.object)
+        #cpset = context_ps.exclude(
+        #     schema__namespace__startswith=INPUT_SCHEMA_PREFIX)
+        logger.debug("cpset=%s" % pformat(list(cpset)))
         res = []
         context['stage'] = self.object.current_stage.name
         for cps in cpset:
-            # TODO: HTML should be part of template
-            res.append("<h2>%s</h2> " % cps.schema.namespace)
-            for cp in models.ContextParameter.objects.filter(paramset=cps):
-                res.append("%s=%s" % (cp.name.name, cp.value))
-        context['settings'] = '<br>'.join(res)
-        return context
-
-    def get_context_data(self, **kwargs):
-        context = super(ContextView, self).get_context_data(**kwargs)
-        cpset = models.ContextParameterSet.objects.filter(context=self.object)
-        res = {}
-        context['stage'] = self.object.current_stage.name
-        for cps in cpset:
+            logger.debug("cps=%s" % cps)
             res2 = {}
             for cp in models.ContextParameter.objects.filter(paramset=cps):
                 res2[cp.name.name] = [cp.value, cp.name.help_text, cp.name.subtype]
                 #res2[cp.name.name] = [cp.value, "hello"]
             if cps.schema.name:
-                res["%s (%s) " % (cps.schema.name, cps.schema.namespace)] = res2
+                res.append(("%s (%s) " % (cps.schema.name, cps.schema.namespace), res2))
             else:
-                res[cps.schema.namespace] = res2
+                res.append((cps.schema.namespace, res2))
         context['settings'] = res
+        logger.debug("context=%s" % pformat(context))
         return context
 
     def get_object(self):
