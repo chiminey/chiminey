@@ -27,7 +27,7 @@ from pprint import pformat
 
 # FIXME,TODO: replace basic authentication with basic+SSL,
 # or better digest or oauth
-from tastypie.authentication import (BasicAuthentication)
+from tastypie.authentication import (BasicAuthentication, ApiKeyAuthentication, MultiAuthentication)
 from tastypie.authorization import DjangoAuthorization, Authorization
 from tastypie import fields
 from tastypie.resources import ModelResource, ALL_WITH_RELATIONS, ALL
@@ -87,9 +87,8 @@ class UserProfileResource(ModelResource):
         allowed_methods = ['get']
         # TODO: FIXME: BasicAuth is horribly insecure without using SSL.
         # Digest is better, but configuration proved tricky.
-        authentication = BasicAuthentication()
+        authentication = MultiAuthentication(ApiKeyAuthentication(), MyBasicAuthentication())
         authorization = DjangoAuthorization()
-
     def apply_authorization_limits(self, request, object_list):
         return object_list.filter(user=request.user)
 
@@ -160,7 +159,7 @@ class UserProfileParameterSetResource(ModelResource):
         resource_name = 'userprofileparameterset'
         # TODO: FIXME: BasicAuth is horribly insecure without using SSL.
         # Digest is better, but configuration proved tricky.
-        authentication = BasicAuthentication()
+        authentication = MultiAuthentication(ApiKeyAuthentication(), MyBasicAuthentication())
         #authentication = DigestAuthentication()
         authorization = DjangoAuthorization()
         allowed_methods = ['get']
@@ -190,7 +189,8 @@ class UserProfileParameterResource(ModelResource):
         resource_name = 'userprofileparameter'
         # TODO: FIXME: BasicAuth is horribly insecure without using SSL.
         # Digest is better, but configuration proved tricky.
-        authentication = BasicAuthentication()
+        authentication = MultiAuthentication(ApiKeyAuthentication(), MyBasicAuthentication())
+
         #authentication = DigestAuthentication()
         authorization = DjangoAuthorization()
         # curl --digest --user user2 --dump-header - -H "Content-Type: application/json" -X PUT --data ' {"value": 44}' http://115.146.86.247/api/v1/userprofileparameter/48/?format=json
@@ -215,8 +215,7 @@ class ContextResource(ModelResource):
         resource_name = 'context'
         # TODO: FIXME: BasicAuth is horribly insecure without using SSL.
         # Digest is better, but configuration proved tricky.
-        authentication = BasicAuthentication()
-        authentication = MyBasicAuthentication()
+        authentication = MultiAuthentication(ApiKeyAuthentication(), MyBasicAuthentication())
         #authentication = DigestAuthentication()
         authorization = DjangoAuthorization()
         allowed_methods = ['get', 'post']
@@ -521,8 +520,7 @@ class ContextMessageResource(ModelResource):
     class Meta:
         queryset = models.ContextMessage.objects.all()
         resource_name  = "contextmessage"
-        authentication = BasicAuthentication()
-        authentication = MyBasicAuthentication()
+        authentication = MultiAuthentication(ApiKeyAuthentication(), MyBasicAuthentication())
         #authentication = DigestAuthentication()
         authorization = DjangoAuthorization()
         allowed_methods = ['get']
@@ -538,8 +536,7 @@ class PlatformInstanceResource(ModelResource):
         resource_name = 'platform'
         # TODO: FIXME: BasicAuth is horribly insecure without using SSL.
         # Digest is better, but configuration proved tricky.
-        authentication = BasicAuthentication()
-        authentication = MyBasicAuthentication()
+        authentication = MultiAuthentication(ApiKeyAuthentication(), MyBasicAuthentication())
         #authentication = DigestAuthentication()
         authorization = DjangoAuthorization()
         allowed_methods = ['get']

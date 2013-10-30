@@ -59,6 +59,8 @@ from bdphpcprovider.smartconnectorscheduler import hrmcstages, platform
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
 
+from tastypie.models import ApiKey
+
 from django.utils.datastructures import SortedDict
 from django import forms
 
@@ -75,7 +77,8 @@ from django.shortcuts import render_to_response, render
 
 
 def bdp_account_settings(request):
-    return render(request, 'accountsettings/bdpaccount.html', {})
+    api_key = ApiKey.objects.get(user=request.user)
+    return render(request, 'accountsettings/bdpaccount.html', {'key': api_key.key})
 
 
 def computation_platform_settings(request):

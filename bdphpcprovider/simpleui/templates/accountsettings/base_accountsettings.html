@@ -9,6 +9,8 @@
                         {% url bdp-account-settings as bdp_account %}
                         {% url computation-platform-settings as computation_platform %}
                         {% url storage-platform-settings as storage_platform %}
+                        <li {% if request.path == bdp_account %} class="active"{% endif %}>
+                            <a href="{{ bdp_account }}">Account Settings</a></li>
                         <li {% if request.path == computation_platform %} class="active"{% endif %}>
                             <a href="{{ computation_platform }}">Computation Platform</a></li>
                         <li{% if request.path == storage_platform %} class="active"{% endif %}>
