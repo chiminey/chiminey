@@ -29,7 +29,7 @@
 
 
 <div class="row-fluid">
-<form class="form-horizontal" name="myform" action="" method="POST"> {% csrf_token %}
+<form class="form-horizontal" name="myform" id="myform-id" action="" method="POST"> {% csrf_token %}
     {% if form.non_field_errors %}
    <div class="alert alert-error">
     {{ form.non_field_errors}}
@@ -67,14 +67,20 @@
       </fieldset>
       <div class="row controls">
         <button type="reset" class="btn" title="Reset">Reset</button>
-        <button type="submit" class="offset9 btn btn-primary">Submit Job </button>
+        <button type="submit"  class="submit offset9 btn btn-primary">Submit Job </button>
       </div>
 
 
 </form>
 
-
 <script type="text/javascript">
+$(document).on('click','.submit', function(e) {
+  e.preventDefault();
+  bootbox.confirm("Are you sure you want to start a new job?", function(result) {
+  if (result) { $('#myform-id').submit();}
+  });
+});
+
 
 function chfield(f) {
   {% for data, field in formdata %}
