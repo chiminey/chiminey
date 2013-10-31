@@ -434,7 +434,7 @@ class HRMCSubmitFormView(FormView):
     system_schema = "http://rmit.edu.au/schemas/system/misc/"
 
     initial = {'number_vm_instances': 1,
-               'minimum_number_vm_instances': 1,
+        'minimum_number_vm_instances': 1,
         'iseed': 42,
         'input_location': 'file://127.0.0.1/myfiles/input',
         'optimisation_scheme': "MC",
@@ -775,7 +775,7 @@ def make_dynamic_field(parameter, **kwargs):
             field = forms.BooleanField(**field_params)
         else:
             field = forms.IntegerField(**field_params)
-    if parameter['type'] == 4:
+    elif parameter['type'] == 4:
         logger.debug("found strlist")
         # if parameter has choices in schema, than use these, otherwise use
         # dynamically generated ones from platform.
