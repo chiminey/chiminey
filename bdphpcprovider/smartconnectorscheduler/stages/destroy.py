@@ -21,6 +21,7 @@
 
 import logging
 import ast
+import os
 
 from bdphpcprovider.smartconnectorscheduler import smartconnector, models, platform
 from bdphpcprovider.smartconnectorscheduler.botocloudconnector \
@@ -77,9 +78,10 @@ class Destroy(smartconnector.Stage):
         #smartconnector.copy_settings(local_settings, run_settings,
         #    RMIT_SCHEMA+'/platform/computation/nectar/ec2_secret_key')
 
-        computation_platform = run_settings[RMIT_SCHEMA + '/platform/computation']
-        credentials = platform.get_credentials(computation_platform)
-        local_settings.update(credentials)
+        comp_pltf_schema = run_settings['http://rmit.edu.au/schemas/platform/computation']['namespace']
+        comp_pltf_settings = run_settings[comp_pltf_schema]
+        platform.update_platform_settings(comp_pltf_schema, comp_pltf_settings)
+        local_settings.update(comp_pltf_settings)
 
         node_type = 'created_nodes'
         if self._exists(run_settings,

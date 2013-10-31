@@ -246,6 +246,15 @@ def get_fanout(parameter_value_list):
     pass
 
 
+def get_job_dir(run_settings):
+    output_storage_schema = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['namespace']
+    ip_address = run_settings[output_storage_schema][u'ip_address']
+    offset = run_settings[output_storage_schema][u'offset']
+    job_dir = os.path.join(ip_address, offset)
+    return job_dir
+
+
+
 def get_threshold():
     pass
 
@@ -487,7 +496,8 @@ def get_value(key, dictionary):
     """
     try:
         return dictionary[key]
-    except KeyError:
+    except KeyError, e:
+        logger.debug(e)
         return u''
 
 
@@ -512,6 +522,8 @@ def parse_bdpurl(bdp_url):
     logger.debug("mypath=%s" % mypath)
     query = parse_qsl(o.query)
     query_settings = dict(x[0:] for x in query)
+    logger.debug('bdp_url=%s' % bdp_url)
+    logger.debug('query_settings=%s' % query_settings)
     return (scheme, host, mypath, location, query_settings)
 
 
@@ -900,6 +912,7 @@ def put_file(file_url, content):
     Writes out the content to the file_url using config info from user_settings. Note that content is bytecodes
     """
     logger.debug("file_url=%s" % file_url)
+    #logger.debug('content=%s' % content)
     if '..' in file_url:
         # .. allow url to potentially leave the user filesys. This would be bad.
         raise InvalidInputError(".. not allowed in urls")
@@ -1025,7 +1038,7 @@ def get_file(file_url):
     return content
 
 
-def get_filep(file_bdp_url):
+def get_filep(file_bdp_url, sftp_reference=False):
     """
     opens a django file pointer to file_bdp_url
     """
@@ -1061,6 +1074,7 @@ def get_filep(file_bdp_url):
     elif scheme == "ssh":
         logger.debug("getting from hpc")
         key_file = get_value('key_file', query_settings)
+        logger.debug('key_file=%s' % key_file)
         if not key_file:
             key_file = None  # require None for ssh_settinglesss to skip keys
 
@@ -1072,6 +1086,7 @@ def get_filep(file_bdp_url):
             'password': password}
         if key_file:
             paramiko_settings['key_filename'] = key_file
+
         ssh_settings = {'params': paramiko_settings,
                         'host': location,
                         'root': root_path + "/"}
@@ -1081,6 +1096,7 @@ def get_filep(file_bdp_url):
         logger.debug("mypath=%s" % mypath)
         fp = fs.open(mypath)
         logger.debug("fp opened")
+        logger.debug("fp_dict %s" % fp.__dict__)
         #content = fp.read()
         #logger.debug("content=%s" % content)
     elif scheme == "tardis":
@@ -1099,6 +1115,8 @@ def get_filep(file_bdp_url):
         fp = fs.open(mypath)
         #content = fs.open(mypath).read()
         #logger.debug("content=%s" % content)
+    if sftp_reference:
+        return fp, fs
     return fp
 
 
@@ -1194,11 +1212,6 @@ def make_runcontext_for_directive(platform_name, directive_name,
     run_context.save()
 
     run_settings[u'http://rmit.edu.au/schemas/system'][u'contextid'] = run_context.id
-
-    # Add the run_context id as suffix to the current output_location
-    output_location = run_settings['http://rmit.edu.au/schemas/input/system']['output_location']
-    run_settings[u'http://rmit.edu.au/schemas/input/system']['output_location'] \
-        = "%s%s" % (output_location, run_context.id)
 
     # Add User settings to context, so we get set values when context executed
     # and local changes can be made to values in that context.
@@ -1422,9 +1435,12 @@ def get_exp_name_for_output(settings, url, path):
 def get_dataset_name_for_output(settings, url, path):
     logger.debug("path=%s" % path)
 
+    host = settings['host']
+    prefix = 'ssh://%s@%s' % (settings['type'], host)
+
     source_url = smartconnector.get_url_with_pkey(
-        settings, os.path.join(path, "HRMC.inp_values"),
-        is_relative_path=True)
+        settings, os.path.join(prefix, path, "HRMC.inp_values"),
+        is_relative_path=False)
     logger.debug("source_url=%s" % source_url)
     try:
         content = get_file(source_url)

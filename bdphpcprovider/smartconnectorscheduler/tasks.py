@@ -168,6 +168,7 @@ def progress_context(context_id):
             raise
     except Exception, e:
         logger.debug('tasks.py=%s' % e)
+        raise
 
 
 def progress_context_old(context_id):

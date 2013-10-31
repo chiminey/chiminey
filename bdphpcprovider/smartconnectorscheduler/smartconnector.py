@@ -63,9 +63,9 @@ def get_platform(platform_url):
 
 def get_bdp_storage_url(platform_url):
     platform_name = platform_url.split('/')[0]
-    record = platform.retrieve_platform(platform_name)
+    record, namespace = platform.retrieve_platform(platform_name)
     logger.debug('record=%s' % record)
-    return record
+    return record, namespace
     '''
     scheme = 'ssh'
     relative_path = parsed_url.path
@@ -118,7 +118,9 @@ def get_url_with_pkey(settings, url_or_relative_path,
     parsed_url = urlparse(url)
     platform = parsed_url.username
     url_settings = {}
-    if platform == 'nectar':
+    logger.debug('platform=%s' % platform)
+    if platform == 'nectar' or platform == 'unix':
+        logger.debug('unix here')
         url_settings['username'] = settings['username']
         #url_settings['password'] = settings['nectar_password']
         url_settings['key_file'] = settings['private_key']
@@ -174,15 +176,16 @@ def get_url_with_pkey(settings, url_or_relative_path,
                          "Valid schemes [file, ssh]" % scheme)
             #raise NotImplementedError()
             return
-    try:
-        platform_object = models.Platform.objects.get(name=platform)
-    except models.Platform.DoesNotExist:
-        logger.error('compatible platform for %s not found' % platform)
 
     # FIXME: suffix root_path with username
-    if platform != 'nectar':
-        root_path = platform_object.root_path
-        url_settings['root_path'] = root_path
+    if platform != 'nectar' and platform != 'unix':
+        try:
+            platform_object = models.Platform.objects.get(name=platform)
+            root_path = platform_object.root_path
+            url_settings['root_path'] = root_path
+        except models.Platform.DoesNotExist:
+            logger.error('compatible platform for %s not found' % platform)
+
     # FIXME: URIs cannot contain unicode data, but IRI can. So need to convert IRI to URL
     # if parameters can be non-ascii
     # https://docs.djangoproject.com/en/dev/ref/unicode/#uri-and-iri-handling

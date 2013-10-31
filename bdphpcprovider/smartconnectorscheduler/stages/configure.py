@@ -27,7 +27,7 @@ from pprint import pformat
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, UI
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.smartconnectorscheduler import models
-from bdphpcprovider.smartconnectorscheduler import smartconnector
+from bdphpcprovider.smartconnectorscheduler import smartconnector, platform
 
 
 from bdphpcprovider.smartconnectorscheduler import mytardis
@@ -58,17 +58,10 @@ class Configure(Stage, UI):
         return True
 
     def process(self, run_settings):
-        local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
+        logger.debug('run_settings=%s' % run_settings)
 
         smartconnector.info(run_settings, "1: configure")
-        self.contextid = int(run_settings[
-            RMIT_SCHEMA + '/system'][u'contextid'])
-        logger.debug("self.contextid=%s" % self.contextid)
-        #TODO: we assume relative path BDP_URL here, but could be made to work
-        # with non-relative (ie., remote paths)
-        self.job_dir = run_settings[
-            RMIT_SCHEMA + '/input/system'][u'output_location']
-
+        local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
         logger.debug("settings=%s" % pformat(run_settings))
         smartconnector.copy_settings(local_settings, run_settings,
             RMIT_SCHEMA + '/system/platform')
@@ -76,11 +69,51 @@ class Configure(Stage, UI):
             RMIT_SCHEMA + '/input/hrmc/number_dimensions')
         smartconnector.copy_settings(local_settings, run_settings,
             RMIT_SCHEMA + '/input/hrmc/threshold')
+        logger.debug('local_settings=%s' % local_settings)
 
         input_location = run_settings[
             RMIT_SCHEMA + '/input/system']['input_location']
         logger.debug("input_location=%s" % input_location)
 
+        self.output_storage_schema = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['namespace']
+        output_storage_settings = run_settings[self.output_storage_schema]
+        platform.update_platform_settings(self.output_storage_schema, output_storage_settings)
+
+        self.contextid = int(run_settings[
+            RMIT_SCHEMA + '/system'][u'contextid'])
+        logger.debug("self.contextid=%s" % self.contextid)
+
+        self.output_loc_offset = str(self.contextid)
+        logger.debug("suffix=%s" % self.output_loc_offset)
+        try:
+            #fixme, hrmc should be variable..so configure can be used in any connector
+            self.output_loc_offset = os.path.join(
+                run_settings[self.output_storage_schema]['offset'],
+                'hrmc' + self.output_loc_offset)
+        except KeyError:
+            pass
+        run_settings[self.output_storage_schema]['offset'] = self.output_loc_offset
+
+        self.job_dir = hrmcstages.get_job_dir(run_settings)
+        iter_inputdir = os.path.join(self.job_dir, "input_0")
+        logger.debug("iter_inputdir=%s" % iter_inputdir)
+        #todo: input location will evenatually be replaced by the scratch space that was used by the sweep
+        #todo: the sweep will indicate the location of the scratch space in the run_settings
+        #todo: add scheme (ssh) to inputlocation
+        source_url = smartconnector.get_url_with_pkey(local_settings,
+            input_location)
+        logger.debug("source_url=%s" % source_url)
+
+        destination_url = smartconnector.get_url_with_pkey(
+            output_storage_settings,
+            '%s://%s@%s' % (output_storage_settings['scheme'],
+                             output_storage_settings['type'],
+                             iter_inputdir),
+            is_relative_path=False)
+        logger.debug("destination_url=%s" % destination_url)
+        hrmcstages.copy_directories(source_url, destination_url)
+
+        output_location = self.output_loc_offset #run_settings[RMIT_SCHEMA + '/input/system'][u'output_location']
         try:
             self.experiment_id = int(smartconnector.get_existing_key(run_settings,
                 RMIT_SCHEMA + '/input/mytardis/experiment_id'))
@@ -88,21 +121,6 @@ class Configure(Stage, UI):
             self.experiment_id = 0
         except ValueError:
             self.experiment_id = 0
-
-        #prefix = "%s%s" % (self.job_dir, self.contextid)
-        prefix = self.job_dir
-        logger.debug("prefix=%s" % prefix)
-        iter_inputdir = os.path.join(prefix, "input_0")
-        logger.debug("iter_inputdir=%s" % iter_inputdir)
-        source_url = smartconnector.get_url_with_pkey(local_settings,
-            input_location)
-        logger.debug("source_url=%s" % source_url)
-        destination_url = smartconnector.get_url_with_pkey(local_settings,
-            iter_inputdir, is_relative_path=False)
-        logger.debug("destination_url=%s" % destination_url)
-        hrmcstages.copy_directories(source_url, destination_url)
-
-        output_location = run_settings[RMIT_SCHEMA + '/input/system'][u'output_location']
 
         if local_settings['mytardis_host']:
             EXP_DATASET_NAME_SPLIT = 2
@@ -131,11 +149,5 @@ class Configure(Stage, UI):
             RMIT_SCHEMA + '/stages/configure',
             {})[u'configure_done'] = 1
         run_settings[RMIT_SCHEMA + '/input/mytardis']['experiment_id'] = str(self.experiment_id)
-
-        # if not self._exists(run_settings,
-        #         RMIT_SCHEMA + '/stages/configure'):
-        #     run_settings[RMIT_SCHEMA + '/stages/configure'] = {}
-        # run_settings[RMIT_SCHEMA + '/stages/configure']
-        # [u'configure_done'] = True
-
+        run_settings[self.output_storage_schema]['offset'] = self.output_loc_offset
         return run_settings
