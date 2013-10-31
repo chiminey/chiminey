@@ -191,7 +191,7 @@ class Transform(Stage):
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/hrmc/iseed')
         smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/hrmc/number_dimensions')
+            'http://rmit.edu.au/schemas/hrmc/optimisation_scheme')
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/hrmc/threshold')
         smartconnector.copy_settings(self.boto_settings, run_settings,

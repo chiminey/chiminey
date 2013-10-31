@@ -58,19 +58,6 @@ def validate_minimum_number_vm_instances(value):
     return minimum_number_vm_instances
 
 
-def validate_number_dimensions(value):
-    number_dimensions = value
-
-    msg = u'number of dimensions should be in [1,2]'
-    try:
-        nd = int(number_dimensions)
-    except ValueError:
-        raise ValidationError(msg)
-    if not nd in [1,2]:
-        raise ValidationError(msg)
-    return number_dimensions
-
-
 def validate_fanout_per_kept_result(value):
     fanout_per_kept_result = value
     msg = u'No. fan out is an integer that is  greater than 0'
@@ -167,7 +154,7 @@ def validate_error_threshold(value):
     #     ('number_vm_instances', in [0,1],
     #     # TODO: in configure stage could copy this information from somewhere to this required location
     #     ('input_location',  'file://127.0.0.1/hrmcrun/input_0'),
-    #     ('number_dimensions', 1),
+    #     ('optimisation_scheme', 1),
     #     ('threshold', "[1]"),
     #     ('error_threshold', "0.03"),
     #     ('max_iteration', 20)
@@ -288,6 +275,17 @@ def check_addition(cleaned_data):
     else:
         logger.debug("okay")
 
+
+
+def myvalidate_choice_field(value, choices):
+    msg = "Submitted value %s not found in choices %s" % (value, choices)
+    logger.debug("checking %s for %s" % (value, choices))
+    if value in choices:
+        return value
+    else:
+        raise ValidationError(msg)
+
+    return value
 
 
 

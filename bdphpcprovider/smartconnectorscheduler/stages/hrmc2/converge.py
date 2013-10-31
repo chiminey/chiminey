@@ -206,7 +206,7 @@ class Converge(Stage):
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/input/hrmc/iseed')
         smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/input/hrmc/number_dimensions')
+            'http://rmit.edu.au/schemas/input/hrmc/optimisation_scheme')
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/input/hrmc/threshold')
         #smartconnector.copy_settings(self.boto_settings, run_settings,
