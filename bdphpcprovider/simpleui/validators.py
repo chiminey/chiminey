@@ -176,7 +176,7 @@ def validate_experiment_id(value):
 
 def validate_natural_number(value):
     # If the field is blank we assume zero
-    if value == "":
+    if value is None or value == "":
         return 0
     msg = u'natural number'
     try:
