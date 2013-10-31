@@ -13,12 +13,22 @@ $(document).ready(function () {
            {% endfor %}
             $('.footable').footable();
        });
+$(document).on('click','.delete', function(e) {
+  e.preventDefault();
+
+  elementList = document.querySelectorAll('[id^=delete_]');
+  var list_of_names = jQuery.map(jQuery('input'), function(element) { if (element.checked) { return jQuery(element).attr('name'); }});
+
+  bootbox.confirm("Are you sure you want to TERMINATE jobs: " + list_of_names, function(result) {
+  if (result) { $('#myform-id').submit();}
+  });
+});
 </script>
 <div class="container-fluid">
 <div class="row-fluid">
 <div class="page-header"><h1> Jobs</h1></div>
 <div class="row-fluid">
-    <form class="form-horizontal" action="" method="POST"> {% csrf_token %}
+    <form class="form-horizontal" id="myform-id" action="" method="POST"> {% csrf_token %}
 
     <table class="footable table table-hover table-bordered table-condensed">
         <thead>
@@ -74,7 +84,7 @@ $(document).ready(function () {
 </tbody>
 </table>
 <div class="controls">
-    <button type="submit" class="offset10 btn btn-small btn-warning">Terminate selected jobs</button>
+    <button type="submit" class="delete offset10 btn btn-small btn-warning">Terminate selected jobs</button>
 </div>
 </form>
 
