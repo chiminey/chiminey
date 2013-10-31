@@ -2,6 +2,20 @@
 {% block account-settings-content %}
 <!--second column-->
 
+<div class="row-fluid">
+<div class="span2">API key for BDP clients
+</div>
+<div class="span1">
+    <div style="display:none" id='content'>{{request.user.username}} {{key}}</div>
+<input class="btn" type='button' id='hideshow' value='hide/show'>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){
+    $('#hideshow').live('click', function(event) {
+         $('#content').toggle('show');
+    });
+});
 
+</script>
 <!--end second column-->
 {% endblock %}

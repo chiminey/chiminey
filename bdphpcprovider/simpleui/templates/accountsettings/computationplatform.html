@@ -6,7 +6,7 @@
 <script type="text/javascript">
 $(document).ready(function () {
     {% for platform_type, platform_details in all_headers.items %}
-    $('.footable_{{platform_type}}').footable();
+    $('.footable-{{platform_type}}').footable();
     {% endfor %}
    });
 </script>
@@ -102,7 +102,7 @@ $(document).ready(function () {
 {% for platform_type, platform_details in all_headers.items %}
      {% for header, schema in platform_details.items %}
          <h2>{{ platform_type }}</h2>
-         <table class="footable_{{platform_type}} table table-hover table-striped table-bordered">
+         <table class="footable-{{platform_type}} table table-hover table-striped table-bordered">
             <thead>
                 <tr>
                     {% for h in header %}
@@ -112,28 +112,27 @@ $(document).ready(function () {
                         </th>
                         {% elif h != 'password' and h != 'offset' %}
                         <th data-hide="phone, tablet">
-                            <strong>{{ h }}</strong>
+                            {{ h }}
                         </th>
                         {% endif %}
                     {% endfor %}
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
                 {% for paramset_key, paramset in schema.items %}
-                <tr class="">
+                <tr>
                     {% for param_key, param in paramset.items %}
                         {% if param_key != 'password' and param_key != 'offset' %}
                         <td class="span1">  {{ param }}</td>
                         {% endif %}
                     {% endfor %}
-                <td>
-                <div class="btn-group">
+                <td class="btn-group">
                     <a data-toggle="modal" href="#updateModal" class="btn btn-primary"
                        onclick="updatePlatform('{{ paramset.items|escapejs }}', '{{ platform_type|slugify }}');">
                                 Update </a>
                   <button data-toggle="modal" href="#deleteModal" class="btn"
                           onclick="deletePlatform('{{ paramset.items|escapejs }}', '{{ platform_type|slugify }}');">Delete</button>
-                </div>
                 </td>
                 </tr>
                 {% endfor %}

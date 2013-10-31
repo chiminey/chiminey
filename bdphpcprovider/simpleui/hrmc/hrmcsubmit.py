@@ -19,7 +19,10 @@ class HRMCSubmitForm(forms.Form):
         help_text="A BDPUrl Directory"
 #        widget=forms.Textarea(attrs={'cols': 80, 'rows': 1})
         )
-    number_dimensions = forms.IntegerField(min_value=0, label=_("Degrees of Variation"), help_text="1 = iseed variation, 2 = iseed/temp variation")
+
+    optimisation_scheme = forms.ChoiceField(label=_("Optimisation Scheme"),
+        help_text="",
+        choices=[("MC","Monte Carlo"), ("MCSA", "Monte Carlo with Simulated Annealing")])
     threshold = forms.CharField(label=_("Threshold"),
             max_length=255,
             widget=forms.TextInput,
@@ -36,7 +39,6 @@ class HRMCSubmitForm(forms.Form):
         super(HRMCSubmitForm, self).__init__(*args, **kwargs)
         self.fields["number_vm_instances"].validators.append(validators.validate_number_vm_instances)
         self.fields["minimum_number_vm_instances"].validators.append(validators.validate_minimum_number_vm_instances)
-        self.fields["number_dimensions"].validators.append(validators.validate_number_dimensions)
         self.fields["threshold"].validators.append(validators.validate_threshold)
         self.fields["iseed"].validators.append(validators.validate_iseed)
         self.fields["pottype"].validators.append(validators.validate_pottype)
@@ -51,7 +53,7 @@ class HRMCSubmitForm(forms.Form):
     #     ('number_vm_instances', 2), (u'iseed', 42),
     #     # TODO: in configure stage could copy this information from somewhere to this required location
     #     ('input_location',  'file://127.0.0.1/hrmcrun/input_0'),
-    #     ('number_dimensions', 1),
+    #     ('optimisation_scheme', 1),
     #     ('threshold', "[1]"),
     #     ('error_threshold', "0.03"),
     #     ('max_iteration', 20)

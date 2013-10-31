@@ -14,10 +14,9 @@ $(document).ready(function () {
             $('.footable').footable();
        });
 </script>
-<div class="container">
+<div class="container-fluid">
 <div class="row-fluid">
-<h1> Jobs</h1>
-</div>
+<div class="page-header"><h1> Jobs</h1></div>
 <div class="row-fluid">
     <form class="form-horizontal" action="" method="POST"> {% csrf_token %}
 
@@ -41,19 +40,17 @@ $(document).ready(function () {
         </thead>
         <tbody>
 {% for job in object_list %}
-<tr class='{{job.2|split:"0"}}'>
-
-
+<tr class='{{job.3|split:"0"}}'>
 <td class="span1">{{ job.0 }} </td>
-<td class="span2">{{ job.3 }} <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{job.5}}" id='{{forloop.counter}}'><img src="#" class="icon-question-sign"></a>
+<td class="span2">{{ job.4 }} <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{job.5}}" id='{{forloop.counter}}'><img src="#" class="icon-question-sign"></a>
 </td>
-<td class="span5">{{ job.4|date}} {{ job.4|time}} ({{job.4|naturaltime}})</td>
+<td class="span5">{{ job.2|date}} {{ job.2|time}} ({{job.2|naturaltime}})</td>
 
 <td>
-{% if job.2|split:"0" == 'error' %}
+{% if job.3|split:"0" == 'error' %}
 <img  class="icon-exclamation-sign">
 {% endif %}
-{{job.2|split:"1"}}
+{{job.3|split:"1"}}
 {% if job.1 %}
 (job stopped)
 {% endif %}

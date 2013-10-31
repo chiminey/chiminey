@@ -58,7 +58,7 @@ def delete(context_id):
                 return
             else:
                 logger.info("deleting %s" % context_id)
-            run_context.deleted == True
+            run_context.deleted = True
             run_context.save()
     except SoftTimeLimitExceeded:
         raise
@@ -76,6 +76,37 @@ def run_contexts():
         logger.warn("Context removed from other thread")
     except SoftTimeLimitExceeded:
         raise
+
+
+@task(name="smartconnectorscheduler.context_message", time_limit=50000, ignore_result=True)
+def context_message(context_id, mess):
+    """ Add a message to context_id """
+    logger.debug("trying to create message %s for context %s" % (mess, context_id))
+    try:
+        with transaction.commit_on_success():
+            try:
+                message = models.ContextMessage.objects.select_for_update().get(context__id=context_id)
+            except models.ContextMessage.DoesNotExist:
+                message = models.ContextMessage()
+                logger.debug("creating new message for %s" % context_id)
+            except DatabaseError:
+                logger.info("context_message for %s is already running.  exiting"
+                    % context_id)
+                return
+            else:
+                logger.info("setting context message for  %s" % context_id)
+            message.message = mess
+
+            try:
+                context = models.Context.objects.get(id=context_id)
+            except models.Context.DoesNotExist:
+                logger.error("cannot retrieve context %s" % context_id)
+                return
+            message.context = context
+            message.save()
+    except SoftTimeLimitExceeded:
+        raise
+
 
 @task(name="smartconnectorscheduler.progress_context", time_limit=50000, ignore_result=True)
 def progress_context(context_id):

@@ -444,7 +444,7 @@ class ContextResourceTest(ResourceTestCase):
                 u'number_vm_instances': (models.ParameterName.NUMERIC, '', 7),
                 u'iseed': (models.ParameterName.NUMERIC, '', 6),
                 u'input_location': (models.ParameterName.STRING, '', 5),
-                u'number_dimensions': (models.ParameterName.NUMERIC, '', 4),
+                u'optimisation_scheme': (models.ParameterName.STRLIST, '', 4),
                 u'threshold': (models.ParameterName.STRING, '', 3),  # FIXME: should be list of ints
                 u'error_threshold': (models.ParameterName.STRING, '', 2),  # FIXME: should use float here
                 u'max_iteration': (models.ParameterName.NUMERIC, '', 1),
@@ -554,7 +554,7 @@ class ContextResourceTest(ResourceTestCase):
                 'number_vm_instances': 2,
                 'iseed': 42,
                 'input_location': 'file://127.0.0.1/hrmcrun/input_0',
-                'number_dimensions': 1,
+                'optimisation_scheme': "MC",
                 'threshold': "[1]",
                 'error_threshold': "0.03",
                 'max_iteration': 20,

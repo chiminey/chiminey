@@ -382,7 +382,7 @@ def retrieve_local_settings(run_settings, local_settings):
     smartconnector.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/system/max_seed_int')
     smartconnector.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/input/hrmc/number_dimensions')
+        'http://rmit.edu.au/schemas/input/hrmc/optimisation_scheme')
     smartconnector.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/input/hrmc/fanout_per_kept_result')
 

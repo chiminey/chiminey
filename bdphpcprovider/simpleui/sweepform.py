@@ -27,8 +27,9 @@ class SweepSubmitForm(forms.Form):
         #widget=forms.Textarea(attrs={'cols': 80, 'rows': 1})
         )
 
-    number_dimensions = forms.IntegerField(min_value=0,
-        label=_("No. varying parameters"), help_text="Number of parameters to vary, e.g. 1 = iseed only, 2 = iseed and temp")
+    optimisation_scheme = forms.ChoiceField(label=_("Optimisation Scheme"),
+        help_text="",
+        choices=[("MC","Monte Carlo"), ("MCSA", "Monte Carlo with Simulated Annealing")])
     max_iteration = forms.IntegerField(label=("Maximum no. iterations"),min_value=1, help_text="Computation ends when either convergence or maximum iteration reached")
     threshold = forms.CharField(label=_("No. results kept per iteration"),
             max_length=255,
@@ -52,7 +53,6 @@ class SweepSubmitForm(forms.Form):
         #self.fields["run_map"].validators.append(validators.validate_run_map)
         self.fields["number_vm_instances"].validators.append(validators.validate_number_vm_instances)
         self.fields["minimum_number_vm_instances"].validators.append(validators.validate_minimum_number_vm_instances)
-        self.fields["number_dimensions"].validators.append(validators.validate_number_dimensions)
         self.fields["threshold"].validators.append(validators.validate_threshold)
         self.fields["iseed"].validators.append(validators.validate_iseed)
         self.fields["pottype"].validators.append(validators.validate_pottype)

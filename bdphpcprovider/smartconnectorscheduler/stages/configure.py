@@ -66,7 +66,7 @@ class Configure(Stage, UI):
         smartconnector.copy_settings(local_settings, run_settings,
             RMIT_SCHEMA + '/system/platform')
         smartconnector.copy_settings(local_settings, run_settings,
-            RMIT_SCHEMA + '/input/hrmc/number_dimensions')
+            RMIT_SCHEMA + '/input/hrmc/optimisation_scheme')
         smartconnector.copy_settings(local_settings, run_settings,
             RMIT_SCHEMA + '/input/hrmc/threshold')
         logger.debug('local_settings=%s' % local_settings)
