@@ -383,7 +383,7 @@ def retrieve_local_settings(run_settings, local_settings):
     #smartconnector.copy_settings(local_settings, run_settings,
     #    'http://rmit.edu.au/schemas/stages/create/nectar_username')
     smartconnector.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/input/hrmc/number_dimensions')
+        'http://rmit.edu.au/schemas/input/hrmc/optimisation_scheme')
     #smartconnector.copy_settings(local_settings, run_settings,
     #    'http://rmit.edu.au/schemas/stages/create/nectar_password')
     smartconnector.copy_settings(local_settings, run_settings,

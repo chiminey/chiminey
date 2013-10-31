@@ -109,7 +109,7 @@ class Sweep(Stage):
         smartconnector.copy_settings(local_settings, run_settings,
             'http://rmit.edu.au/schemas/input/hrmc/iseed')
         smartconnector.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/input/hrmc/number_dimensions')
+            'http://rmit.edu.au/schemas/input/hrmc/optimisation_scheme')
         smartconnector.copy_settings(local_settings, run_settings,
             'http://rmit.edu.au/schemas/input/hrmc/threshold')
         smartconnector.copy_settings(local_settings, run_settings,
@@ -249,7 +249,7 @@ class Sweep(Stage):
             #             self.hrmc_schema + u'iseed': rands[i],
             #             self.hrmc_schema + 'max_seed_int': 1000,
             #             self.hrmc_schema + 'input_location':  "%s/run%s/input_0" % (self.job_dir, run_counter),
-            #             self.hrmc_schema + 'number_dimensions': local_settings['number_dimensions'],
+            #             self.hrmc_schema + 'optimisation_scheme': local_settings['optimisation_scheme'],
             #             self.hrmc_schema + 'threshold': str(local_settings['threshold']),
             #             self.hrmc_schema + 'fanout_per_kept_result': local_settings['fanout_per_kept_result'],
             #             self.hrmc_schema + 'error_threshold': str(local_settings['error_threshold']),
@@ -278,7 +278,7 @@ class Sweep(Stage):
             #             self.hrmc_schema+u'iseed': rands[i],
             #             self.hrmc_schema+'max_seed_int': 1000,
             #             self.hrmc_schema+'input_location':  new_input_location,
-            #             self.hrmc_schema+'number_dimensions': local_settings['number_dimensions'],
+            #             self.hrmc_schema+'optimisation_scheme': local_settings['optimisation_scheme'],
             #             self.hrmc_schema+'threshold': str(local_settings['threshold']),
             #             self.hrmc_schema+'fanout_per_kept_result': local_settings['fanout_per_kept_result'],
             #             self.hrmc_schema+'error_threshold': str(local_settings['error_threshold']),
@@ -379,7 +379,7 @@ def submit_subtask(platform, directive_name, data, user):
         #                 (u'iseed', rands[i]),
         #                 ('max_seed_int', 1000),
         #                 ('input_location',  new_input_location),
-        #                 ('number_dimensions', local_settings['number_dimensions']),
+        #                 ('optimisation_scheme', local_settings['optimisation_scheme']),
         #                 ('threshold', local_settings['threshold']),
         #                 ('error_threshold', local_settings['error_threshold']),
         #                 ('fanout_per_kept_result', local_settings['fanout_per_kept_result']),

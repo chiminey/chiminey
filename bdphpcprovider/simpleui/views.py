@@ -394,11 +394,9 @@ class ContextView(DetailView):
         #cpset = models.ContextParameterSet.objects.filter(context=self.object)
         #cpset = context_ps.exclude(
         #     schema__namespace__startswith=INPUT_SCHEMA_PREFIX)
-        logger.debug("cpset=%s" % pformat(list(cpset)))
         res = []
         context['stage'] = self.object.current_stage.name
         for cps in cpset:
-            logger.debug("cps=%s" % cps)
             res2 = {}
             for cp in models.ContextParameter.objects.filter(paramset=cps):
                 res2[cp.name.name] = [cp.value, cp.name.help_text, cp.name.subtype]
@@ -408,7 +406,6 @@ class ContextView(DetailView):
             else:
                 res.append((cps.schema.namespace, res2))
         context['settings'] = res
-        logger.debug("context=%s" % pformat(context))
         return context
 
     def get_object(self):
@@ -440,7 +437,7 @@ class HRMCSubmitFormView(FormView):
                'minimum_number_vm_instances': 1,
         'iseed': 42,
         'input_location': 'file://127.0.0.1/myfiles/input',
-        'number_dimensions': 1,
+        'optimisation_scheme': "MC",
         'threshold': "[2]",
         'error_threshold': "0.03",
         'max_iteration': 10,
@@ -472,7 +469,7 @@ class HRMCSubmitFormView(FormView):
                     self.hrmc_schema + 'minimum_number_vm_instances': form.cleaned_data['minimum_number_vm_instances'],
                     self.hrmc_schema + u'iseed': form.cleaned_data['iseed'],
                     self.hrmc_schema + 'input_location':  form.cleaned_data['input_location'],
-                    self.hrmc_schema + 'number_dimensions': form.cleaned_data['number_dimensions'],
+                    self.hrmc_schema + 'optimisation_scheme': form.cleaned_data['optimisation_scheme'],
                     self.hrmc_schema + 'threshold': str(form.cleaned_data['threshold']),
                     self.hrmc_schema + 'error_threshold': str(form.cleaned_data['error_threshold']),
                     self.hrmc_schema + 'max_iteration': form.cleaned_data['max_iteration'],
@@ -509,7 +506,7 @@ class SweepSubmitFormView(FormView):
         'maximum_retry': 1,
         'reschedule_failed_processes': 1,
         'input_location': 'file://127.0.0.1/myfiles/input',
-        'number_dimensions': 1,
+        'optimisation_scheme': "MCSA",
         'threshold': "[1]",
         'error_threshold': "0.03",
         'max_iteration': 2,
@@ -555,7 +552,7 @@ def submit_sweep_job(request, form, schemas):
                 schemas['hrmc_schema'] + 'minimum_number_vm_instances': form.cleaned_data['minimum_number_vm_instances'],
                 schemas['hrmc_schema'] + u'iseed': form.cleaned_data['iseed'],
                 schemas['sweep_schema'] + 'input_location':  form.cleaned_data['input_location'],
-                schemas['hrmc_schema'] + 'number_dimensions': form.cleaned_data['number_dimensions'],
+                schemas['hrmc_schema'] + 'optimisation_scheme': form.cleaned_data['optimisation_scheme'],
                 schemas['hrmc_schema'] + 'fanout_per_kept_result': form.cleaned_data['fanout_per_kept_result'],
                 schemas['hrmc_schema'] + 'threshold': str(form.cleaned_data['threshold']),
                 schemas['hrmc_schema'] + 'error_threshold': str(form.cleaned_data['error_threshold']),
@@ -739,7 +736,8 @@ subtype_validation = {
     'jsondict': ('JSON Dictionary', validators.validate_jsondict, forms.Textarea(attrs={'cols': 30, 'rows': 5}), None),
     'float': ('floading point number', validators.validate_float_number, None, None),
     'bool': ('On/Off', validators.validate_bool, None,  None),
-    'platform': ('platform', validators.validate_nectar_platform, None,  None),
+    'platform': ('platform', validators.validate_nectar_platform, forms.Select(),  None),
+    'choicefield': ('choicefield', None, forms.Select(),  None),
 }
 
 clean_rules = {
@@ -779,24 +777,32 @@ def make_dynamic_field(parameter, **kwargs):
             field = forms.IntegerField(**field_params)
     if parameter['type'] == 4:
         logger.debug("found strlist")
+        # if parameter has choices in schema, than use these, otherwise use
+        # dynamically generated ones from platform.
         if parameter['subtype'] == "platform":
-
             field_params['initial'] = ""
             field_params['choices'] = ""
-            # FIXME,TODO: compuation_ns value should be part of directive and
-            # passed in, as some directives will only work with particular computation/*
-            # categories.  Assume only nectar comp platforms ever allowed here.
-            computation_ns = 'http://rmit.edu.au/schemas/platform/computation/nectar'
-            if 'username' in kwargs:
-                field_params['initial'] = platform.get_platform_name(kwargs['username'],
-                 computation_ns)
-                logger.debug("initial=%s" % field_params['initial'])
-                # TODO: retrieve_platform_paramset should be an API call
-                platform_name_choices = [(x['name'], x['name'])
-                    for x in platform.retrieve_platform_paramsets(kwargs['username'],
-                        computation_ns)]
-                logger.debug("platform_name_choices=%s" % platform_name_choices)
-                field_params['choices'] = platform_name_choices
+            if parameter['choices']:
+                try:
+                    field_params['choices'] = ast.literal_eval(parameter['choices'])
+                except Exception:
+                    logger.warn("cannot parse parameter choices")
+                    field_params['choices'] = ""
+            else:
+                # FIXME,TODO: compuation_ns value should be part of directive and
+                # passed in, as some directives will only work with particular computation/*
+                # categories.  Assume only nectar comp platforms ever allowed here.
+                computation_ns = 'http://rmit.edu.au/schemas/platform/computation/nectar'
+                if 'username' in kwargs:
+                    field_params['initial'] = platform.get_platform_name(kwargs['username'],
+                     computation_ns)
+                    logger.debug("initial=%s" % field_params['initial'])
+                    # TODO: retrieve_platform_paramset should be an API call
+                    platform_name_choices = [(x['name'], x['name'])
+                        for x in platform.retrieve_platform_paramsets(kwargs['username'],
+                            computation_ns)]
+                    logger.debug("platform_name_choices=%s" % platform_name_choices)
+                    field_params['choices'] = platform_name_choices
         else:
             if parameter['initial']:
                 field_params['initial'] = str(parameter['initial'])
@@ -815,7 +821,9 @@ def make_dynamic_field(parameter, **kwargs):
         field = forms.CharField(**field_params)
 
     if 'subtype' in parameter and parameter['subtype']:
-        field.validators.append(subtype_validation[parameter['subtype']][1])
+        if subtype_validation[parameter['subtype']][1]:
+            field.validators.append(subtype_validation[parameter['subtype']][1])
+        logger.debug("field_validators=%s"% field.validators)
     return field
 
 
@@ -1078,7 +1086,7 @@ def submit_job(request, form, directive):
     #             schemas['hrmc_schema'] + 'minimum_number_vm_instances': form.cleaned_data['minimum_number_vm_instances'],
     #             schemas['hrmc_schema'] + u'iseed': form.cleaned_data['iseed'],
     #             schemas['sweep_schema'] + 'input_location':  form.cleaned_data['input_location'],
-    #             schemas['hrmc_schema'] + 'number_dimensions': form.cleaned_data['number_dimensions'],
+    #             schemas['hrmc_schema'] + 'optimisation_scheme': form.cleaned_data['optimisation_scheme'],
     #             schemas['hrmc_schema'] + 'fanout_per_kept_result': form.cleaned_data['fanout_per_kept_result'],
     #             schemas['hrmc_schema'] + 'threshold': str(form.cleaned_data['threshold']),
     #             schemas['hrmc_schema'] + 'error_threshold': str(form.cleaned_data['error_threshold']),

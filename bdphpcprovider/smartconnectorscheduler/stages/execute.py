@@ -645,7 +645,7 @@ def retrieve_boto_settings(run_settings, local_settings):
     smartconnector.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/input/hrmc/iseed')
     smartconnector.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/input/hrmc/number_dimensions')
+        'http://rmit.edu.au/schemas/input/hrmc/optimisation_scheme')
     smartconnector.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/input/hrmc/threshold')
     smartconnector.copy_settings(local_settings, run_settings,
@@ -660,7 +660,7 @@ def retrieve_boto_settings(run_settings, local_settings):
     smartconnector.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/input/hrmc/fanout_per_kept_result')
     smartconnector.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/input/hrmc/number_dimensions')
+        'http://rmit.edu.au/schemas/input/hrmc/optimisation_scheme')
     smartconnector.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/input/hrmc/threshold')
     smartconnector.copy_settings(local_settings, run_settings,
