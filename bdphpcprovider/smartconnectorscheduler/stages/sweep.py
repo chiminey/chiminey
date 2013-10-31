@@ -61,9 +61,10 @@ class Sweep(Stage):
         self.numbfile = 0
 
         self.job_dir = "hrmcrun"
-        logger.debug("Run stage initialized")
+        logger.debug("Sweep stage initialized")
 
     def triggered(self, run_settings):
+        logger.debug('run_settings=%s' % run_settings)
         if self._exists(run_settings,
             'http://rmit.edu.au/schemas/stages/sweep',
             'sweep_done'):
@@ -74,23 +75,28 @@ class Sweep(Stage):
     #def generalise_platform_parameters(self, generic_schema, current_schema):
     #    for k, v in current
 
-    def process(self, run_settings):
-        logger.debug('here')
-
-        computation_platform_name = run_settings['http://rmit.edu.au/schemas/input/system/cloud']['computation_platform']
-        logger.debug('computation_platform_name=%s' % computation_platform_name)
-        computation_platform = smartconnector.get_bdp_storage_url(computation_platform_name)
-        logger.debug('computation_platform=%s' % computation_platform)
-        generic_computation_schema = RMIT_SCHEMA + '/platform/computation'
+    def include_platform(self, platform_name, generic_schema, run_settings, offset):
+        platform_name = platform_name
+        logger.debug('platform_name=%s' % platform_name)
+        platform, namespace = smartconnector.get_bdp_storage_url(platform_name)
+        logger.debug('platform=%s' % platform)
         #fixme: in the schema definition, change private_key to private_key_name
-        if 'private_key_path' in computation_platform.keys():
+        if 'private_key_path' in platform.keys():
             bdp_root_path = '/var/cloudenabling/remotesys' #fixme replace by parameter
-            absolute_path = os.path.join(bdp_root_path, computation_platform['private_key_path'])
-            computation_platform['private_key_path'] = absolute_path
-        run_settings[generic_computation_schema] = computation_platform
+            absolute_path = os.path.join(bdp_root_path, platform['private_key_path'])
+            platform['private_key_path'] = absolute_path
+        run_settings[generic_schema] = {'namespace': namespace}
+        run_settings[namespace] = platform
+        run_settings[namespace]['offset'] = offset
         logger.debug('updated_run_settings=%s' % run_settings)
+
+
+    def process(self, run_settings):
+
         # Need to make copy because we pass on run_settings to sub connector
         # so any changes we make to run_settings will be inherited
+
+        logger.debug('run_settings=%s' % run_settings)
         from copy import deepcopy
         local_settings = deepcopy(run_settings[models.UserProfile.PROFILE_SCHEMA_NS])
 
@@ -123,17 +129,37 @@ class Sweep(Stage):
         smartconnector.copy_settings(local_settings, run_settings,
             'http://rmit.edu.au/schemas/input/hrmc/fanout_per_kept_result')
 
+        logger.debug('local_settings=%s' % local_settings)
+
         contextid = int(run_settings['http://rmit.edu.au/schemas/system'][
             u'contextid'])
         logger.debug("contextid=%s" % contextid)
+
+        computation_platform_name = run_settings['http://rmit.edu.au/schemas/input/system/cloud']['computation_platform']
+        generic_computation_schema = RMIT_SCHEMA + '/platform/computation'
+        self.include_platform(computation_platform_name, generic_computation_schema, run_settings, 'sweep%s' % contextid)
+
+        generic_output_schema = RMIT_SCHEMA + '/platform/storage/output'
+        output_location = run_settings['http://rmit.edu.au/schemas/input/system'][u'output_location']
+        logger.debug('output_location=%s' % output_location)
+        output_location_list = output_location.split('/')
+        output_storage_name = output_location_list[0]
+        output_storage_offset = ''
+        if len(output_location_list) > 1:
+            output_storage_offset = os.path.join(*output_location_list[1:])
+        logger.debug('output_storage_offset=%s' % output_storage_offset)
+        self.include_platform(output_storage_name, generic_output_schema, run_settings,
+                              os.path.join(output_storage_offset, 'sweep%s' % contextid))
+
 
         self.rand_index = run_settings['http://rmit.edu.au/schemas/input/hrmc']['iseed']
         logger.debug("rand_index=%s" % self.rand_index)
 
         context = models.Context.objects.get(id=contextid)
         user = context.owner.user.username
-        self.job_dir = run_settings['http://rmit.edu.au/schemas/input/system'][
-            u'output_location']
+        #self.job_dir = run_settings['http://rmit.edu.au/schemas/input/system'][
+        #    u'output_location']
+        self.job_dir = 'file://local@127.0.0.1/sweep' #todo replace with scratch space
 
         subdirective = run_settings['http://rmit.edu.au/schemas/stages/sweep']['directive']
         subdirective_ns = "http://rmit.edu.au/schemas/input/%s" % subdirective
@@ -240,7 +266,7 @@ class Sweep(Stage):
             data["http://rmit.edu.au/schemas/input/hrmc"][u'iseed'] = rands[i]
             data["http://rmit.edu.au/schemas/input/system"]['input_location'] = "%s/run%s/input_0" % (self.job_dir, run_counter)
             #data['smart_connector'] = subdirective
-            data["http://rmit.edu.au/schemas/input/system"]['output_location'] = os.path.join(self.job_dir, subdirective)
+            #data["http://rmit.edu.au/schemas/input/system"]['output_location'] = os.path.join(self.job_dir, subdirective)
             logger.debug("data=%s" % pformat(data))
 
             # data2 = {'smart_connector': 'hrmc',

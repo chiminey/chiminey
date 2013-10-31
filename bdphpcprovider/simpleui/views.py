@@ -508,8 +508,8 @@ class SweepSubmitFormView(FormView):
         'pottype': 1,
         'sweep_map': '{}', #"var1": [3, 7], "var2": [1, 2]}',
         'run_map': '{}',
-        'experiment_id': 0,
-        'output_location': 'file://local@127.0.0.1/sweep'
+        'experiment_id': 0
+        #'output_location': 'file://local@127.0.0.1/sweep'
 
         }
 
@@ -725,6 +725,7 @@ subtype_validation = {
     'string': ('string', validators.validate_string, None, None),
     'whole': ('whole number', validators.validate_whole_number, None, None),
     'nectar_platform': ('NeCTAR platform name', validators.validate_nectar_platform, None, None),
+    'storage_bdpurl': ('Storage platform name with optional offset path', validators.validate_storage_bdpurl, forms.TextInput, 255),
     'even': ('even number', validators.validate_even_number, None, None),
     'bdpurl': ('BDP url', validators.validate_BDP_url, forms.TextInput, 255),
     'float': ('floading point number', validators.validate_float_number, None, None),
@@ -774,6 +775,9 @@ def make_dynamic_field(parameter, **kwargs):
         if parameter['subtype'] == 'nectar_platform':
             schema = 'http://rmit.edu.au/schemas/platform/computation/nectar'
             field_params['initial'] = platform.get_platform_name(kwargs['username'], schema)
+        elif parameter['subtype'] == 'storage_bdpurl':
+            schema = 'http://rmit.edu.au/schemas/platform/storage'
+            field_params['initial'] = platform.get_platform_name(kwargs['username'], schema)
         field = forms.CharField(**field_params)
 
     if 'subtype' in parameter and parameter['subtype']:
@@ -803,7 +807,8 @@ def make_directive_form(**kwargs):
                 field_key = "%s/%s" % (schema_data['namespace'], parameter['name'])
                 form_data.append((field_key, schema_data['description'] if not j else "", parameter['subtype']))
                 #fixme replce if else by fields[field_key] = make_dynamic_field(parameter) after unique key platform model is developed
-                if parameter['subtype'] == 'nectar_platform':
+                if parameter['subtype'] == 'nectar_platform' \
+                    or parameter['subtype'] == 'storage_bdpurl':
                     fields[field_key] = make_dynamic_field(parameter, username=kwargs['username'])
                 else:
                     fields[field_key] = make_dynamic_field(parameter)

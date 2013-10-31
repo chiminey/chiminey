@@ -207,10 +207,10 @@ class Schedule(Stage):
                 node_ip = node.ip_address
                 logger.debug('mynode=%s' % node_ip)
                 try:
-                    #local_settings['platform'] should be replaced
                     relative_path = "%s@%s" % (local_settings['type'],
                         local_settings['payload_destination'])
-                    destination = smartconnector.get_url_with_pkey(local_settings,
+                    destination = smartconnector.get_url_with_pkey(
+                        local_settings,
                         relative_path,
                         is_relative_path=True,
                         ip_address=node_ip)
@@ -275,10 +275,16 @@ class Schedule(Stage):
         except TypeError:
             self.run_map = map
         logger.debug('map=%s' % self.run_map)
+
+        output_storage_schema = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['namespace']
+        output_storage_settings = run_settings[output_storage_schema]
+        platform.update_platform_settings(output_storage_schema, output_storage_settings)
+        job_dir = hrmcstages.get_job_dir(run_settings)
         self.total_processes = stage.get_total_templates(
             [self.run_map], run_settings=run_settings,
-            auth_settings=local_settings)
+            output_storage_settings=output_storage_settings, job_dir=job_dir)
         logger.debug('total_processes=%d' % self.total_processes)
+
         self.current_processes = []
         self.schedule_index, self.current_processes = \
                 start_round_robin_schedule(self.nodes, self.total_processes,
@@ -375,44 +381,18 @@ def retrieve_local_settings(run_settings, local_settings):
         'http://rmit.edu.au/schemas/stages/create/custom_prompt')
     smartconnector.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/system/max_seed_int')
-    #smartconnector.copy_settings(local_settings, run_settings,
-    #    RMIT_SCHEMA+'/platform/computation/nectar/ec2_access_key')
-    #smartconnector.copy_settings(local_settings, run_settings,
-    #    RMIT_SCHEMA+'/platform/computation/nectar/ec2_secret_key')
-
-    #smartconnector.copy_settings(local_settings, run_settings,
-    #    'http://rmit.edu.au/schemas/stages/create/nectar_username')
     smartconnector.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/input/hrmc/number_dimensions')
-    #smartconnector.copy_settings(local_settings, run_settings,
-    #    'http://rmit.edu.au/schemas/stages/create/nectar_password')
     smartconnector.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/input/hrmc/fanout_per_kept_result')
-    #local_settings['username'] = \
-    #    run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_username']
-    #local_settings['username'] = 'root'  # FIXME: schema value is ignored, avoid hardcoding
-    #local_settings['password'] = \
-    #    run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
 
-    #bdp_root_path = '/var/cloudenabling/remotesys' #fixme replace by parameter
-    #    #fixme: in the schema definition, change private_key to private_key_name, private_key_path to private_key
-    #private_key_relative = run_settings[RMIT_SCHEMA+'/platform/computation/nectar']['private_key_path']
-    #logger.debug('private_key_relative=%s' % private_key_relative)
-    #local_settings['private_key'] = os.path.join(bdp_root_path, private_key_relative)
-    #local_settings['root_path'] = '/home/centos' #fixme avoid hard coding
-
-    #key_file = hrmcstages.retrieve_private_key(local_settings,
-    #        run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nectar_private_key'])
-    #local_settings['private_key'] = key_file
-    #local_settings['nectar_private_key'] = key_file
-
-    computation_platform = run_settings[RMIT_SCHEMA+'/platform/computation']
-    credentials = platform.get_credentials(computation_platform)
-    local_settings.update(credentials)
+    comp_pltf_schema = run_settings['http://rmit.edu.au/schemas/platform/computation']['namespace']
+    comp_pltf_settings = run_settings[comp_pltf_schema]
+    platform.update_platform_settings(
+        comp_pltf_schema, comp_pltf_settings)
+    local_settings.update(comp_pltf_settings)
 
     logger.debug('retrieve completed')
-
-
 
 
 def start_round_robin_schedule(nodes, processes, schedule_index, settings):
@@ -445,7 +425,8 @@ def start_round_robin_schedule(nodes, processes, schedule_index, settings):
             ids, ip_address, new_processes,
             maximum_retry=int(settings['maximum_retry']))
 
-        destination = smartconnector.get_url_with_pkey(settings,
+        destination = smartconnector.get_url_with_pkey(
+            settings,
             relative_path,
             is_relative_path=True,
             ip_address=cur_node.ip_address)

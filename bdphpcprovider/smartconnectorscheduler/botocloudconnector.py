@@ -105,7 +105,7 @@ def create_VM_instances(number_vm_instances, settings):
     logger.debug(settings['security_group'])
     try:
         reservation = connection.run_instances(
-                    placement='monash',
+                    #placement='qld',
                     image_id=settings['vm_image'],
                     min_count=1,
                     max_count=number_vm_instances,
@@ -117,7 +117,9 @@ def create_VM_instances(number_vm_instances, settings):
             all_instances.append(instance)
     except EC2ResponseError as e:
         logger.debug('error_code=%s' % e.error_code)
+        logger.debug(e)
         if 'TooManyInstances' not in e.error_code:
+            logger.debug(e)
             raise
     logger.debug('%d of %d requested VM(s) created'
                  % (len(all_instances), number_vm_instances))

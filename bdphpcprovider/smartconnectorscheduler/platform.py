@@ -23,15 +23,15 @@ import logging
 import boto
 import paramiko
 import socket
+
 from boto.ec2.regioninfo import RegionInfo
 from boto.exception import EC2ResponseError
-
 from django.contrib.auth.models import User
-from bdphpcprovider.smartconnectorscheduler import models
 from django.db.models import ObjectDoesNotExist
 
+from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler import sshconnector
-
+from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 logger = logging.getLogger(__name__)
 
 
@@ -123,8 +123,9 @@ def generate_nectar_key(bdp_root_path, parameters):
                 else:
                     logger.exception(e)
                     raise
-            key_name = '%s_%d' % (parameters['private_key'], counter)
-            counter += 1
+            if not key_created:
+                key_name = '%s_%d' % (parameters['private_key'], counter)
+                counter += 1
 
         parameters['private_key'] = key_name
         parameters['private_key_path'] = os.path.join(os.path.dirname(
@@ -522,7 +523,7 @@ def filter_platform_paramsets(platform, schema, filters):
             logger.debug('all_param_sets=%s' % all_param_sets)
     return all_param_sets
 
-#fixme rename to get_platform_credentials
+@deprecated
 def get_credentials(settings):
     credentials = {}
     try:
@@ -539,43 +540,27 @@ def get_credentials(settings):
         raise
     return credentials
 
+
+
 #fixme rename to retrienve_platform_record
 def retrieve_platform(platform_name):
     filter = {'name': platform_name}
     param_sets = filter_platform_paramsets('', '', filter)
     record = {}
+    namespace = ''
     if not len(param_sets):
-        return record
+        return record, namespace
     if len(param_sets) > 1:
-        return record
-    schema = param_sets[0].schema.namespace
-    platform_params = {}
+        return record, namespace
+    namespace = param_sets[0].schema.namespace
+    record = {}
     parameters = models.PlatformInstanceParameter\
         .objects.filter(paramset=param_sets[0])
     for param in parameters:
         name = param.name.name
-        platform_params[name] = param.value
-    platform_params['type'] = os.path.basename(schema)
-    record = platform_params
-    return record
+        record[name] = param.value
+    return record, namespace
 
-#fixme rewrite this after a model with unique key, based on platform name, is implemented
-def get_platform_name(username, schema_namespace):
-    platform, schema = get_platform_and_schema(username, schema_namespace)
-    if not (platform and schema):
-        return ''
-    param_sets = models.PlatformInstanceParameterSet\
-            .objects.filter(platform=platform)
-    if not param_sets:
-        return ''
-    param_name = models.ParameterName.objects.get(
-                    schema=schema, name='name')
-    platform_param_instantce = \
-        models.PlatformInstanceParameter.objects.filter(
-                        name=param_name, paramset=param_sets[0])
-    if not platform_param_instantce:
-        return ''
-    return platform_param_instantce[0].value
 
 
 def get_owner(username):
@@ -591,15 +576,56 @@ def get_owner(username):
     return owner
 
 
+
+def update_platform_settings(schema_namespace, settings):
+    platform_type = os.path.basename(schema_namespace)
+    settings['type'] = platform_type
+    if platform_type == 'nectar':
+        settings['username'] = 'root' #fixme avoid hardcoding
+        settings['private_key_name'] = settings['private_key']
+        settings['private_key'] = settings['private_key_path']
+        settings['root_path'] = '/home/centos' #fixme avoid hardcoding
+        settings['scheme'] = 'ssh'
+    elif platform_type == 'unix':
+        settings['private_key'] = settings['private_key_path']
+        settings['host'] = settings['ip_address']
+        settings['scheme'] = 'ssh'
+
+
+#fixme rewrite this after a model with unique key, based on platform name, is implemented
+def get_platform_name(username, schema_namespace):
+    schema_set = models.Schema.objects.filter(
+                namespace__startswith=schema_namespace)
+    owner = get_owner(username)
+    for schema in schema_set:
+         platform = models.PlatformInstance.objects.get(
+                owner=owner, schema_namespace_prefix=schema.namespace)
+         param_sets = models.PlatformInstanceParameterSet\
+             .objects.filter(platform=platform)
+         if param_sets:
+             param_name = models.ParameterName.objects.get(schema=schema, name='name')
+             platform_param_instantce = models.PlatformInstanceParameter.objects.filter(
+                 name=param_name, paramset=param_sets[0])
+             if platform_param_instantce:
+                 break
+    else:
+        return ''
+    return platform_param_instantce[0].value
+
+
 def get_platform_and_schema(username, schema_namespace):
     platform = None
     schema = None
     owner = get_owner(username)
     if owner:
         try:
+            schema_set = models.Schema.objects.filter(
+                namespace__startswith=schema_namespace)
+            logger.debug('schema_set=%s' % schema_set)
+            schema = schema_set[0]
             platform = models.PlatformInstance.objects.get(
-                owner=owner, schema_namespace_prefix=schema_namespace)
-            schema = models.Schema.objects.get(namespace=schema_namespace)
+                owner=owner, schema_namespace_prefix=schema.namespace)
+            logger.debug('platform=%s' % platform)
         except ObjectDoesNotExist as e:
             logger.error(e)
         except Exception as e:

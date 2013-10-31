@@ -182,12 +182,14 @@ class Wait(Stage):
         #return True  # FIXME: this may be undesirable
         return False
 
-    def get_output(self, ip_address, process_id, output_dir, local_settings):
+    def get_output(self, ip_address, process_id, output_dir, local_settings,
+                   computation_platform_settings, output_storage_settings):
         """
             Retrieve the output from the task on the node
         """
         logger.info("get_output of process %s on %s" % (process_id, ip_address))
-
+        output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
+                                    output_storage_settings['type'])
         cloud_path = os.path.join(local_settings['payload_destination'],
                                   process_id,
                                   local_settings['payload_cloud_dirname']
@@ -196,13 +198,17 @@ class Wait(Stage):
         logger.debug("Transferring output from %s to %s" % (cloud_path, output_dir))
         ip = ip_address#botocloudconnector.get_instance_ip(instance_id, settings)
         #ssh = open_connection(ip_address=ip, settings=settings)
-        source_files_location = "%s@%s" % (local_settings['type'], cloud_path)
-        source_files_url = smartconnector.get_url_with_pkey(local_settings, source_files_location,
-            is_relative_path=True, ip_address=ip)
+        source_files_location = "%s://%s@%s" % (computation_platform_settings['scheme'],
+                                                computation_platform_settings['type'],
+                                                 os.path.join(ip, cloud_path))
+        source_files_url = smartconnector.get_url_with_pkey(
+            computation_platform_settings, source_files_location,
+            is_relative_path=False)
         logger.debug('source_files_url=%s' % source_files_url)
 
         dest_files_url = smartconnector.get_url_with_pkey(
-            local_settings, os.path.join(
+            output_storage_settings,
+            output_prefix+os.path.join(
                 self.job_dir, self.output_dir, process_id),
             is_relative_path=False)
         logger.debug('dest_files_url=%s' % dest_files_url)
@@ -217,13 +223,8 @@ class Wait(Stage):
             Check all registered nodes to find whether
             they are running, stopped or in error_nodes
         """
-
         self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
-
-
-        #TODO: we assume relative path BDP_URL here, but could be made to work with non-relative (ie., remote paths)
-        self.job_dir = run_settings['http://rmit.edu.au/schemas/input/system'][u'output_location']
-
+        self.job_dir = hrmcstages.get_job_dir(run_settings)
         try:
             self.finished_nodes = smartconnector.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/stages/run/finished_nodes')
@@ -239,21 +240,28 @@ class Wait(Stage):
             self.output_dir = "output"
 
         smartconnector.info(run_settings, "%s: wait" % (self.id + 1))
-
         logger.debug("output_dir=%s" % self.output_dir)
         logger.debug("run_settings=%s" % run_settings)
         logger.debug("Wait stage process began")
 
         local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
         retrieve_local_settings(run_settings, local_settings)
-
         logger.debug("local_settings=%s" % local_settings)
-        #self.nodes = botocloudconnector.get_rego_nodes(local_settings)
+
         processes = self.executed_procs
         self.error_nodes = []
         # TODO: parse finished_nodes input
         logger.debug('self.finished_nodes=%s' % self.finished_nodes)
         self.finished_nodes = ast.literal_eval(self.finished_nodes)
+
+        comp_pltf_schema = run_settings['http://rmit.edu.au/schemas/platform/computation']['namespace']
+        comp_pltf_settings = run_settings[comp_pltf_schema]
+        platform.update_platform_settings(comp_pltf_schema, comp_pltf_settings)
+        local_settings.update(comp_pltf_settings)
+
+        output_storage_schema = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['namespace']
+        output_storage_settings = run_settings[output_storage_schema]
+        platform.update_platform_settings(output_storage_schema, output_storage_settings)
 
         for process in processes:
             #instance_id = node.id
@@ -270,28 +278,26 @@ class Wait(Stage):
             #    self.error_nodes.append(node)
             #    continue
             fin = self.job_finished(ip_address, process_id, retry_left, local_settings)
-
             logger.debug("fin=%s" % fin)
             if fin:
-                print "done. output is available"
-
+                logger.debug("done. output is available")
                 logger.debug("node=%s" % str(process))
                 logger.debug("finished_nodes=%s" % self.finished_nodes)
                 #FIXME: for multiple nodes, if one finishes before the other then
                 #its output will be retrieved, but it may again when the other node fails, because
                 #we cannot tell whether we have prevous retrieved this output before and finished_nodes
                 # is not maintained between triggerings...
-
                 if not (int(process_id) in [int(x['id'])
                                             for x in self.finished_nodes
                                             if int(process_id) == int(x['id'])]):
-                    self.get_output(ip_address, process_id, self.output_dir, local_settings)
+                    self.get_output(ip_address, process_id, self.output_dir,
+                                    local_settings, comp_pltf_settings,
+                                    output_storage_settings)
 
                     audit_url = smartconnector.get_url_with_pkey(
-                        local_settings, os.path.join(
+                        comp_pltf_settings, os.path.join(
                             self.output_dir, process_id, "audit.txt"),
                         is_relative_path=True)
-
                     fsys = hrmcstages.get_filesystem(audit_url)
                     logger.debug("Audit file url %s" % audit_url)
                     if fsys.exists(audit_url):
@@ -307,7 +313,6 @@ class Wait(Stage):
                     for iterator, p in enumerate(self.current_processes):
                         if int(p['id']) == int(process_id) and p['status'] == 'running':
                             self.current_processes[iterator]['status'] = 'completed'
-
                 else:
                     logger.info("We have already "
                         + "processed output of %s on node %s" % (process_id, ip_address))
@@ -342,7 +347,6 @@ class Wait(Stage):
         run_settings.setdefault(
             'http://rmit.edu.au/schemas/stages/run',
             {})[u'error_nodes'] = nodes_working
-
 
         if not nodes_working:
             self.finished_nodes = []
@@ -389,35 +393,6 @@ def retrieve_local_settings(run_settings, local_settings):
         'http://rmit.edu.au/schemas/system/platform')
     smartconnector.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/run/payload_cloud_dirname')
-    #smartconnector.copy_settings(local_settings, run_settings,
-    #    'http://rmit.edu.au/schemas/stages/create/nectar_username')
-    #smartconnector.copy_settings(local_settings, run_settings,
-    #    'http://rmit.edu.au/schemas/stages/create/nectar_password')
-    #smartconnector.copy_settings(local_settings, run_settings,
-    #    RMIT_SCHEMA+'/platform/computation/nectar/ec2_access_key')
-    #smartconnector.copy_settings(local_settings, run_settings,
-    #    RMIT_SCHEMA+'/platform/computation/nectar/ec2_secret_key')
-
-    #local_settings['username'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_username']
-    #local_settings['username'] = 'root'  # FIXME: schema value is ignored
-    #local_settings['password'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
-    #key_file = hrmcstages.retrieve_private_key(local_settings,
-    #        run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nectar_private_key'])
-    #local_settings['private_key'] = key_file
-    #local_settings['nectar_private_key'] = key_file
-
-    #bdp_root_path = '/var/cloudenabling/remotesys' #fixme replace by parameter
-        #fixme: in the schema definition, change private_key to private_key_name, private_key_path to private_key
-    #private_key_relative = run_settings[RMIT_SCHEMA+'/platform/computation/nectar']['private_key_path']
-    #logger.debug('private_key_relative=%s' % private_key_relative)
-    #local_settings['private_key'] = os.path.join(bdp_root_path, private_key_relative)
-    #local_settings['root_path'] = '/home/centos' #fixme avoid hard coding
-
-    #fixme: this should be moved to appropriate location  after output storage platform is linked
-    computation_platform = run_settings[RMIT_SCHEMA+'/platform/computation']
-    credentials = platform.get_credentials(computation_platform)
-    local_settings.update(credentials)
-
 
     logger.debug('retrieve completed')
 

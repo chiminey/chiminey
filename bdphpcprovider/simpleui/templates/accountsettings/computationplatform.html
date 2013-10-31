@@ -110,7 +110,7 @@ $(document).ready(function () {
                         <th data-hide="">
                             <strong>{{ h }}</strong>
                         </th>
-                        {% elif h != 'password' %}
+                        {% elif h != 'password' and h != 'offset' %}
                         <th data-hide="phone, tablet">
                             <strong>{{ h }}</strong>
                         </th>
@@ -122,7 +122,7 @@ $(document).ready(function () {
                 {% for paramset_key, paramset in schema.items %}
                 <tr class="">
                     {% for param_key, param in paramset.items %}
-                        {% if param_key != 'password' %}
+                        {% if param_key != 'password' and param_key != 'offset' %}
                         <td class="span1">  {{ param }}</td>
                         {% endif %}
                     {% endfor %}

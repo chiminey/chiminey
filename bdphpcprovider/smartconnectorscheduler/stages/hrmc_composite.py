@@ -138,8 +138,8 @@ class HRMCParallelStage(ParallelStage):
 
     def get_total_templates(self, maps, **kwargs):
         run_settings = kwargs['run_settings']
-        auth_settings = kwargs['auth_settings']
-        job_dir = run_settings['http://rmit.edu.au/schemas/input/system'][u'output_location']
+        output_storage_settings = kwargs['output_storage_settings']
+        job_dir = kwargs['job_dir']
         try:
             id = smartconnector.get_existing_key(
                 run_settings, 'http://rmit.edu.au/schemas/system/id')
@@ -148,7 +148,12 @@ class HRMCParallelStage(ParallelStage):
             id = 0
         iter_inputdir = os.path.join(job_dir, "input_%s" % id)
         url_with_pkey = smartconnector.get_url_with_pkey(
-            auth_settings, iter_inputdir, is_relative_path=False)
+            output_storage_settings,
+            '%s://%s@%s' %(output_storage_settings['scheme'],
+                           output_storage_settings['type'],
+                            iter_inputdir),
+            is_relative_path=False)
+        logger.debug(url_with_pkey)
         input_dirs = hrmcstages.list_dirs(url_with_pkey)
         for iter, template_map in enumerate(maps):
             logger.debug("template_map=%s" % template_map)

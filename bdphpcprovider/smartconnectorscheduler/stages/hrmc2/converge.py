@@ -137,6 +137,7 @@ class Converge(Stage):
     def triggered(self, run_settings):
         """
         """
+
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/input/hrmc', u'error_threshold'):
             self.error_threshold = float(run_settings['http://rmit.edu.au/schemas/input/hrmc'][u'error_threshold'])
             logger.debug("error_threshold=%s" % self.error_threshold)
@@ -151,17 +152,14 @@ class Converge(Stage):
         return False
 
     def process(self, run_settings):
-
-        #import time
-        # start_time = time.time()
-        # logger.debug("Start time %f "% start_time)
-
         self.boto_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
-
         self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
 
         #TODO: we assume relative path BDP_URL here, but could be made to work with non-relative (ie., remote paths)
-        self.job_dir = run_settings['http://rmit.edu.au/schemas/input/system'][u'output_location']
+        #self.job_dir = run_settings['http://rmit.edu.au/schemas/input/system'][u'output_location']
+        self.output_storage_schema = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['namespace']
+        #self.job_dir = run_settings[self.output_storage_schema][u'ip_address']
+        self.job_dir = hrmcstages.get_job_dir(run_settings)
 
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/system', u'id'):
             self.id = run_settings['http://rmit.edu.au/schemas/system'][u'id']
@@ -172,6 +170,8 @@ class Converge(Stage):
             self.output_dir = os.path.join(self.job_dir, "output")
             self.iter_inputdir = os.path.join(self.job_dir, "input")
             self.id = 0
+
+        logger.debug('output_dir=%s iter_inputdir=%s' % (self.output_dir, self.iter_inputdir))
 
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/input/mytardis', u'experiment_id'):
             try:
@@ -209,57 +209,26 @@ class Converge(Stage):
             'http://rmit.edu.au/schemas/input/hrmc/number_dimensions')
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/input/hrmc/threshold')
-        #smartconnector.copy_settings(self.boto_settings, run_settings,
-        #    RMIT_SCHEMA+'/platform/computation/nectar/ec2_access_key')
-        #smartconnector.copy_settings(self.boto_settings, run_settings,
-        #    RMIT_SCHEMA+'/platform/computation/nectar/ec2_secret_key')
-        #smartconnector.copy_settings(self.boto_settings, run_settings,
-        #    'http://rmit.edu.au/schemas/stages/create/nectar_username')
-        #smartconnector.copy_settings(self.boto_settings, run_settings,
-        #    'http://rmit.edu.au/schemas/stages/create/nectar_password')
-        #self.boto_settings['username'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_username']
-        #self.boto_settings['username'] = 'root'  # FIXME: schema value is ignored
-        #self.boto_settings['password'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
 
-        #key_file = hrmcstages.retrieve_private_key(self.boto_settings,
-        #    run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nectar_private_key'])
+        output_storage_schema = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['namespace']
+        output_storage_settings = run_settings[output_storage_schema]
+        platform.update_platform_settings(output_storage_schema, output_storage_settings)
+        output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
+                                    output_storage_settings['type'])
 
-        #self.boto_settings['private_key'] = key_file
-        #self.boto_settings['nectar_private_key'] = key_file
+        inputdir_url = smartconnector.get_url_with_pkey(output_storage_settings,
+            output_prefix + self.iter_inputdir, is_relative_path=False)
+        logger.debug('input_dir_url=%s' % inputdir_url)
 
-        #bdp_root_path = '/var/cloudenabling/remotesys' #fixme replace by parameter
-        #fixme: in the schema definition, change private_key to private_key_name, private_key_path to private_key
-        #private_key_relative = run_settings[RMIT_SCHEMA+'/platform/computation/nectar']['private_key_path']
-        #logger.debug('private_key_relative=%s' % private_key_relative)
-        #self.boto_settings['private_key'] = os.path.join(bdp_root_path, private_key_relative)
-        #self.boto_settings['root_path'] = '/home/centos' #fixme avoid hard coding
-
-        #fixme: this should be moved to appropriate location after mytardis platform type is defined,
-        # fixme: and after input anf output storage platforms are linked
-        computation_platform = run_settings[RMIT_SCHEMA + '/platform/computation']
-        credentials = platform.get_credentials(computation_platform)
-        self.boto_settings.update(credentials)
-
-
-        inputdir_url = smartconnector.get_url_with_pkey(self.boto_settings,
-            self.iter_inputdir, is_relative_path=False)
         (scheme, host, mypath, location, query_settings) = hrmcstages.parse_bdpurl(inputdir_url)
         fsys = hrmcstages.get_filesystem(inputdir_url)
+        logger.debug('mypath=%s' % mypath)
         input_dirs, _ = fsys.listdir(mypath)
+        logger.debug('input_dirs=%s' % input_dirs)
         # TODO: store all audit info in single file in input_X directory in transform,
         # so we do not have to load individual files within node directories here.
         min_crit = sys.float_info.max - 1.0
         min_crit_index = sys.maxint
-
-        # # retrive the audit file for last iteration
-        # fs = get_filesys(context)
-
-        # self.settings = get_all_settings(context)
-        # logger.debug("settings = %s" % self.settings)
-
-        # logger.debug("input dir %s" % self.iter_inputdir)
-        # input_dirs = fs.get_local_subdirectories(self.iter_inputdir)
-        # logger.debug("input_dirs = %s" % input_dirs)
 
         # # TODO: store all audit info in single file in input_X directory in transform,
         # # so we do not have to load individual files within node directories here.
@@ -269,10 +238,10 @@ class Converge(Stage):
         for input_dir in input_dirs:
             # Retrieve audit file
 
-            audit_url = smartconnector.get_url_with_pkey(self.boto_settings,
-                os.path.join(self.iter_inputdir, input_dir, 'audit.txt'), is_relative_path=False)
+            audit_url = smartconnector.get_url_with_pkey(output_storage_settings,
+                output_prefix + os.path.join(self.iter_inputdir, input_dir, 'audit.txt'), is_relative_path=False)
             audit_content = hrmcstages.get_file(audit_url)
-
+            logger.debug('audit_url=%s' % audit_url)
             # extract the best criterion error
             # FIXME: audit.txt is potentially debug file so format may not be fixed.
             p = re.compile("Run (\d+) preserved \(error[ \t]*([0-9\.]+)\)", re.MULTILINE)
@@ -336,7 +305,7 @@ class Converge(Stage):
 
         if self.done_iterating:
             logger.debug("Total Iterations: %d" % self.id)
-            self._ready_final_output(min_crit_node, min_crit_index)
+            self._ready_final_output(min_crit_node, min_crit_index, output_storage_settings)
             smartconnector.success(run_settings, "%s: finished" % (self.id+1))
 
 
@@ -345,19 +314,11 @@ class Converge(Stage):
 
         self.criterion = min_crit
 
-        # # end_time = time.time()
-        # # logger.debug("End time %f "% end_time)
 
-        # try:
-        #     converge_vec = self.settings['converge_time']
-        # except KeyError:
-        #     converge_vec = []
 
-        # converge_vec.append(end_time-start_time)
-        # update_key("converge_time", converge_vec, self.settings)
-
-    def _ready_final_output(self, crit_node, crit_index):
-
+    def _ready_final_output(self, crit_node, crit_index, output_storage_settings):
+        output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
+                                    output_storage_settings['type'])
         new_output_dir = os.path.join(self.job_dir,  'output')
         # FIXME: check new_output_dir does not already exist
         #fs.create_local_filesystem(new_output_dir)
@@ -368,10 +329,10 @@ class Converge(Stage):
         # logger.debug("Convergence Source %s Destination %s " % (source, dest))
         # shutil.copytree(source, dest)
 
-        source_url = smartconnector.get_url_with_pkey(self.boto_settings,
-            os.path.join(self.output_dir), is_relative_path=False)
-        dest_url = smartconnector.get_url_with_pkey(self.boto_settings,
-            os.path.join(new_output_dir), is_relative_path=False)
+        source_url = smartconnector.get_url_with_pkey(output_storage_settings,
+            output_prefix+os.path.join(self.output_dir), is_relative_path=False)
+        dest_url = smartconnector.get_url_with_pkey(output_storage_settings,
+            output_prefix+os.path.join(new_output_dir), is_relative_path=False)
 
         hrmcstages.copy_directories(source_url, dest_url)
 
@@ -388,15 +349,15 @@ class Converge(Stage):
             for m, node_dir in enumerate(node_dirs):
                 exp_value_keys.append(["hrmcdset%s/step" % m, "hrmcdset%s/err" % m])
 
-                source_url = smartconnector.get_url_with_pkey(self.boto_settings,
-                    os.path.join(new_output_dir, node_dir), is_relative_path=False)
+                source_url = smartconnector.get_url_with_pkey(output_storage_settings,
+                    output_prefix+os.path.join(new_output_dir, node_dir), is_relative_path=False)
 
                 (source_scheme, source_location, source_path, source_location,
                     query_settings) = hrmcstages.parse_bdpurl(source_url)
                 logger.debug("source_url=%s" % source_url)
                 legends.append(
                     hrmcstages.get_dataset_name_for_output(
-                        self.boto_settings, "", source_path))
+                        output_storage_settings, "", source_path))
 
             logger.debug("exp_value_keys=%s" % exp_value_keys)
             logger.debug("legends=%s" % legends)
@@ -409,8 +370,8 @@ class Converge(Stage):
 
             for m, node_dir in enumerate(node_dirs):
 
-                dataerrors_url = smartconnector.get_url_with_pkey(self.boto_settings,
-                    os.path.join(new_output_dir, node_dir, DATA_ERRORS_FILE), is_relative_path=False)
+                dataerrors_url = smartconnector.get_url_with_pkey(output_storage_settings,
+                    output_prefix+os.path.join(new_output_dir, node_dir, DATA_ERRORS_FILE), is_relative_path=False)
                 dataerrors_content = hrmcstages.get_file(dataerrors_url)
                 xs = []
                 ys = []
@@ -438,8 +399,8 @@ class Converge(Stage):
                 logger.debug("xs=%s" % xs)
                 logger.debug("ys=%s" % ys)
 
-                crit_url = smartconnector.get_url_with_pkey(self.boto_settings,
-                    os.path.join(new_output_dir, node_dir, "criterion.txt"), is_relative_path=False)
+                crit_url = smartconnector.get_url_with_pkey(output_storage_settings,
+                    output_prefix+os.path.join(new_output_dir, node_dir, "criterion.txt"), is_relative_path=False)
                 try:
                     crit = hrmcstages.get_file(crit_url)
                 except ValueError:
@@ -452,8 +413,9 @@ class Converge(Stage):
                 else:
                     hrmcdset_val = {}
 
-                source_url = smartconnector.get_url_with_pkey(self.boto_settings,
-                    os.path.join(new_output_dir, node_dir), is_relative_path=False)
+                source_url = smartconnector.get_url_with_pkey(
+                    output_storage_settings,
+                    output_prefix+os.path.join(new_output_dir, node_dir), is_relative_path=False)
                 logger.debug("source_url=%s" % source_url)
 
                 # TODO: move into utiltiy function for reuse
@@ -518,9 +480,11 @@ class Converge(Stage):
 
                     res = {"hrmcdfile/r4": cut_xs, "hrmcdfile/g4": cut_ys}
                     return res
-
+                #todo: replace self.boto_setttings with mytardis_settings
+                all_settings = dict(self.boto_settings)
+                all_settings.update(output_storage_settings)
                 self.experiment_id = mytardis.post_dataset(
-                    settings=self.boto_settings,
+                    settings=all_settings,
                     source_url=source_url,
                     exp_name=hrmcstages.get_exp_name_for_output,
                     dataset_name=hrmcstages.get_dataset_name_for_output,

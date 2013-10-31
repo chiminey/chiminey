@@ -114,42 +114,30 @@ class Transform(Stage):
         return False
 
     def copy_files_with_pattern(self, fsys, source_path,
-                             dest_path, pattern):
+                             dest_path, pattern, output_storage_settings):
         """
         """
-        (scheme, host, mypath, location, query_settings) = hrmcstages.parse_bdpurl(source_path)
+        output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
+                                    output_storage_settings['type'])
+        logger.debug('source_path=%s, dest_path=%s' % (source_path, dest_path))
+        (scheme, host, mypath, location, query_settings) = hrmcstages.parse_bdpurl(output_prefix + source_path)
         _, fnames = fsys.listdir(mypath)
         for f in fnames:
             if fnmatch.fnmatch(f, pattern):
-                source_url = smartconnector.get_url_with_pkey(self.boto_settings,
-                    os.path.join(source_path, f), is_relative_path=False)
-                dest_url = smartconnector.get_url_with_pkey(self.boto_settings,
-                    os.path.join(dest_path, f), is_relative_path=False)
+                source_url = smartconnector.get_url_with_pkey(output_storage_settings,
+                    output_prefix + os.path.join(source_path, f), is_relative_path=False)
+                dest_url = smartconnector.get_url_with_pkey(output_storage_settings,
+                    output_prefix + os.path.join(dest_path, f), is_relative_path=False)
+                logger.debug('source_url=%s, dest_url=%s' % (source_url, dest_url))
                 content = hrmcstages.get_file(source_url)
                 hrmcstages.put_file(dest_url, content)
 
-    # def copy_file(self, fsys, source_path, dest_path):
-    #     """
-    #     """
-    #     logger.debug("source_path=%s" % source_path)
-    #     logger.debug("dest_path=%s" % dest_path)
-    #     _, fnames = fsys.listdir(source_path)
-    #     logger.debug("fnames=%s" % fnames)
-    #     for f in fnames:
-    #             source_url = smartconnector.get_url_with_pkey(self.boto_settings,
-    #                 os.path.join(source_path, f), is_relative_path=True)
-    #             dest_url = smartconnector.get_url_with_pkey(self.boto_settings,
-    #                 os.path.join(dest_path, f), is_relative_path=True)
-    #             content = hrmcstages.get_file(source_url)
-    #             hrmcstages.put_file(dest_url, content)
 
     def process(self, run_settings):
         #TODO: break up this function as it is way too long
-
         self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
 
-        #TODO: we assume relative path BDP_URL here, but could be made to work with non-relative (ie., remote paths)
-        self.job_dir = run_settings['http://rmit.edu.au/schemas/input/system'][u'output_location']
+        self.job_dir = hrmcstages.get_job_dir(run_settings)
 
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/system', u'id'):
             self.id = run_settings['http://rmit.edu.au/schemas/system'][u'id']
@@ -169,6 +157,7 @@ class Transform(Stage):
                 self.experiment_id = 0
         else:
             self.experiment_id = 0
+        logger.debug('self.output_dir=%s' % self.output_dir)
         # import time
         # start_time = time.time()
         # logger.debug("Start time %f "% start_time)
@@ -202,42 +191,21 @@ class Transform(Stage):
             'http://rmit.edu.au/schemas/input/hrmc/number_dimensions')
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/input/hrmc/threshold')
-        #smartconnector.copy_settings(self.boto_settings, run_settings,
-        #    RMIT_SCHEMA + '/platform/computation/nectar/ec2_access_key')
-        #smartconnector.copy_settings(self.boto_settings, run_settings,
-        #    RMIT_SCHEMA + '/platform/computation/nectar/ec2_secret_key')
 
-        #smartconnector.copy_settings(self.boto_settings, run_settings,
-        #    'http://rmit.edu.au/schemas/stages/create/nectar_username')
-        #smartconnector.copy_settings(self.boto_settings, run_settings,
-        #    'http://rmit.edu.au/schemas/stages/create/nectar_password')
-        #self.boto_settings['username'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_username']
-        #self.boto_settings['username'] = 'root'  # FIXME: schema value is ignored
-        #self.boto_settings['password'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
-
-        #key_file = hrmcstages.retrieve_private_key(self.boto_settings,
-        #    run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nectar_private_key'])
-        #self.boto_settings['private_key'] = key_file
-        #self.boto_settings['nectar_private_key'] = key_file
-
-        #bdp_root_path = '/var/cloudenabling/remotesys' #fixme replace by parameter
-        #fixme: in the schema definition, change private_key to private_key_name, private_key_path to private_key
-        #private_key_relative = run_settings[RMIT_SCHEMA+'/platform/computation/nectar']['private_key_path']
-        #logger.debug('private_key_relative=%s' % private_key_relative)
-        #self.boto_settings['private_key'] = os.path.join(bdp_root_path, private_key_relative)
-        #self.boto_settings['root_path'] = '/home/centos' #fixme avoid hard coding
-
-        #fixme: this should be moved to appropriate location after mytardis platform type is defined,
-        # fixme: and after input anf output storage platforms are linked
-        computation_platform = run_settings[RMIT_SCHEMA + '/platform/computation']
-        credentials = platform.get_credentials(computation_platform)
-        self.boto_settings.update(credentials)
-
+        output_storage_schema = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['namespace']
+        output_storage_settings = run_settings[output_storage_schema]
+        platform.update_platform_settings(output_storage_schema, output_storage_settings)
+        output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
+                                    output_storage_settings['type'])
 
         logger.debug("boto_settings=%s" % self.boto_settings)
 
-        output_url = smartconnector.get_url_with_pkey(self.boto_settings,
-            self.output_dir, is_relative_path=False)
+
+        logger.debug("output_storage_settings=%s" % output_storage_settings)
+        output_url = smartconnector.get_url_with_pkey(
+            output_storage_settings,
+            output_prefix + self.output_dir, is_relative_path=False)
+
         logger.debug("output_url=%s" % output_url)
         # Should this be output_dir or root of remotesys?
         (scheme, host, mypath, location, query_settings) = hrmcstages.parse_bdpurl(output_url)
@@ -258,8 +226,9 @@ class Transform(Stage):
         for node_output_dir in node_output_dirs:
             base_fname = "HRMC.inp"
             try:
-                values_url = smartconnector.get_url_with_pkey(self.boto_settings,
-                    os.path.join(self.output_dir, node_output_dir,
+                values_url = smartconnector.get_url_with_pkey(
+                    output_storage_settings,
+                    output_prefix + os.path.join(self.output_dir, node_output_dir,
                     '%s_values' % base_fname), is_relative_path=False)
                 values_content = hrmcstages.get_file(values_url)
                 logger.debug("values_file=%s" % values_url)
@@ -268,8 +237,10 @@ class Transform(Stage):
                 values_map = {}
             else:
                 values_map = dict(json.loads(values_content))
-            criterion = self.compute_psd_criterion(node_output_dir, fsys)
-            #criterion = self.compute_hrmc_criterion(values_map['run_counter'], node_output_dir, fs)
+            criterion = self.compute_psd_criterion(
+                node_output_dir, fsys,
+                output_storage_settings)
+            #criterion = self.compute_hrmc_criterion(values_map['run_counter'], node_output_dir, fs,)
             logger.debug("criterion=%s" % criterion)
             index = 0   # FIXME: as node_output_dirs in particular order, then index is not useful.
             outputs.append(Node_info(dir=node_output_dir,
@@ -279,7 +250,6 @@ class Transform(Stage):
         logger.debug("outputs=%s" % outputs)
 
         if self.boto_settings['mytardis_host']:
-
             for i, node_output_dir in enumerate(node_output_dirs):
                 crit = None  # is there an infinity criterion
                 for ni in outputs:
@@ -290,8 +260,10 @@ class Transform(Stage):
                     logger.debug("criterion not found")
                     continue
                 logger.debug("crit=%s" % crit)
-                source_url = smartconnector.get_url_with_pkey(self.boto_settings,
-                    os.path.join(self.output_dir, node_output_dir), is_relative_path=False)
+                source_url = smartconnector.get_url_with_pkey(
+                    output_storage_settings,
+                    output_prefix + os.path.join(self.output_dir, node_output_dir),
+                    is_relative_path=False)
                 logger.debug("source_url=%s" % source_url)
                 graph_params = []
 
@@ -359,8 +331,13 @@ class Transform(Stage):
 
                 #TODO: hrmcexp graph should be tagged to input directories (not output directories)
                 #because we want the result after pruning.
+                #todo: replace self.boto_setttings with mytardis_settings
+                all_settings = dict(self.boto_settings)
+                all_settings.update(output_storage_settings)
+                logger.debug('all_settings=%s' % all_settings)
+                logger.debug('output_storage_settings=%s' % output_storage_settings)
                 self.experiment_id = mytardis.post_dataset(
-                    settings=self.boto_settings,
+                    settings=all_settings,
                     source_url=source_url,
                     exp_id=self.experiment_id,
                     exp_name=hrmcstages.get_exp_name_for_output,
@@ -425,48 +402,62 @@ class Transform(Stage):
 
             # Move all existing domain input files unchanged to next input directory
             for f in self.domain_input_files:
-                source_url = smartconnector.get_url_with_pkey(self.boto_settings,
-                    os.path.join(self.output_dir, Node_info.dir, f), is_relative_path=False)
-                dest_url = smartconnector.get_url_with_pkey(self.boto_settings,
-                    os.path.join(self.new_input_node_dir, f),
+                source_url = smartconnector.get_url_with_pkey(
+                    output_storage_settings,
+                    output_prefix + os.path.join(self.output_dir, Node_info.dir, f), is_relative_path=False)
+                dest_url = smartconnector.get_url_with_pkey(
+                    output_storage_settings,
+                    output_prefix + os.path.join(self.new_input_node_dir, f),
                     is_relative_path=False)
-                content = hrmcstages.get_file(source_url)
-                hrmcstages.put_file(dest_url, content)
+                logger.debug('source_url=%s, dest_url=%s' % (source_url, dest_url))
 
+                content = hrmcstages.get_file(source_url)
+                logger.debug('content collected')
+                hrmcstages.put_file(dest_url, content)
+                logger.debug('put successfully')
+
+
+            logger.debug('put file successfully')
             pattern = "*_values"
             self.copy_files_with_pattern(fsys, os.path.join(self.output_dir, Node_info.dir),
-                self.new_input_node_dir, pattern)
+                self.new_input_node_dir, pattern,
+                output_storage_settings)
 
             pattern = "*_template"
             self.copy_files_with_pattern(fsys, os.path.join(self.output_dir, Node_info.dir),
-                self.new_input_node_dir, pattern)
+                self.new_input_node_dir, pattern,
+                output_storage_settings)
 
             # NB: Converge stage triggers based on criterion value from audit.
 
             info = "Run %s preserved (error %s)\n" % (Node_info.number, Node_info.criterion)
-            audit_url = smartconnector.get_url_with_pkey(self.boto_settings,
-                    os.path.join(self.new_input_node_dir, 'audit.txt'), is_relative_path=False)
+            audit_url = smartconnector.get_url_with_pkey(
+                output_storage_settings,
+                    output_prefix + os.path.join(self.new_input_node_dir, 'audit.txt'), is_relative_path=False)
             hrmcstages.put_file(audit_url, info)
             logger.debug("audit=%s" % info)
             self.audit += info
 
             # move xyz_final.xyz to initial.xyz
-            source_url = smartconnector.get_url_with_pkey(self.boto_settings,
-                os.path.join(self.output_dir, Node_info.dir, "xyz_final.xyz"), is_relative_path=False)
-            dest_url = smartconnector.get_url_with_pkey(self.boto_settings,
-                os.path.join(self.new_input_node_dir, 'input_initial.xyz'), is_relative_path=False)
+            source_url = smartconnector.get_url_with_pkey(
+                output_storage_settings,
+                output_prefix + os.path.join(self.output_dir, Node_info.dir, "xyz_final.xyz"), is_relative_path=False)
+            dest_url = smartconnector.get_url_with_pkey(
+                output_storage_settings,
+                output_prefix + os.path.join(self.new_input_node_dir, 'input_initial.xyz'), is_relative_path=False)
             content = hrmcstages.get_file(source_url)
             hrmcstages.put_file(dest_url, content)
             self.audit += "spawning diamond runs\n"
+
+        audit_url = smartconnector.get_url_with_pkey(
+            output_storage_settings,
+                        output_prefix + os.path.join(self.new_input_dir, 'audit.txt'), is_relative_path=False)
+        hrmcstages.put_file(audit_url, self.audit)
 
 
 
     def output(self, run_settings):
         logger.debug("transform.output")
-        audit_url = smartconnector.get_url_with_pkey(self.boto_settings,
-                        os.path.join(self.new_input_dir, 'audit.txt'), is_relative_path=False)
-        hrmcstages.put_file(audit_url, self.audit)
-
         if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/transform'):
             run_settings['http://rmit.edu.au/schemas/stages/transform'] = {}
         run_settings['http://rmit.edu.au/schemas/stages/transform'][u'transformed'] = 1
@@ -476,11 +467,14 @@ class Transform(Stage):
 
         return run_settings
 
-    def compute_hrmc_criterion(self, number, node_output_dir, fs):
+    def compute_hrmc_criterion(self, number, node_output_dir, fs, output_storage_settings):
+        output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
+                                    output_storage_settings['type'])
         grerr_file = 'grerr%s.dat' % str(number).zfill(2)
         logger.debug("grerr_file=%s " % grerr_file)
-        grerr_url = smartconnector.get_url_with_pkey(self.boto_settings,
-                        os.path.join(self.output_dir,
+        grerr_url = smartconnector.get_url_with_pkey(
+            output_storage_settings,
+                        output_prefix + os.path.join(self.output_dir,
                             node_output_dir, 'grerr%s.dat' % str(number).zfill(2)), is_relative_path=False)
         grerr_content = hrmcstages.get_file(grerr_url)  # FIXME: check that get_file can raise IOError
         if not grerr_content:
@@ -496,7 +490,7 @@ class Transform(Stage):
         logger.debug("criterion=%s" % criterion)
         return criterion
 
-    def compute_psd_criterion(self, node_output_dir, fs):
+    def compute_psd_criterion(self, node_output_dir, fs, output_storage_settings):
         import math
         import os
         #globalFileSystem = fs.get_global_filesystem()
@@ -504,20 +498,29 @@ class Transform(Stage):
         #                    self.output_dir, node_output_dir,
         #                    "PSD_output/psd.dat")
         #Fixme replace all reference to files by parameters, e.g PSDCode
-        psd_url = smartconnector.get_url_with_pkey(self.boto_settings,
-                        os.path.join(self.output_dir,
+        output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
+                                    output_storage_settings['type'])
+        logger.debug('compute psd---')
+        psd_url = smartconnector.get_url_with_pkey(output_storage_settings,
+                        output_prefix + os.path.join(self.output_dir,
                             node_output_dir, "PSD_output", "psd.dat"), is_relative_path=False)
+        logger.debug('psd_url=%s' % psd_url)
+
         psd = hrmcstages.get_filep(psd_url)
+        logger.debug('psd=%s' % psd._name)
 
         # psd_exp = os.path.join(globalFileSystem,
         #                        self.output_dir, node_output_dir,
         #                        "PSD_output/PSD_exp.dat")
-        psd_url = smartconnector.get_url_with_pkey(self.boto_settings,
-                        os.path.join(self.output_dir,
+        psd_url = smartconnector.get_url_with_pkey(
+            output_storage_settings,
+                        output_prefix + os.path.join(self.output_dir,
                             node_output_dir, "PSD_output", "PSD_exp.dat"), is_relative_path=False)
+        logger.debug('psd_url=%s' % psd_url)
         psd_exp = hrmcstages.get_filep(psd_url)
+        logger.debug('psd_exp=%s' % psd_exp._name)
 
-        logger.debug("PSD %s %s " % (psd, psd_exp))
+        logger.debug("PSD %s %s " % (psd._name, psd_exp._name))
         x_axis = []
         y1_axis = []
         for line in psd:
@@ -545,15 +548,11 @@ class Transform(Stage):
             criterion += math.pow((y1_axis[i] - y2_axis[i]), 2)
         logger.debug("Criterion %f" % criterion)
 
-        criterion_url = smartconnector.get_url_with_pkey(self.boto_settings,
-            os.path.join(self.output_dir, node_output_dir, "PSD_output", "criterion.txt"), is_relative_path=False)
+        criterion_url = smartconnector.get_url_with_pkey(
+            output_storage_settings,
+            output_prefix + os.path.join(self.output_dir, node_output_dir, "PSD_output", "criterion.txt"),
+            is_relative_path=False)
         hrmcstages.put_file(criterion_url, str(criterion))
-
-        # criterion_file = DataObject('criterion.txt')
-        # criterion_file.create(str(criterion))
-        # criterion_path = os.path.join(self.output_dir,
-        #                               node_output_dir, "PSD_output")
-        # fs.create(criterion_path, criterion_file)
 
         return criterion
 

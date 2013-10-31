@@ -50,6 +50,7 @@ class Execute(Stage):
         self.job_dir = "hrmcrun"
         logger.debug("Execute stage initialized")
 
+
     def triggered(self, run_settings):
         """
         Triggered when we now that we have N nodes setup and ready to run.
@@ -73,9 +74,11 @@ class Execute(Stage):
         self.reschedule_failed_procs = run_settings['http://rmit.edu.au/schemas/input/reliability'][u'reschedule_failed_processes']
 
         try:
+            logger.debug('here i am')
             exec_procs_str = smartconnector.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/stages/execute/executed_procs')
             self.exec_procs = ast.literal_eval(exec_procs_str)
+            logger.debug('here i am again' )
             logger.debug('executed procs=%d, scheduled procs = %d'
                          % (len(self.exec_procs), len(self.schedule_procs)))
             self.ready_processes = [x for x in self.schedule_procs if x['status'] == 'ready']
@@ -84,18 +87,17 @@ class Execute(Stage):
             return len(self.ready_processes)
             #return len(self.exec_procs) < len(self.schedule_procs)
         except KeyError, e:
+            logger.debug(e)
             self.exec_procs = []
             return True
         return False
 
+
     def process(self, run_settings):
+
         logger.debug("processing run stage")
-
         self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
-
-        #TODO: we assume relative path BDP_URL here, but could be made to work with non-relative (ie., remote paths)
-        self.job_dir = run_settings['http://rmit.edu.au/schemas/input/system'][u'output_location']
-
+        self.job_dir = hrmcstages.get_job_dir(run_settings)
         # TODO: we assume initial input is in "%s/input_0" % self.job_dir
         # in configure stage we could copy initial data in 'input_location' into this location
         try:
@@ -135,12 +137,26 @@ class Execute(Stage):
         local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
         retrieve_boto_settings(run_settings, local_settings)
 
+        comp_pltf_schema = run_settings['http://rmit.edu.au/schemas/platform/computation']['namespace']
+        comp_pltf_settings = run_settings[comp_pltf_schema]
+        platform.update_platform_settings(comp_pltf_schema, comp_pltf_settings)
+
+        output_storage_schema = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['namespace']
+        output_storage_settings = run_settings[output_storage_schema]
+        platform.update_platform_settings(output_storage_schema, output_storage_settings)
+
+        #generic_output_schema = 'http://rmit.edu.au/schemas/platform/storage/output'
+
         failed_processes = [x for x in self.schedule_procs if x['status'] == 'failed']
         if not failed_processes:
-            self._prepare_inputs(local_settings)
+            self._prepare_inputs(
+                local_settings, output_storage_settings, comp_pltf_settings)
         else:
-            self._copy_previous_inputs(local_settings)
+            self._copy_previous_inputs(
+                local_settings, output_storage_settings,
+                comp_pltf_settings)
         try:
+            local_settings.update(comp_pltf_settings)
             pids = self.run_multi_task(local_settings)
         except PackageFailedError, e:
             logger.error(e)
@@ -150,23 +166,28 @@ class Execute(Stage):
 
         return pids
 
-    def _copy_previous_inputs(self, local_settings):
+
+    def _copy_previous_inputs(self, local_settings, output_storage_settings,
+                              computation_platform_settings):
+        output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
+                                    output_storage_settings['type'])
         for proc in self.ready_processes:
             source_location = os.path.join(self.job_dir, "input_backup", proc['id'])
-            source_files_url = smartconnector.get_url_with_pkey(local_settings,
-                    source_location, is_relative_path=False)
+            source_files_url = smartconnector.get_url_with_pkey(output_storage_settings,
+                    output_prefix+source_location, is_relative_path=False)
 
-            dest_files_location = local_settings['type'] + "@"\
+            dest_files_location = computation_platform_settings['type'] + "@"\
                                   + os.path.join(
                 local_settings['payload_destination'],
                 proc['id'], local_settings['payload_cloud_dirname'])
             logger.debug('dest_files_location=%s' % dest_files_location)
 
             dest_files_url = smartconnector.get_url_with_pkey(
-                local_settings, dest_files_location,
+                computation_platform_settings, dest_files_location,
                 is_relative_path=True, ip_address=proc['ip_address'])
             logger.debug('dest_files_url=%s' % dest_files_url)
             hrmcstages.copy_directories(source_files_url, dest_files_url)
+
 
     def output(self, run_settings):
         """
@@ -196,6 +217,7 @@ class Execute(Stage):
         run_settings['http://rmit.edu.au/schemas/input/mytardis']['experiment_id'] = str(self.experiment_id)
 
         return run_settings
+
 
     def run_task(self, ip_address, process_id, settings):
         """
@@ -234,6 +256,7 @@ class Execute(Stage):
             if ssh:
                 ssh.close()
         logger.debug("command_out2=(%s, %s)" % (command_out, errs))
+
 
     def run_multi_task(self, settings):
         """
@@ -277,7 +300,7 @@ class Execute(Stage):
         return all_pids
 
 
-    def _prepare_inputs(self, local_settings):
+    def _prepare_inputs(self, local_settings, output_storage_settings, computation_platform_settings):
             """
             Upload all input files for this run
             """
@@ -289,26 +312,33 @@ class Execute(Stage):
                         if x['status'] == 'ready']
             self.node_ind = 0
             logger.debug("Iteration Input dir %s" % self.iter_inputdir)
+            output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
+                                    output_storage_settings['type'])
             url_with_pkey = smartconnector.get_url_with_pkey(
-                local_settings, self.iter_inputdir, is_relative_path=False)
+                output_storage_settings, output_prefix+self.iter_inputdir, is_relative_path=False)
             logger.debug("url_with_pkey=%s" % url_with_pkey)
             input_dirs = hrmcstages.list_dirs(url_with_pkey)
             if not input_dirs:
                 raise BadInputException("require an initial subdirectory of input directory")
             for input_dir in sorted(input_dirs):
                 logger.debug("Input dir %s" % input_dir)
-                self._upload_variation_inputs(local_settings, self._generate_variations(input_dir, local_settings),
-                                              processes, input_dir)
+                self._upload_variation_inputs(
+                    local_settings, self._generate_variations(
+                        input_dir, local_settings, output_storage_settings),
+                    processes, input_dir,output_storage_settings,
+                    computation_platform_settings)
 
-    def _generate_variations(self, input_dir, local_settings):
+
+    def _generate_variations(self, input_dir, local_settings, output_storage_settings):
         """
         For each templated file in input_dir, generate all variations
         """
+        output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
+                                    output_storage_settings['type'])
         template_pat = re.compile("(.*)_template")
-
         fname_url_with_pkey = smartconnector.get_url_with_pkey(
-            local_settings,
-            os.path.join(self.iter_inputdir, input_dir),
+            output_storage_settings,
+            output_prefix+os.path.join(self.iter_inputdir, input_dir),
             is_relative_path=False)
         input_files = hrmcstages.list_dirs(fname_url_with_pkey,
             list_files=True)
@@ -326,8 +356,8 @@ class Execute(Stage):
             if template_mat:
                 # get the template
                 basename_url_with_pkey = smartconnector.get_url_with_pkey(
-                    local_settings,
-                    os.path.join(self.iter_inputdir, input_dir, fname),
+                    output_storage_settings,
+                    output_prefix+os.path.join(self.iter_inputdir, input_dir, fname),
                     is_relative_path=False)
                 template = hrmcstages.get_file(basename_url_with_pkey)
                 base_fname = template_mat.group(1)
@@ -337,8 +367,8 @@ class Execute(Stage):
                 values_map = {}
                 try:
                     values_url_with_pkey = smartconnector.get_url_with_pkey(
-                        local_settings,
-                        os.path.join(self.iter_inputdir,
+                        output_storage_settings,
+                        output_prefix+os.path.join(self.iter_inputdir,
                             input_dir,
                             '%s_values' % base_fname),
                         is_relative_path=False)
@@ -420,12 +450,17 @@ class Execute(Stage):
                 logger.debug("%d files created" % (temp_num))
             return res
 
-    def _upload_variation_inputs(self, local_settings, variations, processes, input_dir):
+    def _upload_variation_inputs(self, local_settings, variations, processes,
+                                 input_dir, output_storage_settings,
+                                 computation_platform_settings):
         '''
         Create input packages for each variation and upload the vms
         '''
+        output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
+                                    output_storage_settings['type'])
+        output_host = output_storage_settings['host']
         source_files_url = smartconnector.get_url_with_pkey(
-            local_settings, os.path.join(
+            output_storage_settings, output_prefix+os.path.join(
                 self.iter_inputdir, input_dir),
             is_relative_path=False)
 
@@ -445,8 +480,9 @@ class Execute(Stage):
                 logger.debug("path=%s" % path)
 
                 source_url = smartconnector.get_url_with_pkey(
-                    settings, os.path.join(path, "HRMC.inp_values"),
-                    is_relative_path=True)
+                    output_storage_settings,
+                    output_prefix+os.path.join(output_host, path, "HRMC.inp_values"),
+                    is_relative_path=False)
                 logger.debug("source_url=%s" % source_url)
                 try:
                     content = hrmcstages.get_file(source_url)
@@ -530,15 +566,16 @@ class Execute(Stage):
                 #ip = botocloudconnector.get_instance_ip(var_node.id, local_settings)
                 ip = proc['ip_address']
 
-                dest_files_location = local_settings['type'] + "@"\
+                dest_files_location = computation_platform_settings['type'] + "@"\
                                       + os.path.join(local_settings['payload_destination'],
                                                      proc['id'],
                                                      local_settings['payload_cloud_dirname']
                                                      )
                 logger.debug('dest_files_location=%s' % dest_files_location)
 
-                dest_files_url = smartconnector.get_url_with_pkey(local_settings, dest_files_location,
-                                       is_relative_path=True, ip_address=ip)
+                dest_files_url = smartconnector.get_url_with_pkey(
+                    computation_platform_settings, dest_files_location,
+                    is_relative_path=True, ip_address=ip)
                 logger.debug('dest_files_url=%s' % dest_files_url)
 
                 # FIXME: Cleanup any existing runs already there
@@ -554,8 +591,9 @@ class Execute(Stage):
 
                 if self.reschedule_failed_procs:
                     input_backup = os.path.join(self.job_dir, "input_backup", proc['id'])
-                    backup_url = smartconnector.get_url_with_pkey(local_settings,
-                        input_backup, is_relative_path=False)
+                    backup_url = smartconnector.get_url_with_pkey(
+                        output_storage_settings,
+                        output_prefix+input_backup, is_relative_path=False)
                     hrmcstages.copy_directories(source_files_url, backup_url)
 
                 # Why do we need to create a tempory file to make this copy?
@@ -573,50 +611,47 @@ class Execute(Stage):
                 hrmcstages.put_file(value_url, json.dumps(values))
 
 
-
-
-
                 #local_settings['platform'] should be replaced
                 # and overwrite on the remote
-                var_fname_remote = local_settings['type']\
+                var_fname_remote = computation_platform_settings['type']\
                     + "@" + os.path.join(local_settings['payload_destination'],
                                          proc['id'],
                                          local_settings['payload_cloud_dirname'],
                                          var_fname)
-                var_fname_pkey = smartconnector.get_url_with_pkey(local_settings, var_fname_remote,
-                                                        is_relative_path=True, ip_address=ip)
+                var_fname_pkey = smartconnector.get_url_with_pkey(
+                    computation_platform_settings, var_fname_remote,
+                    is_relative_path=True, ip_address=ip)
                 var_content = hrmcstages.get_file(var_url)
                 hrmcstages.put_file(var_fname_pkey, var_content)
 
 
-
-
                 logger.debug("var_fname_pkey=%s" % var_fname_pkey)
-                values_fname_pkey = smartconnector.get_url_with_pkey(local_settings,
-                                                           os.path.join(dest_files_location,
-                                                                        "%s_values" % var_fname),
-                                                           is_relative_path=True, ip_address=ip)
+                values_fname_pkey = smartconnector.get_url_with_pkey(
+                    computation_platform_settings,
+                    os.path.join(dest_files_location,
+                                 "%s_values" % var_fname),
+                    is_relative_path=True, ip_address=ip)
                 values_content = hrmcstages.get_file(value_url)
                 hrmcstages.put_file(values_fname_pkey, values_content)
                 logger.debug("values_fname_pkey=%s" % values_fname_pkey)
 
-
                 #copying values and var_content to backup folder
                 if self.reschedule_failed_procs:
                     value_url = smartconnector.get_url_with_pkey(
-                        local_settings, os.path.join(input_backup, "%s_values" % var_fname),
+                        output_storage_settings,
+                        output_prefix+os.path.join(input_backup, "%s_values" % var_fname),
                         is_relative_path=False)
                     logger.debug("value_url=%s" % value_url)
                     hrmcstages.put_file(value_url, json.dumps(values))
 
                     var_fname_pkey = smartconnector.get_url_with_pkey(
-                        local_settings, os.path.join(input_backup, var_fname),
+                        output_storage_settings,
+                        output_prefix+os.path.join(input_backup, var_fname),
                         is_relative_path=False)
                     var_content = hrmcstages.get_file(var_url)
                     hrmcstages.put_file(var_fname_pkey, var_content)
 
                 # cleanup
-
                 tmp_url = smartconnector.get_url_with_pkey(local_settings, os.path.join("tmp%s" % randsuffix),
                     is_relative_path=True)
                 logger.debug("deleting %s" % tmp_url)
@@ -651,10 +686,6 @@ def retrieve_boto_settings(run_settings, local_settings):
     smartconnector.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/input/hrmc/pottype')
 
-    #smartconnector.copy_settings(local_settings, run_settings,
-    #    'http://rmit.edu.au/schemas/stages/create/nectar_username')
-    #smartconnector.copy_settings(local_settings, run_settings,
-    #    'http://rmit.edu.au/schemas/stages/create/nectar_password')
     smartconnector.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/system/random_numbers')
     smartconnector.copy_settings(local_settings, run_settings,
@@ -671,38 +702,5 @@ def retrieve_boto_settings(run_settings, local_settings):
         'http://rmit.edu.au/schemas/system/random_numbers')
     smartconnector.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/system/id')
-
-    #smartconnector.copy_settings(local_settings, run_settings,
-    #    RMIT_SCHEMA+'/platform/computation/nectar/ec2_access_key')
-    #smartconnector.copy_settings(local_settings, run_settings,
-    #    RMIT_SCHEMA+'/platform/computation/nectar/ec2_secret_key')
-
-    #local_settings['username'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_username']
-    #local_settings['username'] = 'root'  # FIXME: schema value is ignored, avoid hardcoding
-
-    #local_settings['password'] = run_settings['http://rmit.edu.au/schemas/stages/create']['nectar_password']
-    #key_file = hrmcstages.retrieve_private_key(local_settings,
-    #        run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nectar_private_key'])
-    #local_settings['private_key'] = key_file
-    #local_settings['nectar_private_key'] = key_file
-
-    #bdp_root_path = '/var/cloudenabling/remotesys' #fixme replace by parameter
-        #fixme: in the schema definition, change private_key to private_key_name, private_key_path to private_key
-    #private_key_relative = run_settings[RMIT_SCHEMA+'/platform/computation/nectar']['private_key_path']
-    #logger.debug('private_key_relative=%s' % private_key_relative)
-    #local_settings['private_key'] = os.path.join(bdp_root_path, private_key_relative)
-    #local_settings['root_path'] = '/home/centos' #fixme avoid hard coding
-
-    #key_file = hrmcstages.retrieve_private_key(local_settings,
-    #        run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nectar_private_key'])
-    #local_settings['private_key'] = key_file
-    #local_settings['nectar_private_key'] = key_file
-
-    #fixme: this should be moved to appropriate location after mytardis platform type is defined,
-    # fixme: and after input storage platform is linked
-    computation_platform = run_settings[RMIT_SCHEMA+'/platform/computation']
-    credentials = platform.get_credentials(computation_platform)
-    local_settings.update(credentials)
-
 
     logger.debug('retrieve completed')

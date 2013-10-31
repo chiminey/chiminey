@@ -10,5 +10,6 @@ class NeCTARComputationPlatformForm(forms.Form):
     private_key = forms.CharField(initial='generated', widget=forms.HiddenInput(attrs={'required': 'false'}))
     vm_image_size = forms.CharField(label='VM Image Size', initial='m1.small', required=False)
     security_group = forms.CharField(initial='[]', required=False, widget=forms.HiddenInput(attrs={'required': 'false'}))
+    offset = forms.CharField(initial='', required=False, widget=forms.HiddenInput(attrs={'required': 'false'}))
     operation = forms.CharField(initial='update', widget=forms.HiddenInput(attrs={'required': 'false'}))
     filters = forms.CharField(initial='{}', widget=forms.HiddenInput(attrs={'required': 'false'}))

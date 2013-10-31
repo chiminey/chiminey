@@ -67,8 +67,6 @@ class Bootstrap(Stage):
         except KeyError:
             self.started = 0
         logger.debug('self.started=%d' % self.started)
-
-
         local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
         retrieve_local_settings(run_settings, local_settings)
 
@@ -161,38 +159,12 @@ def retrieve_local_settings(run_settings, local_settings):
         RMIT_SCHEMA+'/stages/create/created_nodes')
     smartconnector.copy_settings(local_settings, run_settings,
         RMIT_SCHEMA+'/stages/create/custom_prompt')
-    #smartconnector.copy_settings(local_settings, run_settings,
-    #    RMIT_SCHEMA+'/platform/computation/nectar/ec2_access_key')
-    #smartconnector.copy_settings(local_settings, run_settings,
-    #    RMIT_SCHEMA+'/platform/computation/nectar/ec2_secret_key')
-    #smartconnector.copy_settings(local_settings, run_settings,
-    #    RMIT_SCHEMA+'/platform/computation/nectar/root_path')
 
-    #smartconnector.copy_settings(local_settings, run_settings,
-    #    RMIT_SCHEMA+'/stages/create/nectar_username')
-    #smartconnector.copy_settings(local_settings, run_settings,
-    #    RMIT_SCHEMA+'/stages/create/nectar_password')
-    #local_settings['username'] = \
-    #    run_settings[RMIT_SCHEMA+'/stages/create']['nectar_username']
-    #local_settings['username'] = 'root'  # FIXME: schema value is ignored, avoid hard coding
-    #local_settings['password'] = \
-    #    run_settings[RMIT_SCHEMA+'/stages/create']['nectar_password']
-
-    #bdp_root_path = '/var/cloudenabling/remotesys' #fixme replace by parameter
-    #    #fixme: in the schema definition, change private_key to private_key_name, private_key_path to private_key
-    #private_key_relative = run_settings[RMIT_SCHEMA+'/platform/computation/nectar']['private_key_path']
-    #logger.debug('private_key_relative=%s' % private_key_relative)
-    #local_settings['private_key'] = os.path.join(bdp_root_path, private_key_relative)
-    #local_settings['root_path'] = '/home/centos' #fixme avoid hard coding
-
-    #key_file = hrmcstages.retrieve_private_key(local_settings,
-    #        run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nectar_private_key'])
-    #local_settings['private_key'] = key_file
-    #local_settings['nectar_private_key'] = key_file
-
-    computation_platform = run_settings[RMIT_SCHEMA+'/platform/computation']
-    credentials = platform.get_credentials(computation_platform)
-    local_settings.update(credentials)
+    comp_pltf_schema = run_settings['http://rmit.edu.au/schemas/platform/computation']['namespace']
+    comp_pltf_settings = run_settings[comp_pltf_schema]
+    platform.update_platform_settings(
+        comp_pltf_schema, comp_pltf_settings)
+    local_settings.update(comp_pltf_settings)
 
     logger.debug('retrieve completed')
 

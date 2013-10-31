@@ -46,6 +46,7 @@ def _get_dataset_name(settings, url, path):
     """
     Break path based on EXP_DATASET_NAME_SPLIT
     """
+    logger.debug('dataset_path=%s' % path)
     return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
 
 
@@ -207,7 +208,8 @@ def post_dataset(settings,
     if source_scheme == "file":
         root_path = hrmcstages.get_value('root_path', query_settings)
     else:
-        raise InvalidInputError("only file source_schema supported for source of mytardis transfer")
+        logger.debug('schema=%s' % source_scheme)
+        #raise InvalidInputError("only file source_schema supported for source of mytardis transfer")
 
     expname = exp_name(settings, source_url, source_path)
     new_exp_id = post_experiment(settings, exp_id, expname, experiment_paramset)
@@ -256,10 +258,28 @@ def post_dataset(settings,
     url = "%s/api/v1/dataset_file/" % tardis_host_url
     headers = {'Accept': 'application/json'}
 
-    for file_location in source_files:
 
-        file_path = os.path.join(root_path, file_location)
-        logger.debug("file_path=%s" % file_path)
+
+    args = source_url.split('?')[1]
+
+    logger.debug('args=%s' % args)
+    '''
+    psd_url = smartconnector.get_url_with_pkey(output_storage_credentials,
+                        'ssh://unix@' + os.path.join(self.output_dir,
+                            node_output_dir, "PSD_output", "psd.dat"), is_relative_path=False)
+        logger.debug('psd_url=%s' % psd_url)
+
+        psd = hrmcstages.get_filep(psd_url)
+    '''
+    for file_location in source_files:
+        logger.debug('file_location=%s' % os.path.join(source_location, file_location))
+        source_file_url = "%s://%s?%s" % (source_scheme, os.path.join(source_location, file_location), args)
+        logger.debug('source_file_url=%s' % source_file_url)
+        source_file, source_file_ref = hrmcstages.get_filep(source_file_url, sftp_reference=True)
+        logger.debug('source_file=%s' % source_file._name)
+        #file_path = os.path.join(root_path, file_location)
+        #file_path = os.path.join(source_url, file_location)
+        #logger.debug("file_path=%s" % file_path)
         #logger.debug("content=%s" % open(file_path,'rb').read())
 
         new_datafile_paramset = []
@@ -289,7 +309,8 @@ def post_dataset(settings,
                         for fname, func in dfile_extract_func.items():
                             logger.debug("fname=%s,func=%s" % (fname, func))
                             if fname == os.path.basename(file_location):
-                                new_value.update(func(open(file_path, 'r')))
+                                #new_value.update(func(open(file_path, 'r')))
+                                new_value.update(func(source_file))
                                 found_func_match = True  # FIXME: can multiple funcs match?
 
                         logger.debug("new_value=%s" % new_value)
@@ -320,22 +341,24 @@ def post_dataset(settings,
                 logger.debug("not adding %s" % new_paramset)
 
         logger.debug("new_datafile_paramset=%s" % new_datafile_paramset)
-
-        file_size = os.stat(file_path).st_size
+        logger.debug("file_namee=%s" % source_file._name)
+        file_size = source_file_ref.size(source_file._name)
         logger.debug("file_size=%s" % file_size)
         if file_size > 0:
             data = json.dumps({
                 'dataset': str(new_dataset_uri),
                 "parameter_sets": new_datafile_paramset,
-                'filename': os.path.basename(file_path),
+                'filename': os.path.basename(file_location),
+                #'filename': os.path.basename(file_path),
                 'size': file_size,
                 'mimetype': 'text/plain',
-                'md5sum': hashlib.md5(open(file_path, 'r').read()).hexdigest()
+                'md5sum': hashlib.md5(source_file.read()).hexdigest()
+                #'md5sum': hashlib.md5(open(file_path, 'r').read()).hexdigest()
                 })
             logger.debug("data=%s" % data)
 
             r = requests.post(url, data={'json_data': data}, headers=headers,
-                files={'attached_file': open(file_path, 'rb')},
+                files={'attached_file': source_file}, #open(file_path, 'rb')},
                 auth=HTTPBasicAuth(tardis_user, tardis_pass)
                 )
             # FIXME: need to check for status_code and handle failures.
@@ -344,7 +367,7 @@ def post_dataset(settings,
             logger.debug("r.te=%s" % r.text)
             logger.debug("r.he=%s" % r.headers)
         else:
-            logger.warn("not transferring empty file %s" % file_path)
+            logger.warn("not transferring empty file %s" % file_location)
             #TODO: check whether mytardis api can accept zero length files
 
     return new_exp_id
