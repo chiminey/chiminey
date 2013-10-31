@@ -21,16 +21,17 @@
 #
 #
 import os
+import functools
 import logging
 import django
 from pprint import pformat
 
 # FIXME,TODO: replace basic authentication with basic+SSL,
 # or better digest or oauth
-from tastypie.authentication import (BasicAuthentication)
+from tastypie.authentication import (BasicAuthentication, ApiKeyAuthentication, MultiAuthentication)
 from tastypie.authorization import DjangoAuthorization, Authorization
 from tastypie import fields
-from tastypie.resources import ModelResource, ALL_WITH_RELATIONS, ALL
+from tastypie.resources import Resource, ModelResource, ALL_WITH_RELATIONS, ALL
 from tastypie.utils import dict_strip_unicode_keys
 from tastypie import http
 from tastypie.exceptions import ImmediateHttpResponse
@@ -87,9 +88,8 @@ class UserProfileResource(ModelResource):
         allowed_methods = ['get']
         # TODO: FIXME: BasicAuth is horribly insecure without using SSL.
         # Digest is better, but configuration proved tricky.
-        authentication = BasicAuthentication()
+        authentication = MultiAuthentication(ApiKeyAuthentication(), MyBasicAuthentication())
         authorization = DjangoAuthorization()
-
     def apply_authorization_limits(self, request, object_list):
         return object_list.filter(user=request.user)
 
@@ -139,6 +139,7 @@ class ParameterNameResource(ModelResource):
     schema = fields.ForeignKey(SchemaResource,
         attribute='schema')
 
+
     class Meta:
         queryset = models.ParameterName.objects.all()
         resource_name = 'parametername'
@@ -159,7 +160,7 @@ class UserProfileParameterSetResource(ModelResource):
         resource_name = 'userprofileparameterset'
         # TODO: FIXME: BasicAuth is horribly insecure without using SSL.
         # Digest is better, but configuration proved tricky.
-        authentication = BasicAuthentication()
+        authentication = MultiAuthentication(ApiKeyAuthentication(), MyBasicAuthentication())
         #authentication = DigestAuthentication()
         authorization = DjangoAuthorization()
         allowed_methods = ['get']
@@ -189,12 +190,14 @@ class UserProfileParameterResource(ModelResource):
         resource_name = 'userprofileparameter'
         # TODO: FIXME: BasicAuth is horribly insecure without using SSL.
         # Digest is better, but configuration proved tricky.
-        authentication = BasicAuthentication()
+        authentication = MultiAuthentication(ApiKeyAuthentication(), MyBasicAuthentication())
+
         #authentication = DigestAuthentication()
         authorization = DjangoAuthorization()
         # curl --digest --user user2 --dump-header - -H "Content-Type: application/json" -X PUT --data ' {"value": 44}' http://115.146.86.247/api/v1/userprofileparameter/48/?format=json
         allowed_methods = ['get', 'put']
         # TODO: validation on put value to correct type
+
 
 
 class ContextResource(ModelResource):
@@ -213,8 +216,7 @@ class ContextResource(ModelResource):
         resource_name = 'context'
         # TODO: FIXME: BasicAuth is horribly insecure without using SSL.
         # Digest is better, but configuration proved tricky.
-        authentication = BasicAuthentication()
-        authentication = MyBasicAuthentication()
+        authentication = MultiAuthentication(ApiKeyAuthentication(), MyBasicAuthentication())
         #authentication = DigestAuthentication()
         authorization = DjangoAuthorization()
         allowed_methods = ['get', 'post']
@@ -227,7 +229,7 @@ class ContextResource(ModelResource):
         return models.Context.objects.filter(owner__user=request.user).order_by('-id')
 
     def post_list(self, request, **kwargs):
-        #curl --user user2 --dump-header - -H "Content-Type: application/json" -X POST --data ' {"number_vm_instances": 8, "minimum_number_vm_instances": 8, "iseed": 42, "input_location": "file://127.0.0.1/myfiles/input", "number_dimensions": 2, "threshold": "[2]", "error_threshold": "0.03", "max_iteration": 10}' http://115.146.86.247/api/v1/context/?format=json
+        #curl --user user2 --dump-header - -H "Content-Type: application/json" -X POST --data ' {"number_vm_instances": 8, "minimum_number_vm_instances": 8, "iseed": 42, "input_location": "file://127.0.0.1/myfiles/input", "optimisation_scheme": 2, "threshold": "[2]", "error_threshold": "0.03", "max_iteration": 10}' http://115.146.86.247/api/v1/context/?format=json
 
         if django.VERSION >= (1, 4):
             body = request.body
@@ -271,11 +273,19 @@ class ContextResource(ModelResource):
             logger.error(e)
         else:
             logger.debug("run_context=%s" % run_context)
+
+            # make success message for context.
+            mess = "info, job started"
+            message, was_created = models.ContextMessage.objects.get_or_create(context=run_context)
+            message.message = mess
+            message.save()
+
             bundle.obj.pk = run_context.id
             # We do not call obj_create because make_runcontext_for_directive()
             # has already created the object.
 
             location = self.get_resource_uri(bundle)
+
 
         return http.HttpCreated(location=location)
 
@@ -297,7 +307,7 @@ class ContextResource(ModelResource):
                      ('max_seed_int', 1000),
                      (u'random_numbers', 'file://127.0.0.1/randomnums.txt'),
                      ('input_location',  bundle.data[self.hrmc_schema+'input_location']),
-                     ('number_dimensions', bundle.data[self.hrmc_schema+'number_dimensions']),
+                     ('optimisation_scheme', bundle.data[self.hrmc_schema+'optimisation_scheme']),
                      ('threshold', str(bundle.data[self.hrmc_schema+'threshold'])),
                      ('error_threshold', str(bundle.data[self.hrmc_schema+'error_threshold'])),
                      ('max_iteration', bundle.data[self.hrmc_schema+'max_iteration']),
@@ -309,9 +319,9 @@ class ContextResource(ModelResource):
 
         logger.debug("directive_args=%s" % pformat(directive_args))
         # make the system settings, available to initial stage and merged with run_settings
-        system_dict = {u'system': u'settings', u'output_location': bundle.data[self.system_schema+'output_location']}
+        system_dict = {u'system': u'settings', u'output_location': bundle.data[os.path.join(self.system_schema, 'output_location')]}
 
-        logger.debug('post_to_hrmc output_location = %s' % bundle.data[self.system_schema+'output_location'])
+        logger.debug('post_to_hrmc output_location = %s' % bundle.data[os.path.join(self.system_schema, 'output_location')])
 
         system_settings = {u'http://rmit.edu.au/schemas/system/misc': system_dict}
 
@@ -333,14 +343,31 @@ class ContextResource(ModelResource):
             'float': ('floading point number', validators.validate_float_number, None, None),
             'jsondict': ('JSON Dictionary', validators.validate_jsondict, forms.Textarea(attrs={'cols':30, 'rows': 5}), None),
             'bool': ('On/Off', validators.validate_bool, None,  None),
+            'platform': ('platform', validators.validate_nectar_platform, None,  None),
+            'choicefield': ('choicefield', functools.partial(validators.myvalidate_choice_field, choices=('MC','MCSA')), forms.Select(),  None),
 
         }
         directive = models.Directive.objects.get(name=directive_name)
         for das in models.DirectiveArgSet.objects.filter(directive=directive):
+            logger.debug("checking das=%s" % das)
             for param in models.ParameterName.objects.filter(schema=das.schema):
+                logger.debug("checking param=%s"  % param.name)
                 value = data[os.path.join(das.schema.namespace, param.name)]
+                # # FIXME: if a input field is blank, then may have been disabled.
+                # # Therefore, we pass in initial default value, with assumption
+                # # that it will be ignored anyway.  This might not be the best
+                # # idea, because user that leaves field blank will get default value
+                # # sent and not blank.  Therefore, fields cannot be blank.
+
+                # if str(value) == "":
+                #     logger.warn("skipping %s because disabled as input" % param.name)
+                #     data[os.path.join(das.schema.namespace, param.name)] = param.initial
+                #     logger.debug("data=%s" % data)
+                #     continue;
+
                 validator = subtype_validation[param.subtype][1]
                 value = validator(value)
+                data[os.path.join(das.schema.namespace, param.name)] = value
 
     def _post_to_sweep(self, bundle):
         platform = 'local'
@@ -361,7 +388,7 @@ class ContextResource(ModelResource):
                     ('max_iteration', bundle.data[self.hrmc_schema + 'max_iteration']),
                     ('error_threshold', str(bundle.data[self.hrmc_schema + 'error_threshold'])),
                     ('threshold', str(bundle.data[self.hrmc_schema + 'threshold'])),
-                    ('number_dimensions', bundle.data[self.hrmc_schema + 'number_dimensions']),
+                    ('optimisation_scheme', bundle.data[self.hrmc_schema + 'optimisation_scheme']),
                     ('iseed', bundle.data[self.hrmc_schema + 'iseed']),
                     ('fanout_per_kept_result', bundle.data[self.hrmc_schema + 'fanout_per_kept_result']),
                 ],
@@ -489,14 +516,134 @@ class ContextResource(ModelResource):
         return (platform, directive_name, directive_args, system_settings)
 
 
+class DictObject(object):
+    def __init__(self, initial=None):
+        self.__dict__['_data'] = {}
+
+        if hasattr(initial, 'items'):
+            self.__dict__['_data'] = initial
+
+    def __getattr__(self, name):
+        return self._data.get(name, None)
+
+    def __setattr__(self, name, value):
+        self.__dict__['_data'][name] = value
+
+    def to_dict(self):
+        return self._data
+
+from tastypie.bundle import Bundle
+
+# class ContextInfoResource2(Resource):
+#     class Meta:
+#         resource_name = 'contextinfo'
+#         authentication = MultiAuthentication(ApiKeyAuthentication(), MyBasicAuthentication())
+#         authorization = DjangoAuthorization()
+#         allowed_methods = ['get']
+#         paginator_class = Paginator
+#         qs = models.Context.objects.none()
+
+#     def dehydrate(self, bundle):
+#         bundle.data['custom_field'] = "Whatever you want"
+#         return bundle
+
+# from tastypie.serializers import Serializer
+
+# class ContextInfoResource(Resource):
+
+#     class Meta:
+#         resource_name = 'contextinfo'
+#         object_class = str
+#         authentication = MultiAuthentication(ApiKeyAuthentication(), MyBasicAuthentication())
+#         authorization = DjangoAuthorization()
+#         allowed_methods = ['get']
+#         paginator_class = Paginator
+#         serializer = Serializer()
+
+
+#     def obj_get(self, request=None, **kwargs):
+#         do = "hello"
+#         logger.debug("do=%s" % do)
+#         return do
+
+#     def get_object_list(self, request=None, **kwargs):
+#         infos = []
+#         logger.error('Got Request %s kwargs %s' % (request, kwargs))
+#         info = self.obj_get(request, **kwargs)
+#         infos.append(info)
+
+#         return infos
+
+#     def detail_uri_kwargs(self, bundle_or_obj):
+#         kwargs = {}
+
+#         if isinstance(bundle_or_obj, Bundle):
+#         #     kwargs['pk'] = bundle_or_obj.obj.id
+#         # else:
+#         #     kwargs['pk'] = bundle_or_obj.id
+#             kwargs['pk'] = 1
+#         else:
+#             kwargs['pk'] =  1
+
+#         return kwargs
+
+
+#     # def obj_get_list(self, request=None, **kwargs):
+#     #     return [DictObject(initial={"foo":"bar"})]
+
+#     def obj_get_list(self, request=None, **kwargs):
+#         return self.get_object_list(kwargs['bundle'].request)
+
+#     def rollback(self, bundles):
+#         pass
+
+class ContextMessageResource(ModelResource):
+    context = fields.ForeignKey(ContextResource,
+        attribute="context", full=True, null=True)
+
+    class Meta:
+        queryset = models.ContextMessage.objects.all()
+        resource_name  = "contextmessage"
+        authentication = MultiAuthentication(ApiKeyAuthentication(), MyBasicAuthentication())
+        #authentication = DigestAuthentication()
+        authorization = DjangoAuthorization()
+        allowed_methods = ['get']
+        paginator_class = Paginator
+
+    def get_object_list(self, request):
+        return models.ContextMessage.objects.filter(context__owner__user=request.user).order_by('-id')
+
+
+
+
+class ContextParameterSetResource(ModelResource):
+    context = fields.ForeignKey(ContextResource,
+        attribute='context')
+    schema = fields.ForeignKey(SchemaResource,
+        attribute='schema')
+
+    class Meta:
+        queryset = models.ContextParameterSet.objects.all()
+        resource_name = 'contextparameterset'
+        # TODO: FIXME: BasicAuth is horribly insecure without using SSL.
+        # Digest is better, but configuration proved tricky.
+        authentication = MultiAuthentication(ApiKeyAuthentication(), MyBasicAuthentication())
+        #authentication = DigestAuthentication()
+        authorization = DjangoAuthorization()
+        allowed_methods = ['get']
+
+    def get_object_list(self, request):
+        return models.ContextParameterSet.objects.filter(context__owner__user=request.user)
+
+
+
 class PlatformInstanceResource(ModelResource):
     class Meta:
         queryset = models.PlatformInstance.objects.all()
         resource_name = 'platform'
         # TODO: FIXME: BasicAuth is horribly insecure without using SSL.
         # Digest is better, but configuration proved tricky.
-        authentication = BasicAuthentication()
-        authentication = MyBasicAuthentication()
+        authentication = MultiAuthentication(ApiKeyAuthentication(), MyBasicAuthentication())
         #authentication = DigestAuthentication()
         authorization = DjangoAuthorization()
         allowed_methods = ['get']
@@ -514,8 +661,7 @@ class PlatformInstanceParameterSetResource(ModelResource):
         resource_name = 'platformparamset'
         # TODO: FIXME: BasicAuth is horribly insecure without using SSL.
         # Digest is better, but configuration proved tricky.
-        authentication = BasicAuthentication()
-        authentication = MyBasicAuthentication()
+        authentication = MultiAuthentication(ApiKeyAuthentication(), MyBasicAuthentication())
         #authentication = DigestAuthentication()
         authorization = DjangoAuthorization()
         allowed_methods = ['get', 'post']
@@ -605,8 +751,7 @@ class PlatformInstanceParameterResource(ModelResource):
         resource_name = 'platformparameter'
         # TODO: FIXME: BasicAuth is horribly insecure without using SSL.
         # Digest is better, but configuration proved tricky.
-        authentication = BasicAuthentication()
-        authentication = MyBasicAuthentication()
+        authentication = MultiAuthentication(ApiKeyAuthentication(), MyBasicAuthentication())
         #authentication = DigestAuthentication()
         authorization = DjangoAuthorization()
         allowed_methods = ['get']

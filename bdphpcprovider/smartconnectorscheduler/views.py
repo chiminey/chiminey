@@ -236,7 +236,7 @@ def test_directive(request, directive_id):
                         ('number_vm_instances', 2), (u'iseed', 42),
                         # TODO: in configure stage could copy this information from somewhere to this required location
                         ('input_location',  'file://127.0.0.1/hrmcrun/input_0'),
-                        ('number_dimensions', 1),
+                        ('optimisation_scheme', 'MC'),
                         ('threshold', "[1]"),
                         ('error_threshold', "0.03"),
                         ('max_iteration', 20),

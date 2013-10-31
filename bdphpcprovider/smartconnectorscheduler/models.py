@@ -132,6 +132,8 @@ class ParameterName(models.Model):
                                  verbose_name="Subtype for the parameter")
     description = models.TextField(default="", blank=True,
         verbose_name="Human readable name for the parameter")
+    hidefield = models.URLField(verify_exists=False, max_length=400, help_text="", blank=True, default="", null=True)
+    hidecondition = models.TextField(default="", blank=True)
 
     def __unicode__(self):
         return u'%s (%s)' % (self.name, self.schema.name)
@@ -154,16 +156,17 @@ class ParameterName(models.Model):
             try:
                 res = int(val)
             except ValueError:
-                logger.debug("invalid type")
+                logger.debug("invalid numeric type")
                 raise
         elif self.type == self.STRLIST:
-            try:
-                import ast
-                res = ast.literal_eval(val)
-                logger.debug('STRLIST %s length %d' % (res, len(res)))
-            except ValueError:
-                logger.debug("invalid type")
-                raise
+            res = val
+            # try:
+            #     import ast
+            #     res = ast.literal_eval(val)
+            #     logger.debug('STRLIST %s length %d' % (res, len(res)))
+            # except ValueError:
+            #     logger.debug("invalid strlist type")
+            #     raise
         else:
             logger.debug("Unsupported Type")
             raise ValueError
@@ -208,7 +211,7 @@ class UserProfileParameter(models.Model):
         try:
             val = self.name.get_value(self.value)
         except ValueError:
-            logger.error("got bad value")
+            logger.error("up:got bad value %s" % self.value)
             raise
         return val
 
@@ -427,7 +430,7 @@ class PlatformInstanceParameter(models.Model):
         try:
             val = self.name.get_value(self.value)
         except ValueError:
-            logger.error("got bad value")
+            logger.error("pi:got bad value %s" % self.value)
             raise
         return val
 
@@ -470,7 +473,7 @@ class PlatformInstance(models.Model):
     owner = models.ForeignKey(UserProfile)
     instance_type = models.CharField(max_length=256)
 
-    
+
     ip_address = models.CharField(max_length=50)
     root_path = models.CharField(max_length=512)
     username = models.CharField(max_length=50)
@@ -701,6 +704,12 @@ class Context(models.Model):
             )
 
 
+class ContextMessage(models.Model):
+
+    context = models.ForeignKey(Context)
+    message = models.TextField(blank=True, verbose_name="Message", help_text="Status message for the context")
+
+
 class ContextParameterSet(models.Model):
     """
     All the information required to run the stage in the context
@@ -740,7 +749,7 @@ class ContextParameter(models.Model):
         try:
             val = self.name.get_value(self.value)
         except ValueError:
-            logger.error("got bad value")
+            logger.error("cp:got bad value %s" % self.value)
             raise
         return val
 
@@ -779,7 +788,7 @@ class StageParameter(models.Model):
         try:
             val = self.name.get_value(self.value)
         except ValueError:
-            logger.error("got bad value")
+            logger.error("sp:got bad value %s" % self.value)
             raise
         return val
 

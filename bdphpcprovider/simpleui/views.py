@@ -19,8 +19,11 @@
 # IN THE SOFTWARE.
 
 import logging
+import os
 import json
 import requests
+import itertools
+
 import ast
 from pprint import pformat
 
@@ -58,6 +61,8 @@ from bdphpcprovider.smartconnectorscheduler import hrmcstages, platform
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
 
+from tastypie.models import ApiKey
+
 from django.utils.datastructures import SortedDict
 from django import forms
 
@@ -74,7 +79,8 @@ from django.shortcuts import render_to_response, render
 
 
 def bdp_account_settings(request):
-    return render(request, 'accountsettings/bdpaccount.html', {})
+    api_key = ApiKey.objects.get(user=request.user)
+    return render(request, 'accountsettings/bdpaccount.html', {'key': api_key.key})
 
 
 def computation_platform_settings(request):
@@ -105,11 +111,11 @@ def computation_platform_settings(request):
         headers=headers,
         cookies=cookies)
     except HTTPError as e:
-        logger.debug( 'The server couldn\'t fulfill the request. %s' % e)
-        logger.debug( 'Error code: ', e.code)
+        logger.debug('The server couldn\'t fulfill the request. %s' % e)
+        logger.debug('Error code: ', e.code)
     except URLError as e:
-        logger.debug( 'We failed to reach a server. %s' % e)
-        logger.debug( 'Reason: ', e.reason)
+        logger.debug('We failed to reach a server. %s' % e)
+        logger.debug('Reason: ', e.reason)
     else:
         logger.debug('everything is fine')
         #logger.debug(r.text)
@@ -117,6 +123,8 @@ def computation_platform_settings(request):
         GET_data = r.json()
         computation_platforms, all_headers = filter_computation_platforms(GET_data)
         logger.debug(computation_platforms)
+    # FIXME: schemas in all_headers must be sorted with "name" as first
+    # parameter so that footable will respond correctly.
     return render(request, 'accountsettings/computationplatform.html',
                               {'nci_form': nciform, 'nectar_form': nectarform,
                                'computation_platforms': computation_platforms,
@@ -145,11 +153,11 @@ def storage_platform_settings(request):
         headers=headers,
         cookies=cookies)
     except HTTPError as e:
-        logger.debug( 'The server couldn\'t fulfill the request. %s' % e)
-        logger.debug( 'Error code: ', e.code)
+        logger.debug('The server couldn\'t fulfill the request. %s' % e)
+        logger.debug('Error code: ', e.code)
     except URLError as e:
-        logger.debug( 'We failed to reach a server. %s' % e)
-        logger.debug( 'Reason: ', e.reason)
+        logger.debug('We failed to reach a server. %s' % e)
+        logger.debug('Reason: ', e.reason)
     else:
         logger.debug('everything is fine')
         #logger.debug(r.text)
@@ -164,7 +172,7 @@ def storage_platform_settings(request):
 
 def post_platform(schema, form_data, request, type=None):
     logger.debug('operation=%s' % form_data['operation'])
-    api_host = "http://127.0.0.1"  #fixme: remove local host address
+    api_host = "http://127.0.0.1"  # fixme: remove local host address
     url = "%s/api/v1/platformparamset/?format=json" % api_host
     # pass the sessionid cookie through to the internal API
     cookies = dict(request.COOKIES)
@@ -326,6 +334,7 @@ class ContextList(ListView):
 
 from django.shortcuts import get_object_or_404
 from django.db.models import Model
+
 class AccountSettingsView(FormView):
     template_name = "accountsettings/computationplatform.html"
     form_class = NCIComputationPlatformForm
@@ -372,23 +381,20 @@ class ContextView(DetailView):
     model = models.Context
     template_name = 'view_context.html'
 
-    def get_context_data_old(self, **kwargs):
-        context = super(ContextView, self).get_context_data(**kwargs)
-        cpset = models.ContextParameterSet.objects.filter(context=self.object)
-        res = []
-        context['stage'] = self.object.current_stage.name
-        for cps in cpset:
-            # TODO: HTML should be part of template
-            res.append("<h2>%s</h2> " % cps.schema.namespace)
-            for cp in models.ContextParameter.objects.filter(paramset=cps):
-                res.append("%s=%s" % (cp.name.name, cp.value))
-        context['settings'] = '<br>'.join(res)
-        return context
-
     def get_context_data(self, **kwargs):
         context = super(ContextView, self).get_context_data(**kwargs)
-        cpset = models.ContextParameterSet.objects.filter(context=self.object)
-        res = {}
+
+        INPUT_SCHEMA_PREFIX = "http://rmit.edu.au/schemas/input"
+        context_ps = models.ContextParameterSet.objects.filter(context=self.object)
+        cpset = list(itertools.chain(
+               context_ps.filter(
+                   schema__namespace__startswith=INPUT_SCHEMA_PREFIX).order_by('-ranking'),
+               context_ps.exclude(
+                   schema__namespace__startswith=INPUT_SCHEMA_PREFIX)))
+        #cpset = models.ContextParameterSet.objects.filter(context=self.object)
+        #cpset = context_ps.exclude(
+        #     schema__namespace__startswith=INPUT_SCHEMA_PREFIX)
+        res = []
         context['stage'] = self.object.current_stage.name
         for cps in cpset:
             res2 = {}
@@ -396,9 +402,9 @@ class ContextView(DetailView):
                 res2[cp.name.name] = [cp.value, cp.name.help_text, cp.name.subtype]
                 #res2[cp.name.name] = [cp.value, "hello"]
             if cps.schema.name:
-                res["%s (%s) " % (cps.schema.name, cps.schema.namespace)] = res2
+                res.append(("%s (%s) " % (cps.schema.name, cps.schema.namespace), res2))
             else:
-                res[cps.schema.namespace] = res2
+                res.append((cps.schema.namespace, res2))
         context['settings'] = res
         return context
 
@@ -431,7 +437,7 @@ class HRMCSubmitFormView(FormView):
                'minimum_number_vm_instances': 1,
         'iseed': 42,
         'input_location': 'file://127.0.0.1/myfiles/input',
-        'number_dimensions': 1,
+        'optimisation_scheme': "MC",
         'threshold': "[2]",
         'error_threshold': "0.03",
         'max_iteration': 10,
@@ -463,7 +469,7 @@ class HRMCSubmitFormView(FormView):
                     self.hrmc_schema + 'minimum_number_vm_instances': form.cleaned_data['minimum_number_vm_instances'],
                     self.hrmc_schema + u'iseed': form.cleaned_data['iseed'],
                     self.hrmc_schema + 'input_location':  form.cleaned_data['input_location'],
-                    self.hrmc_schema + 'number_dimensions': form.cleaned_data['number_dimensions'],
+                    self.hrmc_schema + 'optimisation_scheme': form.cleaned_data['optimisation_scheme'],
                     self.hrmc_schema + 'threshold': str(form.cleaned_data['threshold']),
                     self.hrmc_schema + 'error_threshold': str(form.cleaned_data['error_threshold']),
                     self.hrmc_schema + 'max_iteration': form.cleaned_data['max_iteration'],
@@ -500,7 +506,7 @@ class SweepSubmitFormView(FormView):
         'maximum_retry': 1,
         'reschedule_failed_processes': 1,
         'input_location': 'file://127.0.0.1/myfiles/input',
-        'number_dimensions': 1,
+        'optimisation_scheme': "MCSA",
         'threshold': "[1]",
         'error_threshold': "0.03",
         'max_iteration': 2,
@@ -546,7 +552,7 @@ def submit_sweep_job(request, form, schemas):
                 schemas['hrmc_schema'] + 'minimum_number_vm_instances': form.cleaned_data['minimum_number_vm_instances'],
                 schemas['hrmc_schema'] + u'iseed': form.cleaned_data['iseed'],
                 schemas['sweep_schema'] + 'input_location':  form.cleaned_data['input_location'],
-                schemas['hrmc_schema'] + 'number_dimensions': form.cleaned_data['number_dimensions'],
+                schemas['hrmc_schema'] + 'optimisation_scheme': form.cleaned_data['optimisation_scheme'],
                 schemas['hrmc_schema'] + 'fanout_per_kept_result': form.cleaned_data['fanout_per_kept_result'],
                 schemas['hrmc_schema'] + 'threshold': str(form.cleaned_data['threshold']),
                 schemas['hrmc_schema'] + 'error_threshold': str(form.cleaned_data['error_threshold']),
@@ -732,7 +738,8 @@ subtype_validation = {
     'jsondict': ('JSON Dictionary', validators.validate_jsondict, forms.Textarea(attrs={'cols': 30, 'rows': 5}), None),
     'float': ('floading point number', validators.validate_float_number, None, None),
     'bool': ('On/Off', validators.validate_bool, None,  None),
-
+    'platform': ('platform', validators.validate_nectar_platform, forms.Select(),  None),
+    'choicefield': ('choicefield', None, forms.Select(),  None),
 }
 
 clean_rules = {
@@ -770,6 +777,47 @@ def make_dynamic_field(parameter, **kwargs):
             field = forms.BooleanField(**field_params)
         else:
             field = forms.IntegerField(**field_params)
+    if parameter['type'] == 4:
+        logger.debug("found strlist")
+        # if parameter has choices in schema, than use these, otherwise use
+        # dynamically generated ones from platform.
+        if parameter['subtype'] == "platform":
+            field_params['initial'] = ""
+            field_params['choices'] = ""
+            if parameter['choices']:
+                try:
+                    field_params['choices'] = ast.literal_eval(parameter['choices'])
+                except Exception:
+                    logger.warn("cannot parse parameter choices")
+                    field_params['choices'] = ""
+            else:
+                # FIXME,TODO: compuation_ns value should be part of directive and
+                # passed in, as some directives will only work with particular computation/*
+                # categories.  Assume only nectar comp platforms ever allowed here.
+                computation_ns = 'http://rmit.edu.au/schemas/platform/computation/nectar'
+                if 'username' in kwargs:
+                    field_params['initial'] = platform.get_platform_name(kwargs['username'],
+                     computation_ns)
+                    logger.debug("initial=%s" % field_params['initial'])
+                    # TODO: retrieve_platform_paramset should be an API call
+                    platform_name_choices = [(x['name'], x['name'])
+                        for x in platform.retrieve_platform_paramsets(kwargs['username'],
+                            computation_ns)]
+                    logger.debug("platform_name_choices=%s" % platform_name_choices)
+                    field_params['choices'] = platform_name_choices
+        else:
+            if parameter['initial']:
+                field_params['initial'] = str(parameter['initial'])
+            else:
+                field_params['initial'] = ""
+            if parameter['choices']:
+                # TODO: We load the dynamic choices rather than use the choices field
+                # in the model
+                field_params['choices'] = ast.literal_eval(str(parameter['choices']))
+            else:
+                field_params['choices'] = []
+
+        field = forms.ChoiceField(**field_params)
     else:
         field_params['initial'] = str(parameter['initial'])
         if parameter['subtype'] == 'nectar_platform':
@@ -781,7 +829,9 @@ def make_dynamic_field(parameter, **kwargs):
         field = forms.CharField(**field_params)
 
     if 'subtype' in parameter and parameter['subtype']:
-        field.validators.append(subtype_validation[parameter['subtype']][1])
+        if subtype_validation[parameter['subtype']][1]:
+            field.validators.append(subtype_validation[parameter['subtype']][1])
+        logger.debug("field_validators=%s"% field.validators)
     return field
 
 
@@ -805,10 +855,9 @@ def make_directive_form(**kwargs):
                 logger.debug("parameter=%s" % parameter)
                 # TODO: handle all possible types
                 field_key = "%s/%s" % (schema_data['namespace'], parameter['name'])
-                form_data.append((field_key, schema_data['description'] if not j else "", parameter['subtype']))
+                form_data.append((field_key, schema_data['description'] if not j else "", parameter['subtype'], parameter['hidefield'], parameter['hidecondition']))
                 #fixme replce if else by fields[field_key] = make_dynamic_field(parameter) after unique key platform model is developed
-                if parameter['subtype'] == 'nectar_platform' \
-                    or parameter['subtype'] == 'storage_bdpurl':
+                if 'username' in kwargs:
                     fields[field_key] = make_dynamic_field(parameter, username=kwargs['username'])
                 else:
                     fields[field_key] = make_dynamic_field(parameter)
@@ -973,6 +1022,23 @@ def get_directive_params(request, directive):
 
     return directive_params
 
+def get_from_api(request, resource_uri):
+    headers = {'content-type': 'application/json'}
+    host_ip = "127.0.0.1"
+    api_host = "http://%s" % host_ip
+    url = "%s%s/?format=json" % (api_host, resource_uri)
+    cookies = dict(request.COOKIES)
+    logger.debug("cookies=%s" % cookies)
+    r = requests.get(url, headers=headers, cookies=cookies)
+    # FIXME: need to check for status_code and handle failures such
+    # as 500 - lack of disk space at mytardis
+    logger.debug('URL=%s' % url)
+    logger.debug('r.json=%s' % r.json)
+    logger.debug('r.text=%s' % r.text)
+    logger.debug('r.headers=%s' % r.headers)
+    return r.json()
+
+
 
 def add_form_fields(request, paramnameset):
     form_field_info = []
@@ -995,6 +1061,9 @@ def add_form_fields(request, paramnameset):
             # schema
             x['initial'] = pname['initial']
             x['subtype'] = pname['subtype']
+            x['choices'] = pname['choices']
+            x['hidefield'] = pname['hidefield']
+            x['hidecondition'] = pname['hidecondition']
             p.append(x)
         s['parameters'] = p
         form_field_info.append(s)
@@ -1025,7 +1094,7 @@ def submit_job(request, form, directive):
     #             schemas['hrmc_schema'] + 'minimum_number_vm_instances': form.cleaned_data['minimum_number_vm_instances'],
     #             schemas['hrmc_schema'] + u'iseed': form.cleaned_data['iseed'],
     #             schemas['sweep_schema'] + 'input_location':  form.cleaned_data['input_location'],
-    #             schemas['hrmc_schema'] + 'number_dimensions': form.cleaned_data['number_dimensions'],
+    #             schemas['hrmc_schema'] + 'optimisation_scheme': form.cleaned_data['optimisation_scheme'],
     #             schemas['hrmc_schema'] + 'fanout_per_kept_result': form.cleaned_data['fanout_per_kept_result'],
     #             schemas['hrmc_schema'] + 'threshold': str(form.cleaned_data['threshold']),
     #             schemas['hrmc_schema'] + 'error_threshold': str(form.cleaned_data['error_threshold']),
@@ -1052,10 +1121,8 @@ def submit_job(request, form, directive):
         error_message = ''
         messages.error(request, "Task Failed with status code %s: %s" % (r.status_code, r.text))
         return False
-    else:
-        messages.success(request, 'Job Created')
 
-        logger.debug("r.json=%s" % r.json)
+    logger.debug("r.json=%s" % r.json)
 
     logger.debug("r.status_code=%s" % r.status_code)
     logger.debug("r.text=%s" % r.text)
@@ -1065,6 +1132,16 @@ def submit_job(request, form, directive):
         logger.debug("header_location=%s" % header_location)
         new_context_uri = header_location[len(api_host):]
         logger.debug("new_context_uri=%s" % new_context_uri)
+        if str(new_context_uri)[-1] == '/':
+            job_id = str(new_context_uri).split('/')[-2:-1][0]
+        else:
+            job_id = str(new_context_uri).split('/')[-1]
+
+        logger.debug("job_id=%s" % job_id)
+        messages.success(request, 'Job %s Created' % job_id)
+    else:
+        messages.success(request, 'Job Created')
+
     return True
 
 
@@ -1089,8 +1166,8 @@ def get_contexts(request):
         contexts = []
         logger.debug("POST=%s" % request.POST)
         for key in request.POST:
-            logger.debug("key=%s"% key)
-            logger.debug("value=%s" %request.POST[key])
+            logger.debug("key=%s" % key)
+            logger.debug("value=%s" % request.POST[key])
             if key.startswith("delete_"):
                 try:
                     val = int(key.split('_')[-1])
@@ -1115,7 +1192,7 @@ def get_contexts(request):
     if offset < 0:
         offset = 0
 
-    limit =page_size
+    limit = page_size
     #if 'limit' in request.GET:
     #    try:
     #         limit = int(request.GET.get('limit'))
@@ -1127,7 +1204,7 @@ def get_contexts(request):
     host_ip = "127.0.0.1"
     headers = {'content-type': 'application/json'}
     api_host = "http://%s" % host_ip
-    url = "%s/api/v1/context/?limit=%s&offset=%s&format=json" % (api_host, limit, offset)
+    url = "%s/api/v1/contextmessage/?limit=%s&offset=%s&format=json" % (api_host, limit, offset)
     cookies = dict(request.COOKIES)
     logger.debug("cookies=%s" % cookies)
     r = requests.get(url, headers=headers, cookies=cookies)
@@ -1144,21 +1221,29 @@ def get_contexts(request):
     logger.debug("r.json()=%s" % pformat(r.json()))
     for x in r.json()['objects']:
         logger.debug("x=%s" % pformat(x))
+        contextid = contextdeleted = contextcreated = ""
+        directive_name = directive_desc = ""
+        if 'context' in x and x['context']:
+            if 'id' in x['context']:
+                contextid = x['context']['id']
+            if 'deleted' in x['context']:
+                contextdeleted = x['context']['deleted']
+            if 'created' in x['context']:
+                    contextcreated = x['context']['created']
+            if 'directive' in x['context'] and x['context']['directive']:
+                if 'name' in x['context']['directive']:
+                    directive_name = x['context']['directive']['name']
+                if 'description' in x['context']['directive']:
+                    directive_desc = x['context']['directive']['description']
+
         obj = []
-        obj.append(x['id'])
-        obj.append(x['deleted'])
-        obj.append(x['status'])
-        name = ''
-        desc = ''
-        if 'directive' in x and x['directive']:
-            if 'name' in x['directive']:
-                name = x['directive']['name']
-            if 'description' in x['directive']:
-                desc = x['directive']['description']
-        obj.append(name)
-        obj.append(dateutil.parser.parse(x['created']))
-        obj.append(desc)
-        obj.append(reverse('contextview', kwargs={'pk': x['id']}))
+        obj.append(contextid)
+        obj.append(contextdeleted)
+        obj.append(dateutil.parser.parse(contextcreated))
+        obj.append(x['message'])
+        obj.append(directive_name)
+        obj.append(directive_desc)
+        obj.append(reverse('contextview', kwargs={'pk': contextid}))
         object_list.append(obj)
 
     meta = r.json()['meta']

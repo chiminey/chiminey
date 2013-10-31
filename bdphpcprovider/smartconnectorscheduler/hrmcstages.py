@@ -344,6 +344,7 @@ def _get_command_actual_args(directive_args, user_settings):
                     sch = metadata[0].decode('utf8')
                     # FIXME: error handling
                     try:
+                        logger.debug("schema_namespace=%s" % sch)
                         metadata_schema = models.Schema.objects.get(namespace=sch)
                     except models.Schema.DoesNotExist:
                         msg = "schema %s does not exist choices are " % sch

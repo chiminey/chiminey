@@ -90,7 +90,8 @@ def create_environ(number_vm_instances, settings):
         return all_running_instances
         # FIXME: if host keys check fail, then need to remove offending
         # key from known_hosts and try again.
-    return None
+    #return None
+    return []
 
 
 def create_VM_instances(number_vm_instances, settings):
@@ -116,11 +117,13 @@ def create_VM_instances(number_vm_instances, settings):
         for instance in reservation.instances:
             all_instances.append(instance)
     except EC2ResponseError as e:
+        logger.error(e)
         logger.debug('error_code=%s' % e.error_code)
-        logger.debug(e)
+        logger.error(e.message)
         if 'TooManyInstances' not in e.error_code:
             logger.debug(e)
             raise
+    logger.debug(all_instances)
     logger.debug('%d of %d requested VM(s) created'
                  % (len(all_instances), number_vm_instances))
     return all_instances

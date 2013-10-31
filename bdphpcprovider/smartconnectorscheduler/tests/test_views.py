@@ -438,7 +438,7 @@ class TestCommandContextLoop(TestCase):
     #             u'number_vm_instances': (models.ParameterName.NUMERIC,''),
     #             u'iseed': (models.ParameterName.NUMERIC,''),
     #             u'input_location': (models.ParameterName.STRING,''),
-    #             u'number_dimensions': (models.ParameterName.NUMERIC,''),
+    #             u'optimisation_scheme': (models.ParameterName.NUMERIC,''),
     #             u'threshold': (models.ParameterName.NUMERIC,''),
     #             }
     #             ],
@@ -869,7 +869,7 @@ class TestCommandContextLoop(TestCase):
                 u'number_vm_instances': (models.ParameterName.NUMERIC, '', 7),
                 u'iseed': (models.ParameterName.NUMERIC, '', 6),
                 u'input_location': (models.ParameterName.STRING, '', 5),
-                u'number_dimensions': (models.ParameterName.NUMERIC, '', 4),
+                u'optimisation_scheme': (models.ParameterName.STRLIST, '', 4),
                 u'threshold': (models.ParameterName.STRING, '', 3),  # FIXME: should be list of ints
                 u'error_threshold': (models.ParameterName.STRING, '', 2),  # FIXME: should use float here
                 u'max_iteration': (models.ParameterName.NUMERIC, '', 1)

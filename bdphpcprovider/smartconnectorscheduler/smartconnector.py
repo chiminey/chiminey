@@ -34,6 +34,9 @@ from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 from bdphpcprovider.smartconnectorscheduler import platform
 from django.contrib import messages
 
+
+
+
 logger = logging.getLogger(__name__)
 
 class Error(Exception):
@@ -381,14 +384,21 @@ def addMessage(run_settings, level, msg):
         logger.error("unable to load contextid from run_settings")
         logger.error(pformat(run_settings))
         return
-    try:
-        context = models.Context.objects.get(id=context_id)
-    except context.ObjectDoesNotExist:
-        logger.erorr("unable to load context from contextid")
+    logger.debug("context_id=%s" % context_id)
+    if not context_id:
+        logger.error("invalid context_id")
         return
+    mess = '%s,%s' % (level, msg)
+    logger.debug("mess=%s" % mess)
+    # Cannot write ContextMessage in same process as tasks.py
+    # holds lock on all tables, so would get all messages
+    # within a stages at the end of the stages process
+    # With celery task, then some other worker (if available)
+    # can do the task ASAP.
+    # FIXME: this is circular import at global level
+    from bdphpcprovider.smartconnectorscheduler import tasks
 
-    context.status = '%s,%s' % (level, msg)
-    context.save()
+    tasks.context_message.delay(context_id, mess)
 
 
 def debug(run_settings, msg):

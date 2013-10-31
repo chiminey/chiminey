@@ -3,6 +3,8 @@ import datetime
 from south.db import db
 from south.v2 import SchemaMigration
 from django.db import models
+from django.utils import timezone
+
 
 
 class Migration(SchemaMigration):
@@ -10,7 +12,8 @@ class Migration(SchemaMigration):
     def forwards(self, orm):
         # Adding field 'Context.created'
         db.add_column('smartconnectorscheduler_context', 'created',
-                      self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, default=datetime.datetime(2013, 10, 14, 0, 0), blank=True),
+                      #self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, default=datetime.datetime(2013, 10, 14, 0, 0), blank=True),
+                      self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, default=timezone.now(), blank=True),
                       keep_default=False)
 
 

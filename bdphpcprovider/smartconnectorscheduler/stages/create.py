@@ -44,16 +44,15 @@ class Create(Stage):
             but not group_id
         """
         if self._exists(run_settings,
-            RMIT_SCHEMA+'/stages/configure',
+            RMIT_SCHEMA + '/stages/configure',
             'configure_done'):
-                configure_done = run_settings[RMIT_SCHEMA+'/stages/configure'][u'configure_done']
+                configure_done = run_settings[RMIT_SCHEMA + '/stages/configure'][u'configure_done']
                 if configure_done:
                     if not self._exists(run_settings,
-                        RMIT_SCHEMA+'/stages/create', 'group_id'):
+                        RMIT_SCHEMA + '/stages/create', 'group_id'):
                         if self._exists(run_settings,
                             RMIT_SCHEMA+'/system', 'platform'):
                             self.platform = run_settings[RMIT_SCHEMA+'/system'][u'platform']
-                            self.computation_platform_schema = run_settings[RMIT_SCHEMA+'/platform/computation']['namespace']
                             return True
         return False
 
@@ -65,13 +64,13 @@ class Create(Stage):
         smartconnector.info(run_settings, "1: create")
         local_settings = {}
         smartconnector.copy_settings(local_settings, run_settings,
-            RMIT_SCHEMA+'/system/platform')
+            RMIT_SCHEMA + '/system/platform')
         smartconnector.copy_settings(local_settings, run_settings,
-            RMIT_SCHEMA+'/stages/create/vm_image')
+            RMIT_SCHEMA + '/stages/create/vm_image')
         smartconnector.copy_settings(local_settings, run_settings,
             RMIT_SCHEMA+'/stages/create/group_id_dir')
         smartconnector.copy_settings(local_settings, run_settings,
-            RMIT_SCHEMA+'/stages/create/custom_prompt')
+            RMIT_SCHEMA + '/stages/create/custom_prompt')
         smartconnector.copy_settings(local_settings, run_settings,
             RMIT_SCHEMA+'/stages/create/cloud_sleep_interval')
         logger.debug('local_settings=%s' % local_settings)
@@ -86,7 +85,6 @@ class Create(Stage):
         number_vm_instances = run_settings[RMIT_SCHEMA+'/input/system/cloud'][u'number_vm_instances']
         min_number_vms = run_settings[RMIT_SCHEMA+'/input/system/cloud'][u'minimum_number_vm_instances']
         logger.debug("VM instance %d" % number_vm_instances)
-
         self.nodes = botocloudconnector.create_environ(
             number_vm_instances,
             local_settings)
@@ -96,14 +94,13 @@ class Create(Stage):
         failure_detection = FailureDetection()
         failure_recovery = FailureRecovery()
         #fixme add no retries
-        if self.nodes:
-            if not failure_detection.sufficient_vms(len(self.nodes), min_number_vms):
-                if not failure_recovery.recovered_insufficient_vms_failure():
-                    self.group_id = 'UNKNOWN'  # FIXME: do we we mean '' or None here?
-                    logger.info("Sufficient number VMs cannot be created for this computation."
-                                "Increase your quota or decrease your minimum requirement")
-                    return
-
+        if not failure_detection.sufficient_vms(len(self.nodes), min_number_vms):
+            if not failure_recovery.recovered_insufficient_vms_failure():
+                self.group_id = 'UNKNOWN'  # FIXME: do we we mean '' or None here?
+                smartconnector.error(run_settings, "error: sufficient VMS cannot be created")
+                logger.info("Sufficient number VMs cannot be created for this computation."
+                            "Increase your quota or decrease your minimum requirement")
+                return
         if self.nodes:
             self.nodes = botocloudconnector.get_ssh_ready_instances(
                 self.nodes, local_settings)
@@ -114,6 +111,9 @@ class Create(Stage):
 
         botocloudconnector.print_all_information(
             local_settings, all_instances=self.nodes)
+        smartconnector.info(run_settings, "1: create (%s nodes created)" % len(self.nodes))
+
+
         #Fixme: the following should transfer power to FT managers
         if not self.group_id:
             self.group_id = 'UNKNOWN'  # FIXME: do we we mean '' or None here?
@@ -127,20 +127,20 @@ class Create(Stage):
         """
         logger.debug('output')
         run_settings.setdefault(
-            RMIT_SCHEMA+'/stages/create', {})[u'group_id'] \
+            RMIT_SCHEMA + '/stages/create', {})[u'group_id'] \
             = self.group_id
 
         if not self.nodes:
             run_settings.setdefault(
-            RMIT_SCHEMA+'/stages/create', {})[u'created_nodes'] = []
+            RMIT_SCHEMA + '/stages/create', {})[u'created_nodes'] = []
         else:
             if self.group_id is "UNKNOWN":
                 run_settings.setdefault(
-                    RMIT_SCHEMA+'/reliability', {})[u'cleanup_nodes'] \
+                    RMIT_SCHEMA + '/reliability', {})[u'cleanup_nodes'] \
                     = [(x.id, x.ip_address, unicode(x.region)) for x in self.nodes]
             else:
                 run_settings.setdefault(
-                    RMIT_SCHEMA+'/stages/create', {})[u'created_nodes'] \
+                    RMIT_SCHEMA + '/stages/create', {})[u'created_nodes'] \
                     = [(x.id, x.ip_address, unicode(x.region)) for x in self.nodes]
         logger.debug("Updated run settings %s" % run_settings)
         return run_settings

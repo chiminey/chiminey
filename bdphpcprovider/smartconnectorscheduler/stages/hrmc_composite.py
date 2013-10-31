@@ -53,7 +53,7 @@ class HRMCParallelStage(ParallelStage):
             smartconnector.copy_settings(local_settings, run_settings,
                 'http://rmit.edu.au/schemas/input/hrmc/fanout_per_kept_result')
             smartconnector.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/input/hrmc/number_dimensions')
+            'http://rmit.edu.au/schemas/input/hrmc/optimisation_scheme')
             smartconnector.copy_settings(local_settings, run_settings,
                 'http://rmit.edu.au/schemas/input/hrmc/threshold')
             smartconnector.copy_settings(local_settings, run_settings,
@@ -86,8 +86,8 @@ class HRMCParallelStage(ParallelStage):
         else:
             pottype = 0
 
-        num_dim = local_settings['number_dimensions']
-        if num_dim == 0:
+        optimisation_scheme = local_settings['optimisation_scheme']
+        if optimisation_scheme == 'MC':
             N = local_settings['fanout_per_kept_result']
             rand_nums = hrmcstages.generate_rands(local_settings,
                 0, local_settings['max_seed_int'],
@@ -100,7 +100,7 @@ class HRMCParallelStage(ParallelStage):
                 'istart': [1 if id > 0 else 2],
                 'pottype': [pottype]
             }
-        elif num_dim == 1:
+        elif optimisation_scheme == 'MCSA':
             threshold = local_settings['threshold']
             logger.debug("threshold=%s" % threshold)
             N = int(ast.literal_eval(threshold)[0])
