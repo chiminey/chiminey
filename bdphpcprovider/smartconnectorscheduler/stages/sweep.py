@@ -281,7 +281,8 @@ class Sweep(Stage):
 
             # logger.debug("data2=%s" % pformat(data2))
 
-            submit_subtask("nectar", subdirective, data, user, context)
+            current_context = models.Context.objects.get(id=contextid)
+            submit_subtask("nectar", subdirective, data, user, current_context)
 
             # api_host = "http://127.0.0.1"
             # url = "%s/api/v1/context/?format=json" % api_host

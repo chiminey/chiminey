@@ -1212,7 +1212,7 @@ def make_runcontext_for_directive(platform_name, directive_name,
     run_settings[u'http://rmit.edu.au/schemas/system'][u'contextid'] =  0
 
     run_context = _make_new_run_context(command_for_directive.stage,
-        profile, directive, run_settings)
+        profile, directive, parent, run_settings)
     logger.debug("run_context =%s" % run_context)
     run_context.current_stage = command_for_directive.stage
     run_context.save()
@@ -1235,6 +1235,7 @@ def _make_new_run_context(stage, profile, directive, parent, run_settings):
     Make a new context  for a user to execute stages based on initial context
     """
     # make run_context for this user
+    logger.debug('parent=%s' % parent)
     run_context = models.Context.objects.create(
         owner=profile,
         directive=directive,
