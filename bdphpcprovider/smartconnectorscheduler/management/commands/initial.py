@@ -166,6 +166,7 @@ class Command(BaseCommand):
                 {
                 u'platform': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':2, 'help_text':''},
                 u'contextid': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''},
+                u'parentcontextid': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''},
                 u'random_numbers': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':0, 'help_text':''},
                 u'system': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':3, 'help_text':''},
                 u'id': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':2, 'help_text':''},
