@@ -75,17 +75,6 @@ class Sweep(Stage):
     #def generalise_platform_parameters(self, generic_schema, current_schema):
     #    for k, v in current
 
-    def include_platform(self, platform_name, generic_schema, run_settings, offset):
-        #fixme: what happens if input/output storage are from the same storage platform type (same schema)
-
-        logger.debug('platform_name=%s' % platform_name)
-        logger.debug('platform=%s' % platform)
-
-        run_settings[namespace] = platform
-        run_settings[namespace]['offset'] = offset
-        logger.debug('updated_run_settings=%s' % run_settings)
-
-
     def process(self, run_settings):
 
         # Need to make copy because we pass on run_settings to sub connector
@@ -130,6 +119,13 @@ class Sweep(Stage):
             u'contextid'])
         logger.debug("contextid=%s" % contextid)
 
+        if self._exists(run_settings,
+            'http://rmit.edu.au/schemas/system',
+            'parent_contextid'):
+            parent_contextid = int(run_settings['http://rmit.edu.au/schemas/system'][u'parent_contextid'])
+        else:
+            parent_contextid = 0
+
         computation_platform_name = run_settings['http://rmit.edu.au/schemas/input/system/cloud']['computation_platform']
         run_settings[RMIT_SCHEMA + '/platform/computation'] = {}
         run_settings[RMIT_SCHEMA + '/platform/computation']['platform_url'] = computation_platform_name
@@ -140,10 +136,16 @@ class Sweep(Stage):
         if len(output_location_list) > 1:
             output_storage_offset = os.path.join(*output_location_list[1:])
         logger.debug('output_storage_offset=%s' % output_storage_offset)
+
         run_settings[RMIT_SCHEMA + '/platform/storage/output'] = {}
         run_settings[RMIT_SCHEMA + '/platform/storage/output']['platform_url'] = output_storage_name
         run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset'] = \
             os.path.join(output_storage_offset, 'sweep%s' % contextid)
+
+
+
+        # TODO: move iseed out of hrmc into separate schema to use on any
+        # sweepable connector and make this function completely hrmc independent.
 
         self.rand_index = run_settings['http://rmit.edu.au/schemas/input/hrmc']['iseed']
         logger.debug("rand_index=%s" % self.rand_index)
@@ -279,7 +281,7 @@ class Sweep(Stage):
 
             # logger.debug("data2=%s" % pformat(data2))
 
-            submit_subtask("nectar", subdirective, data, user)
+            submit_subtask("nectar", subdirective, data, user, context)
 
             # api_host = "http://127.0.0.1"
             # url = "%s/api/v1/context/?format=json" % api_host
@@ -338,7 +340,7 @@ class Sweep(Stage):
         return run_settings
 
 
-def submit_subtask(platform, directive_name, data, user):
+def submit_subtask(platform, directive_name, data, user, parentcontext):
     # directive_args = []
     # for metadata in data:
     #     arg_metadata = {}
@@ -369,7 +371,7 @@ def submit_subtask(platform, directive_name, data, user):
         (task_run_settings, command_args, run_context) \
             = hrmcstages.make_runcontext_for_directive(
                 platform,
-                directive_name, directive_args, {}, user)
+                directive_name, directive_args, {}, user, parent=parentcontext)
     except InvalidInputError, e:
         logger.error(str(e))
     logger.debug("sweep process done")

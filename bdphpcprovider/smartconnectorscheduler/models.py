@@ -133,6 +133,9 @@ class ParameterName(models.Model):
     description = models.TextField(default="", blank=True,
         verbose_name="Human readable name for the parameter")
     hidefield = models.URLField(verify_exists=False, max_length=400, help_text="", blank=True, default="", null=True)
+    # FIXME: as hidecondition becomes rhs of expression in html, could be
+    # untrusted context.  Therefore, only superusers should be able to change
+    # this field....
     hidecondition = models.TextField(default="", blank=True)
 
     def __unicode__(self):
@@ -594,6 +597,8 @@ class Context(models.Model):
                              help_text="")
     directive = models.ForeignKey(Directive, null=True)
     created = models.DateTimeField(auto_now_add=True)
+    parent = models.ForeignKey('self', null=True, blank=True)
+
 
     CONTEXT_SCHEMA_NS = "http://rmit.edu.au/schemas/context1"
 

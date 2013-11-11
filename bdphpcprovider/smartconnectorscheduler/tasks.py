@@ -128,6 +128,9 @@ def progress_context(context_id):
                     logger.info("progress context for %s is already running.  exiting"
                         % context_id)
                     return
+                except Context.DoesNotExist, e:
+                    logger.warn("Context %s removed from other thread" % context_id)
+                    return
                 else:
                     logger.info("processing %s" % context_id)
                 stage = run_context.current_stage
