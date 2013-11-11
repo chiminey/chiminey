@@ -107,9 +107,7 @@ def computation_platform_settings(request):
     headers = {'content-type': 'application/json'}
     try:
         #response = urlopen(req)
-        r = requests.get(url,
-        headers=headers,
-        cookies=cookies)
+        r = requests.get(url, headers=headers, cookies=cookies)
     except HTTPError as e:
         logger.debug('The server couldn\'t fulfill the request. %s' % e)
         logger.debug('Error code: ', e.code)
@@ -185,12 +183,15 @@ def post_platform(schema, form_data, request, type=None):
     for i in ast.literal_eval(form_data['filters']):
         logger.debug(i)
         filters[i[0]] = i[1]
+    platform_name = parameters['name']
+    if form_data['operation'] == 'update':
+        platform_name = filters['name']
     data = json.dumps({'operation': form_data['operation'],
                        'parameters': parameters,
                        'schema': schema,
-                       'filters': filters})
-    logger.debug('filters=%s' % form_data['filters'])
-    logger.debug('filters=%s' % filters)
+                       'platform_name': platform_name})
+    #logger.debug('filters=%s' % form_data['filters'])
+    #logger.debug('filters=%s' % filters)
     r = requests.post(url,
         data=data,
         headers=headers,
@@ -208,33 +209,31 @@ def post_platform(schema, form_data, request, type=None):
     # TODO: need to check for status_code and handle failures.
 
 
-#fixme revise this method
+#fixme revise this method ---again
 def filter_computation_platforms(GET_json_data):
     platform_parameters_objects = GET_json_data['objects']
     computation_platforms = {}
-
     for i in platform_parameters_objects:
-        schema = i['paramset']['platform']['schema_namespace_prefix']
+        schema = i['paramset']['schema']['namespace']
         computation_platforms[schema] = {}
 
-
     for i in platform_parameters_objects:
-        schema = i['paramset']['platform']['schema_namespace_prefix']
+        schema = i['paramset']['schema']['namespace']
         paramset_id = i['paramset']['id']
         computation_platforms[schema][paramset_id] = {}
 
-
     for i in platform_parameters_objects:
-        schema = i['paramset']['platform']['schema_namespace_prefix']
+        schema = i['paramset']['schema']['namespace']
         paramset_id = i['paramset']['id']
         name = i['name']['name']
-
-        if name == 'password':
-            value = '****'
-        else:
-            value = i['value']
+        '''
+            if name == 'password':
+                value = '****'
+            else:
+                value = i['value']
+        '''
+        value = i['value']
         computation_platforms[schema][paramset_id][str(name)] = str(value)
-
     headers={}
     all_headers={}
     import os
@@ -251,11 +250,9 @@ def filter_computation_platforms(GET_json_data):
         headers[i] = params
         all_headers[platform_type] = {tuple(params): j}
         logger.debug(platform_type)
-    logger.debug('----')
     logger.debug(all_headers)
-
-
     return computation_platforms, all_headers
+
 
 class UserProfileParameterListView(ListView):
     model = models.UserProfileParameter
@@ -563,7 +560,8 @@ def submit_sweep_job(request, form, schemas):
                 schemas['sweep_schema'] + 'directive': 'hrmc',
                 #'run_map': form.cleaned_data['run_map'],
                 schemas['run_schema'] + 'run_map': "{}",
-                schemas['system_schema'] + 'output_location': form.cleaned_data['output_location']})
+                schemas['system_schema'] + 'output_location': form.cleaned_data['output_location'],
+                'http://rmit.edu.au/schemas/bdp_userprofile/username': request.user.username})
 
     logger.debug("data=%s" % data)
     r = requests.post(url,
@@ -730,15 +728,15 @@ subtype_validation = {
     'natural': ('natural number', validators.validate_natural_number, None, None),
     'string': ('string', validators.validate_string, None, None),
     'whole': ('whole number', validators.validate_whole_number, None, None),
-    'nectar_platform': ('NeCTAR platform name', validators.validate_nectar_platform, None, None),
-    'storage_bdpurl': ('Storage platform name with optional offset path', validators.validate_storage_bdpurl, forms.TextInput, 255),
+    'nectar_platform': ('NeCTAR platform name', validators.validate_platform_url, None, None),
+    'storage_bdpurl': ('Storage platform name with optional offset path', validators.validate_platform_url, forms.TextInput, 255),
     'even': ('even number', validators.validate_even_number, None, None),
     'bdpurl': ('BDP url', validators.validate_BDP_url, forms.TextInput, 255),
     'float': ('floading point number', validators.validate_float_number, None, None),
     'jsondict': ('JSON Dictionary', validators.validate_jsondict, forms.Textarea(attrs={'cols': 30, 'rows': 5}), None),
     'float': ('floading point number', validators.validate_float_number, None, None),
     'bool': ('On/Off', validators.validate_bool, None,  None),
-    'platform': ('platform', validators.validate_nectar_platform, forms.Select(),  None),
+    'platform': ('platform', validators.validate_platform_url, forms.Select(),  None),
     'choicefield': ('choicefield', None, forms.Select(),  None),
 }
 
@@ -796,13 +794,17 @@ def make_dynamic_field(parameter, **kwargs):
                 # categories.  Assume only nectar comp platforms ever allowed here.
                 computation_ns = 'http://rmit.edu.au/schemas/platform/computation/nectar'
                 if 'username' in kwargs:
-                    field_params['initial'] = platform.get_platform_name(kwargs['username'],
-                     computation_ns)
+                    platforms = platform.retrieve_all_platforms(kwargs['username'],
+                     schema_namespace_prefix=computation_ns)
+                    if platforms:
+                        field_params['initial'] = platforms[0]['name']
+                    else:
+                        field_params['initial'] = ''
                     logger.debug("initial=%s" % field_params['initial'])
                     # TODO: retrieve_platform_paramset should be an API call
                     platform_name_choices = [(x['name'], x['name'])
-                        for x in platform.retrieve_platform_paramsets(kwargs['username'],
-                            computation_ns)]
+                        for x in platform.retrieve_all_platforms(
+                            kwargs['username'], schema_namespace_prefix=computation_ns)]
                     logger.debug("platform_name_choices=%s" % platform_name_choices)
                     field_params['choices'] = platform_name_choices
         else:
@@ -822,10 +824,20 @@ def make_dynamic_field(parameter, **kwargs):
         field_params['initial'] = str(parameter['initial'])
         if parameter['subtype'] == 'nectar_platform':
             schema = 'http://rmit.edu.au/schemas/platform/computation/nectar'
-            field_params['initial'] = platform.get_platform_name(kwargs['username'], schema)
+            platforms = platform.retrieve_all_platforms(kwargs['username'],
+                     schema_namespace_prefix=schema)
+            if platforms:
+                field_params['initial'] = platforms[0]['name']
+            else:
+                field_params['initial'] = ''
         elif parameter['subtype'] == 'storage_bdpurl':
             schema = 'http://rmit.edu.au/schemas/platform/storage'
-            field_params['initial'] = platform.get_platform_name(kwargs['username'], schema)
+            platforms = platform.retrieve_all_platforms(kwargs['username'],
+                     schema_namespace_prefix=schema)
+            if platforms:
+                field_params['initial'] = platforms[0]['name']
+            else:
+                field_params['initial'] = ''
         field = forms.CharField(**field_params)
 
     if 'subtype' in parameter and parameter['subtype']:
@@ -1085,7 +1097,7 @@ def submit_job(request, form, directive):
     logger.debug("cookies=%s" % cookies)
     headers = {'content-type': 'application/json'}
     logger.debug("form.cleaned_data=%s" % pformat(form.cleaned_data))
-
+    form.cleaned_data['http://rmit.edu.au/schemas/bdp_userprofile/username'] = request.user.username
     data = json.dumps(dict(form.cleaned_data.items() + [('smart_connector',directive)]))
 
 

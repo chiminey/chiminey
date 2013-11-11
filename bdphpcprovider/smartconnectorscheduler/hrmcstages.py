@@ -69,6 +69,11 @@ def get_make_path(destination):
     return make_path
 
 
+def get_bdp_root_path():
+    bdp_root_path = '/var/cloudenabling/remotesys' #fixme avoid hard coding; systematically determine bdp_root_path
+    return bdp_root_path
+
+
 @deprecated
 def get_filesys(context):
     """
@@ -245,8 +250,8 @@ def get_fanout(parameter_value_list):
     '''
     pass
 
-
-def get_job_dir(run_settings):
+@deprecated
+def get_job_dir_old(run_settings):
     output_storage_schema = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['namespace']
     ip_address = run_settings[output_storage_schema][u'ip_address']
     offset = run_settings[output_storage_schema][u'offset']
@@ -1361,7 +1366,7 @@ def retrieve_private_key(settings, private_key_url):
         private_key_url)
     logger.debug("url=%s" % url)
     key_contents = get_file(url)
-    local_url = smartconnector.get_url_with_pkey(settings,
+    local_url = smartconnector.de(settings,
         os.path.join("centos", 'key'), is_relative_path=True)
     logger.debug("local_url=%s" % local_url)
     put_file(local_url, key_contents)

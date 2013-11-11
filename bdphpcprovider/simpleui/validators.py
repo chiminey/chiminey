@@ -1,7 +1,6 @@
 import json
 import logging
 from django.core.validators import ValidationError
-from bdphpcprovider.smartconnectorscheduler.platform import retrieve_platform #fixme (replace by equivalent rest api)
 
 logger = logging.getLogger(__name__)
 
@@ -225,21 +224,18 @@ def validate_string(value):
     msg = u'string'
     return str(value)
 
-#fixme expand; use rest api to acceess objects
-def validate_nectar_platform(value):
-    record, _ = retrieve_platform(value)
-    if not record:
-        raise ValidationError('Enter a registered NeCTAR platform name. See Settings')
-    logger.debug('record=%s' % record)
+
+def validate_platform_url(value):
+    value = value.strip()
+    if not len(str(value)):
+        raise ValidationError('BDP url is empty')
+    if ' ' in str(value):
+        raise ValidationError('Space in BDP url not allowed')
+    platform_name = value.split('/')[0]
+    if not platform_name:
+        raise ValidationError('Platform name is missing from the BDP url')
     return value
 
-def validate_storage_bdpurl(value):
-    platform_name = value.split('/')[0]
-    record, _ = retrieve_platform(platform_name)
-    if not (record and platform_name):
-        raise ValidationError('Enter a registered storage platform name. See Settings')
-    logger.debug('record=%s' % record)
-    return value
 
 def validate_BDP_url(value):
     logger.debug("checking bdpurl %s" % value)

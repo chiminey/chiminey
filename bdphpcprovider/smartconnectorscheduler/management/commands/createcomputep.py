@@ -21,11 +21,12 @@
 import os.path
 from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth.models import User
+from django.db import transaction
 
-
-from bdphpcprovider.smartconnectorscheduler import models, platform
-from bdphpcprovider.smartconnectorscheduler.platform import retrieve_platform_paramsets, create_platform_paramset, delete_platform_paramsets
-
+from bdphpcprovider.smartconnectorscheduler import models, sshconnector
+from bdphpcprovider.smartconnectorscheduler.platform import \
+    retrieve_platform_paramsets, create_platform_paramset, delete_platform_paramsets
+from bdphpcprovider.smartconnectorscheduler.storage import RemoteStorage, get_bdp_root_path, LocalStorage
 from django.db.models import ObjectDoesNotExist
 
 
@@ -74,8 +75,9 @@ class Command(BaseCommand):
             'password': password,
             'private_key_name': private_key_name
         }
-        self.create_platform(
-            bdp_username, platform_settings)
+        self.update_platform()
+        #self.create_platform_old(
+        #    bdp_username, platform_settings)
         filter_list= {'username': 'nci2'}
         #self.retrieve_platform(bdp_username, filter_list)
 
@@ -88,6 +90,34 @@ class Command(BaseCommand):
             elif not validate:
                 validated = True
         return data
+
+    def retrieve_all_platforms(self):
+        username = 'seid'
+        name = 'nectar_home_test'
+        schema_namespace_prefix = 'http://rmit.edu.au/schemas/platform/computation/nectsfa'
+        platforms = []
+        try:
+            user = User.objects.get(username=username)
+            owner = models.UserProfile.objects.get(user=user)
+            if not schema_namespace_prefix:
+                paramsets = models.PlatformParameterSet.objects.filter(owner=owner)
+            else:
+                schema = models.Schema.objects.get(namespace__startswith=schema_namespace_prefix)
+                paramsets = models.PlatformParameterSet.objects.filter(
+                    owner=owner, schema=schema)
+            for paramset in paramsets:
+                parameters = {'name': paramset.name}
+                parameter_objects = models.PlatformParameter.objects.filter(paramset=paramset)
+                for parameter in parameter_objects:
+                    parameters[parameter.name.name] = parameter.value
+                platforms.append(parameters)
+        except ObjectDoesNotExist, e:
+            print e
+        for i in platforms:
+            print i['name']
+        return platforms
+
+
 
     def retrieve_platform(self, bdp_username, filterlist):
         user = User.objects.get(username=bdp_username)
@@ -129,6 +159,133 @@ class Command(BaseCommand):
 
 
 
+    def unix_key_generate(self):
+        import socket, paramiko
+        remote_path = '/home/ec2-user'
+        parameters = {'username': 'ec2-user', 'password': '1234', 'ip_address': '118.138.241.55',
+                      'home_path': '/home/ec2-user', 'private_key_path': '.ssh/seid/unix/bdp_iman'}
+        passwd_auth = True
+
+        from django.core.files.base import ContentFile
+
+
+        key_generated = True
+        message = 'Key generated successfully'
+        password = ''
+        if 'password' in parameters.keys():
+            password = parameters['password']
+
+        ssh_settings = {'username': parameters['username'],
+                    'password': password}
+
+        storage_settings = {'params': ssh_settings,
+                            'host': parameters['ip_address'],
+                            'root': "/"}
+        bdp_root_path = get_bdp_root_path()
+        key_name_org = os.path.splitext(os.path.basename(parameters['private_key_path']))[0]
+        key_name = key_name_org
+        private_key_absolute_path = os.path.join(bdp_root_path, parameters['private_key_path'])
+        key_dir = os.path.dirname(private_key_absolute_path)
+        if not os.path.exists(key_dir):
+            os.makedirs(key_dir)
+        counter = 1
+        while os.path.exists(os.path.join(key_dir, key_name)):
+            key_name = '%s_%d' % (key_name_org, counter)
+            counter += 1
+        parameters['private_key_path'] = os.path.join(os.path.dirname(
+                parameters['private_key_path']), key_name)
+        private_key_absolute_path = os.path.join(bdp_root_path, parameters['private_key_path'])
+        public_key_absolute_path = '%s.pub' % private_key_absolute_path
+        remote_key_path = os.path.join(parameters['home_path'], '.ssh', ('%s.pub' % key_name))
+        authorized_remote_path = os.path.join(parameters['home_path'], '.ssh', 'authorized_keys')
+        try:
+            private_key = paramiko.RSAKey.generate(1024)
+            private_key.write_private_key_file(private_key_absolute_path)
+            public_key = paramiko.RSAKey(filename=private_key_absolute_path)
+            public_key_content = '%s %s' % (public_key.get_name(), public_key.get_base64())
+            f = open(public_key_absolute_path, 'w')
+            f.write("\n%s\n" % public_key_content)
+            f.close()
+            fs = RemoteStorage(settings=storage_settings)
+            fs.save(remote_key_path, ContentFile(public_key_content))
+            ssh_client = sshconnector.open_connection(parameters['ip_address'], ssh_settings)
+            command = 'cat %s >> %s' % (remote_key_path, authorized_remote_path)
+            command_out, errs = sshconnector.run_command_with_status(ssh_client, command)
+            if errs:
+                if 'Permission denied' in errs:
+                    key_generated = False
+                    message = 'Permission denied to copy public key to %s/.ssh/authorized_keys' % parameters['home_path']
+                else:
+                    raise IOError
+        except sshconnector.AuthError:
+            key_generated = False
+            message = 'Unauthorized access to %s' % parameters['ip_address']
+        except socket.gaierror, e:
+            key_generated = False
+            if 'Name or service not known' in e:
+                message = 'Unknown IP address [%s]' % parameters['ip_address']
+            else:
+                message = '[%s]: %s, %s' % (parameters['ip_address'], e.__doc__, e.strerror)
+        except IOError, e:
+            key_generated = False
+            if 'Permission denied' in e:
+                message = "Permission denied to copy public key to %s/.ssh " % parameters['home_path']
+            elif 'No such file' in e:
+                message = 'Home path [%s] does not exist' % parameters['home_path']
+            else:
+                message = '[%s]: %s, %s' % (parameters['home_path'], e.__doc__, e.strerror)
+        except Exception as e:
+            key_generated = False
+            message = e
+        print message
+
+        return key_generated, message
+
+
+
+
+    def remote_path_exists(self):
+        import socket, paramiko
+        remote_path = '/home/ec2-user'
+        parameters = {'username': 'ec2-user', 'password': '1234', 'ip_address': '118.138.241.55'}
+        passwd_auth = True
+
+
+        password = ''
+        if 'password' in parameters.keys():
+            password = parameters['password']
+        paramiko_settings = {'username': parameters['username'],
+                             'password': password}
+        if (not passwd_auth) and 'private_key_path' in parameters:
+            paramiko_settings['key_filename'] = os.path.join(
+                get_bdp_root_path(), parameters['private_key_path'])
+        ssh_settings = {'params': paramiko_settings,
+                        'host': parameters['ip_address'],
+                        'root': "/"}
+        exists = True
+        message = 'Remote path [%s] exists' % remote_path
+        try:
+            fs = RemoteStorage(settings=ssh_settings)
+            fs.listdir(remote_path)
+        except paramiko.AuthenticationException, e:
+            message = 'Unauthorized access to %s' % parameters['ip_address']
+            exists = False
+        except socket.gaierror as e:
+            exists = False
+            if 'Name or service not known' in e:
+                message = 'Unknown IP address [%s]' % parameters['ip_address']
+            else:
+                message = '[%s]: %s, %s' % (parameters['ip_address'], e.__doc__, e.strerror)
+        except IOError, e:
+            exists = False
+            if 'Permission denied' in e:
+                message = "Permission denied to access %s/.ssh " % remote_path
+            elif 'No such file' in e:
+                message = 'Remote path [%s] does not exist' % remote_path
+            else:
+                message = '[%s]: %s, %s' % (remote_path, e.__doc__, e.strerror)
+        return exists, message
+
 
 
     def is_unique_platform(self, unique_key, parameterset):
@@ -136,7 +293,138 @@ class Command(BaseCommand):
             print parameter
 
 
-    def create_platform(self, bdp_username,
+    def retrieve_platform(self):
+        username = 'seid'
+        name = 'nectar_home_test'
+        parameters = {}
+        try:
+            user = User.objects.get(username=username)
+            owner = models.UserProfile.objects.get(user=user)
+            paramset = models.PlatformParameterSet.objects.get(
+                name=name, owner=owner)
+            parameter_objects = models.PlatformParameter.objects.filter(paramset=paramset)
+            for parameter in parameter_objects:
+                parameters[parameter.name.name] = parameter.value
+
+
+            #print platform
+        except ObjectDoesNotExist, e:
+            print e
+
+        print parameters
+
+    @transaction.commit_on_success
+    def update_platform(self):
+        from django.db.utils import IntegrityError
+        self.retrieve_platform()
+        username = 'seid'
+        name = 'home'
+        updated_parameters = {u'ec2_access_key': u'special-282XX82', u'name':'home'}
+        try:
+
+            user = User.objects.get(username=username)
+            owner = models.UserProfile.objects.get(user=user)
+            paramset = models.PlatformParameterSet.objects.get(
+                name=name, owner=owner)
+            print paramset
+            #parameter_objects = models.PlatformParameter.objects.filter(paramset=paramset)
+
+
+            for k, v in updated_parameters.items():
+                try:
+
+                    param_name = models.ParameterName.objects\
+                        .get(schema=paramset.schema, name=k)
+                    print param_name
+                    platform_param = models.PlatformParameter.objects\
+                        .get(name=param_name, paramset=paramset)
+                    print platform_param
+                    platform_param.value = v
+                    print 'hi'
+                    platform_param.save()
+                except ObjectDoesNotExist as e:
+                    print('Skipping unrecognized parameter name: %s' % k)
+                    continue
+            if 'name' in updated_parameters.keys():
+                paramset.name = updated_parameters['name']
+                paramset.save()
+            #print platform
+        except ObjectDoesNotExist, e:
+            print e
+        except IntegrityError, e:
+            print '---'
+            print e
+            print '-------'
+        print '--'
+        #self.retrieve_platform()
+
+
+    def delete_platform(self):
+        self.retrieve_platform()
+        username = 'seid'
+        name = 'nectar_home_test'
+        updated_parameters = {u'ec2_access_key': u'special'}
+        try:
+
+            user = User.objects.get(username=username)
+            owner = models.UserProfile.objects.get(user=user)
+            paramset = models.PlatformParameterSet.objects\
+                .get(
+                name=name, owner=owner)
+            paramset.delete()
+            #parameter_objects = models.PlatformParameter.objects.filter(paramset=paramset)
+
+            #print platform
+        except ObjectDoesNotExist, e:
+            print e
+        print '--'
+        self.retrieve_platform()
+
+
+    def create_platform(self):
+        from django.db.utils import IntegrityError
+        username = 'seid'
+        namespace = 'http://rmit.edu.au/schemas/platform/computation/nectar'
+        name = 'nectar_home_test'
+        parameters = {
+                'ec2_access_key': 'unique',
+                'ec2_secret_key': 'secret_key_test',
+                #'ec2_access_key': 'access_key_test114',
+                'private_key': 'file://local@127.0.0.1/schema.pem',
+                'private_key_iman': 'file://local@127.0.0.1/test.pem'
+            }
+        try:
+            user = User.objects.get(username=username)
+
+            owner = models.UserProfile.objects.get(user=user)
+
+            schema = models.Schema.objects\
+                .get(namespace=namespace)
+        except ObjectDoesNotExist, e:
+            print e
+            return
+
+        try:
+            param_set = models.PlatformParameterSet.objects.create(name=name, owner=owner, schema=schema)
+        except IntegrityError, e:
+            print e
+            print ('Plaatform name %s already exists' % name)
+            return
+        for k, v in parameters.items():
+            try:
+                param_name = models.ParameterName.objects\
+                    .get(schema=schema, name=k)
+            except ObjectDoesNotExist as e:
+                print('Skipping unrecognized parameter name: %s' % k)
+                continue
+            models.PlatformParameter.objects\
+                .create(name=param_name, paramset=param_set, value=v)
+
+
+
+
+
+    def create_platform_old(self, bdp_username,
                                     platform_settings):
 
         self.PARAMS = {

@@ -63,6 +63,7 @@ class Create(Stage):
         """
         smartconnector.info(run_settings, "1: create")
         local_settings = {}
+        #todo: remove system/platform dependency
         smartconnector.copy_settings(local_settings, run_settings,
             RMIT_SCHEMA + '/system/platform')
         smartconnector.copy_settings(local_settings, run_settings,
@@ -75,10 +76,15 @@ class Create(Stage):
             RMIT_SCHEMA+'/stages/create/cloud_sleep_interval')
         logger.debug('local_settings=%s' % local_settings)
 
-        comp_pltf_schema = run_settings['http://rmit.edu.au/schemas/platform/computation']['namespace']
-        comp_pltf_settings = run_settings[comp_pltf_schema]
-        platform.update_platform_settings(
-            comp_pltf_schema, comp_pltf_settings)
+        computation_platform_url = run_settings['http://rmit.edu.au/schemas/platform/computation']['platform_url']
+        bdp_username = run_settings['http://rmit.edu.au/schemas/bdp_userprofile']['username']
+        try:
+            comp_pltf_settings = platform.get_platform_settings(computation_platform_url, bdp_username)
+        except KeyError:
+            #Fixme: the following should transfer power to FT managers
+            self.group_id = 'UNKNOWN'
+            self.nodes = []
+            return
         local_settings.update(comp_pltf_settings)
         logger.debug('local_settings=%s' % local_settings)
 

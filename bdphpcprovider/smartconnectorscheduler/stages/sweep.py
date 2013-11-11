@@ -76,16 +76,11 @@ class Sweep(Stage):
     #    for k, v in current
 
     def include_platform(self, platform_name, generic_schema, run_settings, offset):
-        platform_name = platform_name
+        #fixme: what happens if input/output storage are from the same storage platform type (same schema)
+
         logger.debug('platform_name=%s' % platform_name)
-        platform, namespace = smartconnector.get_bdp_storage_url(platform_name)
         logger.debug('platform=%s' % platform)
-        #fixme: in the schema definition, change private_key to private_key_name
-        if 'private_key_path' in platform.keys():
-            bdp_root_path = '/var/cloudenabling/remotesys' #fixme replace by parameter
-            absolute_path = os.path.join(bdp_root_path, platform['private_key_path'])
-            platform['private_key_path'] = absolute_path
-        run_settings[generic_schema] = {'namespace': namespace}
+
         run_settings[namespace] = platform
         run_settings[namespace]['offset'] = offset
         logger.debug('updated_run_settings=%s' % run_settings)
@@ -136,21 +131,19 @@ class Sweep(Stage):
         logger.debug("contextid=%s" % contextid)
 
         computation_platform_name = run_settings['http://rmit.edu.au/schemas/input/system/cloud']['computation_platform']
-        generic_computation_schema = RMIT_SCHEMA + '/platform/computation'
-        self.include_platform(computation_platform_name, generic_computation_schema, run_settings, 'sweep%s' % contextid)
-
-        generic_output_schema = RMIT_SCHEMA + '/platform/storage/output'
+        run_settings[RMIT_SCHEMA + '/platform/computation'] = {}
+        run_settings[RMIT_SCHEMA + '/platform/computation']['platform_url'] = computation_platform_name
         output_location = run_settings['http://rmit.edu.au/schemas/input/system'][u'output_location']
-        logger.debug('output_location=%s' % output_location)
         output_location_list = output_location.split('/')
         output_storage_name = output_location_list[0]
         output_storage_offset = ''
         if len(output_location_list) > 1:
             output_storage_offset = os.path.join(*output_location_list[1:])
         logger.debug('output_storage_offset=%s' % output_storage_offset)
-        self.include_platform(output_storage_name, generic_output_schema, run_settings,
-                              os.path.join(output_storage_offset, 'sweep%s' % contextid))
-
+        run_settings[RMIT_SCHEMA + '/platform/storage/output'] = {}
+        run_settings[RMIT_SCHEMA + '/platform/storage/output']['platform_url'] = output_storage_name
+        run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset'] = \
+            os.path.join(output_storage_offset, 'sweep%s' % contextid)
 
         self.rand_index = run_settings['http://rmit.edu.au/schemas/input/hrmc']['iseed']
         logger.debug("rand_index=%s" % self.rand_index)

@@ -25,8 +25,8 @@ from core.views import (
     DirectiveResource,
     DirectiveArgSetResource,
     PlatformInstanceResource,
-    PlatformInstanceParameterSetResource,
-    PlatformInstanceParameterResource
+    PlatformParameterSetResource,
+    PlatformParameterResource
     )
 from tastypie.api import Api
 v1_api = Api(api_name='v1')
@@ -44,8 +44,8 @@ v1_api.register(ContextMessageResource())
 v1_api.register(DirectiveResource())
 v1_api.register(DirectiveArgSetResource())
 v1_api.register(PlatformInstanceResource())
-v1_api.register(PlatformInstanceParameterSetResource())
-v1_api.register(PlatformInstanceParameterResource())
+v1_api.register(PlatformParameterSetResource())
+v1_api.register(PlatformParameterResource())
 
 
 

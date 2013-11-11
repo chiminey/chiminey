@@ -438,6 +438,46 @@ class PlatformInstanceParameter(models.Model):
         ordering = ("name",)
 
 
+class PlatformParameterSet(models.Model):
+    name = models.CharField(max_length=255, blank=False, null=False, help_text='The name of the platform')
+    owner = models.ForeignKey(UserProfile)
+    schema = models.ForeignKey(Schema, verbose_name="Schema")
+    ranking = models.IntegerField(default=0)
+
+    def __unicode__(self):
+        return u'%s' % self.name
+
+    class Meta:
+        ordering = ("name",)
+        unique_together = (('owner', 'name'),)
+
+
+class PlatformParameter(models.Model):
+   """ The value for some metadata for a User Profile
+        :parameter name: the associated  :class:`bdphpcprovider.smartconnectorscheduler.models.ParameterName` that the value matches to
+        :parameter paramset: associated  :class:`bdphpcprovider.smartconnectorscheduler.models.PlatformParameterSet` and class:`bdphpcprovider.smartconnectorscheduler.models.Schema` for this value
+        :parameter value: the actual value
+    """
+   name = models.ForeignKey(ParameterName, verbose_name="Parameter Name")
+   paramset = models.ForeignKey(PlatformParameterSet, verbose_name="Parameter Set")
+   value = models.TextField(blank=True, verbose_name="Parameter Value", help_text="The Value of this parameter")
+
+   class Meta:
+       ordering = ("name",)
+
+   def getValue(self,):
+       try:
+           val = self.name.get_value(self.value)
+       except ValueError:
+           logger.error("pi:got bad value %s" % self.value)
+           raise
+       return val
+
+   def __unicode__(self):
+       return u'%s %s %s' % (self.name, self.paramset, self.value)
+
+
+
 '''
 class ComputationPlatform(models.Model):
     """

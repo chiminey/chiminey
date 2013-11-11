@@ -136,8 +136,12 @@ class Transform(Stage):
     def process(self, run_settings):
         #TODO: break up this function as it is way too long
         self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
-
-        self.job_dir = hrmcstages.get_job_dir(run_settings)
+        bdp_username = run_settings['http://rmit.edu.au/schemas/bdp_userprofile']['username']
+        output_storage_url = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['platform_url']
+        output_storage_settings = platform.get_platform_settings(output_storage_url, bdp_username)
+        output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
+                                    output_storage_settings['type'])
+        self.job_dir = platform.get_job_dir(output_storage_settings, run_settings)
 
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/system', u'id'):
             self.id = run_settings['http://rmit.edu.au/schemas/system'][u'id']
@@ -192,14 +196,7 @@ class Transform(Stage):
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/input/hrmc/threshold')
 
-        output_storage_schema = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['namespace']
-        output_storage_settings = run_settings[output_storage_schema]
-        platform.update_platform_settings(output_storage_schema, output_storage_settings)
-        output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
-                                    output_storage_settings['type'])
-
         logger.debug("boto_settings=%s" % self.boto_settings)
-
 
         logger.debug("output_storage_settings=%s" % output_storage_settings)
         output_url = smartconnector.get_url_with_pkey(

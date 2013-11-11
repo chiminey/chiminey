@@ -75,9 +75,10 @@ class Configure(Stage, UI):
             RMIT_SCHEMA + '/input/system']['input_location']
         logger.debug("input_location=%s" % input_location)
 
-        self.output_storage_schema = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['namespace']
-        output_storage_settings = run_settings[self.output_storage_schema]
-        platform.update_platform_settings(self.output_storage_schema, output_storage_settings)
+        bdp_username = run_settings['http://rmit.edu.au/schemas/bdp_userprofile']['username']
+        output_storage_url = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['platform_url']
+        output_storage_settings = platform.get_platform_settings(output_storage_url, bdp_username)
+
 
         self.contextid = int(run_settings[
             RMIT_SCHEMA + '/system'][u'contextid'])
@@ -88,13 +89,13 @@ class Configure(Stage, UI):
         try:
             #fixme, hrmc should be variable..so configure can be used in any connector
             self.output_loc_offset = os.path.join(
-                run_settings[self.output_storage_schema]['offset'],
+                run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset'],
                 'hrmc' + self.output_loc_offset)
         except KeyError:
             pass
-        run_settings[self.output_storage_schema]['offset'] = self.output_loc_offset
+        run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset'] = self.output_loc_offset
 
-        self.job_dir = hrmcstages.get_job_dir(run_settings)
+        self.job_dir = platform.get_job_dir(output_storage_settings, run_settings)
         iter_inputdir = os.path.join(self.job_dir, "input_0")
         logger.debug("iter_inputdir=%s" % iter_inputdir)
         #todo: input location will evenatually be replaced by the scratch space that was used by the sweep
@@ -149,5 +150,5 @@ class Configure(Stage, UI):
             RMIT_SCHEMA + '/stages/configure',
             {})[u'configure_done'] = 1
         run_settings[RMIT_SCHEMA + '/input/mytardis']['experiment_id'] = str(self.experiment_id)
-        run_settings[self.output_storage_schema]['offset'] = self.output_loc_offset
+        run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset'] = self.output_loc_offset
         return run_settings

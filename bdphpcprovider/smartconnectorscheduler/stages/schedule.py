@@ -276,10 +276,11 @@ class Schedule(Stage):
             self.run_map = map
         logger.debug('map=%s' % self.run_map)
 
-        output_storage_schema = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['namespace']
-        output_storage_settings = run_settings[output_storage_schema]
-        platform.update_platform_settings(output_storage_schema, output_storage_settings)
-        job_dir = hrmcstages.get_job_dir(run_settings)
+        bdp_username = run_settings['http://rmit.edu.au/schemas/bdp_userprofile']['username']
+        output_storage_url = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['platform_url']
+        output_storage_settings = platform.get_platform_settings(output_storage_url, bdp_username)
+
+        job_dir = platform.get_job_dir(output_storage_settings, run_settings)
         self.total_processes = stage.get_total_templates(
             [self.run_map], run_settings=run_settings,
             output_storage_settings=output_storage_settings, job_dir=job_dir)
@@ -386,10 +387,9 @@ def retrieve_local_settings(run_settings, local_settings):
     smartconnector.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/input/hrmc/fanout_per_kept_result')
 
-    comp_pltf_schema = run_settings['http://rmit.edu.au/schemas/platform/computation']['namespace']
-    comp_pltf_settings = run_settings[comp_pltf_schema]
-    platform.update_platform_settings(
-        comp_pltf_schema, comp_pltf_settings)
+    computation_platform_url = run_settings['http://rmit.edu.au/schemas/platform/computation']['platform_url']
+    bdp_username = run_settings['http://rmit.edu.au/schemas/bdp_userprofile']['username']
+    comp_pltf_settings = platform.get_platform_settings(computation_platform_url, bdp_username)
     local_settings.update(comp_pltf_settings)
 
     logger.debug('retrieve completed')
