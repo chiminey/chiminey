@@ -135,6 +135,13 @@ class Sweep(Stage):
             u'contextid'])
         logger.debug("contextid=%s" % contextid)
 
+        if self._exists(run_settings,
+            'http://rmit.edu.au/schemas/system',
+            'parent_contextid'):
+            parent_contextid = int(run_settings['http://rmit.edu.au/schemas/system'][u'parent_contextid'])
+        else:
+            parent_contextid = 0
+
         computation_platform_name = run_settings['http://rmit.edu.au/schemas/input/system/cloud']['computation_platform']
         generic_computation_schema = RMIT_SCHEMA + '/platform/computation'
         self.include_platform(computation_platform_name, generic_computation_schema, run_settings, 'sweep%s' % contextid)
@@ -151,7 +158,8 @@ class Sweep(Stage):
         self.include_platform(output_storage_name, generic_output_schema, run_settings,
                               os.path.join(output_storage_offset, 'sweep%s' % contextid))
 
-
+        # TODO: move iseed out of hrmc into separate schema to use on any
+        # sweepable connector and make this function completely hrmc independent.
         self.rand_index = run_settings['http://rmit.edu.au/schemas/input/hrmc']['iseed']
         logger.debug("rand_index=%s" % self.rand_index)
 
@@ -286,7 +294,7 @@ class Sweep(Stage):
 
             # logger.debug("data2=%s" % pformat(data2))
 
-            submit_subtask("nectar", subdirective, data, user)
+            submit_subtask("nectar", subdirective, data, user, context)
 
             # api_host = "http://127.0.0.1"
             # url = "%s/api/v1/context/?format=json" % api_host
@@ -345,7 +353,7 @@ class Sweep(Stage):
         return run_settings
 
 
-def submit_subtask(platform, directive_name, data, user):
+def submit_subtask(platform, directive_name, data, user, parentcontext):
     # directive_args = []
     # for metadata in data:
     #     arg_metadata = {}
@@ -376,7 +384,7 @@ def submit_subtask(platform, directive_name, data, user):
         (task_run_settings, command_args, run_context) \
             = hrmcstages.make_runcontext_for_directive(
                 platform,
-                directive_name, directive_args, {}, user)
+                directive_name, directive_args, {}, user, parent=parentcontext)
     except InvalidInputError, e:
         logger.error(str(e))
     logger.debug("sweep process done")

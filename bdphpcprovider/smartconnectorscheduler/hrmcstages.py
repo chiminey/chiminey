@@ -1163,7 +1163,7 @@ def check_settings_valid(settings_to_test, user_settings, command):
 
 
 def make_runcontext_for_directive(platform_name, directive_name,
-    directive_args, initial_settings, username):
+    directive_args, initial_settings, username, parent=None):
     """
     Create a new runcontext with the commmand equivalent to the directive
     on the platform.
@@ -1225,7 +1225,7 @@ def make_runcontext_for_directive(platform_name, directive_name,
     return (run_settings, command_args, run_context)
 
 
-def _make_new_run_context(stage, profile, directive, run_settings):
+def _make_new_run_context(stage, profile, directive, parent, run_settings):
     """
     Make a new context  for a user to execute stages based on initial context
     """
@@ -1233,6 +1233,7 @@ def _make_new_run_context(stage, profile, directive, run_settings):
     run_context = models.Context.objects.create(
         owner=profile,
         directive=directive,
+        parent=parent,
         status="starting",
         current_stage=stage)
     run_context.update_run_settings(run_settings)

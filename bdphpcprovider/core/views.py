@@ -211,6 +211,9 @@ class ContextResource(ModelResource):
     directive = fields.ForeignKey(DirectiveResource,
         attribute='directive', full=True, null=True)
 
+    parent = fields.ForeignKey('self',
+        attribute='parent', null=True)
+
     class Meta:
         queryset = models.Context.objects.all()
         resource_name = 'context'

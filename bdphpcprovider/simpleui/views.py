@@ -1222,6 +1222,7 @@ def get_contexts(request):
     for x in r.json()['objects']:
         logger.debug("x=%s" % pformat(x))
         contextid = contextdeleted = contextcreated = ""
+        parent_id = 0
         directive_name = directive_desc = ""
         if 'context' in x and x['context']:
             if 'id' in x['context']:
@@ -1230,19 +1231,28 @@ def get_contexts(request):
                 contextdeleted = x['context']['deleted']
             if 'created' in x['context']:
                     contextcreated = x['context']['created']
+            if 'parent' in x['context'] and x['context']['parent']:
+                    parent = x['context']['parent']
+                    if str(parent)[-1] == '/':
+                        parent_id = str(parent).split('/')[-2:-1][0]
+                    else:
+                        parent_id = str(parent).split('/')[-1]
+
             if 'directive' in x['context'] and x['context']['directive']:
                 if 'name' in x['context']['directive']:
                     directive_name = x['context']['directive']['name']
                 if 'description' in x['context']['directive']:
                     directive_desc = x['context']['directive']['description']
 
+
         obj = []
-        obj.append(contextid)
+        obj.append(int(contextid))
         obj.append(contextdeleted)
         obj.append(dateutil.parser.parse(contextcreated))
         obj.append(x['message'])
         obj.append(directive_name)
         obj.append(directive_desc)
+        obj.append(int(parent_id))
         obj.append(reverse('contextview', kwargs={'pk': contextid}))
         object_list.append(obj)
 
