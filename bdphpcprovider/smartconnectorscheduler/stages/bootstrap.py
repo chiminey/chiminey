@@ -164,10 +164,9 @@ def retrieve_local_settings(run_settings, local_settings):
     smartconnector.copy_settings(local_settings, run_settings,
         RMIT_SCHEMA+'/stages/create/custom_prompt')
 
-    comp_pltf_schema = run_settings['http://rmit.edu.au/schemas/platform/computation']['namespace']
-    comp_pltf_settings = run_settings[comp_pltf_schema]
-    platform.update_platform_settings(
-        comp_pltf_schema, comp_pltf_settings)
+    computation_platform_url = run_settings['http://rmit.edu.au/schemas/platform/computation']['platform_url']
+    bdp_username = run_settings['http://rmit.edu.au/schemas/bdp_userprofile']['username']
+    comp_pltf_settings = platform.get_platform_settings(computation_platform_url, bdp_username)
     local_settings.update(comp_pltf_settings)
 
     logger.debug('retrieve completed')

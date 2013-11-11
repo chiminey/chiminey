@@ -78,9 +78,9 @@ class Destroy(smartconnector.Stage):
         #smartconnector.copy_settings(local_settings, run_settings,
         #    RMIT_SCHEMA+'/platform/computation/nectar/ec2_secret_key')
 
-        comp_pltf_schema = run_settings['http://rmit.edu.au/schemas/platform/computation']['namespace']
-        comp_pltf_settings = run_settings[comp_pltf_schema]
-        platform.update_platform_settings(comp_pltf_schema, comp_pltf_settings)
+        bdp_username = run_settings['http://rmit.edu.au/schemas/bdp_userprofile']['username']
+        computation_platform_url = run_settings['http://rmit.edu.au/schemas/platform/computation']['platform_url']
+        comp_pltf_settings = platform.get_platform_settings(computation_platform_url, bdp_username)
         local_settings.update(comp_pltf_settings)
 
         node_type = 'created_nodes'

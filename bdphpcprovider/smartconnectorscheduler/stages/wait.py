@@ -224,7 +224,10 @@ class Wait(Stage):
             they are running, stopped or in error_nodes
         """
         self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
-        self.job_dir = hrmcstages.get_job_dir(run_settings)
+        bdp_username = run_settings['http://rmit.edu.au/schemas/bdp_userprofile']['username']
+        output_storage_url = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['platform_url']
+        output_storage_settings = platform.get_platform_settings(output_storage_url, bdp_username)
+        self.job_dir = platform.get_job_dir(output_storage_settings, run_settings)
         try:
             self.finished_nodes = smartconnector.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/stages/run/finished_nodes')
@@ -253,14 +256,9 @@ class Wait(Stage):
         logger.debug('self.finished_nodes=%s' % self.finished_nodes)
         self.finished_nodes = ast.literal_eval(self.finished_nodes)
 
-        comp_pltf_schema = run_settings['http://rmit.edu.au/schemas/platform/computation']['namespace']
-        comp_pltf_settings = run_settings[comp_pltf_schema]
-        platform.update_platform_settings(comp_pltf_schema, comp_pltf_settings)
+        computation_platform_url = run_settings['http://rmit.edu.au/schemas/platform/computation']['platform_url']
+        comp_pltf_settings = platform.get_platform_settings(computation_platform_url, bdp_username)
         local_settings.update(comp_pltf_settings)
-
-        output_storage_schema = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['namespace']
-        output_storage_settings = run_settings[output_storage_schema]
-        platform.update_platform_settings(output_storage_schema, output_storage_settings)
 
         for process in processes:
             #instance_id = node.id
@@ -376,8 +374,8 @@ class Wait(Stage):
             run_settings.setdefault(
             'http://rmit.edu.au/schemas/stages/create', {})[u'failed_nodes'] = self.failed_nodes
 
-        smartconnector.info(run_settings, "%s: waiting (%s processes done)"
-            % (self.id + 1, len(self.finished_nodes)))
+        smartconnector.info(run_settings, "%s: waiting (%s of %s processes done)"
+            % (self.id + 1, len(self.finished_nodes), len(self.current_processes)))
 
 
         if self.procs_2b_rescheduled:

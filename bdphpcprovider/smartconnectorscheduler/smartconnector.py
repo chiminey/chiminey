@@ -31,7 +31,7 @@ from urlparse import urlparse
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
 from bdphpcprovider.smartconnectorscheduler.errors import deprecated
-from bdphpcprovider.smartconnectorscheduler import platform
+from bdphpcprovider.smartconnectorscheduler.platform import retrieve_platform
 from django.contrib import messages
 
 
@@ -64,9 +64,9 @@ def get_platform(platform_url):
     return get_bdp_storage_url(platform_url)
 
 
-def get_bdp_storage_url(platform_url):
+def get_bdp_storage_url(platform_url, username):
     platform_name = platform_url.split('/')[0]
-    record, namespace = platform.retrieve_platform(platform_name)
+    record, namespace = retrieve_platform(platform_name, username)
     logger.debug('record=%s' % record)
     return record, namespace
     '''
@@ -131,6 +131,7 @@ def get_url_with_pkey(settings, url_or_relative_path,
         # username = settings['nectar_username']
         # password = settings['nectar_password']
         url_settings['root_path'] = settings['root_path']
+
         args = '&'.join(["%s=%s" % (k, v) for k, v in sorted(url_settings.items())])
         scheme = 'ssh'
 

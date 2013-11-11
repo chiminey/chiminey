@@ -36,11 +36,6 @@ function submitForm(description) {
     var operation = $('form #id_operation');
     operation.val(description);
     var password = $.trim($('form #id_password').val());
-    if(password.length == 0){}
-    {
-        if(description=='delete' || description == 'update')
-        $('form #id_password').val("****")
-    }
     form.validate();
     if (form.valid()){
         form.submit()
@@ -71,7 +66,6 @@ function deletePlatform(parameters, platform_type) {
     fieldReadonly()
     form_id = '#' + platform_type + '_form_delete'
     $(form_id).show();
-    $("form input[id][type='password']").val("*****");
     $('form #id_filters').val(parameters)
     var current_params = parameters.replace(/[\]\(\)\[']/g, '');
     var array_params = current_params.split(',');
@@ -79,6 +73,9 @@ function deletePlatform(parameters, platform_type) {
     {
         key = array_params[i].replace(/^[ \t]+|[ \t]+$./, '');
         value = array_params[++i].replace(/^[ \t]+|[ \t]+$./, '');
+        if (key=='password'){
+            value = '--------'
+        }
         param_id =   '#id_' + key
         $('form '+ param_id).val(value)
         //$('form '+ param_id).attr('readonly', true);

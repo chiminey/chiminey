@@ -51,6 +51,7 @@ logger = logging.getLogger(__name__)
 
 # TODO: this code should be copied to maintain separation between api/ui
 from bdphpcprovider.simpleui import validators
+from bdphpcprovider.core import serverside_validators
 
 logger = logging.getLogger(__name__)
 
@@ -238,6 +239,7 @@ class ContextResource(ModelResource):
         deserialized = self.deserialize(request, body, format=request.META.get('CONTENT_TYPE', 'application/json'))
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
+        bundle.data['username'] = request.user.username
         try:
             if 'smart_connector' in bundle.data:
                 # TODO: generalise this
@@ -331,19 +333,21 @@ class ContextResource(ModelResource):
         return (platform, directive_name, directive_args, system_settings)
 
     def validate_input(self, data, directive_name):
-
+        logger.debug(data)
+        username = data['http://rmit.edu.au/schemas/bdp_userprofile/username']
+        logger.debug(username)
         subtype_validation = {
             'natural': ('natural number', validators.validate_natural_number, None, None),
             'string': ('string', validators.validate_string, None, None),
             'whole': ('whole number', validators.validate_whole_number, None, None),
-            'nectar_platform': ('NeCTAR platform name', validators.validate_nectar_platform, None, None),
-            'storage_bdpurl': ('Storage platform name with optional offset path', validators.validate_storage_bdpurl, forms.TextInput, 255),
+            'nectar_platform': ('NeCTAR platform name', serverside_validators.validate_platform, None, None),
+            'storage_bdpurl': ('Storage platform name with optional offset path', serverside_validators.validate_platform, forms.TextInput, 255),
             'even': ('even number', validators.validate_even_number, None, None),
             'bdpurl': ('BDP url', validators.validate_BDP_url, forms.TextInput, 255),
             'float': ('floading point number', validators.validate_float_number, None, None),
             'jsondict': ('JSON Dictionary', validators.validate_jsondict, forms.Textarea(attrs={'cols':30, 'rows': 5}), None),
             'bool': ('On/Off', validators.validate_bool, None,  None),
-            'platform': ('platform', validators.validate_nectar_platform, None,  None),
+            'platform': ('platform', serverside_validators.validate_platform, None,  None),
             'choicefield': ('choicefield', functools.partial(validators.myvalidate_choice_field, choices=('MC','MCSA')), forms.Select(),  None),
 
         }
@@ -366,7 +370,12 @@ class ContextResource(ModelResource):
                 #     continue;
 
                 validator = subtype_validation[param.subtype][1]
-                value = validator(value)
+                current_subtype = param.subtype
+                logger.debug(current_subtype)
+                if current_subtype == 'storage_bdpurl' or current_subtype == 'nectar_platform' or current_subtype == 'platform':
+                    value = validator(value, username)
+                else:
+                    value = validator(value)
                 data[os.path.join(das.schema.namespace, param.name)] = value
 
     def _post_to_sweep(self, bundle):
@@ -383,6 +392,9 @@ class ContextResource(ModelResource):
 
         directive_args.append(
             ['',
+                ['http://rmit.edu.au/schemas/bdp_userprofile',
+                    (u'username', str(bundle.data['http://rmit.edu.au/schemas/bdp_userprofile/username'])),
+                ],
                 ['http://rmit.edu.au/schemas/input/hrmc',
                     ('pottype', bundle.data[self.hrmc_schema + 'pottype']),
                     ('max_iteration', bundle.data[self.hrmc_schema + 'max_iteration']),
@@ -652,12 +664,11 @@ class PlatformInstanceResource(ModelResource):
         return object_list.filter(user=request.user)
 
 
-class PlatformInstanceParameterSetResource(ModelResource):
-    platform = fields.ForeignKey(PlatformInstanceResource, attribute='platform', full=True)
+class PlatformParameterSetResource(ModelResource):
+    #platform_name =
     schema = fields.ForeignKey(SchemaResource, attribute='schema', full=True)
-
     class Meta:
-        queryset = models.PlatformInstanceParameterSet.objects.all()
+        queryset = models.PlatformParameterSet.objects.all()
         resource_name = 'platformparamset'
         # TODO: FIXME: BasicAuth is horribly insecure without using SSL.
         # Digest is better, but configuration proved tricky.
@@ -666,7 +677,6 @@ class PlatformInstanceParameterSetResource(ModelResource):
         authorization = DjangoAuthorization()
         allowed_methods = ['get', 'post']
         filtering = {
-            'platform': ALL_WITH_RELATIONS,
             'schema': ALL_WITH_RELATIONS,
         }
 
@@ -716,38 +726,37 @@ class PlatformInstanceParameterSetResource(ModelResource):
 
     def create_platform(self, bundle):
         username = bundle.data['username']
-        schema = bundle.data['schema']
+        schema_namespace = bundle.data['schema']
         parameters = bundle.data['parameters']
-        created, message = platform.create_platform_paramset(
-            username, schema, parameters)
+        platform_name = bundle.data['platform_name']
+        created, message = platform.create_platform(
+            platform_name, username, schema_namespace, parameters)
         logger.debug('created=%s' % created)
         return created, message
 
     def update_platform(self, bundle):
         username = bundle.data['username']
-        schema = bundle.data['schema']
-        filters = bundle.data['filters']
         updated_parameters = bundle.data['parameters']
-        updated, message = platform.update_platform_paramset(
-            username, schema, filters, updated_parameters)
+        platform_name = bundle.data['platform_name']
+        updated, message = platform.update_platform(platform_name,
+            username, updated_parameters)
         logger.debug('updated=%s' % updated)
         return updated, message
 
     def delete_platform(self, bundle):
         username = bundle.data['username']
-        schema = bundle.data['schema']
-        filters = bundle.data['filters']
-        deleted, message  = platform.delete_platform_paramsets(username, schema, filters)
+        platform_name = bundle.data['platform_name']
+        deleted, message  = platform.delete_platform(platform_name, username)
         logger.debug('deleted=%s' % deleted)
         return deleted, message
 
 
-class PlatformInstanceParameterResource(ModelResource):
+class PlatformParameterResource(ModelResource):
     name = fields.ForeignKey(ParameterNameResource, attribute='name', full=True)
-    paramset = fields.ForeignKey(PlatformInstanceParameterSetResource, attribute='paramset', full=True)
+    paramset = fields.ForeignKey(PlatformParameterSetResource, attribute='paramset', full=True)
 
     class Meta:
-        queryset = models.PlatformInstanceParameter.objects.all()
+        queryset = models.PlatformParameter.objects.all()
         resource_name = 'platformparameter'
         # TODO: FIXME: BasicAuth is horribly insecure without using SSL.
         # Digest is better, but configuration proved tricky.
@@ -772,6 +781,6 @@ class PlatformInstanceParameterResource(ModelResource):
         logger.debug('query=%s' % query)
         logger.debug('query_settings=%s' % query_settings)
         schema = query_settings['schema']
-        return models.PlatformInstanceParameter.objects.filter(
+        return models.PlatformParameter.objects.filter(
             paramset__schema__namespace__startswith=schema)
 

@@ -97,7 +97,10 @@ class Execute(Stage):
 
         logger.debug("processing run stage")
         self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
-        self.job_dir = hrmcstages.get_job_dir(run_settings)
+        bdp_username = run_settings['http://rmit.edu.au/schemas/bdp_userprofile']['username']
+        output_storage_url = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['platform_url']
+        output_storage_settings = platform.get_platform_settings(output_storage_url, bdp_username)
+        self.job_dir = platform.get_job_dir(output_storage_settings, run_settings)
         # TODO: we assume initial input is in "%s/input_0" % self.job_dir
         # in configure stage we could copy initial data in 'input_location' into this location
         try:
@@ -137,14 +140,8 @@ class Execute(Stage):
         local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
         retrieve_boto_settings(run_settings, local_settings)
 
-        comp_pltf_schema = run_settings['http://rmit.edu.au/schemas/platform/computation']['namespace']
-        comp_pltf_settings = run_settings[comp_pltf_schema]
-        platform.update_platform_settings(comp_pltf_schema, comp_pltf_settings)
-
-        output_storage_schema = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['namespace']
-        output_storage_settings = run_settings[output_storage_schema]
-        platform.update_platform_settings(output_storage_schema, output_storage_settings)
-
+        computation_platform_url = run_settings['http://rmit.edu.au/schemas/platform/computation']['platform_url']
+        comp_pltf_settings = platform.get_platform_settings(computation_platform_url, bdp_username)
         #generic_output_schema = 'http://rmit.edu.au/schemas/platform/storage/output'
 
         failed_processes = [x for x in self.schedule_procs if x['status'] == 'failed']
