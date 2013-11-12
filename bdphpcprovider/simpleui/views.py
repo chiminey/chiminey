@@ -502,7 +502,7 @@ class SweepSubmitFormView(FormView):
         'iseed': 42,
         'maximum_retry': 1,
         'reschedule_failed_processes': 1,
-        'input_location': 'file://127.0.0.1/myfiles/input',
+        #'input_location': 'file://127.0.0.1/myfiles/input',
         'optimisation_scheme': "MCSA",
         'threshold': "[1]",
         'error_threshold': "0.03",

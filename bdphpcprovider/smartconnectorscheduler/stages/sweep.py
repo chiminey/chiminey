@@ -42,7 +42,7 @@ from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadSpecificationError, BadInputException
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
-from bdphpcprovider.smartconnectorscheduler import models
+from bdphpcprovider.smartconnectorscheduler import models, platform, storage
 
 
 logger = logging.getLogger(__name__)
@@ -129,6 +129,8 @@ class Sweep(Stage):
         computation_platform_name = run_settings['http://rmit.edu.au/schemas/input/system/cloud']['computation_platform']
         run_settings[RMIT_SCHEMA + '/platform/computation'] = {}
         run_settings[RMIT_SCHEMA + '/platform/computation']['platform_url'] = computation_platform_name
+
+
         output_location = run_settings['http://rmit.edu.au/schemas/input/system'][u'output_location']
         output_location_list = output_location.split('/')
         output_storage_name = output_location_list[0]
@@ -143,6 +145,21 @@ class Sweep(Stage):
             os.path.join(output_storage_offset, 'sweep%s' % contextid)
 
 
+        minput_location = run_settings['http://rmit.edu.au/schemas/input/system'][u'input_location']
+        input_location_list = minput_location.split('/')
+        input_storage_name = input_location_list[0]
+        input_storage_offset = ''
+        if len(input_location_list) > 1:
+            input_storage_offset = os.path.join(*input_location_list[1:])
+        logger.debug('input_storage_offset=%s' % input_storage_offset)
+
+        run_settings[RMIT_SCHEMA + '/platform/storage/input'] = {}
+        run_settings[RMIT_SCHEMA + '/platform/storage/input']['platform_url'] = input_storage_name
+        bdp_username = run_settings['http://rmit.edu.au/schemas/bdp_userprofile']['username']
+        input_storage_url = run_settings['http://rmit.edu.au/schemas/platform/storage/input']['platform_url']
+        input_storage_settings = platform.get_platform_settings(input_storage_url, bdp_username)
+        run_settings['http://rmit.edu.au/schemas/platform/storage/input']['offset'] = input_storage_offset
+
 
         # TODO: move iseed out of hrmc into separate schema to use on any
         # sweepable connector and make this function completely hrmc independent.
@@ -154,7 +171,7 @@ class Sweep(Stage):
         user = context.owner.user.username
         #self.job_dir = run_settings['http://rmit.edu.au/schemas/input/system'][
         #    u'output_location']
-        self.job_dir = 'file://local@127.0.0.1/sweep' #todo replace with scratch space
+        self.job_dir = 'file://local@127.0.0.1/sweep%s' % contextid #todo replace with scratch space
 
         subdirective = run_settings['http://rmit.edu.au/schemas/stages/sweep']['directive']
         subdirective_ns = "http://rmit.edu.au/schemas/input/%s" % subdirective
@@ -196,8 +213,14 @@ class Sweep(Stage):
             logger.debug("systemsetttings=%s" % pformat(run_settings['http://rmit.edu.au/schemas/input/system']))
             input_location = run_settings[
                 'http://rmit.edu.au/schemas/input/system'][u'input_location']
-            input_url = smartconnector.get_url_with_pkey(local_settings,
-                input_location, is_relative_path=False)
+            #input_url = smartconnector.get_url_with_pkey(local_settings,
+            #    input_location, is_relative_path=False)
+            #'file://127.0.0.1/myfiles/input'
+            input_prefix = '%s://%s@' % (input_storage_settings['scheme'],
+                                    input_storage_settings['type'])
+            input_url = smartconnector.get_url_with_pkey(input_storage_settings,
+            input_prefix+os.path.join(input_storage_settings['ip_address'], input_storage_offset),
+            is_relative_path=False)
             logger.debug("input_url=%s" % input_url)
             # job_dir contains some overriding context that this run is situated under
             # run_inputdir = os.path.join(self.job_dir,
@@ -210,7 +233,7 @@ class Sweep(Stage):
             run_iter_url = smartconnector.get_url_with_pkey(local_settings,
                 run_inputdir, is_relative_path=False)
             logger.debug("run_iter_url=%s" % run_iter_url)
-            hrmcstages.copy_directories(input_url, run_iter_url)
+            storage.copy_directories(input_url, run_iter_url)
 
             # Q: copy payload_location to gridYY/payload_Z ? this would allow templating of this too????
             # TODO: can we have multiple values files per input_dir or just one.
