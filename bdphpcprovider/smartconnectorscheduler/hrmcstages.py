@@ -30,7 +30,7 @@ from pprint import pformat
 import paramiko
 import getpass
 from urlparse import urlparse, parse_qsl
-
+from django.db import transaction
 
 from django.utils.importlib import import_module
 from django.core.exceptions import ImproperlyConfigured
@@ -1230,18 +1230,21 @@ def make_runcontext_for_directive(platform_name, directive_name,
     return (run_settings, command_args, run_context)
 
 
+@transaction.commit_on_success
 def _make_new_run_context(stage, profile, directive, parent, run_settings):
     """
     Make a new context  for a user to execute stages based on initial context
     """
     # make run_context for this user
-    logger.debug('parent=%s' % parent)
     run_context = models.Context.objects.create(
         owner=profile,
         directive=directive,
         parent=parent,
         status="starting",
         current_stage=stage)
+    if not parent:
+        run_context.parent = run_context
+        run_context.save()
     run_context.update_run_settings(run_settings)
     return run_context
 

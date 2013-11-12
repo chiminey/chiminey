@@ -626,7 +626,8 @@ class ContextMessageResource(ModelResource):
         paginator_class = Paginator
 
     def get_object_list(self, request):
-        return models.ContextMessage.objects.filter(context__owner__user=request.user).order_by('-id')
+        return models.ContextMessage.objects.filter(context__owner__user=request.user)\
+            .order_by('-context__parent__id', 'id')
 
 
 
