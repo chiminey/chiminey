@@ -374,8 +374,9 @@ class Wait(Stage):
             run_settings.setdefault(
             'http://rmit.edu.au/schemas/stages/create', {})[u'failed_nodes'] = self.failed_nodes
 
+        completed_procs = [x for x in self.executed_procs if x['status'] == 'completed']
         smartconnector.info(run_settings, "%s: waiting (%s of %s processes done)"
-            % (self.id + 1, len(self.finished_nodes), len(self.current_processes)))
+            % (self.id + 1, len(completed_procs), len(self.current_processes)))
 
 
         if self.procs_2b_rescheduled:

@@ -95,7 +95,7 @@ class Create(Stage):
             number_vm_instances,
             local_settings)
         logger.debug('node initialisation done')
-
+        #todo: cleanup nodes with Error state, and also nodes that are spawning indefinitely (timeout)
         #check if sufficient no. node created
         failure_detection = FailureDetection()
         failure_recovery = FailureRecovery()

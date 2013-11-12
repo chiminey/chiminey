@@ -248,6 +248,34 @@ CELERYBEAT_SCHEDULE = {
       },
     }
 
+
+CELERY_DEFAULT_QUEUE = 'default'
+CELERY_QUEUES = {
+   "hightasks": {
+       "binding_key": "high",
+       "exchange": "default",
+   },
+   "default": {
+       "binding_key": "default",
+       "exchange": "default",
+   }
+}
+CELERY_DEFAULT_EXCHANGE = "default"
+CELERY_DEFAULT_EXCHANGE_TYPE = "direct"
+CELERY_DEFAULT_ROUTING_KEY = "default"
+
+CELERY_ROUTES = {
+  "smartconnectorscheduler.context_message": {
+   "queue": "hightasks",
+   "routing_key": "high",
+},
+"smartconnectorscheduler.delete": {
+   "queue": "hightasks",
+   "routing_key": "high",
+},
+}
+
+
 #CELERYD_OPTS = "--time-limit=10"
 
 FILE_UPLOAD_PERMISSIONS = 0700

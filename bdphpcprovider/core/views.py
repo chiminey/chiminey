@@ -627,7 +627,7 @@ class ContextMessageResource(ModelResource):
 
     def get_object_list(self, request):
         return models.ContextMessage.objects.filter(context__owner__user=request.user)\
-            .order_by('-context__parent__id', 'id')
+            .order_by('-context__parent__id', 'context__id')
 
 
 
