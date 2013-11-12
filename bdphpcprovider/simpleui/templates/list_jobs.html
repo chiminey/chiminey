@@ -6,22 +6,18 @@
 {% load split %}
 {% load humanize %}
 {% block content %}
+
+
 <script type="text/javascript">
 $(document).ready(function () {
            {% for job in object_list %}
            $('#{{ forloop.counter }}').tooltip();
            {% endfor %}
             $('.footable').footable();
-
-
             {% for job in object_list %}
-
-            {% for id in object_list %}
-            // {{id}}
-            {% if id.6 == job.0 %}
-            $('#expand_{{job.0}}').html('{{job.0}} <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="bar" id="tooltip_{{job.0}}"><img src="#" class="icon-chevron-down"></a>')
-            {% endif %}
-            {% endfor %}
+               {% if job.0 == job.6 %}
+                    $('#expand_{{job.0}}').html('{{job.0}} <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="bar" id="tooltip_{{job.0}}"><img src="#" class="icon-chevron-down"></a>')
+               {% endif %}
             {% endfor %}
 
        });
@@ -29,7 +25,7 @@ $(document).ready(function () {
 $(document).on('click', '#expand_{{job.0}}', function(e) {
 
   {% for id in object_list %}
-  {% if id.6 == job.0 %}
+  {% if id.6 == job.0  and id.0 != job.0%}
   if ($("#row_{{id.0}}").is(':visible')) {
     $('#expand_{{job.0}}').html('{{job.0}} <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="foo" id="tooltip_{{job.0}}"><img src="#" class="icon-chevron-right"></a>');
   } else {
@@ -57,7 +53,6 @@ $(document).on('click','.delete', function(e) {
 <div class="page-header"><h1> Jobs</h1></div>
 <div class="row-fluid">
     <form class="form-horizontal" id="myform-id" action="" method="POST"> {% csrf_token %}
-
     <table class="footable table table-hover table-bordered table-condensed">
         <thead>
             <tr>
@@ -78,8 +73,11 @@ $(document).on('click','.delete', function(e) {
         </thead>
         <tbody>
 {% for job in object_list %}
+    {% if job.0 == job.6 %}
+        <tr><td></td></tr>
+    {% endif %}
 <tr class='{{job.3|split:"0"}}' id="row_{{job.0}}">
-<td class="span1" id="expand_{{job.0}}">{{ job.0 }}
+<td class="span1" id="expand_{{job.0}}"> {{ job.0 }}
 </td>
 <td class="span2">{{ job.4 }} <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{job.5}}" id='{{forloop.counter}}'><img src="#" class="icon-question-sign"></a>
 </td>

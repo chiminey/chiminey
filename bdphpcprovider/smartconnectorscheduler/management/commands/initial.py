@@ -306,7 +306,7 @@ class Command(BaseCommand):
                 u'threshold': {'type':models.ParameterName.STRING, 'subtype':'string', 'description':'No. results kept per iteration', 'ranking':4, 'initial':'[1]', 'help_text':'Number of outputs to keep between iterations. eg. [2] would keep the top 2 results.'},  # FIXME: should be list of ints
                 u'optimisation_scheme': {'type':models.ParameterName.STRLIST, 'subtype':'choicefield', 'description':'No. varying parameters', 'ranking':5, 'choices': '[("MC","Monte Carlo"), ("MCSA", "Monte Carlo with Simulated Annealing")]', 'initial': 'MC', 'help_text':'', 'hidefield': 'http://rmit.edu.au/schemas/input/hrmc/fanout_per_kept_result', 'hidecondition':'== "MCSA"'},
                 u'iseed': {'type':models.ParameterName.NUMERIC, 'subtype':'natural', 'description':'Random Number Seed', 'ranking':7, 'initial': 42, 'help_text':'Initial seed for random numbers'},
-                u'fanout_per_kept_result': {'type':models.ParameterName.NUMERIC, 'subtype':'natural', 'description':'No. fanout kept per result', 'initial': 4, 'ranking':12, 'help_text':''},
+                u'fanout_per_kept_result': {'type':models.ParameterName.NUMERIC, 'subtype':'natural', 'description':'No. fanout kept per result', 'initial': 1, 'ranking':12, 'help_text':''},
                 }
                 ],
             u'http://rmit.edu.au/schemas/input/sweep':
