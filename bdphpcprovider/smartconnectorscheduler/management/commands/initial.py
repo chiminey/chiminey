@@ -101,6 +101,14 @@ class Command(BaseCommand):
                 u'namespace': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':0, 'help_text':''},
                 }
                 ],
+            u'http://rmit.edu.au/schemas/platform/storage/input':
+                [u'schema for storage platform (input) instances',
+                {
+                u'offset': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking': 3, 'help_text':''},
+                u'platform_url': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking': 1, 'help_text':''},
+                u'namespace': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':0, 'help_text':''},
+                }
+                ],
             u'http://rmit.edu.au/schemas//files':
                 [u'general input files for directive',
                 {
@@ -279,7 +287,7 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/input/system':
                 [u'Locations',
                 {
-                u'input_location': {'type':models.ParameterName.STRING, 'subtype':'bdpurl', 'initial':'file://127.0.0.1/myfiles/input', 'description':'Input Location', 'ranking':1,  'help_text': 'A BDP Url'},
+                u'input_location': {'type':models.ParameterName.STRING, 'subtype':'storage_bdpurl', 'initial':'file://127.0.0.1/myfiles/input', 'description':'Input Location', 'ranking':1,  'help_text': 'Storage platform name with optional offset path: e.g., storage_home/myexperiment'},
                 u'output_location': {'type':models.ParameterName.STRING, 'subtype':'storage_bdpurl', 'initial':'file://local@127.0.0.1/sweep', 'description':'Output Location', 'ranking': 2, 'help_text': 'Storage platform name with optional offset path: e.g., storage_home/myexperiment'}
                 }
                 ],
