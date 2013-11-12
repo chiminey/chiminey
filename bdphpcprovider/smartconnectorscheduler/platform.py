@@ -47,6 +47,7 @@ def create_platform(platform_name, username,
                   ' Paramteres %s are missing' % missing_params
         return False, message
     platform_type = os.path.basename(schema_namespace)
+    parameters['name'] = platform_name
     configure_platform(platform_type, username, parameters)
     valid_params, message = validate_parameters(
         platform_type, parameters, passwd_auth=True)
@@ -138,9 +139,12 @@ def update_platform(platform_name, username,
     logger.debug(platform_name)
     logger.debug(updated_parameters)
     current_platform_record, schema_namespace = retrieve_platform(platform_name, username)
+    if 'name' not in updated_parameters.keys():
+        updated_parameters['name'] = platform_name
     updated_platform_record = dict(current_platform_record)
     updated_platform_record.update(updated_parameters)
     platform_type = os.path.basename(schema_namespace)
+    configure_platform(platform_type, username, updated_platform_record)
     valid_params, message = validate_parameters(
         platform_type, updated_platform_record, passwd_auth=True)
     if not valid_params:
@@ -328,7 +332,6 @@ def generate_nectar_key(parameters):
         unique_key = False
         counter = 1
         while not unique_key:
-            logger.debug('hi%s' % counter)
             try:
                 if not os.path.exists(os.path.join(key_dir, key_name)):
                     key_pair = connection.create_key_pair(key_name)
