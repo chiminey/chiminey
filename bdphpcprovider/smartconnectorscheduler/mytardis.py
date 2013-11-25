@@ -310,6 +310,7 @@ def post_dataset(settings,
                             logger.debug("fname=%s,func=%s" % (fname, func))
                             if fname == os.path.basename(file_location):
                                 #new_value.update(func(open(file_path, 'r')))
+                                source_file.seek(0)
                                 new_value.update(func(source_file))
                                 found_func_match = True  # FIXME: can multiple funcs match?
 
@@ -345,6 +346,7 @@ def post_dataset(settings,
         file_size = source_file_ref.size(source_file._name)
         logger.debug("file_size=%s" % file_size)
         if file_size > 0:
+            source_file.seek(0)
             data = json.dumps({
                 'dataset': str(new_dataset_uri),
                 "parameter_sets": new_datafile_paramset,
@@ -356,11 +358,15 @@ def post_dataset(settings,
                 #'md5sum': hashlib.md5(open(file_path, 'r').read()).hexdigest()
                 })
             logger.debug("data=%s" % data)
-
+            #import pdb; pdb.set_trace()
+            source_file.seek(0)
+            #logger.debug(source_file.read())
+            source_file.seek(0)
             r = requests.post(url, data={'json_data': data}, headers=headers,
                 files={'attached_file': source_file}, #open(file_path, 'rb')},
                 auth=HTTPBasicAuth(tardis_user, tardis_pass)
                 )
+
             # FIXME: need to check for status_code and handle failures.
 
             logger.debug("r.js=%s" % r.json)
