@@ -172,7 +172,7 @@ def retrieve_local_settings(run_settings, local_settings):
     logger.debug('retrieve completed')
 
 
-def start_multi_setup_task(settings, maketarget_nodegroup_pair={}):
+def start_multi_setup_task(settings):
     """
     Run the package on each of the nodes in the group and grab
     any output as needed
@@ -180,6 +180,7 @@ def start_multi_setup_task(settings, maketarget_nodegroup_pair={}):
     nodes = botocloudconnector.get_rego_nodes(settings)
     logger.debug("nodes=%s" % nodes)
     requested_nodes = 0
+    maketarget_nodegroup_pair={}
 
     # TODO: need testcases for following code
     if not maketarget_nodegroup_pair:
