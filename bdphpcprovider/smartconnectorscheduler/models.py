@@ -575,6 +575,8 @@ class DirectiveArgSet(models.Model):
     order = models.IntegerField()
     schema = models.ForeignKey(Schema)
 
+    def __unicode__(self):
+        return u"%s %s" % (self.directive, self.schema)
 
 class SmartConnector(models.Model):
     """
@@ -612,16 +614,17 @@ class Context(models.Model):
         schema_map = {}
         for cps in ContextParameterSet.objects.filter(context=self):
             schema = cps.schema.namespace
-            #logger.debug("schema=%s" % schema)
+            logger.debug("schema=%s" % schema)
             sch_cont = {}
             for param in ContextParameter.objects.filter(paramset=cps):
+                logger.debug("param=%s"  % param)
                 sch_cont[param.name.name] = param.getValue()  # NB: Assume that key is unique to each schema
             sch = schema_map[schema] if schema in schema_map else []
             sch.append(sch_cont)
             schema_map[schema] = sch[0]  # NB: assume only one instance of each schema per context
 
         context = schema_map
-        #logger.debug("context=%s" % context)
+        logger.debug("context=%s" % context)
 
         return context
 
@@ -710,23 +713,29 @@ class Context(models.Model):
 
             for k in kvs:
                 v = kvs[k]
+                logger.debug("k=%s v=%s" % (k, v))
 
                 try:
                     pn = ParameterName.objects.get(schema=sch,
                         name=k)
                 except ParameterName.DoesNotExist:
                     msg = "Unknown parameter '%s' for context '%s'" % (k, run_settings)
-                    logger.exception(msg)
+                    logger.error(msg)
                     raise InvalidInputError(msg)
                 try:
                     cp = ContextParameter.objects.get(name__name=k, paramset=paramset)
                 except ContextParameter.DoesNotExist:
                     # TODO: need to check type
                     logger.debug("new param =%s" % pn)
-                    cp = ContextParameter.objects.create(name=pn,
-                        paramset=paramset, value=v)
-                except MultipleObjectsReturned:
-                    logger.exception("Found duplicate entry in ContextParamterSet")
+                    try:
+                        cp = ContextParameter.objects.create(name=pn,
+                            paramset=paramset, value=v)
+                    except Exception, e:
+                        logger.error(e)
+                        pass
+                except MultipleObjectsReturned, e:
+                    logger.error(e)
+                    logger.error("Found duplicate entry in ContextParamterSet")
                     raise
                 else:
                     logger.debug("updating %s to %s" % (cp.name, v))

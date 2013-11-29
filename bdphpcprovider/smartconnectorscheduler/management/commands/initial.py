@@ -291,12 +291,17 @@ class Command(BaseCommand):
                 u'output_location': {'type':models.ParameterName.STRING, 'subtype':'storage_bdpurl', 'initial':'file://local@127.0.0.1/sweep', 'description':'Output Location', 'ranking': 2, 'help_text': 'Storage platform name with optional offset path: e.g., storage_home/myexperiment'}
                 }
                 ],
+            u'http://rmit.edu.au/schemas/input/system/compplatform':
+                [u'Computation Platform',
+                {
+                u'computation_platform': {'type':models.ParameterName.STRLIST, 'subtype':'platform', 'initial': '', 'description':'Computation Platform Name', 'ranking':0, 'help_text':'The name of the computation platform to be used'},
+                }
+                ],
             u'http://rmit.edu.au/schemas/input/system/cloud':
                 [u'Cloud Resources',
                 {
                 u'number_vm_instances': {'type':models.ParameterName.NUMERIC, 'subtype':'whole', 'initial':4, 'description':'Number of VM instances', 'ranking':1, 'help_text':''},
                 u'minimum_number_vm_instances': {'type':models.ParameterName.NUMERIC, 'subtype':'whole', 'initial':1, 'description':'Minimum No. VMs', 'ranking':2, 'help_text':''},
-                u'computation_platform': {'type':models.ParameterName.STRLIST, 'subtype':'platform', 'initial': '', 'description':'Computation Platform Name', 'ranking':0, 'help_text':'The name of the computation platform to be used'},
                 }
                 ],
             u'http://rmit.edu.au/schemas/input/mytardis':
@@ -751,7 +756,7 @@ class Command(BaseCommand):
         sweep_stage.update_settings({
             u'http://rmit.edu.au/schemas/stages/sweep':
             {
-                u'template_name': 'HRMC.inp'
+                u'template_name': 'HRMC.inp',
             },
             # FIXME: move random_numbers into system schema
             u'http://rmit.edu.au/schemas/system':
@@ -767,23 +772,67 @@ class Command(BaseCommand):
 
         self.define_remote_make(nci_platform)
 
+        self.setup_sweep_remotemake(nci_platform)
+
         self.setup_directive_args()
         print "done"
+
+    def setup_sweep_remotemake(self, local_platform):
+
+
+        sweep, _ = models.Directive.objects.get_or_create(name="sweep_make",
+            description="Parameter Sweep Connector for remote make")
+
+        sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep",
+            description="Sweep Test",
+            package="bdphpcprovider.smartconnectorscheduler.stages.sweep.Sweep",
+            order=100)
+        sweep_stage.update_settings({
+            u'http://rmit.edu.au/schemas/stages/sweep':
+            {
+                u'template_name': 'HRMC.inp',
+            },
+            # FIXME: move random_numbers into system schema
+            u'http://rmit.edu.au/schemas/system':
+            {
+                u'random_numbers': 'file://127.0.0.1/randomnums.txt'
+            },
+
+            })
+
+        # FIXME: tasks.progress_context does not load up composite stage settings
+        comm, _ = models.Command.objects.get_or_create(platform=local_platform,
+            directive=sweep, stage=sweep_stage)
+
 
     def setup_directive_args(self):
         sweep, _ = models.Directive.objects.get_or_create(name="sweep")
 
         RMIT_SCHEMA = "http://rmit.edu.au/schemas"
         for i, sch in enumerate([
-                RMIT_SCHEMA+"/input/system/cloud",
-                RMIT_SCHEMA+"/input/reliability",
-                RMIT_SCHEMA+"/input/system",
-                RMIT_SCHEMA+"/input/hrmc",
-                RMIT_SCHEMA+"/input/mytardis",
-                RMIT_SCHEMA+"/input/sweep"
+                RMIT_SCHEMA + "/input/system/compplatform",
+                RMIT_SCHEMA + "/input/system/cloud",
+                RMIT_SCHEMA + "/input/reliability",
+                RMIT_SCHEMA + "/input/system",
+                RMIT_SCHEMA + "/input/hrmc",
+                RMIT_SCHEMA + "/input/mytardis",
+                RMIT_SCHEMA + "/input/sweep"
                 ]):
             schema = models.Schema.objects.get(namespace=sch)
             das, _ = models.DirectiveArgSet.objects.get_or_create(directive=sweep, order=i, schema=schema)
+
+        sweep_make, _ = models.Directive.objects.get_or_create(name="sweep_make")
+
+        RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+        for i, sch in enumerate([
+                RMIT_SCHEMA + "/input/system/compplatform",
+                RMIT_SCHEMA + "/input/system",
+                RMIT_SCHEMA + "/input/mytardis",
+                RMIT_SCHEMA + "/input/sweep"
+                ]):
+            schema = models.Schema.objects.get(namespace=sch)
+            das, _ = models.DirectiveArgSet.objects.get_or_create(directive=sweep_make, order=i, schema=schema)
+
 
     def define_remote_make(self, nci_platform):
         remote_make, _ = models.Directive.objects.get_or_create(name="remotemake", description="Remote execution of a Makefile")

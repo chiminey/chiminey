@@ -14,10 +14,10 @@ import logging
 import logging.config
 
 # for celery 3.0
-#from celery.utils.log import get_task_logger
-#logger = get_task_logger(__name__)
+from celery.utils.log import get_task_logger
+logger = get_task_logger(__name__)
 
-logger = logging.getLogger(__name__)
+#logger = logging.getLogger(__name__)
 
 # from celery.signals import after_setup_task_logger
 
@@ -53,9 +53,12 @@ def delete(context_id):
             try:
                 run_context = models.Context.objects.select_for_update().get(id=run_context.id, deleted=False)
             except DatabaseError:
-                logger.info("progress context for %s is already running.  exiting"
+                logger.info("progress context for %s is already deleted.  exiting"
                     % context_id)
                 return
+            except Context.DoesNotExist:
+                logger.info("progress context for %s is already deleted.  exiting"
+                    % context_id)
             else:
                 logger.info("deleting %s" % context_id)
             run_context.deleted = True
@@ -69,8 +72,10 @@ def run_contexts():
     # Collect all valid contexts and process all before getting new set. This
     # should ensure that difficult for one user to monopolise processor, though
     # still not effective against DoS attack of job submission requests...
+    logger.debug("run_contexts")
     try:
         for context in models.Context.objects.filter(deleted=False):
+            logger.debug("checking context=%s" % context)
             progress_context.delay(context.id)
     except models.Context.DoesNotExist:
         logger.warn("Context removed from other thread")
@@ -112,27 +117,29 @@ def context_message(context_id, mess):
 def progress_context(context_id):
     try:
         try:
-            try:
-                run_context = models.Context.objects.get(id=context_id, deleted=False)
-            except models.Context.DoesNotExist:
-                logger.warn("Context %s removed from other thread" % context_id)
-                return
-            #logger.debug("process context %s" % run_context)
+            # try:
+            #     run_context = models.Context.objects.get(id=context_id, deleted=False)
+            # except models.Context.DoesNotExist:
+            #     logger.warn("Context %s removed from other thread" % context_id)
+            #     return
+            # logger.debug("try to process context %s" % run_context)
 
             test_info = []
             with transaction.commit_on_success():
+                logger.debug("progress_context.context_id=%s" % context_id)
                 try:
                     run_context = models.Context.objects.select_for_update(
-                        nowait=True).get(id=run_context.id, deleted=False)
+                        nowait=True).get(id=context_id, deleted=False)
                 except DatabaseError:
-                    logger.info("progress context for %s is already running.  exiting"
+                    logger.debug("progress context for %s is already running.  exiting"
                         % context_id)
                     return
-                except Context.DoesNotExist, e:
-                    logger.warn("Context %s removed from other thread" % context_id)
+                except models.Context.DoesNotExist, e:
+                    logger.debug("Context %s removed from other thread" % context_id)
                     return
                 else:
                     logger.info("processing %s" % context_id)
+                logger.debug("Executing task id %r, args: %r kwargs: %r" % ( progress_context.request.id, progress_context.request.args, progress_context.request.kwargs))
                 stage = run_context.current_stage
                 logger.debug("stage=%s" % stage)
                 children = models.Stage.objects.filter(parent=stage)
@@ -175,20 +182,22 @@ def progress_context(context_id):
                     logger.debug("task run_settings=%s" % task_run_settings)
 
                     logger.debug("Stage '%s' testing for triggering" % current_stage.name)
-                    if stage.triggered(deepcopy(task_run_settings)):
-                        logger.debug("Stage '%s' TRIGGERED" % current_stage.name)
-                        stage.process(deepcopy(task_run_settings))
-                        task_run_settings = stage.output(task_run_settings)
-                        logger.debug("updated task_run_settings=%s" % pformat(task_run_settings))
-                        run_context.update_run_settings(task_run_settings)
-                        logger.debug("task_run_settings=%s" % pformat(task_run_settings))
-                        logger.debug("context run_settings=%s" % run_context)
+                    try:
+                        if stage.triggered(deepcopy(task_run_settings)):
+                            logger.debug("Stage '%s' TRIGGERED" % current_stage.name)
+                            stage.process(deepcopy(task_run_settings))
+                            task_run_settings = stage.output(task_run_settings)
+                            logger.debug("updated task_run_settings=%s" % pformat(task_run_settings))
+                            run_context.update_run_settings(task_run_settings)
+                            logger.debug("task_run_settings=%s" % pformat(task_run_settings))
+                            logger.debug("context run_settings=%s" % run_context)
 
-                        triggered = True
-                        break
-                    else:
-                        logger.debug("Stage '%s' NOT TRIGGERED" % current_stage.name)
-
+                            triggered = True
+                            break
+                        else:
+                            logger.debug("Stage '%s' NOT TRIGGERED" % current_stage.name)
+                    except Exception, e:
+                        logger.error("error=%s" % e)
                 if not triggered:
                     logger.debug("No stages triggered")
                     test_info = task_run_settings
@@ -197,7 +206,6 @@ def progress_context(context_id):
                     #run_context.delete()
 
                 logger.info("context task %s complete" % (context_id))
-                return test_info
         except SoftTimeLimitExceeded:
             raise
     except Exception, e:
