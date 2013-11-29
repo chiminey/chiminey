@@ -468,4 +468,3 @@ def get_job_dir(output_storage_settings, run_settings):
     offset = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset']
     job_dir = os.path.join(ip_address, offset)
     return job_dir
-

@@ -87,31 +87,9 @@ class Sweep(Stage):
         smartconnector.copy_settings(local_settings, run_settings,
             'http://rmit.edu.au/schemas/system/platform')
         smartconnector.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/input/reliability/reschedule_failed_processes')
-        smartconnector.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/input/reliability/maximum_retry')
-        smartconnector.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/input/system/cloud/number_vm_instances')
-        smartconnector.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/input/system/cloud/minimum_number_vm_instances')
-        smartconnector.copy_settings(local_settings, run_settings,
             'http://rmit.edu.au/schemas/input/mytardis/experiment_id')
         smartconnector.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/input/hrmc/iseed')
-        smartconnector.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/input/hrmc/optimisation_scheme')
-        smartconnector.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/input/hrmc/threshold')
-        smartconnector.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/input/hrmc/pottype')
-        smartconnector.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/input/hrmc/error_threshold')
-        smartconnector.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/input/hrmc/max_iteration')
-        smartconnector.copy_settings(local_settings, run_settings,
             'http://rmit.edu.au/schemas/system/random_numbers')
-        smartconnector.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/input/hrmc/fanout_per_kept_result')
 
         logger.debug('local_settings=%s' % local_settings)
 
@@ -126,10 +104,9 @@ class Sweep(Stage):
         else:
             parent_contextid = 0
 
-        computation_platform_name = run_settings['http://rmit.edu.au/schemas/input/system/cloud']['computation_platform']
+        computation_platform_name = run_settings['http://rmit.edu.au/schemas/input/system/compplatform']['computation_platform']
         run_settings[RMIT_SCHEMA + '/platform/computation'] = {}
         run_settings[RMIT_SCHEMA + '/platform/computation']['platform_url'] = computation_platform_name
-
 
         output_location = run_settings['http://rmit.edu.au/schemas/input/system'][u'output_location']
         output_location_list = output_location.split('/')
@@ -350,6 +327,7 @@ class Sweep(Stage):
 
 
     def output(self, run_settings):
+        logger.debug("sweep output")
         run_settings.setdefault(
             'http://rmit.edu.au/schemas/stages/sweep',
             {})[u'sweep_done'] = 1

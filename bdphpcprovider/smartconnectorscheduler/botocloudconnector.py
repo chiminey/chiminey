@@ -106,7 +106,7 @@ def create_VM_instances(number_vm_instances, settings):
     logger.debug(settings['security_group'])
     try:
         reservation = connection.run_instances(
-                    #placement='qld',
+                    placement='monash',
                     image_id=settings['vm_image'],
                     min_count=1,
                     max_count=number_vm_instances,
