@@ -141,8 +141,6 @@ class Sweep(Stage):
         # TODO: move iseed out of hrmc into separate schema to use on any
         # sweepable connector and make this function completely hrmc independent.
 
-        self.rand_index = run_settings['http://rmit.edu.au/schemas/input/hrmc']['iseed']
-        logger.debug("rand_index=%s" % self.rand_index)
 
         context = models.Context.objects.get(id=contextid)
         user = context.owner.user.username
@@ -162,22 +160,28 @@ class Sweep(Stage):
         runs = _expand_variations(maps=[map], values={})
         logger.debug("runs=%s" % runs)
 
-        # prep random seeds for each run based off original iseed
-        # FIXME: inefficient for large random file
-        # TODO, FIXME: this is potentially problematic if different
-        # runs end up overlapping in the random numbers they utilise.
-        # solution is to have separate random files per run or partition
-        # big file up.
-        try:
-            rands = hrmcstages.generate_rands(settings=local_settings,
-            start_range=0,
-            end_range=-1,
-            num_required=len(runs),
-            start_index=self.rand_index)
-            logger.debug("rands=%s" % rands)
-        except Exception, e:
-            logger.debug(e)
-            raise
+
+        rands = []
+        if 'http://rmit.edu.au/schemas/input/hrmc' in run_settings:
+
+            self.rand_index = run_settings['http://rmit.edu.au/schemas/input/hrmc']['iseed']
+            logger.debug("rand_index=%s" % self.rand_index)
+            # prep random seeds for each run based off original iseed
+            # FIXME: inefficient for large random file
+            # TODO, FIXME: this is potentially problematic if different
+            # runs end up overlapping in the random numbers they utilise.
+            # solution is to have separate random files per run or partition
+            # big file up.
+            try:
+                rands = hrmcstages.generate_rands(settings=local_settings,
+                start_range=0,
+                end_range=-1,
+                num_required=len(runs),
+                start_index=self.rand_index)
+                logger.debug("rands=%s" % rands)
+            except Exception, e:
+                logger.debug(e)
+                raise
 
         # For each of the generated runs, copy across and modify input directory
         # and then schedule subrun of hrmc connector
@@ -196,7 +200,7 @@ class Sweep(Stage):
             input_prefix = '%s://%s@' % (input_storage_settings['scheme'],
                                     input_storage_settings['type'])
             input_url = smartconnector.get_url_with_pkey(input_storage_settings,
-            input_prefix+os.path.join(input_storage_settings['ip_address'], input_storage_offset),
+                input_prefix + os.path.join(input_storage_settings['ip_address'], input_storage_offset),
             is_relative_path=False)
             logger.debug("input_url=%s" % input_url)
             # job_dir contains some overriding context that this run is situated under
@@ -241,6 +245,20 @@ class Sweep(Stage):
             values_map.update(context)
             logger.debug("new values_map=%s" % values_map)
             hrmcstages.put_file(values_url, json.dumps(values_map))
+
+            # new format for values map one per directory
+            try:
+                new_values_url = smartconnector.get_url_with_pkey(
+                    local_settings,
+                    os.path.join(run_inputdir, "initial",
+                        'values'),
+                    is_relative_path=False)
+                logger.debug("new_values_url=%s" % new_values_url)
+            except IOError:
+                logger.warn("no values file found")
+
+            hrmcstages.put_file(new_values_url, json.dumps(values_map))
+
             data = {}
             logger.debug("rs=%s" % pformat(run_settings))
             # for param_name, params in run_settings.items():
@@ -258,7 +276,9 @@ class Sweep(Stage):
             #             if str(param_name).startswith(subdirective_ns)])
             data = run_settings
             logger.debug("data=%s" % pformat(data))
-            data["http://rmit.edu.au/schemas/input/hrmc"][u'iseed'] = rands[i]
+
+            if len(rands):
+                data["http://rmit.edu.au/schemas/input/hrmc"][u'iseed'] = rands[i]
             data["http://rmit.edu.au/schemas/input/system"]['input_location'] = "%s/run%s/input_0" % (self.job_dir, run_counter)
             #data['smart_connector'] = subdirective
             #data["http://rmit.edu.au/schemas/input/system"]['output_location'] = os.path.join(self.job_dir, subdirective)
