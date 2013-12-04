@@ -522,7 +522,7 @@ class SweepSubmitFormView(FormView):
 
         schemas={
         'hrmc_schema':"http://rmit.edu.au/schemas/hrmc/",
-        'system_schema':"http://rmit.edu.au/schemas/system/misc/",
+        'system_schema':"http://rmit.edu.au/q/misc/",
         'run_schema':"http://rmit.edu.au/schemas/stages/run/",
         'sweep_schema':"http://rmit.edu.au/schemas/stages/sweep/",
         }
@@ -793,7 +793,18 @@ def make_dynamic_field(parameter, **kwargs):
                 # FIXME,TODO: compuation_ns value should be part of directive and
                 # passed in, as some directives will only work with particular computation/*
                 # categories.  Assume only nectar comp platforms ever allowed here.
-                computation_ns = 'http://rmit.edu.au/schemas/platform/computation/nectar'
+
+                comp_platform = kwargs['directive']['name']
+                logger.debug("computation platform is %s" % comp_platform)
+
+                computation_ns = 'http://rmit.edu.au/schemas/platform/computation/'
+                if comp_platform == 'sweep':
+                    computation_ns += 'nectar'
+                elif comp_platform == 'sweep_make':
+                    computation_ns += 'nci'
+                else:
+                    logger.warn("unknown computation platform")
+
                 if 'username' in kwargs:
                     platforms = platform.retrieve_all_platforms(kwargs['username'],
                      schema_namespace_prefix=computation_ns)
@@ -822,6 +833,8 @@ def make_dynamic_field(parameter, **kwargs):
 
         field = forms.ChoiceField(**field_params)
     else:
+
+
         field_params['initial'] = str(parameter['initial'])
         if parameter['subtype'] == 'nectar_platform':
             schema = 'http://rmit.edu.au/schemas/platform/computation/nectar'
@@ -860,6 +873,8 @@ def check_clean_rules(self, cleaned_data):
 
 def make_directive_form(**kwargs):
     fields = SortedDict()
+
+
     form_data = []
     if 'directive_params' in kwargs:
         for i, schema_data in enumerate(kwargs['directive_params']):
@@ -871,9 +886,9 @@ def make_directive_form(**kwargs):
                 form_data.append((field_key, schema_data['description'] if not j else "", parameter['subtype'], parameter['hidefield'], parameter['hidecondition']))
                 #fixme replce if else by fields[field_key] = make_dynamic_field(parameter) after unique key platform model is developed
                 if 'username' in kwargs:
-                    fields[field_key] = make_dynamic_field(parameter, username=kwargs['username'])
+                    fields[field_key] = make_dynamic_field(parameter, username=kwargs['username'], directive=kwargs['directive'])
                 else:
-                    fields[field_key] = make_dynamic_field(parameter)
+                    fields[field_key] = make_dynamic_field(parameter, directive=kwargs['directive'])
                 logger.debug("field=%s" % fields[field_key].validators)
     logger.debug("fields = %s" % fields)
     #http://www.b-list.org/weblog/2008/nov/09/dynamic-forms/
@@ -1325,7 +1340,8 @@ def submit_directive(request, directive_id):
         form, form_data = make_directive_form(
             request=request.POST,
             directive_params=directive_params,
-            username=request.user.username)
+            username=request.user.username,
+            directive=directive)
         logger.debug("form=%s" % pformat(form))
         logger.debug("form_data=%s" % pformat(form_data))
         if form.is_valid():
@@ -1345,7 +1361,9 @@ def submit_directive(request, directive_id):
         else:
             messages.error(request, "Job Failed because of validation errors. See below")
     else:
-        form, form_data = make_directive_form(directive_params=directive_params, username=request.user.username)
+        form, form_data = make_directive_form(directive_params=directive_params,
+            username=request.user.username,
+            directive=directive)
 
     # TODO: generalise
     if directive['name'] == "sweep":

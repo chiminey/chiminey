@@ -25,10 +25,10 @@ from bdphpcprovider.smartconnectorscheduler import hrmcstages
 
 def setup_settings(run_settings):
     settings = {}
-    settings['username'] = \
-        run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nci_user']
-    settings['password'] = \
-        run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nci_password']
+    # settings['username'] = \
+    #     run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nci_user']
+    # settings['password'] = \
+    #     run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nci_password']
     settings['mytardis_host'] = \
         run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['mytardis_host']
     settings['mytardis_user'] = \
@@ -44,6 +44,12 @@ def setup_settings(run_settings):
         run_settings[
         'http://rmit.edu.au/schemas/remotemake/config'][
         'payload_destination']
+    settings['payload_source'] = \
+        run_settings[
+        'http://rmit.edu.au/schemas/remotemake/config'][
+        'payload_source']
+
+
     settings['input_location'] = run_settings[
         'http://rmit.edu.au/schemas/input/system']['input_location']
     for key in ['nci_user', 'nci_password']:
@@ -77,4 +83,25 @@ def setup_settings(run_settings):
 
     settings['sweep_map'] = run_settings[
             'http://rmit.edu.au/schemas/input/sweep']['sweep_map']
+
+    settings['comp_platform_url'] = run_settings[
+            'http://rmit.edu.au/schemas/platform/computation']['platform_url']
+
+    settings['storeout_platform_url'] = run_settings[
+            'http://rmit.edu.au/schemas/platform/storage/output']['platform_url']
+
+    settings['storein_platform_offset'] = run_settings[
+            'http://rmit.edu.au/schemas/platform/storage/input']['offset']
+
+    settings['storeout_platform_offset'] = run_settings[
+            'http://rmit.edu.au/schemas/platform/storage/output']['offset']
+
+    settings['storein_platform_url'] = run_settings[
+            'http://rmit.edu.au/schemas/platform/storage/input']['platform_url']
+
+
+    settings['bdp_username'] = run_settings[
+            'http://rmit.edu.au/schemas/bdp_userprofile']['username']
+
+
     return settings

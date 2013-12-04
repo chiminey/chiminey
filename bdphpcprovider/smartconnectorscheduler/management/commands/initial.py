@@ -467,7 +467,8 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/remotemake/config':
                 [u'',
                 {
-                u'payload_destination': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':2, 'help_text':''}
+                u'payload_destination': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':2, 'help_text':''},
+                u'payload_source': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':3, 'help_text':''}
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/upload_makefile':
@@ -747,7 +748,7 @@ class Command(BaseCommand):
         print "done"
 
         sweep, _ = models.Directive.objects.get_or_create(name="sweep",
-            description="Parameter Sweep Connector")
+            description="HRMC Sweep Connector")
 
         sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep",
             description="Sweep Test",
@@ -781,17 +782,13 @@ class Command(BaseCommand):
 
 
         sweep, _ = models.Directive.objects.get_or_create(name="sweep_make",
-            description="Parameter Sweep Connector for remote make")
+            description="Remote Make Sweep Connector")
 
-        sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep",
+        sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep_make",
             description="Sweep Test",
             package="bdphpcprovider.smartconnectorscheduler.stages.sweep.Sweep",
             order=100)
         sweep_stage.update_settings({
-            u'http://rmit.edu.au/schemas/stages/sweep':
-            {
-                u'template_name': 'HRMC.inp',
-            },
             # FIXME: move random_numbers into system schema
             u'http://rmit.edu.au/schemas/system':
             {
@@ -863,7 +860,8 @@ class Command(BaseCommand):
             {
                 'http://rmit.edu.au/schemas/remotemake/config':
                 {
-                    u'payload_destination': 'iet595/remotemake'
+                    u'payload_destination': 'iet595/remotemake',
+                    u'payload_source': 'file://127.0.0.1/local/vasppayload',
                 }
             })
         # executes make with run target
@@ -902,14 +900,14 @@ class Command(BaseCommand):
             directive=remote_make,
             stage=remote_make_composite_stage)
 
-        RMIT_SCHEMA = "http://rmit.edu.au/schemas"
-        for i, sch in enumerate([
-                RMIT_SCHEMA + "/input/system",
-                RMIT_SCHEMA + "/input/mytardis",
-                RMIT_SCHEMA + "/input/sweep"
-                ]):
-            schema = models.Schema.objects.get(namespace=sch)
-            das, _ = models.DirectiveArgSet.objects.get_or_create(directive=remote_make, order=i, schema=schema)
+        # RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+        # for i, sch in enumerate([
+        #         RMIT_SCHEMA + "/input/system",
+        #         RMIT_SCHEMA + "/input/mytardis",
+        #         RMIT_SCHEMA + "/input/sweep"
+        #         ]):
+        #     schema = models.Schema.objects.get(namespace=sch)
+        #     das, _ = models.DirectiveArgSet.objects.get_or_create(directive=remote_make, order=i, schema=schema)
 
     def handle(self, *args, **options):
         self.setup()
