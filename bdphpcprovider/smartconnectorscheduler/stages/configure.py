@@ -123,7 +123,12 @@ class Configure(Stage, UI):
         except ValueError:
             self.experiment_id = 0
 
-        if local_settings['mytardis_host']:
+        mytardis_url = run_settings['http://rmit.edu.au/schemas/input/mytardis']['mytardis_platform']
+        mytardis_settings = platform.get_platform_settings(mytardis_url, bdp_username)
+        logger.debug(mytardis_settings)
+        #local_settings.update(mytardis_settings)
+
+        if mytardis_settings['mytardis_host']:
             EXP_DATASET_NAME_SPLIT = 2
 
             def _get_exp_name_for_input(path):
@@ -132,7 +137,7 @@ class Configure(Stage, UI):
             ename = _get_exp_name_for_input(output_location)
             logger.debug("ename=%s" % ename)
             self.experiment_id = mytardis.post_experiment(
-                settings=local_settings,
+                settings=mytardis_settings,
                 exp_id=self.experiment_id,
                 expname=ename,
                 experiment_paramset=[

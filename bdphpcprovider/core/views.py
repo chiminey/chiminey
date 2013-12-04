@@ -351,6 +351,7 @@ class ContextResource(ModelResource):
             'jsondict': ('JSON Dictionary', validators.validate_jsondict, forms.Textarea(attrs={'cols':30, 'rows': 5}), None),
             'bool': ('On/Off', validators.validate_bool, None,  None),
             'platform': ('platform', serverside_validators.validate_platform, None,  None),
+            'mytardis': ('platform', serverside_validators.validate_platform, None,  None),
             'choicefield': ('choicefield', functools.partial(validators.myvalidate_choice_field, choices=('MC','MCSA')), forms.Select(),  None),
 
         }
@@ -375,7 +376,8 @@ class ContextResource(ModelResource):
                 validator = subtype_validation[param.subtype][1]
                 current_subtype = param.subtype
                 logger.debug(current_subtype)
-                if current_subtype == 'storage_bdpurl' or current_subtype == 'nectar_platform' or current_subtype == 'platform':
+                if current_subtype == 'storage_bdpurl' or current_subtype == 'nectar_platform' or\
+                                current_subtype == 'platform' or current_subtype == 'mytardis':
                     value = validator(value, username)
                 else:
                     value = validator(value)
@@ -439,6 +441,7 @@ class ContextResource(ModelResource):
                 ['http://rmit.edu.au/schemas/input/mytardis',
                     #('experiment_id', bundle.data[self.hrmc_schema + 'experiment_id']),
                     ('experiment_id', 0),
+                    ('mytardis_platform', bundle.data['http://rmit.edu.au/schemas/input/mytardis/mytardis_platform'])
                 ],
                 ['http://rmit.edu.au/schemas/stages/run',
                     #('run_map', bundle.data['run_map'])

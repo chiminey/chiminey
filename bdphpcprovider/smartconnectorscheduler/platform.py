@@ -23,9 +23,11 @@ import logging
 import boto
 import paramiko
 import socket
+import requests
 
 from boto.ec2.regioninfo import RegionInfo
 from boto.exception import EC2ResponseError
+from requests.auth import HTTPBasicAuth
 from django.contrib.auth.models import User
 from django.db.models import ObjectDoesNotExist
 from django.db.utils import IntegrityError
@@ -56,7 +58,10 @@ def create_platform(platform_name, username,
     key_generated, message = generate_key(platform_type, parameters)
     if not key_generated:
         return key_generated, message
-    if 'password' in parameters.keys():
+    remove_password = True
+    if 'mytardis' in platform_type:
+        remove_password = False #parameters['api_key'] fixme uncomment
+    if 'password' in parameters.keys() and remove_password:
         parameters['password'] = ''
     created, message = db_create_platform(platform_name, username,
                     schema_namespace, parameters)
@@ -112,6 +117,8 @@ def retrieve_platform(platform_name, username):
 def retrieve_all_platforms(username, schema_namespace_prefix=''):
     platforms = []
     paramsets = []
+    logger.debug('username=%s' % username)
+    logger.debug('schema_namespace_prefix=%s' % schema_namespace_prefix)
     try:
         user = User.objects.get(username=username)
         owner = models.UserProfile.objects.get(user=user)
@@ -152,7 +159,10 @@ def update_platform(platform_name, username,
     key_generated, message = generate_key(platform_type, updated_platform_record)
     if not key_generated:
         return key_generated, message
-    if 'password' in updated_platform_record.keys():
+    remove_password = True
+    if 'mytardis' in platform_type:
+        remove_password = False #parameters['api_key'] fixme uncomment
+    if 'password' in updated_platform_record.keys() and remove_password:
         updated_platform_record['password'] = ''
     updated, message = db_update_platform(platform_name, username, updated_platform_record)
     #TODO: cleanup method
@@ -233,8 +243,9 @@ def validate_parameters(platform_type, parameters, passwd_auth=False):
     if platform_type == 'unix' or platform_type == 'nci':
         path_list = [parameters['root_path'], parameters['home_path']]
         return validate_remote_path(path_list, parameters, passwd_auth)
-    else:
-        return True, 'All valid parameters'
+    if platform_type == 'mytardis':
+        return validate_mytardis_parameters(parameters)
+    return True, 'All valid parameters'
 
 
 def validate_remote_path(path_list, parameters, passwd_auth=False):
@@ -248,6 +259,24 @@ def validate_remote_path(path_list, parameters, passwd_auth=False):
         return False, ', '.join(error_messages)
     else:
         return True, 'Remote path %s exists' % path_list
+
+
+def validate_mytardis_parameters(parameters):
+    headers = {'Accept': 'application/json'}
+    mytardis_url = 'http://%s/api/v1/experiment/?format=json' % parameters['ip_address']
+    username = parameters['username']
+    password = parameters['password']
+    try:
+        response = requests.get(mytardis_url, headers=headers,
+                                auth=HTTPBasicAuth(username, password))
+        status_code = response.status_code
+        if status_code == 200:
+            return True, "MyTardis instance registered successfully"
+        if status_code == 401:
+            return False, "Unauthorised access to %s" % parameters['ip_address']
+        return False, "MyTardis instance registration failed with %s error code" % response.status_code
+    except Exception, e:
+        return False, 'Unable to connect to Mytardis instance [%s]' % parameters['ip_address']
 
 
 def retrieve_missing_params(schema_namespace, parameters):
@@ -308,6 +337,8 @@ def generate_key(platform_type, parameters):
         return generate_nectar_key(parameters)
     elif platform_type == 'nci' or platform_type == 'unix':
         return generate_unix_key(parameters)
+    elif platform_type == 'mytardis':
+        return True, ''
     else:
         return False, 'Unknown platform type [%s]' % platform_type
 
@@ -454,6 +485,10 @@ def update_platform_settings(schema_namespace, settings):
                                                settings['private_key_path'])
         settings['host'] = settings['ip_address']
         settings['scheme'] = 'ssh'
+    elif platform_type == 'mytardis':
+        settings['mytardis_host'] = settings['ip_address']
+        settings['mytardis_user'] = settings['username']
+        settings['mytardis_password'] = settings['password']
 
 
 def get_platform_settings(platform_url, username):

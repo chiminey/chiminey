@@ -31,11 +31,20 @@ function closeDialog () {
     $('#createModal').modal('hide');
 };
 
-function submitForm(description) {
-    var form =  $(this).closest('form').attr("id");
-    var operation = $('form #id_operation');
+function submitForm(description, form_id) {
+    var form = '#' + form_id;
+    var operation = $(form + ' #id_operation');
     operation.val(description);
-    var password = $.trim($('form #id_password').val());
+    var password = $.trim($(form + ' #id_password').val());
+    var api_key = $.trim($(form + ' #id_api_key').val());
+    if (form_id == 'mytardis_form_create'){
+        $(form + ' #id_password').attr('required', 'true')
+        $(form + ' #id_api_key').attr('required', 'true')
+        if (api_key != "")
+            $(form + ' #id_password').removeAttr("required");
+        else if (password != "")
+            $(form + ' #id_api_key').removeAttr("required");
+    }
     form.validate();
     if (form.valid()){
         form.submit()

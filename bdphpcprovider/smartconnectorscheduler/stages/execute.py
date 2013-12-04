@@ -142,12 +142,16 @@ class Execute(Stage):
 
         computation_platform_url = run_settings['http://rmit.edu.au/schemas/platform/computation']['platform_url']
         comp_pltf_settings = platform.get_platform_settings(computation_platform_url, bdp_username)
+
+        mytardis_url = run_settings['http://rmit.edu.au/schemas/input/mytardis']['mytardis_platform']
+        mytardis_settings = platform.get_platform_settings(mytardis_url, bdp_username)
+
         #generic_output_schema = 'http://rmit.edu.au/schemas/platform/storage/output'
 
         failed_processes = [x for x in self.schedule_procs if x['status'] == 'failed']
         if not failed_processes:
             self._prepare_inputs(
-                local_settings, output_storage_settings, comp_pltf_settings)
+                local_settings, output_storage_settings, comp_pltf_settings, mytardis_settings)
         else:
             self._copy_previous_inputs(
                 local_settings, output_storage_settings,
@@ -297,7 +301,8 @@ class Execute(Stage):
         return all_pids
 
 
-    def _prepare_inputs(self, local_settings, output_storage_settings, computation_platform_settings):
+    def _prepare_inputs(self, local_settings, output_storage_settings,
+                        computation_platform_settings, mytardis_settings):
             """
             Upload all input files for this run
             """
@@ -323,7 +328,7 @@ class Execute(Stage):
                     local_settings, self._generate_variations(
                         input_dir, local_settings, output_storage_settings),
                     processes, input_dir,output_storage_settings,
-                    computation_platform_settings)
+                    computation_platform_settings, mytardis_settings)
 
 
     def _generate_variations(self, input_dir, local_settings, output_storage_settings):
@@ -449,7 +454,7 @@ class Execute(Stage):
 
     def _upload_variation_inputs(self, local_settings, variations, processes,
                                  input_dir, output_storage_settings,
-                                 computation_platform_settings):
+                                 computation_platform_settings, mytardis_settings):
         '''
         Create input packages for each variation and upload the vms
         '''
@@ -466,8 +471,8 @@ class Execute(Stage):
         #file://127.0.0.1/sweephrmc261/hrmcrun262/input_0/initial?root_path=/var/cloudenabling/remotesys
         # Copy input directory to mytardis only after saving locally, so if
         # something goes wrong we still have the results
-        if local_settings['mytardis_host']:
 
+        if mytardis_settings['mytardis_host']:
             EXP_DATASET_NAME_SPLIT = 2
 
             def _get_exp_name_for_input(settings, url, path):
@@ -518,7 +523,7 @@ class Execute(Stage):
             # later closer to when corresponding datasets are created, but
             # would required PUT of paramerset data to existing experiment.
             #fixme uncomment later
-
+            local_settings.update(mytardis_settings)
             self.experiment_id = mytardis.post_dataset(
                 settings=local_settings,
                 source_url=source_files_url,

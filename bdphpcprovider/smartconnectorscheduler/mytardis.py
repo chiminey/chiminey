@@ -91,7 +91,7 @@ def post_experiment(settings,
     tardis_pass = settings["mytardis_password"]
     tardis_host_url = "http://%s" % settings["mytardis_host"]
     logger.debug("experiment_paramset=%s" % experiment_paramset)
-
+    logger.debug(settings)
     exp_id_pat = re.compile(".*/([0-9]+)/$")
     if not new_exp_id:
         logger.debug("creating new experiment")

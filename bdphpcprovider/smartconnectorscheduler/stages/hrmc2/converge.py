@@ -160,6 +160,8 @@ class Converge(Stage):
         output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
                                       output_storage_settings['type'])
         self.job_dir = platform.get_job_dir(output_storage_settings, run_settings)
+        mytardis_url = run_settings['http://rmit.edu.au/schemas/input/mytardis']['mytardis_platform']
+        mytardis_settings = platform.get_platform_settings(mytardis_url, bdp_username)
 
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/system', u'id'):
             self.id = run_settings['http://rmit.edu.au/schemas/system'][u'id']
@@ -299,7 +301,7 @@ class Converge(Stage):
 
         if self.done_iterating:
             logger.debug("Total Iterations: %d" % self.id)
-            self._ready_final_output(min_crit_node, min_crit_index, output_storage_settings)
+            self._ready_final_output(min_crit_node, min_crit_index, output_storage_settings, mytardis_settings)
             smartconnector.success(run_settings, "%s: finished" % (self.id+1))
 
 
@@ -310,7 +312,7 @@ class Converge(Stage):
 
 
 
-    def _ready_final_output(self, crit_node, crit_index, output_storage_settings):
+    def _ready_final_output(self, crit_node, crit_index, output_storage_settings, mytardis_settings):
         output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
                                     output_storage_settings['type'])
         new_output_dir = os.path.join(self.job_dir,  'output')
@@ -333,7 +335,7 @@ class Converge(Stage):
         node_dirs = hrmcstages.list_dirs(dest_url)
         logger.debug("node_dirs=%s" % node_dirs)
 
-        if self.boto_settings['mytardis_host']:
+        if mytardis_settings['mytardis_host']:
 
             re_dbl_fort = re.compile(r'(\d*\.\d+)[dD]([-+]?\d+)')
 
@@ -476,6 +478,7 @@ class Converge(Stage):
                     return res
                 #todo: replace self.boto_setttings with mytardis_settings
                 all_settings = dict(self.boto_settings)
+                all_settings.update(mytardis_settings)
                 all_settings.update(output_storage_settings)
                 self.experiment_id = mytardis.post_dataset(
                     settings=all_settings,
