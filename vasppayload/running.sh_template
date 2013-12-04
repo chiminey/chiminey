@@ -2,22 +2,28 @@
 
 ID=`sed 's/\..*$//' <run.pid`
 
-nqstat > nqstat.out 
+nqstat > nqstat.out
 RUNNING=`grep "^${ID} R" nqstat.out`
 SUSPENDED=`grep "^${ID} S" nqstat.out`
 QUEUED=`grep "^${ID} Q" nqstat.out`
 
-echo $VAR
+echo $RUNNING
 if [ "$RUNNING" ]
 then
-  echo stillrunning 
+  echo  running stillrunning
 fi
+echo $SUSPENDED
 if [ "$SUSPENDED" ]
 then
-  echo stillrunning 
+  echo suspended stillrunning
 fi
+echo $QUEUED
 if [ "$QUEUED" ]
 then
-  echo stillrunning 
+  echo queued stillrunning
+fi
+
+if [[ ! -f "{{job_name}}.o${ID}" ]]; then
+  echo stillrunning
 fi
 

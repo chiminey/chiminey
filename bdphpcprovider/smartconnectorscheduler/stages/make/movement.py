@@ -76,11 +76,14 @@ class MakeUploadStage(Stage):
         settings = setup_settings(run_settings)
         logger.debug("settings=%s" % settings)
 
-        _upload_payload(settings, settings['payload_source'])
+        map_initial_location = "%s/initial" % settings['input_location']
+        values_map = _load_values_map(settings, map_initial_location)
+        logger.debug("values_map=%s" % values_map)
+        _upload_payload(settings, settings['payload_source'], values_map)
 
         _upload_variations_inputs(
             settings,
-            settings['input_location'])
+            settings['input_location'], values_map)
 
         smartconnector.info(run_settings, "1: upload done")
 
@@ -120,7 +123,7 @@ def _get_dest_bdp_url(settings):
                          str(settings['contextid'])))
 
 
-def _upload_payload(settings, source_url):
+def _upload_payload(settings, source_url, values_map):
 
     encoded_s_url = get_url_with_pkey(settings, source_url)
     logger.debug("encoded_s_url=%s" % encoded_s_url)
@@ -138,14 +141,30 @@ def _upload_payload(settings, source_url):
         dest_url, is_relative_path=True, ip_address=settings['host'])
 
     hrmcstages.copy_directories(encoded_s_url, encoded_d_url)
+
+    # context = _load_values_map(settings, source_url_initial)
+    # logger.debug("context=%s" % context)
+
+    for content_fname, content in _instantiate_context(
+            source_url,
+            settings,
+            values_map).items():
+
+        content_url = smartconnector.get_url_with_pkey(
+            settings,
+            os.path.join(dest_url, content_fname),
+            is_relative_path=True, ip_address=settings['host'])
+        logger.debug("content_url=%s" % content_url)
+        hrmcstages.put_file(content_url, content.encode('utf-8'))
+
     logger.debug("done payload upload")
 
-def _upload_variations_inputs(settings, source_url):
+def _upload_variations_inputs(settings, source_url, values_map):
 
     #variation_map = {'a': [3]}
 
-    variation_map = ast.literal_eval(settings['sweep_map'])
-    logger.debug("variation_map=%s" % variation_map)
+    # variation_map = ast.literal_eval(settings['sweep_map'])
+    # logger.debug("variation_map=%s" % variation_map)
 
     bdp_username = settings['bdp_username']
 
@@ -158,9 +177,6 @@ def _upload_variations_inputs(settings, source_url):
     logger.debug("source_url_initial=%s" % source_url_initial)
     encoded_s_url = get_url_with_pkey(settings, source_url_initial)
     logger.debug("encoded_s_url=%s" % encoded_s_url)
-
-    context = _load_values_map(settings, source_url_initial)
-    logger.debug("context=%s" % context)
 
     dest_url = _get_dest_bdp_url(settings)
 
@@ -179,7 +195,7 @@ def _upload_variations_inputs(settings, source_url):
     for content_fname, content in _instantiate_context(
             source_url_initial,
             settings,
-            context).items():
+            values_map).items():
 
         content_url = smartconnector.get_url_with_pkey(
             settings,
@@ -188,7 +204,7 @@ def _upload_variations_inputs(settings, source_url):
         logger.debug("content_url=%s" % content_url)
         hrmcstages.put_file(content_url, content.encode('utf-8'))
 
-    _save_values(settings, dest_url, context)
+    _save_values(settings, dest_url, values_map)
 
     logger.debug("done input upload")
 

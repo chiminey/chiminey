@@ -183,6 +183,42 @@ class Sweep(Stage):
                 logger.debug(e)
                 raise
 
+        input_location = run_settings[
+            'http://rmit.edu.au/schemas/input/system'][u'input_location']
+        input_prefix = '%s://%s@' % (input_storage_settings['scheme'],
+                                input_storage_settings['type'])
+        input_url = smartconnector.get_url_with_pkey(input_storage_settings,
+            input_prefix + os.path.join(input_storage_settings['ip_address'], input_storage_offset),
+        is_relative_path=False)
+        logger.debug("input_url=%s" % input_url)
+
+        starting_map = {}
+        try:
+            values_url = smartconnector.get_url_with_pkey(
+                local_settings,
+                os.path.join("initial",
+                    'values'),
+                is_relative_path=False)
+
+            logger.debug("values_url=%s" % values_url)
+            values_content = hrmcstages.get_file(values_url)
+            logger.debug("values_content=%s" % values_content)
+            starting_map = dict(json.loads(values_content))
+        except IOError:
+            logger.warn("no values file found")
+
+        INPUT_SCHEMA_PREFIX = "http://rmit.edu.au/schemas/input"
+        # FIXME: could have name collisions here
+        for ns in run_settings:
+            if ns.startswith(INPUT_SCHEMA_PREFIX):
+                for k, v in run_settings[ns].items():
+                    starting_map[k] = v
+
+        logger.debug("starting_map=%s" % pformat(starting_map))
+        # # include run variations into the starting_map
+        # logger.debug("new starting_map=%s" % starting_map)
+        # hrmcstages.put_file(values_url, json.dumps(starting_map))
+
         # For each of the generated runs, copy across and modify input directory
         # and then schedule subrun of hrmc connector
         logger.debug("run_settings=%s" % run_settings)
@@ -220,18 +256,44 @@ class Sweep(Stage):
             # TODO: can we have multiple values files per input_dir or just one.
             # if mulitple, then need template_name(s).  Otherwise, run stage templates
             # all need to refer to same value file...
-            template_name = run_settings['http://rmit.edu.au/schemas/stages/sweep'][u'template_name']
-            logger.debug("template_name=%s" % template_name)
 
-            # Need to load up existing values, because original input_dir could
-            # have contained values for the whole run
+            if self._exists(run_settings,
+                'http://rmit.edu.au/schemas/stages/sweep',
+                'template_name'):
 
-            values_map = {}
+                template_name = run_settings['http://rmit.edu.au/schemas/stages/sweep'][u'template_name']
+                logger.debug("template_name=%s" % template_name)
+
+                # Need to load up existing values, because original input_dir could
+                # have contained values for the whole run
+
+                values_map = {}
+                try:
+                    values_url = smartconnector.get_url_with_pkey(
+                        local_settings,
+                        os.path.join(run_inputdir, "initial",
+                            '%s_values' % template_name),
+                        is_relative_path=False)
+
+                    logger.debug("values_url=%s" % values_url)
+                    values_content = hrmcstages.get_file(values_url)
+                    logger.debug("values_content=%s" % values_content)
+                    values_map = dict(json.loads(values_content))
+                except IOError:
+                    logger.warn("no values file found")
+
+                # include run variations into the values_map
+                values_map.update(context)
+                logger.debug("new values_map=%s" % values_map)
+                hrmcstages.put_file(values_url, json.dumps(values_map))
+
+            # new format for values map one per directory
+            values_map =dict(starting_map)
             try:
                 values_url = smartconnector.get_url_with_pkey(
                     local_settings,
                     os.path.join(run_inputdir, "initial",
-                        '%s_values' % template_name),
+                        'values'),
                     is_relative_path=False)
 
                 logger.debug("values_url=%s" % values_url)
@@ -246,18 +308,6 @@ class Sweep(Stage):
             logger.debug("new values_map=%s" % values_map)
             hrmcstages.put_file(values_url, json.dumps(values_map))
 
-            # new format for values map one per directory
-            try:
-                new_values_url = smartconnector.get_url_with_pkey(
-                    local_settings,
-                    os.path.join(run_inputdir, "initial",
-                        'values'),
-                    is_relative_path=False)
-                logger.debug("new_values_url=%s" % new_values_url)
-            except IOError:
-                logger.warn("no values file found")
-
-            hrmcstages.put_file(new_values_url, json.dumps(values_map))
 
             data = {}
             logger.debug("rs=%s" % pformat(run_settings))
