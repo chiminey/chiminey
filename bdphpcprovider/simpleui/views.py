@@ -802,6 +802,8 @@ def make_dynamic_field(parameter, **kwargs):
                     computation_ns += 'nectar'
                 elif comp_platform == 'sweep_make':
                     computation_ns += 'nci'
+                elif comp_platform == 'sweep_vasp':
+                    computation_ns += 'nci'
                 else:
                     logger.warn("unknown computation platform")
 

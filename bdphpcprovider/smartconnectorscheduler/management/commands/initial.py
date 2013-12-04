@@ -291,6 +291,18 @@ class Command(BaseCommand):
                 u'output_location': {'type':models.ParameterName.STRING, 'subtype':'storage_bdpurl', 'initial':'file://local@127.0.0.1/sweep', 'description':'Output Location', 'ranking': 2, 'help_text': 'Storage platform name with optional offset path: e.g., storage_home/myexperiment'}
                 }
                 ],
+            u'http://rmit.edu.au/schemas/input/vasp':
+                [u'VASP Smart Connector',
+                {
+                u'ncpus': {'type':models.ParameterName.NUMERIC, 'subtype':'whole', 'initial':16, 'description':'Number of CPUs', 'ranking':1, 'help_text':''},
+                u'project': {'type':models.ParameterName.STRING, 'subtype': 'string', 'initial':'h72', 'description':'Project Identifier', 'ranking':2, 'help_text':''},
+                u'job_name': {'type':models.ParameterName.STRING, 'subtype': 'string', 'initial':'Si-FCC', 'description':'Job Name', 'ranking':3, 'help_text':''},
+                u'queue': {'type':models.ParameterName.STRING, 'subtype': 'string', 'initial':'express', 'description':'Task Queue to use', 'ranking':4, 'help_text':''},
+                u'walltime': {'type':models.ParameterName.STRING, 'subtype': 'string', 'initial':'00:10:00', 'description':'Wall Time', 'ranking':5, 'help_text':''},
+                u'mem': {'type':models.ParameterName.STRING, 'subtype': 'string', 'initial':'16GB', 'description':'Memory', 'ranking':6, 'help_text':''},
+                u'max_iteration': {'type':models.ParameterName.NUMERIC, 'subtype':'whole', 'description':'Maximum no. iterations', 'ranking':7, 'initial': 10, 'help_text':'Computation ends when either convergence or maximum iteration reached'},
+                }
+                ],
             u'http://rmit.edu.au/schemas/input/system/compplatform':
                 [u'Computation Platform',
                 {
@@ -748,7 +760,7 @@ class Command(BaseCommand):
         print "done"
 
         sweep, _ = models.Directive.objects.get_or_create(name="sweep",
-            description="HRMC Sweep Connector")
+            defaults={'description': "HRMC Sweep Connector"})
 
         sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep",
             description="Sweep Test",
@@ -764,7 +776,6 @@ class Command(BaseCommand):
             {
                 u'random_numbers': 'file://127.0.0.1/randomnums.txt'
             },
-
             })
 
         # FIXME: tasks.progress_context does not load up composite stage settings
@@ -775,14 +786,17 @@ class Command(BaseCommand):
 
         self.setup_sweep_remotemake(nci_platform)
 
+        self.define_vasp(nci_platform)
+
+        self.setup_sweep_vasp(nci_platform)
+
         self.setup_directive_args()
         print "done"
 
-    def setup_sweep_remotemake(self, local_platform):
+    def setup_sweep_vasp(self, local_platform):
 
-
-        sweep, _ = models.Directive.objects.get_or_create(name="sweep_make",
-            description="Remote Make Sweep Connector")
+        sweep, _ = models.Directive.objects.get_or_create(name="sweep_vasp",
+            defaults={'description': "VASP Sweep Connector"})
 
         sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep_make",
             description="Sweep Test",
@@ -801,9 +815,30 @@ class Command(BaseCommand):
         comm, _ = models.Command.objects.get_or_create(platform=local_platform,
             directive=sweep, stage=sweep_stage)
 
+    def setup_sweep_remotemake(self, local_platform):
+
+        sweep, _ = models.Directive.objects.get_or_create(name="sweep_make",
+            defaults={'description': "Remote Make Sweep Connector"})
+
+        sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep_make",
+            description="Sweep Test",
+            package="bdphpcprovider.smartconnectorscheduler.stages.sweep.Sweep",
+            order=100)
+        sweep_stage.update_settings({
+            # FIXME: move random_numbers into system schema
+            u'http://rmit.edu.au/schemas/system':
+            {
+                u'random_numbers': 'file://127.0.0.1/randomnums.txt'
+            },
+
+            })
+
+        # FIXME: tasks.progress_context does not load up composite stage settings
+        comm, _ = models.Command.objects.get_or_create(platform=local_platform,
+            directive=sweep, stage=sweep_stage)
 
     def setup_directive_args(self):
-        sweep, _ = models.Directive.objects.get_or_create(name="sweep")
+        sweep = models.Directive.objects.get(name="sweep")
 
         RMIT_SCHEMA = "http://rmit.edu.au/schemas"
         for i, sch in enumerate([
@@ -818,7 +853,7 @@ class Command(BaseCommand):
             schema = models.Schema.objects.get(namespace=sch)
             das, _ = models.DirectiveArgSet.objects.get_or_create(directive=sweep, order=i, schema=schema)
 
-        sweep_make, _ = models.Directive.objects.get_or_create(name="sweep_make")
+        sweep_make = models.Directive.objects.get(name="sweep_make")
 
         RMIT_SCHEMA = "http://rmit.edu.au/schemas"
         for i, sch in enumerate([
@@ -830,9 +865,101 @@ class Command(BaseCommand):
             schema = models.Schema.objects.get(namespace=sch)
             das, _ = models.DirectiveArgSet.objects.get_or_create(directive=sweep_make, order=i, schema=schema)
 
+        sweep_make = models.Directive.objects.get(name="sweep_vasp")
+
+        RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+        for i, sch in enumerate([
+                RMIT_SCHEMA + "/input/system/compplatform",
+                RMIT_SCHEMA + "/input/system",
+                RMIT_SCHEMA + "/input/vasp",
+                RMIT_SCHEMA + "/input/mytardis",
+                RMIT_SCHEMA + "/input/sweep"
+                ]):
+            schema = models.Schema.objects.get(namespace=sch)
+            das, _ = models.DirectiveArgSet.objects.get_or_create(directive=sweep_make, order=i, schema=schema)
+
+    def define_vasp(self, nci_platform):
+        vasp, _ = models.Directive.objects.get_or_create(
+            name="vasp", defaults={'description': "VASP Connector", 'hidden':True})
+        smartpack = "bdphpcprovider.smartconnectorscheduler.stages"
+        self.upload_makefile = smartpack + ".make.movement.MakeUploadStage"
+        self.download_makefile = smartpack + ".make.movement.MakeDownloadStage"
+        self.remotemake_stage = smartpack + ".make.remotemake.MakeRunStage"
+        self.make_finished_stage = smartpack + ".make.makefinished.MakeFinishedStage"
+
+        vasp_composite_stage, _ = models.Stage.objects.get_or_create(
+            name="vasp_connector",
+            description="VASP Connector",
+            package=self.parallel_package,
+            order=0)
+        vasp_composite_stage.update_settings({})
+
+        # TODO: need to build specific upload/download stages because no way
+        # adapt to different connectors yet...
+
+        # copies input files + makefile to remote system
+        upload_makefile_stage, _ = models.Stage.objects.get_or_create(
+            name="upload_makefile",
+            description="upload payload to remote",
+            package=self.upload_makefile,
+            parent=vasp_composite_stage,
+            order=1)
+        upload_makefile_stage.update_settings(
+            {
+                'http://rmit.edu.au/schemas/remotemake/config':
+                {
+                    u'payload_destination': 'iet595/remotemake',
+                    u'payload_source': 'file://127.0.0.1/local/vasppayload',
+                }
+            })
+        # executes make with run target
+        remotemake_stage, _ = models.Stage.objects.get_or_create(
+            name="make",
+            description="Makefile execution stage",
+            package=self.remotemake_stage,
+            parent=vasp_composite_stage,
+            order=2)
+
+        remotemake_stage.update_settings({})
+
+        # executes make with finished target and repeats until finished.
+        make_finished_stage, _ = models.Stage.objects.get_or_create(
+            name="makefinished",
+            description="Makefile execution stage",
+            package=self.make_finished_stage,
+            parent=vasp_composite_stage,
+            order=3)
+        logger.debug('make_finished_stage=%s' % str(make_finished_stage))
+        make_finished_stage.update_settings({})
+
+        # # copies input files + makefile to remote system
+        # download_makefile_stage, _ = models.Stage.objects.get_or_create(
+        #     name="download_makefile",
+        #     description="download payload to remote",
+        #     package=self.download_makefile,
+        #     parent=vasp_composite_stage,
+        #     order=4)
+        # download_makefile_stage.update_settings({})
+
+        # FIXME: not clear wether we need to store platform in command
+        # as different stages make run on different platforms.
+        comm, _ = models.Command.objects.get_or_create(
+            platform=nci_platform,
+            directive=vasp,
+            stage=vasp_composite_stage)
+
+        # RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+        # for i, sch in enumerate([
+        #         RMIT_SCHEMA + "/input/system",
+        #         RMIT_SCHEMA + "/input/mytardis",
+        #         RMIT_SCHEMA + "/input/sweep"
+        #         ]):
+        #     schema = models.Schema.objects.get(namespace=sch)
+        #     das, _ = models.DirectiveArgSet.objects.get_or_create(directive=vasp, order=i, schema=schema)
+
 
     def define_remote_make(self, nci_platform):
-        remote_make, _ = models.Directive.objects.get_or_create(name="remotemake", description="Remote execution of a Makefile")
+        remote_make, _ = models.Directive.objects.get_or_create(name="remotemake", defaults={'description': "Remote execution of a Makefile"})
         smartpack = "bdphpcprovider.smartconnectorscheduler.stages"
         self.upload_makefile = smartpack + ".make.movement.MakeUploadStage"
         self.download_makefile = smartpack + ".make.movement.MakeDownloadStage"
@@ -861,7 +988,7 @@ class Command(BaseCommand):
                 'http://rmit.edu.au/schemas/remotemake/config':
                 {
                     u'payload_destination': 'iet595/remotemake',
-                    u'payload_source': 'file://127.0.0.1/local/vasppayload',
+                    u'payload_source': 'file://127.0.0.1/local/testpayload',
                 }
             })
         # executes make with run target

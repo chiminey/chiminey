@@ -248,6 +248,7 @@ class ContextResource(ModelResource):
                 'hrmc': self._post_to_hrmc,
                 'sweep': self._post_to_sweep_hrmc,
                 'sweep_make': self._post_to_sweep_make,
+                'sweep_vasp': self._post_to_sweep_vasp,
                 'copydir': self._post_to_copy,
                 'remotemake': self._post_to_remotemake}
 
@@ -373,6 +374,7 @@ class ContextResource(ModelResource):
                 #     continue;
 
                 validator = subtype_validation[param.subtype][1]
+                logger.debug("validator=%s" % validator)
                 current_subtype = param.subtype
                 logger.debug(current_subtype)
                 if current_subtype == 'storage_bdpurl' or current_subtype == 'nectar_platform' or current_subtype == 'platform':
@@ -390,6 +392,13 @@ class ContextResource(ModelResource):
         return self._post_to_sweep(bundle=bundle,
             directive=directive,
             subdirective="remotemake")
+
+
+    def _post_to_sweep_vasp(self, bundle, directive):
+        return self._post_to_sweep(bundle=bundle,
+            directive=directive,
+            subdirective="vasp")
+
 
     def _post_to_sweep(self, bundle, directive, subdirective):
         logger.debug("_post_to_sweep for %s" % subdirective)
