@@ -246,7 +246,10 @@ class Transform(Stage):
         outputs.sort(key=lambda x: int(x.criterion))
         logger.debug("outputs=%s" % outputs)
 
-        if self.boto_settings['mytardis_host']:
+        mytardis_url = run_settings['http://rmit.edu.au/schemas/input/mytardis']['mytardis_platform']
+        mytardis_settings = platform.get_platform_settings(mytardis_url, bdp_username)
+
+        if mytardis_settings['mytardis_host']:
             for i, node_output_dir in enumerate(node_output_dirs):
                 crit = None  # is there an infinity criterion
                 for ni in outputs:
@@ -330,7 +333,9 @@ class Transform(Stage):
                 #because we want the result after pruning.
                 #todo: replace self.boto_setttings with mytardis_settings
                 all_settings = dict(self.boto_settings)
+                all_settings.update(mytardis_settings)
                 all_settings.update(output_storage_settings)
+
                 logger.debug('all_settings=%s' % all_settings)
                 logger.debug('output_storage_settings=%s' % output_storage_settings)
                 self.experiment_id = mytardis.post_dataset(

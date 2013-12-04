@@ -438,10 +438,11 @@ def copy_directories(source_url, destination_url):
         logger.warn("scheme: %s not supported" % source_scheme)
         return
 
-    if source_path[0] == os.path.sep:
-        source_path = source_path[1:]
-    if source_path[-1] == os.path.sep:
-        source_path = source_path[:-1]
+    if source_path:
+        if source_path[0] == os.path.sep:
+            source_path = source_path[1:]
+        if source_path[-1] == os.path.sep:
+            source_path = source_path[:-1]
     logger.debug("source_path=%s" % source_path)
 
     dir_file_info = fs.listdir(source_path)
@@ -456,6 +457,8 @@ def copy_directories(source_url, destination_url):
         for fname in dir_file_info[1]:
             logger.debug("fname=%s" % fname)
             file_path = str(os.path.join(current_dirname, fname))
+            #if file_path[0] != os.path.sep:
+            #    file_path = "/%s" % file_path
             logger.debug("file_path=%s" % file_path)
             file_paths.append(file_path)
             logger.debug("file_paths=%s" % file_paths)

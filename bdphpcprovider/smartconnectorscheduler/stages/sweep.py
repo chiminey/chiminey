@@ -82,6 +82,7 @@ class Sweep(Stage):
 
         logger.debug('run_settings=%s' % run_settings)
         from copy import deepcopy
+
         local_settings = deepcopy(run_settings[models.UserProfile.PROFILE_SCHEMA_NS])
 
         smartconnector.copy_settings(local_settings, run_settings,
@@ -185,6 +186,7 @@ class Sweep(Stage):
         runs = _expand_variations(maps=[map], values={})
         logger.debug("runs=%s" % runs)
 
+
         # prep random seeds for each run based off original iseed
         # FIXME: inefficient for large random file
         # TODO, FIXME: this is potentially problematic if different
@@ -208,6 +210,7 @@ class Sweep(Stage):
         for i, context in enumerate(runs):
             # Duplicate input directory into runX duplicates
             logger.debug("run=%s" % context)
+
             run_counter = int(context['run_counter'])
             logger.debug("run_counter=%s" % run_counter)
             logger.debug("systemsetttings=%s" % pformat(run_settings['http://rmit.edu.au/schemas/input/system']))
@@ -222,6 +225,7 @@ class Sweep(Stage):
             input_prefix+os.path.join(input_storage_settings['ip_address'], input_storage_offset),
             is_relative_path=False)
             logger.debug("input_url=%s" % input_url)
+
             # job_dir contains some overriding context that this run is situated under
             # run_inputdir = os.path.join(self.job_dir,
             #     "run%s" % str(run_counter),
@@ -230,11 +234,14 @@ class Sweep(Stage):
                 "run%s" % str(run_counter),
                 "input_0",)
             logger.debug("run_inputdir=%s" % run_inputdir)
+
             run_iter_url = smartconnector.get_url_with_pkey(local_settings,
                 run_inputdir, is_relative_path=False)
             logger.debug("run_iter_url=%s" % run_iter_url)
+            logger.debug('input_url=%s' % input_url)
             storage.copy_directories(input_url, run_iter_url)
-
+            #logger.debug('----')
+            #raise Exception
             # Q: copy payload_location to gridYY/payload_Z ? this would allow templating of this too????
             # TODO: can we have multiple values files per input_dir or just one.
             # if mulitple, then need template_name(s).  Otherwise, run stage templates
@@ -266,6 +273,7 @@ class Sweep(Stage):
             hrmcstages.put_file(values_url, json.dumps(values_map))
             data = {}
             logger.debug("rs=%s" % pformat(run_settings))
+
             # for param_name, params in run_settings.items():
             #     logger.debug("param_name=%s params=%s" % (param_name, params))
             #     if str(param_name).startswith(self.hrmc_schema[:-1]):

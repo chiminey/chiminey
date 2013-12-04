@@ -53,6 +53,7 @@ from bdphpcprovider.simpleui.hrmc.copy import CopyForm
 from bdphpcprovider.simpleui.ncicomputationplatform import NCIComputationPlatformForm
 from bdphpcprovider.simpleui.nectarcomputationplatform import NeCTARComputationPlatformForm
 from bdphpcprovider.simpleui.sshstorageplatform import SSHStoragePlatformForm
+from bdphpcprovider.simpleui.mytardisplatform import MyTardisPlatformForm
 #TODO,FIXME: simpleui shouldn't refer to anything in smartconnectorscheduler
 #and should be using its own models and use the REST API for all information.
 
@@ -93,7 +94,7 @@ def computation_platform_settings(request):
             schema = 'http://rmit.edu.au/schemas/platform/computation/nci'
             post_platform(schema, nciform.cleaned_data, request)
             return HttpResponseRedirect('/accounts/settings/platform/computation/')
-        elif nectarform.is_valid():
+        if nectarform.is_valid():
             schema = 'http://rmit.edu.au/schemas/platform/computation/nectar'
             post_platform(schema, nectarform.cleaned_data, request, type='nectar')
             return HttpResponseRedirect('/accounts/settings/platform/computation/')
@@ -131,12 +132,19 @@ def computation_platform_settings(request):
 
 def storage_platform_settings(request):
     unix_form = SSHStoragePlatformForm()
+    mytardis_form = MyTardisPlatformForm()
     if request.method == "POST":
         unix_form = SSHStoragePlatformForm(request.POST)
         if unix_form.is_valid():
             schema = 'http://rmit.edu.au/schemas/platform/storage/unix'
             post_platform(schema, unix_form.cleaned_data, request)
             return HttpResponseRedirect('/accounts/settings/platform/storage')
+        mytardis_form = MyTardisPlatformForm(request.POST)
+        if mytardis_form.is_valid():
+            schema = 'http://rmit.edu.au/schemas/platform/storage/mytardis'
+            post_platform(schema, mytardis_form.cleaned_data, request)
+            return HttpResponseRedirect('/accounts/settings/platform/storage')
+
 
     #FIXME: consider using non-locahost URL for api_host
     api_host = "http://127.0.0.1"
@@ -162,9 +170,10 @@ def storage_platform_settings(request):
         #logger.debug(r.json())
         GET_data = r.json()
         storage_platforms, all_headers = filter_computation_platforms(GET_data)
-        logger.debug(storage_platforms)
+        logger.debug('storage=%s' % storage_platforms)
     return render(request, 'accountsettings/storageplatform.html',
                               {'unix_form': unix_form,
+                               'mytardis_form': mytardis_form,
                                'all_headers': all_headers})
 
 
@@ -221,6 +230,7 @@ def filter_computation_platforms(GET_json_data):
         schema = i['paramset']['schema']['namespace']
         paramset_id = i['paramset']['id']
         computation_platforms[schema][paramset_id] = {}
+        computation_platforms[schema][paramset_id]['name'] = str(i['paramset']['name'])
 
     for i in platform_parameters_objects:
         schema = i['paramset']['schema']['namespace']
@@ -525,6 +535,7 @@ class SweepSubmitFormView(FormView):
         'system_schema':"http://rmit.edu.au/schemas/system/misc/",
         'run_schema':"http://rmit.edu.au/schemas/stages/run/",
         'sweep_schema':"http://rmit.edu.au/schemas/stages/sweep/",
+        'mytardis_schema' : 'http://rmit.edu.au/schemas/input/mytardis'
         }
         submit_sweep_job(self.request, form, schemas)
         return super(SweepSubmitFormView, self).form_valid(form)
@@ -558,6 +569,7 @@ def submit_sweep_job(request, form, schemas):
                 #'experiment_id': form.cleaned_data['experiment_id'],
                 schemas['sweep_schema'] + 'sweep_map': form.cleaned_data['sweep_map'],
                 schemas['sweep_schema'] + 'directive': 'hrmc',
+                schemas['mytardis_schema'] + 'mytardis_platform': form.cleaned_data['mytardis_platform'],
                 #'run_map': form.cleaned_data['run_map'],
                 schemas['run_schema'] + 'run_map': "{}",
                 schemas['system_schema'] + 'output_location': form.cleaned_data['output_location'],
@@ -734,9 +746,10 @@ subtype_validation = {
     'bdpurl': ('BDP url', validators.validate_BDP_url, forms.TextInput, 255),
     'float': ('floading point number', validators.validate_float_number, None, None),
     'jsondict': ('JSON Dictionary', validators.validate_jsondict, forms.Textarea(attrs={'cols': 30, 'rows': 5}), None),
-    'float': ('floading point number', validators.validate_float_number, None, None),
+    'float': ('floating point number', validators.validate_float_number, None, None),
     'bool': ('On/Off', validators.validate_bool, None,  None),
     'platform': ('platform', validators.validate_platform_url, forms.Select(),  None),
+    'mytardis': ('MyTardis platform name', validators.validate_platform_url, forms.Select(),  None),
     'choicefield': ('choicefield', None, forms.Select(),  None),
 }
 
@@ -780,7 +793,7 @@ def make_dynamic_field(parameter, **kwargs):
         logger.debug("found strlist")
         # if parameter has choices in schema, than use these, otherwise use
         # dynamically generated ones from platform.
-        if parameter['subtype'] == "platform":
+        if parameter['subtype'] == "platform" or parameter['subtype'] == 'mytardis':
             field_params['initial'] = ""
             field_params['choices'] = ""
             if parameter['choices']:
@@ -793,10 +806,14 @@ def make_dynamic_field(parameter, **kwargs):
                 # FIXME,TODO: compuation_ns value should be part of directive and
                 # passed in, as some directives will only work with particular computation/*
                 # categories.  Assume only nectar comp platforms ever allowed here.
-                computation_ns = 'http://rmit.edu.au/schemas/platform/computation/nectar'
+                if parameter['subtype'] == "platform":
+                    schema = 'http://rmit.edu.au/schemas/platform/computation/nectar'
+                elif parameter['subtype'] == 'mytardis':
+                    schema = 'http://rmit.edu.au/schemas/platform/storage/mytardis'
+                #computation_ns = 'http://rmit.edu.au/schemas/platform/computation/nectar'
                 if 'username' in kwargs:
                     platforms = platform.retrieve_all_platforms(kwargs['username'],
-                     schema_namespace_prefix=computation_ns)
+                     schema_namespace_prefix=schema)
                     if platforms:
                         field_params['initial'] = platforms[0]['name']
                     else:
@@ -805,9 +822,10 @@ def make_dynamic_field(parameter, **kwargs):
                     # TODO: retrieve_platform_paramset should be an API call
                     platform_name_choices = [(x['name'], x['name'])
                         for x in platform.retrieve_all_platforms(
-                            kwargs['username'], schema_namespace_prefix=computation_ns)]
+                            kwargs['username'], schema_namespace_prefix=schema)]
                     logger.debug("platform_name_choices=%s" % platform_name_choices)
                     field_params['choices'] = platform_name_choices
+
         else:
             if parameter['initial']:
                 field_params['initial'] = str(parameter['initial'])
@@ -822,6 +840,7 @@ def make_dynamic_field(parameter, **kwargs):
 
         field = forms.ChoiceField(**field_params)
     else:
+        logger.debug("subtype=%s" % parameter['subtype'])
         field_params['initial'] = str(parameter['initial'])
         if parameter['subtype'] == 'nectar_platform':
             schema = 'http://rmit.edu.au/schemas/platform/computation/nectar'
@@ -831,8 +850,16 @@ def make_dynamic_field(parameter, **kwargs):
                 field_params['initial'] = platforms[0]['name']
             else:
                 field_params['initial'] = ''
+        elif parameter['subtype'] == 'mytardis':
+            schema = 'http://rmit.edu.au/schemas/platform/storage/mytardis'
+            platforms = platform.retrieve_all_platforms(kwargs['username'],
+                     schema_namespace_prefix=schema)
+            if platforms:
+                field_params['initial'] = platforms[0]['name']
+            else:
+                field_params['initial'] = ''
         elif parameter['subtype'] == 'storage_bdpurl':
-            schema = 'http://rmit.edu.au/schemas/platform/storage'
+            schema = 'http://rmit.edu.au/schemas/platform/storage/unix'
             platforms = platform.retrieve_all_platforms(kwargs['username'],
                      schema_namespace_prefix=schema)
             if platforms:
