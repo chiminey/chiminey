@@ -122,7 +122,8 @@ def get_url_with_pkey(settings, url_or_relative_path,
     platform = parsed_url.username
     url_settings = {}
     logger.debug('platform=%s' % platform)
-    if platform == 'nectar' or platform == 'unix':
+    logger.debug("settings=%s" % pformat(settings))
+    if platform in ['nectar', 'unix', 'nci']:
         logger.debug('unix here')
         url_settings['username'] = settings['username']
         #url_settings['password'] = settings['nectar_password']
@@ -135,15 +136,15 @@ def get_url_with_pkey(settings, url_or_relative_path,
         args = '&'.join(["%s=%s" % (k, v) for k, v in sorted(url_settings.items())])
         scheme = 'ssh'
 
-    elif platform == 'nci':
-        url_settings['username'] = settings['nci_user']
-        url_settings['password'] = settings['nci_password']
-        url_settings['key_file'] = settings['nci_private_key']
-        # key_file = settings['nci_private_key']
-        # username = settings['nci_user']
-        # password = settings['nci_password']
+    # elif platform == 'nci':
+    #     url_settings['username'] = settings['username']
+    #     url_settings['password'] = settings['nci_password']
+    #     url_settings['key_file'] = settings['nci_private_key']
+    #     # key_file = settings['nci_private_key']
+    #     # username = settings['nci_user']
+    #     # password = settings['nci_password']
 
-        scheme = 'ssh'
+    #     scheme = 'ssh'
     elif platform == 'tardis':
         url_settings['mytardis_username'] = settings['mytardis_user']
         url_settings['mytardis_password'] = settings['mytardis_password']
@@ -182,7 +183,7 @@ def get_url_with_pkey(settings, url_or_relative_path,
             return
 
     # FIXME: suffix root_path with username
-    if platform != 'nectar' and platform != 'unix':
+    if platform != 'nectar' and platform != 'unix' and platform != 'nci':
         try:
             platform_object = models.Platform.objects.get(name=platform)
             root_path = platform_object.root_path
@@ -194,7 +195,9 @@ def get_url_with_pkey(settings, url_or_relative_path,
     # if parameters can be non-ascii
     # https://docs.djangoproject.com/en/dev/ref/unicode/#uri-and-iri-handling
     args = '&'.join(["%s=%s" % (k, v) for k, v in sorted(url_settings.items())])
+    logger.debug("ip_address=%s" % ip_address)
     if is_relative_path:
+        logger.debug("is_relative_path")
         partial_path = parsed_url.path
         if partial_path:
             if partial_path[0] == os.path.sep:

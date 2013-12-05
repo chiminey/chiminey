@@ -1187,8 +1187,12 @@ def make_runcontext_for_directive(platform_name, directive_name,
 
     directive = models.Directive.objects.get(name=directive_name)
     logger.debug("directive=%s" % directive)
-    command_for_directive = models.Command.objects.get(directive=directive,
-        platform=platform)
+
+    # Have removed need to search on platform as should need to check platform
+    # in this situation.
+    # command_for_directive = models.Command.objects.get(directive=directive,
+    #     platform=platform)
+    command_for_directive = models.Command.objects.get(directive=directive)
     logger.debug("command_for_directive=%s" % command_for_directive)
     user_settings = retrieve_settings(profile)
     logger.debug("user_settings=%s" % pformat(user_settings))
@@ -1318,43 +1322,27 @@ def _make_run_settings_for_command(command, command_args, run_settings):
     """
     Create run_settings for the command to execute with
     """
+    logger.debug("_make_run_settings_for_command")
     if u'http://rmit.edu.au/schemas/system/misc' in run_settings:
         misc = run_settings[u'http://rmit.edu.au/schemas/system/misc']
     else:
         misc = {}
 
-    # if u'transitions' in misc:
-    #     curr_trans = json.loads(misc[u'transitions'])
-    #     logger.debug("curr_trans = %s" % curr_trans)
-    # else:
-    #     curr_trans = {}
-
-    #context = {}
-    arg_num = 0
+    # Use of file arguments is deprecated as we use metadata arguments
+    # for sending bdp urls and platform keys instead
+    #arg_num = 0
     file_args = {}
     config_args = collections.defaultdict(dict)
     for (k, v) in command_args:
         logger.debug("k=%s,v=%s" % (k, v))
         if k:
             config_args[os.path.dirname(k)][os.path.basename(k)] = v
-        else:
-            file_args['file%s' % arg_num] = v
-            arg_num += 1
+        # else:
+        #     file_args['file%s' % arg_num] = v
+        #     arg_num += 1
 
-    run_settings[u'http://rmit.edu.au/schemas/%s/files' % command.directive.name] = file_args
+    #run_settings[u'http://rmit.edu.au/schemas/%s/files' % command.directive.name] = file_args
     run_settings.update(config_args)
-
-    logger.debug("run_settings=%s" % run_settings)
-    # transitions = models.make_stage_transitions(command.stage)
-    # logger.debug("transitions=%s" % transitions)
-    # transitions.update(curr_trans)
-
-    # if u'http://rmit.edu.au/schemas/system/misc' in run_settings:
-    #     misc = run_settings[u'http://rmit.edu.au/schemas/system/misc']
-    # else:
-    #     misc = {}
-    #     run_settings[u'http://rmit.edu.au/schemas/system/misc'] = misc
-    # misc[u'transitions'] = json.dumps(transitions, ensure_ascii=True)
 
     logger.debug("run_settings =  %s" % run_settings)
     return run_settings

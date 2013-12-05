@@ -485,6 +485,13 @@ def update_platform_settings(schema_namespace, settings):
                                                settings['private_key_path'])
         settings['root_path'] = '/home/centos' #fixme avoid hardcoding
         settings['scheme'] = 'ssh'
+
+    elif platform_type == 'nci':
+        settings['private_key'] = os.path.join(storage.get_bdp_root_path(),
+                                               settings['private_key_path'])
+        settings['host'] = settings['ip_address']
+        settings['scheme'] = 'ssh'
+
     elif platform_type == 'unix':
         settings['private_key'] = os.path.join(storage.get_bdp_root_path(),
                                                settings['private_key_path'])
@@ -508,4 +515,3 @@ def get_job_dir(output_storage_settings, run_settings):
     offset = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset']
     job_dir = os.path.join(ip_address, offset)
     return job_dir
-
