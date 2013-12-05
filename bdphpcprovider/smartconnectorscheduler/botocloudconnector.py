@@ -56,6 +56,8 @@ def _create_cloud_connection(settings):
         return _create_amazon_connection(settings)
     elif provider.lower() == "nectar":
         return _create_nectar_connection(settings)
+    elif provider.lower() == 'csrack':
+        return _create_csrack_connection(settings)
     else:
         logger.info("Unknown provider: %s" % provider)
         sys.exit()  # FIXME: throw exception
@@ -67,6 +69,20 @@ def _create_nectar_connection(settings):
         aws_access_key_id=settings['ec2_access_key'],
         aws_secret_access_key=settings['ec2_secret_key'],
         is_secure=True,
+        region=region,
+        port=8773,
+        path="/services/Cloud")
+    #logger.info("settings %s" % settings)
+    logger.info("Connecting to... %s" % region.name)
+    return connection
+
+
+def _create_csrack_connection(settings):
+    region = RegionInfo(name="nova", endpoint="10.234.0.1")
+    connection = boto.connect_ec2(
+        aws_access_key_id=settings['ec2_access_key'],
+        aws_secret_access_key=settings['ec2_secret_key'],
+        is_secure=False,
         region=region,
         port=8773,
         path="/services/Cloud")
@@ -98,8 +114,11 @@ def create_VM_instances(number_vm_instances, settings):
     """
         Create the Nectar VM instance and return ip_address
     """
-    # TODO: create the required security group settings (e.g., ssh) at
-    # nectar automagically, so we can control allowed ports etc.
+
+    if settings['platform'] == 'csrack':
+        security_groups = ["bdp", "default"] #fixme avoid hardcoding
+    else:
+        security_groups = [settings['security_group']]
     connection = _create_cloud_connection(settings)
     all_instances = []
     logger.info("Creating %d VM(s)" % number_vm_instances)
@@ -111,7 +130,7 @@ def create_VM_instances(number_vm_instances, settings):
                     min_count=1,
                     max_count=number_vm_instances,
                     key_name=settings['private_key_name'],
-                    security_groups=[settings['security_group']],
+                    security_groups=security_groups,
                     instance_type=settings['vm_image_size'])
         logger.debug("Created Reservation %s" % reservation)
         for instance in reservation.instances:
@@ -136,12 +155,14 @@ def get_ssh_ready_instances(all_instances, settings):
     ssh_ready_instances = []
     for instance in all_instances:
         ip = instance.ip_address
+        if not ip:
+            ip = instance.private_ip_address
         try:
             if is_ssh_ready(settings, ip):
                 ssh_ready_instances.append(instance)
                 logger.debug('[%s] is ssh ready' % ip)
         except Exception as ex:
-            logger.debug("[%s] Exception: %s" % (instance.ip_address, ex))
+            logger.debug("[%s] Exception: %s" % (ip, ex))
         logger.debug('ssh ready instances are %s' % ssh_ready_instances)
     return ssh_ready_instances
 
@@ -164,6 +185,8 @@ def _store_md5_on_instances(all_instances, group_id, settings):
     for instance in all_instances:
         # login and store md5 file
         ip_address = instance.ip_address
+        if not ip_address:
+            ip_address = instance.private_ip_address
         logger.debug("Instance IP %s" % ip_address)
         try:
             logger.info("Registering %s to group '%s'\
@@ -187,6 +210,8 @@ def _customize_prompt(all_instances, settings):
     customised_instances = []
     for instance in all_instances:
         ip_address = instance.ip_address
+        if not ip_address:
+            ip_address = instance.private_ip_address
         logger.info("Customizing command prompt")
         logger.debug("Custom prompt %s" % settings['custom_prompt'])
         try:
@@ -310,6 +335,9 @@ def _wait_for_instance_to_start_running(all_instances, settings):
     logger.debug("Started waiting")
     while all_instances:
         for instance in all_instances:
+            ip_address = instance.ip_address
+            if not ip_address:
+                ip_address = instance.private_ip_address
             logger.debug("this instance %s" % instance)
             if does_instance_exist(instance):
                 if is_instance_running(instance):
@@ -317,7 +345,7 @@ def _wait_for_instance_to_start_running(all_instances, settings):
                     all_instances.remove(instance)
             else:
                 all_instances.remove(instance)
-            logger.debug('Current status of %s: %s' % (instance.ip_address, instance.state))
+            logger.debug('Current status of %s: %s' % (ip_address, instance.state))
             if instance.state in 'error':
                 all_instances.remove(instance)
         time.sleep(settings['cloud_sleep_interval'])
@@ -354,12 +382,15 @@ def _wait_for_instance_to_terminate(all_instances, settings):
     while all_instances:
         for instance in all_instances:
             current_instance = instance
+            ip_address = instance.ip_address
+            if not ip_address:
+                ip_address = instance.private_ip_address
             if is_instance_terminated(current_instance):
                 all_instances.remove(instance)
-                logger.debug('Current status of %s: %s' % (instance.ip_address, 'terminated'))
+                logger.debug('Current status of %s: %s' % (ip_address, 'terminated'))
                 logger.debug('remaining_instances=%s' % all_instances)
             else:
-                logger.debug('Current status of %s: %s' % (instance.ip_address, instance.state))
+                logger.debug('Current status of %s: %s' % (ip_address, instance.state))
         time.sleep(settings['cloud_sleep_interval'])
 
 
@@ -382,6 +413,8 @@ def print_all_information(settings, all_instances=None):
     for instance in all_instances:
         instance_id = instance.id
         ip = instance.ip_address
+        if not ip:
+            ip = instance.private_ip_address
         try:
             ssh = open_connection(ip, settings)
             group_name = run_command(ssh, "ls %s " % settings['group_id_dir'])
@@ -459,6 +492,8 @@ def get_instance_ip(instance_id, settings):
     for instance in all_instances:
         if instance.id == instance_id:
             ip_address = instance.ip_address
+            if not ip_address:
+                ip_address = instance.private_ip_address
             logger.debug("IP %s", ip_address)
             break
     return ip_address
