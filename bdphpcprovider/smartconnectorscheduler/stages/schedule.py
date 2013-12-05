@@ -185,14 +185,17 @@ class Schedule(Stage):
 
         else:
             for node in self.nodes:
-                if (node.ip_address in [x[1]
+                node_ip = node.ip_address
+                if not node_ip:
+                    node_ip = node.private_ip_address
+                if (node_ip in [x[1]
                                         for x in self.scheduled_nodes
-                                        if x[1] == node.ip_address]) \
+                                        if x[1] == node_ip]) \
                     and (not self.procs_2b_rescheduled):
                     continue
-                if (node.ip_address in [x[1]
+                if (node_ip in [x[1]
                                         for x in self.rescheduled_nodes
-                                        if x[1] == node.ip_address]) \
+                                        if x[1] == node_ip]) \
                     and self.procs_2b_rescheduled:
                     continue
                 if not botocloudconnector.is_instance_running(node):
@@ -201,10 +204,10 @@ class Schedule(Stage):
                     #FIXME: should error nodes be counted as finished?
                     #FIXME: remove this instance from created_nodes
                     logging.error('Instance %s not running' % node.id)
-                    self.error_nodes.append((node.id, node.ip_address,
+                    self.error_nodes.append((node.id, node_ip,
                                             unicode(node.region)))
                     continue
-                node_ip = node.ip_address
+
                 logger.debug('mynode=%s' % node_ip)
                 try:
                     relative_path = "%s@%s" % (local_settings['type'],
@@ -225,15 +228,15 @@ class Schedule(Stage):
                     node_list = self.scheduled_nodes
                     if self.procs_2b_rescheduled:
                         node_list = self.rescheduled_nodes
-                    if not (node.ip_address in [x[1]
+                    if not (node_ip in [x[1]
                                                     for x in node_list
-                                                    if x[1] == node.ip_address]):
-                            node_list.append((node.id, node.ip_address,
+                                                    if x[1] == node_ip]):
+                            node_list.append((node.id, node_ip,
                                                         unicode(node.region)))
                             if self.procs_2b_rescheduled:
                                 scheduled_procs = [x
                                                    for x in self.current_processes
-                                                   if x['ip_address'] == node.ip_address
+                                                   if x['ip_address'] == node_ip
                                     and x['status'] == 'reschedule_ready']
                                 self.total_rescheduled_procs += len(scheduled_procs)
                                 for process in scheduled_procs:
@@ -244,15 +247,15 @@ class Schedule(Stage):
                             else:
                                 scheduled_procs = [x['ip_address']
                                                    for x in self.current_processes
-                                                   if x['ip_address'] == node.ip_address]
+                                                   if x['ip_address'] == node_ip]
                                 self.total_scheduled_procs += len(scheduled_procs)
                                 #if self.total_scheduled_procs == len(self.current_processes):
                                 #    break
                     else:
                             logger.info("We have already "
-                                + "scheduled process on node %s" % node.ip_address)
+                                + "scheduled process on node %s" % node_ip)
                 else:
-                    print "job still running on %s" % node.ip_address
+                    print "job still running on %s" % node_ip
         #logger.debug('exit total_scheduled_procs=%d' % self.total_scheduled_procs)
 
     def start_schedule(self, run_settings, local_settings):
@@ -410,6 +413,8 @@ def start_round_robin_schedule(nodes, processes, schedule_index, settings):
 
     for cur_node in all_nodes:
         ip_address = cur_node.ip_address
+        if not ip_address:
+            ip_address = cur_node.private_ip_address
         logger.debug('ip_address=%s' % ip_address)
         relative_path = settings['type'] + '@' + settings['payload_destination']
         procs_on_cur_node = proc_per_node
@@ -429,7 +434,7 @@ def start_round_robin_schedule(nodes, processes, schedule_index, settings):
             settings,
             relative_path,
             is_relative_path=True,
-            ip_address=cur_node.ip_address)
+            ip_address=ip_address)
         logger.debug('schedule destination=%s' % destination)
         makefile_path = hrmcstages.get_make_path(destination)
         logger.debug('makefile_path=%s' % makefile_path)
@@ -468,6 +473,8 @@ def start_round_robin_reschedule(nodes, procs_2b_rescheduled, current_procs, set
     rescheduled_procs = list(procs_2b_rescheduled)
     for cur_node in all_nodes:
         ip_address = cur_node.ip_address
+        if not ip_address:
+            ip_address = cur_node.private_ip_address
         logger.debug('ip_address=%s' % ip_address)
         relative_path = settings['type'] + '@' + settings['payload_destination']
         procs_on_cur_node = proc_per_node
@@ -484,11 +491,10 @@ def start_round_robin_reschedule(nodes, procs_2b_rescheduled, current_procs, set
             ids, ip_address, new_processes,
             status='reschedule_ready',
             maximum_retry=int(settings['maximum_retry']))
-
         destination = smartconnector.get_url_with_pkey(settings,
             relative_path,
             is_relative_path=True,
-            ip_address=cur_node.ip_address)
+            ip_address=ip_address)
         logger.debug('schedule destination=%s' % destination)
         makefile_path = hrmcstages.get_make_path(destination)
         logger.debug('makefile_path=%s' % makefile_path)

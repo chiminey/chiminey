@@ -87,9 +87,12 @@ class Bootstrap(Stage):
             self.nodes = botocloudconnector.get_rego_nodes(local_settings)
             self.error_nodes = []
             for node in self.nodes:
-                if (node.ip_address in [x[1]
+                node_ip = node.ip_address
+                if not node_ip:
+                    node_ip = node.private_ip_address
+                if (node_ip in [x[1]
                                         for x in self.bootstrapped_nodes
-                                        if x[1] == node.ip_address]):
+                                        if x[1] == node_ip]):
                     continue
                 if not botocloudconnector.is_instance_running(node):
                     # An unlikely situation where the node crashed after is was
@@ -97,10 +100,9 @@ class Bootstrap(Stage):
                     #FIXME: should error nodes be counted as finished?
                     #FIXME: remove this instance from created_nodes
                     logging.error('Instance %s not running' % node.id)
-                    self.error_nodes.append((node.id, node.ip_address,
+                    self.error_nodes.append((node.id, node_ip,
                                             unicode(node.region)))
                     continue
-                node_ip = node.ip_address
                 relative_path = "%s@%s" % (local_settings['type'],
                     local_settings['payload_destination'])
                 destination = smartconnector.get_url_with_pkey(local_settings,
@@ -119,19 +121,19 @@ class Bootstrap(Stage):
                     print "done."
                     logger.debug("node=%s" % str(node))
                     logger.debug("bootstrapped_nodes=%s" % self.bootstrapped_nodes)
-                    if not (node.ip_address in [x[1]
+                    if not (node_ip in [x[1]
                                                 for x in self.bootstrapped_nodes
-                                                if x[1] == node.ip_address]):
-                        logger.debug('new ip = %s' % node.ip_address)
-                        self.bootstrapped_nodes.append((node.id, node.ip_address,
+                                                if x[1] == node_ip]):
+                        logger.debug('new ip = %s' % node_ip)
+                        self.bootstrapped_nodes.append((node.id, node_ip,
                                             unicode(node.region)))
                     else:
                         logger.info("We have already "
-                            + "bootstrapped node %s" % node.ip_address)
+                            + "bootstrapped node %s" % node_ip)
                     smartconnector.info(run_settings, "bootstrapping nodes (%s nodes done)"
                         % len(self.bootstrapped_nodes))
                 else:
-                    print "job still running on %s" % node.ip_address
+                    print "job still running on %s" % node_ip
 
 
     def output(self, run_settings):
@@ -203,6 +205,8 @@ def start_multi_setup_task(settings):
         for i in range(0, maketarget_nodegroup_pair[make_target]):
             instance = nodes[0]
             node_ip = instance.ip_address
+            if not node_ip:
+                node_ip = instance.private_ip_address
             logger.debug("node_ip=%s" % node_ip)
             logger.debug('constructing source')
             source = smartconnector.get_url_with_pkey(settings, settings['payload_source'])

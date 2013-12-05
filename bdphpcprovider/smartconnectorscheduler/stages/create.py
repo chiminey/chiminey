@@ -91,6 +91,12 @@ class Create(Stage):
         number_vm_instances = run_settings[RMIT_SCHEMA+'/input/system/cloud'][u'number_vm_instances']
         min_number_vms = run_settings[RMIT_SCHEMA+'/input/system/cloud'][u'minimum_number_vm_instances']
         logger.debug("VM instance %d" % number_vm_instances)
+        platform = 'csrack' # local_settings['platform']
+        if platform == 'csrack':
+            local_settings['vm_image'] = "ami-00000004"
+        elif platform == 'nectar':
+            local_settings['vm_image'] = "0000000d"
+
         self.nodes = botocloudconnector.create_environ(
             number_vm_instances,
             local_settings)
@@ -140,6 +146,9 @@ class Create(Stage):
             run_settings.setdefault(
             RMIT_SCHEMA + '/stages/create', {})[u'created_nodes'] = []
         else:
+            for node in self.nodes:
+                if not node.ip_address:
+                    node.ip_address = node.private_ip_address
             if self.group_id is "UNKNOWN":
                 run_settings.setdefault(
                     RMIT_SCHEMA + '/reliability', {})[u'cleanup_nodes'] \
