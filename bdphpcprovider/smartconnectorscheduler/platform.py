@@ -360,9 +360,7 @@ def generate_nectar_key(parameters):
             connection = boto.connect_ec2(
                 aws_access_key_id=parameters['ec2_access_key'],
                 aws_secret_access_key=parameters['ec2_secret_key'],
-                is_secure=True, region=region,
-                is_secure=False,
-                region=region,
+                is_secure=False, region=region,
                 port=8773, path="/services/Cloud")
         elif cloud_type == 'nectar':
             region = RegionInfo(name="NeCTAR", endpoint="nova.rc.nectar.org.au")
