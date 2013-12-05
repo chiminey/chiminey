@@ -36,7 +36,9 @@ class AuthError(Error):
 
 def is_ssh_ready(settings, ip_address):
     ssh_ready = False
-    while not ssh_ready:
+    max_retries = 15
+    retries = 0
+    while not ssh_ready and retries < max_retries:
         logger.debug("Connecting to %s in progress ..." % ip_address)
         try:
             open_connection(ip_address, settings)
@@ -49,7 +51,7 @@ def is_ssh_ready(settings, ip_address):
             elif 'Authentication failed' in ex:
                 pass
             else:
-                pass
+                retries += 1
             sleep(settings['cloud_sleep_interval'])
     logger.debug("Connecting to %s completed" % ip_address)
     # TODO: need way of exiting polling loop if vm connection is borked.

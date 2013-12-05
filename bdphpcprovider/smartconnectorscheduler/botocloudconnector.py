@@ -333,6 +333,8 @@ def _wait_for_instance_to_start_running(all_instances, settings):
     # TODO: spamming all nodes in tenancy continually is impolite, so should
     # store nodes we know to be part of this run (in context?)
     logger.debug("Started waiting")
+    max_retries = 15
+    retries = 0
     while all_instances:
         for instance in all_instances:
             ip_address = instance.ip_address
@@ -346,8 +348,9 @@ def _wait_for_instance_to_start_running(all_instances, settings):
             else:
                 all_instances.remove(instance)
             logger.debug('Current status of %s: %s' % (ip_address, instance.state))
-            if instance.state in 'error':
+            if instance.state in 'error' or retries == max_retries:
                 all_instances.remove(instance)
+        retries += 1
         time.sleep(settings['cloud_sleep_interval'])
     return all_running_instances
 

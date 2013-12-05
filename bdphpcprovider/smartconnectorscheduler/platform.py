@@ -354,12 +354,25 @@ def generate_nectar_key(parameters):
     if not os.path.exists(key_dir):
         os.makedirs(key_dir)
     try:
-        region = RegionInfo(name="NeCTAR", endpoint="nova.rc.nectar.org.au")
-        connection = boto.connect_ec2(
-            aws_access_key_id=parameters['ec2_access_key'],
-            aws_secret_access_key=parameters['ec2_secret_key'],
-            is_secure=True, region=region,
-            port=8773, path="/services/Cloud")
+        cloud_type = 'csrack' # parameters['cloud_type'] avoid hardcoding
+        if cloud_type == 'csrack':
+            region = RegionInfo(name="nova", endpoint="10.234.0.1")
+            connection = boto.connect_ec2(
+                aws_access_key_id=parameters['ec2_access_key'],
+                aws_secret_access_key=parameters['ec2_secret_key'],
+                is_secure=True, region=region,
+                is_secure=False,
+                region=region,
+                port=8773, path="/services/Cloud")
+        elif cloud_type == 'nectar':
+            region = RegionInfo(name="NeCTAR", endpoint="nova.rc.nectar.org.au")
+            connection = boto.connect_ec2(
+                aws_access_key_id=parameters['ec2_access_key'],
+                aws_secret_access_key=parameters['ec2_secret_key'],
+                is_secure=True, region=region,
+                port=8773, path="/services/Cloud")
+        else:
+            return False, 'Unknown cloud platform'
         unique_key = False
         counter = 1
         while not unique_key:
