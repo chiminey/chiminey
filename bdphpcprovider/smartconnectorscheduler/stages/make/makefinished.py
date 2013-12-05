@@ -28,6 +28,7 @@ from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import sshconnector
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
+from bdphpcprovider.smartconnectorscheduler import platform
 
 
 from bdphpcprovider.smartconnectorscheduler import mytardis
@@ -38,6 +39,7 @@ from paramiko.ssh_exception import SSHException
 from . import setup_settings
 
 logger = logging.getLogger(__name__)
+
 
 class MakeFinishedStage(Stage):
     """
@@ -57,9 +59,9 @@ class MakeFinishedStage(Stage):
                 run_settings,
                 'http://rmit.edu.au/schemas/stages/make',
                 u'runs_left'):
-            if len(ast.literal_eval(run_settings[
+            if ast.literal_eval(run_settings[
                 'http://rmit.edu.au/schemas/stages/make'][
-                u'runs_left'])):
+                u'runs_left']):
                 if self._exists(
                         run_settings,
                         'http://rmit.edu.au/schemas/stages/make',
@@ -75,7 +77,7 @@ class MakeFinishedStage(Stage):
             settings=settings,
             url_or_relative_path=remote_path,
             is_relative_path=True,
-            ip_address=settings['ip'])
+            ip_address=settings['host'])
         (scheme, host, mypath, location, query_settings) = \
             hrmcstages.parse_bdpurl(encoded_d_url)
         command = "cd %s; make %s" % (os.path.join(
@@ -128,59 +130,89 @@ class MakeFinishedStage(Stage):
         else:
             self.runs_left = []
 
-        base_tasks_url = "%s@%s" % ('nci', os.path.join(
-                settings['payload_destination'],
-                str(settings['contextid']))
-            )
+        def _get_dest_bdp_url(settings):
+            return "%s@%s" % (
+                    "nci",
+                    os.path.join(settings['payload_destination'],
+                                 str(settings['contextid'])))
 
-        new_runs_left = []
-        for run_counter in sorted(self.runs_left):
-            remote_path = os.path.join(base_tasks_url, str(run_counter))
-            logger.debug("remote_path= %s" % remote_path)
+        dest_url = _get_dest_bdp_url(settings)
+        computation_platform_url = settings['comp_platform_url']
+        bdp_username = settings['bdp_username']
+        comp_pltf_settings = platform.get_platform_settings(
+            computation_platform_url,
+            bdp_username)
+        settings.update(comp_pltf_settings)
 
+        encoded_d_url = smartconnector.get_url_with_pkey(
+            settings,
+            dest_url,
+            is_relative_path=True,
+            ip_address=settings['host'])
+
+        (scheme, host, mypath, location, query_settings) = \
+            hrmcstages.parse_bdpurl(encoded_d_url)
+
+        if self.runs_left:
             job_finished = self._job_finished(
                 settings=settings,
-                remote_path=remote_path)
-            if job_finished and run_counter in self.runs_left:
-                self._get_output(settings, run_counter)
-            else:
-                new_runs_left.append(run_counter)
+                remote_path=dest_url)
 
-        self.runs_left = new_runs_left
+            if not job_finished:
+                return
+
+            self._get_output(settings, dest_url)
+            self.runs_left -= 1
+
+        if self.runs_left <= 0:
+            smartconnector.success(run_settings, "%s: finished" % (1))
+
         logger.debug("processing finished")
 
-    def _get_output(self, settings, run_counter):
+    def _get_output(self, settings, source_url):
         """
             Retrieve the output from the task on the node
         """
-        remote_path = "%s@%s" % (
-            "nci",
-            os.path.join(settings['payload_destination'],
-                         str(settings['contextid']), str(run_counter)))
+        logger.debug("get_output from %s" % source_url)
 
-        logger.debug("Relative path %s" % remote_path)
+        computation_platform_url = settings['comp_platform_url']
+        bdp_username = settings['bdp_username']
+        comp_pltf_settings = platform.get_platform_settings(
+            computation_platform_url,
+            bdp_username)
+        settings.update(comp_pltf_settings)
 
-        remote_ip = settings['ip']
         encoded_s_url = smartconnector.get_url_with_pkey(
             settings,
-            remote_path,
+            source_url,
             is_relative_path=True,
-            ip_address=remote_ip)
+            ip_address=settings['host'])
+
         (scheme, host, mypath, location, query_settings) = \
             hrmcstages.parse_bdpurl(encoded_s_url)
         make_path = os.path.join(query_settings['root_path'], mypath)
         logger.debug("make_path=%s" % make_path)
 
-        dest_url = os.path.join(
-            settings['output_location'],
-            str(run_counter))
+        output_storage_url = settings['storeout_platform_url']
+        logger.debug("output_storage_url=%s" % output_storage_url)
+        output_storage_settings = platform.get_platform_settings(output_storage_url, bdp_username)
+        settings.update(output_storage_settings)
+        logger.debug("output_storage_settings=%s" % output_storage_settings)
 
-        logger.debug("Transferring output from %s to %s" % (remote_path,
+        dest_url = '%s://%s@%s/%s/make%s' % (output_storage_settings['scheme'],
+                output_storage_settings['type'],
+                output_storage_settings['host'],
+                    settings['storeout_platform_offset'], str(settings['contextid']))
+
+        logger.debug("Transferring output from %s to %s" % (source_url,
             dest_url))
-        logger.debug("dest_url=%s" % dest_url)
-        encoded_d_url = smartconnector.get_url_with_pkey(
-            settings,
-            dest_url, is_relative_path=False, ip_address=settings['ip'])
+        settings.update(output_storage_settings)
+
+        encoded_d_url = smartconnector.get_url_with_pkey(settings, dest_url)
+
+        # encoded_d_url = smartconnector.get_url_with_pkey(
+        #     settings,
+        #     dest_url, is_relative_path=False, ip_address=settings['host'])
         logger.debug("encoded_d_url=%s" % encoded_d_url)
 
         #hrmcstages.delete_files(encoded_d_url, exceptions=[])
@@ -246,22 +278,24 @@ class MakeFinishedStage(Stage):
             # FIXME: all values from map are strings initially, so need to know
             # type to coerce.
             num_kp = None
-            try:
-                num_kp = int(values['num_kp'])
-            except IndexError:
-                pass
-            except ValueError:
-                pass
+            if 'num_kp' in values:
+                try:
+                    num_kp = int(values['num_kp'])
+                except IndexError:
+                    pass
+                except ValueError:
+                    pass
 
             logger.debug("num_kp=%s" % num_kp)
 
             encut = None
-            try:
-                encut = int(values['encut'])
-            except IndexError:
-                pass
-            except ValueError:
-                pass
+            if 'encut' in values:
+                try:
+                    encut = int(values['encut'])
+                except IndexError:
+                    pass
+                except ValueError:
+                    pass
             logger.debug("encut=%s" % encut)
 
             EXP_DATASET_NAME_SPLIT = 1
@@ -270,7 +304,7 @@ class MakeFinishedStage(Stage):
                 """
                 Break path based on EXP_DATASET_NAME_SPLIT
                 """
-                return str(os.sep.join(path.split(os.sep)[-(EXP_DATASET_NAME_SPLIT + 1):-EXP_DATASET_NAME_SPLIT]))
+                return str(os.sep.join(path.split(os.sep)[-(EXP_DATASET_NAME_SPLIT + 1):]))
 
             def _get_dataset_name_for_make(settings, url, path):
                 """
@@ -284,7 +318,7 @@ class MakeFinishedStage(Stage):
 
             settings['ENCUT'] = encut
             settings['NUMKP'] = num_kp
-            settings['RUNCOUNTER'] = run_counter
+            settings['RUNCOUNTER'] = settings['contextid']
             # TODO: THIS IS
             self.experiment_id = mytardis.post_dataset(
                 settings=settings,

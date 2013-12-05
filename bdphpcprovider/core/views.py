@@ -44,6 +44,7 @@ from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.smartconnectorscheduler import platform
+from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 
 
 logger = logging.getLogger(__name__)
@@ -69,7 +70,6 @@ class MyBasicAuthentication(BasicAuthentication):
                 request.user = u
                 return True
         return super(MyBasicAuthentication, self).is_authenticated(request, **kwargs)
-
 
 
 class UserResource(ModelResource):
@@ -200,7 +200,6 @@ class UserProfileParameterResource(ModelResource):
         # TODO: validation on put value to correct type
 
 
-
 class ContextResource(ModelResource):
     hrmc_schema = "http://rmit.edu.au/schemas/input/hrmc/"
     system_schema = "http://rmit.edu.au/schemas/input/system"
@@ -243,33 +242,35 @@ class ContextResource(ModelResource):
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
         bundle.data['username'] = request.user.username
-        try:
-            if 'smart_connector' in bundle.data:
-                # TODO: generalise this
-                logger.debug('smart_connector=%s' % bundle.data['smart_connector'])
-                if bundle.data['smart_connector'] == 'hrmc':
-                    (platform, directive_name,
-                     directive_args, system_settings) = self._post_to_hrmc(bundle)
-                elif bundle.data['smart_connector'] == 'sweep':
-                    (platform, directive_name,
-                     directive_args, system_settings) = self._post_to_sweep(bundle)
-                elif bundle.data['smart_connector'] == 'copydir':
-                    (platform, directive_name,
-                     directive_args, system_settings) = self._post_to_copy(bundle)
-                elif bundle.data['smart_connector'] == 'remotemake':
-                        (platform, directive_name,
-                         directive_args, system_settings) = self._post_to_remotemake(bundle)
-            else:
-                return http.HttpBadRequest()
-        except Exception, e:
-            logger.error(e)
-            raise ImmediateHttpResponse(http.HttpBadRequest(e))
-            #return self.create_response(request, bundle, response_class=http.HttpForbidden)
+        if 'smart_connector' in bundle.data:
+
+            dispatch_table = {
+                'hrmc': self._post_to_hrmc,
+                'sweep': self._post_to_sweep_hrmc,
+                'sweep_make': self._post_to_sweep_make,
+                'sweep_vasp': self._post_to_sweep_vasp,
+                'copydir': self._post_to_copy,
+                'remotemake': self._post_to_remotemake}
+
+            smart_connector = bundle.data['smart_connector']
+            logger.debug("smart_connector=%s" % smart_connector)
+
+            try:
+                if smart_connector in dispatch_table:
+                    logger.debug("dispatching %s" % smart_connector)
+                    (myplatform, directive_name,
+                     directive_args, system_settings) = dispatch_table[smart_connector](bundle, smart_connector)
+                else:
+                    return http.HttpBadRequest()
+            except Exception, e:
+                logger.error("post_list error %s" % e)
+                raise ImmediateHttpResponse(http.HttpBadRequest(e))
+                #return self.create_response(request, bundle, response_class=http.HttpForbidden)
         location = []
         try:
             (run_settings, command_args, run_context) \
                  = hrmcstages.make_runcontext_for_directive(
-                 platform,
+                 myplatform,
                  directive_name,
                  directive_args, system_settings, request.user.username)
 
@@ -291,10 +292,10 @@ class ContextResource(ModelResource):
 
             location = self.get_resource_uri(bundle)
 
-
         return http.HttpCreated(location=location)
 
-    def _post_to_hrmc(self, bundle):
+    @deprecated
+    def _post_to_hrmc(self, bundle, smart_connector):
         platform = 'nectar'
         directive_name = "hrmc"
         logger.debug("%s" % directive_name)
@@ -374,6 +375,7 @@ class ContextResource(ModelResource):
                 #     continue;
 
                 validator = subtype_validation[param.subtype][1]
+                logger.debug("validator=%s" % validator)
                 current_subtype = param.subtype
                 logger.debug(current_subtype)
                 if current_subtype == 'storage_bdpurl' or current_subtype == 'nectar_platform' or\
@@ -383,73 +385,130 @@ class ContextResource(ModelResource):
                     value = validator(value)
                 data[os.path.join(das.schema.namespace, param.name)] = value
 
-    def _post_to_sweep(self, bundle):
+    def _post_to_sweep_hrmc(self, bundle, directive):
+        return self._post_to_sweep(bundle=bundle,
+            directive=directive,
+            subdirective="hrmc")
+
+    def _post_to_sweep_make(self, bundle, directive):
+        return self._post_to_sweep(bundle=bundle,
+            directive=directive,
+            subdirective="remotemake")
+
+
+    def _post_to_sweep_vasp(self, bundle, directive):
+        return self._post_to_sweep(bundle=bundle,
+            directive=directive,
+            subdirective="vasp")
+
+
+    def _post_to_sweep(self, bundle, directive, subdirective):
+        logger.debug("_post_to_sweep for %s" % subdirective)
         platform = 'local'
-        directive_name = "sweep"
-        logger.debug("%s" % directive_name)
-        directive_args = []
+        logger.debug("%s" % directive)
 
         try:
-            self.validate_input(bundle.data, directive_name)
+            self.validate_input(bundle.data, directive)
         except ValidationError, e:
             logger.error(e)
             raise
+        directive_obj = models.Directive.objects.get(name=directive)
+        dirargs = models.DirectiveArgSet.objects.filter(directive=directive_obj)
+        schemas = [x.schema.namespace for x in dirargs]
+        dargs = {}
+        for key in bundle.data:
+            if os.path.dirname(key) in schemas:
+                d = dargs.setdefault(os.path.dirname(key), {})
+                d[os.path.basename(key)] = bundle.data[key]
 
-        directive_args.append(
-            ['',
-                ['http://rmit.edu.au/schemas/bdp_userprofile',
-                    (u'username', str(bundle.data['http://rmit.edu.au/schemas/bdp_userprofile/username'])),
-                ],
-                ['http://rmit.edu.au/schemas/input/hrmc',
-                    ('pottype', bundle.data[self.hrmc_schema + 'pottype']),
-                    ('max_iteration', bundle.data[self.hrmc_schema + 'max_iteration']),
-                    ('error_threshold', str(bundle.data[self.hrmc_schema + 'error_threshold'])),
-                    ('threshold', str(bundle.data[self.hrmc_schema + 'threshold'])),
-                    ('optimisation_scheme', bundle.data[self.hrmc_schema + 'optimisation_scheme']),
-                    ('iseed', bundle.data[self.hrmc_schema + 'iseed']),
-                    ('fanout_per_kept_result', bundle.data[self.hrmc_schema + 'fanout_per_kept_result']),
-                ],
-                ['http://rmit.edu.au/schemas/input/sweep',
-                    ('sweep_map', bundle.data[self.sweep_schema + 'sweep_map']),
-                ],
-                ['http://rmit.edu.au/schemas/stages/sweep',
-                    ('directive', 'hrmc')
-                ],
-                ['http://rmit.edu.au/schemas/input/reliability',
-                    ('maximum_retry',
-                        bundle.data['http://rmit.edu.au/schemas/input/reliability/' + 'maximum_retry']),
-                    ('reschedule_failed_processes',
-                        int(bundle.data['http://rmit.edu.au/schemas/input/reliability/' + 'reschedule_failed_processes'])),
-                ],
-                ['http://rmit.edu.au/schemas/input/system/cloud',
-                    ('number_vm_instances',
-                        bundle.data['http://rmit.edu.au/schemas/input/system/cloud/number_vm_instances']),
-                    ('minimum_number_vm_instances',
-                        bundle.data['http://rmit.edu.au/schemas/input/system/cloud/minimum_number_vm_instances']),
-                    ('computation_platform',
-                     bundle.data['http://rmit.edu.au/schemas/input/system/cloud/computation_platform']),
-                ],
-                ['http://rmit.edu.au/schemas/system',
-                    (u'random_numbers', 'file://127.0.0.1/randomnums.txt'),
-                    ('system', 'settings'),
-                    ('max_seed_int', 1000),
-                ],
-                ['http://rmit.edu.au/schemas/input/system',
-                    ('input_location', bundle.data['http://rmit.edu.au/schemas/input/system/input_location']),
-                    ('output_location', bundle.data['http://rmit.edu.au/schemas/input/system/output_location'])
-                ],
-                ['http://rmit.edu.au/schemas/input/mytardis',
-                    #('experiment_id', bundle.data[self.hrmc_schema + 'experiment_id']),
-                    ('experiment_id', 0),
-                    ('mytardis_platform', bundle.data['http://rmit.edu.au/schemas/input/mytardis/mytardis_platform'])
-                ],
-                ['http://rmit.edu.au/schemas/stages/run',
-                    #('run_map', bundle.data['run_map'])
-                    ('run_map', "{}")
-                ],
-            ])
+        logger.debug("dargs=%s" % pformat(dargs))
+
+        d_arg = []
+        for key in dargs:
+            directive_arg = []
+            directive_arg.append(key)
+            for k, v in dargs[key].items():
+                directive_arg.append((k, v))
+            d_arg.append(directive_arg)
+
+        d_arg.append(
+        ['http://rmit.edu.au/schemas/system',
+            (u'random_numbers', 'file://127.0.0.1/randomnums.txt'),
+            ('system', 'settings'),
+            ('max_seed_int', 1000),
+        ])
+        d_arg.append(
+        ['http://rmit.edu.au/schemas/stages/sweep',
+            ('directive', subdirective)
+        ])
+        d_arg.append(
+        ['http://rmit.edu.au/schemas/bdp_userprofile',
+            (u'username', str(bundle.data['http://rmit.edu.au/schemas/bdp_userprofile/username'])),
+        ])
+
+        directive_args = [''] + d_arg
+
 
         logger.debug("directive_args=%s" % pformat(directive_args))
+
+        # directive_args = ['',
+        #         ['http://rmit.edu.au/schemas/input/hrmc',
+        #             ('pottype', bundle.data[self.hrmc_schema + 'pottype']),
+        #             ('max_iteration', bundle.data[self.hrmc_schema + 'max_iteration']),
+        #             ('error_threshold', str(bundle.data[self.hrmc_schema + 'error_threshold'])),
+        #             ('threshold', str(bundle.data[self.hrmc_schema + 'threshold'])),
+        #             ('optimisation_scheme', bundle.data[self.hrmc_schema + 'optimisation_scheme']),
+        #             ('iseed', bundle.data[self.hrmc_schema + 'iseed']),
+        #             ('fanout_per_kept_result', bundle.data[self.hrmc_schema + 'fanout_per_kept_result']),
+        #         ],
+        #         ['http://rmit.edu.au/schemas/input/sweep',
+        #             ('sweep_map', bundle.data[self.sweep_schema + 'sweep_map']),
+        #         ],
+        #         ['http://rmit.edu.au/schemas/input/reliability',
+        #             ('maximum_retry',
+        #                 bundle.data['http://rmit.edu.au/schemas/input/reliability/' + 'maximum_retry']),
+        #             ('reschedule_failed_processes',
+        #                 int(bundle.data['http://rmit.edu.au/schemas/input/reliability/' + 'reschedule_failed_processes'])),
+        #         ],
+        #         ['http://rmit.edu.au/schemas/input/system/cloud',
+        #             ('number_vm_instances',
+        #                 bundle.data['http://rmit.edu.au/schemas/input/system/cloud/number_vm_instances']),
+        #             ('minimum_number_vm_instances',
+        #                 bundle.data['http://rmit.edu.au/schemas/input/system/cloud/minimum_number_vm_instances']),
+        #             ('computation_platform',
+        #              bundle.data['http://rmit.edu.au/schemas/input/system/cloud/computation_platform']),
+        #         ],
+        #         ['http://rmit.edu.au/schemas/input/system',
+        #             ('input_location', bundle.data['http://rmit.edu.au/schemas/input/system/input_location']),
+        #             ('output_location', bundle.data['http://rmit.edu.au/schemas/input/system/output_location'])
+        #         ],
+        #         ['http://rmit.edu.au/schemas/input/mytardis',
+        #             #('experiment_id', bundle.data[self.hrmc_schema + 'experiment_id']),
+        #             ('experiment_id', 0),
+        #         ],
+
+        #         ['http://rmit.edu.au/schemas/system',
+        #             (u'random_numbers', 'file://127.0.0.1/randomnums.txt'),
+        #             ('system', 'settings'),
+        #             ('max_seed_int', 1000),
+        #         ],
+        #         # ['http://rmit.edu.au/schemas/stages/run',
+        #         #     #('run_map', bundle.data['run_map'])
+        #         #     ('run_map', "{}")
+        #         # ],
+        #         ['http://rmit.edu.au/schemas/stages/sweep',
+        #             ('directive', 'hrmc')
+        #         ],
+        #         ['http://rmit.edu.au/schemas/bdp_userprofile',
+        #             (u'username', str(bundle.data['http://rmit.edu.au/schemas/bdp_userprofile/username'])),
+        #         ],
+        #     ]
+
+        logger.debug("directive_args=%s" % pformat(directive_args))
+
+        return (platform, directive, [directive_args], {})
+
+
         # make the system settings, available to initial stage and merged with run_settings
 
         logger.debug("directive_name=%s" % directive_name)
@@ -457,7 +516,8 @@ class ContextResource(ModelResource):
 
         return (platform, directive_name, directive_args, {})
 
-    def _post_to_remotemake(self, bundle):
+    @deprecated
+    def _post_to_remotemake(self, bundle, smart_connector):
         platform = 'nci'
         directive_name = "remotemake"
         logger.debug("%s" % directive_name)
@@ -512,7 +572,8 @@ class ContextResource(ModelResource):
 
         return (platform, directive_name, directive_args, {})
 
-    def _post_to_copy(self, bundle):
+    @deprecated
+    def _post_to_copy(self, bundle, smart_connector):
         platform = 'nci'  # FIXME: should be local, why local Ian?
         directive_name = "copydir"
         logger.debug("%s" % directive_name)
@@ -534,21 +595,21 @@ class ContextResource(ModelResource):
         return (platform, directive_name, directive_args, system_settings)
 
 
-class DictObject(object):
-    def __init__(self, initial=None):
-        self.__dict__['_data'] = {}
+# class DictObject(object):
+#     def __init__(self, initial=None):
+#         self.__dict__['_data'] = {}
 
-        if hasattr(initial, 'items'):
-            self.__dict__['_data'] = initial
+#         if hasattr(initial, 'items'):
+#             self.__dict__['_data'] = initial
 
-    def __getattr__(self, name):
-        return self._data.get(name, None)
+#     def __getattr__(self, name):
+#         return self._data.get(name, None)
 
-    def __setattr__(self, name, value):
-        self.__dict__['_data'][name] = value
+#     def __setattr__(self, name, value):
+#         self.__dict__['_data'][name] = value
 
-    def to_dict(self):
-        return self._data
+#     def to_dict(self):
+#         return self._data
 
 from tastypie.bundle import Bundle
 

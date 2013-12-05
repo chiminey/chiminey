@@ -17,7 +17,7 @@
             <li class="divider"></li>
             {% else %}
             {% url makedirective directive.id as account %}
-            <li {% if request.path == account %} class="active"{% endif %}><a href="{% url makedirective directive.id %}">{{directive.name}}:{{directive.description}}</a></li>
+            <li {% if request.path == account %} class="active"{% endif %}><a href="{% url makedirective directive.id %}">{{directive.description}}</a></li>
             {% endif %}
             {% endfor %}
           </ul>
