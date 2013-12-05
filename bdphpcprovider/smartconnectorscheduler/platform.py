@@ -434,11 +434,16 @@ def generate_unix_key(parameters):
         public_key_content = '%s %s' % (public_key.get_name(), public_key.get_base64())
         f = open(public_key_absolute_path, 'w')
         f.write("\n%s\n" % public_key_content)
+        all= "\n%s\n" % public_key_content
         f.close()
         fs = storage.RemoteStorage(settings=storage_settings)
         fs.save(remote_key_path, ContentFile(public_key_content))
         ssh_client = sshconnector.open_connection(parameters['ip_address'], ssh_settings)
-        command = 'cat %s >> %s' % (remote_key_path, authorized_remote_path)
+        #command = 'cat %s >> %s' % (remote_key_path, authorized_remote_path)
+        space = " "
+        command = 'echo %s >> %s; echo %s >> %s;  echo %s >> %s' % (
+            space, authorized_remote_path, public_key_content,
+            authorized_remote_path, space, authorized_remote_path)
         command_out, errs = sshconnector.run_command_with_status(ssh_client, command)
         if errs:
             if 'Permission denied' in errs:
