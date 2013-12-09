@@ -44,6 +44,8 @@ from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
 from bdphpcprovider.smartconnectorscheduler import models, platform, storage
 
+from bdphpcprovider.smartconnectorscheduler import mytardis
+
 
 logger = logging.getLogger(__name__)
 
@@ -122,7 +124,6 @@ class Sweep(Stage):
         run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset'] = \
             os.path.join(output_storage_offset, 'sweep%s' % contextid)
 
-
         minput_location = run_settings['http://rmit.edu.au/schemas/input/system'][u'input_location']
         input_location_list = minput_location.split('/')
         input_storage_name = input_location_list[0]
@@ -138,19 +139,33 @@ class Sweep(Stage):
         input_storage_settings = platform.get_platform_settings(input_storage_url, bdp_username)
         run_settings['http://rmit.edu.au/schemas/platform/storage/input']['offset'] = input_storage_offset
 
+        try:
+            self.experiment_id = int(smartconnector.get_existing_key(run_settings,
+                RMIT_SCHEMA + '/input/mytardis/experiment_id'))
+        except KeyError:
+            self.experiment_id = 0
+        except ValueError:
+            self.experiment_id = 0
 
-        # TODO: move iseed out of hrmc into separate schema to use on any
-        # sweepable connector and make this function completely hrmc independent.
-
+        subdirective = run_settings['http://rmit.edu.au/schemas/stages/sweep']['directive']
+        # subdirective_ns = "http://rmit.edu.au/schemas/input/%s" % subdirective
 
         context = models.Context.objects.get(id=contextid)
         user = context.owner.user.username
         #self.job_dir = run_settings['http://rmit.edu.au/schemas/input/system'][
         #    u'output_location']
-        self.job_dir = 'file://local@127.0.0.1/sweep%s' % contextid #todo replace with scratch space
+        self.job_dir = 'file://local@127.0.0.1/sweep%s' % contextid  # todo replace with scratch space
 
-        subdirective = run_settings['http://rmit.edu.au/schemas/stages/sweep']['directive']
-        subdirective_ns = "http://rmit.edu.au/schemas/input/%s" % subdirective
+        if subdirective == "vasp":
+            # TODO: Generalise
+            self.experiment_id = self.make_mytardis_exp(
+                run_settings,
+                self.experiment_id,
+                self.job_dir)
+            run_settings[RMIT_SCHEMA + '/input/mytardis']['experiment_id'] = self.experiment_id
+
+        # TODO: move iseed out of hrmc into separate schema to use on any
+        # sweepable connector and make this function completely hrmc independent.
 
         map_text = run_settings['http://rmit.edu.au/schemas/input/sweep'][
             'sweep_map']
@@ -161,9 +176,9 @@ class Sweep(Stage):
         runs = _expand_variations(maps=[map], values={})
         logger.debug("runs=%s" % runs)
 
+        # Create randoms
         rands = []
         if 'http://rmit.edu.au/schemas/input/hrmc' in run_settings:
-
             self.rand_index = run_settings['http://rmit.edu.au/schemas/input/hrmc']['iseed']
             logger.debug("rand_index=%s" % self.rand_index)
             # prep random seeds for each run based off original iseed
@@ -182,43 +197,49 @@ class Sweep(Stage):
             except Exception, e:
                 logger.debug(e)
                 raise
-        '''
-        input_location = run_settings[
-            'http://rmit.edu.au/schemas/input/system'][u'input_location']
-        input_prefix = '%s://%s@' % (input_storage_settings['scheme'],
-                                input_storage_settings['type'])
-        input_url = smartconnector.get_url_with_pkey(input_storage_settings,
-            input_prefix + os.path.join(input_storage_settings['ip_address'], input_storage_offset),
-        is_relative_path=False)
-        logger.debug("input_url=%s" % input_url)
-        '''
+
+        # load initial values file
         starting_map = {}
-
         try:
+            input_prefix = '%s://%s@' % (input_storage_settings['scheme'],
+                                    input_storage_settings['type'])
             values_url = smartconnector.get_url_with_pkey(
-                local_settings,
-                os.path.join("initial",
-                    'values'),
-                is_relative_path=False)
-
+                input_storage_settings,
+                input_prefix + os.path.join(input_storage_settings['ip_address'],
+                input_storage_offset, "initial", "values"),
+            is_relative_path=False)
             logger.debug("values_url=%s" % values_url)
-            values_content = hrmcstages.get_file(values_url)
+            values_e_url = smartconnector.get_url_with_pkey(
+                local_settings,
+                values_url,
+                is_relative_path=False)
+            logger.debug("values_url=%s" % values_e_url)
+            values_content = hrmcstages.get_file(values_e_url)
             logger.debug("values_content=%s" % values_content)
             starting_map = dict(json.loads(values_content))
         except IOError:
-            logger.warn("no values file found")
+            logger.warn("no initial values file found")
+        logger.debug("starting_map after initial values=%s" % pformat(starting_map))
 
+        # move form values to starting map
         INPUT_SCHEMA_PREFIX = "http://rmit.edu.au/schemas/input"
         # FIXME: could have name collisions here
         for ns in run_settings:
             if ns.startswith(INPUT_SCHEMA_PREFIX):
                 for k, v in run_settings[ns].items():
                     starting_map[k] = v
-
-        logger.debug("starting_map=%s" % pformat(starting_map))
+        logger.debug("starting_map after form=%s" % pformat(starting_map))
         # # include run variations into the starting_map
         # logger.debug("new starting_map=%s" % starting_map)
         # hrmcstages.put_file(values_url, json.dumps(starting_map))
+
+        # get input_url directory
+        input_prefix = '%s://%s@' % (input_storage_settings['scheme'],
+                                input_storage_settings['type'])
+        input_url = smartconnector.get_url_with_pkey(input_storage_settings,
+            input_prefix + os.path.join(input_storage_settings['ip_address'], input_storage_offset),
+        is_relative_path=False)
+        logger.debug("input_url=%s" % input_url)
 
         # For each of the generated runs, copy across and modify input directory
         # and then schedule subrun of hrmc connector
@@ -235,12 +256,6 @@ class Sweep(Stage):
             #input_url = smartconnector.get_url_with_pkey(local_settings,
             #    input_location, is_relative_path=False)
             #'file://127.0.0.1/myfiles/input'
-            input_prefix = '%s://%s@' % (input_storage_settings['scheme'],
-                                    input_storage_settings['type'])
-            input_url = smartconnector.get_url_with_pkey(input_storage_settings,
-                input_prefix + os.path.join(input_storage_settings['ip_address'], input_storage_offset),
-            is_relative_path=False)
-            logger.debug("input_url=%s" % input_url)
 
             # job_dir contains some overriding context that this run is situated under
             # run_inputdir = os.path.join(self.job_dir,
@@ -273,7 +288,7 @@ class Sweep(Stage):
                 # Need to load up existing values, because original input_dir could
                 # have contained values for the whole run
 
-                values_map = {}
+                v_map = {}
                 try:
                     values_url = smartconnector.get_url_with_pkey(
                         local_settings,
@@ -284,36 +299,35 @@ class Sweep(Stage):
                     logger.debug("values_url=%s" % values_url)
                     values_content = hrmcstages.get_file(values_url)
                     logger.debug("values_content=%s" % values_content)
-                    values_map = dict(json.loads(values_content))
+                    v_map = dict(json.loads(values_content), indent=4)
                 except IOError:
                     logger.warn("no values file found")
 
-                # include run variations into the values_map
-                values_map.update(context)
-                logger.debug("new values_map=%s" % values_map)
-                hrmcstages.put_file(values_url, json.dumps(values_map))
+                # include run variations into the v_map
+                v_map.update(starting_map)
+                v_map.update(context)
+                logger.debug("new v_map=%s" % v_map)
+                hrmcstages.put_file(values_url, json.dumps(v_map, indent=4))
 
-            # new format for values map one per directory
-            values_map =dict(starting_map)
+            v_map = {}
             try:
                 values_url = smartconnector.get_url_with_pkey(
                     local_settings,
                     os.path.join(run_inputdir, "initial",
                         'values'),
                     is_relative_path=False)
-
                 logger.debug("values_url=%s" % values_url)
                 values_content = hrmcstages.get_file(values_url)
                 logger.debug("values_content=%s" % values_content)
-                values_map = dict(json.loads(values_content))
+                v_map = dict(json.loads(values_content), )
             except IOError:
                 logger.warn("no values file found")
 
-            # include run variations into the values_map
-            values_map.update(context)
-            logger.debug("new values_map=%s" % values_map)
-            hrmcstages.put_file(values_url, json.dumps(values_map))
-
+            # include run variations into the v_map
+            v_map.update(starting_map)
+            v_map.update(context)
+            logger.debug("new v_map=%s" % v_map)
+            hrmcstages.put_file(values_url, json.dumps(v_map, indent=4))
 
             data = {}
             logger.debug("rs=%s" % pformat(run_settings))
@@ -341,67 +355,9 @@ class Sweep(Stage):
             #data["http://rmit.edu.au/schemas/input/system"]['output_location'] = os.path.join(self.job_dir, subdirective)
             logger.debug("data=%s" % pformat(data))
 
-            # data2 = {'smart_connector': 'hrmc',
-            #             self.hrmc_schema + 'number_vm_instances': local_settings['number_vm_instances'],
-            #             self.hrmc_schema + 'minimum_number_vm_instances': local_settings['minimum_number_vm_instances'],
-            #             self.hrmc_schema + u'iseed': rands[i],
-            #             self.hrmc_schema + 'max_seed_int': 1000,
-            #             self.hrmc_schema + 'input_location':  "%s/run%s/input_0" % (self.job_dir, run_counter),
-            #             self.hrmc_schema + 'optimisation_scheme': local_settings['optimisation_scheme'],
-            #             self.hrmc_schema + 'threshold': str(local_settings['threshold']),
-            #             self.hrmc_schema + 'fanout_per_kept_result': local_settings['fanout_per_kept_result'],
-            #             self.hrmc_schema + 'error_threshold': str(local_settings['error_threshold']),
-            #             self.hrmc_schema + 'max_iteration': local_settings['max_iteration'],
-            #             self.hrmc_schema + 'pottype': local_settings['pottype'],
-            #             self.hrmc_schema + 'experiment_id': local_settings['experiment_id'],
-            #             self.system_schema + 'output_location': os.path.join(self.job_dir, 'hrmcrun')}
-
-            # logger.debug("data2=%s" % pformat(data2))
-
             current_context = models.Context.objects.get(id=contextid)
             submit_subtask("nectar", subdirective, data, user, current_context)
-
-            # api_host = "http://127.0.0.1"
-            # url = "%s/api/v1/context/?format=json" % api_host
-
-            # # this assumes all interim results kept in local storage
-            # new_input_location = "%s/run%s/input_0" % (self.job_dir, run_counter)
-
-            # # pass the sessionid cookie through to the internal API
-            # cookies = dict(self.request.COOKIES)
-            # logger.debug("cookies=%s" % cookies)
-            # headers = {'content-type': 'application/json'}
-            # data = json.dumps({'smart_connector': 'smartconnector_hrmc',
-            #             self.hrmc_schema+'number_vm_instances': local_settings['number_vm_instances'],
-            #             self.hrmc_schema+'minimum_number_vm_instances': local_settings['minimum_number_vm_instances'],
-            #             self.hrmc_schema+u'iseed': rands[i],
-            #             self.hrmc_schema+'max_seed_int': 1000,
-            #             self.hrmc_schema+'input_location':  new_input_location,
-            #             self.hrmc_schema+'optimisation_scheme': local_settings['optimisation_scheme'],
-            #             self.hrmc_schema+'threshold': str(local_settings['threshold']),
-            #             self.hrmc_schema+'fanout_per_kept_result': local_settings['fanout_per_kept_result'],
-            #             self.hrmc_schema+'error_threshold': str(local_settings['error_threshold']),
-            #             self.hrmc_schema+'max_iteration': local_settings['max_iteration'],
-            #             self.hrmc_schema+'pottype': local_settings['pottype'],
-            #             self.hrmc_schema+'experiment_id': local_settings['experiment_id'],
-            #             self.system_schema+'output_location': os.path.join(self.job_dir, 'hrmcrun') })
-
-            # r = requests.post(url,
-            #     data=data,
-            #     headers=headers,
-            #     cookies=cookies)
-
-            # # TODO: need to check for status_code and handle failures.
-
-            # logger.debug("r.json=%s" % r.json)
-            # logger.debug("r.text=%s" % r.text)
-            # logger.debug("r.headers=%s" % r.headers)
-            # header_location = r.headers['location']
-            # logger.debug("header_location=%s" % header_location)
-            # new_context_uri = header_location[len(api_host):]
-            # logger.debug("new_context_uri=%s" % new_context_uri)
         smartconnector.success(run_settings, "0: finished")
-
 
     def output(self, run_settings):
         logger.debug("sweep output")
@@ -416,7 +372,31 @@ class Sweep(Stage):
             #run_settings[k] = k
         '''
         logger.debug('interesting run_settings=%s' % run_settings)
+
+        if '%s/input/mytardis' % RMIT_SCHEMA in run_settings:
+            run_settings[RMIT_SCHEMA + '/input/mytardis']['experiment_id'] = str(self.experiment_id)
+
         return run_settings
+
+    def make_mytardis_exp(self, run_settings, experiment_id, output_location):
+        bdp_username = run_settings[
+            'http://rmit.edu.au/schemas/bdp_userprofile']['username']
+        mytardis_url = run_settings[
+            'http://rmit.edu.au/schemas/input/mytardis']['mytardis_platform']
+        mytardis_settings = platform.get_platform_settings(
+            mytardis_url,
+            bdp_username)
+        logger.debug(mytardis_settings)
+        if mytardis_settings['mytardis_host']:
+            def _get_exp_name_for_input(path):
+                return str(os.sep.join(path.split(os.sep)[-1:]))
+            ename = _get_exp_name_for_input(output_location)
+            logger.debug("ename=%s" % ename)
+            experiment_id = mytardis.post_experiment(
+                settings=mytardis_settings,
+                exp_id=self.experiment_id,
+                expname=ename)
+        return experiment_id
 
 
 def submit_subtask(platform, directive_name, data, user, parentcontext):
