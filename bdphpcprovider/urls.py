@@ -1,3 +1,25 @@
+# Copyright (C) 2013, RMIT University
+
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to
+# deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+# sell copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+# IN THE SOFTWARE.
+#
+#
+#
 from django.conf.urls import patterns, url, include
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import login, logout
@@ -8,8 +30,11 @@ from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 
 from bdphpcprovider.smartconnectorscheduler import views as scsviews
 from bdphpcprovider.simpleui import views as uiviews
-from bdphpcprovider.simpleui.views \
-    import computation_platform_settings, bdp_account_settings, storage_platform_settings
+from bdphpcprovider.simpleui.views import (
+    computation_platform_settings,
+    bdp_account_settings,
+    storage_platform_settings
+    )
 
 from core.views import (
     UserProfileResource,
@@ -26,7 +51,10 @@ from core.views import (
     DirectiveArgSetResource,
     PlatformInstanceResource,
     PlatformParameterSetResource,
-    PlatformParameterResource
+    PlatformParameterResource,
+    PresetResource,
+    PresetParameterSetResource,
+    PresetParameterResource
     )
 from tastypie.api import Api
 v1_api = Api(api_name='v1')
@@ -46,7 +74,9 @@ v1_api.register(DirectiveArgSetResource())
 v1_api.register(PlatformInstanceResource())
 v1_api.register(PlatformParameterSetResource())
 v1_api.register(PlatformParameterResource())
-
+v1_api.register(PresetResource())
+v1_api.register(PresetParameterSetResource())
+v1_api.register(PresetParameterResource())
 
 
 urlpatterns = patterns('',
