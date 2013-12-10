@@ -852,3 +852,73 @@ class PlatformParameterResource(ModelResource):
         return models.PlatformParameter.objects.filter(
             paramset__schema__namespace__startswith=schema)
 
+
+class PresetResource(ModelResource):
+    user_profile = fields.ForeignKey(UserProfileResource, 'user_profile')
+    directive = fields.ForeignKey(DirectiveResource, 'directive')
+
+    class Meta:
+        queryset = models.Preset.objects.all()
+        resource_name = 'preset'
+        allowed_methods = ['get', 'post']
+        authentication = MultiAuthentication(
+            ApiKeyAuthentication(),
+            MyBasicAuthentication())
+        authorization = DjangoAuthorization()
+
+    def apply_authorization_limits(self, request, object_list):
+        return object_list.filter(user_profile__user=request.user)
+
+    def get_object_list(self, request):
+        if request.user.is_authenticated():
+            return models.Preset.objects.filter(user_profile__user=request.user)
+        else:
+            return models.Preset.objects.none()
+
+
+class PresetParameterSetResource(ModelResource):
+    preset = fields.ForeignKey(PresetResource, attribute='preset')
+    schema = fields.ForeignKey(SchemaResource, attribute='schema')
+
+    class Meta:
+        queryset = models.PresetParameterSet.objects.all()
+        resource_name = 'presetparameterset'
+        authentication = MultiAuthentication(
+            ApiKeyAuthentication(),
+            MyBasicAuthentication())
+        authorization = DjangoAuthorization()
+        allowed_methods = ['get', 'post', 'put']
+
+    def apply_authorization_limits(self, request, object_list):
+        return object_list.filter(preset__user_profile__user=request.user)
+
+    def get_object_list(self, request):
+        return models.PresetParameterSet.objects.filter(
+            preset__user_profile__user=request.user)
+
+
+class PresetParameterResource(ModelResource):
+    name = fields.ForeignKey(ParameterNameResource, attribute='name')
+    paramset = fields.ForeignKey(
+        PresetParameterSetResource,
+        attribute='paramset')
+
+    def apply_authorization_limits(self, request, object_list):
+        return object_list.filter(
+            paramset__preset__user_profile__user=request.user)
+
+    def obj_create(self, bundle, **kwargs):
+        return super(PresetParameterResource, self).obj_create(bundle,
+            user=bundle.request.user)
+
+    def get_object_list(self, request):
+        return models.PresetParameter.objects.filter(
+            paramset__preset__user_profile__user=request.user)
+
+    class Meta:
+        queryset = models.PresetParameter.objects.all()
+        resource_name = 'presetparameter'
+        authentication = MultiAuthentication(
+            ApiKeyAuthentication(), MyBasicAuthentication())
+        authorization = DjangoAuthorization()
+        allowed_methods = ['get', 'put', 'post']

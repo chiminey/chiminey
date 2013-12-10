@@ -218,6 +218,17 @@ class UserProfileAdmin(admin.ModelAdmin):
     inlines = (UserProfileParameterSetInline,)
 
 
+
+
+class PresetParameterInline(admin.TabularInline):
+    model = models.PresetParameter
+    extra = 0
+
+
+class PresetParameterSetAdmin(admin.ModelAdmin):
+    inlines = [PresetParameterInline]
+    # list_display = ('preset', 'schema')
+
 from tastypie.admin import ApiKeyInline
 from tastypie.models import ApiAccess, ApiKey
 from django.contrib.auth.admin import UserAdmin
@@ -254,3 +265,6 @@ admin.site.register(models.PlatformInstanceParameterSet, PlatformInstanceParamet
 admin.site.register(models.PlatformInstanceParameter)
 admin.site.register(models.PlatformParameterSet, PlatformParameterSetAdmin)
 admin.site.register(models.PlatformParameter)
+admin.site.register(models.Preset)
+admin.site.register(models.PresetParameterSet, PresetParameterSetAdmin)
+admin.site.register(models.PresetParameter)
