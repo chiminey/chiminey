@@ -119,32 +119,32 @@ class Command(BaseCommand):
                 u'namespace': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':0, 'help_text':''},
                 }
                 ],
-            u'http://rmit.edu.au/schemas//files':
-                [u'general input files for directive',
-                {
-                u'file0': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':3, 'help_text':''},
-                u'file1': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':2, 'help_text':''},
-                u'file2': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''},
-                }
-                ],
-             # Note that file schema ns must match regex
-             # protocol://host/schemas/{directective.name}/files
-             # otherwise files will not be matched correctly.
-             # TODO: make fall back to directive files in case specfici
-             # version not defined here.
-            u'http://rmit.edu.au/schemas/smartconnector1/files':
-                 [u'the smartconnector1 input files',
-                 {
-                 u'file0': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':3, 'help_text':''},
-                 u'file1': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':2, 'help_text':''},
-                 u'file2': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''},
-                 }
-                 ],
-            u'http://rmit.edu.au/schemas/hrmc/files':
-                 [u'the smartconnector hrmc input files',
-                 {
-                 }
-                 ],
+            # u'http://rmit.edu.au/schemas//files':
+            #     [u'general input files for directive',
+            #     {
+            #     u'file0': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':3, 'help_text':''},
+            #     u'file1': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':2, 'help_text':''},
+            #     u'file2': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''},
+            #     }
+            #     ],
+            #  # Note that file schema ns must match regex
+            #  # protocol://host/schemas/{directective.name}/files
+            #  # otherwise files will not be matched correctly.
+            #  # TODO: make fall back to directive files in case specfici
+            #  # version not defined here.
+            # u'http://rmit.edu.au/schemas/smartconnector1/files':
+            #      [u'the smartconnector1 input files',
+            #      {
+            #      u'file0': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':3, 'help_text':''},
+            #      u'file1': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':2, 'help_text':''},
+            #      u'file2': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''},
+            #      }
+            #      ],
+            # u'http://rmit.edu.au/schemas/hrmc/files':
+            #      [u'the smartconnector hrmc input files',
+            #      {
+            #      }
+            #      ],
             u'http://rmit.edu.au/schemas/smartconnector1/create':
                 [u'the smartconnector1 create stage config',
                 {
@@ -239,21 +239,21 @@ class Command(BaseCommand):
                         'description':'hostname for tardis', 'ranking':0, 'help_text':''},
                 }
                 ],
-            u'http://rmit.edu.au/schemas/copy/files':
-                 [u'the copy input files',
-                 {
-                 u'file0': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':2, 'help_text':''},
-                 u'file1': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''},
-                 }
-                 ],
-            u'http://rmit.edu.au/schemas/program/files':
-                 [u'the copy input files',
-                 {
-                 u'file0': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':3, 'help_text':''},
-                 u'file1': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':2, 'help_text':''},
-                 u'file2': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''},
-                 }
-                 ],
+            # u'http://rmit.edu.au/schemas/copy/files':
+            #      [u'the copy input files',
+            #      {
+            #      u'file0': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':2, 'help_text':''},
+            #      u'file1': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''},
+            #      }
+            #      ],
+            # u'http://rmit.edu.au/schemas/program/files':
+            #      [u'the copy input files',
+            #      {
+            #      u'file0': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':3, 'help_text':''},
+            #      u'file1': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':2, 'help_text':''},
+            #      u'file2': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''},
+            #      }
+            #      ],
 
             u'http://rmit.edu.au/schemas/stages/copy/testing':
                 [u'the copy stage internal testing',
@@ -477,16 +477,16 @@ class Command(BaseCommand):
                 {
                 }
                 ],
-            u'http://rmit.edu.au/schemas/sweep/files':
-                [u'the smartconnector hrmc input files',
-                {
-                }
-                ],
-            u'http://rmit.edu.au/schemas/remotemake/files':
-                [u'',
-                {
-                }
-                ],
+            # u'http://rmit.edu.au/schemas/sweep/files':
+            #     [u'the smartconnector hrmc input files',
+            #     {
+            #     }
+            #     ],
+            # u'http://rmit.edu.au/schemas/remotemake/files':
+            #     [u'',
+            #     {
+            #     }
+            #     ],
             u'http://rmit.edu.au/schemas/remotemake/config':
                 [u'',
                 {
