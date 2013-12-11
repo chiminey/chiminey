@@ -33,8 +33,6 @@ from bdphpcprovider.smartconnectorscheduler import mytardis
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler.stages.composite import (make_graph_paramset, make_paramset)
 
-
-
 logger = logging.getLogger(__name__)
 
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
@@ -132,39 +130,7 @@ class Transform(Stage):
                 content = hrmcstages.get_file(source_url)
                 hrmcstages.put_file(dest_url, content)
 
-
-    def process(self, run_settings):
-        #TODO: break up this function as it is way too long
-        self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
-        bdp_username = run_settings['http://rmit.edu.au/schemas/bdp_userprofile']['username']
-        output_storage_url = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['platform_url']
-        output_storage_settings = platform.get_platform_settings(output_storage_url, bdp_username)
-        output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
-                                    output_storage_settings['type'])
-        self.job_dir = platform.get_job_dir(output_storage_settings, run_settings)
-
-        if self._exists(run_settings, 'http://rmit.edu.au/schemas/system', u'id'):
-            self.id = run_settings['http://rmit.edu.au/schemas/system'][u'id']
-            self.output_dir = os.path.join(os.path.join(self.job_dir, "output_%s" % self.id))
-            self.input_dir = os.path.join(os.path.join(self.job_dir, "input_%d" % self.id))
-            self.new_input_dir = os.path.join(os.path.join(self.job_dir, "input_%d" % (self.id + 1)))
-        else:
-            # FIXME: Not clear that this a valid path through stages
-            self.output_dir = os.path.join(os.path.join(self.job_dir, "output"))
-            self.output_dir = os.path.join(os.path.join(self.job_dir, "input"))
-            self.new_input_dir = os.path.join(os.path.join(self.job_dir, "input_1"))
-
-        if self._exists(run_settings, 'http://rmit.edu.au/schemas/input/mytardis', u'experiment_id'):
-            try:
-                self.experiment_id = int(run_settings['http://rmit.edu.au/schemas/input/mytardis'][u'experiment_id'])
-            except ValueError:
-                self.experiment_id = 0
-        else:
-            self.experiment_id = 0
-        logger.debug('self.output_dir=%s' % self.output_dir)
-        # import time
-        # start_time = time.time()
-        # logger.debug("Start time %f "% start_time)
+    def retrieve_local_settings(self, run_settings):
         self.boto_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
 
         smartconnector.copy_settings(self.boto_settings, run_settings,
@@ -195,8 +161,45 @@ class Transform(Stage):
             'http://rmit.edu.au/schemas/input/hrmc/optimisation_scheme')
         smartconnector.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/input/hrmc/threshold')
+        self.boto_settings['bdp_username'] = run_settings[
+            RMIT_SCHEMA + '/bdp_userprofile']['username']
 
         logger.debug("boto_settings=%s" % self.boto_settings)
+
+    def process(self, run_settings):
+
+        self.retrieve_local_settings(run_settings)
+        #TODO: break up this function as it is way too long
+        self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
+        bdp_username = self.boto_settings['bdp_username']
+        output_storage_url = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['platform_url']
+        output_storage_settings = platform.get_platform_settings(output_storage_url, bdp_username)
+        output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
+                                    output_storage_settings['type'])
+        self.job_dir = platform.get_job_dir(output_storage_settings, run_settings)
+
+        if self._exists(run_settings, 'http://rmit.edu.au/schemas/system', u'id'):
+            self.id = run_settings['http://rmit.edu.au/schemas/system'][u'id']
+            self.output_dir = os.path.join(os.path.join(self.job_dir, "output_%s" % self.id))
+            self.input_dir = os.path.join(os.path.join(self.job_dir, "input_%d" % self.id))
+            self.new_input_dir = os.path.join(os.path.join(self.job_dir, "input_%d" % (self.id + 1)))
+        else:
+            # FIXME: Not clear that this a valid path through stages
+            self.output_dir = os.path.join(os.path.join(self.job_dir, "output"))
+            self.output_dir = os.path.join(os.path.join(self.job_dir, "input"))
+            self.new_input_dir = os.path.join(os.path.join(self.job_dir, "input_1"))
+
+        if self._exists(run_settings, 'http://rmit.edu.au/schemas/input/mytardis', u'experiment_id'):
+            try:
+                self.experiment_id = int(run_settings['http://rmit.edu.au/schemas/input/mytardis'][u'experiment_id'])
+            except ValueError:
+                self.experiment_id = 0
+        else:
+            self.experiment_id = 0
+        logger.debug('self.output_dir=%s' % self.output_dir)
+        # import time
+        # start_time = time.time()
+        # logger.debug("Start time %f "% start_time)
 
         logger.debug("output_storage_settings=%s" % output_storage_settings)
         output_url = smartconnector.get_url_with_pkey(
@@ -209,7 +212,6 @@ class Transform(Stage):
         fsys = hrmcstages.get_filesystem(output_url)
         logger.debug("fsys=%s" % fsys)
         logger.debug("mypath=%s" % mypath)
-
 
         node_output_dirs, _ = fsys.listdir(mypath)
         logger.debug("node_output_dirs=%s" % node_output_dirs)
@@ -418,7 +420,6 @@ class Transform(Stage):
                 hrmcstages.put_file(dest_url, content)
                 logger.debug('put successfully')
 
-
             logger.debug('put file successfully')
             pattern = "*_values"
             self.copy_files_with_pattern(fsys, os.path.join(self.output_dir, Node_info.dir),
@@ -455,8 +456,6 @@ class Transform(Stage):
             output_storage_settings,
                         output_prefix + os.path.join(self.new_input_dir, 'audit.txt'), is_relative_path=False)
         hrmcstages.put_file(audit_url, self.audit)
-
-
 
     def output(self, run_settings):
         logger.debug("transform.output")

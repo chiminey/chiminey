@@ -32,11 +32,12 @@ logger = logging.getLogger(__name__)
 
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
+
 class Create(Stage):
 
     def __init__(self, user_settings=None):
         self.group_id = ''
-        self.platform = None
+        self.myplatform = None
 
     def triggered(self, run_settings):
         """
@@ -46,16 +47,17 @@ class Create(Stage):
         if self._exists(run_settings,
             RMIT_SCHEMA + '/stages/configure',
             'configure_done'):
-                configure_done = run_settings[RMIT_SCHEMA + '/stages/configure'][u'configure_done']
+                configure_done = run_settings[
+                    RMIT_SCHEMA + '/stages/configure'][u'configure_done']
                 if configure_done:
                     if not self._exists(run_settings,
                         RMIT_SCHEMA + '/stages/create', 'group_id'):
                         if self._exists(run_settings,
-                            RMIT_SCHEMA+'/system', 'platform'):
-                            self.platform = run_settings[RMIT_SCHEMA+'/system'][u'platform']
+                            RMIT_SCHEMA + '/system', 'platform'):
+                            self.myplatform = run_settings[
+                                RMIT_SCHEMA + '/system'][u'platform']
                             return True
         return False
-
 
     def process(self, run_settings):
         """
@@ -69,11 +71,11 @@ class Create(Stage):
         smartconnector.copy_settings(local_settings, run_settings,
             RMIT_SCHEMA + '/stages/create/vm_image')
         smartconnector.copy_settings(local_settings, run_settings,
-            RMIT_SCHEMA+'/stages/create/group_id_dir')
+            RMIT_SCHEMA + '/stages/create/group_id_dir')
         smartconnector.copy_settings(local_settings, run_settings,
             RMIT_SCHEMA + '/stages/create/custom_prompt')
         smartconnector.copy_settings(local_settings, run_settings,
-            RMIT_SCHEMA+'/stages/create/cloud_sleep_interval')
+            RMIT_SCHEMA + '/stages/create/cloud_sleep_interval')
         logger.debug('local_settings=%s' % local_settings)
 
         computation_platform_url = run_settings['http://rmit.edu.au/schemas/platform/computation']['platform_url']
@@ -88,14 +90,15 @@ class Create(Stage):
         local_settings.update(comp_pltf_settings)
         logger.debug('local_settings=%s' % local_settings)
 
-        number_vm_instances = run_settings[RMIT_SCHEMA+'/input/system/cloud'][u'number_vm_instances']
-        min_number_vms = run_settings[RMIT_SCHEMA+'/input/system/cloud'][u'minimum_number_vm_instances']
+        number_vm_instances = run_settings[RMIT_SCHEMA + '/input/system/cloud'][u'number_vm_instances']
+        min_number_vms = run_settings[RMIT_SCHEMA + '/input/system/cloud'][u'minimum_number_vm_instances']
         logger.debug("VM instance %d" % number_vm_instances)
-        platform = 'csrack' # local_settings['platform']
-        if platform == 'csrack':
+        comp_platform = 'csrack'  # local_settings['platform']
+        comp_platform = 'nectar'  # local_settings['platform']
+        if comp_platform == 'csrack':
             local_settings['vm_image'] = "ami-00000004"
-        elif platform == 'nectar':
-            local_settings['vm_image'] = "0000000d"
+        elif comp_platform == 'nectar':
+            local_settings['vm_image'] = "ami-0000000d"
 
         self.nodes = botocloudconnector.create_environ(
             number_vm_instances,
@@ -125,13 +128,11 @@ class Create(Stage):
             local_settings, all_instances=self.nodes)
         smartconnector.info(run_settings, "1: create (%s nodes created)" % len(self.nodes))
 
-
         #Fixme: the following should transfer power to FT managers
         if not self.group_id:
             self.group_id = 'UNKNOWN'  # FIXME: do we we mean '' or None here?
             logger.debug("No new VM instance can be created for this computation. Retry later.")
             #clear_temp_files(run_settings)
-
 
     def output(self, run_settings):
         """

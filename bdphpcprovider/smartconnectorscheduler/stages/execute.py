@@ -95,11 +95,13 @@ class Execute(Stage):
 
     def process(self, run_settings):
 
-        logger.debug("processing run stage")
+        logger.debug("processing execute stage")
+        local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
+        retrieve_boto_settings(run_settings, local_settings)
+
         self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
-        bdp_username = run_settings['http://rmit.edu.au/schemas/bdp_userprofile']['username']
         output_storage_url = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['platform_url']
-        output_storage_settings = platform.get_platform_settings(output_storage_url, bdp_username)
+        output_storage_settings = platform.get_platform_settings(output_storage_url, local_settings['bdp_username'])
         self.job_dir = platform.get_job_dir(output_storage_settings, run_settings)
         # TODO: we assume initial input is in "%s/input_0" % self.job_dir
         # in configure stage we could copy initial data in 'input_location' into this location
@@ -136,15 +138,13 @@ class Execute(Stage):
         except ValueError:
             self.experiment_id = 0
 
-        logger.debug("run_settings=%s" % run_settings)
-        local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
-        retrieve_boto_settings(run_settings, local_settings)
+        logger.debug("process run_settings=%s" % pformat(run_settings))
 
         computation_platform_url = run_settings['http://rmit.edu.au/schemas/platform/computation']['platform_url']
-        comp_pltf_settings = platform.get_platform_settings(computation_platform_url, bdp_username)
+        comp_pltf_settings = platform.get_platform_settings(computation_platform_url, local_settings['bdp_username'])
 
         mytardis_url = run_settings['http://rmit.edu.au/schemas/input/mytardis']['mytardis_platform']
-        mytardis_settings = platform.get_platform_settings(mytardis_url, bdp_username)
+        mytardis_settings = platform.get_platform_settings(mytardis_url, local_settings['bdp_username'])
 
         #generic_output_schema = 'http://rmit.edu.au/schemas/platform/storage/output'
 
@@ -359,7 +359,7 @@ class Execute(Stage):
                 # get the template
                 basename_url_with_pkey = smartconnector.get_url_with_pkey(
                     output_storage_settings,
-                    output_prefix+os.path.join(self.iter_inputdir, input_dir, fname),
+                    output_prefix + os.path.join(self.iter_inputdir, input_dir, fname),
                     is_relative_path=False)
                 template = hrmcstages.get_file(basename_url_with_pkey)
                 base_fname = template_mat.group(1)
@@ -370,7 +370,7 @@ class Execute(Stage):
                 try:
                     values_url_with_pkey = smartconnector.get_url_with_pkey(
                         output_storage_settings,
-                        output_prefix+os.path.join(self.iter_inputdir,
+                        output_prefix + os.path.join(self.iter_inputdir,
                             input_dir,
                             '%s_values' % base_fname),
                         is_relative_path=False)
@@ -458,11 +458,12 @@ class Execute(Stage):
         '''
         Create input packages for each variation and upload the vms
         '''
+        logger.debug("upload_variation_inputs")
         output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
                                     output_storage_settings['type'])
         output_host = output_storage_settings['host']
         source_files_url = smartconnector.get_url_with_pkey(
-            output_storage_settings, output_prefix+os.path.join(
+            output_storage_settings, output_prefix + os.path.join(
                 self.iter_inputdir, input_dir),
             is_relative_path=False)
 
@@ -704,5 +705,7 @@ def retrieve_boto_settings(run_settings, local_settings):
         'http://rmit.edu.au/schemas/system/random_numbers')
     smartconnector.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/system/id')
+    local_settings['bdp_username'] = run_settings[
+        RMIT_SCHEMA + '/bdp_userprofile']['username']
 
-    logger.debug('retrieve completed')
+    logger.debug('retrieve completed %s' % pformat(local_settings))
