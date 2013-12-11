@@ -96,6 +96,7 @@ def setup_settings(run_settings):
     settings['bdp_username'] = run_settings[
             'http://rmit.edu.au/schemas/bdp_userprofile']['username']
 
+
     settings['mytardis_platform'] = run_settings['http://rmit.edu.au/schemas/input/mytardis']['mytardis_platform']
 
     # settings['mytardis_host'] = \

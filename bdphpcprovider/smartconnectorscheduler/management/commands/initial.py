@@ -920,7 +920,7 @@ class Command(BaseCommand):
                 'http://rmit.edu.au/schemas/remotemake/config':
                 {
                     u'payload_destination': 'iet595/remotemake',
-                    u'payload_source': 'file://127.0.0.1/local/vasppayload',
+                    u'payload_source': 'file://127.0.0.1/vasppayload',
                 }
             })
         # executes make with run target

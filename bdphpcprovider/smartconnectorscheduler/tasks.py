@@ -7,6 +7,8 @@ from django.db import transaction
 from django.db import DatabaseError
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
+from bdphpcprovider.smartconnectorscheduler import smartconnector
+
 
 from copy import deepcopy
 
@@ -202,7 +204,7 @@ def progress_context(context_id):
                         else:
                             logger.debug("Stage '%s' NOT TRIGGERED" % current_stage.name)
                     except Exception, e:
-                        logger.error("error=%s" % e)
+                        smartconnector.error(run_settings, "0: internal error:%s" % e)
                 if not triggered:
                     logger.debug("No stages triggered")
                     test_info = task_run_settings
