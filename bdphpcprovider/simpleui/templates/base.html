@@ -37,14 +37,6 @@ function submitForm(description, form_id) {
     operation.val(description);
     var password = $.trim($(form + ' #id_password').val());
     var api_key = $.trim($(form + ' #id_api_key').val());
-    if (form_id == 'mytardis_form_create'){
-        $(form + ' #id_password').attr('required', 'true')
-        $(form + ' #id_api_key').attr('required', 'true')
-        if (api_key != "")
-            $(form + ' #id_password').removeAttr("required");
-        else if (password != "")
-            $(form + ' #id_api_key').removeAttr("required");
-    }
     form.validate();
     if (form.valid()){
         form.submit()
@@ -55,9 +47,15 @@ function submitForm(description, form_id) {
 function updatePlatform(parameters, platform_type) {
     $('form[id*="_form_update"]').hide();
     formreset()
+    if (platform_type == 'csrack' || platform_type == 'nectar'){
+        platform_type = 'cloud'
+    }
+    else if (platform_type == 'nci'){
+        platform_type = 'cluster'
+    }
     form_id = '#' + platform_type + '_form_update';
     $(form_id).show();
-    $('form #id_filters').val(parameters);
+    $('form #id_platform_type').attr("disabled", "disabled")
     var current_params = parameters.replace(/[\]\(\)\[']/g, '');
     var array_params = current_params.split(',');
     for (var i=0;i<array_params.length;i++)
@@ -67,15 +65,22 @@ function updatePlatform(parameters, platform_type) {
         param_id =   '#id_' + key
         $('form '+ param_id).val(value)
     };
+    current_platform_name =  $('form #id_platform_name').val();
+    $('form #id_filter').val(current_platform_name);
 }
 
 //consider merging the ff method with updatePlatform
 function deletePlatform(parameters, platform_type) {
     $('form[id*="_form_delete"]').hide();
     fieldReadonly()
+    if (platform_type == 'csrack' || platform_type == 'nectar'){
+        platform_type = 'cloud'
+    }
+    else if (platform_type == 'nci'){
+        platform_type = 'cluster'
+    }
     form_id = '#' + platform_type + '_form_delete'
     $(form_id).show();
-    $('form #id_filters').val(parameters)
     var current_params = parameters.replace(/[\]\(\)\[']/g, '');
     var array_params = current_params.split(',');
     for (var i=0;i<array_params.length;i++)
@@ -95,6 +100,7 @@ function fieldReadonly(){
     var form =  $(this).closest('form').attr("id");
     $("form input[id][type='text']").attr("readonly", "readonly")
     $("form input[id][type='password']").attr("readonly", "readonly")
+    $("form select[id]").attr("disabled", "disabled")
 }
 
 function formreset(){
@@ -103,7 +109,12 @@ function formreset(){
     $("form input[id][type='password']").removeAttr("readonly");
     $("form input[id][type='text']").val("");
     $("form input[id][type='password']").val("");
-}
+    $("form select[id]").removeAttr("disabled");
+    $("form select[id]").val($("form select[id] option:first").val());
+
+ }
+
+
 
 </script>
 

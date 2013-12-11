@@ -112,7 +112,8 @@ class SchemaResource(ModelResource):
         resource_name = 'schema'
         allowed_methods = ['get']
         filtering = {
-            'schema': ALL_WITH_RELATIONS
+            'schema': ALL_WITH_RELATIONS,
+            'namespace': ALL_WITH_RELATIONS,
         }
 
 
@@ -341,6 +342,9 @@ class ContextResource(ModelResource):
         username = data['http://rmit.edu.au/schemas/bdp_userprofile/username']
         logger.debug(username)
         subtype_validation = {
+            'password': ('string', validators.validate_string_not_empty, forms.PasswordInput, None),
+            'hidden': ('natural number', validators.validate_hidden, None, None),
+            'string_not_empty': ('string_not_empty', validators.validate_string_not_empty, None, None),
             'natural': ('natural number', validators.validate_natural_number, None, None),
             'string': ('string', validators.validate_string, None, None),
             'whole': ('whole number', validators.validate_whole_number, None, None),
@@ -761,6 +765,8 @@ class PlatformParameterSetResource(ModelResource):
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
         bundle.data['username'] = request.user.username
+        #logger.debug('bundle.data=%s' % bundle.data)
+        #bundle.data['operation'] = bundle.data['http://rmit.edu.au/schemas/platform/computation/cloud/ec2_based/operation']
         try:
             if 'operation' in bundle.data:
                 logger.debug('operation=%s' % bundle.data['operation'])

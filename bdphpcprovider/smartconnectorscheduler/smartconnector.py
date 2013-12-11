@@ -123,7 +123,7 @@ def get_url_with_pkey(settings, url_or_relative_path,
     url_settings = {}
     logger.debug('platform=%s' % platform)
     logger.debug("settings=%s" % pformat(settings))
-    if platform in ['nectar', 'unix', 'nci']:
+    if platform in ['nectar', 'unix', 'nci', 'csrack']:
         logger.debug('unix here')
         url_settings['username'] = settings['username']
         #url_settings['password'] = settings['nectar_password']
@@ -183,7 +183,7 @@ def get_url_with_pkey(settings, url_or_relative_path,
             return
 
     # FIXME: suffix root_path with username
-    if platform != 'nectar' and platform != 'unix' and platform != 'nci':
+    if platform != 'nectar' and platform != 'unix' and platform != 'nci' and platform != 'csrack':
         try:
             platform_object = models.Platform.objects.get(name=platform)
             root_path = platform_object.root_path
