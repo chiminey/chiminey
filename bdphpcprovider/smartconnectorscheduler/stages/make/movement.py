@@ -34,6 +34,8 @@ from bdphpcprovider.smartconnectorscheduler.smartconnector import (
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler import platform
+from bdphpcprovider.smartconnectorscheduler.errors import deprecated
+
 
 from django.template import TemplateSyntaxError
 from django.template import Context, Template
@@ -44,6 +46,8 @@ from . import setup_settings
 logger = logging.getLogger(__name__)
 
 VALUES_FNAME = "values"
+
+RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
 
 class MakeUploadStage(Stage):
@@ -69,21 +73,42 @@ class MakeUploadStage(Stage):
     def process(self, run_settings):
         """ perform the stage operation
         """
-        #
-        #smartconnector.info(run_settings, "1: upload starting")
 
+        bdp_username = run_settings[RMIT_SCHEMA + '/bdp_userprofile']['username']
+        logger.debug("bdp_username=%s" % bdp_username)
+        input_storage_url = run_settings[
+            RMIT_SCHEMA + '/platform/storage/input']['platform_url']
+        logger.debug("input_storage_url=%s" % input_storage_url)
+        input_storage_settings = platform.get_platform_settings(
+            input_storage_url,
+            bdp_username)
+        logger.debug("input_storage_settings=%s" % pformat(input_storage_settings))
+        input_offset = run_settings[RMIT_SCHEMA + "/platform/storage/input"]['offset']
+        logger.debug("input_offset=%s" % pformat(input_offset))
+        input_prefix = '%s://%s@' % (input_storage_settings['scheme'],
+                                    input_storage_settings['type'])
+
+        map_initial_location = "%s/%s/initial" % (input_prefix, input_offset)
+        logger.debug("map_initial_location=%s" % map_initial_location)
+
+        # input_storage_url = run_settings[
+        # RMIT_SCHEMA + '/platform/storage/input']['platform_url']
+        # input_storage_settings = platform.get_platform_settings(input_storage_url, bdp_username)
+        # input_offset = settings['input_location']
+        # input_prefix = '%s://%s@' % (input_storage_settings['scheme'],
+        #                             input_storage_settings['type'])
+        # map_initial_location = "%s/initial" % (input_prefix, input_offset)
 
         settings = setup_settings(run_settings)
         logger.debug("settings=%s" % settings)
 
-        map_initial_location = "%s/initial" % settings['input_location']
+        # map_initial_location = "%s/initial" % settings['input_location']
         values_map = _load_values_map(settings, map_initial_location)
         logger.debug("values_map=%s" % values_map)
         _upload_payload(settings, settings['payload_source'], values_map)
-
         _upload_variations_inputs(
             settings,
-            settings['input_location'], values_map)
+            map_initial_location, values_map)
 
         smartconnector.info(run_settings, "1: upload done")
 
@@ -159,7 +184,8 @@ def _upload_payload(settings, source_url, values_map):
 
     logger.debug("done payload upload")
 
-def _upload_variations_inputs(settings, source_url, values_map):
+
+def _upload_variations_inputs(settings, source_url_initial, values_map):
 
     #variation_map = {'a': [3]}
 
@@ -173,7 +199,7 @@ def _upload_variations_inputs(settings, source_url, values_map):
     # input_storage_settings = platform.get_platform_settings(input_storage_url, bdp_username)
     # logger.debug("input_storage_settings=%s" % input_storage_settings)
     # settings.update(input_storage_settings)
-    source_url_initial = "%s/initial" % source_url
+    # source_url_initial = "%s/initial" % source_url
     logger.debug("source_url_initial=%s" % source_url_initial)
     encoded_s_url = get_url_with_pkey(settings, source_url_initial)
     logger.debug("encoded_s_url=%s" % encoded_s_url)
@@ -209,6 +235,7 @@ def _upload_variations_inputs(settings, source_url, values_map):
     logger.debug("done input upload")
 
 
+@deprecated
 def _upload_variations_inputs_old(settings, source_url):
 
     #variation_map = {'a': [3]}

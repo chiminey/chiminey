@@ -71,6 +71,9 @@ class Sweep(Stage):
             RMIT_SCHEMA + '/input/mytardis/experiment_id')
         smartconnector.copy_settings(local_settings, run_settings,
             RMIT_SCHEMA + '/system/random_numbers')
+        local_settings['bdp_username'] = run_settings[
+            RMIT_SCHEMA + '/bdp_userprofile']['username']
+
         logger.debug('local_settings=%s' % local_settings)
 
         contextid = int(run_settings[RMIT_SCHEMA + '/system'][
@@ -112,12 +115,12 @@ class Sweep(Stage):
         if len(input_location_list) > 1:
             input_storage_offset = os.path.join(*input_location_list[1:])
         logger.debug('input_storage_offset=%s' % input_storage_offset)
-
         run_settings[RMIT_SCHEMA + '/platform/storage/input'] = {}
         run_settings[RMIT_SCHEMA + '/platform/storage/input'][
             'platform_url'] = input_storage_name
         bdp_username = run_settings[RMIT_SCHEMA + '/bdp_userprofile'][
             'username']
+        logger.debug("bdp_username=%s" % bdp_username)
         input_storage_url = run_settings[
             RMIT_SCHEMA + '/platform/storage/input']['platform_url']
         input_storage_settings = platform.get_platform_settings(
@@ -136,10 +139,12 @@ class Sweep(Stage):
             self.experiment_id = 0
 
         subdirective = run_settings[RMIT_SCHEMA + '/stages/sweep']['directive']
-        context = models.Context.objects.get(id=contextid)
-        user = context.owner.user.username
+        current_context = models.Context.objects.get(id=contextid)
+        user = current_context.owner.user.username
         # TODO: replace with scratch space computation platform space
-        self.job_dir = 'file://local@127.0.0.1/sweep%s' % contextid
+        self.scratch_platform = '%ssweep%s' % (
+            platform.get_scratch_platform(),
+            contextid)
 
         # TODO: this is domain-specific so should be a parameter of the
         # stage.
@@ -148,24 +153,30 @@ class Sweep(Stage):
                 run_settings=run_settings,
                 experiment_id=self.experiment_id,
                 experiment_paramset=[
-                        make_paramset("remotemake", []),
-                        make_graph_paramset("expgraph",
-                            name="makeexp1",
-                            graph_info={"axes":["num_kp", "energy"], "legends":["TOTEN"]},
-                            value_dict={},
-                            value_keys=[["makedset/num_kp", "makedset/toten"]]),
-                        make_graph_paramset("expgraph",
-                            name="makeexp2",
-                            graph_info={"axes":["encut", "energy"], "legends":["TOTEN"]},
-                            value_dict={},
-                            value_keys=[["makedset/encut", "makedset/toten"]]),
-                        make_graph_paramset("expgraph",
-                            name="makeexp3",
-                            graph_info={"axes":["num_kp", "encut", "TOTEN"], "legends":["TOTEN"]},
-                            value_dict={},
-                            value_keys=[["makedset/num_kp", "makedset/encut", "makedset/toten"]]),
+                    make_paramset("remotemake", []),
+                    make_graph_paramset("expgraph",
+                        name="makeexp1",
+                        graph_info={"axes":["num_kp", "energy"],
+                            "legends":["TOTEN"]},
+                        value_dict={},
+                        value_keys=[["makedset/num_kp",
+                            "makedset/toten"]]),
+                    make_graph_paramset("expgraph",
+                        name="makeexp2",
+                        graph_info={"axes":["encut", "energy"],
+                            "legends":["TOTEN"]},
+                        value_dict={},
+                        value_keys=[["makedset/encut",
+                            "makedset/toten"]]),
+                    make_graph_paramset("expgraph",
+                        name="makeexp3",
+                        graph_info={"axes":["num_kp", "encut", "TOTEN"],
+                            "legends":["TOTEN"]},
+                        value_dict={},
+                        value_keys=[["makedset/num_kp", "makedset/encut",
+                            "makedset/toten"]]),
                     ],
-                output_location=self.job_dir)
+                output_location=self.scratch_platform)
 
             run_settings[RMIT_SCHEMA + '/input/mytardis'][
                 'experiment_id'] = self.experiment_id
@@ -262,7 +273,7 @@ class Sweep(Stage):
             logger.debug("run_counter=%s" % run_counter)
             logger.debug("systemsetttings=%s" % pformat(run_settings[
                 RMIT_SCHEMA + '/input/system']))
-            run_inputdir = os.path.join(self.job_dir,
+            run_inputdir = os.path.join(self.scratch_platform,
                 "run%s" % str(run_counter),
                 "input_0",)
             logger.debug("run_inputdir=%s" % run_inputdir)
@@ -329,12 +340,34 @@ class Sweep(Stage):
             if len(rands):
                 run_settings[RMIT_SCHEMA + '/input/hrmc'][u'iseed'] = rands[i]
             run_settings[RMIT_SCHEMA + "/input/system"]['input_location'] =  \
-                "%s/run%s/input_0" % (self.job_dir, run_counter)
+                "%s/run%s/input_0" % (self.scratch_platform, run_counter)
+            run_settings[RMIT_SCHEMA + "/input/system"]['input_location'] =  \
+                "%s/run%s/input_0" % (self.scratch_platform, run_counter)
+
+            minput_location = "local/sweep%s/run%s/input_0" % (contextid, run_counter)
+            input_location_list = minput_location.split('/')
+            input_storage_name = input_location_list[0]
+            input_storage_offset = ''
+            if len(input_location_list) > 1:
+                input_storage_offset = os.path.join(*input_location_list[1:])
+            logger.debug('input_storage_offset=%s' % input_storage_offset)
+            run_settings[RMIT_SCHEMA + '/platform/storage/input'] = {}
+            run_settings[RMIT_SCHEMA + '/platform/storage/input'][
+                'platform_url'] = input_storage_name
+            bdp_username = run_settings[RMIT_SCHEMA + '/bdp_userprofile'][
+                'username']
+            input_storage_url = run_settings[
+                RMIT_SCHEMA + '/platform/storage/input']['platform_url']
+            input_storage_settings = platform.get_platform_settings(
+                input_storage_url,
+                bdp_username)
+            run_settings[RMIT_SCHEMA + '/platform/storage/input'][
+                'offset'] = input_storage_offset
+
             logger.debug("run_settings=%s" % pformat(run_settings))
 
-            new_context = models.Context.objects.get(id=contextid)
             _submit_subtask("nectar", subdirective, run_settings, user, current_context)
-        smartconnector.success(run_settings, "0: finished")
+        smartconnector.success(run_settings, "0: creating sub jobs")
 
     def output(self, run_settings):
         logger.debug("sweep output")

@@ -37,6 +37,7 @@ from django.core.files.base import ContentFile
 from bdphpcprovider.smartconnectorscheduler import models, sshconnector
 from bdphpcprovider.smartconnectorscheduler import storage
 
+RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
 logger = logging.getLogger(__name__)
 
@@ -516,6 +517,8 @@ def update_platform_settings(schema_namespace, settings):
 
 def get_platform_settings(platform_url, username):
     platform_name = platform_url.split('/')[0]
+    if platform_name == "local":
+        return {"scheme": 'file', 'type': 'local'}
     record, schema_namespace = retrieve_platform(platform_name, username)
     update_platform_settings(schema_namespace, record)
     return record
@@ -526,3 +529,7 @@ def get_job_dir(output_storage_settings, run_settings):
     offset = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset']
     job_dir = os.path.join(ip_address, offset)
     return job_dir
+
+
+def get_scratch_platform():
+    return "file://local@127.0.0.1/"
