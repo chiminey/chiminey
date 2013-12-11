@@ -32,7 +32,7 @@ setup(
         'decisiontree',
         'django-mptt',
         'django-storages',
-        'requests',
+        'requests==2.0',
         'django-widget-tweaks',
 	'python-dateutil'
         ],

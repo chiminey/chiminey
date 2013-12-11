@@ -223,10 +223,17 @@ class Wait(Stage):
             Check all registered nodes to find whether
             they are running, stopped or in error_nodes
         """
+
+        local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
+        retrieve_local_settings(run_settings, local_settings)
+        logger.debug("local_settings=%s" % local_settings)
+
         self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
-        bdp_username = run_settings['http://rmit.edu.au/schemas/bdp_userprofile']['username']
         output_storage_url = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['platform_url']
-        output_storage_settings = platform.get_platform_settings(output_storage_url, bdp_username)
+        output_storage_settings = platform.get_platform_settings(output_storage_url, local_settings['bdp_username'])
+        # FIXME: Need to be consistent with how we handle settings here.  Prob combine all into
+        # single local_settings for simplicity.
+        output_storage_settings['bdp_username'] = local_settings['bdp_username']
         self.job_dir = platform.get_job_dir(output_storage_settings, run_settings)
         try:
             self.finished_nodes = smartconnector.get_existing_key(run_settings,
@@ -238,17 +245,13 @@ class Wait(Stage):
             self.id = int(smartconnector.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/system/id'))
             self.output_dir = "output_%s" % self.id
-        except KeyError, e:
+        except KeyError:
             self.id = 0
             self.output_dir = "output"
 
         logger.debug("output_dir=%s" % self.output_dir)
         logger.debug("run_settings=%s" % run_settings)
         logger.debug("Wait stage process began")
-
-        local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
-        retrieve_local_settings(run_settings, local_settings)
-        logger.debug("local_settings=%s" % local_settings)
 
         processes = self.executed_procs
         self.error_nodes = []
@@ -257,7 +260,7 @@ class Wait(Stage):
         self.finished_nodes = ast.literal_eval(self.finished_nodes)
 
         computation_platform_url = run_settings['http://rmit.edu.au/schemas/platform/computation']['platform_url']
-        comp_pltf_settings = platform.get_platform_settings(computation_platform_url, bdp_username)
+        comp_pltf_settings = platform.get_platform_settings(computation_platform_url, local_settings['bdp_username'])
         local_settings.update(comp_pltf_settings)
 
         for process in processes:
@@ -396,6 +399,8 @@ def retrieve_local_settings(run_settings, local_settings):
         'http://rmit.edu.au/schemas/system/platform')
     smartconnector.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/run/payload_cloud_dirname')
+    local_settings['bdp_username'] = run_settings[
+        RMIT_SCHEMA + '/bdp_userprofile']['username']
 
     logger.debug('retrieve completed')
 

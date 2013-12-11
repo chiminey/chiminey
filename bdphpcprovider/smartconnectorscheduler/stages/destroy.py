@@ -73,6 +73,8 @@ class Destroy(smartconnector.Stage):
             'http://rmit.edu.au/schemas/system/platform')
         smartconnector.copy_settings(local_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/create/cloud_sleep_interval')
+        local_settings['bdp_username'] = run_settings[
+            RMIT_SCHEMA + '/bdp_userprofile']['username']
         #smartconnector.copy_settings(local_settings, run_settings,
         #    RMIT_SCHEMA+'/platform/computation/nectar/ec2_access_key')
         #smartconnector.copy_settings(local_settings, run_settings,

@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
 
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
+
 class Configure(Stage, UI):
     """
         - Setups up remote file system
@@ -69,6 +70,8 @@ class Configure(Stage, UI):
             RMIT_SCHEMA + '/input/hrmc/optimisation_scheme')
         smartconnector.copy_settings(local_settings, run_settings,
             RMIT_SCHEMA + '/input/hrmc/threshold')
+        local_settings['bdp_username'] = run_settings[
+            RMIT_SCHEMA + '/bdp_userprofile']['username']
         logger.debug('local_settings=%s' % local_settings)
 
         input_location = run_settings[
@@ -79,6 +82,16 @@ class Configure(Stage, UI):
         output_storage_url = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['platform_url']
         output_storage_settings = platform.get_platform_settings(output_storage_url, bdp_username)
 
+        input_storage_url = run_settings[
+            RMIT_SCHEMA + '/platform/storage/input']['platform_url']
+        input_storage_settings = platform.get_platform_settings(
+            input_storage_url,
+            bdp_username)
+        input_offset = run_settings[RMIT_SCHEMA + "/platform/storage/input"]['offset']
+        input_prefix = '%s://%s@' % (input_storage_settings['scheme'],
+                                    input_storage_settings['type'])
+        map_initial_location = "%s/%s/initial" % (input_prefix, input_offset)
+        logger.debug("map_initial_location=%s" % map_initial_location)
 
         self.contextid = int(run_settings[
             RMIT_SCHEMA + '/system'][u'contextid'])
@@ -114,7 +127,7 @@ class Configure(Stage, UI):
         logger.debug("destination_url=%s" % destination_url)
         hrmcstages.copy_directories(source_url, destination_url)
 
-        output_location = self.output_loc_offset #run_settings[RMIT_SCHEMA + '/input/system'][u'output_location']
+        output_location = self.output_loc_offset  # run_settings[RMIT_SCHEMA + '/input/system'][u'output_location']
         try:
             self.experiment_id = int(smartconnector.get_existing_key(run_settings,
                 RMIT_SCHEMA + '/input/mytardis/experiment_id'))

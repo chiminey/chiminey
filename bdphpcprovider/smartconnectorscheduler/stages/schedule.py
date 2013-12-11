@@ -22,6 +22,9 @@ import logging
 import ast
 import os
 
+from pprint import pformat
+
+
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import smartconnector, hrmcstages, platform
 from bdphpcprovider.smartconnectorscheduler import botocloudconnector, sshconnector
@@ -389,13 +392,14 @@ def retrieve_local_settings(run_settings, local_settings):
         'http://rmit.edu.au/schemas/input/hrmc/optimisation_scheme')
     smartconnector.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/input/hrmc/fanout_per_kept_result')
+    local_settings['bdp_username'] = run_settings[
+        RMIT_SCHEMA + '/bdp_userprofile']['username']
 
     computation_platform_url = run_settings['http://rmit.edu.au/schemas/platform/computation']['platform_url']
-    bdp_username = run_settings['http://rmit.edu.au/schemas/bdp_userprofile']['username']
-    comp_pltf_settings = platform.get_platform_settings(computation_platform_url, bdp_username)
+    comp_pltf_settings = platform.get_platform_settings(computation_platform_url, local_settings['bdp_username'])
     local_settings.update(comp_pltf_settings)
 
-    logger.debug('retrieve completed')
+    logger.debug('retrieve completed %s' % pformat(local_settings))
 
 
 def start_round_robin_schedule(nodes, processes, schedule_index, settings):
