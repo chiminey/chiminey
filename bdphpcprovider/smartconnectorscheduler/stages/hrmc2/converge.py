@@ -186,6 +186,8 @@ class Converge(Stage):
 
     def process(self, run_settings):
 
+        self.retrieve_local_settings(run_settings)
+
         self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
         bdp_username = self.boto_settings['bdp_username']
         output_storage_url = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['platform_url']
