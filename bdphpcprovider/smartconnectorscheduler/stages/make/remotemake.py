@@ -128,7 +128,6 @@ class MakeRunStage(Stage):
         logger.debug("program_success =%s" % self.program_success)
         smartconnector.info(run_settings, "1: execute started")
 
-
     def output(self, run_settings):
         run_settings.setdefault(
             'http://rmit.edu.au/schemas/stages/make',

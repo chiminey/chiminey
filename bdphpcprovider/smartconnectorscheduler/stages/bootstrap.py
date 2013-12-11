@@ -19,8 +19,8 @@
 # IN THE SOFTWARE.
 
 import logging
+from pprint import pformat
 import ast
-import os
 
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
+
 class Bootstrap(Stage):
     """
     Schedules processes on a cloud infrastructure
@@ -42,15 +43,15 @@ class Bootstrap(Stage):
         logger.debug('Bootstrap stage initialised')
 
     def triggered(self, run_settings):
-        if not self._exists(run_settings, RMIT_SCHEMA+'/stages/create', u'created_nodes'):
+        if not self._exists(run_settings, RMIT_SCHEMA + '/stages/create', u'created_nodes'):
             return False
-        created_str = run_settings[RMIT_SCHEMA+'/stages/create'][u'created_nodes']
+        created_str = run_settings[RMIT_SCHEMA + '/stages/create'][u'created_nodes']
         self.created_nodes = ast.literal_eval(created_str)
         if len(self.created_nodes) == 0:
             return False
         try:
             bootstrapped_str = smartconnector.get_existing_key(run_settings,
-                RMIT_SCHEMA+'/stages/bootstrap/bootstrapped_nodes')
+                RMIT_SCHEMA + '/stages/bootstrap/bootstrapped_nodes')
             self.bootstrapped_nodes = ast.literal_eval(bootstrapped_str)
             logger.debug('bootstrapped nodes=%d, created nodes = %d'
                          % (len(self.bootstrapped_nodes), len(self.created_nodes)))
@@ -63,18 +64,18 @@ class Bootstrap(Stage):
     def process(self, run_settings):
         try:
             self.started = int(smartconnector.get_existing_key(run_settings,
-                RMIT_SCHEMA+'/stages/bootstrap/started'))
+                RMIT_SCHEMA + '/stages/bootstrap/started'))
         except KeyError:
             self.started = 0
         logger.debug('self.started=%d' % self.started)
         smartconnector.info(run_settings, "bootstrapping nodes")
         local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
         retrieve_local_settings(run_settings, local_settings)
-
+        logger.debug("local_settings=%s" % pformat(local_settings))
         if not self.started:
             try:
                 logger.debug('process to start')
-                _ = start_multi_setup_task(local_settings)
+                start_multi_setup_task(local_settings)
             except PackageFailedError, e:
                 logger.error("unable to start setup of packages: %s" % e)
             except Exception, e:
@@ -135,20 +136,19 @@ class Bootstrap(Stage):
                 else:
                     print "job still running on %s" % node_ip
 
-
     def output(self, run_settings):
         run_settings.setdefault(
-            RMIT_SCHEMA+'/stages/bootstrap',
+            RMIT_SCHEMA + '/stages/bootstrap',
             {})[u'started'] = self.started
         run_settings.setdefault(
-            RMIT_SCHEMA+'/stages/bootstrap',
+            RMIT_SCHEMA + '/stages/bootstrap',
             {})[u'bootstrapped_nodes'] = str(self.bootstrapped_nodes)
         run_settings.setdefault(
-            RMIT_SCHEMA+'/system',
+            RMIT_SCHEMA + '/system',
             {})[u'id'] = 0
         logger.debug('created_nodes=%s' % self.created_nodes)
         if len(self.bootstrapped_nodes) == len(self.created_nodes):
-            run_settings.setdefault(RMIT_SCHEMA+'/stages/bootstrap',
+            run_settings.setdefault(RMIT_SCHEMA + '/stages/bootstrap',
             {})[u'bootstrap_done'] = 1
 
         return run_settings
@@ -156,21 +156,23 @@ class Bootstrap(Stage):
 
 def retrieve_local_settings(run_settings, local_settings):
     smartconnector.copy_settings(local_settings, run_settings,
-        RMIT_SCHEMA+'/stages/setup/payload_source')
+        RMIT_SCHEMA + '/stages/setup/payload_source')
     smartconnector.copy_settings(local_settings, run_settings,
-        RMIT_SCHEMA+'/stages/setup/payload_destination')
+        RMIT_SCHEMA + '/stages/setup/payload_destination')
     smartconnector.copy_settings(local_settings, run_settings,
-        RMIT_SCHEMA+'/system/platform')
+        RMIT_SCHEMA + '/system/platform')
     smartconnector.copy_settings(local_settings, run_settings,
-        RMIT_SCHEMA+'/stages/create/created_nodes')
+        RMIT_SCHEMA + '/stages/create/created_nodes')
     smartconnector.copy_settings(local_settings, run_settings,
-        RMIT_SCHEMA+'/stages/create/custom_prompt')
-
+        RMIT_SCHEMA + '/stages/create/custom_prompt')
+    local_settings['bdp_username'] = run_settings[
+        RMIT_SCHEMA + '/bdp_userprofile']['username']
     computation_platform_url = run_settings['http://rmit.edu.au/schemas/platform/computation']['platform_url']
-    bdp_username = run_settings['http://rmit.edu.au/schemas/bdp_userprofile']['username']
-    comp_pltf_settings = platform.get_platform_settings(computation_platform_url, bdp_username)
+    logger.debug("computation_platform_url=%s" % computation_platform_url)
+    comp_pltf_settings = platform.get_platform_settings(computation_platform_url, local_settings['bdp_username'])
     local_settings.update(comp_pltf_settings)
 
+    logger.debug("local_settings=%s" % local_settings)
     logger.debug('retrieve completed')
 
 
@@ -182,7 +184,7 @@ def start_multi_setup_task(settings):
     nodes = botocloudconnector.get_rego_nodes(settings)
     logger.debug("nodes=%s" % nodes)
     requested_nodes = 0
-    maketarget_nodegroup_pair={}
+    maketarget_nodegroup_pair = {}
 
     # TODO: need testcases for following code
     if not maketarget_nodegroup_pair:
@@ -200,7 +202,7 @@ def start_multi_setup_task(settings):
     logger.info("Requested nodes %d: \nAvailable nodes %s "
            % (requested_nodes, len(nodes)))
 
-    logger.debug('starting')
+    logger.debug('starting setup')
     for make_target in maketarget_nodegroup_pair:
         for i in range(0, maketarget_nodegroup_pair[make_target]):
             instance = nodes[0]

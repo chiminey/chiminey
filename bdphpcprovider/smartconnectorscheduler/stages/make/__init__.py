@@ -25,15 +25,7 @@ from bdphpcprovider.smartconnectorscheduler import hrmcstages
 
 def setup_settings(run_settings):
     settings = {}
-    # settings['username'] = \
-    #     run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nci_user']
-    # settings['password'] = \
-    #     run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nci_password']
 
-
-    # settings['private_key'] = \
-    #         run_settings[
-    #             models.UserProfile.PROFILE_SCHEMA_NS]['nci_private_key']
     settings['payload_destination'] = \
         run_settings[
         'http://rmit.edu.au/schemas/remotemake/config'][
@@ -43,12 +35,13 @@ def setup_settings(run_settings):
         'http://rmit.edu.au/schemas/remotemake/config'][
         'payload_source']
 
-
     settings['input_location'] = run_settings[
         'http://rmit.edu.au/schemas/input/system']['input_location']
+
     for key in ['nci_user', 'nci_password']:
         settings[key] = \
             run_settings[models.UserProfile.PROFILE_SCHEMA_NS][key]
+
     settings['ip'] = run_settings[
         models.UserProfile.PROFILE_SCHEMA_NS]['nci_host']
     settings['nci_host'] = \
@@ -98,12 +91,5 @@ def setup_settings(run_settings):
 
 
     settings['mytardis_platform'] = run_settings['http://rmit.edu.au/schemas/input/mytardis']['mytardis_platform']
-
-    # settings['mytardis_host'] = \
-    #     run_settings[]['mytardis_host']
-    # settings['mytardis_user'] = \
-    #     run_settings[]['mytardis_user']
-    # settings['mytardis_password'] = \
-    #     run_settings[]['mytardis_password']
 
     return settings

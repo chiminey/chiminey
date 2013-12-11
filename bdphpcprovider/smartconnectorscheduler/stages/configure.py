@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
 
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
+
 class Configure(Stage, UI):
     """
         - Setups up remote file system
@@ -86,7 +87,7 @@ class Configure(Stage, UI):
         input_storage_settings = platform.get_platform_settings(
             input_storage_url,
             bdp_username)
-        input_offset = run_settings[RMIT + "/platform/storage/input"]['offset']
+        input_offset = run_settings[RMIT_SCHEMA + "/platform/storage/input"]['offset']
         input_prefix = '%s://%s@' % (input_storage_settings['scheme'],
                                     input_storage_settings['type'])
         map_initial_location = "%s/%s/initial" % (input_prefix, input_offset)
@@ -126,7 +127,7 @@ class Configure(Stage, UI):
         logger.debug("destination_url=%s" % destination_url)
         hrmcstages.copy_directories(source_url, destination_url)
 
-        output_location = self.output_loc_offset #run_settings[RMIT_SCHEMA + '/input/system'][u'output_location']
+        output_location = self.output_loc_offset  # run_settings[RMIT_SCHEMA + '/input/system'][u'output_location']
         try:
             self.experiment_id = int(smartconnector.get_existing_key(run_settings,
                 RMIT_SCHEMA + '/input/mytardis/experiment_id'))

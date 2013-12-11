@@ -750,11 +750,9 @@ class Context(models.Model):
             res = self.current_stage.name
         else:
             res = "None"
-        #logger.debug("res=%s" % res)
         res2 = ContextParameterSet.objects.filter(context=self)
-        #logger.debug("res2=%s" % res2)
 
-        return u"RunCommand:owner=%s\nstage=%s\nparameters=%s\n" % (self.owner,
+        return u"Context:{'owner':%s, 'stage':%s, 'parameters':%s}" % (self.owner,
              res, [unicode(x) for x in res2]
             )
 

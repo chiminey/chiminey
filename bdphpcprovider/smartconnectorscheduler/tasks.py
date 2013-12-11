@@ -146,6 +146,7 @@ def progress_context(context_id):
                     return
                 else:
                     logger.info("processing %s" % context_id)
+                run_context = models.Context.objects.get(id=context_id, deleted=False)
                 logger.debug("Executing task id %r, args: %r kwargs: %r" % ( progress_context.request.id, progress_context.request.args, progress_context.request.kwargs))
                 stage = run_context.current_stage
                 logger.debug("stage=%s" % stage)
@@ -162,7 +163,7 @@ def progress_context(context_id):
                 logger.debug("profile=%s" % profile)
 
                 run_settings = run_context.get_context()
-                logger.debug("retrieved run_settings=%s" % run_settings)
+                logger.debug("retrieved run_settings=%s" % pformat(run_settings))
 
                 # user_settings are r/w during execution, but original values
                 # associated with UserProfile are unchanged as loaded once on
@@ -178,7 +179,7 @@ def progress_context(context_id):
                     logger.debug("process stage=%s", stage)
 
                     task_run_settings = deepcopy(run_settings)
-                    logger.debug("starting task settings = %s" % task_run_settings)
+                    logger.debug("starting task settings = %s" % pformat(task_run_settings))
                     # stage_settings are read only as transfered into context here
                     stage_settings = current_stage.get_settings()
                     logger.debug("stage_settings=%s" % stage_settings)
@@ -197,7 +198,7 @@ def progress_context(context_id):
                             logger.debug("updated task_run_settings=%s" % pformat(task_run_settings))
                             run_context.update_run_settings(task_run_settings)
                             logger.debug("task_run_settings=%s" % pformat(task_run_settings))
-                            logger.debug("context run_settings=%s" % run_context)
+                            logger.debug("context run_settings=%s" % pformat(run_context))
 
                             triggered = True
                             break

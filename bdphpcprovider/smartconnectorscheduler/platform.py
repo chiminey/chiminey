@@ -211,7 +211,7 @@ def delete_platform(platform_name, username):
             .get(name=platform_name, owner=owner)
         paramset.delete()
         return True, 'Record deleted successfully'
-    except ObjectDoesNotExist, e:
+    except ObjectDoesNotExist:
         return False, 'Record does not exist'
 
 
@@ -355,7 +355,8 @@ def generate_nectar_key(parameters):
     if not os.path.exists(key_dir):
         os.makedirs(key_dir)
     try:
-        cloud_type = 'csrack' # parameters['cloud_type'] avoid hardcoding
+        cloud_type = 'csrack'  # parameters['cloud_type'] avoid hardcoding
+        cloud_type = 'nectar'  # parameters['cloud_type'] avoid hardcoding
         if cloud_type == 'csrack':
             region = RegionInfo(name="nova", endpoint="10.234.0.1")
             connection = boto.connect_ec2(
@@ -446,7 +447,7 @@ def generate_unix_key(parameters):
         public_key_content = '%s %s' % (public_key.get_name(), public_key.get_base64())
         f = open(public_key_absolute_path, 'w')
         f.write("\n%s\n" % public_key_content)
-        all= "\n%s\n" % public_key_content
+        all = "\n%s\n" % public_key_content
         f.close()
         fs = storage.RemoteStorage(settings=storage_settings)
         fs.save(remote_key_path, ContentFile(public_key_content))
@@ -491,11 +492,11 @@ def update_platform_settings(schema_namespace, settings):
     platform_type = os.path.basename(schema_namespace)
     settings['type'] = platform_type
     if platform_type == 'nectar':
-        settings['username'] = 'root' #fixme avoid hardcoding
+        settings['username'] = 'root'  # fixme avoid hardcoding
         settings['private_key_name'] = settings['private_key']
         settings['private_key'] = os.path.join(storage.get_bdp_root_path(),
                                                settings['private_key_path'])
-        settings['root_path'] = '/home/centos' #fixme avoid hardcoding
+        settings['root_path'] = '/home/centos'  # fixme avoid hardcoding
         settings['scheme'] = 'ssh'
 
     elif platform_type == 'nci':
@@ -521,6 +522,7 @@ def get_platform_settings(platform_url, username):
         return {"scheme": 'file', 'type': 'local'}
     record, schema_namespace = retrieve_platform(platform_name, username)
     update_platform_settings(schema_namespace, record)
+    record['bdp_username'] = username
     return record
 
 
