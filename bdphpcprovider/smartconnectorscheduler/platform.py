@@ -37,6 +37,7 @@ from django.core.files.base import ContentFile
 from bdphpcprovider.smartconnectorscheduler import models, sshconnector
 from bdphpcprovider.smartconnectorscheduler import storage
 
+RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
 logger = logging.getLogger(__name__)
 
@@ -211,7 +212,7 @@ def delete_platform(platform_name, username):
             .get(name=platform_name, owner=owner)
         paramset.delete()
         return True, 'Record deleted successfully'
-    except ObjectDoesNotExist, e:
+    except ObjectDoesNotExist:
         return False, 'Record does not exist'
 
 
@@ -454,7 +455,7 @@ def generate_unix_key(parameters):
         public_key_content = '%s %s' % (public_key.get_name(), public_key.get_base64())
         f = open(public_key_absolute_path, 'w')
         f.write("\n%s\n" % public_key_content)
-        all= "\n%s\n" % public_key_content
+        all = "\n%s\n" % public_key_content
         f.close()
         fs = storage.RemoteStorage(settings=storage_settings)
         fs.save(remote_key_path, ContentFile(public_key_content))
@@ -495,7 +496,7 @@ def generate_unix_key(parameters):
 
 
 #fixme: in the schema definition, change private_key to private_key_name
-def update_platform_settings(schema_namespace, settings):
+def _update_platform_settings(settings):
     #platform_type = os.path.basename(schema_namespace)
     platform_type = settings['platform_type']
     settings['type'] = platform_type
@@ -504,7 +505,7 @@ def update_platform_settings(schema_namespace, settings):
         settings['private_key_name'] = settings['private_key']
         settings['private_key'] = os.path.join(storage.get_bdp_root_path(),
                                                settings['private_key_path'])
-        settings['root_path'] = '/home/centos' #fixme avoid hardcoding
+        settings['root_path'] = '/home/centos'  # fixme avoid hardcoding
         settings['scheme'] = 'ssh'
 
     elif platform_type == 'nci':
@@ -526,8 +527,11 @@ def update_platform_settings(schema_namespace, settings):
 
 def get_platform_settings(platform_url, username):
     platform_name = platform_url.split('/')[0]
+    if platform_name == "local":
+        return {"scheme": 'file', 'type': 'local'}
     record, schema_namespace = retrieve_platform(platform_name, username)
-    update_platform_settings(schema_namespace, record)
+    _update_platform_settings(record)
+    record['bdp_username'] = username
     return record
 
 
@@ -536,3 +540,7 @@ def get_job_dir(output_storage_settings, run_settings):
     offset = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset']
     job_dir = os.path.join(ip_address, offset)
     return job_dir
+
+
+def get_scratch_platform():
+    return "file://local@127.0.0.1/"

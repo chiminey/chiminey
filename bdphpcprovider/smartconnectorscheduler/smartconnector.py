@@ -36,6 +36,8 @@ from django.contrib import messages
 
 
 
+RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+
 
 logger = logging.getLogger(__name__)
 
@@ -182,11 +184,14 @@ def get_url_with_pkey(settings, url_or_relative_path,
             #raise NotImplementedError()
             return
 
-    # FIXME: suffix root_path with username
-    if platform != 'nectar' and platform != 'unix' and platform != 'nci' and platform != 'csrack':
+    if platform == 'local':
+        # fixme His gets the root path for the user's local file system.  This
+        # could be hardcoded rather than using real platform object
         try:
-            platform_object = models.Platform.objects.get(name=platform)
-            root_path = platform_object.root_path
+            platform_object = models.Platform.objects.get(name=platform) #fixme remove Platform model
+            bdp_username = settings['bdp_username']
+            logger.debug("bdp_username=%s" % bdp_username)
+            root_path = os.path.join(platform_object.root_path, bdp_username)
             url_settings['root_path'] = root_path
         except models.Platform.DoesNotExist:
             logger.error('compatible platform for %s not found' % platform)

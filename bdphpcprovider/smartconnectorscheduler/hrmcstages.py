@@ -384,35 +384,35 @@ def _get_command_actual_args(directive_args, user_settings):
                                 .decode('utf8'), typed_val))
 
         # retrieve the file url and resolve against rendering_context
-        if file_url:
-            # THis could be an expensive operations if remote, so may need
-            # caching or maybe remote resolution?
-            if rendering_context:
-                source_url = get_url_with_pkey(user_settings, file_url)
-                content = get_file(source_url).decode('utf-8')  # FIXME: assume template are unicode, not bytestrings
-                logger.debug("content=%s" % content)
-                # Parse file parameter and retrieve data
-                logger.debug("file_url %s" % file_url)
-                # TODO: don't use temp file, use remote file with
-                # name file_url with suffix based on the command job number?
-                t = Template(content)
-                logger.debug("rendering_context = %s" % rendering_context)
-                con = Context(rendering_context)
-                logger.debug("prerending content = %s" % t)
-                local_url = get_new_local_url(file_url)  # TODO: make remote
-                logger.debug("local_rul=%s" % local_url)
-                rendered_content = t.render(con).encode('utf-8')
-                logger.debug("rendered_content=%s" % rendered_content)
-                dest_url = get_url_with_pkey(user_settings, local_url)
-                put_file(dest_url, rendered_content)
-            else:
-                logger.debug("no render required")
-                local_url = file_url
-            #localfs.save(remote_file_path, ContentFile(cont.encode('utf-8')))  # NB: ContentFile only takes bytes
-            #command_args.append((u'', remote_file_path.decode('utf-8')))
-            command_args.append((u'', local_url))
-            #_put_file(file_url, cont.encode('utf8'), fs)
-            #command_args.append((u'', file_url))
+        # if file_url:
+        #     # THis could be an expensive operations if remote, so may need
+        #     # caching or maybe remote resolution?
+        #     if rendering_context:
+        #         source_url = get_url_with_pkey(user_settings, file_url)
+        #         content = get_file(source_url).decode('utf-8')  # FIXME: assume template are unicode, not bytestrings
+        #         logger.debug("content=%s" % content)
+        #         # Parse file parameter and retrieve data
+        #         logger.debug("file_url %s" % file_url)
+        #         # TODO: don't use temp file, use remote file with
+        #         # name file_url with suffix based on the command job number?
+        #         t = Template(content)
+        #         logger.debug("rendering_context = %s" % rendering_context)
+        #         con = Context(rendering_context)
+        #         logger.debug("prerending content = %s" % t)
+        #         local_url = get_new_local_url(file_url)  # TODO: make remote
+        #         logger.debug("local_rul=%s" % local_url)
+        #         rendered_content = t.render(con).encode('utf-8')
+        #         logger.debug("rendered_content=%s" % rendered_content)
+        #         dest_url = get_url_with_pkey(user_settings, local_url)
+        #         put_file(dest_url, rendered_content)
+        #     else:
+        #         logger.debug("no render required")
+        #         local_url = file_url
+        #     #localfs.save(remote_file_path, ContentFile(cont.encode('utf-8')))  # NB: ContentFile only takes bytes
+        #     #command_args.append((u'', remote_file_path.decode('utf-8')))
+        #     command_args.append((u'', local_url))
+        #     #_put_file(file_url, cont.encode('utf8'), fs)
+        #     #command_args.append((u'', file_url))
     return command_args
 
 

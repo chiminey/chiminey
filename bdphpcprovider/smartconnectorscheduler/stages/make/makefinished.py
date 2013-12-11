@@ -207,12 +207,7 @@ class MakeFinishedStage(Stage):
         logger.debug("Transferring output from %s to %s" % (source_url,
             dest_url))
         settings.update(output_storage_settings)
-
         encoded_d_url = smartconnector.get_url_with_pkey(settings, dest_url)
-
-        # encoded_d_url = smartconnector.get_url_with_pkey(
-        #     settings,
-        #     dest_url, is_relative_path=False, ip_address=settings['host'])
         logger.debug("encoded_d_url=%s" % encoded_d_url)
 
         #hrmcstages.delete_files(encoded_d_url, exceptions=[])
@@ -227,8 +222,15 @@ class MakeFinishedStage(Stage):
             # been transferred.
             raise
 
-        # TODO: this is very domain specific
-        if settings['mytardis_host']:
+        def _get_mytardis_settings(settings, bdp_username):
+            mytardis_url = settings['mytardis_platform']
+            return platform.get_platform_settings(mytardis_url, bdp_username)
+
+        mytardis_settings = _get_mytardis_settings(settings, bdp_username)
+        logger.debug(mytardis_settings)
+
+         # TODO: this is very domain specific
+        if mytardis_settings['mytardis_host']:
 
             OUTCAR_FILE = "OUTCAR"
             VALUES_FILE = "values"
@@ -298,13 +300,11 @@ class MakeFinishedStage(Stage):
                     pass
             logger.debug("encut=%s" % encut)
 
-            EXP_DATASET_NAME_SPLIT = 1
-
             def _get_exp_name_for_make(settings, url, path):
                 """
                 Break path based on EXP_DATASET_NAME_SPLIT
                 """
-                return str(os.sep.join(path.split(os.sep)[-(EXP_DATASET_NAME_SPLIT + 1):]))
+                return str(os.sep.join(path.split(os.sep)[-2:-1]))
 
             def _get_dataset_name_for_make(settings, url, path):
                 """
@@ -316,34 +316,17 @@ class MakeFinishedStage(Stage):
                 return "%s:encut=%s,num_kp=%s" % (runcounter, encut, numkp)
                 #return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
 
-            settings['ENCUT'] = encut
-            settings['NUMKP'] = num_kp
-            settings['RUNCOUNTER'] = settings['contextid']
-            # TODO: THIS IS
+            mytardis_settings['ENCUT'] = encut
+            mytardis_settings['NUMKP'] = num_kp
+            mytardis_settings['RUNCOUNTER'] = settings['contextid']
+
             self.experiment_id = mytardis.post_dataset(
-                settings=settings,
+                settings=mytardis_settings,
                 source_url=encoded_d_url,
                 exp_id=self.experiment_id,
                 exp_name=_get_exp_name_for_make,
                 dataset_name=_get_dataset_name_for_make,
-                experiment_paramset=[
-                    make_paramset("remotemake", []),
-                    make_graph_paramset("expgraph",
-                        name="makeexp1",
-                        graph_info={"axes":["num_kp", "energy"], "legends":["TOTEN"]},
-                        value_dict={},
-                        value_keys=[["makedset/num_kp", "makedset/toten"]]),
-                    make_graph_paramset("expgraph",
-                        name="makeexp2",
-                        graph_info={"axes":["encut", "energy"], "legends":["TOTEN"]},
-                        value_dict={},
-                        value_keys=[["makedset/encut", "makedset/toten"]]),
-                    make_graph_paramset("expgraph",
-                        name="makeexp3",
-                        graph_info={"axes":["num_kp", "encut", "TOTEN"], "legends":["TOTEN"]},
-                        value_dict={},
-                        value_keys=[["makedset/num_kp", "makedset/encut", "makedset/toten"]]),
-                ],
+                experiment_paramset=[],
                 dataset_paramset=[
                     make_paramset("remotemake/output", []),
                     make_graph_paramset("dsetgraph",
@@ -356,7 +339,7 @@ class MakeFinishedStage(Stage):
                         value_keys=[]
                         ),
                     ]
-               )
+                )
 
     def output(self, run_settings):
         run_settings['http://rmit.edu.au/schemas/stages/make']['runs_left']  \

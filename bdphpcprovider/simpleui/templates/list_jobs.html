@@ -65,8 +65,9 @@ $(document).on('click','.delete', function(e) {
                 <strong>Created</strong>
             </th>
             <th data-hide="phone">
-                <strong>Iteration:State</strong>
+                <strong>Iteration: Current task</strong>
             </th>
+            <th data-hide=""><strong>State</strong></th>
             <th data-hide=""></th>
             <th data-hide=""></th>
 </tr>
@@ -88,9 +89,11 @@ $(document).on('click','.delete', function(e) {
 <img  class="icon-exclamation-sign">
 {% endif %}
 {{job.3|split:"1"}}
-{% if job.1 %}
-(job stopped)
-{% endif %}
+</td>
+<td>
+  {% if not job.1 %}
+  <strong>RUNNING</strong>
+  {% endif %}
 
 </td>
 <td class="span2">

@@ -17,24 +17,25 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
-import logging
 import os
 import json
-import logging.config
 from pprint import pformat
+import logging
+import logging.config
 
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.exceptions import MultipleObjectsReturned
+from django.core.urlresolvers import reverse
+from django.contrib.auth.models import User
+from django.db import models
+
+from tastypie.models import create_api_key
 
 from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
 from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 
-from django.core.urlresolvers import reverse
-
-
 logger = logging.getLogger(__name__)
-
 
 class UserProfile(models.Model):
     user = models.ForeignKey(User, unique=True, help_text="Information about the user")
@@ -749,11 +750,9 @@ class Context(models.Model):
             res = self.current_stage.name
         else:
             res = "None"
-        #logger.debug("res=%s" % res)
         res2 = ContextParameterSet.objects.filter(context=self)
-        #logger.debug("res2=%s" % res2)
 
-        return u"RunCommand:owner=%s\nstage=%s\nparameters=%s\n" % (self.owner,
+        return u"Context:{'owner':%s, 'stage':%s, 'parameters':%s}" % (self.owner,
              res, [unicode(x) for x in res2]
             )
 
@@ -849,14 +848,44 @@ class StageParameter(models.Model):
     class Meta:
         ordering = ("name",)
 
-from django.contrib.auth.models import User
-from django.db import models
-from tastypie.models import create_api_key
+
+class Preset(models.Model):
+    name = models.CharField(max_length=256)
+    user_profile = models.ForeignKey(UserProfile, verbose_name="User Profile")
+    directive = models.ForeignKey(Directive)
+
+    def __unicode__(self):
+        return "name=%s\nuser_profile=%s\ndirective=%s\n" % (self.name, self.user_profile, self.directive)
+
+    class Meta:
+        ordering = ("name",)
+        unique_together = (('name', 'user_profile'),)
+
+
+class PresetParameterSet(models.Model):
+    preset = models.ForeignKey(Preset, verbose_name="Preset")
+    schema = models.ForeignKey(Schema, verbose_name="Schema")
+    ranking = models.IntegerField(default=0)
+
+    def __unicode__(self):
+        return "preset=%s\schema=%s\n" % (self.preset, self.schema)
+
+    class Meta:
+        ordering = ("ranking",)
+
+
+class PresetParameter(models.Model):
+    name = models.ForeignKey(ParameterName, verbose_name="Parameter Name")
+    paramset = models.ForeignKey(PresetParameterSet, verbose_name="Parameter Set")
+    value = models.TextField(blank=True, verbose_name="Parameter Value", help_text="The Value of this parameter")
+
+    def __unicode__(self):
+        return "%s (%s)=%s" % (self.name, self.parameter.type, self.value)
+
+    class Meta:
+        ordering = ("name",)
+
 
 models.signals.post_save.connect(create_api_key, sender=User)
 
 
-
-
-
-# StageParameterSet

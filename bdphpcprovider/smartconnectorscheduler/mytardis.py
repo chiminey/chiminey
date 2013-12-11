@@ -50,36 +50,39 @@ def _get_dataset_name(settings, url, path):
     return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
 
 
-# def post_exp_parameterset(settings,
-#     exp_id,
-#     experiment_schema):
+def _get_mytardis_data(tardis_url, field_name):
+    headers = {'content-type': 'application/json'}
+    cookies = {}  # only pulling public info so don't need auth
+    url = "%sapi/v1/%s?limit=0&format=json" % (
+        tardis_url,
+        field_name)
+    logger.debug("url=%s" % url)
+    r = requests.get(url, headers=headers, cookies=cookies)
+    if r.status_code != 200:
+        logger.debug('URL=%s' % url)
+        logger.debug('r.json=%s' % r.json)
+        #logger.debug('r.text=%s' % pformat(r.text))
+        #logger.debug('r.headers=%s' % r.headers)
+        logger.warn("Cannot read %s from %s" % (field_name, tardis_url))
+        return {}
+    return r.json()
 
-#     tardis_user = settings["mytardis_user"]
-#     tardis_pass = settings["mytardis_password"]
-#     tardis_host_url = "http://%s" % settings["mytardis_host"]
-#     logger.debug("posting exp metadata to mytardis at %s" % tardis_host_url)
 
-#     url = "%s/api/v1/experiment/?format=json" % tardis_host_url
-#     headers = {'content-type': 'application/json'}
-#     schemas = [{
-#                 "schema": "http://rmit.edu.au/schemas/hrmcexp",
-#                 "parameters": []
-#                }]
-#     data = json.dumps({
-#         'title': exp_name(settings, source_url, source_path),
-#         'description': 'some test repo',
-#         "parameter_sets": schemas})
-#     logger.debug("data=%s" % data)
-#     r = requests.post(url,
-#         data=data,
-#         headers=headers,
-#         auth=(tardis_user, tardis_pass))
+def get_parameter_uri(url, name_uri):
+    res = _get_mytardis_data(url, name_uri + "/")
+    logger.debug("res=%s" % res)
+    if not len(res):
+        return ""
+    else:
+        return res['name']
 
-#     # TODO: need to check for status_code and handle failures by repolling.
 
-#     logger.debug(r.json)
-#     logger.debug(r.text)
-#     logger.debug(r.headers)
+def extract_id(uri):
+    if str(uri)[-1] == '/':
+        return str(uri).split('/')[-2:-1][0]
+    else:
+        return str(uri).split('/')[-1]
+
 
 def post_experiment(settings,
     exp_id,
@@ -137,9 +140,32 @@ def post_experiment(settings,
         if experiment_paramset:
             logger.debug("updating metadata from existing experiment")
 
+
+
+            # exp_obj = _get_mytardis_data(tardis_url, 'experiment/%s' % new_exp_id)
+
+            # sch = schema_info['ns']
+            # for parameterset in experiment['parameter_sets']:
+            #     sch = parameterset['schema']
+
+            #     parameter_res = {}
+            #     for parameter in parameterset['parameters']:
+            #         name = get_parameter_name(url, "parametername/%s" % extract_id(parameter['name']))
+            #         if not name:
+            #             continue
+            #         text = parameter['string_value']
+            #         parameter_res[name] = text
+            #     if parameter_res:
+            #         res.append(parameter_res)
+
+            # for pset in experiment_paramset:
+
+
             url = "%s/api/v1/experimentparameterset/?format=json" % tardis_host_url
             headers = {'content-type': 'application/json'}
 
+            # TODO: if parameter has already been created, then put rather than
+            # post
             for pset in experiment_paramset:
                 logger.debug("pset=%s" % pset)
                 data = json.dumps(

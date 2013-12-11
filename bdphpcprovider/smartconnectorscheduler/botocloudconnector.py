@@ -338,8 +338,8 @@ def _wait_for_instance_to_start_running(all_instances, settings):
     # TODO: spamming all nodes in tenancy continually is impolite, so should
     # store nodes we know to be part of this run (in context?)
     logger.debug("Started waiting")
-    #maximum rwait time 10 minutes
-    minutes = 10 #fixme avoid hard coding; move to settings.py
+    #maximum rwait time 30 minutes
+    minutes = 30 #fixme avoid hard coding; move to settings.py
     max_retries = (minutes * 60)/settings['cloud_sleep_interval']
     retries = 0
     while all_instances:
@@ -381,7 +381,8 @@ def is_instance_terminated(instance):
         if instance.state in 'terminated':
             return True
     except boto.exception.EC2ResponseError as e:
-        if 'InstanceNotFound' in e.error_code:
+        if 'InstanceNotFound' in e.error_code \
+            or 'InvalidInstanceID' in e.error_code:
             return True
         raise
     return False
