@@ -242,7 +242,7 @@ class Execute(Stage):
             ip_address=ip)
         makefile_path = hrmcstages.get_make_path(destination)
         #makefile_path = settings['payload_destination']
-        command = "cd %s; make %s" % (makefile_path, 'startrun IDS=%s' % (
+        command = "cd %s; make -f Makefile %s" % (makefile_path, 'startrun IDS=%s' % (
                                       settings['filename_for_PIDs']))
         logger.debug('command_exec=%s' % command)
         command_out = ''

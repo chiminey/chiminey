@@ -1,5 +1,5 @@
 startrun:
-	echo hello from startrun	
+	sh ./startrun.sh
 
 running:
-	echo hello from running
+	sh ./running.sh
