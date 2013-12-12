@@ -74,11 +74,9 @@ class Execute(Stage):
         self.reschedule_failed_procs = run_settings['http://rmit.edu.au/schemas/input/reliability'][u'reschedule_failed_processes']
 
         try:
-            logger.debug('here i am')
             exec_procs_str = smartconnector.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/stages/execute/executed_procs')
             self.exec_procs = ast.literal_eval(exec_procs_str)
-            logger.debug('here i am again' )
             logger.debug('executed procs=%d, scheduled procs = %d'
                          % (len(self.exec_procs), len(self.schedule_procs)))
             self.ready_processes = [x for x in self.schedule_procs if x['status'] == 'ready']

@@ -36,7 +36,9 @@ class AuthError(Error):
 
 def is_ssh_ready(settings, ip_address):
     ssh_ready = False
-    max_retries = 15
+    #maximum rwait time 30 minutes
+    minutes = 30 #fixme avoid hard coding; move to settings.py
+    max_retries = (minutes * 60)/settings['cloud_sleep_interval']
     retries = 0
     while not ssh_ready and retries < max_retries:
         logger.debug("Connecting to %s in progress ..." % ip_address)

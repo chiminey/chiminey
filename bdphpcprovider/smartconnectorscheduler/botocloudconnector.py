@@ -51,7 +51,8 @@ class Fake_VM:
 
 
 def _create_cloud_connection(settings):
-    provider = settings['platform']
+    provider = settings['platform_type']
+    logger.debug('provider=%s' % provider)
     if provider.lower() == "amazon":
         return _create_amazon_connection(settings)
     elif provider.lower() == "nectar":
@@ -78,6 +79,7 @@ def _create_nectar_connection(settings):
 
 
 def _create_csrack_connection(settings):
+    logger.debug('Connecting to csrack')
     region = RegionInfo(name="nova", endpoint="10.234.0.1")
     connection = boto.connect_ec2(
         aws_access_key_id=settings['ec2_access_key'],
@@ -87,7 +89,7 @@ def _create_csrack_connection(settings):
         port=8773,
         path="/services/Cloud")
     #logger.info("settings %s" % settings)
-    logger.info("Connecting to... %s" % region.name)
+    logger.info("Connected to csrack")
     return connection
 
 
@@ -114,23 +116,26 @@ def create_VM_instances(number_vm_instances, settings):
     """
         Create the Nectar VM instance and return ip_address
     """
-
-    if settings['platform'] == 'csrack':
-        security_groups = ["bdp", "default"] #fixme avoid hardcoding
+    #fixme avoid hardcoding, move to settings.py
+    if settings['platform_type'] == 'csrack':
+        placement = None
+        vm_image = "ami-00000004"
+    elif settings['platform_type'] == 'nectar':
+        placement = 'monash'
+        vm_image = "ami-0000000"
     else:
-        security_groups = [settings['security_group']]
+        return []
     connection = _create_cloud_connection(settings)
     all_instances = []
     logger.info("Creating %d VM(s)" % number_vm_instances)
-    logger.debug(settings['security_group'])
     try:
         reservation = connection.run_instances(
-                    placement='monash',
-                    image_id=settings['vm_image'],
+                    placement=placement,
+                    image_id=vm_image,
                     min_count=1,
                     max_count=number_vm_instances,
                     key_name=settings['private_key_name'],
-                    security_groups=security_groups,
+                    security_groups=[settings['security_group']],
                     instance_type=settings['vm_image_size'])
         logger.debug("Created Reservation %s" % reservation)
         for instance in reservation.instances:
@@ -333,7 +338,9 @@ def _wait_for_instance_to_start_running(all_instances, settings):
     # TODO: spamming all nodes in tenancy continually is impolite, so should
     # store nodes we know to be part of this run (in context?)
     logger.debug("Started waiting")
-    max_retries = 15
+    #maximum rwait time 30 minutes
+    minutes = 30 #fixme avoid hard coding; move to settings.py
+    max_retries = (minutes * 60)/settings['cloud_sleep_interval']
     retries = 0
     while all_instances:
         for instance in all_instances:
@@ -374,7 +381,8 @@ def is_instance_terminated(instance):
         if instance.state in 'terminated':
             return True
     except boto.exception.EC2ResponseError as e:
-        if 'InstanceNotFound' in e.error_code:
+        if 'InstanceNotFound' in e.error_code \
+            or 'InvalidInstanceID' in e.error_code:
             return True
         raise
     return False

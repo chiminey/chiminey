@@ -125,7 +125,7 @@ def get_url_with_pkey(settings, url_or_relative_path,
     url_settings = {}
     logger.debug('platform=%s' % platform)
     logger.debug("settings=%s" % pformat(settings))
-    if platform in ['nectar', 'unix', 'nci']:
+    if platform in ['nectar', 'unix', 'nci', 'csrack']:
         logger.debug('unix here')
         url_settings['username'] = settings['username']
         #url_settings['password'] = settings['nectar_password']
@@ -185,10 +185,10 @@ def get_url_with_pkey(settings, url_or_relative_path,
             return
 
     if platform == 'local':
-        # THis gets the root path for the user's local file system.  This
+        # fixme His gets the root path for the user's local file system.  This
         # could be hardcoded rather than using real platform object
         try:
-            platform_object = models.Platform.objects.get(name=platform)
+            platform_object = models.Platform.objects.get(name=platform) #fixme remove Platform model
             bdp_username = settings['bdp_username']
             logger.debug("bdp_username=%s" % bdp_username)
             root_path = os.path.join(platform_object.root_path, bdp_username)

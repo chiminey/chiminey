@@ -50,10 +50,6 @@ from bdphpcprovider.simpleui.hrmc.hrmcsubmit import HRMCSubmitForm
 from bdphpcprovider.simpleui.makeform import MakeSubmitForm
 from bdphpcprovider.simpleui.sweepform import SweepSubmitForm
 from bdphpcprovider.simpleui.hrmc.copy import CopyForm
-from bdphpcprovider.simpleui.ncicomputationplatform import NCIComputationPlatformForm
-from bdphpcprovider.simpleui.nectarcomputationplatform import NeCTARComputationPlatformForm
-from bdphpcprovider.simpleui.sshstorageplatform import SSHStoragePlatformForm
-from bdphpcprovider.simpleui.mytardisplatform import MyTardisPlatformForm
 #TODO,FIXME: simpleui shouldn't refer to anything in smartconnectorscheduler
 #and should be using its own models and use the REST API for all information.
 
@@ -85,23 +81,36 @@ def bdp_account_settings(request):
 
 
 def computation_platform_settings(request):
-    nciform = NCIComputationPlatformForm()
-    nectarform = NeCTARComputationPlatformForm()
+    namespace = "http://rmit.edu.au/schemas/platform/computation/cloud/ec2-based"
+    cloud_params = _get_platform_params(request, namespace)
+    cloudform, form_data = make_directive_form(
+        platform_params=cloud_params,
+        username=request.user.username)
+    namespace = "http://rmit.edu.au/schemas/platform/computation/cluster/pbs_based"
+    cluster_params = _get_platform_params(request, namespace)
+    cluster_form, form_data = make_directive_form(
+        platform_params=cluster_params,
+        username=request.user.username)
     if request.method == "POST":
-        nciform = NCIComputationPlatformForm(request.POST)
-        nectarform = NeCTARComputationPlatformForm(request.POST)
-        if nciform.is_valid():
-            schema = 'http://rmit.edu.au/schemas/platform/computation/nci'
-            post_platform(schema, nciform.cleaned_data, request)
+        cloudform, form_data = make_directive_form(
+            request=request.POST,
+            platform_params=cloud_params,
+            username=request.user.username)
+        cluster_form, form_data = make_directive_form(
+            request=request.POST,
+            platform_params=cluster_params,
+            username=request.user.username)
+        if cluster_form.is_valid():
+            schema = 'http://rmit.edu.au/schemas/platform/computation/cluster/pbs_based'
+            post_platform(schema, cluster_form.cleaned_data, request)
             return HttpResponseRedirect('/accounts/settings/platform/computation/')
-        if nectarform.is_valid():
-            schema = 'http://rmit.edu.au/schemas/platform/computation/nectar'
-            post_platform(schema, nectarform.cleaned_data, request, type='nectar')
+        if cloudform.is_valid():
+            schema = 'http://rmit.edu.au/schemas/platform/computation/cloud/ec2-based'
+            post_platform(schema, cloudform.cleaned_data, request)
             return HttpResponseRedirect('/accounts/settings/platform/computation/')
 
     #FIXME: consider using non-locahost URL for api_host
     api_host = "http://127.0.0.1"
-
     url = "%s/api/v1/platformparameter/?format=json&limit=0&schema=http://rmit.edu.au/schemas/platform/computation" % api_host
     cookies = dict(request.COOKIES)
     logger.debug("cookies=%s" % cookies)
@@ -122,33 +131,58 @@ def computation_platform_settings(request):
         GET_data = r.json()
         computation_platforms, all_headers = filter_computation_platforms(GET_data)
         logger.debug(computation_platforms)
-    # FIXME: schemas in all_headers must be sorted with "name" as first
-    # parameter so that footable will respond correctly.
+    logger.debug("cloud_form_get=%s" % cloudform)
+    logger.debug("cloud_data_get=%s" % form_data)
+    logger.debug("nci_form_get=%s" % cluster_form)
     return render(request, 'accountsettings/computationplatform.html',
-                              {'nci_form': nciform, 'nectar_form': nectarform,
-                               'computation_platforms': computation_platforms,
-                               'all_headers': all_headers})
+                  {'cluster_form': cluster_form, 'cloud_form': cloudform,
+                    'computation_platforms': computation_platforms,
+                    'all_headers': all_headers})
+
+
+def _get_platform_params(request, namespace):
+    schema_id = get_schema_id(request, namespace)
+    platform_params =[]
+    schema_info = get_schema_info(request, schema_id)
+    parameters = get_parameters(request, schema_id)
+    platform_params.append((schema_info, parameters))
+    platform_params = add_form_fields(request, platform_params)
+    return platform_params
 
 
 def storage_platform_settings(request):
-    unix_form = SSHStoragePlatformForm()
-    mytardis_form = MyTardisPlatformForm()
+    namespace = "http://rmit.edu.au/schemas/platform/storage/mytardis"
+    mytardis_params = _get_platform_params(request, namespace)
+    mytardis_form, form_data = make_directive_form(
+        platform_params=mytardis_params,
+        username=request.user.username)
+    namespace = "http://rmit.edu.au/schemas/platform/storage/unix"
+    unix_params = _get_platform_params(request, namespace)
+    unix_form, form_data = make_directive_form(
+        platform_params=unix_params,
+            username=request.user.username)
     if request.method == "POST":
-        unix_form = SSHStoragePlatformForm(request.POST)
+        #unix_form = SSHStoragePlatformForm(request.POST)
+        unix_form, form_data = make_directive_form(
+            request=request.POST,
+            platform_params=unix_params,
+            username=request.user.username)
         if unix_form.is_valid():
             schema = 'http://rmit.edu.au/schemas/platform/storage/unix'
             post_platform(schema, unix_form.cleaned_data, request)
             return HttpResponseRedirect('/accounts/settings/platform/storage')
-        mytardis_form = MyTardisPlatformForm(request.POST)
+        mytardis_form, form_data = make_directive_form(
+            request=request.POST,
+            platform_params=mytardis_params,
+            username=request.user.username)
         if mytardis_form.is_valid():
+            logger.debug('valid mytardis')
             schema = 'http://rmit.edu.au/schemas/platform/storage/mytardis'
             post_platform(schema, mytardis_form.cleaned_data, request)
             return HttpResponseRedirect('/accounts/settings/platform/storage')
 
-
     #FIXME: consider using non-locahost URL for api_host
     api_host = "http://127.0.0.1"
-
     url = "%s/api/v1/platformparameter/?format=json&limit=0&schema=http://rmit.edu.au/schemas/platform/storage" % api_host
     cookies = dict(request.COOKIES)
     logger.debug("cookies=%s" % cookies)
@@ -171,10 +205,11 @@ def storage_platform_settings(request):
         GET_data = r.json()
         storage_platforms, all_headers = filter_computation_platforms(GET_data)
         logger.debug('storage=%s' % storage_platforms)
+    logger.debug('invalid mytardis')
     return render(request, 'accountsettings/storageplatform.html',
-                              {'unix_form': unix_form,
-                               'mytardis_form': mytardis_form,
-                               'all_headers': all_headers})
+                  {'unix_form': unix_form,
+                   'mytardis_form': mytardis_form,
+                   'all_headers': all_headers})
 
 
 def post_platform(schema, form_data, request, type=None):
@@ -185,27 +220,19 @@ def post_platform(schema, form_data, request, type=None):
     cookies = dict(request.COOKIES)
     logger.debug("cookies=%s" % cookies)
     headers = {'content-type': 'application/json'}
-    parameters = {}
-    filters = {}
-    for k, v in form_data.items():
-        parameters[k] = v
-    for i in ast.literal_eval(form_data['filters']):
-        logger.debug(i)
-        filters[i[0]] = i[1]
-    platform_name = parameters['name']
+    platform_name = form_data['platform_name']
+
     if form_data['operation'] == 'update':
-        platform_name = filters['name']
+        platform_name = form_data['filter']
+        form_data['filter'] = ''
     data = json.dumps({'operation': form_data['operation'],
-                       'parameters': parameters,
+                       'parameters': form_data,
                        'schema': schema,
                        'platform_name': platform_name})
-    #logger.debug('filters=%s' % form_data['filters'])
-    #logger.debug('filters=%s' % filters)
     r = requests.post(url,
         data=data,
         headers=headers,
         cookies=cookies)
-
     if r.status_code != 201:
         error_message = ''
         if r.status_code == 409:
@@ -236,13 +263,13 @@ def filter_computation_platforms(GET_json_data):
         schema = i['paramset']['schema']['namespace']
         paramset_id = i['paramset']['id']
         name = i['name']['name']
-        '''
-            if name == 'password':
-                value = '****'
-            else:
-                value = i['value']
-        '''
-        value = i['value']
+
+        if name == 'password':
+            value = ''
+        else:
+            value = i['value']
+
+        #value = i['value']
         computation_platforms[schema][paramset_id][str(name)] = str(value)
     headers={}
     all_headers={}
@@ -250,7 +277,9 @@ def filter_computation_platforms(GET_json_data):
     logger.debug('computation=%s' % computation_platforms)
     for i, j in computation_platforms.items():
         headers[i] = []
-        platform_type = os.path.basename(i)
+        logger.debug('j=%s' % j)
+        platform_type = j.itervalues().next()['platform_type']
+        logger.debug('this_platform_type=%s' % platform_type)
 
         params = []
         for a, b in j.items():
@@ -344,7 +373,6 @@ from django.db.models import Model
 
 class AccountSettingsView(FormView):
     template_name = "accountsettings/computationplatform.html"
-    form_class = NCIComputationPlatformForm
     #success_url = '/accountsettings/computationplatform.html'
 
     def get_success_url(self):
@@ -737,8 +765,11 @@ class CopyFormView(FormView):
         return super(CopyFormView, self).form_valid(form)
 
 subtype_validation = {
+    'password': ('password', validators.validate_string_not_empty, forms.PasswordInput, None),
+    'hidden': ('natural number', validators.validate_hidden, None, None),
     'natural': ('natural number', validators.validate_natural_number, None, None),
     'string': ('string', validators.validate_string, None, None),
+    'string_not_empty': ('string_not_empty', validators.validate_string_not_empty, None, None),
     'whole': ('whole number', validators.validate_whole_number, None, None),
     'nectar_platform': ('NeCTAR platform name', validators.validate_platform_url, None, None),
     'storage_bdpurl': ('Storage platform name with optional offset path', validators.validate_platform_url, forms.TextInput, 255),
@@ -773,8 +804,14 @@ def make_dynamic_field(parameter, **kwargs):
         'label': parameter['description'],
         'help_text': help_text
     }
+    if 'platform' in kwargs.keys():
+        field_params = {
+        'required': True,
+        'label': parameter['description'],
+        'help_text': help_text
+    }
 
-    if parameter['subtype'] in  ['bdpurl', 'jsondict']:
+    if parameter['subtype'] in ['bdpurl', 'jsondict']:
         field_params['widget'] = subtype_validation[parameter['subtype']][2]
         field_params['max_length'] = subtype_validation[parameter['subtype']][3]
 
@@ -807,17 +844,17 @@ def make_dynamic_field(parameter, **kwargs):
                 # passed in, as some directives will only work with particular computation/*
                 # categories.  Assume only nectar comp platforms ever allowed here.
 
-                if parameter['subtype'] == "platform":
+                if parameter['subtype'] == "platform" and 'directive' in kwargs.keys():
                     comp_platform = kwargs['directive']['name']
                     logger.debug("computation platform is %s" % comp_platform)
 
                     schema = 'http://rmit.edu.au/schemas/platform/computation/'
                     if comp_platform == 'sweep':
-                        schema += 'nectar'
+                        schema += 'cloud/ec2-based'
                     elif comp_platform == 'sweep_make':
-                        schema += 'nci'
+                        schema += 'cluster/pbs_based'
                     elif comp_platform == 'sweep_vasp':
-                        schema += 'nci'
+                        schema += 'cluster/pbs_based'
                     else:
                         logger.warn("unknown computation platform")
                 elif parameter['subtype'] == 'mytardis':
@@ -828,12 +865,12 @@ def make_dynamic_field(parameter, **kwargs):
                     platforms = platform.retrieve_all_platforms(kwargs['username'],
                      schema_namespace_prefix=schema)
                     if platforms:
-                        field_params['initial'] = platforms[0]['name']
+                        field_params['initial'] = platforms[0]['platform_name']
                     else:
                         field_params['initial'] = ''
                     logger.debug("initial=%s" % field_params['initial'])
                     # TODO: retrieve_platform_paramset should be an API call
-                    platform_name_choices = [(x['name'], x['name'])
+                    platform_name_choices = [(x['platform_name'], x['platform_name'])
                         for x in platform.retrieve_all_platforms(
                             kwargs['username'], schema_namespace_prefix=schema)]
                     logger.debug("platform_name_choices=%s" % platform_name_choices)
@@ -876,9 +913,18 @@ def make_dynamic_field(parameter, **kwargs):
             platforms = platform.retrieve_all_platforms(kwargs['username'],
                      schema_namespace_prefix=schema)
             if platforms:
-                field_params['initial'] = platforms[0]['name']
+                field_params['initial'] = platforms[0]['platform_name']
             else:
                 field_params['initial'] = ''
+
+        if parameter['subtype'] == 'hidden':
+            field_params['widget'] = forms.HiddenInput(attrs={'required': 'false'})
+            field_params['required'] = False
+        elif 'platform' in kwargs.keys():
+            field_params['widget'] = forms.TextInput(attrs={'required': 'true'})
+            field_params['required'] = True
+            if parameter['subtype'] == 'password':
+                field_params['widget'] = forms.PasswordInput(attrs={'required': 'true'})
         field = forms.CharField(**field_params)
 
     if 'subtype' in parameter and parameter['subtype']:
@@ -917,6 +963,22 @@ def make_directive_form(**kwargs):
                 else:
                     fields[field_key] = make_dynamic_field(parameter, directive=kwargs['directive'])
                 logger.debug("field=%s" % fields[field_key].validators)
+    elif 'platform_params' in kwargs.keys():
+        for i, schema_data in enumerate(kwargs['platform_params']):
+            logger.debug("schemadata=%s" % pformat(schema_data))
+            for j, parameter in enumerate(schema_data['parameters']):
+                logger.debug("parameter=%s" % parameter)
+                # TODO: handle all possible types
+                #field_key = "%s/%s" % (schema_data['namespace'], parameter['name'])
+                field_key = "%s" % (parameter['name'])
+                form_data.append((field_key, schema_data['description'] if not j else "", parameter['subtype'], parameter['hidefield'], parameter['hidecondition']))
+                #fixme replce if else by fields[field_key] = make_dynamic_field(parameter) after unique key platform model is developed
+                if 'username' in kwargs:
+                    fields[field_key] = make_dynamic_field(parameter, username=kwargs['username'], platform=True)
+                else:
+                    fields[field_key] = make_dynamic_field(parameter, platform=True)
+                logger.debug("field=%s" % fields[field_key].validators)
+
     logger.debug("fields = %s" % fields)
     #http://www.b-list.org/weblog/2008/nov/09/dynamic-forms/
     ParamSetForm = type('ParamSetForm', (forms.BaseForm,),
@@ -985,6 +1047,27 @@ def get_schema_info(request, schema_id):
     logger.debug('r.text=%s' % r.text)
     logger.debug('r.headers=%s' % r.headers)
     return r.json()
+
+
+def get_schema_id(request, namespace):
+    headers = {'content-type': 'application/json'}
+    host_ip = "127.0.0.1"
+    api_host = "http://%s" % host_ip
+    url = "%s/api/v1/schema/?format=json&namespace=%s" % (api_host, namespace)
+    cookies = dict(request.COOKIES)
+    logger.debug("cookies=%s" % cookies)
+    r = requests.get(url, headers=headers, cookies=cookies)
+    # FIXME: need to check for status_code and handle failures such
+    # as 500 - lack of disk space at mytardis
+    logger.debug('URL=%s' % url)
+    logger.debug('r.json=%s' % r.json)
+    logger.debug('r.text=%s' % r.text)
+    logger.debug('r.headers=%s' % r.headers)
+    schema_id = ''
+    if r.json()['objects']:
+        schema = r.json()['objects'][0]
+        schema_id = schema['id']
+    return schema_id
 
 
 def get_directive(request, directive_id):
