@@ -49,8 +49,8 @@ def create_platform(platform_name, username,
         message = 'Cannot create platform parameter set.' \
                   ' Paramteres %s are missing' % missing_params
         return False, message
-    platform_type = os.path.basename(schema_namespace)
-    parameters['name'] = platform_name
+    parameters['platform_name'] = platform_name
+    platform_type = parameters['platform_type']
     configure_platform(platform_type, username, parameters)
     valid_params, message = validate_parameters(
         platform_type, parameters, passwd_auth=True)
@@ -132,7 +132,7 @@ def retrieve_all_platforms(username, schema_namespace_prefix=''):
                     owner=owner, schema=schema)
                 paramsets.extend(current_paramsets)
         for paramset in paramsets:
-            parameters = {'name': paramset.name}
+            parameters = {'platform_name': paramset.name}
             parameter_objects = models.PlatformParameter.objects.filter(paramset=paramset)
             for parameter in parameter_objects:
                 parameters[parameter.name.name] = parameter.value
@@ -147,11 +147,12 @@ def update_platform(platform_name, username,
     logger.debug(platform_name)
     logger.debug(updated_parameters)
     current_platform_record, schema_namespace = retrieve_platform(platform_name, username)
-    if 'name' not in updated_parameters.keys():
-        updated_parameters['name'] = platform_name
+    if 'platform_name' not in updated_parameters.keys():
+        updated_parameters['platform_name'] = platform_name
     updated_platform_record = dict(current_platform_record)
     updated_platform_record.update(updated_parameters)
-    platform_type = os.path.basename(schema_namespace)
+    platform_type = current_platform_record['platform_type']
+    updated_platform_record['platform_type'] = platform_type
     configure_platform(platform_type, username, updated_platform_record)
     valid_params, message = validate_parameters(
         platform_type, updated_platform_record, passwd_auth=True)
@@ -179,9 +180,9 @@ def db_update_platform(platform_name, username, updated_parameters):
         owner = models.UserProfile.objects.get(user=user)
         paramset = models.PlatformParameterSet.objects.get(
             name=platform_name, owner=owner)
-        if 'name' in updated_parameters.keys():
-                paramset.name = updated_parameters['name']
-                paramset.save()
+        if 'platform_name' in updated_parameters.keys():
+            paramset.name = updated_parameters['platform_name']
+            paramset.save()
         for k, v in updated_parameters.items():
             try:
                 param_name = models.ParameterName.objects\
@@ -216,14 +217,14 @@ def delete_platform(platform_name, username):
 
 
 def configure_platform(platform_type, username, parameters):
-    if platform_type == 'nectar':
+    if platform_type == 'nectar' or platform_type == 'csrack':
         configure_nectar_platform(platform_type, username, parameters)
     elif platform_type == 'unix' or platform_type == 'nci':
         configure_unix_platform(platform_type, username, parameters)
 
 
 def configure_nectar_platform(platform_type, username, parameters):
-    key_name = 'bdp_%s' % parameters['name']
+    key_name = 'bdp_%s' % parameters['platform_name']
     key_relative_path = '%s.pem' % os.path.join(
         '.ssh', username, platform_type, key_name)
     parameters['private_key'] = key_name
@@ -234,7 +235,7 @@ def configure_nectar_platform(platform_type, username, parameters):
 
 
 def configure_unix_platform(platform_type, username, parameters):
-    key_name = 'bdp_%s' % parameters['name']
+    key_name = 'bdp_%s' % parameters['platform_name']
     key_relative_path = os.path.join(
         '.ssh', username, platform_type, key_name)
     parameters['private_key_path'] = key_relative_path
@@ -334,8 +335,8 @@ def remote_path_exists(remote_path, parameters, passwd_auth=False):
 
 
 def generate_key(platform_type, parameters):
-    if platform_type == 'nectar':
-        return generate_nectar_key(parameters)
+    if platform_type == 'nectar' or platform_type == 'csrack':
+        return generate_cloud_key(parameters)
     elif platform_type == 'nci' or platform_type == 'unix':
         return generate_unix_key(parameters)
     elif platform_type == 'mytardis':
@@ -344,7 +345,8 @@ def generate_key(platform_type, parameters):
         return False, 'Unknown platform type [%s]' % platform_type
 
 
-def generate_nectar_key(parameters):
+def generate_cloud_key(parameters):
+    logger.debug('generating key')
     key_generated = True
     message = 'Key generated successfully'
     bdp_root_path = storage.get_bdp_root_path()
@@ -355,16 +357,16 @@ def generate_nectar_key(parameters):
     if not os.path.exists(key_dir):
         os.makedirs(key_dir)
     try:
-        cloud_type = 'csrack'  # parameters['cloud_type'] avoid hardcoding
-        cloud_type = 'nectar'  # parameters['cloud_type'] avoid hardcoding
-        if cloud_type == 'csrack':
+        platform_type = parameters['platform_type']
+        logger.debug('platform_type=%s' % platform_type)
+        if platform_type == 'csrack':
             region = RegionInfo(name="nova", endpoint="10.234.0.1")
             connection = boto.connect_ec2(
                 aws_access_key_id=parameters['ec2_access_key'],
                 aws_secret_access_key=parameters['ec2_secret_key'],
                 is_secure=False, region=region,
                 port=8773, path="/services/Cloud")
-        elif cloud_type == 'nectar':
+        elif platform_type == 'nectar':
             region = RegionInfo(name="NeCTAR", endpoint="nova.rc.nectar.org.au")
             connection = boto.connect_ec2(
                 aws_access_key_id=parameters['ec2_access_key'],
@@ -385,6 +387,7 @@ def generate_nectar_key(parameters):
                     parameters['private_key_path']), '%s.pem' % key_name)
                     logger.debug('key_pair=%s' % key_pair)
                     unique_key = True
+
             except EC2ResponseError, e:
                 if 'InvalidKeyPair.Duplicate' in e.error_code:
                     key_name = '%s_%d' % (parameters['private_key'], counter)
@@ -392,15 +395,14 @@ def generate_nectar_key(parameters):
                 else:
                     logger.exception(e)
                     raise
-        connection.get_all_security_groups([security_group_name])
+        if not connection.get_all_security_groups([security_group_name]):
+            _create_security_group(connection, security_group_name)
     except EC2ResponseError as e:
         if 'Unauthorized' in e.error_code:
             key_generated = False
-            message = 'Unauthorized access to NeCTAR'
+            message = 'Unauthorized access to %s' % platform_type
         elif 'SecurityGroupNotFoundForProject' in e.error_code:
-            security_group = connection.create_security_group(
-                    security_group_name, "SSH security group for the BDP Provider")
-            security_group.authorize('tcp', 22, 22, '0.0.0.0/0')
+            _create_security_group(connection, security_group_name)
         else:
             key_generated = False
             message = e.error_code
@@ -408,6 +410,12 @@ def generate_nectar_key(parameters):
         key_generated = False
         message = e
     return key_generated, message
+
+
+def _create_security_group(connection, security_group_name):
+    security_group = connection.create_security_group(
+        security_group_name, "SSH security group for the BDP Provider")
+    security_group.authorize('tcp', 22, 22, '0.0.0.0/0')
 
 
 def generate_unix_key(parameters):
@@ -488,11 +496,12 @@ def generate_unix_key(parameters):
 
 
 #fixme: in the schema definition, change private_key to private_key_name
-def update_platform_settings(schema_namespace, settings):
-    platform_type = os.path.basename(schema_namespace)
+def _update_platform_settings(settings):
+    #platform_type = os.path.basename(schema_namespace)
+    platform_type = settings['platform_type']
     settings['type'] = platform_type
-    if platform_type == 'nectar':
-        settings['username'] = 'root'  # fixme avoid hardcoding
+    if platform_type == 'nectar' or platform_type == 'csrack':
+        settings['username'] = 'root' #fixme avoid hardcoding
         settings['private_key_name'] = settings['private_key']
         settings['private_key'] = os.path.join(storage.get_bdp_root_path(),
                                                settings['private_key_path'])
@@ -521,7 +530,7 @@ def get_platform_settings(platform_url, username):
     if platform_name == "local":
         return {"scheme": 'file', 'type': 'local'}
     record, schema_namespace = retrieve_platform(platform_name, username)
-    update_platform_settings(schema_namespace, record)
+    _update_platform_settings(record)
     record['bdp_username'] = username
     return record
 

@@ -21,21 +21,21 @@ $(document).ready(function () {
             </div>
             <div class="modal-body">
                 <ul class="nav nav-tabs" id="myTab">
-                  <li class="active"><a href="#nectar" data-toggle="tab">NeCTAR</a></li>
-                  <li><a href="#nci" data-toggle="tab">NCI</a></li>
+                  <li class="active"><a href="#cloud" data-toggle="tab">Cloud</a></li>
+                  <li><a href="#cluster" data-toggle="tab">Cluster</a></li>
                 </ul>
                 <div class="tab-content">
-                    <div class="tab-pane active" id="nectar">
-                        <form class="form-horizontal" action="{{ action }}" method="POST" id="nectar_form_create"> {% csrf_token %}
-                            {{ nectar_form.as_p }}
-                            <button type="submit" class="btn btn-primary" onclick="submitForm('create', 'nectar_form_create');">Add</button>
+                    <div class="tab-pane active" id="cloud">
+                        <form class="form-horizontal" action="{{ action }}" method="POST" id="cloud_form_create"> {% csrf_token %}
+                            {{ cloud_form.as_p }}
+                            <button type="submit" class="btn btn-primary" onclick="submitForm('create', 'cloud_form_create');">Add</button>
                             <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                         </form>
                     </div>
-                    <div class="tab-pane" id="nci">
-                        <form class="form-horizontal" action="{{ action }}" method="POST" id="nci_form_create"> {% csrf_token %}
-                            {{nci_form.as_p}}
-                            <button type="submit" class="btn btn-primary" onclick="submitForm('create', 'nci_form_create');">Add</button>
+                    <div class="tab-pane" id="cluster">
+                        <form class="form-horizontal" action="{{ action }}" method="POST" id="cluster_form_create"> {% csrf_token %}
+                            {{cluster_form.as_p}}
+                            <button type="submit" class="btn btn-primary" onclick="submitForm('create', 'cluster_form_create');">Add</button>
                             <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                         </form>
                      </div>
@@ -54,14 +54,14 @@ $(document).ready(function () {
                 <h4 class="modal-title">Update Computation Platform</h4>
             </div>
             <div class="modal-body">
-                <form class="form-horizontal" action="{{ action }}" method="POST" id="nectar_form_update"> {% csrf_token %}
-                    {{ nectar_form.as_p }}
-                    <button type="submit" class="btn btn-primary" onclick="submitForm('update', 'nectar_form_update');">Update</button>
+                <form class="form-horizontal" action="{{ action }}" method="POST" id="cloud_form_update"> {% csrf_token %}
+                    {{ cloud_form.as_p }}
+                    <button type="submit" class="btn btn-primary" onclick="submitForm('update', 'cloud_form_update');">Update</button>
                     <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                 </form>
-                <form class="form-horizontal" action="{{ action }}" method="POST" id="nci_form_update"> {% csrf_token %}
-                    {{ nci_form.as_p }}
-                    <button type="submit" class="btn btn-primary" onclick="submitForm('update', 'nci_form_update');">Update</button>
+                <form class="form-horizontal" action="{{ action }}" method="POST" id="cluster_form_update"> {% csrf_token %}
+                    {{ cluster_form.as_p }}
+                    <button type="submit" class="btn btn-primary" onclick="submitForm('update', 'cluster_form_update');">Update</button>
                     <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                 </form>
             </div>
@@ -79,14 +79,14 @@ $(document).ready(function () {
                 <h4 class="modal-title">Delete Computation Platform</h4>
             </div>
             <div class="modal-body">
-                <form class="form-horizontal" action="{{ action }}" method="POST" id="nectar_form_delete"> {% csrf_token %}
-                    {{ nectar_form.as_p }}
-                    <button type="submit" class="btn btn-primary" onclick="submitForm('delete', 'nectar_form_delete');">Delete</button>
+                <form class="form-horizontal" action="{{ action }}" method="POST" id="cloud_form_delete"> {% csrf_token %}
+                    {{ cloud_form.as_p }}
+                    <button type="submit" class="btn btn-primary" onclick="submitForm('delete', 'cloud_form_delete');">Delete</button>
                     <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                 </form>
-                <form class="form-horizontal" action="{{ action }}" method="POST" id="nci_form_delete"> {% csrf_token %}
-                    {{ nci_form.as_p }}
-                    <button type="submit" class="btn btn-primary" onclick="submitForm('delete', 'nci_form_delete');">Delete</button>
+                <form class="form-horizontal" action="{{ action }}" method="POST" id="cluster_form_delete"> {% csrf_token %}
+                    {{ cluster_form.as_p }}
+                    <button type="submit" class="btn btn-primary" onclick="submitForm('delete', 'cluster_form_delete');">Delete</button>
                     <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
 
                 </form>

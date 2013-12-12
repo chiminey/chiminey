@@ -173,6 +173,9 @@ def validate_experiment_id(value):
     return experiment_id
 
 
+def validate_hidden(value):
+    return True
+
 def validate_natural_number(value):
     # If the field is blank we assume zero
     if value is None or value == "":
@@ -223,6 +226,15 @@ def validate_even_number(value):
 def validate_string(value):
     msg = u'string'
     return str(value)
+
+
+def validate_string_not_empty(value):
+    value = value.strip()
+    if not len(str(value)):
+        raise ValidationError('Empty')
+    if ' ' in str(value):
+        raise ValidationError('Space not allowed')
+    return value
 
 
 def validate_platform_url(value):

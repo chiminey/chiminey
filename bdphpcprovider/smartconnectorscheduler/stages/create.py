@@ -37,7 +37,9 @@ class Create(Stage):
 
     def __init__(self, user_settings=None):
         self.group_id = ''
-        self.myplatform = None
+        self.platform_type = None
+        logger.debug("Create stage initialized")
+
 
     def triggered(self, run_settings):
         """
@@ -54,7 +56,7 @@ class Create(Stage):
                         RMIT_SCHEMA + '/stages/create', 'group_id'):
                         if self._exists(run_settings,
                             RMIT_SCHEMA + '/system', 'platform'):
-                            self.myplatform = run_settings[
+                            self.platform_type = run_settings[
                                 RMIT_SCHEMA + '/system'][u'platform']
                             return True
         return False
@@ -93,13 +95,7 @@ class Create(Stage):
         number_vm_instances = run_settings[RMIT_SCHEMA + '/input/system/cloud'][u'number_vm_instances']
         min_number_vms = run_settings[RMIT_SCHEMA + '/input/system/cloud'][u'minimum_number_vm_instances']
         logger.debug("VM instance %d" % number_vm_instances)
-        comp_platform = 'csrack'  # local_settings['platform']
-        comp_platform = 'nectar'  # local_settings['platform']
-        if comp_platform == 'csrack':
-            local_settings['vm_image'] = "ami-00000004"
-        elif comp_platform == 'nectar':
-            local_settings['vm_image'] = "ami-0000000d"
-
+        self.platform_type = local_settings['platform_type']
         self.nodes = botocloudconnector.create_environ(
             number_vm_instances,
             local_settings)
@@ -142,6 +138,10 @@ class Create(Stage):
         run_settings.setdefault(
             RMIT_SCHEMA + '/stages/create', {})[u'group_id'] \
             = self.group_id
+
+        run_settings.setdefault(
+            RMIT_SCHEMA+'/system', {})[u'platform'] \
+            = self.platform_type
 
         if not self.nodes:
             run_settings.setdefault(
