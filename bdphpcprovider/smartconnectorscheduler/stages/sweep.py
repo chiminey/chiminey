@@ -180,8 +180,19 @@ class Sweep(Stage):
 
             run_settings[RMIT_SCHEMA + '/input/mytardis'][
                 'experiment_id'] = self.experiment_id
+        elif subdirective == "remotemake":
+            self.experiment_id = self._make_mytardis_exp(
+                run_settings=run_settings,
+                experiment_id=self.experiment_id,
+                experiment_paramset=[
+                    make_paramset("remotemake", [])],
+                output_location=self.scratch_platform)
         elif subdirective == "hrmc":
             pass
+
+        if '%s/input/mytardis' % RMIT_SCHEMA in run_settings:
+                run_settings[RMIT_SCHEMA + '/input/mytardis'][
+            'experiment_id'] = str(self.experiment_id)
 
         # # generate all variations
         map_text = run_settings[RMIT_SCHEMA + '/input/sweep']['sweep_map']

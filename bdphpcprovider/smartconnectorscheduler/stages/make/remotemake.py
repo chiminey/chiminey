@@ -101,7 +101,7 @@ class MakeRunStage(Stage):
         (scheme, host, mypath, location, query_settings) = \
             hrmcstages.parse_bdpurl(encoded_d_url)
 
-        command = "cd %s; make %s" % (os.path.join(
+        command = "cd %s; make -f Makefile %s" % (os.path.join(
                 query_settings['root_path'],
                 mypath),
             'startrun')

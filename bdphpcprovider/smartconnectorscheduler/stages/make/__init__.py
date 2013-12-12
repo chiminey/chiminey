@@ -89,6 +89,11 @@ def setup_settings(run_settings):
     settings['bdp_username'] = run_settings[
             'http://rmit.edu.au/schemas/bdp_userprofile']['username']
 
+    settings['directive'] = run_settings[
+        'http://rmit.edu.au/schemas/stages/sweep']['directive']
+
+
+
 
     settings['mytardis_platform'] = run_settings['http://rmit.edu.au/schemas/input/mytardis']['mytardis_platform']
 

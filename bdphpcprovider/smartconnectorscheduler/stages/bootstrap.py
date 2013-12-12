@@ -249,7 +249,7 @@ def start_setup(instance, ip,  settings, source, destination):
             ssh.close()
     logger.debug("command_out1=(%s, %s)" % (command_out, errs))
 
-    command = "cd %s; make %s" % (makefile_path, 'setupstart')
+    command = "cd %s; make -f Makefile %s" % (makefile_path, 'setupstart')
     command_out = ''
     errs = ''
     logger.debug("starting command for %s" % ip)
@@ -270,7 +270,7 @@ def job_finished(ip, settings, destination):
     """
     ssh = sshconnector.open_connection(ip_address=ip, settings=settings)
     makefile_path = hrmcstages.get_make_path(destination)
-    command = "cd %s; make %s" % (makefile_path, 'setupdone')
+    command = "cd %s; make -f Makefile %s" % (makefile_path, 'setupdone')
     command_out, _ = sshconnector.run_command_with_status(ssh, command)
     if command_out:
         logger.debug("command_out = %s" % command_out)

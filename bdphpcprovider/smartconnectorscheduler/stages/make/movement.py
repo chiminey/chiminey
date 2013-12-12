@@ -92,10 +92,10 @@ class MakeUploadStage(Stage):
 
         values_map = _load_values_map(settings, map_initial_location)
         logger.debug("values_map=%s" % values_map)
-        _upload_payload(settings, settings['payload_source'], values_map)
         _upload_variations_inputs(
             settings,
             map_initial_location, values_map)
+        _upload_payload(settings, settings['payload_source'], values_map)
 
         smartconnector.info(run_settings, "1: upload done")
 

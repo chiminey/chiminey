@@ -119,7 +119,7 @@ class Wait(Stage):
             ip_address=ip)
         makefile_path = hrmcstages.get_make_path(destination)
         #makefile_path = settings['payload_destination']
-        command = "cd %s; make %s" % (makefile_path, 'running') # IDS=%s' % (
+        command = "cd %s; make -f Makefile %s" % (makefile_path, 'running') # IDS=%s' % (
                                       #settings['filename_for_PIDs']))
 
         command_out = ''
@@ -262,6 +262,8 @@ class Wait(Stage):
         computation_platform_url = run_settings['http://rmit.edu.au/schemas/platform/computation']['platform_url']
         comp_pltf_settings = platform.get_platform_settings(computation_platform_url, local_settings['bdp_username'])
         local_settings.update(comp_pltf_settings)
+        comp_pltf_settings['bdp_username'] = local_settings['bdp_username']
+
 
         for process in processes:
             #instance_id = node.id
