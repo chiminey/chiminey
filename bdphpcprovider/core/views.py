@@ -23,6 +23,7 @@
 import os
 import functools
 import logging
+import json
 import django
 from pprint import pformat
 
@@ -39,6 +40,18 @@ from tastypie.paginator import Paginator
 from django.contrib.auth.models import User
 from django.core.validators import ValidationError
 from django import forms
+from django.contrib.sessions.models import Session
+
+from django.contrib.auth import authenticate, login
+
+from django.http import (
+    HttpResponseRedirect,
+    HttpResponse,
+    HttpResponseForbidden,
+    HttpResponseNotFound,
+    HttpResponseNotAllowed,
+    HttpResponseBadRequest)
+
 
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
@@ -46,6 +59,8 @@ from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.smartconnectorscheduler import platform
 from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 
+from django.utils.encoding import smart_unicode
+from bdphpcprovider.core.auth import logged_in_or_basicauth
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +77,6 @@ class MyBasicAuthentication(BasicAuthentication):
         super(MyBasicAuthentication, self).__init__(*args, **kwargs)
 
     def is_authenticated(self, request, **kwargs):
-        from django.contrib.sessions.models import Session
         if 'sessionid' in request.COOKIES:
             s = Session.objects.get(pk=request.COOKIES['sessionid'])
             if '_auth_user_id' in s.get_decoded():
@@ -928,3 +942,209 @@ class PresetParameterResource(ModelResource):
             ApiKeyAuthentication(), MyBasicAuthentication())
         authorization = DjangoAuthorization()
         allowed_methods = ['get', 'put', 'post']
+
+
+def has_session_key(func):
+    def wrapper(request, *args, **kwargs):
+        if 'sessionid' in request.COOKIES:
+            s = Session.objects.get(pk=request.COOKIES['sessionid'])
+            if '_auth_user_id' in s.get_decoded():
+                u = User.objects.get(id=s.get_decoded()['_auth_user_id'])
+                request.user = u
+                return func(request, *args, **kwargs)
+
+        response = HttpResponse()
+        response.status_code = 401
+        return response
+    return wrapper
+
+# def _auth_user(request):
+#     if found_session_cookie(request):
+#         return None
+
+#     if request.method == 'POST':
+#         logger.debug("post=%s" % request.POST)
+#         try:
+#             username = request.POST['username']
+#             password = request.POST['password']
+#         except Exception:
+#             return HttpResponse('Unauthorized', status=401)
+#         user = authenticate(username=username, password=password)
+#         logger.debug(user)
+#         if user is None:
+#             return HttpResponse('Unauthorized', status=401)
+#         if not user.is_active:
+#             return HttpResponseForbidden()
+#         login(request, user)
+#         return None
+
+#     if request.method == 'GET':
+#         pass
+
+#     return HttpResponseForbidden()
+
+
+def _preset_as_dict(request, ps):
+    pset_data = []
+    for pset in models.PresetParameterSet.objects.filter(preset=ps):
+        p_data = {}
+        for pp in models.PresetParameter.objects.filter(paramset=pset):
+            p_data["%s/%s" % (pset.schema.namespace, pp.name.name)] = pp.value
+        pset_data.append(p_data)
+    return pset_data
+
+
+@has_session_key
+@logged_in_or_basicauth()
+def preset_list(request):
+
+    def get_preset(request):
+        try:
+            user_profile = models.UserProfile.objects.get(user=request.user)
+        except models.UserProfile.DoesNotExist:
+            return HttpResponseNotFound()
+        name = request.GET.get('name', '')
+        if name:
+            try:
+                ps = models.Preset.objects.get(
+                    name=name,
+                    user_profile=user_profile)
+            except models.Preset.DoesNotExist:
+                return HttpResponseNotFound()
+            data = {}
+            data['id'] = ps.id
+            data['name'] = ps.name
+            data['user'] = user_profile.user.username
+            data['parameters'] = _preset_as_dict(request, ps)
+        else:
+            user = user_profile.user.username
+            data = []
+            ps = models.Preset.objects.filter(
+                    user_profile=user_profile)
+            for p in ps:
+                p_data = {}
+                logger.debug("p=%s" % p)
+                p_data['id'] = p.id
+                p_data['name'] = p.name
+                p_data['user'] = user
+                p_data['parameters'] = _preset_as_dict(request, p)
+                data.append(p_data)
+
+        logger.debug("data=%s" % data)
+        return HttpResponse(json.dumps(data),
+                        mimetype='application/json')
+
+    def post_preset(request):
+        if not 'POST' in request.method:
+            return HttpResponseForbidden()
+        name = request.POST['name']
+        logger.debug("name=%s" % name)
+        try:
+            user_profile = models.UserProfile.objects.get(user=request.user)
+        except models.UserProfile.DoesNotExist:
+            return HttpResponseNotFound(request.user)
+        logger.debug("user_profile=%s" % user_profile)
+        if not user_profile:
+            return HttpResponseNotFound()
+        direct_name = request.POST['directive']
+        try:
+            directive = models.Directive.objects.get(
+                name=direct_name,
+                hidden=False)
+        except models.Directive.DoesNotExist:
+            return HttpResponseNotFound(direct_name)
+        logger.debug("directive=%s" % directive)
+        if not directive:
+            return HttpResponseNotFound()
+        try:
+            ps = models.Preset.objects.get(
+                name=name,
+                user_profile=user_profile)
+        except models.Preset.DoesNotExist:
+            pass
+        else:
+            return HttpResponseBadRequest()
+        ps = models.Preset(
+            name=name,
+            user_profile=user_profile,
+            directive=directive)
+        ps.save()
+        parameters_data = request.POST['data']
+        parameters = json.loads(parameters_data)
+        schema_set = {}
+        ranking = 0
+        for pset in list(parameters):
+            logger.debug("pset=%s" % pset)
+            pset_data = {}
+            schema = None
+            for pp_k, pp_v in dict(pset).items():
+                logger.debug("pp_k=%s,pp_v=%s" % (pp_k, pp_v))
+                schema_name, key = os.path.split(pp_k)
+                if schema_name in schema_set:
+                    schema = schema_set[schema_name]
+                else:
+                    try:
+                        schema = models.Schema.objects.get(
+                            namespace=schema_name)
+                    except models.Schema.DoesNotExist:
+                        return HttpResponseNotFound(schema_name)
+                    schema_set[schema_name] = schema
+                pset_data[pp_k] = pp_v
+            new_pset = models.PresetParameterSet(
+                preset=ps,
+                schema=schema,
+                ranking=ranking)
+            new_pset.save()
+            for p_key, p_val in pset_data.items():
+                p_name = os.path.basename(p_key)
+                try:
+                    # could cache this value for speed
+                    name = models.ParameterName.objects.get(
+                        schema=schema,
+                        name=p_name)
+                except models.Schema.DoesNotExist:
+                    return HttpResponseNotFound(p_name)
+                new_p = models.PresetParameter(
+                    name=name,
+                    paramset=new_pset,
+                    value=p_val)
+                new_p.save()
+            ranking += 1
+
+        response = HttpResponse()
+        response.status_code = 201
+        return response
+    for m, f in {'GET': get_preset, 'POST': post_preset}.items():
+        if request.method == m:
+            return f(request)
+    return HttpResponseNotAllowed()
+
+
+@has_session_key
+@logged_in_or_basicauth()
+def preset_detail(request, pk):
+
+    def get_preset(request, pk):
+        user_profile = models.UserProfile.objects.get(user=request.user)
+        ps = models.Preset.objects.get(id=pk, user_profile=user_profile)
+        data = {}
+        data['id'] = ps.id
+        data['name'] = ps.name
+        data['user'] = user_profile.user.username
+        data['parameters'] = _preset_as_dict(request, pk)
+        return HttpResponse(json.dumps(data),
+                        mimetype='application/json')
+
+    def put_preset(request, pk):
+        # TODO: implement update
+        return HttpResponseNotAllowed()
+
+    def delete_preset(request, pk):
+        # TODO: implement delete
+        return HttpResponseNotAllowed()
+
+    for m, f in {'GET': get_preset, 'PUT': put_preset,
+            'DELETE': delete_preset}.items():
+        if request.method == m:
+            return f(request, pk)
+    return HttpResponseNotAllowed()
