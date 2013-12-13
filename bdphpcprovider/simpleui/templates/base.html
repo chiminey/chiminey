@@ -20,23 +20,114 @@
 </style>
 
 <script>
-/**
-    $(document).ready(function() {
-     $('#createModal').bind('show', function () {
-        });
 
-     });
- **/
 function closeDialog () {
     $('#createModal').modal('hide');
 };
+
+$( "#id_presets" ).change(function() {
+  alert( "Handler for .change() called." );
+});
+
+
+function addPreset(form_id){
+    form_content = ''
+    bootbox.prompt("Enter name for the current parameter set", function(result) {
+        result =  $.trim(result);
+        if(result) {
+            $("#id_presets").append('<option value='+result+'>'+result+'</option>');
+            $("#id_presets").val(result)
+            dictionary_string = sertializeForm(form_id, result)
+            bootbox.alert(dictionary_string, function() {});
+        }
+    });
+}
+
+
+function deletePreset(form_id){
+    var form =  '#' + form_id;
+    selected_item = $(form + " #id_presets option:selected").val();
+    bootbox.confirm("Are you sure you want to delete " + selected_item + "?", function(result) {
+        if (result) {
+            bootbox.alert(selected_item + "deleted", function() {});
+            $(form + " #id_presets option[value='" + selected_item + "']").remove();
+            resetParameters(form_id)
+        }
+    });
+}
+
+function resetParameters(form_id){
+    dictionary = {
+        'http://rmit.edu.au/schemas/input/system/compplatform/computation_platform' : 'csrack',
+        'http://rmit.edu.au/schemas/input/system/cloud/number_vm_instances' : '16' ,
+        'http://rmit.edu.au/schemas/input/system/cloud/minimum_number_vm_instances' : '10' ,
+        'http://rmit.edu.au/schemas/input/reliability/maximum_retry' : '1' ,
+        'http://rmit.edu.au/schemas/input/reliability/reschedule_failed_processes' : '' ,
+        'http://rmit.edu.au/schemas/input/system/input_location' : 'amun_storage/input' ,
+        'http://rmit.edu.au/schemas/input/system/output_location' : 'amun_storage/output' ,
+        'http://rmit.edu.au/schemas/input/hrmc/pottype' : '1' ,
+        'http://rmit.edu.au/schemas/input/hrmc/max_iteration' : '1' ,
+        'http://rmit.edu.au/schemas/input/hrmc/error_threshold' : '0.03' ,
+        'http://rmit.edu.au/schemas/input/hrmc/threshold' : '[1]' ,
+        'http://rmit.edu.au/schemas/input/hrmc/optimisation_scheme' : 'MCSA' ,
+        'http://rmit.edu.au/schemas/input/hrmc/iseed' : '42' ,
+        'http://rmit.edu.au/schemas/input/hrmc/fanout_per_kept_result' : '12' ,
+        'http://rmit.edu.au/schemas/input/mytardis/experiment_id' : '0' ,
+        'http://rmit.edu.au/schemas/input/mytardis/mytardis_platform' : 'mytardis' ,
+        'http://rmit.edu.au/schemas/input/sweep/sweep_map' : '{"var": [1,2,3,4]}'
+    }
+    default_dictionary = {
+        'http://rmit.edu.au/schemas/input/system/compplatform/computation_platform' : 'csrack',
+        'http://rmit.edu.au/schemas/input/system/cloud/number_vm_instances' : '1' ,
+        'http://rmit.edu.au/schemas/input/system/cloud/minimum_number_vm_instances' : '1' ,
+        'http://rmit.edu.au/schemas/input/reliability/maximum_retry' : '2' ,
+        'http://rmit.edu.au/schemas/input/reliability/reschedule_failed_processes' : "checked" ,
+        'http://rmit.edu.au/schemas/input/system/input_location' : 'nectar_vm/input' ,
+        'http://rmit.edu.au/schemas/input/system/output_location' : 'nectar_vm/output' ,
+        'http://rmit.edu.au/schemas/input/hrmc/pottype' : '1' ,
+        'http://rmit.edu.au/schemas/input/hrmc/max_iteration' : '10' ,
+        'http://rmit.edu.au/schemas/input/hrmc/error_threshold' : '0.03' ,
+        'http://rmit.edu.au/schemas/input/hrmc/threshold' : '[1]' ,
+        'http://rmit.edu.au/schemas/input/hrmc/optimisation_scheme' : 'MCSA' ,
+        'http://rmit.edu.au/schemas/input/hrmc/iseed' : '42' ,
+        'http://rmit.edu.au/schemas/input/hrmc/fanout_per_kept_result' : '12' ,
+        'http://rmit.edu.au/schemas/input/mytardis/experiment_id' : '0' ,
+        'http://rmit.edu.au/schemas/input/mytardis/mytardis_platform' : 'mytardis' ,
+        'http://rmit.edu.au/schemas/input/sweep/sweep_map' : '{}'
+    }
+    var form = '#' + form_id;
+    selected_item = $.trim($("form #id_presets option:selected").text());
+    if (selected_item === 'Default'){
+        dictionary = default_dictionary
+    }
+    $.each($(form).serializeArray(), function() {
+        if (this.name != 'preset_name'){
+            (document.getElementsByName(this.name)[0]).value = dictionary[this.name]
+        }
+    });
+    //bootbox.alert("YOu selected " + form_content, function() {});
+}
+
+
+function sertializeForm(form_id, result){
+    var form = '#' + form_id;
+    form_content = ''
+    result =  $.trim(result);
+    $.each($(form).serializeArray(), function() {
+        if (this.name == 'preset_name' && result){
+            this.value = result
+        }
+        form_content += "'" + this.name + "' : '" + this.value + "' , "
+    });
+    dictionary_string = "{" + form_content + "}"
+    return dictionary_string
+}
+
 
 function submitForm(description, form_id) {
     var form = '#' + form_id;
     var operation = $(form + ' #id_operation');
     operation.val(description);
-    var password = $.trim($(form + ' #id_password').val());
-    var api_key = $.trim($(form + ' #id_api_key').val());
     form.validate();
     if (form.valid()){
         form.submit()

@@ -30,6 +30,17 @@
 
 <div class="row-fluid">
 <form class="form-horizontal" name="myform" id="myform-id" action="" method="POST"> {% csrf_token %}
+<div class="control-group span11 offset1">
+    <label class="control-label" for="id_default_presets">Default presets</label>
+    <div class="controls">
+    <select id="id_presets" name="preset_name" class="target" onchange="resetParameters('myform-id')">
+        <option value="default" selected="selected"> Default </option>
+        <option value="experiment 1"> experiment 1 </option>
+    </select>
+    <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="bar" id="id_add_preset" onclick="addPreset('myform-id')"><img src="#" class="icon-plus-sign" border='none' style="border-style: none"></a>
+    <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="bar" id="id_add_preset" onclick="deletePreset('myform-id')"><img src="#" class="icon-minus-sign" border='none' style="border-style: none"></a>
+    </div>
+</div>
     {% if form.non_field_errors %}
    <div class="alert alert-error">
     {{ form.non_field_errors}}
