@@ -36,6 +36,7 @@ from bdphpcprovider.simpleui.views import (
     storage_platform_settings
     )
 
+
 from core.views import (
     UserProfileResource,
     SchemaResource,
@@ -137,6 +138,8 @@ urlpatterns = patterns('',
     url(r'^jobs/finished/edit/(?P<pk>\d+)/$', login_required(uiviews.FinishedContextUpdateView.as_view()),
         name='finishedcontext-edit',),
 
+    # api urls
+    url(r'^coreapi/', include('bdphpcprovider.core.urls')),
     url(r'^api/', include(v1_api.urls)),
 )
 urlpatterns += staticfiles_urlpatterns()
