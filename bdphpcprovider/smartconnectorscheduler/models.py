@@ -457,28 +457,28 @@ class PlatformParameterSet(models.Model):
 
 
 class PlatformParameter(models.Model):
-   """ The value for some metadata for a User Profile
+    """ The value for some metadata for a User Profile
         :parameter name: the associated  :class:`bdphpcprovider.smartconnectorscheduler.models.ParameterName` that the value matches to
         :parameter paramset: associated  :class:`bdphpcprovider.smartconnectorscheduler.models.PlatformParameterSet` and class:`bdphpcprovider.smartconnectorscheduler.models.Schema` for this value
         :parameter value: the actual value
     """
-   name = models.ForeignKey(ParameterName, verbose_name="Parameter Name")
-   paramset = models.ForeignKey(PlatformParameterSet, verbose_name="Parameter Set")
-   value = models.TextField(blank=True, verbose_name="Parameter Value", help_text="The Value of this parameter")
+    name = models.ForeignKey(ParameterName, verbose_name="Parameter Name")
+    paramset = models.ForeignKey(PlatformParameterSet, verbose_name="Parameter Set")
+    value = models.TextField(blank=True, verbose_name="Parameter Value", help_text="The Value of this parameter")
 
-   class Meta:
-       ordering = ("name",)
+    class Meta:
+        ordering = ("name",)
 
-   def getValue(self,):
-       try:
-           val = self.name.get_value(self.value)
-       except ValueError:
-           logger.error("pi:got bad value %s" % self.value)
-           raise
-       return val
+    def getValue(self,):
+        try:
+            val = self.name.get_value(self.value)
+        except ValueError:
+            logger.error("pi:got bad value %s" % self.value)
+            raise
+        return val
 
-   def __unicode__(self):
-       return u'%s %s %s' % (self.name, self.paramset, self.value)
+    def __unicode__(self):
+        return u'%s %s %s' % (self.name, self.paramset, self.value)
 
 
 
@@ -820,11 +820,11 @@ class StageParameterSet(models.Model):
 
     class Meta:
         ordering = ["-ranking"]
-        app_label = "smartconnectorscheduler"
+        # app_label = "smartconnectorscheduler"
 
     def __unicode__(self):
         res = "schema=%s\n" % self.schema
-        res += ('\n'.join([str(cp) for cp in ContextParameter.objects.filter(paramset=self)]))
+        res += ('\n'.join([str(cp) for cp in StageParameter.objects.filter(paramset=self)]))
         return res
 
 
@@ -859,28 +859,28 @@ class Preset(models.Model):
 
     class Meta:
         ordering = ("name",)
-        unique_together = (('name', 'user_profile'),)
+        #unique_together = (('name', 'user_profile'),)
 
 
 class PresetParameterSet(models.Model):
     preset = models.ForeignKey(Preset, verbose_name="Preset")
-    schema = models.ForeignKey(Schema, verbose_name="Schema")
+    #schema = models.ForeignKey(Schema, verbose_name="Schema")
     ranking = models.IntegerField(default=0)
 
     def __unicode__(self):
-        return "preset=%s\schema=%s\n" % (self.preset, self.schema)
+        return "preset=%s" % (self.preset)
 
     class Meta:
         ordering = ("ranking",)
 
 
 class PresetParameter(models.Model):
-    name = models.ForeignKey(ParameterName, verbose_name="Parameter Name")
-    paramset = models.ForeignKey(PresetParameterSet, verbose_name="Parameter Set")
-    value = models.TextField(blank=True, verbose_name="Parameter Value", help_text="The Value of this parameter")
+    name = models.ForeignKey(ParameterName, verbose_name="Preset Parameter Name")
+    paramset = models.ForeignKey(PresetParameterSet, verbose_name="Preset Parameter Set")
+    value = models.TextField(blank=True, verbose_name="Preset Parameter Value", help_text="The Value of this parameter")
 
     def __unicode__(self):
-        return "%s (%s)=%s" % (self.name, self.parameter.type, self.value)
+        return "%s (%s)=%s" % (self.name, self.paramset, self.value)
 
     class Meta:
         ordering = ("name",)

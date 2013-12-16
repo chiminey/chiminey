@@ -53,9 +53,9 @@ from core.views import (
     PlatformInstanceResource,
     PlatformParameterSetResource,
     PlatformParameterResource,
-    PresetResource,
-    PresetParameterSetResource,
-    PresetParameterResource
+    # PresetResource,
+    # PresetParameterSetResource,
+    # PresetParameterResource
     )
 from tastypie.api import Api
 v1_api = Api(api_name='v1')
@@ -75,9 +75,9 @@ v1_api.register(DirectiveArgSetResource())
 v1_api.register(PlatformInstanceResource())
 v1_api.register(PlatformParameterSetResource())
 v1_api.register(PlatformParameterResource())
-v1_api.register(PresetResource())
-v1_api.register(PresetParameterSetResource())
-v1_api.register(PresetParameterResource())
+# v1_api.register(PresetResource())
+# v1_api.register(PresetParameterSetResource())
+# v1_api.register(PresetParameterResource())
 
 
 urlpatterns = patterns('',

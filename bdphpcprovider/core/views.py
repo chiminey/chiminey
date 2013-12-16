@@ -42,6 +42,10 @@ from django.core.validators import ValidationError
 from django import forms
 from django.contrib.sessions.models import Session
 
+from django.core.exceptions import MultipleObjectsReturned
+
+from django.core.urlresolvers import reverse
+
 from django.contrib.auth import authenticate, login
 
 from django.http import (
@@ -873,75 +877,75 @@ class PlatformParameterResource(ModelResource):
             paramset__schema__namespace__startswith=schema)
 
 
-class PresetResource(ModelResource):
-    user_profile = fields.ForeignKey(UserProfileResource, 'user_profile')
-    directive = fields.ForeignKey(DirectiveResource, 'directive')
+# class PresetResource(ModelResource):
+#     user_profile = fields.ForeignKey(UserProfileResource, 'user_profile')
+#     directive = fields.ForeignKey(DirectiveResource, 'directive')
 
-    class Meta:
-        queryset = models.Preset.objects.all()
-        resource_name = 'preset'
-        allowed_methods = ['get', 'post']
-        authentication = MultiAuthentication(
-            ApiKeyAuthentication(),
-            MyBasicAuthentication())
-        authorization = DjangoAuthorization()
+#     class Meta:
+#         queryset = models.Preset.objects.all()
+#         resource_name = 'preset'
+#         allowed_methods = ['get', 'post']
+#         authentication = MultiAuthentication(
+#             ApiKeyAuthentication(),
+#             MyBasicAuthentication())
+#         authorization = DjangoAuthorization()
 
-    def apply_authorization_limits(self, request, object_list):
-        return object_list.filter(user_profile__user=request.user)
+#     def apply_authorization_limits(self, request, object_list):
+#         return object_list.filter(user_profile__user=request.user)
 
-    def get_object_list(self, request):
-        if request.user.is_authenticated():
-            return models.Preset.objects.filter(user_profile__user=request.user)
-        else:
-            return models.Preset.objects.none()
-
-
-class PresetParameterSetResource(ModelResource):
-    preset = fields.ForeignKey(PresetResource, attribute='preset')
-    schema = fields.ForeignKey(SchemaResource, attribute='schema')
-
-    class Meta:
-        queryset = models.PresetParameterSet.objects.all()
-        resource_name = 'presetparameterset'
-        authentication = MultiAuthentication(
-            ApiKeyAuthentication(),
-            MyBasicAuthentication())
-        authorization = DjangoAuthorization()
-        allowed_methods = ['get', 'post', 'put']
-
-    def apply_authorization_limits(self, request, object_list):
-        return object_list.filter(preset__user_profile__user=request.user)
-
-    def get_object_list(self, request):
-        return models.PresetParameterSet.objects.filter(
-            preset__user_profile__user=request.user)
+#     def get_object_list(self, request):
+#         if request.user.is_authenticated():
+#             return models.Preset.objects.filter(user_profile__user=request.user)
+#         else:
+#             return models.Preset.objects.none()
 
 
-class PresetParameterResource(ModelResource):
-    name = fields.ForeignKey(ParameterNameResource, attribute='name')
-    paramset = fields.ForeignKey(
-        PresetParameterSetResource,
-        attribute='paramset')
+# class PresetParameterSetResource(ModelResource):
+#     preset = fields.ForeignKey(PresetResource, attribute='preset')
+#     schema = fields.ForeignKey(SchemaResource, attribute='schema')
 
-    def apply_authorization_limits(self, request, object_list):
-        return object_list.filter(
-            paramset__preset__user_profile__user=request.user)
+#     class Meta:
+#         queryset = models.PresetParameterSet.objects.all()
+#         resource_name = 'presetparameterset'
+#         authentication = MultiAuthentication(
+#             ApiKeyAuthentication(),
+#             MyBasicAuthentication())
+#         authorization = DjangoAuthorization()
+#         allowed_methods = ['get', 'post', 'put']
 
-    def obj_create(self, bundle, **kwargs):
-        return super(PresetParameterResource, self).obj_create(bundle,
-            user=bundle.request.user)
+#     def apply_authorization_limits(self, request, object_list):
+#         return object_list.filter(preset__user_profile__user=request.user)
 
-    def get_object_list(self, request):
-        return models.PresetParameter.objects.filter(
-            paramset__preset__user_profile__user=request.user)
+#     def get_object_list(self, request):
+#         return models.PresetParameterSet.objects.filter(
+#             preset__user_profile__user=request.user)
 
-    class Meta:
-        queryset = models.PresetParameter.objects.all()
-        resource_name = 'presetparameter'
-        authentication = MultiAuthentication(
-            ApiKeyAuthentication(), MyBasicAuthentication())
-        authorization = DjangoAuthorization()
-        allowed_methods = ['get', 'put', 'post']
+
+# class PresetParameterResource(ModelResource):
+#     name = fields.ForeignKey(ParameterNameResource, attribute='name')
+#     paramset = fields.ForeignKey(
+#         PresetParameterSetResource,
+#         attribute='paramset')
+
+#     def apply_authorization_limits(self, request, object_list):
+#         return object_list.filter(
+#             paramset__preset__user_profile__user=request.user)
+
+#     def obj_create(self, bundle, **kwargs):
+#         return super(PresetParameterResource, self).obj_create(bundle,
+#             user=bundle.request.user)
+
+#     def get_object_list(self, request):
+#         return models.PresetParameter.objects.filter(
+#             paramset__preset__user_profile__user=request.user)
+
+#     class Meta:
+#         queryset = models.PresetParameter.objects.all()
+#         resource_name = 'presetparameter'
+#         authentication = MultiAuthentication(
+#             ApiKeyAuthentication(), MyBasicAuthentication())
+#         authorization = DjangoAuthorization()
+#         allowed_methods = ['get', 'put', 'post']
 
 
 def has_session_key(func):
@@ -985,59 +989,153 @@ def has_session_key(func):
 
 
 def _preset_as_dict(request, ps):
-    pset_data = []
+    p_data = {}
     for pset in models.PresetParameterSet.objects.filter(preset=ps):
-        p_data = {}
         for pp in models.PresetParameter.objects.filter(paramset=pset):
-            p_data["%s/%s" % (pset.schema.namespace, pp.name.name)] = pp.value
-        pset_data.append(p_data)
-    return pset_data
+            p_data["%s/%s" % (pp.name.schema.namespace, pp.name.name)] = pp.value
+    logger.debug("p_data=%s" % pformat(p_data))
+    return p_data
+
+
+def _delete_preset(request, pk):
+    """ Deletes a prest by pk
+        e.g., /coreapi/delete/4
+
+    """
+    user_profile = models.UserProfile.objects.get(user=request.user)
+    try:
+        ps = models.Preset.objects.get(id=pk, user_profile=user_profile)
+    except models.Preset.DoesNotExist:
+        return HttpResponseNotFound()
+    except MultipleObjectsReturned:
+        return HttpResponseBadRequest()
+    ps.delete()
+    response = HttpResponse()
+    response.status_code = 200
+    return response
+
+
+def _fix_put(request):
+    if request.method == "PUT":
+        if hasattr(request, '_post'):
+            del request._post
+            del request._files
+        try:
+            request.method = "POST"
+            request._load_post_and_files()
+            request.method = "PUT"
+        except AttributeError:
+            request.META['REQUEST_METHOD'] = 'POST'
+            request._load_post_and_files()
+            request.META['REQUEST_METHOD'] = 'PUT'
+    request.PUT = request.POST
+
+
+def _put_pset_by_data(request, data_packet):
+    try:
+        direct_name = data_packet['direct_name']
+        data = data_packet['data']
+        name = data_packet['name']
+    except IndexError:
+        return HttpResponseBadRequest()
+    logger.debug("data_packet=%s" % pformat(data_packet))
+
+    logger.debug("name=%s" % name)
+    try:
+        user_profile = models.UserProfile.objects.get(user=request.user)
+    except models.UserProfile.DoesNotExist:
+        return HttpResponseNotFound(request.user)
+    logger.debug("user_profile=%s" % user_profile)
+    if not user_profile:
+        return HttpResponseNotFound()
+    try:
+        directive = models.Directive.objects.get(
+            name=direct_name,
+            hidden=False)
+    except models.Directive.DoesNotExist:
+        return HttpResponseNotFound(direct_name)
+    logger.debug("directive=%s" % directive)
+    if not directive:
+        return HttpResponseNotFound()
+
+    ps = models.Preset.objects.create(
+        name=name,
+        user_profile=user_profile,
+        directive=directive)
+    logger.debug("ps=%s" % ps)
+
+    parameters_data = data
+    parameters = json.loads(parameters_data)
+    ranking = 0
+    # TODO: we don't check types here
+    # for pset in list(parameters):
+    #     logger.debug("pset=%s" % pset)
+    #     pset_data = {}
+    #     schema_name = None
+
+    new_pset = models.PresetParameterSet.objects.create(
+        preset=ps, ranking=ranking)
+
+    logger.debug("new_pset=%s" % new_pset)
+    for pp_k, pp_v in dict(parameters).items():
+        logger.debug("pp_k=%s,pp_v=%s" % (pp_k, pp_v))
+        schema_name, key = os.path.split(pp_k)
+        # Assume all parameters in set from same schema
+        logger.debug("schema_name=%s" % schema_name)
+        schema = None
+        try:
+            schema = models.Schema.objects.get(
+                namespace=schema_name)
+        except models.Schema.DoesNotExist:
+            return HttpResponseNotFound(schema_name)
+        logger.debug("schema=%s" % schema)
+        logger.debug("new_pset=%s" % new_pset)
+        logger.debug("new_pset.id=%s" % new_pset.id)
+        p_name = os.path.basename(pp_k)
+        logger.debug("p_name=%s" % p_name)
+        new_name = None
+        try:
+            # could cache this value for speed
+            new_name = models.ParameterName.objects.get(
+                schema=schema,
+                name=p_name)
+        except models.Schema.DoesNotExist:
+            return HttpResponseNotFound(p_name)
+
+        logger.debug("new_name=%s" % new_name)
+        try:
+            new_p = models.PresetParameter.objects.create(
+                name=new_name,
+                paramset=new_pset, value=pp_v)
+        except Exception, e:
+            logger.error(e)
+            return HttpResponseBadRequest()
+
+        new_p.value = pp_v
+        new_p.save()
+        # logger.debug("new_p=%s" % new_p)
+        logger.debug("done")
+        ranking += 1
+
+    response = HttpResponse()
+    response.status_code = 201
+    response['location'] = reverse('preset_detail', args=[ps.pk])
+    return response
 
 
 @has_session_key
 @logged_in_or_basicauth()
 def preset_list(request):
 
-    def get_preset(request):
+    def _post_pset_by_data(request, data_packet):
         try:
-            user_profile = models.UserProfile.objects.get(user=request.user)
-        except models.UserProfile.DoesNotExist:
-            return HttpResponseNotFound()
-        name = request.GET.get('name', '')
-        if name:
-            try:
-                ps = models.Preset.objects.get(
-                    name=name,
-                    user_profile=user_profile)
-            except models.Preset.DoesNotExist:
-                return HttpResponseNotFound()
-            data = {}
-            data['id'] = ps.id
-            data['name'] = ps.name
-            data['user'] = user_profile.user.username
-            data['parameters'] = _preset_as_dict(request, ps)
-        else:
-            user = user_profile.user.username
-            data = []
-            ps = models.Preset.objects.filter(
-                    user_profile=user_profile)
-            for p in ps:
-                p_data = {}
-                logger.debug("p=%s" % p)
-                p_data['id'] = p.id
-                p_data['name'] = p.name
-                p_data['user'] = user
-                p_data['parameters'] = _preset_as_dict(request, p)
-                data.append(p_data)
+            direct_name = data_packet['direct_name']
+            data = data_packet['data']
+            name = data_packet['name']
+        except IndexError:
+            return HttpResponseBadRequest()
+        logger.debug("data_packet=%s" % pformat(data_packet))
 
-        logger.debug("data=%s" % data)
-        return HttpResponse(json.dumps(data),
-                        mimetype='application/json')
-
-    def post_preset(request):
-        if not 'POST' in request.method:
-            return HttpResponseForbidden()
-        name = request.POST['name']
         logger.debug("name=%s" % name)
         try:
             user_profile = models.UserProfile.objects.get(user=request.user)
@@ -1046,7 +1144,6 @@ def preset_list(request):
         logger.debug("user_profile=%s" % user_profile)
         if not user_profile:
             return HttpResponseNotFound()
-        direct_name = request.POST['directive']
         try:
             directive = models.Directive.objects.get(
                 name=direct_name,
@@ -1064,60 +1161,210 @@ def preset_list(request):
             pass
         else:
             return HttpResponseBadRequest()
-        ps = models.Preset(
+
+        ps = models.Preset.objects.create(
             name=name,
             user_profile=user_profile,
             directive=directive)
-        ps.save()
-        parameters_data = request.POST['data']
+        logger.debug("ps=%s" % ps)
+
+        parameters_data = data
         parameters = json.loads(parameters_data)
-        schema_set = {}
+        logger.debug("parameters=%s" % pformat(parameters))
         ranking = 0
-        for pset in list(parameters):
-            logger.debug("pset=%s" % pset)
-            pset_data = {}
+        # TODO: we don't check types here
+        # for pset in list(parameters):
+        #     logger.debug("pset=%s" % pset)
+        #     pset_data = {}
+        #     schema_name = None
+
+        new_pset = models.PresetParameterSet.objects.create(
+            preset=ps, ranking=ranking)
+
+        logger.debug("new_pset=%s" % new_pset)
+        for pp_k, pp_v in dict(parameters).items():
+            logger.debug("pp_k=%s,pp_v=%s" % (pp_k, pp_v))
+            schema_name, key = os.path.split(pp_k)
+            # Assume all parameters in set from same schema
+            logger.debug("schema_name=%s" % schema_name)
             schema = None
-            for pp_k, pp_v in dict(pset).items():
-                logger.debug("pp_k=%s,pp_v=%s" % (pp_k, pp_v))
-                schema_name, key = os.path.split(pp_k)
-                if schema_name in schema_set:
-                    schema = schema_set[schema_name]
-                else:
-                    try:
-                        schema = models.Schema.objects.get(
-                            namespace=schema_name)
-                    except models.Schema.DoesNotExist:
-                        return HttpResponseNotFound(schema_name)
-                    schema_set[schema_name] = schema
-                pset_data[pp_k] = pp_v
-            new_pset = models.PresetParameterSet(
-                preset=ps,
-                schema=schema,
-                ranking=ranking)
-            new_pset.save()
-            for p_key, p_val in pset_data.items():
-                p_name = os.path.basename(p_key)
-                try:
-                    # could cache this value for speed
-                    name = models.ParameterName.objects.get(
-                        schema=schema,
-                        name=p_name)
-                except models.Schema.DoesNotExist:
-                    return HttpResponseNotFound(p_name)
-                new_p = models.PresetParameter(
-                    name=name,
+            try:
+                schema = models.Schema.objects.get(
+                    namespace=schema_name)
+            except models.Schema.DoesNotExist:
+                return HttpResponseNotFound(schema_name)
+            logger.debug("schema=%s" % schema)
+            logger.debug("new_pset=%s" % new_pset)
+            logger.debug("new_pset.id=%s" % new_pset.id)
+            p_name = os.path.basename(pp_k)
+            logger.debug("p_name=%s" % p_name)
+            new_name = None
+            try:
+                # could cache this value for speed
+                new_name = models.ParameterName.objects.get(
+                    schema=schema,
+                    name=p_name)
+            except models.Schema.DoesNotExist:
+                return HttpResponseNotFound(p_name)
+
+            logger.debug("new_name=%s" % new_name)
+            try:
+                models.PresetParameter.objects.create(
+                    name=new_name,
                     paramset=new_pset,
-                    value=p_val)
-                new_p.save()
+                    value=pp_v)
+            except Exception, e:
+                logger.error(e)
+                return HttpResponseBadRequest()
+            # logger.debug("new_p=%s" % new_p)
+            logger.debug("done")
             ranking += 1
 
+        # TODO: return id of new preset
         response = HttpResponse()
+        response['location'] = reverse('preset_detail', args=[ps.pk])
         response.status_code = 201
         return response
-    for m, f in {'GET': get_preset, 'POST': post_preset}.items():
+
+    def post_preset(request):
+        """
+            Create a new Preset using POST
+            e.g., /coreapi/preset/   {name:"presetname", directive="name of directive",
+                data:'dictionary of full  schema/name strings and values'}
+            returns location
+        """
+
+        name = request.POST['name']
+        data = request.POST['data']
+        direct_name = request.POST['directive']
+        return _post_pset_by_data(request, {
+            'name': name,
+            'data': data,
+            'direct_name': direct_name})
+
+    # def put_preset(request):
+    #     response = delete_preset(request, pk)
+    #     logger.debug("response=%s" % response.status_code)
+    #     if response.status_code != 200:
+    #         return HttpResponseBadRequest()
+    #     logger.debug("response=%s" % response)
+
+    #     _fix_put(request)
+    #     logger.debug("put=%s" % request.PUT)
+    #     name = request.PUT['name']
+    #     data = request.PUT['data']
+    #     direct_name = request.PUT['directive']
+    #     response = _put_pset_by_data(request, {
+    #                 'name': name,
+    #                 'data': data,
+    #                 'direct_name': direct_name})
+    #     if response.status_code == 201:
+    #         response = HttpResponse()
+    #         response.status_code = 200
+    #         return response
+    #     return HttpResponseBadRequest()
+
+    # def delete_preset(request, pk):
+    #     user_profile = models.UserProfile.objects.get(user=request.user)
+    #     try:
+    #         ps = models.Preset.objects.get(id=pk, user_profile=user_profile)
+    #     except models.Preset.DoesNotExist:
+    #         return HttpResponseNotFound()
+    #     except MultipleObjectsReturned:
+    #         return HttpResponseBadRequest()
+    #     ps.delete()
+    #     response = HttpResponse()
+    #     response.status_code = 200
+    #     return response
+
+    def put_preset(request):
+        """
+            Updates a specific preset with new values based on "name" key
+            e.g., /core/api/preset  {name:"...", directive:"...","data":"..."}
+            deletes preset record which matches
+            "location" contains uri of new record
+        """
+        _fix_put(request)
+        name = request.PUT['name']
+        data = request.PUT['data']
+        direct_name = request.PUT['directive']
+
+        try:
+            ps = models.Preset.objects.get(name=name)
+        except models.Preset.DoesNotExist:
+            logger.info("preset not found")
+        else:
+            response = _delete_preset(request, ps.pk)
+            logger.debug("response=%s" % response.status_code)
+            # TODO: if object not there, not an error
+            if response.status_code != 200:
+                return HttpResponseBadRequest()
+            logger.debug("response=%s" % response)
+
+        logger.debug("put=%s" % request.PUT)
+        response = _put_pset_by_data(request, {
+                    'name': name,
+                    'data': data,
+                    'direct_name': direct_name})
+        if response.status_code == 201:
+            response = HttpResponse()
+            response.status_code = 200
+            return response
+        return HttpResponseBadRequest()
+
+    def get_preset(request):
+        """
+        Retrieve current preset
+        e.g.,   /coreapi/preset/
+                returns set of all presets
+                /coreapi/preset/?name=foo
+                returns preset with name field equals 'foo'
+        """
+        try:
+            user_profile = models.UserProfile.objects.get(user=request.user)
+        except models.UserProfile.DoesNotExist:
+            return HttpResponseNotFound()
+        name = request.GET.get('name', '')
+        if name:
+            # return by preset name
+            try:
+                ps = models.Preset.objects.get(
+                    name=name,
+                    user_profile=user_profile)
+            except models.Preset.DoesNotExist:
+                return HttpResponseNotFound()
+            data = {}
+            data['id'] = ps.id
+            data['name'] = ps.name
+            data['directive'] = ps.directive.name
+            data['user'] = user_profile.user.username
+            data['parameters'] = _preset_as_dict(request, ps)
+        else:
+            # return complete list
+            user = user_profile.user.username
+            data = []
+            ps = models.Preset.objects.filter(
+                    user_profile=user_profile)
+            for p in ps:
+                p_data = {}
+                logger.debug("p=%s" % p)
+                p_data['id'] = p.id
+                p_data['name'] = p.name
+                p_data['directive'] = p.directive.name
+                p_data['user'] = user
+                p_data['parameters'] = _preset_as_dict(request, p)
+                data.append(p_data)
+
+        logger.debug("data=%s" % data)
+        return HttpResponse(json.dumps(data),
+                        mimetype='application/json')
+
+    for m, f in {'GET': get_preset, 'POST': post_preset, 'PUT': put_preset}.items():
         if request.method == m:
-            return f(request)
-    return HttpResponseNotAllowed()
+            response = f(request)
+            logger.debug("response=%s" % response.status_code)
+            return response
+    return HttpResponseNotAllowed(['GET', 'POST', 'PUT'])
 
 
 @has_session_key
@@ -1125,26 +1372,58 @@ def preset_list(request):
 def preset_detail(request, pk):
 
     def get_preset(request, pk):
+        """
+            Returns details for specific preset via GET
+            e.g., /coreapi/preset/5/
+        """
+
         user_profile = models.UserProfile.objects.get(user=request.user)
-        ps = models.Preset.objects.get(id=pk, user_profile=user_profile)
+        try:
+            ps = models.Preset.objects.get(id=pk, user_profile=user_profile)
+        except models.Preset.DoesNotExist:
+            return HttpResponseNotFound()
+        except MultipleObjectsReturned:
+            return HttpResponseBadRequest()
         data = {}
         data['id'] = ps.id
         data['name'] = ps.name
+        data['directive'] = ps.directive.name
         data['user'] = user_profile.user.username
         data['parameters'] = _preset_as_dict(request, pk)
         return HttpResponse(json.dumps(data),
                         mimetype='application/json')
 
     def put_preset(request, pk):
-        # TODO: implement update
-        return HttpResponseNotAllowed()
+        """
+            Updates a specific preset with new values
+            e.g., /core/api/preset/5  {name:"...", directive:"...","data":"..."}
+            deletes preset/5 record
+            "location" contains uri of new record
+        """
+        response = _delete_preset(request, pk)
+        logger.debug("response=%s" % response.status_code)
+        # TODO: if object not there, not an error
+        if response.status_code != 200:
+            return HttpResponseBadRequest()
+        logger.debug("response=%s" % response)
 
-    def delete_preset(request, pk):
-        # TODO: implement delete
-        return HttpResponseNotAllowed()
+        _fix_put(request)
+        logger.debug("put=%s" % request.PUT)
+        name = request.PUT['name']
+        data = request.PUT['data']
+        direct_name = request.PUT['directive']
+        response = _put_pset_by_data(request, {
+                    'name': name,
+                    'data': data,
+                    'direct_name': direct_name})
+        if response.status_code == 201:
+            response.status_code = 200
+            # TODO: return id of new item
+            return response
+        return HttpResponseBadRequest()
 
     for m, f in {'GET': get_preset, 'PUT': put_preset,
-            'DELETE': delete_preset}.items():
+            'DELETE': _delete_preset}.items():
         if request.method == m:
             return f(request, pk)
-    return HttpResponseNotAllowed()
+    return HttpResponseNotAllowed(['GET', 'POST', 'DELETE'])

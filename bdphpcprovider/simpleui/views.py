@@ -1226,25 +1226,6 @@ def submit_job(request, form, directive):
     form.cleaned_data['http://rmit.edu.au/schemas/bdp_userprofile/username'] = request.user.username
     data = json.dumps(dict(form.cleaned_data.items() + [('smart_connector',directive)]))
 
-
-    # data = json.dumps({'smart_connector': 'sweep',
-    #             schemas['hrmc_schema'] + 'number_vm_instances': form.cleaned_data['number_vm_instances'],
-    #             schemas['hrmc_schema'] + 'minimum_number_vm_instances': form.cleaned_data['minimum_number_vm_instances'],
-    #             schemas['hrmc_schema'] + u'iseed': form.cleaned_data['iseed'],
-    #             schemas['sweep_schema'] + 'input_location':  form.cleaned_data['input_location'],
-    #             schemas['hrmc_schema'] + 'optimisation_scheme': form.cleaned_data['optimisation_scheme'],
-    #             schemas['hrmc_schema'] + 'fanout_per_kept_result': form.cleaned_data['fanout_per_kept_result'],
-    #             schemas['hrmc_schema'] + 'threshold': str(form.cleaned_data['threshold']),
-    #             schemas['hrmc_schema'] + 'error_threshold': str(form.cleaned_data['error_threshold']),
-    #             schemas['hrmc_schema'] + 'max_iteration': form.cleaned_data['max_iteration'],
-    #             schemas['hrmc_schema'] + 'pottype': form.cleaned_data['pottype'],
-    #             #'experiment_id': form.cleaned_data['experiment_id'],
-    #             schemas['sweep_schema'] + 'sweep_map': form.cleaned_data['sweep_map'],
-    #             schemas['sweep_schema'] + 'directive': 'hrmc',
-    #             #'run_map': form.cleaned_data['run_map'],
-    #             schemas['run_schema'] + 'run_map': "{}",
-    #             schemas['system_schema'] + 'output_location': form.cleaned_data['output_location']})
-
     logger.debug("data=%s" % data)
     r = requests.post(url,
         data=data,
