@@ -45,6 +45,8 @@ from django.contrib.sessions.models import Session
 from django.core.exceptions import MultipleObjectsReturned
 
 from django.core.urlresolvers import reverse
+from django.db.utils import IntegrityError
+
 
 from django.contrib.auth import authenticate, login
 
@@ -1075,7 +1077,9 @@ def preset_list(request):
             user_profile = models.UserProfile.objects.get(
                 user=request.user)
         except models.UserProfile.DoesNotExist:
-            return HttpResponseNotFound(request.user)
+            return _error_response(
+                HttpResponseNotFound(),
+                "cannot get userprofile")
         logger.debug("user_profile=%s" % user_profile)
         if not user_profile:
             return _error_response(
@@ -1102,10 +1106,11 @@ def preset_list(request):
             return _error_response(
                 HttpResponseBadRequest(),
                 "preset with primary key %s already exists" % name)
-        ps = models.Preset.objects.create(
+        ps = models.Preset(
             name=name,
             user_profile=user_profile,
             directive=directive)
+        ps.save()
         logger.debug("ps=%s" % ps)
         parameters_data = data
         parameters = json.loads(parameters_data)
@@ -1124,7 +1129,7 @@ def preset_list(request):
                 schema = models.Schema.objects.get(
                     namespace=schema_name)
             except models.Schema.DoesNotExist:
-                return _error_response(
+                return (
                     HttpResponseNotFound(),
                     "cannot get schema")
             logger.debug("schema=%s" % schema)
@@ -1145,16 +1150,17 @@ def preset_list(request):
             else:
                 logger.debug("new_name=%s" % new_name)
                 try:
-                    models.PresetParameter.objects.create(
+                    ppp = models.PresetParameter(
                         name=new_name,
                         paramset=new_pset,
                         value=pp_v)
+                    ppp.save()
+                    logger.debug("ppp=%s" % ppp)
                 except Exception, e:
                     logger.error(e)
                     return _error_response(
-                        HttpResponseBadRequest(),
-                        "cannot create new object")
-                # logger.debug("new_p=%s" % new_p)
+                         HttpResponseBadRequest(),
+                         "cannot create new object")
                 logger.debug("done")
         # TODO: return id of new preset
         response = HttpResponse()
