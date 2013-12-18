@@ -260,7 +260,7 @@ class Migration(SchemaMigration):
         db.create_table('smartconnectorscheduler_presetparameter', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('name', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['smartconnectorscheduler.ParameterName'])),
-            ('paramset', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['smartconnectorscheduler.StageParameterSet'])),
+            ('paramset', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['smartconnectorscheduler.PresetParameterSet'])),
             ('value', self.gf('django.db.models.fields.TextField')(blank=True)),
         ))
         db.send_create_signal('smartconnectorscheduler', ['PresetParameter'])
