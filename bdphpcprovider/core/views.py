@@ -1048,9 +1048,10 @@ def _fix_put(request):
             request.META['REQUEST_METHOD'] = 'PUT'
     request.PUT = request.POST
 
-
+from django.db import transaction
 @has_session_key
 @logged_in_or_basicauth()
+@transaction.commit_on_success
 def preset_list(request):
 
     def post_preset(request):
@@ -1122,6 +1123,9 @@ def preset_list(request):
         for pp_k, pp_v in dict(parameters).items():
             logger.debug("pp_k=%s,pp_v=%s" % (pp_k, pp_v))
             schema_name, key = os.path.split(pp_k)
+            if not schema_name or not key:
+                logger.warn("Invalid parameter name %s" % pp_k)
+                continue
             # Assume all parameters in set from same schema
             logger.debug("schema_name=%s" % schema_name)
             schema = None
@@ -1129,9 +1133,8 @@ def preset_list(request):
                 schema = models.Schema.objects.get(
                     namespace=schema_name)
             except models.Schema.DoesNotExist:
-                return (
-                    HttpResponseNotFound(),
-                    "cannot get schema")
+                logger.warn("cannot get schema for %s. Skipped"% (schema.namespace))
+                continue
             logger.debug("schema=%s" % schema)
             logger.debug("new_pset=%s" % new_pset)
             logger.debug("new_pset.id=%s" % new_pset.id)
@@ -1170,8 +1173,8 @@ def preset_list(request):
 
     def put_preset(request):
         """
-            Updates a specific preset with new data values based on "name" key
-            e.g., /core/api/preset  {name:"...", "data":"..."}
+            Updates a specific preset with new values based on "name" key
+            e.g., /coreapi/preset/  {name:"...", directive:"...","data":"..."}
             deletes preset record which matches
             "location" contains uri of new record
         """
@@ -1247,6 +1250,7 @@ def preset_list(request):
                 HttpResponseNotFound(),
                 "preset not found")
         name = request.GET.get('name', '')
+        directive = request.GET.get('directive', '')
         if name:
             # return by preset name
             try:
@@ -1261,6 +1265,28 @@ def preset_list(request):
             data['directive'] = ps.directive.name
             data['user'] = user_profile.user.username
             data['parameters'] = _preset_as_dict(request, ps)
+        elif directive:
+            try:
+                d = models.Directive.objects.get(name=directive)
+            except models.Directive.DoesNotExist:
+                return HttpResponseNotFound()
+
+            # return by preset name
+            try:
+                ps = models.Preset.objects.filter(
+                    directive=d,
+                    user_profile=user_profile)
+            except models.Preset.DoesNotExist:
+                return HttpResponseNotFound()
+            data = []
+            for p in ps:
+                d={}
+                d['id'] = p.id
+                d['name'] = p.name
+                d['directive'] = p.directive.name
+                d['user'] = user_profile.user.username
+                d['parameters'] = _preset_as_dict(request, p)
+                data.append(d)
         else:
             # return complete list
             user = user_profile.user.username
@@ -1332,8 +1358,10 @@ def preset_detail(request, pk):
 
     def put_preset(request, pk):
         """
-            Updates a specific preset with new data values
-            e.g., /core/api/preset/5  {"data":"..."}
+            Updates a specific preset with new values
+            e.g., /coreapi/preset/5  {name:"...", directive:"...","data":"..."}
+            deletes preset/5 record
+            "location" contains uri of new record
         """
         _fix_put(request)
         try:
