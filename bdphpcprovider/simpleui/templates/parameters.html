@@ -33,19 +33,19 @@
 <div class="control-group span11 offset1">
     <label class="control-label" for="id_default_presets">Parameters Set Name</label>
     <div class="controls">
-    <select id="id_presets" name="preset_name" class="target" onchange="resetForm('myform-id')">
-        <option value="default" selected="selected"> default </option>
+    <select id="id_presets" name="preset_name" class="target" onchange="resetPreset('myform-id')">
+        <!--option value="default" selected="selected"> default </option-->
         {% for preset in presets %}
          <option value="{{ preset }}"> {{ preset }} </option>
         {% endfor %}
     </select>
-    <button type="button" class="btn btn-info btn-small" onclick="addPreset('myform-id')">
+    <button type="button" class="btn btn-info btn-small" onclick="addPreset('myform-id', '{{directive.name}}')">
         <span class="glyphicon glyphicon-plus"></span>
     </button>
      <button type="button" class="btn btn-danger btn-small" onclick="deletePreset('myform-id')">
         <i class="glyphicon glyphicon-minus"></i>
     </button>
-     <button type="button" class="btn btn-default btn-small" onclick="updatePreset('myform-id')">
+     <button type="button" class="btn btn-default btn-small" onclick="updatePreset('myform-id', '{{directive.name}}')">
         <span class="glyphicon glyphicon-floppy-disk"></span>
     </button>
     </div>
