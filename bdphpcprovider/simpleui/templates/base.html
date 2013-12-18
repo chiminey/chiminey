@@ -139,8 +139,9 @@ function replaceFormElementsValues(form_id, dictionary){
                 if ((dictionary[elem[i].name]).toLowerCase() === 'on')
                     $('input').filter(':checkbox').attr('checked', true);
                 else{
-                   $('input').filter(':checkbox').attr('checked', false);
-                    //(document.getElementsByName(elem[i].name)[0]).value  = "off";
+                    (document.getElementsByName(elem[i].name)[0]).value  = "off";//fixme
+                    $('input').filter(':checkbox').attr('checked', false);
+
                 }
             }
             else
