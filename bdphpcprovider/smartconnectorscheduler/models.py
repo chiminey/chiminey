@@ -859,7 +859,7 @@ class Preset(models.Model):
 
     class Meta:
         ordering = ("name",)
-        #unique_together = (('name', 'user_profile'),)
+        unique_together = (('name', 'user_profile'),)
 
 
 class PresetParameterSet(models.Model):
@@ -872,6 +872,7 @@ class PresetParameterSet(models.Model):
 
     class Meta:
         ordering = ("ranking",)
+
 
 
 class PresetParameter(models.Model):

@@ -1046,9 +1046,10 @@ def _fix_put(request):
             request.META['REQUEST_METHOD'] = 'PUT'
     request.PUT = request.POST
 
-
+from django.db import transaction
 @has_session_key
 @logged_in_or_basicauth()
+@transaction.commit_on_success
 def preset_list(request):
 
     def post_preset(request):
@@ -1117,6 +1118,9 @@ def preset_list(request):
         for pp_k, pp_v in dict(parameters).items():
             logger.debug("pp_k=%s,pp_v=%s" % (pp_k, pp_v))
             schema_name, key = os.path.split(pp_k)
+            if not schema_name or not key:
+                logger.warn("Invalid parameter name %s" % pp_k)
+                continue
             # Assume all parameters in set from same schema
             logger.debug("schema_name=%s" % schema_name)
             schema = None
@@ -1124,9 +1128,8 @@ def preset_list(request):
                 schema = models.Schema.objects.get(
                     namespace=schema_name)
             except models.Schema.DoesNotExist:
-                return _error_response(
-                    HttpResponseNotFound(),
-                    "cannot get schema")
+                logger.warn("cannot get schema for %s. Skipped"% (schema.namespace))
+                continue
             logger.debug("schema=%s" % schema)
             logger.debug("new_pset=%s" % new_pset)
             logger.debug("new_pset.id=%s" % new_pset.id)
