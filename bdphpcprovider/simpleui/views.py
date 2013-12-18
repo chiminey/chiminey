@@ -1455,7 +1455,7 @@ def submit_directive(request, directive_id):
         form, form_data = make_directive_form(directive_params=directive_params,
             username=request.user.username,
             directive=directive)
-
+    '''
     # TODO: generalise
     if directive['name'] == "sweep":
         for d in directives:
@@ -1463,6 +1463,29 @@ def submit_directive(request, directive_id):
                 directive['name'] = d['name']
                 directive['description'] = d['description']
                 break
+    '''
+    api_host = "http://127.0.0.1"
+    url = "%s/coreapi/preset/?directive=%s" % (api_host, directive['name'])
+    logger.debug("directive_name=%s" % directive['name'])
+    cookies = dict(request.COOKIES)
+    logger.debug("cookies=%s" % cookies)
+    headers = {'content-type': 'application/json'}
+    try:
+        r = requests.get(url, headers=headers, cookies=cookies)
+    except HTTPError as e:
+        logger.debug('The server couldn\'t fulfill the request. %s' % e)
+        logger.debug('Error code: ', e.code)
+    except URLError as e:
+        logger.debug('We failed to reach a server. %s' % e)
+        logger.debug('Reason: ', e.reason)
+    else:
+        logger.debug('everything is fine')
+        logger.debug(r.text)
+        logger.debug(r.json())
+        #GET_data = r.json()
+    presets = []
+    for i in r.json():
+        presets.append(i['name'])
 
     return render_to_response(
                        'parameters.html',
@@ -1470,6 +1493,7 @@ def submit_directive(request, directive_id):
                            'directives': [x for x in directives if not x['hidden']],
                            'directive': directive,
                            'form': form,
+                           'presets': presets,
                            'formdata': form_data,
                            'longfield': [x for (x,y) in subtype_validation.items() if y[2] is not None]
                         },
