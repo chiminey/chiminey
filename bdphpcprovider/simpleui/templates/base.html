@@ -46,13 +46,21 @@ function addPreset(form_id, directive_name){
             request.done(function() {
                 $("#id_presets").append('<option value='+result+'>'+result+'</option>');
                 $("#id_presets").val(result);
-                alert('Created');
+                alertMessage(result, "created");
                 });
             request.fail(function(jqXHR) {
                 alert(jqXHR.responseText);
                 });
         }
     });
+}
+
+
+function alertMessage(preset_name, message){
+    var box = bootbox.alert("Preset '" + preset_name + "' " + message);
+    setTimeout(function() {
+        box.modal('hide');
+    }, 1500);
 }
 
 
@@ -73,7 +81,7 @@ function deletePreset(form_id){
                                 type : 'DELETE',
                                 dataType : 'json',
                                 success : function (){
-                                            alert("deleted");
+                                            alertMessage(selected_item, "deleted");
                                             $(form + " #id_presets option[value='" + selected_item + "']").remove();
                                             resetPreset(form_id);
                                 }
@@ -87,7 +95,7 @@ function deletePreset(form_id){
 
 function updatePreset(form_id, directive_name){
     var form =  '#' + form_id;
-    selected_item = $(form + " #id_presets option:selected").val();
+    var selected_item = $(form + " #id_presets option:selected").val();
     $.ajax({
         cache: false,
         url : '/coreapi/preset/?name='+selected_item,
@@ -102,7 +110,7 @@ function updatePreset(form_id, directive_name){
                         data: {name: selected_item, data: dictionary, directive: directive_name},
                         dataType : 'json',
                         success : function (){
-                                    alert("updated");
+                                    alertMessage(selected_item, "updated");
                         }
                     });
         }
