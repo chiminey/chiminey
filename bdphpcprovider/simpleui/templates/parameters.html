@@ -31,24 +31,24 @@
 <div class="row-fluid">
 <form class="form-horizontal" name="myform" id="myform-id" action="" method="POST"> {% csrf_token %}
 <div class="control-group span11 offset1">
-    <label class="control-label" for="id_default_presets">Parameters Set Name</label>
+    <label class="control-label" for="id_default_presets">Preset Name</label>
     <div class="controls">
     <select id="id_presets" name="preset_name" class="target" onchange="resetPreset('myform-id')">
         <!--option value="default" selected="selected"> default </option-->
         {% for preset in presets %}
          <option value="{{ preset }}"> {{ preset }} </option>
         {% endfor %}
+        <script>resetPreset('myform-id')</script>
+
     </select>
-    <button type="button" class="btn btn-info btn-small" onclick="addPreset('myform-id', '{{directive.name}}')">
-      <i class="fa fa-plus"></i>
-
+    <button type="button" class="btn btn-info btn-small" title="Add new preset" onclick="addPreset('myform-id', '{{directive.name}}')">
+        <i class="fa fa-plus"></i>
     </button>
-     <button type="button" class="btn btn-danger btn-small" onclick="deletePreset('myform-id')">
-      <i class="fa fa-minus"></i>
-
+     <button type="button" class="btn btn-danger btn-small" title="Delete current preset" onclick="deletePreset('myform-id')">
+        <i class="fa fa-minus"></i>
     </button>
-     <button type="button" class="btn btn-default btn-small" onclick="updatePreset('myform-id', '{{directive.name}}')">
-      <i class="fa fa-floppy-o"></i>
+     <button type="button" class="btn btn-default btn-small" title="Update current preset" onclick="updatePreset('myform-id', '{{directive.name}}')">
+        <i class="fa fa-floppy-o"></i>
     </button>
     </div>
 </div>
