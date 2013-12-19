@@ -40,13 +40,15 @@
         {% endfor %}
     </select>
     <button type="button" class="btn btn-info btn-small" onclick="addPreset('myform-id', '{{directive.name}}')">
-        <span class="glyphicon glyphicon-plus"></span>
+      <i class="fa fa-plus"></i>
+
     </button>
      <button type="button" class="btn btn-danger btn-small" onclick="deletePreset('myform-id')">
-        <i class="glyphicon glyphicon-minus"></i>
+      <i class="fa fa-minus"></i>
+
     </button>
      <button type="button" class="btn btn-default btn-small" onclick="updatePreset('myform-id', '{{directive.name}}')">
-        <span class="glyphicon glyphicon-floppy-disk"></span>
+      <i class="fa fa-floppy-o"></i>
     </button>
     </div>
 </div>
@@ -79,7 +81,7 @@
             {{field|add_class:"span2"|attr:"onchange:chfield(this);"}}
             {% endif %}
 
-              <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{field.help_text}}" id='{{forloop.counter}}'><img  class="icon-question-sign"></a>
+              <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{field.help_text}}" id='{{forloop.counter}}'><i  class="fa fa-question-circle"></i></a>
               </div>
             </div>
           {% endif %}

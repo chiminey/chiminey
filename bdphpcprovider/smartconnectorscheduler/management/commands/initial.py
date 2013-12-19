@@ -9,6 +9,9 @@ from django.contrib.auth.models import Permission
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
 from django.core.management.base import BaseCommand
+from django.conf import settings
+
+
 
 from bdphpcprovider.smartconnectorscheduler import models
 
@@ -35,6 +38,10 @@ class Command(BaseCommand):
             return
 
         self.group, _ = Group.objects.get_or_create(name="standarduser")
+        self.group.save()
+        self.group, _ = Group.objects.get_or_create(name="admin")
+        self.group.save()
+        self.group, _ = Group.objects.get_or_create(name="developer")
         self.group.save()
 
         for model_name in ('userprofileparameter', 'userprofileparameterset'):
@@ -570,7 +577,8 @@ class Command(BaseCommand):
         #     pn.save()
 
         logger.debug("stages=%s" % models.Stage.objects.all())
-        local_filesys_rootpath = '/var/cloudenabling/remotesys'
+        local_filesys_rootpath = settings.LOCAL_FILESYS_ROOT_PATH
+        #local_filesys_rootpath = '/var/cloudenabling/remotesys'
         nci_filesys_root_path = '/short/h72/BDP/BDP_payload'
         local_platform, _ = models.Platform.objects.get_or_create(name='local',
             root_path=local_filesys_rootpath)
