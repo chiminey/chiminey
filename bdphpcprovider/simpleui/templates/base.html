@@ -33,7 +33,7 @@ $( "#id_presets" ).change(function() {
 
 
 function addPreset(form_id, directive_name){
-    bootbox.prompt("Enter name for the current parameter set", function(result) {
+    bootbox.prompt("Enter name for the new preset", function(result) {
         var result =  $.trim(result);
         if(result) {
             var dictionary = retrieveFormElementsValues(form_id, result)
@@ -59,7 +59,7 @@ function addPreset(form_id, directive_name){
 function deletePreset(form_id){
     var form =  '#' + form_id;
     var selected_item = $(form + " #id_presets option:selected").val();
-    bootbox.confirm("Are you sure you want to delete '" + selected_item + "'?", function(result) {
+    bootbox.confirm("Are you sure you want to delete preset '" + selected_item + "'?", function(result) {
         if (result){
             $.ajax({
                 cache: false,
@@ -110,7 +110,6 @@ function updatePreset(form_id, directive_name){
 }
 
 
-
 function resetPreset(form_id){
     var dictionary= {};
     var form = '#' + form_id;
@@ -131,6 +130,7 @@ function resetPreset(form_id){
 }
 
 
+
 function replaceFormElementsValues(form_id, dictionary){
     var elem = document.getElementById(form_id).elements;
     for(var i = 0; i < elem.length; i++){
@@ -138,11 +138,8 @@ function replaceFormElementsValues(form_id, dictionary){
             if (elem[i].type === 'checkbox'){
                 if ((dictionary[elem[i].name]).toLowerCase() === 'on')
                     $('input').filter(':checkbox').attr('checked', true);
-                else{
-                    (document.getElementsByName(elem[i].name)[0]).value  = "off";//fixme
+                else
                     $('input').filter(':checkbox').attr('checked', false);
-
-                }
             }
             else
                 (document.getElementsByName(elem[i].name)[0]).value = dictionary[elem[i].name];
@@ -159,6 +156,12 @@ function retrieveFormElementsValues(form_id, preset_name){
             elem[i].value = trimmed_preset_name;
         if (elem[i].name.length > 0){
             var value = elem[i].value.replace(/\"/g, '\\\"');
+            if (elem[i].type === 'checkbox'){
+                if((document.getElementsByName(elem[i].name)[0]).checked)
+                    value = "on"
+                else
+                    value = "off"
+            }
             form_content += '"' + elem[i].name + '" : "' + value + '",';
         }
     }
@@ -330,6 +333,9 @@ function formreset(){
         </footer>
     </div>
 </div>
+    <script>$(function() {
+    $('button').tooltip();
+});</script>
 </body>
 </html>
 
