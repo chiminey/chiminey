@@ -17,12 +17,15 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+import os
 import getpass
 import re
 import sys
+import shutil
 
 from optparse import make_option
 from django.contrib.auth.models import User, Group
+from django.conf import settings
 from django.core import exceptions
 from django.core.management.base import BaseCommand, CommandError
 from django.utils.translation import ugettext as _
@@ -166,7 +169,7 @@ class Command(BaseCommand):
         userProfile = models.UserProfile(user=user)
         userProfile.save()
 
-        print "remotefsys=%s" % remotefsys
+        self.stdout.write("remotefsys=%s\n" % remotefsys)
 
         # Setup the schema for user configuration information (kept in profile)
         self.PARAMS = {
@@ -196,6 +199,50 @@ class Command(BaseCommand):
             models.UserProfileParameter.objects.get_or_create(name=param_name,
                 paramset=param_set,
                 value=v)
+
+        try:
+            os.makedirs(os.path.join(settings.LOCAL_FILESYS_ROOT_PATH, username))
+            os.makedirs(os.path.join(settings.LOCAL_FILESYS_ROOT_PATH, username, "myfiles","input"))
+        except IOError, e:
+            raise CommandError("cannot create user filesystem")
+        except AttributeError, e:
+            raise CommandError("LOCAL_FILESYS_ROOT_PATH must be set in settings.py")
+
+
+
+
+# mkdir /var/cloudenabling/remotesys/{$user}/myfiles
+# mkdir /var/cloudenabling/remotesys/{$user}/myfiles/input
+# cp -a /opt/cloudenabling/current/input2 /var/cloudenabling/remotesys/${user}/myfiles/input/initial
+# cp -a /opt/cloudenabling/current/vaspinput /var/cloudenabling/remotesys/${user}/local/vaspinput/initial
+# cp -a /opt/cloudenabling/current/payload2_new /var/cloudenabling/remotesys/${user}/local/testpayload_new
+# cp -a /opt/cloudenabling/current/bdphpcprovider/randomnums.txt /var/cloudenabling/remotesys/{$user}
+# cp -a /opt/cloudenabling/current/testpayload /var/cloudenabling/remotesys/{$user}/local/
+# cp -a /opt/cloudenabling/current/vasppayload /var/cloudenabling/remotesys/${user}/local/
+
+        curr_dir = os.path.dirname(os.path.realpath(__file__))
+        source_prefix = os.path.join(curr_dir, "..","..","..","..")
+
+        copy_commands = (
+            ("input2","myfiles/input/initial"),
+            ("vaspinput","local/vaspinput/initial"),
+            ("payload2_new","local/test_payload_new"),
+            ("testpayload","local/testpayload"),
+            ("vasppayload","local/vasppayload"),
+            )
+
+        for src, dest in copy_commands:
+            try:
+                s = os.path.abspath(os.path.join(source_prefix, src))
+                d = os.path.join(settings.LOCAL_FILESYS_ROOT_PATH, username, dest)
+                self.stdout.write("%s -> %s" % (s, d))
+                shutil.copytree(s,d)
+            except IOError, e:
+                raise CommandError("ERROR:%s\n" % e)
+
+        shutil.copy(os.path.abspath(
+            os.path.join(source_prefix, "bdphpcprovider","randomnums.txt")),
+            os.path.join(settings.LOCAL_FILESYS_ROOT_PATH, username))
 
         if verbosity >= 1:
           self.stdout.write("BDPHPCProvider user created successfully.\n")

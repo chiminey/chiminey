@@ -164,11 +164,11 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'django.contrib.humanize',
     'south',
+    'django_nose',
     'storages',
     'djcelery',
     'djkombu',
     'tastypie',
-    'django_nose',
     'widget_tweaks'
 
 ) + OUR_APPS
@@ -245,7 +245,7 @@ CELERYBEAT_SCHEDULE = {
     "run_contexts": {
         "task": "smartconnectorscheduler.run_contexts",
         #"schedule": timedelta(seconds=10)
-        "schedule": timedelta(seconds=10)
+        "schedule": timedelta(seconds=60)
       },
     }
 
@@ -291,4 +291,5 @@ djcelery.setup_loader()
 
 
 
+LOCAL_FILESYS_ROOT_PATH = "/var/cloudenabling/remotesys"
 
