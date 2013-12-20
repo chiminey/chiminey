@@ -122,7 +122,7 @@ def create_VM_instances(number_vm_instances, settings):
         vm_image = "ami-00000004"
     elif settings['platform_type'] == 'nectar':
         placement = 'monash'
-        vm_image = "ami-0000000"
+        vm_image = "ami-0000000d"
     else:
         return []
     connection = _create_cloud_connection(settings)
