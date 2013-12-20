@@ -22,45 +22,67 @@
 
 <script>
 
+//var el = document.getElementById('settings_menu');
+//el.onclick = addPreset("myform-id", "sweep", "last");
+
+
+
+
+
 function closeDialog () {
     $('#createModal').modal('hide');
 };
-/**
-$( "#id_presets" ).change(function() {
-  alert( "Handler for .change() called." );
-});
-**/
 
 
-function addPreset(form_id, directive_name){
-    bootbox.prompt("Enter name for the new preset", function(result) {
-        var result =  $.trim(result);
-        if(result) {
-            var dictionary = retrieveFormElementsValues(form_id, result)
-            var request = $.ajax({
-                            type: "POST",
-                            url: "/coreapi/preset/",
-                            data: {name: result, data: dictionary, directive: directive_name},
-                            dataType: "json"
-                            })
-            request.done(function() {
-                $("#id_presets").append('<option value='+result+'>'+result+'</option>');
-                $("#id_presets").val(result);
-                alertMessage(result, "created");
-                });
-            request.fail(function(jqXHR) {
-                alert(jqXHR.responseText);
-                });
-        }
-    });
-}
-
-
-function alertMessage(preset_name, message){
+function alertMessage(preset_name, message, delay){
+    if (delay < 1500)
+        delay = 1500
     var box = bootbox.alert("Preset '" + preset_name + "' " + message);
     setTimeout(function() {
         box.modal('hide');
-    }, 1500);
+    }, delay);
+}
+
+
+function addPreset(form_id, directive_name, preset_name){
+    var date = new Date().getTime()
+    if (preset_name){
+        $("#id_current_directive").prepend('<p  class="text-center"><strong>Saving ... </strong></p>')
+        addPresetDB(form_id, directive_name, preset_name, true);
+    }
+    else{
+        bootbox.prompt("Enter name for the new preset", 'Cancel', 'Add' , function(result) {
+            var preset_name =  $.trim(result);
+            if(preset_name) {
+                addPresetDB(form_id, directive_name, preset_name, false);
+            }
+        }, directive_name+'_'+date);
+    }
+}
+
+function addPresetDB(form_id, directive_name, preset_name, auto_save){
+    var dictionary = retrieveFormElementsValues(form_id, preset_name)
+    var request = $.ajax({
+                    async: false,
+                    type: "POST",
+                    url: "/coreapi/preset/",
+                    data: {name: preset_name, data: dictionary, directive: directive_name},
+                    dataType: "json"
+                    });
+    request.done(function() {
+        $("#id_presets").append('<option value='+preset_name+'>'+preset_name+'</option>');
+        $("#id_presets").val(preset_name);
+        if (!auto_save){
+            activate_DEL_UPD_buttons();
+            alertMessage(preset_name, "created", 0);
+            }
+        });
+    request.fail(function(jqXHR) {
+        if (!auto_save)
+            alertMessage(preset_name, jqXHR.responseText, 3000);
+        else
+            updatePreset(form_id, directive_name, preset_name);
+        });
 }
 
 
@@ -75,17 +97,17 @@ function deletePreset(form_id){
                 type : 'GET',
                 dataType : 'json',
                 success : function (data){
-                            var id = data.id;
-                            $.ajax({
-                                url : '/coreapi/preset/' + id,
-                                type : 'DELETE',
-                                dataType : 'json',
-                                success : function (){
-                                            alertMessage(selected_item, "deleted");
-                                            $(form + " #id_presets option[value='" + selected_item + "']").remove();
-                                            resetPreset(form_id);
-                                }
-                            });
+                    var id = data.id;
+                    $.ajax({
+                        url : '/coreapi/preset/' + id,
+                        type : 'DELETE',
+                        dataType : 'json',
+                        success : function (){
+                            alertMessage(selected_item, "deleted", 0);
+                            $(form + " #id_presets option[value='" + selected_item + "']").remove();
+                            resetPreset(form_id);
+                        }
+                    });
                 }
             });
         }
@@ -93,35 +115,60 @@ function deletePreset(form_id){
 }
 
 
-function updatePreset(form_id, directive_name){
-    var form =  '#' + form_id;
-    var selected_item = $(form + " #id_presets option:selected").val();
-    $.ajax({
-        cache: false,
-        url : '/coreapi/preset/?name='+selected_item,
-        type : 'GET',
-        dataType : 'json',
-        success : function (data){
-                    var id = data.id;
-                    var dictionary = retrieveFormElementsValues(form_id, '');
-                    $.ajax({
-                        url : '/coreapi/preset/' + id,
-                        type : 'PUT',
-                        data: {name: selected_item, data: dictionary, directive: directive_name},
-                        dataType : 'json',
-                        success : function (){
-                                    alertMessage(selected_item, "updated");
-                        }
-                    });
-        }
-    });
+function updatePreset(form_id, directive_name, preset_name){
+    var selected_item = $.trim(preset_name);
+    var auto_save = true;
+    if (!selected_item){
+        var form =  '#' + form_id;
+        selected_item = $(form + " #id_presets option:selected").val();
+        selected_item = $.trim(selected_item);
+        auto_save = false;
+    }
+    if (selected_item){
+        $.ajax({
+            async: false,
+            cache: false,
+            url : '/coreapi/preset/?name='+selected_item,
+            type : 'GET',
+            dataType : 'json',
+            success : function (data){
+                var id = data.id;
+                var dictionary = retrieveFormElementsValues(form_id, selected_item);
+                $.ajax({
+                    async: false,
+                    url : '/coreapi/preset/' + id,
+                    type : 'PUT',
+                    data: {name: selected_item, data: dictionary, directive: directive_name},
+                    dataType : 'json',
+                    success: function (){
+                        if (!auto_save)
+                            alertMessage(selected_item, "updated", 0);
+                    },
+                    error: function(){
+                        alertMessage(selected_item, "failed", 0);
+                    }
+                 });
+            }
+        });
+    }
 }
 
-
-function resetPreset(form_id){
+function resetPreset(form_id, preset_name){
+    var last_preset = 'last_{{ directive.name }}_preset';
     var dictionary= {};
     var form = '#' + form_id;
-    var selected_item = $.trim($("form #id_presets option:selected").val());
+    var selected_item = $.trim(preset_name);
+    if ($("form #id_presets option[value="+selected_item+"]").length == 0){
+        selected_item = $.trim($("form #id_presets option:selected").val());
+    }
+    else
+        $("#id_presets").val(selected_item);
+
+    if (selected_item == last_preset)
+        deactivate_DEL_UPD_buttons();
+    else
+       activate_DEL_UPD_buttons();
+
     $.ajax({
         cache: false,
         url : '/coreapi/preset/?name='+selected_item,
@@ -137,6 +184,17 @@ function resetPreset(form_id){
     });
 }
 
+
+function deactivate_DEL_UPD_buttons(){
+     $('form #id_delete_preset_button').attr("disabled", "disabled");
+     $('form #id_update_preset_button').attr("disabled", "disabled");
+}
+
+
+function activate_DEL_UPD_buttons(){
+    $('form #id_delete_preset_button').removeAttr("disabled");
+    $('form #id_update_preset_button').removeAttr("disabled");
+}
 
 
 function replaceFormElementsValues(form_id, dictionary){
@@ -274,7 +332,6 @@ function formreset(){
 {% endblock head %}
 </head>
 
-
     <body>
         <div class="navbar navbar-fixed-top">
           <div class="navbar-inner">
@@ -285,18 +342,18 @@ function formreset(){
                 <span class="icon-bar"></span>
               </a>
 
-              <span class="brand"><a href="/">BDPHPC Beta</a></span>
+              <span class="brand"><a href="/" onclick='addPreset("myform-id", "{{ directive.name }}", "last_{{ directive.name }}_preset")'>BDPHPC Beta</a></span>
 
               <div class="nav-collapse">
                 <ul class="nav">
                     {% if not user.is_authenticated %}
-                    <li><a  href="{% url login %}">login</a></li>
+                    <li><a  href="{% url login %}" onclick='addPreset("myform-id", "{{ directive.name }}", "last_{{ directive.name }}_preset")'>login</a></li>
                     {% else %}
-                    <li><a  href="{% url logout %}">logout</a></li>
+                    <li><a  href="{% url logout %}" onclick='addPreset("myform-id", "{{ directive.name }}", "last_{{ directive.name }}_preset")'>logout</a></li>
                     <!-- <li><a  href="{% url hrmcjob-new %}">Create HRMC Job</a></li> -->
                     <li><a  href="{% url makedirective 0 %}">Create Job</a></li>
                 <!--   <li><a  href="{% url sweepjob-new %}">Create SWEEP Job</a></li> -->
-                    <li><a  href="{% url hrmcjob-list %}">Jobs</a></li>
+                    <li><a  href="{% url hrmcjob-list %}" onclick='addPreset("myform-id", "{{ directive.name }}", "last_{{ directive.name }}_preset")'>Jobs</a></li>
 <!--                    <li><a  href="{% url makejob-new %}">Create RemoteMake Job</a></li> -->
 <!--                    <li><a  href="{% url userprofileparameter-list %}">User Settings</a></li-->
 <!--                    <li><a  href="{% url listdir-list %}">Directory</a></li> -->
@@ -304,7 +361,7 @@ function formreset(){
                     {% if user.is_superuser %}
                      <li><a  href="/admin">Admin</a></li>
                      {%endif %}
-                    <li><a href="{% url computation-platform-settings %}">Settings</a></li>
+                    <li><a href="{% url computation-platform-settings %}" onclick='addPreset("myform-id", "{{ directive.name }}", "last_{{ directive.name }}_preset")'>Settings</a></li>
                   <!-- <p class="navbar-text pull-right">
                        <a href="" class="navbar-link">Settings</a>
                    </p> -->
@@ -343,7 +400,11 @@ function formreset(){
 </div>
     <script>$(function() {
     $('button').tooltip();
-});</script>
+    });
+    </script>
+
+
+
 </body>
 </html>
 
