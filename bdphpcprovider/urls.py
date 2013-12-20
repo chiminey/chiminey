@@ -83,63 +83,53 @@ v1_api.register(PlatformParameterResource())
 urlpatterns = patterns('',
 
     url(r'^admin/', include(admin.site.urls)),
-
     ('^accounts/', include('django.contrib.auth.urls')),
-    #url(r'^login/$',  'django.contrib.auth.views.login', name="mylogin"),
-    #url(r'^logout/$', 'django.contrib.auth.views.logout', name="mylogout"),
     url(r'^$', uiviews.AboutView.as_view(), name="home"),
-
     url(r'^$', 'django.views.generic.simple.redirect_to', {'url':  '/'}, name='home'),
-
-    url(r'^accounts/profile/$', login_required(uiviews.UserProfileParameterListView.as_view()),
-        name='userprofileparameter-list',),
-    url(r'^accounts/profile/new/$', login_required(uiviews.CreateUserProfileParameterView.as_view()),
-        name='userprofileparameter-new',),
-    url(r'^accounts/profile/edit/(?P<pk>\d+)/$', login_required(uiviews.UpdateUserProfileParameterView.as_view()),
-        name='userprofileparameter-edit',),
-    url(r'^accounts/profile/delete/(?P<pk>\d+)/$', login_required(uiviews.DeleteUserProfileParameterView.as_view()),
-        name='userprofileparameter-delete',),
-
-    # url(r'^jobs/$', login_required(uiviews.ContextList.as_view()),
-    #     name='hrmcjob-list',),
     url(r'^jobs/$', login_required(uiviews.get_contexts),
         name='hrmcjob-list',),
     url(r'^job/(?P<pk>\d+)/$', login_required(uiviews.ContextView.as_view()),
         name='contextview',),
-    url(r'^jobs/hrmc/new/$', login_required(uiviews.HRMCSubmitFormView.as_view()),
-        name='hrmcjob-new',),
-    url(r'^jobs/sweep/new/$', login_required(uiviews.SweepSubmitFormView.as_view()),
-        name='sweepjob-new',),
-    url(r'^jobs/pbs/new/$', login_required(uiviews.MakeSubmitFormView.as_view()),
-        name='makejob-new',),
-
     url(r'^jobs/directive/(?P<directive_id>\d+)/$', login_required(uiviews.submit_directive),
         name='makedirective',),
-
-    url(r'^jobs/copy/new/$', login_required(uiviews.CopyFormView.as_view()),
-        name='copyjob-new',),
-
-    url(r'^list/$', login_required(uiviews.ListDirList.as_view()),
-        name='listdir-list',),
-
     url(r'^accounts/settings/bdp/$', login_required(bdp_account_settings),
         name='bdp-account-settings',),
-
     url(r'^accounts/settings/platform/computation/$', login_required(computation_platform_settings),
         name='computation-platform-settings',),
-
     url(r'^accounts/settings/platform/storage/$', login_required(storage_platform_settings),
         name='storage-platform-settings',),
 
-    url(r'^output/(?P<group_id>\w+)/(?P<file_id>[\w.]+)/$', scsviews.getoutput, name="getoutput"),
-    url(r'^directive/(?P<directive_id>\d+)/$', scsviews.test_directive),
-
-
-    url(r'^jobs/finished/edit/(?P<pk>\d+)/$', login_required(uiviews.FinishedContextUpdateView.as_view()),
-        name='finishedcontext-edit',),
+    # # FIXME: this method is deprecated by list_jobs button.
+    # url(r'^jobs/finished/edit/(?P<pk>\d+)/$', login_required(uiviews.FinishedContextUpdateView.as_view()),
+    #     name='finishedcontext-edit',),
 
     # api urls
     url(r'^coreapi/', include('bdphpcprovider.core.urls')),
     url(r'^api/', include(v1_api.urls)),
+
+    #url(r'^login/$',  'django.contrib.auth.views.login', name="mylogin"),
+    #url(r'^logout/$', 'django.contrib.auth.views.logout', name="mylogout"),
+    # url(r'^accounts/profile/$', login_required(uiviews.UserProfileParameterListView.as_view()),
+    #     name='userprofileparameter-list',),
+    # url(r'^accounts/profile/new/$', login_required(uiviews.CreateUserProfileParameterView.as_view()),
+    #     name='userprofileparameter-new',),
+    # url(r'^accounts/profile/edit/(?P<pk>\d+)/$', login_required(uiviews.UpdateUserProfileParameterView.as_view()),
+    #     name='userprofileparameter-edit',),
+    # url(r'^accounts/profile/delete/(?P<pk>\d+)/$', login_required(uiviews.DeleteUserProfileParameterView.as_view()),
+    #     name='userprofileparameter-delete',),
+    # url(r'^jobs/$', login_required(uiviews.ContextList.as_view()),
+    #     name='hrmcjob-list',),
+    # url(r'^jobs/hrmc/new/$', login_required(uiviews.HRMCSubmitFormView.as_view()),
+    #     name='hrmcjob-new',),
+    # url(r'^jobs/sweep/new/$', login_required(uiviews.SweepSubmitFormView.as_view()),
+    #     name='sweepjob-new',),
+    # url(r'^jobs/pbs/new/$', login_required(uiviews.MakeSubmitFormView.as_view()),
+    #     name='makejob-new',),
+    # url(r'^jobs/copy/new/$', login_required(uiviews.CopyFormView.as_view()),
+    #     name='copyjob-new',),
+    # url(r'^list/$', login_required(uiviews.ListDirList.as_view()),
+    #     name='listdir-list',),
+    # url(r'^output/(?P<group_id>\w+)/(?P<file_id>[\w.]+)/$', scsviews.getoutput, name="getoutput"),
+    # url(r'^directive/(?P<directive_id>\d+)/$', scsviews.test_directive),
 )
 urlpatterns += staticfiles_urlpatterns()

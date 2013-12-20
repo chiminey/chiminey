@@ -1,8 +1,8 @@
-{% load staticfiles %}
 <!DOCTYPE html>
+{% load staticfiles %}
 <html lang="en">
 <head>
-<meta charset="utf-8">
+<meta charset="utf8">
 
 <title>Bioscience Data Platform: TARDIS In The Cloud</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
@@ -285,14 +285,8 @@ function formreset(){
                     <li><a  href="{% url login %}">login</a></li>
                     {% else %}
                     <li><a  href="{% url logout %}">logout</a></li>
-                    <!-- <li><a  href="{% url hrmcjob-new %}">Create HRMC Job</a></li> -->
                     <li><a  href="{% url makedirective 0 %}">Create Job</a></li>
-                <!--   <li><a  href="{% url sweepjob-new %}">Create SWEEP Job</a></li> -->
                     <li><a  href="{% url hrmcjob-list %}">Jobs</a></li>
-<!--                    <li><a  href="{% url makejob-new %}">Create RemoteMake Job</a></li> -->
-<!--                    <li><a  href="{% url userprofileparameter-list %}">User Settings</a></li-->
-<!--                    <li><a  href="{% url listdir-list %}">Directory</a></li> -->
-<!--                    <li><a  href="{% url copyjob-new %}">Copy Data</a></li> -->
                     {% if user.is_superuser %}
                      <li><a  href="/admin">Admin</a></li>
                      {%endif %}

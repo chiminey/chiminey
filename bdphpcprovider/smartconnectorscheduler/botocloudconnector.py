@@ -116,15 +116,30 @@ def create_VM_instances(number_vm_instances, settings):
     """
         Create the Nectar VM instance and return ip_address
     """
-    #fixme avoid hardcoding, move to settings.py
-    if settings['platform_type'] == 'csrack':
-        placement = None
-        vm_image = "ami-00000004"
-    elif settings['platform_type'] == 'nectar':
-        placement = 'monash'
-        vm_image = "ami-0000000"
-    else:
+    # #fixme avoid hardcoding, move to settings.py
+    # if settings['platform_type'] == 'csrack':
+    #     placement = None
+    #     vm_image = "ami-00000004"
+    # elif settings['platform_type'] == 'nectar':
+    #     placement = 'monash'
+    #     vm_image = "ami-0000000d"
+    # else:
+    #     return []
+
+    from django.conf import settings as django_settings
+
+    try:
+        platform_type = settings['platform_type']
+        if platform_type in django_settings.VM_IMAGES:
+            params = django_settings.VM_IMAGES[platform_type]
+            placement = params['placement']
+            vm_image = params['vm_image']
+        else:
+            return []
+    except IndexError, e:
+        logger.error("cannot load vm parameters")
         return []
+
     connection = _create_cloud_connection(settings)
     all_instances = []
     logger.info("Creating %d VM(s)" % number_vm_instances)
