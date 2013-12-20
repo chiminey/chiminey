@@ -147,7 +147,7 @@ def progress_context(context_id):
                 else:
                     logger.info("processing %s" % context_id)
                 run_context = models.Context.objects.get(id=context_id, deleted=False)
-                logger.debug("Executing task id %r, args: %r kwargs: %r" % ( progress_context.request.id, progress_context.request.args, progress_context.request.kwargs))
+                logger.debug("Executing task id %r, args: %r kwargs: %r" % (progress_context.request.id, progress_context.request.args, progress_context.request.kwargs))
                 stage = run_context.current_stage
                 logger.debug("stage=%s" % stage)
                 children = models.Stage.objects.filter(parent=stage)
@@ -168,7 +168,9 @@ def progress_context(context_id):
                 # user_settings are r/w during execution, but original values
                 # associated with UserProfile are unchanged as loaded once on
                 # context creation.
-                user_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
+                #user_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
+                # PROFILE_SCHEMA is now deprecated, so
+                user_settings = {}
 
                 triggered = 0
                 for current_stage in stageset:

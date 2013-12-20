@@ -1,7 +1,7 @@
 import djcelery
 from datetime import timedelta
 
-DEBUG=True
+DEBUG = True
 
 # Django settings for the SMRA project deployed under runserver
 
@@ -22,8 +22,8 @@ MANAGERS = ADMINS
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': path.join(path.dirname(__file__),'db/django.sql').replace('\\','/'),                      # Or path to database file if using sqlite3.
+        'ENGINE': 'django.db.backends.sqlite3',  # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
+        'NAME': path.join(path.dirname(__file__), 'db/django.sql').replace('\\', '/'),                      # Or path to database file if using sqlite3.
         'USER': '',                      # Not used with sqlite3.
         'PASSWORD': '',                  # Not used with sqlite3.
         'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
@@ -31,7 +31,7 @@ DATABASES = {
     }
 }
 
-LOGIN_REDIRECT_URL="/"
+LOGIN_REDIRECT_URL = "/"
 
 # Celery queue uses Django for persistence
 BROKER_TRANSPORT = 'django'
@@ -96,7 +96,8 @@ MIDDLEWARE_CLASSES = (
     #'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.transaction.TransactionMiddleware'
+    'django.middleware.transaction.TransactionMiddleware',
+    #'debug_toolbar.middleware.DebugToolbarMiddleware',
 )
 
 ROOT_URLCONF = 'bdphpcprovider.urls'
@@ -169,7 +170,8 @@ INSTALLED_APPS = (
     'djcelery',
     'djkombu',
     'tastypie',
-    'widget_tweaks'
+    'widget_tweaks',
+    #'debug_toolbar',
 
 ) + OUR_APPS
 
@@ -276,6 +278,8 @@ CELERY_ROUTES = {
 },
 }
 
+INTERNAL_IPS = ('127.0.0.1',)
+
 
 #CELERYD_OPTS = "--time-limit=10"
 
@@ -289,7 +293,26 @@ TEST_MYTARDIS_PASSWORD = ""
 djcelery.setup_loader()
 
 
+# DEBUG_TOOLBAR_PANELS = (
+#         'debug_toolbar.panels.version.VersionDebugPanel',
+#         'debug_toolbar.panels.timer.TimerDebugPanel',
+#         'debug_toolbar.panels.settings_vars.SettingsVarsDebugPanel',
+#         'debug_toolbar.panels.headers.HeaderDebugPanel',
+#         #'debug_toolbar.panels.profiling.ProfilingDebugPanel',
+#         'debug_toolbar.panels.request_vars.RequestVarsDebugPanel',
+#         'debug_toolbar.panels.sql.SQLDebugPanel',
+#         'debug_toolbar.panels.template.TemplateDebugPanel',
+#         'debug_toolbar.panels.cache.CacheDebugPanel',
+#         'debug_toolbar.panels.signals.SignalDebugPanel',
+#         'debug_toolbar.panels.logger.LoggingPanel',
+#     )
 
+# DEBUG_TOOLBAR_CONFIG = {
+#    'INTERCEPT_REDIRECTS': False,
+# }
 
 LOCAL_FILESYS_ROOT_PATH = "/var/cloudenabling/remotesys"
+
+VM_IMAGES = {'csrack': {'placement': None, 'vm_image': "ami-00000004"},
+             'nectar': {'placement': 'monash', 'vm_image': "ami-0000000d"}}
 

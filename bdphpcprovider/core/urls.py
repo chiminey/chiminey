@@ -21,9 +21,7 @@
 #
 #
 
-from django.conf.urls.defaults import patterns, url, include
-from django.contrib.auth.decorators import login_required
-
+from django.conf.urls.defaults import patterns, url
 
 from . import views
 
