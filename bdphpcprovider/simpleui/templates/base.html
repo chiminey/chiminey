@@ -350,14 +350,10 @@ function formreset(){
                     <li><a  href="{% url login %}" onclick='addPreset("myform-id", "{{ directive.name }}", "last_{{ directive.name }}_preset")'>login</a></li>
                     {% else %}
                     <li><a  href="{% url logout %}" onclick='addPreset("myform-id", "{{ directive.name }}", "last_{{ directive.name }}_preset")'>logout</a></li>
-                    <!-- <li><a  href="{% url hrmcjob-new %}">Create HRMC Job</a></li> -->
+
                     <li><a  href="{% url makedirective 0 %}">Create Job</a></li>
-                <!--   <li><a  href="{% url sweepjob-new %}">Create SWEEP Job</a></li> -->
+
                     <li><a  href="{% url hrmcjob-list %}" onclick='addPreset("myform-id", "{{ directive.name }}", "last_{{ directive.name }}_preset")'>Jobs</a></li>
-<!--                    <li><a  href="{% url makejob-new %}">Create RemoteMake Job</a></li> -->
-<!--                    <li><a  href="{% url userprofileparameter-list %}">User Settings</a></li-->
-<!--                    <li><a  href="{% url listdir-list %}">Directory</a></li> -->
-<!--                    <li><a  href="{% url copyjob-new %}">Copy Data</a></li> -->
                     {% if user.is_superuser %}
                      <li><a  href="/admin">Admin</a></li>
                      {%endif %}
