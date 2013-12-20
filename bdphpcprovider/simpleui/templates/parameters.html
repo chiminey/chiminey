@@ -32,9 +32,9 @@
 
 <div class="row-fluid">
 <form class="form-horizontal" name="myform" id="myform-id" action="" method="POST"> {% csrf_token %}
-<div class="control-group span11 offset1" id="id_preset_div">
+<div class="control-group span11 offset1" >
     <label class="control-label" for="id_default_presets">Preset Name</label>
-    <div class="controls">
+    <div id="id_preset_div" class="controls">
      {% with "last_"|add:directive.name|add:"_preset" as last_saved_preset %}
     <select id="id_presets" name="preset_name" class="target" onchange="resetPreset('myform-id', '')">
         {% for preset in presets %}
