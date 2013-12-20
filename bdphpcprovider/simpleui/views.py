@@ -17,76 +17,91 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
-
 import logging
-import os
 import json
 import requests
 import itertools
-
 import ast
 from pprint import pformat
-
+import dateutil.parser
 from urllib2 import URLError, HTTPError
 
-
-logger = logging.getLogger(__name__)
 
 from django.views.generic import ListView, UpdateView, CreateView, DeleteView
 from django.views.generic.base import TemplateView
 from django.core.urlresolvers import reverse
 from django.contrib.auth import logout
 from django.http import HttpResponseRedirect
-
-from django.template import Context, RequestContext, loader
+from django.template import RequestContext
 from django.shortcuts import redirect
-
-from django.core.urlresolvers import reverse
 from django.shortcuts import render_to_response
-
 from django.contrib import messages
+from django.utils.datastructures import SortedDict
+from django.core.validators import ValidationError
+from django.views.generic.edit import FormView
+from django.views.generic import DetailView
+from django.shortcuts import render
+from django import forms
+from django.http import Http404
 
+from tastypie.models import ApiKey
+
+from bdphpcprovider.simpleui import validators
 from bdphpcprovider.simpleui.hrmc.hrmcsubmit import HRMCSubmitForm
 from bdphpcprovider.simpleui.makeform import MakeSubmitForm
 from bdphpcprovider.simpleui.sweepform import SweepSubmitForm
 from bdphpcprovider.simpleui.hrmc.copy import CopyForm
+
 #TODO,FIXME: simpleui shouldn't refer to anything in smartconnectorscheduler
 #and should be using its own models and use the REST API for all information.
-
 from bdphpcprovider.smartconnectorscheduler import models
-from bdphpcprovider.smartconnectorscheduler import hrmcstages, platform
-from bdphpcprovider.smartconnectorscheduler import smartconnector
-from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
+from bdphpcprovider.smartconnectorscheduler import platform
+from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 
-from tastypie.models import ApiKey
+logger = logging.getLogger(__name__)
+RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
-from django.utils.datastructures import SortedDict
-from django import forms
 
-from bdphpcprovider.simpleui import validators
-from django.core.validators import ValidationError
+subtype_validation = {
+    'password': ('password', validators.validate_string_not_empty, forms.PasswordInput, None),
+    'hidden': ('natural number', validators.validate_hidden, None, None),
+    'natural': ('natural number', validators.validate_natural_number, None, None),
+    'string': ('string', validators.validate_string, None, None),
+    'string_not_empty': ('string_not_empty', validators.validate_string_not_empty, None, None),
+    'whole': ('whole number', validators.validate_whole_number, None, None),
+    'nectar_platform': ('NeCTAR platform name', validators.validate_platform_url, None, None),
+    'storage_bdpurl': ('Storage platform name with optional offset path', validators.validate_platform_url, forms.TextInput, 255),
+    'even': ('even number', validators.validate_even_number, None, None),
+    'bdpurl': ('BDP url', validators.validate_BDP_url, forms.TextInput, 255),
+    'float': ('floading point number', validators.validate_float_number, None, None),
+    'jsondict': ('JSON Dictionary', validators.validate_jsondict, forms.Textarea(attrs={'cols': 30, 'rows': 5}), None),
+    'float': ('floating point number', validators.validate_float_number, None, None),
+    'bool': ('On/Off', validators.validate_bool, None,  None),
+    'platform': ('platform', validators.validate_platform_url, forms.Select(),  None),
+    'mytardis': ('MyTardis platform name', validators.validate_platform_url, forms.Select(),  None),
+    'choicefield': ('choicefield', None, forms.Select(),  None),
+}
 
-from django.http import Http404
-from django.views.generic.edit import FormView
 
-from django.views.generic import DetailView
-
-from django.http import HttpResponseRedirect
-from django.shortcuts import render_to_response, render
+clean_rules = {
+    'addition': validators.check_addition
+}
 
 
 def bdp_account_settings(request):
     api_key = ApiKey.objects.get(user=request.user)
-    return render(request, 'accountsettings/bdpaccount.html', {'key': api_key.key})
+    return render(request,
+                  'accountsettings/bdpaccount.html',
+                  {'key': api_key.key})
 
 
 def computation_platform_settings(request):
-    namespace = "http://rmit.edu.au/schemas/platform/computation/cloud/ec2-based"
+    namespace = RMIT_SCHEMA + "/platform/computation/cloud/ec2-based"
     cloud_params = _get_platform_params(request, namespace)
     cloudform, form_data = make_directive_form(
         platform_params=cloud_params,
         username=request.user.username)
-    namespace = "http://rmit.edu.au/schemas/platform/computation/cluster/pbs_based"
+    namespace = RMIT_SCHEMA + "/platform/computation/cluster/pbs_based"
     cluster_params = _get_platform_params(request, namespace)
     cluster_form, form_data = make_directive_form(
         platform_params=cluster_params,
@@ -101,11 +116,11 @@ def computation_platform_settings(request):
             platform_params=cluster_params,
             username=request.user.username)
         if cluster_form.is_valid():
-            schema = 'http://rmit.edu.au/schemas/platform/computation/cluster/pbs_based'
+            schema = RMIT_SCHEMA + '/platform/computation/cluster/pbs_based'
             post_platform(schema, cluster_form.cleaned_data, request)
             return HttpResponseRedirect('/accounts/settings/platform/computation/')
         if cloudform.is_valid():
-            schema = 'http://rmit.edu.au/schemas/platform/computation/cloud/ec2-based'
+            schema = RMIT_SCHEMA + '/platform/computation/cloud/ec2-based'
             post_platform(schema, cloudform.cleaned_data, request)
             return HttpResponseRedirect('/accounts/settings/platform/computation/')
 
@@ -116,7 +131,6 @@ def computation_platform_settings(request):
     logger.debug("cookies=%s" % cookies)
     headers = {'content-type': 'application/json'}
     try:
-        #response = urlopen(req)
         r = requests.get(url, headers=headers, cookies=cookies)
     except HTTPError as e:
         logger.debug('The server couldn\'t fulfill the request. %s' % e)
@@ -126,8 +140,6 @@ def computation_platform_settings(request):
         logger.debug('Reason: ', e.reason)
     else:
         logger.debug('everything is fine')
-        #logger.debug(r.text)
-        #logger.debug(r.json())
         GET_data = r.json()
         computation_platforms, all_headers = filter_computation_platforms(GET_data)
         logger.debug(computation_platforms)
@@ -142,7 +154,7 @@ def computation_platform_settings(request):
 
 def _get_platform_params(request, namespace):
     schema_id = get_schema_id(request, namespace)
-    platform_params =[]
+    platform_params = []
     schema_info = get_schema_info(request, schema_id)
     parameters = get_parameters(request, schema_id)
     platform_params.append((schema_info, parameters))
@@ -151,12 +163,12 @@ def _get_platform_params(request, namespace):
 
 
 def storage_platform_settings(request):
-    namespace = "http://rmit.edu.au/schemas/platform/storage/mytardis"
+    namespace = RMIT_SCHEMA + "/platform/storage/mytardis"
     mytardis_params = _get_platform_params(request, namespace)
     mytardis_form, form_data = make_directive_form(
         platform_params=mytardis_params,
         username=request.user.username)
-    namespace = "http://rmit.edu.au/schemas/platform/storage/unix"
+    namespace = RMIT_SCHEMA + "/platform/storage/unix"
     unix_params = _get_platform_params(request, namespace)
     unix_form, form_data = make_directive_form(
         platform_params=unix_params,
@@ -168,7 +180,7 @@ def storage_platform_settings(request):
             platform_params=unix_params,
             username=request.user.username)
         if unix_form.is_valid():
-            schema = 'http://rmit.edu.au/schemas/platform/storage/unix'
+            schema = RMIT_SCHEMA + '/platform/storage/unix'
             post_platform(schema, unix_form.cleaned_data, request)
             return HttpResponseRedirect('/accounts/settings/platform/storage')
         mytardis_form, form_data = make_directive_form(
@@ -177,13 +189,15 @@ def storage_platform_settings(request):
             username=request.user.username)
         if mytardis_form.is_valid():
             logger.debug('valid mytardis')
-            schema = 'http://rmit.edu.au/schemas/platform/storage/mytardis'
+            schema = RMIT_SCHEMA + '/platform/storage/mytardis'
             post_platform(schema, mytardis_form.cleaned_data, request)
             return HttpResponseRedirect('/accounts/settings/platform/storage')
 
     #FIXME: consider using non-locahost URL for api_host
     api_host = "http://127.0.0.1"
-    url = "%s/api/v1/platformparameter/?format=json&limit=0&schema=http://rmit.edu.au/schemas/platform/storage" % api_host
+    url = "%s/api/v1/platformparameter/" \
+        "?format=json&limit=0&schema=" \
+        "http://rmit.edu.au/schemas/platform/storage" % api_host
     cookies = dict(request.COOKIES)
     logger.debug("cookies=%s" % cookies)
     headers = {'content-type': 'application/json'}
@@ -234,11 +248,12 @@ def post_platform(schema, form_data, request, type=None):
         headers=headers,
         cookies=cookies)
     if r.status_code != 201:
-        error_message = ''
+        logger.debug(r.text)
         if r.status_code == 409:
             messages.error(request, "%s" % r.headers['message'])
         else:
-            messages.error(request, "Task Failed with status code %s: %s" % (r.status_code, r.headers['message']))
+            messages.error(request, "Task Failed with status code %s: %s"
+                % (r.status_code, r.headers['message']))
         return False
     else:
         messages.success(request, "%s" % r.headers['message'])
@@ -257,7 +272,8 @@ def filter_computation_platforms(GET_json_data):
         schema = i['paramset']['schema']['namespace']
         paramset_id = i['paramset']['id']
         computation_platforms[schema][paramset_id] = {}
-        computation_platforms[schema][paramset_id]['name'] = str(i['paramset']['name'])
+        computation_platforms[schema][paramset_id]['name'] = str(
+            i['paramset']['name'])
 
     for i in platform_parameters_objects:
         schema = i['paramset']['schema']['namespace']
@@ -271,9 +287,8 @@ def filter_computation_platforms(GET_json_data):
 
         #value = i['value']
         computation_platforms[schema][paramset_id][str(name)] = str(value)
-    headers={}
-    all_headers={}
-    import os
+    headers = {}
+    all_headers = {}
     logger.debug('computation=%s' % computation_platforms)
     for i, j in computation_platforms.items():
         headers[i] = []
@@ -293,17 +308,21 @@ def filter_computation_platforms(GET_json_data):
     return computation_platforms, all_headers
 
 
+# TODO: Remove UserProfile access in the API, as most of data
+# represented in schema
+@deprecated
 class UserProfileParameterListView(ListView):
     model = models.UserProfileParameter
     template_name = "list_userprofileparameter.html"
 
     def get_queryset(self):
-            return models.UserProfileParameter.objects.filter(paramset__user_profile__user=self.request.user)
+            return models.UserProfileParameter.objects.filter(
+                paramset__user_profile__user=self.request.user)
 
-from django.views.generic import TemplateView
 
 class AboutView(TemplateView):
     template_name = "home.html"
+
 
 class CreateUserProfileParameterView(CreateView):
     model = models.UserProfileParameter
@@ -313,11 +332,13 @@ class CreateUserProfileParameterView(CreateView):
         return reverse('userprofileparameter-list')
 
     def get_context_data(self, **kwargs):
-        context = super(CreateUserProfileParameterView, self).get_context_data(**kwargs)
+        context = super(CreateUserProfileParameterView,
+                        self).get_context_data(**kwargs)
         context['action'] = reverse('userprofileparameter-new')
         return context
 
 
+@deprecated
 class UpdateUserProfileParameterView(UpdateView):
     model = models.UserProfileParameter
     template_name = "edit_userprofileparameter.html"
@@ -326,8 +347,10 @@ class UpdateUserProfileParameterView(UpdateView):
         return reverse('userprofileparameter-list')
 
     def get_context_data(self, **kwargs):
-        context = super(UpdateUserProfileParameterView, self).get_context_data(**kwargs)
-        context['action'] = reverse('userprofileparameter-edit', kwargs={'pk': self.get_object().id})
+        context = super(UpdateUserProfileParameterView,
+            self).get_context_data(**kwargs)
+        context['action'] = reverse('userprofileparameter-edit',
+                                    kwargs={'pk': self.get_object().id})
         return context
 
     def get_object(self):
@@ -368,8 +391,6 @@ class ContextList(ListView):
     def get_queryset(self):
         return models.Context.objects.filter(owner__user=self.request.user).order_by('-id')
 
-from django.shortcuts import get_object_or_404
-from django.db.models import Model
 
 class AccountSettingsView(FormView):
     template_name = "accountsettings/computationplatform.html"
@@ -379,6 +400,8 @@ class AccountSettingsView(FormView):
         return reverse('hrmcjob-list')
 
 
+@deprecated
+# Replaced by button in job_list
 class FinishedContextUpdateView(UpdateView):
     model = models.Context
     template_name = "edit_context.html"
@@ -398,18 +421,18 @@ class FinishedContextUpdateView(UpdateView):
         else:
             raise Http404
 
+# @deprecated
+# class ListDirList(TemplateView):
 
-class ListDirList(TemplateView):
+#     template_name = "listdir.html"
 
-    template_name = "listdir.html"
+#     def get_context_data(self, **kwargs):
+#         context = super(ListDirList, self).get_context_data(**kwargs)
 
-    def get_context_data(self, **kwargs):
-        context = super(ListDirList, self).get_context_data(**kwargs)
-
-        url = smartconnector.get_url_with_pkey({}, ".", is_relative_path=True)
-        file_paths = [x[1:] for x in hrmcstages.list_all_files(url)]
-        context['paths'] = file_paths
-        return context
+#         url = smartconnector.get_url_with_pkey({}, ".", is_relative_path=True)
+#         file_paths = [x[1:] for x in hrmcstages.list_all_files(url)]
+#         context['paths'] = file_paths
+#         return context
 
 
 class ContextView(DetailView):
@@ -419,23 +442,19 @@ class ContextView(DetailView):
     def get_context_data(self, **kwargs):
         context = super(ContextView, self).get_context_data(**kwargs)
 
-        INPUT_SCHEMA_PREFIX = "http://rmit.edu.au/schemas/input"
+        INPUT_SCHEMA_PREFIX = RMIT_SCHEMA + "/input"
         context_ps = models.ContextParameterSet.objects.filter(context=self.object)
         cpset = list(itertools.chain(
                context_ps.filter(
                    schema__namespace__startswith=INPUT_SCHEMA_PREFIX).order_by('-ranking'),
                context_ps.exclude(
                    schema__namespace__startswith=INPUT_SCHEMA_PREFIX)))
-        #cpset = models.ContextParameterSet.objects.filter(context=self.object)
-        #cpset = context_ps.exclude(
-        #     schema__namespace__startswith=INPUT_SCHEMA_PREFIX)
         res = []
         context['stage'] = self.object.current_stage.name
         for cps in cpset:
             res2 = {}
             for cp in models.ContextParameter.objects.filter(paramset=cps):
                 res2[cp.name.name] = [cp.value, cp.name.help_text, cp.name.subtype]
-                #res2[cp.name.name] = [cp.value, "hello"]
             if cps.schema.name:
                 res.append(("%s (%s) " % (cps.schema.name, cps.schema.namespace), res2))
             else:
@@ -451,22 +470,22 @@ class ContextView(DetailView):
                 raise Http404
 
 
-
-
 class ContextList(ListView):
     model = models.Context
     template_name = "list_jobs.html"
 
     def get_queryset(self):
-        return models.Context.objects.filter(owner__user=self.request.user).order_by('-id')
+        return models.Context.objects.filter(
+            owner__user=self.request.user).order_by('-id')
 
 
+@deprecated
 class HRMCSubmitFormView(FormView):
     template_name = 'hrmc.html'
     form_class = HRMCSubmitForm
     success_url = '/jobs'
-    hrmc_schema = "http://rmit.edu.au/schemas/hrmc/"
-    system_schema = "http://rmit.edu.au/schemas/system/misc/"
+    hrmc_schema = RMIT_SCHEMA + "/hrmc/"
+    system_schema = RMIT_SCHEMA + "/system/misc/"
 
     initial = {'number_vm_instances': 1,
         'minimum_number_vm_instances': 1,
@@ -529,12 +548,11 @@ class HRMCSubmitFormView(FormView):
         return super(HRMCSubmitFormView, self).form_valid(form)
 
 
+@deprecated
 class SweepSubmitFormView(FormView):
     template_name = 'sweep.html'
     form_class = SweepSubmitForm
     success_url = '/jobs'
-
-
     initial = {'number_vm_instances': 0,
                'minimum_number_vm_instances': 0,
         'iseed': 42,
@@ -547,28 +565,27 @@ class SweepSubmitFormView(FormView):
         'max_iteration': 2,
         'fanout_per_kept_result': 2,
         'pottype': 1,
-        'sweep_map': '{}', #"var1": [3, 7], "var2": [1, 2]}',
+        'sweep_map': '{}',  # "var1": [3, 7], "var2": [1, 2]}',
         'run_map': '{}',
         'experiment_id': 0
         #'output_location': 'file://local@127.0.0.1/sweep'
-
         }
 
     # This method is called when valid form data has been POSTed.
     # It should return an HttpResponse.
     def form_valid(self, form):
-
-        schemas={
-        'hrmc_schema':"http://rmit.edu.au/schemas/hrmc/",
-        'system_schema':"http://rmit.edu.au/q/misc/",
-        'run_schema':"http://rmit.edu.au/schemas/stages/run/",
-        'sweep_schema':"http://rmit.edu.au/schemas/stages/sweep/",
-        'mytardis_schema' : 'http://rmit.edu.au/schemas/input/mytardis'
+        schemas = {
+        'hrmc_schema': RMIT_SCHEMA + "/hrmc/",
+        'system_schema': "http://rmit.edu.au/q/misc/",
+        'run_schema': RMIT_SCHEMA + "/stages/run/",
+        'sweep_schema': RMIT_SCHEMA + "/stages/sweep/",
+        'mytardis_schema': RMIT_SCHEMA + '/input/mytardis'
         }
         submit_sweep_job(self.request, form, schemas)
         return super(SweepSubmitFormView, self).form_valid(form)
 
 
+@deprecated
 def submit_sweep_job(request, form, schemas):
 
     #FIXME: consider using non-locahost URL for api_host
@@ -601,7 +618,7 @@ def submit_sweep_job(request, form, schemas):
                 #'run_map': form.cleaned_data['run_map'],
                 schemas['run_schema'] + 'run_map': "{}",
                 schemas['system_schema'] + 'output_location': form.cleaned_data['output_location'],
-                'http://rmit.edu.au/schemas/bdp_userprofile/username': request.user.username})
+                RMIT_SCHEMA + '/bdp_userprofile/username': request.user.username})
 
     logger.debug("data=%s" % data)
     r = requests.post(url,
@@ -620,11 +637,12 @@ def submit_sweep_job(request, form, schemas):
     logger.debug("new_context_uri=%s" % new_context_uri)
 
 
+@deprecated
 class MakeSubmitFormView(FormView):
     template_name = 'make.html'
     form_class = MakeSubmitForm
     success_url = '/jobs'
-    system_schema = "http://rmit.edu.au/schemas/system/misc/"
+    system_schema = RMIT_SCHEMA + "/system/misc/"
 
     initial = {
         'input_location': 'file://local@127.0.0.1/myfiles/vasppayload',
@@ -648,13 +666,13 @@ class MakeSubmitFormView(FormView):
         logger.debug("cookies=%s" % cookies)
         headers = {'content-type': 'application/json'}
 
-        remotemake_schema = "http://rmit.edu.au/schemas/remotemake/"
-        make_schema = "http://rmit.edu.au/schemas/stages/make/"
+        remotemake_schema = RMIT_SCHEMA + "/remotemake/"
+        make_schema = RMIT_SCHEMA + "/stages/make/"
         data = json.dumps({'smart_connector': 'remotemake',
-                    remotemake_schema+'input_location':  form.cleaned_data['input_location'],
-                    remotemake_schema+'experiment_id': form.cleaned_data['experiment_id'],
-                    make_schema+'sweep_map': form.cleaned_data['sweep_map'],
-                    self.system_schema+'output_location': form.cleaned_data['output_location']})
+                    remotemake_schema + 'input_location':  form.cleaned_data['input_location'],
+                    remotemake_schema + 'experiment_id': form.cleaned_data['experiment_id'],
+                    make_schema + 'sweep_map': form.cleaned_data['sweep_map'],
+                    self.system_schema + 'output_location': form.cleaned_data['output_location']})
 
         r = requests.post(url,
             data=data,
@@ -675,49 +693,7 @@ class MakeSubmitFormView(FormView):
         return super(MakeSubmitFormView, self).form_valid(form)
 
 
-
-    # def form_valid(self, form):
-    #     # This method is called when valid form data has been POSTed.
-    #     # It should return an HttpResponse.
-    #     platform = 'local'
-    #     directive_name = "remotemake"
-    #     logger.debug("%s" % directive_name)
-    #     directive_args = []
-
-    #     directive_args.append(
-    #         ['',
-    #             ['http://rmit.edu.au/schemas/remotemake',
-    #                 ('input_location',  form.cleaned_data['input_location'])]])
-
-    #     logger.debug("form=%s" % pformat(form.cleaned_data))
-
-    #     logger.debug("directive_args=%s" % directive_args)
-
-    #     # make the system settings, available to initial stage and merged with run_settings
-    #     system_dict = {
-    #         u'system': u'settings',
-    #         u'output_location': form.cleaned_data['output_location']}
-    #     system_settings = {u'http://rmit.edu.au/schemas/system/misc': system_dict}
-
-    #     logger.debug("directive_name=%s" % directive_name)
-    #     logger.debug("directive_args=%s" % directive_args)
-
-    #     # FIXME: we should be sending this request to scheduler API using
-    #     # POST, to keep separation of concerns.  See sweep for example.
-
-    #     try:
-    #         (run_settings, command_args, run_context) \
-    #             = hrmcstages.make_runcontext_for_directive(
-    #             platform,
-    #             directive_name,
-    #             directive_args, system_settings, self.request.user.username)
-
-    #     except InvalidInputError, e:
-    #         return HttpResponse(str(e))
-
-    #     return super(MakeSubmitFormView, self).form_valid(form)
-
-
+@deprecated
 class CopyFormView(FormView):
     template_name = 'copy.html'
     form_class = CopyForm
@@ -764,30 +740,6 @@ class CopyFormView(FormView):
 
         return super(CopyFormView, self).form_valid(form)
 
-subtype_validation = {
-    'password': ('password', validators.validate_string_not_empty, forms.PasswordInput, None),
-    'hidden': ('natural number', validators.validate_hidden, None, None),
-    'natural': ('natural number', validators.validate_natural_number, None, None),
-    'string': ('string', validators.validate_string, None, None),
-    'string_not_empty': ('string_not_empty', validators.validate_string_not_empty, None, None),
-    'whole': ('whole number', validators.validate_whole_number, None, None),
-    'nectar_platform': ('NeCTAR platform name', validators.validate_platform_url, None, None),
-    'storage_bdpurl': ('Storage platform name with optional offset path', validators.validate_platform_url, forms.TextInput, 255),
-    'even': ('even number', validators.validate_even_number, None, None),
-    'bdpurl': ('BDP url', validators.validate_BDP_url, forms.TextInput, 255),
-    'float': ('floading point number', validators.validate_float_number, None, None),
-    'jsondict': ('JSON Dictionary', validators.validate_jsondict, forms.Textarea(attrs={'cols': 30, 'rows': 5}), None),
-    'float': ('floating point number', validators.validate_float_number, None, None),
-    'bool': ('On/Off', validators.validate_bool, None,  None),
-    'platform': ('platform', validators.validate_platform_url, forms.Select(),  None),
-    'mytardis': ('MyTardis platform name', validators.validate_platform_url, forms.Select(),  None),
-    'choicefield': ('choicefield', None, forms.Select(),  None),
-}
-
-clean_rules = {
-    'addition': validators.check_addition
-}
-
 
 def make_dynamic_field(parameter, **kwargs):
 
@@ -816,7 +768,7 @@ def make_dynamic_field(parameter, **kwargs):
         field_params['max_length'] = subtype_validation[parameter['subtype']][3]
 
     if parameter['type'] == 2:
-        if  parameter['initial']:
+        if parameter['initial']:
             field_params['initial'] = int(parameter['initial'])
         else:
             field_params['initial'] = 0
@@ -848,7 +800,7 @@ def make_dynamic_field(parameter, **kwargs):
                     comp_platform = kwargs['directive']['name']
                     logger.debug("computation platform is %s" % comp_platform)
 
-                    schema = 'http://rmit.edu.au/schemas/platform/computation/'
+                    schema = RMIT_SCHEMA + '/platform/computation/'
                     if comp_platform == 'sweep':
                         schema += 'cloud/ec2-based'
                     elif comp_platform == 'sweep_make':
@@ -858,8 +810,7 @@ def make_dynamic_field(parameter, **kwargs):
                     else:
                         logger.warn("unknown computation platform")
                 elif parameter['subtype'] == 'mytardis':
-                    schema = 'http://rmit.edu.au/schemas/platform/storage/mytardis'
-                #computation_ns = 'http://rmit.edu.au/schemas/platform/computation/nectar'
+                    schema = RMIT_SCHEMA + '/platform/storage/mytardis'
 
                 if 'username' in kwargs:
                     platforms = platform.retrieve_all_platforms(kwargs['username'],
@@ -893,7 +844,7 @@ def make_dynamic_field(parameter, **kwargs):
         logger.debug("subtype=%s" % parameter['subtype'])
         field_params['initial'] = str(parameter['initial'])
         if parameter['subtype'] == 'nectar_platform':
-            schema = 'http://rmit.edu.au/schemas/platform/computation/nectar'
+            schema = RMIT_SCHEMA + '/platform/computation/nectar'
             platforms = platform.retrieve_all_platforms(kwargs['username'],
                      schema_namespace_prefix=schema)
             if platforms:
@@ -901,7 +852,7 @@ def make_dynamic_field(parameter, **kwargs):
             else:
                 field_params['initial'] = ''
         elif parameter['subtype'] == 'mytardis':
-            schema = 'http://rmit.edu.au/schemas/platform/storage/mytardis'
+            schema = RMIT_SCHEMA + '/platform/storage/mytardis'
             platforms = platform.retrieve_all_platforms(kwargs['username'],
                      schema_namespace_prefix=schema)
             if platforms:
@@ -909,7 +860,7 @@ def make_dynamic_field(parameter, **kwargs):
             else:
                 field_params['initial'] = ''
         elif parameter['subtype'] == 'storage_bdpurl':
-            schema = 'http://rmit.edu.au/schemas/platform/storage/unix'
+            schema = RMIT_SCHEMA + '/platform/storage/unix'
             platforms = platform.retrieve_all_platforms(kwargs['username'],
                      schema_namespace_prefix=schema)
             if platforms:
@@ -930,7 +881,7 @@ def make_dynamic_field(parameter, **kwargs):
     if 'subtype' in parameter and parameter['subtype']:
         if subtype_validation[parameter['subtype']][1]:
             field.validators.append(subtype_validation[parameter['subtype']][1])
-        logger.debug("field_validators=%s"% field.validators)
+        logger.debug("field_validators=%s" % field.validators)
     return field
 
 
@@ -946,9 +897,8 @@ def check_clean_rules(self, cleaned_data):
 
 def make_directive_form(**kwargs):
     fields = SortedDict()
-
-
     form_data = []
+    # TODO: refactor this method
     if 'directive_params' in kwargs:
         for i, schema_data in enumerate(kwargs['directive_params']):
             logger.debug("schemadata=%s" % pformat(schema_data))
@@ -957,7 +907,7 @@ def make_directive_form(**kwargs):
                 # TODO: handle all possible types
                 field_key = "%s/%s" % (schema_data['namespace'], parameter['name'])
                 form_data.append((field_key, schema_data['description'] if not j else "", parameter['subtype'], parameter['hidefield'], parameter['hidecondition']))
-                #fixme replce if else by fields[field_key] = make_dynamic_field(parameter) after unique key platform model is developed
+                #FIXME: replace if else by fields[field_key] = make_dynamic_field(parameter) after unique key platform model is developed
                 if 'username' in kwargs:
                     fields[field_key] = make_dynamic_field(parameter, username=kwargs['username'], directive=kwargs['directive'])
                 else:
@@ -1001,35 +951,35 @@ def make_directive_form(**kwargs):
     return (pset_form, pset_form_data)
 
 
-def get_test_schemas(direcive_id):
+# def get_test_schemas(direcive_id):
 
-    return [
-        {
-        'description': 'desc of input1',
-        'hidden': False,
-        'id': 1,
-        'name': 'input1',
-        'namespace': 'http://rmit.edu.au/schemas/input1',
-        'parameters': [
-            {'pk': 1, 'name': 'arg1', 'help_text':'help for arg1', 'type': 1, 'initial': 1, 'subtype': 'natural'},
-            {'pk': 2, 'name': 'arg2', 'help_text':'help for arg2', 'type': 2, 'initial': 'a', 'subtype': 'string'},
-            {'pk': 3, 'name': 'arg3', 'help_text':'help for arg3','type': 2, 'initial': 'b', 'subtype': 'string'},
-            {'pk': 4, 'name': 'arg4', 'help_text':'help for arg4','type': 1, 'initial': 3, 'subtype': 'whole'},
-        ]},
-        {
-        'description': 'desc of input2',
-        'hidden': False,
-        'id': 2,
-        'name': 'input2',
-        'namespace': 'http://rmit.edu.au/schemas/input2',
-        'parameters': [
-            {'pk': 1, 'name': 'arg1', 'help_text':'help for arg1', 'type': 1, 'initial': 1, 'subtype': 'even'},
-          {'pk': 2, 'name': 'arg2', 'help_text':'help for arg2', 'type': 1, 'initial': 2},
-          {'pk': 3, 'name': 'arg3', 'help_text':'arg1+arg2', 'type': 1, 'initial': 2},
+#     return [
+#         {
+#         'description': 'desc of input1',
+#         'hidden': False,
+#         'id': 1,
+#         'name': 'input1',
+#         'namespace': RMIT_SCHEMA + '/input1',
+#         'parameters': [
+#             {'pk': 1, 'name': 'arg1', 'help_text':'help for arg1', 'type': 1, 'initial': 1, 'subtype': 'natural'},
+#             {'pk': 2, 'name': 'arg2', 'help_text':'help for arg2', 'type': 2, 'initial': 'a', 'subtype': 'string'},
+#             {'pk': 3, 'name': 'arg3', 'help_text':'help for arg3','type': 2, 'initial': 'b', 'subtype': 'string'},
+#             {'pk': 4, 'name': 'arg4', 'help_text':'help for arg4','type': 1, 'initial': 3, 'subtype': 'whole'},
+#         ]},
+#         {
+#         'description': 'desc of input2',
+#         'hidden': False,
+#         'id': 2,
+#         'name': 'input2',
+#         'namespace': RMIT_SCHEMA + '/input2',
+#         'parameters': [
+#             {'pk': 1, 'name': 'arg1', 'help_text':'help for arg1', 'type': 1, 'initial': 1, 'subtype': 'even'},
+#           {'pk': 2, 'name': 'arg2', 'help_text':'help for arg2', 'type': 1, 'initial': 2},
+#           {'pk': 3, 'name': 'arg3', 'help_text':'arg1+arg2', 'type': 1, 'initial': 2},
 
-        ]}
+#         ]}
 
-        ]
+#         ]
 
 
 def get_schema_info(request, schema_id):
@@ -1102,7 +1052,7 @@ def get_directives(request):
     # logger.debug('r.json=%s' % r.json)
     # logger.debug('r.text=%s' % r.text)
     # logger.debug('r.headers=%s' % r.headers)
-    return [ x for x in r.json()['objects'] ]
+    return [x for x in r.json()['objects']]
 
 
 def get_directive_schemas(request, directive_id):
@@ -1157,8 +1107,8 @@ def get_directive_params(request, directive):
         parameters = get_parameters(request, schema_id)
         logger.debug("parameters=%s" % pformat(parameters))
         directive_params.append((schema_info, parameters))
-
     return directive_params
+
 
 def get_from_api(request, resource_uri):
     headers = {'content-type': 'application/json'}
@@ -1177,7 +1127,6 @@ def get_from_api(request, resource_uri):
     return r.json()
 
 
-
 def add_form_fields(request, paramnameset):
     form_field_info = []
     for schema, paramnames in paramnameset:
@@ -1186,7 +1135,7 @@ def add_form_fields(request, paramnameset):
         s['name'] = schema['name']
         s['namespace'] = schema['namespace']
         p = []
-        for pname  in paramnames:
+        for pname in paramnames:
             x = {}
             x['pk'] = pname['id']
             x['name'] = pname['name']
@@ -1208,41 +1157,34 @@ def add_form_fields(request, paramnameset):
     return form_field_info
 
 
-
 def submit_job(request, form, directive):
 
     #FIXME: consider using non-locahost URL for api_host
     api_host = "http://127.0.0.1"
     url = "%s/api/v1/context/?format=json" % api_host
-
     logger.debug("request.user.username=%s" % request.user.username)
     logger.debug("request.user.username=%s" % request.user.password)
-
     # pass the sessionid cookie through to the internal API
     cookies = dict(request.COOKIES)
     logger.debug("cookies=%s" % cookies)
     headers = {'content-type': 'application/json'}
     logger.debug("form.cleaned_data=%s" % pformat(form.cleaned_data))
-    form.cleaned_data['http://rmit.edu.au/schemas/bdp_userprofile/username'] = request.user.username
-    data = json.dumps(dict(form.cleaned_data.items() + [('smart_connector',directive)]))
-
+    form.cleaned_data[RMIT_SCHEMA + '/bdp_userprofile/username'] = request.user.username
+    data = json.dumps(dict(form.cleaned_data.items()
+        + [('smart_connector', directive)]))
     logger.debug("data=%s" % data)
     r = requests.post(url,
         data=data,
         headers=headers,
         cookies=cookies)
-
     logger.debug("r.status_code=%s" % r.status_code)
     logger.debug("r.text=%s" % r.text)
     logger.debug("r.headers=%s" % r.headers)
-
     if r.status_code != 201:
-        error_message = ''
-        messages.error(request, "Task Failed with status code %s: %s" % (r.status_code, r.text))
+        messages.error(request, "Task Failed with status code %s: %s"
+            % (r.status_code, r.text))
         return False
-
     logger.debug("r.json=%s" % r.json)
-
     logger.debug("r.status_code=%s" % r.status_code)
     logger.debug("r.text=%s" % r.text)
     logger.debug("r.headers=%s" % r.headers)
@@ -1255,32 +1197,16 @@ def submit_job(request, form, directive):
             job_id = str(new_context_uri).split('/')[-2:-1][0]
         else:
             job_id = str(new_context_uri).split('/')[-1]
-
         logger.debug("job_id=%s" % job_id)
         messages.success(request, 'Job %s Created' % job_id)
     else:
         messages.success(request, 'Job Created')
-
     return True
 
 
-
-
-# class ContextList(ListView):
-#     model = models.Context
-#     template_name = "list_jobs.html"
-
-#     def get_queryset(self):
-#         return models.Context.objects.filter(owner__user=self.request.user).order_by('-id')
-
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-
-
 def get_contexts(request):
-
     offset = 0
     page_size = 20
-
     if request.method == 'POST':
         contexts = []
         logger.debug("POST=%s" % request.POST)
@@ -1301,8 +1227,8 @@ def get_contexts(request):
         for context_id in contexts:
             logger.debug("scheduling deletion of %s" % context_id)
             tasks.delete.delay(context_id)
-        messages.info(request, "Deletion of contexts %s has been scheduled" % ','.join([str(x) for x in contexts]))
-
+        messages.info(request, "Deletion of contexts %s has been scheduled"
+                      % ','.join([str(x) for x in contexts]))
     if 'offset' in request.GET:
         try:
             offset = int(request.GET.get('offset'))
@@ -1310,16 +1236,9 @@ def get_contexts(request):
             pass
     if offset < 0:
         offset = 0
-
     limit = page_size
-    #if 'limit' in request.GET:
-    #    try:
-    #         limit = int(request.GET.get('limit'))
-    #     except ValueError:
-    #         pass
     logger.debug("offset=%s" % offset)
     logger.debug("limit=%s" % limit)
-
     host_ip = "127.0.0.1"
     headers = {'content-type': 'application/json'}
     api_host = "http://%s" % host_ip
@@ -1334,8 +1253,6 @@ def get_contexts(request):
     # logger.debug('r.json=%s' % r.json)
     # logger.debug('r.text=%s' % r.text)
     # logger.debug('r.headers=%s' % r.headers)
-
-    import dateutil.parser
     object_list = []
     logger.debug("r.json()=%s" % pformat(r.json()))
     for x in r.json()['objects']:
@@ -1356,14 +1273,11 @@ def get_contexts(request):
                         parent_id = str(parent).split('/')[-2:-1][0]
                     else:
                         parent_id = str(parent).split('/')[-1]
-
             if 'directive' in x['context'] and x['context']['directive']:
                 if 'name' in x['context']['directive']:
                     directive_name = x['context']['directive']['name']
                 if 'description' in x['context']['directive']:
                     directive_desc = x['context']['directive']['description']
-
-
         obj = []
         obj.append(int(contextid))
         obj.append(contextdeleted)
@@ -1374,19 +1288,14 @@ def get_contexts(request):
         obj.append(int(parent_id))
         obj.append(reverse('contextview', kwargs={'pk': contextid}))
         object_list.append(obj)
-
     meta = r.json()['meta']
-
     # if offset > (meta['total_count'] - limit):
     #     offset = 0
-
     pages = []
     number_pages = meta['total_count'] / page_size
     for off in range(0, number_pages + 1):
         pages.append(page_size * off)
-
     logger.debug("pages=%s" % pages)
-
     return render_to_response(
                        'list_jobs.html',
                        {'object_list': object_list,
@@ -1422,7 +1331,6 @@ def submit_directive(request, directive_id):
             return redirect("home")
             # TODO: handle
             raise
-
     directive_params = get_directive_params(request, directive)
     logger.debug("directive_params=%s" % pformat(directive_params))
     directive_params = add_form_fields(request, directive_params)
@@ -1437,12 +1345,6 @@ def submit_directive(request, directive_id):
         logger.debug("form_data=%s" % pformat(form_data))
         if form.is_valid():
             logger.debug("form result =%s" % form.cleaned_data)
-            # schemas={
-            # 'hrmc_schema': "http://rmit.edu.au/schemas/input/hrmc/",
-            # 'system_schema': "http://rmit.edu.au/schemas/input/system",
-            # 'run_schema': "http://rmit.edu.au/schemas/stages/run/",
-            # 'sweep_schema': "http://rmit.edu.au/schemas/input/sweep/",
-            # }
             valid = submit_job(request, form, directive['name'])
             if valid:
                 return redirect("hrmcjob-list")
@@ -1455,15 +1357,6 @@ def submit_directive(request, directive_id):
         form, form_data = make_directive_form(directive_params=directive_params,
             username=request.user.username,
             directive=directive)
-    '''
-    # TODO: generalise
-    if directive['name'] == "sweep":
-        for d in directives:
-            if d['name'] == "hrmc":
-                directive['name'] = d['name']
-                directive['description'] = d['description']
-                break
-    '''
     api_host = "http://127.0.0.1"
     url = "%s/coreapi/preset/?directive=%s" % (api_host, directive['name'])
     logger.debug("directive_name=%s" % directive['name'])
@@ -1486,17 +1379,15 @@ def submit_directive(request, directive_id):
     presets = []
     for i in r.json():
         presets.append(i['name'])
-
     return render_to_response(
                        'parameters.html',
-                       {
-                           'directives': [x for x in directives if not x['hidden']],
-                           'directive': directive,
-                           'form': form,
-                           'presets': presets,
-                           'formdata': form_data,
-                           'longfield': [x for (x,y) in subtype_validation.items() if y[2] is not None]
-                        },
+                       {'directives': [x for x in directives
+                                       if not x['hidden']],
+                        'directive': directive,
+                        'form': form,
+                        'presets': presets,
+                        'formdata': form_data,
+                        'longfield': [x for (x, y)
+                                      in subtype_validation.items()
+                                      if y[2] is not None]},
                        context_instance=RequestContext(request))
-
-

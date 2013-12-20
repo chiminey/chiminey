@@ -874,13 +874,14 @@ class PresetParameterSet(models.Model):
         ordering = ("ranking",)
 
 
-
 class PresetParameter(models.Model):
     name = models.ForeignKey(ParameterName, verbose_name="Preset Parameter Name")
     paramset = models.ForeignKey(PresetParameterSet, verbose_name="Preset Parameter Set")
     value = models.TextField(blank=True, verbose_name="Preset Parameter Value", help_text="The Value of this parameter")
 
     def __unicode__(self):
+        # FIXME: be cautious here, self.value is UNTRUSTED and should not
+        # be displayed to user without appropriate processing.
         return "%s (%s)=%s" % (self.name, self.paramset, self.value)
 
     class Meta:

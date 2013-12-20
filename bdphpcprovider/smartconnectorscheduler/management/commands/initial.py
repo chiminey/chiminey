@@ -232,6 +232,7 @@ class Command(BaseCommand):
                         'description':'BDP username', 'ranking':12, 'help_text':''},
                 }
                 ],
+            # TODO: this schema is deprecated
             models.UserProfile.PROFILE_SCHEMA_NS:
                 [u'user profile',
                 {
@@ -990,9 +991,11 @@ class Command(BaseCommand):
         #     schema = models.Schema.objects.get(namespace=sch)
         #     das, _ = models.DirectiveArgSet.objects.get_or_create(directive=vasp, order=i, schema=schema)
 
-
     def define_remote_make(self, nci_platform):
-        remote_make, _ = models.Directive.objects.get_or_create(name="remotemake", defaults={'description': "Remote execution of a Makefile"})
+        remote_make, _ = models.Directive.objects.get_or_create(
+            name="remotemake",
+            defaults={'description': "Remote execution of a Makefile",
+                      'hidden': True})
         smartpack = "bdphpcprovider.smartconnectorscheduler.stages"
         self.upload_makefile = smartpack + ".make.movement.MakeUploadStage"
         self.download_makefile = smartpack + ".make.movement.MakeDownloadStage"

@@ -173,17 +173,17 @@ class Command(BaseCommand):
 
         # Setup the schema for user configuration information (kept in profile)
         self.PARAMS = {
-            'nci_user': 'iet595',
-            'nci_password': 'changemepassword',  # NB: change this password
-            'nci_host': 'raijin.nci.org.au',
-            'nci_private_key': 'mynectarkey',
-            'nectar_private_key': 'file://local@127.0.0.1/mynectarkey.pem',
-            'nectar_private_key_name': '',
-            'nectar_ec2_access_key': '',
-            'nectar_ec2_secret_key': '',
-            'mytardis_host': '',
-            'mytardis_user': '',
-            'mytardis_password': ''
+            # 'nci_user': 'iet595',
+            # 'nci_password': 'changemepassword',  # NB: change this password
+            # 'nci_host': 'raijin.nci.org.au',
+            # 'nci_private_key': 'mynectarkey',
+            # 'nectar_private_key': 'file://local@127.0.0.1/mynectarkey.pem',
+            # 'nectar_private_key_name': '',
+            # 'nectar_ec2_access_key': '',
+            # 'nectar_ec2_secret_key': '',
+            # 'mytardis_host': '',
+            # 'mytardis_user': '',
+            # 'mytardis_password': ''
             }
 
         #TODO: prompt user to enter private key paths and names and other credentials
@@ -226,7 +226,8 @@ class Command(BaseCommand):
         copy_commands = (
             ("input2","myfiles/input/initial"),
             ("vaspinput","local/vaspinput/initial"),
-            ("payload2_new","local/test_payload_new"),
+            ("testinput","local/testinput/initial"),
+            ("payload2_new","local/testpayload_new"),
             ("testpayload","local/testpayload"),
             ("vasppayload","local/vasppayload"),
             )
