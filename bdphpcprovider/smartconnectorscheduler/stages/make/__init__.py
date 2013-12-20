@@ -38,14 +38,14 @@ def setup_settings(run_settings):
     settings['input_location'] = run_settings[
         'http://rmit.edu.au/schemas/input/system']['input_location']
 
-    for key in ['nci_user', 'nci_password']:
-        settings[key] = \
-            run_settings[models.UserProfile.PROFILE_SCHEMA_NS][key]
+    # for key in ['nci_user', 'nci_password']:
+    #     settings[key] = \
+    #         run_settings[models.UserProfile.PROFILE_SCHEMA_NS][key]
 
-    settings['ip'] = run_settings[
-        models.UserProfile.PROFILE_SCHEMA_NS]['nci_host']
-    settings['nci_host'] = \
-            run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nci_host']
+    # settings['ip'] = run_settings[
+    #     models.UserProfile.PROFILE_SCHEMA_NS]['nci_host']
+    # settings['nci_host'] = \
+    #         run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nci_host']
     settings['output_location'] = \
             run_settings[
                 'http://rmit.edu.au/schemas/input/system'][
@@ -58,13 +58,13 @@ def setup_settings(run_settings):
         experiment_id = 0
     settings['experiment_id'] = experiment_id
 
-    key_file = ""
-    if 'nci_private' in run_settings[models.UserProfile.PROFILE_SCHEMA_NS]:
-        if run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nci_private_key']:
-            key_file = hrmcstages.retrieve_private_key(settings,
-                run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nci_private_key'])
-    settings['private_key'] = key_file
-    settings['nci_private_key'] = key_file
+    # key_file = ""
+    # if 'nci_private' in run_settings[models.UserProfile.PROFILE_SCHEMA_NS]:
+    #     if run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nci_private_key']:
+    #         key_file = hrmcstages.retrieve_private_key(settings,
+    #             run_settings[models.UserProfile.PROFILE_SCHEMA_NS]['nci_private_key'])
+    # settings['private_key'] = key_file
+    # settings['nci_private_key'] = key_file
     settings['contextid'] = run_settings[
         'http://rmit.edu.au/schemas/system']['contextid']
 

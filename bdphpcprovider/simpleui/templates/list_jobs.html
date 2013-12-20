@@ -80,13 +80,14 @@ $(document).on('click','.delete', function(e) {
 <tr class='{{job.3|split:"0"}}' id="row_{{job.0}}">
 <td class="span1" id="expand_{{job.0}}"> {{ job.0 }}
 </td>
-<td class="span2">{{ job.4 }} <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{job.5}}" id='{{forloop.counter}}'><img src="#" class="icon-question-sign"></a>
+<td class="span2">{{ job.4 }} <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{job.5}}" id='{{forloop.counter}}'>
+  <i  class="fa fa-question-circle"></i></a>
 </td>
 <td class="span5">{{ job.2|date}} {{ job.2|time}} ({{job.2|naturaltime}})</td>
 
 <td>
 {% if job.3|split:"0" == 'error' %}
-<img  class="icon-exclamation-sign">
+<i class="fa fa-exclamation-circle"</i>
 {% endif %}
 {{job.3|split:"1"}}
 </td>
