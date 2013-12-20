@@ -47,7 +47,7 @@ function alertMessage(preset_name, message, delay){
 function addPreset(form_id, directive_name, preset_name){
     var date = new Date().getTime()
     if (preset_name){
-        $("#id_current_directive").prepend('<p  class="text-center"><strong>Saving ... </strong></p>')
+        $("#id_preset_div").append('<strong>  Saving ... </strong>')
         addPresetDB(form_id, directive_name, preset_name, true);
     }
     else{
