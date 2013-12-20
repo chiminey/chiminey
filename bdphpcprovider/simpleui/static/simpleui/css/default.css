@@ -218,5 +218,10 @@ h2 small, blockquote small {
 body { padding-top: 80px; }
 @media screen and (max-width: 768px) {
     body { padding-top: 0px; }
+
+}
+
+input[type=text], input[type=password] {
+    height: 28px !important;
 }
 
