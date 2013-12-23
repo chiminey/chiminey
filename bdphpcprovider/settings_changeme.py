@@ -222,11 +222,11 @@ LOGGING = {
             },
         'bdphpcprovider.smartconnectorscheduler.tasks': {
             'level': 'WARN',
-            'handlers': ['celeryd'],
+            'handlers': ['file'],
             },
         'celery.task': {
                 'level': 'ERROR',
-                'handlers': ['celeryd'],
+                'handlers': ['file'],
             },
         'django.db.backends': {
                 'level': 'WARN',
@@ -259,7 +259,7 @@ CELERYBEAT_SCHEDULE = {
     #},
     "run_contexts": {
         "task": "smartconnectorscheduler.run_contexts",
-        "schedule": timedelta(seconds=5)
+        "schedule": timedelta(seconds=15)
         #"schedule": timedelta(seconds=60)
       },
     }
