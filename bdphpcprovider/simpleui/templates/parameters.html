@@ -5,7 +5,9 @@
 
 
 <div class="container-fluid">
+
   <div class="page-header"><h1>Create Job</h1></div>
+
 <div class="row-fluid">
 <div class="span2">
   <div>
@@ -23,33 +25,37 @@
           </ul>
         </div>
     </div>
-<div class="span10" style="padding-left:20px; border-left: 2px solid #ccc;">
+<div id="id_current_directive" class="span10" style="padding-left:20px; border-left: 2px solid #ccc;">
 <h1> {{directive.name}}</h1>
 <p class="lead"> {{directive.description}}</p>
 
 
 <div class="row-fluid">
 <form class="form-horizontal" name="myform" id="myform-id" action="" method="POST"> {% csrf_token %}
-<div class="control-group span11 offset1">
+<div class="control-group span11 offset1" >
     <label class="control-label" for="id_default_presets">Preset Name</label>
-    <div class="controls">
-    <select id="id_presets" name="preset_name" class="target" onchange="resetPreset('myform-id')">
-        <!--option value="default" selected="selected"> default </option-->
+    <div id="id_preset_div" class="controls">
+     {% with "last_"|add:directive.name|add:"_preset" as last_saved_preset %}
+    <select id="id_presets" name="preset_name" class="target" onchange="resetPreset('myform-id', '')">
         {% for preset in presets %}
-         <option value="{{ preset }}"> {{ preset }} </option>
+            {% if last_saved_preset == preset %}
+                <option value="{{ preset }}"> Most Recent Values </option>
+            {% else %}
+                <option value="{{ preset }}"> {{ preset }} </option>
+            {% endif %}
         {% endfor %}
-        <script>resetPreset('myform-id')</script>
-
     </select>
-    <button type="button" class="btn btn-info btn-small" title="Add new preset" onclick="addPreset('myform-id', '{{directive.name}}')">
+    {% endwith %}
+    <button type="button" class="btn btn-info btn-small" title="Add new preset" onclick="addPreset('myform-id', '{{directive.name}}', '')">
         <i class="fa fa-plus"></i>
     </button>
-     <button type="button" class="btn btn-danger btn-small" title="Delete current preset" onclick="deletePreset('myform-id')">
+     <button  id="id_delete_preset_button" type="button" class="btn btn-danger btn-small" title="Delete current preset" onclick="deletePreset('myform-id')">
         <i class="fa fa-minus"></i>
     </button>
-     <button type="button" class="btn btn-default btn-small" title="Update current preset" onclick="updatePreset('myform-id', '{{directive.name}}')">
+     <button id="id_update_preset_button" type="button" class="btn btn-default btn-small" title="Update current preset" onclick="updatePreset('myform-id', '{{directive.name}}', '')">
         <i class="fa fa-floppy-o"></i>
     </button>
+     <script>resetPreset('myform-id', 'last_{{ directive.name }}_preset')</script>
     </div>
 </div>
     {% if form.non_field_errors %}
@@ -99,7 +105,10 @@
 $(document).on('click','.submit', function(e) {
   e.preventDefault();
   bootbox.confirm("Are you sure you want to start a new job?", function(result) {
-  if (result) { $('#myform-id').submit();}
+  if (result) {
+      $('#myform-id').submit();
+      addPreset("myform-id", "{{ directive.name }}", "last_{{ directive.name }}_preset")
+  }
   });
 });
 
