@@ -14,10 +14,19 @@ $(document).ready(function () {
            $('#{{ forloop.counter }}').tooltip();
            {% endfor %}
             $('.footable').footable();
+            // {% for job in object_list %}
+            //    {% if job.0 == job.6 %}
+            //         $('#expand_{{job.0}}').html('{{job.0}} <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="bar" id="tooltip_{{job.0}}"><img src="#" class="icon-chevron-down"></a>')
+            //    {% endif %}
+            // {% endfor %}
             {% for job in object_list %}
-               {% if job.0 == job.6 %}
-                    $('#expand_{{job.0}}').html('{{job.0}} <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="bar" id="tooltip_{{job.0}}"><img src="#" class="icon-chevron-down"></a>')
-               {% endif %}
+
+              {% for id in object_list %}
+              {% if id.6 == job.0  and id.0 != job.0%}
+                $('#expand_{{job.0}}').html('{{job.0}} <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="bar" id="tooltip_{{job.0}}"><img src="#" class="icon-chevron-down"></a>');
+              {% endif %}
+              {% endfor %}
+
             {% endfor %}
 
        });

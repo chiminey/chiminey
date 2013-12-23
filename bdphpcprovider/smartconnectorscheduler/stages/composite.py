@@ -24,10 +24,12 @@ import json
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from itertools import product
 
+from bdphpcprovider.smartconnectorscheduler.errors import deprecated
+
 
 logger = logging.getLogger(__name__)
 
-
+@deprecated
 class ParallelStage(Stage):
     """
         A list of stages
@@ -102,6 +104,7 @@ class ParallelStage(Stage):
         return total_templates
 
 
+# TODO: these methods should be moved to MyTardis specfic package
 def make_graph_paramset(schema_ns,
     name, graph_info, value_dict, value_keys):
 
@@ -126,7 +129,7 @@ def make_graph_paramset(schema_ns,
 
     return res
 
-
+# TODO: these methods should be moved to MyTardis specfic package
 def make_paramset(schema_ns, parameters):
     res = {}
     res['schema'] = 'http://rmit.edu.au/schemas/%s' % schema_ns
