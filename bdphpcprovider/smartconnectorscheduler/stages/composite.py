@@ -29,12 +29,12 @@ from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 
 logger = logging.getLogger(__name__)
 
-@deprecated
 class ParallelStage(Stage):
     """
         A list of stages
     """
     def __init__(self, user_settings=None):
+        logger.debug("ps__init")
         pass
 
     def __unicode__(self):

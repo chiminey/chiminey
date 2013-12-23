@@ -275,18 +275,23 @@ def safe_import(path, args, kw):
     except ValueError:
         raise ImproperlyConfigured('%s isn\'t a filter module' % path)
     filter_module, filter_classname = path[:dot], path[dot + 1:]
+    logger.debug("filter_module=%s filter_classname=%s" % (filter_module, filter_classname))
     try:
         mod = import_module(filter_module)
     except ImportError, e:
         raise ImproperlyConfigured('Error importing filter %s: "%s"' %
                                    (filter_module, e))
+    logger.debug("mod=%s" % mod)
     try:
         filter_class = getattr(mod, filter_classname)
     except AttributeError:
         raise ImproperlyConfigured('Filter module "%s" does not define a "%s" class' %
                                    (filter_module, filter_classname))
+    logger.debug("filter_class=%s" % filter_class)
 
     filter_instance = filter_class(*args, **kw)
+    logger.debug("filter_instance=%s" % filter_instance)
+
     return filter_instance
 
 
