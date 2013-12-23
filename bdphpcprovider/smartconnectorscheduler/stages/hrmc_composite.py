@@ -149,7 +149,7 @@ class HRMCParallelStage(ParallelStage):
         iter_inputdir = os.path.join(job_dir, "input_%s" % id)
         url_with_pkey = smartconnector.get_url_with_pkey(
             output_storage_settings,
-            '%s://%s@%s' %(output_storage_settings['scheme'],
+            '%s://%s@%s' % (output_storage_settings['scheme'],
                            output_storage_settings['type'],
                             iter_inputdir),
             is_relative_path=False)
@@ -168,36 +168,36 @@ class HRMCParallelStage(ParallelStage):
         return total_templates
 
 
-def make_graph_paramset(schema_ns,
-    name, graph_info, value_dict, value_keys):
+# def make_graph_paramset(schema_ns,
+#     name, graph_info, value_dict, value_keys):
 
-    res = {}
-    res['schema'] = "http://rmit.edu.au/schemas/%s" % schema_ns
-    paramset = []
+#     res = {}
+#     res['schema'] = "http://rmit.edu.au/schemas/%s" % schema_ns
+#     paramset = []
 
-    def _make_param(x,y):
-        param = {}
-        param['name'] = x
-        param['string_value'] = y
-        return param
+#     def _make_param(x,y):
+#         param = {}
+#         param['name'] = x
+#         param['string_value'] = y
+#         return param
 
-    for x, y in (
-        ("graph_info", json.dumps(graph_info)),
-        ("name", name),
-        ('value_dict', json.dumps(value_dict)),
-        ("value_keys", json.dumps(value_keys))):
+#     for x, y in (
+#         ("graph_info", json.dumps(graph_info)),
+#         ("name", name),
+#         ('value_dict', json.dumps(value_dict)),
+#         ("value_keys", json.dumps(value_keys))):
 
-        paramset.append(_make_param(x, y))
-    res['parameters'] = paramset
+#         paramset.append(_make_param(x, y))
+#     res['parameters'] = paramset
 
-    return res
+#     return res
 
 
-def make_paramset(schema_ns, parameters):
-    res = {}
-    res['schema'] = 'http://rmit.edu.au/schemas/%s' % schema_ns
-    res['parameters'] = parameters
-    return res
+# def make_paramset(schema_ns, parameters):
+#     res = {}
+#     res['schema'] = 'http://rmit.edu.au/schemas/%s' % schema_ns
+#     res['parameters'] = parameters
+#     return res
 
 
 

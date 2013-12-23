@@ -17,7 +17,12 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+from tastypie.admin import ApiKeyInline
+
+from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.models import User
 from django.contrib import admin
+
 from bdphpcprovider.smartconnectorscheduler import models
 
 
@@ -40,9 +45,9 @@ class DirectiveArgSetInline(admin.TabularInline):
     #   django.db.models.TextField: {'widget': TextInput},
     # }
 
+
 class DirectiveAdmin(admin.ModelAdmin):
     inlines = [DirectiveArgSetInline]
-
 
 
 class ContextParameterInline(admin.TabularInline):
@@ -108,7 +113,6 @@ class PlatformParameterSetAdmin(admin.ModelAdmin):
         return obj.owner
 
 
-
 class UserProfileParameterInline(admin.TabularInline):
     model = models.UserProfileParameter
     extra = 0
@@ -132,7 +136,6 @@ class StageParameterInline(admin.TabularInline):
 
 class StageParameterSetAdmin(admin.ModelAdmin):
     inlines = [StageParameterInline]
-
 
 
 class ContextAdmin(admin.ModelAdmin):
@@ -179,7 +182,6 @@ class ContextAdmin(admin.ModelAdmin):
 #         return queryset.filter(id=parent)
 
 
-
 class StageInline(admin.TabularInline):
     model = models.StageParameterSet
     extra = 0
@@ -194,12 +196,11 @@ class StageAdmin(admin.ModelAdmin):
     list_display_links = ('name',)
     #list_filter = ('ParentListFilter',)
     list_filter = ('parent',)
-    ordering= ('parent', 'order')
+    ordering = ('parent', 'order')
     inlines = (StageInline,)
 
     def parent_name(self, obj):
-      return obj.parent.name
-
+        return obj.parent.name
 
 
 class UserProfileParameterSetInline(admin.TabularInline):
@@ -209,15 +210,14 @@ class UserProfileParameterSetInline(admin.TabularInline):
     #   django.db.models.TextField: {'widget': TextInput},
     # }
 
+
 class UserProfileAdmin(admin.ModelAdmin):
     model = models.UserProfile
     list_display = ('user', 'company', 'nickname')
     list_display_links = ('user',)
     list_filter = ('company',)
-    ordering= ('company', 'user')
+    ordering = ('company', 'user')
     inlines = (UserProfileParameterSetInline,)
-
-
 
 
 class PresetParameterInline(admin.TabularInline):
@@ -229,10 +229,6 @@ class PresetParameterSetAdmin(admin.ModelAdmin):
     inlines = [PresetParameterInline]
     # list_display = ('preset', 'schema')
 
-from tastypie.admin import ApiKeyInline
-from tastypie.models import ApiAccess, ApiKey
-from django.contrib.auth.admin import UserAdmin
-from django.contrib.auth.models import User
 
 #admin.site.register(ApiKey)
 #admin.site.register(ApiAccess)
@@ -242,8 +238,6 @@ class UserModelAdmin(UserAdmin):
 
 admin.site.unregister(User)
 admin.site.register(User, UserModelAdmin)
-
-
 admin.site.register(models.UserProfile, UserProfileAdmin)
 admin.site.register(models.Schema, SchemaAdmin)
 admin.site.register(models.ParameterName)
@@ -257,7 +251,6 @@ admin.site.register(models.ContextParameterSet, ContextParameterSetAdmin)
 admin.site.register(models.ContextParameter)
 admin.site.register(models.StageParameterSet, StageParameterSetAdmin)
 admin.site.register(models.StageParameter)
-admin.site.register(models.Command)
 admin.site.register(models.Directive, DirectiveAdmin)
 admin.site.register(models.DirectiveArgSet)
 admin.site.register(models.PlatformInstance)

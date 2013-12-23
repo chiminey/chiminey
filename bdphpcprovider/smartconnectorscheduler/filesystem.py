@@ -46,7 +46,7 @@ logger = logging.getLogger(__name__)
 
 #TODO: make filesystem-specific exceptions
 
-
+@deprecated
 class FileSystem(object):
     # FIXME: these methods should not interact with the underlying filesystem
     # directory, and should only interact vis osfs api calls.  For example,
@@ -319,7 +319,7 @@ class FileSystem(object):
         new_files = [x for x in files if pat.match(x)]
         return new_files
 
-
+@deprecated
 class DataObject(object):
     # Assume that whole file is contained in one big string
     # as it makes json parsing easier

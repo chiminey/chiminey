@@ -17,25 +17,22 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
-import os
 import json
 from pprint import pformat
 import logging
 import logging.config
 
+from tastypie.models import create_api_key
+
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.exceptions import MultipleObjectsReturned
 from django.core.urlresolvers import reverse
-from django.contrib.auth.models import User
-from django.db import models
-
-from tastypie.models import create_api_key
 
 from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
-from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 
 logger = logging.getLogger(__name__)
+
 
 class UserProfile(models.Model):
     user = models.ForeignKey(User, unique=True, help_text="Information about the user")
@@ -83,7 +80,7 @@ class ParameterName(models.Model):
         :attribute help_text: text that appears in admin tool
         :attribute max_length: maximum length for STRING types
     """
-    schema = models.ForeignKey(Schema, help_text ="Schema that contains this parameter")
+    schema = models.ForeignKey(Schema, help_text="Schema that contains this parameter")
     name = models.CharField(max_length=50)
     # TODO: need to do this so that each paramter can appear only once
     # in each schema
@@ -546,23 +543,10 @@ class Directive(models.Model):
                                verbose_name="Description",
                              help_text="Human Readable name for this directive")
     hidden = models.BooleanField(default=False)
-
+    stage = models.ForeignKey(Stage, null=True, blank=True)
 
     def __unicode__(self):
         return u"Directive:%s" % (self.name)
-
-
-class Command(models.Model):
-    """
-    Holds a platform specific operation that uses an external API
-    Initialised from the specified stage
-    """
-    directive = models.ForeignKey(Directive)
-    stage = models.ForeignKey(Stage, null=True, blank=True)
-    platform = models.ForeignKey(Platform)
-
-    def __unicode__(self):
-        return u"Command:%s %s %s" % (self.directive, self.stage, self.platform)
 
 
 class DirectiveArgSet(models.Model):
@@ -578,6 +562,7 @@ class DirectiveArgSet(models.Model):
 
     def __unicode__(self):
         return u"%s %s" % (self.directive, self.schema)
+
 
 class SmartConnector(models.Model):
     """
@@ -602,7 +587,6 @@ class Context(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     parent = models.ForeignKey('self', null=True, blank=True)
 
-
     CONTEXT_SCHEMA_NS = "http://rmit.edu.au/schemas/context1"
 
     def get_absolute_url(self):
@@ -618,7 +602,7 @@ class Context(models.Model):
             logger.debug("schema=%s" % schema)
             sch_cont = {}
             for param in ContextParameter.objects.filter(paramset=cps):
-                logger.debug("param=%s"  % param)
+                logger.debug("param=%s" % param)
                 sch_cont[param.name.name] = param.getValue()  # NB: Assume that key is unique to each schema
             sch = schema_map[schema] if schema in schema_map else []
             sch.append(sch_cont)
@@ -628,56 +612,6 @@ class Context(models.Model):
         logger.debug("context=%s" % context)
 
         return context
-
-    @deprecated
-    def update_run_settings_old(self, run_settings):
-        """
-            update the run_settings associated with the context with new values from a map
-        """
-        logger.debug("run_settings=%s" % run_settings)
-        for schdata in run_settings:
-            logger.debug("schdata=%s" % schdata)
-            try:
-                sch = Schema.objects.get(namespace=schdata)
-            except Schema.DoesNotExist:
-                logger.error("schema %s does not exist" % schdata)
-                raise
-            except MultipleObjectsReturned:
-                logger.error("multiple schemas found for %s" % schdata)
-                raise
-
-            logger.debug("sch=%s" % sch)
-
-            paramset, _ = ContextParameterSet.objects.get_or_create(schema=sch, context=self)
-
-            logger.debug("paramset=%s" % paramset)
-            #TODO: what if entries in original context have been deleted?
-            kvs = run_settings[schdata]
-
-            for k in kvs:
-                v = kvs[k]
-                try:
-                    pn = ParameterName.objects.get(schema=sch,
-                        name=k)
-                except ParameterName.DoesNotExist:
-                    msg = "Unknown parameter '%s' for context '%s'" % (k, run_settings)
-                    logger.exception(msg)
-                    raise InvalidInputError(msg)
-                try:
-                    cp = ContextParameter.objects.get(name__name=k, paramset=paramset)
-                except ContextParameter.DoesNotExist:
-                    # TODO: need to check type
-                    logger.debug("new param =%s" % pn)
-                    cp = ContextParameter.objects.create(name=pn,
-                        paramset=paramset, value=v)
-                except MultipleObjectsReturned:
-                    logger.exception("Found duplicate entry in ContextParamterSet")
-                    raise
-                else:
-                    logger.debug("updating %s to %s" % (cp.name, v))
-                    # TODO: need to check type
-                    cp.value = v
-                    cp.save()
 
     def update_run_settings(self, run_settings):
         """
@@ -744,7 +678,6 @@ class Context(models.Model):
                     cp.value = v
                     cp.save()
 
-
     def __unicode__(self):
         if self.current_stage:
             res = self.current_stage.name
@@ -773,7 +706,7 @@ class ContextParameterSet(models.Model):
 
     class Meta:
         ordering = ["-ranking"]
-        app_label="smartconnectorscheduler"
+        app_label = "smartconnectorscheduler"
 
     def __unicode__(self):
         res = "schema=%s\n" % self.schema
@@ -889,5 +822,4 @@ class PresetParameter(models.Model):
 
 
 models.signals.post_save.connect(create_api_key, sender=User)
-
 

@@ -380,7 +380,7 @@ class Stage(object):
                 if p in c:
                     c = c[p]
                 else:
-                    logger.warn("%s not found in context" % p)
+                    logger.debug("%s not found in context" % p)
                     return False
             return True
 

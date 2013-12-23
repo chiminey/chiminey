@@ -41,6 +41,25 @@ EMAIL_RE = re.compile(
     r')@(?:[A-Z0-9-]+\.)+[A-Z]{2,6}$', re.IGNORECASE)  # domain
 
 
+copy_commands = (
+    ("input2", "myfiles/input/initial"),
+    ("vaspinput", "local/vaspinput/initial"),
+    ("testinput", "local/testinput/initial"),
+    ("payload2_new", "local/testpayload_new"),
+    ("testpayload", "local/testpayload"),
+    ("vasppayload", "local/vasppayload"),
+    )
+
+# mkdir /var/cloudenabling/remotesys/{$user}/myfiles
+# mkdir /var/cloudenabling/remotesys/{$user}/myfiles/input
+# cp -a /opt/cloudenabling/current/input2 /var/cloudenabling/remotesys/${user}/myfiles/input/initial
+# cp -a /opt/cloudenabling/current/vaspinput /var/cloudenabling/remotesys/${user}/local/vaspinput/initial
+# cp -a /opt/cloudenabling/current/payload2_new /var/cloudenabling/remotesys/${user}/local/testpayload_new
+# cp -a /opt/cloudenabling/current/bdphpcprovider/randomnums.txt /var/cloudenabling/remotesys/{$user}
+# cp -a /opt/cloudenabling/current/testpayload /var/cloudenabling/remotesys/{$user}/local/
+# cp -a /opt/cloudenabling/current/vasppayload /var/cloudenabling/remotesys/${user}/local/
+
+
 def is_valid_email(value):
     if not EMAIL_RE.search(value):
         raise exceptions.ValidationError(_('Enter a valid e-mail address.'))
@@ -187,63 +206,47 @@ class Command(BaseCommand):
             }
 
         #TODO: prompt user to enter private key paths and names and other credentials
-
-        user_schema = models.Schema.objects.get(namespace=models.UserProfile.PROFILE_SCHEMA_NS)
-
-        param_set, _ = models.UserProfileParameterSet.objects.get_or_create(user_profile=userProfile,
+        user_schema = models.Schema.objects.get(
+            namespace=models.UserProfile.PROFILE_SCHEMA_NS)
+        param_set, _ = models.UserProfileParameterSet.objects.get_or_create(
+            user_profile=userProfile,
             schema=user_schema)
-
         for k, v in self.PARAMS.items():
             param_name = models.ParameterName.objects.get(schema=user_schema,
                 name=k)
             models.UserProfileParameter.objects.get_or_create(name=param_name,
                 paramset=param_set,
                 value=v)
-
         try:
-            os.makedirs(os.path.join(settings.LOCAL_FILESYS_ROOT_PATH, username))
-            os.makedirs(os.path.join(settings.LOCAL_FILESYS_ROOT_PATH, username, "myfiles","input"))
+            os.makedirs(os.path.join(
+                settings.LOCAL_FILESYS_ROOT_PATH,
+                username))
+            os.makedirs(os.path.join(
+                settings.LOCAL_FILESYS_ROOT_PATH,
+                username,
+                "myfiles",
+                "input"))
         except IOError, e:
             raise CommandError("cannot create user filesystem")
         except AttributeError, e:
-            raise CommandError("LOCAL_FILESYS_ROOT_PATH must be set in settings.py")
-
-
-
-
-# mkdir /var/cloudenabling/remotesys/{$user}/myfiles
-# mkdir /var/cloudenabling/remotesys/{$user}/myfiles/input
-# cp -a /opt/cloudenabling/current/input2 /var/cloudenabling/remotesys/${user}/myfiles/input/initial
-# cp -a /opt/cloudenabling/current/vaspinput /var/cloudenabling/remotesys/${user}/local/vaspinput/initial
-# cp -a /opt/cloudenabling/current/payload2_new /var/cloudenabling/remotesys/${user}/local/testpayload_new
-# cp -a /opt/cloudenabling/current/bdphpcprovider/randomnums.txt /var/cloudenabling/remotesys/{$user}
-# cp -a /opt/cloudenabling/current/testpayload /var/cloudenabling/remotesys/{$user}/local/
-# cp -a /opt/cloudenabling/current/vasppayload /var/cloudenabling/remotesys/${user}/local/
+            raise CommandError(
+                "LOCAL_FILESYS_ROOT_PATH must be set in settings.py")
 
         curr_dir = os.path.dirname(os.path.realpath(__file__))
-        source_prefix = os.path.join(curr_dir, "..","..","..","..")
-
-        copy_commands = (
-            ("input2","myfiles/input/initial"),
-            ("vaspinput","local/vaspinput/initial"),
-            ("testinput","local/testinput/initial"),
-            ("payload2_new","local/testpayload_new"),
-            ("testpayload","local/testpayload"),
-            ("vasppayload","local/vasppayload"),
-            )
+        source_prefix = os.path.join(curr_dir, "..", "..", "..", "..")
 
         for src, dest in copy_commands:
             try:
                 s = os.path.abspath(os.path.join(source_prefix, src))
                 d = os.path.join(settings.LOCAL_FILESYS_ROOT_PATH, username, dest)
                 self.stdout.write("%s -> %s" % (s, d))
-                shutil.copytree(s,d)
+                shutil.copytree(s, d)
             except IOError, e:
                 raise CommandError("ERROR:%s\n" % e)
 
         shutil.copy(os.path.abspath(
-            os.path.join(source_prefix, "bdphpcprovider","randomnums.txt")),
+            os.path.join(source_prefix, "bdphpcprovider", "randomnums.txt")),
             os.path.join(settings.LOCAL_FILESYS_ROOT_PATH, username))
 
         if verbosity >= 1:
-          self.stdout.write("BDPHPCProvider user created successfully.\n")
+            self.stdout.write("BDPHPCProvider user created successfully.\n")
