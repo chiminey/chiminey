@@ -32,8 +32,10 @@
 
 <div class="row-fluid">
 <form class="form-horizontal" name="myform" id="myform-id" action="" method="POST"> {% csrf_token %}
+  <fieldset>
+    <legend></legend>
 <div class="control-group span11 offset1" >
-    <label class="control-label" for="id_default_presets">Preset Name</label>
+    <label class="control-label" for="id_default_presets"><strong>Preset Name</strong></label>
     <div id="id_preset_div" class="controls">
      {% with "last_"|add:directive.name|add:"_preset" as last_saved_preset %}
     <select id="id_presets" name="preset_name" class="target" onchange="resetPreset('myform-id', '')">
@@ -58,6 +60,7 @@
      <script>resetPreset('myform-id', 'last_{{ directive.name }}_preset')</script>
     </div>
 </div>
+</fieldset>
     {% if form.non_field_errors %}
    <div class="alert alert-error">
     {{ form.non_field_errors}}
@@ -93,9 +96,9 @@
           {% endif %}
       {% endfor %}
       </fieldset>
-      <div class="row controls">
+      <div class="row-actions">
         <button type="reset" class="btn" title="Reset">Reset</button>
-        <button type="submit"  class="submit offset9 btn btn-primary">Submit Job </button>
+        <button type="submit"  class="submit  btn btn-primary">Submit Job </button>
       </div>
 
 

@@ -44,6 +44,9 @@ ERRGR_COLUMN_NUM = 28
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
 
+# TODO: key task here is to seperate the domain specific  parts from the
+# general parts of this stage and move to different class/module
+
 class IterationConverge(Stage):
     """
     Determine whether the function has been optimised
