@@ -188,7 +188,7 @@ def delete_files(url, exceptions=None):
     try:
         current_content = fsys.listdir(path)
     except Exception, e:
-        logger.warn(e)
+        logger.warn("cannot get content %s" % e)
         current_content = []
     logger.debug("current_content=%s" % pformat(current_content))
     current_path_pointer = path

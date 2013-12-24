@@ -37,6 +37,9 @@ logger = logging.getLogger(__name__)
 
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
+# TODO: key task here is to seperate the domain specific  parts from the
+# general parts of this stage and move to different class/module
+
 
 class Transform(Stage):
     """

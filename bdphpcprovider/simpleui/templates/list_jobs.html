@@ -83,9 +83,13 @@ $(document).on('click','.delete', function(e) {
         </thead>
         <tbody>
 {% for job in object_list %}
-    {% if job.0 == job.6 %}
-        <tr><td></td></tr>
-    {% endif %}
+{% if forloop.first %}
+{% else %}
+{% if job.0 == job.6 %}
+    <tr><td></td></tr>
+{% endif %}
+{% endif %}
+
 <tr class='{{job.3|split:"0"}}' id="row_{{job.0}}">
 <td class="span1" id="expand_{{job.0}}"> {{ job.0 }}
 </td>

@@ -570,7 +570,7 @@ def delete_files(url, exceptions=None):
     try:
         current_content = fsys.listdir(path)
     except Exception, e:
-        logger.warn(e)
+        logger.warn("cannot ready directory. %s" %e)
         current_content = []
     logger.debug("current_content=%s" % pformat(current_content))
     current_path_pointer = path
@@ -1450,7 +1450,7 @@ def get_dataset_name_for_output(settings, url, path):
     try:
         content = get_file(source_url)
     except IOError, e:
-        logger.warn(e)
+        logger.warn("cannot read file %s" %e)
         return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
 
     logger.debug("content=%s" % content)
