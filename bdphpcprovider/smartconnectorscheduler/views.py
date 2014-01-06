@@ -34,6 +34,7 @@ from django.conf import settings
 from bdphpcprovider.smartconnectorscheduler import models
 from getresults import get_results
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
+from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 
 from bdphpcprovider.smartconnectorscheduler.errors import ContextKeyMissing, InvalidInputError
 
@@ -125,6 +126,7 @@ logger = logging.getLogger(__name__)
 #     return HttpResponse(template.render(context))
 
 
+@deprecated
 def callback(message, stage, group_id):
     import urllib
     import urllib2
@@ -137,7 +139,7 @@ def callback(message, stage, group_id):
     response = urllib2.urlopen(req)
     the_page = response.read()
 
-
+@deprecated
 def hello(request):
     template = loader.get_template('hello.html')
     context = Context({
@@ -147,7 +149,7 @@ def hello(request):
     #start(['create', '-v','1'])
     return HttpResponse(template.render(context))
 
-
+@deprecated
 def test_directive(request, directive_id):
     """
     Create example directives to be processed
@@ -272,17 +274,17 @@ def test_directive(request, directive_id):
 
 
 
-def getoutput(request, group_id, file_id):
-    """ Return an output file identified by file_id"""
-    # FIXME: add validation for group_id and file_id access
+# def getoutput(request, group_id, file_id):
+#     """ Return an output file identified by file_id"""
+#     # FIXME: add validation for group_id and file_id access
 
-    output_dir = '%s/%s/output' % (settings.BDP_OUTPUT_DIR_PATH,
-                                   group_id)
-    hrmc_output = [f for f in os.listdir(output_dir) if os.path.isdir(output_dir)
-    and not f.endswith("_post")]
+#     output_dir = '%s/%s/output' % (settings.BDP_OUTPUT_DIR_PATH,
+#                                    group_id)
+#     hrmc_output = [f for f in os.listdir(output_dir) if os.path.isdir(output_dir)
+#     and not f.endswith("_post")]
 
-    absolute_output_dir = "%s/%s" % (output_dir, hrmc_output[0])
-    print "Absolute path ", absolute_output_dir
+#     absolute_output_dir = "%s/%s" % (output_dir, hrmc_output[0])
+#     print "Absolute path ", absolute_output_dir
 
-    file_text = open("%s/%s" % (absolute_output_dir, file_id)).read()
-    return HttpResponse(file_text, mimetype='text/plain')
+#     file_text = open("%s/%s" % (absolute_output_dir, file_id)).read()
+#     return HttpResponse(file_text, mimetype='text/plain')

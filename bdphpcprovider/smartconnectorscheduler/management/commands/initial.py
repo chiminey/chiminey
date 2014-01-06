@@ -1,20 +1,36 @@
+# Copyright (C) 2013, RMIT University
 
-import os
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to
+# deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+# sell copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+# IN THE SOFTWARE.
+
 import logging
 import logging.config
+from urlparse import urlparse
 
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import Group
 from django.contrib.auth.models import Permission
-
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
 from django.core.management.base import BaseCommand
 from django.conf import settings
-
-
+from django.template.defaultfilters import slugify
 
 from bdphpcprovider.smartconnectorscheduler import models
-
 
 logger = logging.getLogger(__name__)
 
@@ -23,8 +39,6 @@ class Command(BaseCommand):
     """
     Load up the initial state of the database (replaces use of
     fixtures).  Assumes specific strcture.
-    NB: passwords are wrong and will need to be changed in the admin
-    tool.
     """
 
     args = ''
@@ -37,6 +51,7 @@ class Command(BaseCommand):
             print "action aborted by user"
             return
 
+        # TODO: define precisely what thee groups allow
         self.group, _ = Group.objects.get_or_create(name="standarduser")
         self.group.save()
         self.group, _ = Group.objects.get_or_create(name="admin")
@@ -52,6 +67,8 @@ class Command(BaseCommand):
             #self.group.permissions.add(add_model)
             self.group.permissions.add(change_model)
             #self.group.permissions.add(delete_model)
+
+        # TODO: refactor and clarify all these schemas
         schema_data = {
              u'http://rmit.edu.au/schemas/platform/storage/mytardis':
                 [u'schema for Unix storage platform instances',
@@ -179,6 +196,7 @@ class Command(BaseCommand):
             # hence we could merge next too stages, for example.
             # However, current ContextParameterSets are unamed in the
             # URI so we can't identify which one to use.
+            # TODO: testing schemas are probably deprecated
             u'http://rmit.edu.au/schemas/stages/null/testing':
                 [u'the null stage internal testing',
                 {
@@ -189,7 +207,6 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/stages/parallel/testing':
                 [u'the parallel stage internal testing',
                 {
-
                 u'output': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':2, 'help_text':''},
                 u'index': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''},
                 }
@@ -532,10 +549,6 @@ class Command(BaseCommand):
                 ]
         }
 
-        from urlparse import urlparse
-        from django.template.defaultfilters import slugify
-
-        # hidelinks = {}
         for ns in schema_data:
             l = schema_data[ns]
             logger.debug("l=%s" % l)
@@ -577,7 +590,8 @@ class Command(BaseCommand):
         #     pn.hidefield = link_pn
         #     pn.save()
 
-        logger.debug("stages=%s" % models.Stage.objects.all())
+        # TODO: this platform code is superseeded by platfrom api and should
+        # be removed.
         local_filesys_rootpath = settings.LOCAL_FILESYS_ROOT_PATH
         #local_filesys_rootpath = '/var/cloudenabling/remotesys'
         nci_filesys_root_path = '/short/h72/BDP/BDP_payload'
@@ -589,100 +603,25 @@ class Command(BaseCommand):
             name='nci', root_path=nci_filesys_root_path)
 
         logger.debug("local_filesys_rootpath=%s" % local_filesys_rootpath)
-        local_fs = FileSystemStorage(location=local_filesys_rootpath)
 
-        copy_dir, _ = models.Directive.objects.get_or_create(name="copydir", hidden=True)
-        program_dir, _ = models.Directive.objects.get_or_create(name="program", hidden=True)
-        self.copy_dir_stage = "bdphpcprovider.smartconnectorscheduler.stages.movement.CopyDirectoryStage"
-        self.program_stage = "bdphpcprovider.smartconnectorscheduler.stages.program.LocalProgramStage"
-        # Define all the stages that will make up the command.  This structure
-        # has two layers of composition
-        copy_stage, _ = models.Stage.objects.get_or_create(name="copydir",
-             description="data movemement operation",
-             package=self.copy_dir_stage,
-             order=100)
-        copy_stage.update_settings({})
-        program_stage, _ = models.Stage.objects.get_or_create(name="program",
-            description="program execution stage",
-            package=self.program_stage,
-            order=0)
-        program_stage.update_settings({})
-        comm, _ = models.Command.objects.get_or_create(platform=nci_platform, directive=copy_dir, stage=copy_stage)
-        comm, _ = models.Command.objects.get_or_create(platform=nci_platform, directive=program_dir, stage=program_stage)
-        local_fs.save("local/greet.txt",
-            ContentFile("{{salutation}} World"))
-        local_fs.save("remote/greetaddon.txt",
-            ContentFile("(remotely)"))
+        self.define_helloworld(local_filesys_rootpath)
+        self.define_copydir(local_filesys_rootpath)
+        self.define_smartconnector1(local_filesys_rootpath)
 
-        copy_dir, _ = models.Directive.objects.get_or_create(name="copyfile", hidden=True)
-        self.copy_file_stage = "bdphpcprovider.smartconnectorscheduler.stages.movement.CopyFileStage"
-        # Define all the stages that will make up the command.  This structure
-        # has two layers of composition
-        copy_stage, _ = models.Stage.objects.get_or_create(name="copy",
-             description="data movemement operation",
-             package=self.copy_file_stage,
-             order=100)
-        copy_stage.update_settings({})
-        comm, _ = models.Command.objects.get_or_create(platform=nci_platform, directive=copy_dir, stage=copy_stage)
+        self.define_hrmc()
+        self.define_hrmc_sweep()
 
-        smart_dir, _ = models.Directive.objects.get_or_create(name="smartconnector1", hidden=True)
-        self.null_package = "bdphpcprovider.smartconnectorscheduler.stages.nullstage.NullStage"
-        self.parallel_package = "bdphpcprovider.smartconnectorscheduler.stages.composite.ParallelStage"
-        self.hrmc_parallel_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc_composite.HRMCParallelStage"
-        # Define all the stages that will make up the command.  This structure
-        # has two layers of composition
-        composite_stage, _ = models.Stage.objects.get_or_create(name="basic_connector",
-             description="encapsulates a workflow",
-             package=self.parallel_package,
-             order=100)
-        setup_stage, _ = models.Stage.objects.get_or_create(name="setup",
-            parent=composite_stage,
-            description="This is a setup stage of something",
-            package=self.null_package,
-            order=0)
-        # stage settings are usable from subsequent stages in a run so only
-        # need to define once for first null or parallel stage
-        setup_stage.update_settings(
-            {
-            u'http://rmit.edu.au/schemas/smartconnector1/create':
-                {
-                    u'null_number': 4,
-                }
-            })
-        stage2, _ = models.Stage.objects.get_or_create(name="run",
-            parent=composite_stage,
-            description="This is the running connector",
-            package=self.parallel_package,
-            order=1)
-        stage2.update_settings(
-            {
-            u'http://rmit.edu.au/schemas/smartconnector1/create':
-                {
-                    u'parallel_number': 2
-                }
-            })
-        models.Stage.objects.get_or_create(name="run1",
-            parent=stage2,
-            description="This is the running part 1",
-            package=self.null_package,
-            order=1)
-        models.Stage.objects.get_or_create(name="run2",
-            parent=stage2,
-            description="This is the running part 2",
-            package=self.null_package,
-            order=2)
-        models.Stage.objects.get_or_create(name="finished",
-            parent=composite_stage,
-            description="And here we finish everything off",
-            package=self.null_package,
-            order=3)
-        comm, _ = models.Command.objects.get_or_create(platform=nci_platform, directive=smart_dir, stage=composite_stage)
-        local_fs.save("input/input.txt",
-            ContentFile("a={{a}} b={{b}} c={{c}}"))
-        local_fs.save("input/file.txt",
-            ContentFile("foobar"))
+        self.define_remote_make(nci_platform)
+        self.define_sweep_remotemake(nci_platform)
 
-        hrmc_smart_dir, _ = models.Directive.objects.get_or_create(name="hrmc", description="A Hybrid Reverse Monte Carlo Smart Connector", hidden=True)
+        self.define_vasp(nci_platform)
+        self.define_sweep_vasp(nci_platform)
+
+        self.setup_directive_args()
+        print "done"
+
+    def define_hrmc(self):
+
         self.configure_package = "bdphpcprovider.smartconnectorscheduler.stages.configure.Configure"
         self.create_package = "bdphpcprovider.smartconnectorscheduler.stages.create.Create"
         self.bootstrap_package = "bdphpcprovider.smartconnectorscheduler.stages.bootstrap.Bootstrap"
@@ -697,8 +636,15 @@ class Command(BaseCommand):
             description="Encapsultes HRMC smart connector workflow",
             package=self.hrmc_parallel_package,
             order=100)
+
         # FIXME: tasks.progress_context does not load up composite stage settings
         hrmc_composite_stage.update_settings({})
+
+        hrmc_smart_dir, _ = models.Directive.objects.get_or_create(
+            name="hrmc",
+            description="A Hybrid Reverse Monte Carlo Smart Connector",
+            hidden=True,
+            stage=hrmc_composite_stage)
 
         configure_stage, _ = models.Stage.objects.get_or_create(name="configure",
             description="This is configure stage of HRMC smart connector",
@@ -789,12 +735,30 @@ class Command(BaseCommand):
             order=70)
         destroy_stage.update_settings({})
 
-        comm, _ = models.Command.objects.get_or_create(platform=nectar_platform,
-            directive=hrmc_smart_dir, stage=hrmc_composite_stage)
+        # comm, _ = models.Command.objects.get_or_create(platform=nectar_platform,
+        #     directive=hrmc_smart_dir, stage=hrmc_composite_stage)
         print "done"
 
-        sweep, _ = models.Directive.objects.get_or_create(name="sweep",
-            defaults={'description': "HRMC Sweep Connector"})
+    def define_sweep_vasp(self, local_platform):
+
+        sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep_make",
+            description="Sweep Test",
+            package="bdphpcprovider.smartconnectorscheduler.stages.sweep.Sweep",
+            order=100)
+        sweep_stage.update_settings({
+            # FIXME: move random_numbers into system schema
+            u'http://rmit.edu.au/schemas/system':
+            {
+                u'random_numbers': 'file://127.0.0.1/randomnums.txt'
+            },
+
+            })
+
+        sweep, _ = models.Directive.objects.get_or_create(name="sweep_vasp",
+            defaults={'description': "VASP Sweep Connector"},
+            stage=sweep_stage)
+
+    def define_hrmc_sweep(self):
 
         sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep",
             description="Sweep Test",
@@ -811,26 +775,12 @@ class Command(BaseCommand):
                 u'random_numbers': 'file://127.0.0.1/randomnums.txt'
             },
             })
-
         # FIXME: tasks.progress_context does not load up composite stage settings
-        comm, _ = models.Command.objects.get_or_create(platform=local_platform,
-            directive=sweep, stage=sweep_stage)
+        sweep, _ = models.Directive.objects.get_or_create(name="sweep",
+            defaults={'description': "HRMC Sweep Connector"},
+            stage=sweep_stage)
 
-        self.define_remote_make(nci_platform)
-
-        self.setup_sweep_remotemake(nci_platform)
-
-        self.define_vasp(nci_platform)
-
-        self.setup_sweep_vasp(nci_platform)
-
-        self.setup_directive_args()
-        print "done"
-
-    def setup_sweep_vasp(self, local_platform):
-
-        sweep, _ = models.Directive.objects.get_or_create(name="sweep_vasp",
-            defaults={'description': "VASP Sweep Connector"})
+    def define_sweep_remotemake(self, local_platform):
 
         sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep_make",
             description="Sweep Test",
@@ -844,32 +794,9 @@ class Command(BaseCommand):
             },
 
             })
-
-        # FIXME: tasks.progress_context does not load up composite stage settings
-        comm, _ = models.Command.objects.get_or_create(platform=local_platform,
-            directive=sweep, stage=sweep_stage)
-
-    def setup_sweep_remotemake(self, local_platform):
-
         sweep, _ = models.Directive.objects.get_or_create(name="sweep_make",
-            defaults={'description': "Remote Make Sweep Connector"})
-
-        sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep_make",
-            description="Sweep Test",
-            package="bdphpcprovider.smartconnectorscheduler.stages.sweep.Sweep",
-            order=100)
-        sweep_stage.update_settings({
-            # FIXME: move random_numbers into system schema
-            u'http://rmit.edu.au/schemas/system':
-            {
-                u'random_numbers': 'file://127.0.0.1/randomnums.txt'
-            },
-
-            })
-
-        # FIXME: tasks.progress_context does not load up composite stage settings
-        comm, _ = models.Command.objects.get_or_create(platform=local_platform,
-            directive=sweep, stage=sweep_stage)
+            defaults={'description': "Remote Make Sweep Connector"},
+            stage=sweep_stage)
 
     def setup_directive_args(self):
         sweep = models.Directive.objects.get(name="sweep")
@@ -912,9 +839,110 @@ class Command(BaseCommand):
             schema = models.Schema.objects.get(namespace=sch)
             das, _ = models.DirectiveArgSet.objects.get_or_create(directive=sweep_make, order=i, schema=schema)
 
+    def define_helloworld(self, local_filesys_rootpath):
+        local_fs = FileSystemStorage(location=local_filesys_rootpath)
+        self.copy_dir_stage = "bdphpcprovider.smartconnectorscheduler.stages.movement.CopyDirectoryStage"
+        self.program_stage = "bdphpcprovider.smartconnectorscheduler.stages.program.LocalProgramStage"
+        # Define all the stages that will make up the command.  This structure
+        # has two layers of composition
+        copy_stage, _ = models.Stage.objects.get_or_create(name="copydir",
+             description="data movemement operation",
+             package=self.copy_dir_stage,
+             order=100)
+        copy_stage.update_settings({})
+        program_stage, _ = models.Stage.objects.get_or_create(name="program",
+            description="program execution stage",
+            package=self.program_stage,
+            order=0)
+        program_stage.update_settings({})
+        copy_dir, _ = models.Directive.objects.get_or_create(
+            name="copydir",
+            hidden=True,
+            stage=copy_stage)
+        program_dir, _ = models.Directive.objects.get_or_create(name="program",
+            hidden=True,
+            stage=program_stage)
+        local_fs.save("local/greet.txt",
+            ContentFile("{{salutation}} World"))
+        local_fs.save("remote/greetaddon.txt",
+            ContentFile("(remotely)"))
+
+    def define_copydir(self, local_filesys_rootpath):
+        self.copy_file_stage = "bdphpcprovider.smartconnectorscheduler.stages.movement.CopyFileStage"
+        # Define all the stages that will make up the command.  This structure
+        # has two layers of composition
+        copy_stage, _ = models.Stage.objects.get_or_create(name="copy",
+             description="data movemement operation",
+             package=self.copy_file_stage,
+             order=100)
+        copy_stage.update_settings({})
+        copy_dir, _ = models.Directive.objects.get_or_create(
+            name="copyfile",
+            hidden=True,
+            stage=copy_stage)
+
+    def define_smartconnector1(self, local_filesys_rootpath):
+        local_fs = FileSystemStorage(location=local_filesys_rootpath)
+        self.null_package = "bdphpcprovider.smartconnectorscheduler.stages.nullstage.NullStage"
+        self.parallel_package = "bdphpcprovider.smartconnectorscheduler.stages.composite.ParallelStage"
+        self.hrmc_parallel_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc_composite.HRMCParallelStage"
+        # Define all the stages that will make up the command.  This structure
+        # has two layers of composition
+        composite_stage, _ = models.Stage.objects.get_or_create(name="basic_connector",
+             description="encapsulates a workflow",
+             package=self.parallel_package,
+             order=100)
+        smart_dir, _ = models.Directive.objects.get_or_create(
+            name="smartconnector1",
+            hidden=True,
+            stage=composite_stage)
+        setup_stage, _ = models.Stage.objects.get_or_create(name="setup",
+            parent=composite_stage,
+            description="This is a setup stage of something",
+            package=self.null_package,
+            order=0)
+        # stage settings are usable from subsequent stages in a run so only
+        # need to define once for first null or parallel stage
+        setup_stage.update_settings(
+            {
+            u'http://rmit.edu.au/schemas/smartconnector1/create':
+                {
+                    u'null_number': 4,
+                }
+            })
+        stage2, _ = models.Stage.objects.get_or_create(name="run",
+            parent=composite_stage,
+            description="This is the running connector",
+            package=self.parallel_package,
+            order=1)
+        stage2.update_settings(
+            {
+            u'http://rmit.edu.au/schemas/smartconnector1/create':
+                {
+                    u'parallel_number': 2
+                }
+            })
+        models.Stage.objects.get_or_create(name="run1",
+            parent=stage2,
+            description="This is the running part 1",
+            package=self.null_package,
+            order=1)
+        models.Stage.objects.get_or_create(name="run2",
+            parent=stage2,
+            description="This is the running part 2",
+            package=self.null_package,
+            order=2)
+        models.Stage.objects.get_or_create(name="finished",
+            parent=composite_stage,
+            description="And here we finish everything off",
+            package=self.null_package,
+            order=3)
+        local_fs.save("input/input.txt",
+            ContentFile("a={{a}} b={{b}} c={{c}}"))
+        local_fs.save("input/file.txt",
+            ContentFile("foobar"))
+
     def define_vasp(self, nci_platform):
-        vasp, _ = models.Directive.objects.get_or_create(
-            name="vasp", defaults={'description': "VASP Connector", 'hidden':True})
         smartpack = "bdphpcprovider.smartconnectorscheduler.stages"
         self.upload_makefile = smartpack + ".make.movement.MakeUploadStage"
         self.download_makefile = smartpack + ".make.movement.MakeDownloadStage"
@@ -927,6 +955,11 @@ class Command(BaseCommand):
             package=self.parallel_package,
             order=0)
         vasp_composite_stage.update_settings({})
+        vasp, _ = models.Directive.objects.get_or_create(
+            name="vasp", defaults={
+                'stage': vasp_composite_stage,
+                'description': "VASP Connector",
+                'hidden': True})
 
         # TODO: need to build specific upload/download stages because no way
         # adapt to different connectors yet...
@@ -975,13 +1008,6 @@ class Command(BaseCommand):
         #     order=4)
         # download_makefile_stage.update_settings({})
 
-        # FIXME: not clear wether we need to store platform in command
-        # as different stages make run on different platforms.
-        comm, _ = models.Command.objects.get_or_create(
-            platform=nci_platform,
-            directive=vasp,
-            stage=vasp_composite_stage)
-
         # RMIT_SCHEMA = "http://rmit.edu.au/schemas"
         # for i, sch in enumerate([
         #         RMIT_SCHEMA + "/input/system",
@@ -992,10 +1018,6 @@ class Command(BaseCommand):
         #     das, _ = models.DirectiveArgSet.objects.get_or_create(directive=vasp, order=i, schema=schema)
 
     def define_remote_make(self, nci_platform):
-        remote_make, _ = models.Directive.objects.get_or_create(
-            name="remotemake",
-            defaults={'description': "Remote execution of a Makefile",
-                      'hidden': True})
         smartpack = "bdphpcprovider.smartconnectorscheduler.stages"
         self.upload_makefile = smartpack + ".make.movement.MakeUploadStage"
         self.download_makefile = smartpack + ".make.movement.MakeDownloadStage"
@@ -1008,6 +1030,11 @@ class Command(BaseCommand):
             package=self.parallel_package,
             order=0)
         remote_make_composite_stage.update_settings({})
+        remote_make, _ = models.Directive.objects.get_or_create(
+            name="remotemake",
+            defaults={'stage': remote_make_composite_stage,
+                      'description': "Remote execution of a Makefile",
+                      'hidden': True})
 
         # TODO: need to build specific upload/download stages because no way
         # adapt to different connectors yet...
@@ -1056,12 +1083,6 @@ class Command(BaseCommand):
         #     order=4)
         # download_makefile_stage.update_settings({})
 
-        # FIXME: not clear wether we need to store platform in command
-        # as different stages make run on different platforms.
-        comm, _ = models.Command.objects.get_or_create(
-            platform=nci_platform,
-            directive=remote_make,
-            stage=remote_make_composite_stage)
 
         # RMIT_SCHEMA = "http://rmit.edu.au/schemas"
         # for i, sch in enumerate([
@@ -1071,6 +1092,7 @@ class Command(BaseCommand):
         #         ]):
         #     schema = models.Schema.objects.get(namespace=sch)
         #     das, _ = models.DirectiveArgSet.objects.get_or_create(directive=remote_make, order=i, schema=schema)
+
 
     def handle(self, *args, **options):
         self.setup()

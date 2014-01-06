@@ -6,39 +6,31 @@
 <div class="row-fluid">
     {% if form.errors %}
     <div class="alert-error">Your username and password didn't match. Please try again.</div>
-</div>
     {% endif %}
-    <div class="row-fluid">
-
+</div>
+<div class="row-fluid">
+<div class="page-header">
 <h1> Please Login</h1>
+</div>
+</div>
+<div class="row-fluid">
 
 <form class="form-horizontal" action="" method="POST">{% csrf_token %}
-<fieldset>
-
-<div class="control-group span11">
-<div class="controls">
+<div class="control-group">
     <label class="control-label">{{ form.username.label_tag }}</label>
     <div class="controls">{{ form.username }}</div>
 </div>
-</div>
-<div class="controls">
+    <div class="control-group">
     <label class="control-label">{{ form.password.label_tag }}</label>
     <div class="controls">{{ form.password }}</div>
-    <p></p>
-    <div class="row-fluid controls">
+    </div>
+    <div class="control-group">
+        <div class="controls">
 <button type="submit" class="btn">Login</button>
+</div>
+</div>
 <input type="hidden" name="next" value="{{ next }}" />
-
-</div>
-
-</div>
-
-</div>
-</fieldset>
-</div>
-
 </form>
 </div>
 </div>
-
 {% endblock %}

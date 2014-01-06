@@ -29,6 +29,7 @@ from bdphpcprovider.smartconnectorscheduler import sshconnector
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.smartconnectorscheduler import platform
+from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 
 
 from bdphpcprovider.smartconnectorscheduler import mytardis
