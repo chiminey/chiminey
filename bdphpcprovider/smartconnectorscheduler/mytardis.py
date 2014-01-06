@@ -29,7 +29,6 @@ from requests.auth import HTTPBasicAuth
 
 logger = logging.getLogger(__name__)
 
-from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
 
 EXP_DATASET_NAME_SPLIT = 2
@@ -160,7 +159,6 @@ def post_experiment(settings,
 
             # for pset in experiment_paramset:
 
-
             url = "%s/api/v1/experimentparameterset/?format=json" % tardis_host_url
             headers = {'content-type': 'application/json'}
 
@@ -284,8 +282,6 @@ def post_dataset(settings,
     url = "%s/api/v1/dataset_file/" % tardis_host_url
     headers = {'Accept': 'application/json'}
 
-
-
     args = source_url.split('?')[1]
 
     logger.debug('args=%s' % args)
@@ -389,7 +385,7 @@ def post_dataset(settings,
             #logger.debug(source_file.read())
             source_file.seek(0)
             r = requests.post(url, data={'json_data': data}, headers=headers,
-                files={'attached_file': source_file}, #open(file_path, 'rb')},
+                files={'attached_file': source_file},  # open(file_path, 'rb')},
                 auth=HTTPBasicAuth(tardis_user, tardis_pass)
                 )
 
@@ -636,5 +632,4 @@ def post_datafile(dest_url, content):
     # logger.debug("r.js=%s" % r.json)
     # logger.debug("r.te=%s" % r.text)
     # logger.debug("r.he=%s" % r.headers)
-
 

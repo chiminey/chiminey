@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_bdp_root_path():
-    bdp_root_path = '/var/cloudenabling/remotesys' #fixme avoid hard coding; systematically determine bdp_root_path
+    bdp_root_path = '/var/cloudenabling/remotesys'  # fixme avoid hard coding; systematically determine bdp_root_path
     return bdp_root_path
 
 
@@ -48,7 +48,7 @@ class RemoteStorage(SFTPStorage):
     def __init__(self, settings=None):
         import pkg_resources
         version = pkg_resources.get_distribution("django_storages").version
-        if not version is "1.1.8":
+        if not version == "1.1.8":
             logger.warn("ConnectorStorage overrides version 1.1.8 of django_storages. found version %s" % version)
 
         super(RemoteStorage, self).__init__()
@@ -60,7 +60,6 @@ class RemoteStorage(SFTPStorage):
             super(RemoteStorage, self).__dict__["_host"] = settings['host']
         super(RemoteStorage, self).__dict__["_dir_mode"] = 0700
         print super(RemoteStorage, self)
-
 
     def _connect(self):
         """ Overrides internal behaviour to not store host keys
@@ -94,7 +93,6 @@ class RemoteStorage(SFTPStorage):
 
         if not hasattr(self, '_sftp'):
             self._sftp = self._ssh.open_sftp()
-
 
     def get_available_name(self, name):
         """
@@ -190,7 +188,7 @@ def delete_files(url, exceptions=None):
     try:
         current_content = fsys.listdir(path)
     except Exception, e:
-        logger.warn(e)
+        logger.warn("cannot get content %s" % e)
         current_content = []
     logger.debug("current_content=%s" % pformat(current_content))
     current_path_pointer = path
@@ -286,8 +284,6 @@ def get_filesystem(bdp_url):
     return fs
 
 
-
-
 def list_all_files(source_url):
     """
     Supports only file and ssh schemes
@@ -370,7 +366,6 @@ def list_all_files(source_url):
                 break
 
     return sorted(file_paths)
-
 
 
 def copy_directories(source_url, destination_url):
@@ -541,7 +536,6 @@ def put_file(file_url, content):
     query = parse_qsl(o.query)
     query_settings = dict(x[0:] for x in query)
 
-
     if '@' in location:
         location = location.split('@')[1]
 
@@ -631,7 +625,7 @@ def file_exists(bdp_file_url):
         logger.warn("scheme: %s not supported" % source_scheme)
         return
 
-    logger.debug("source_path=%s"  % source_path)
+    logger.debug("source_path=%s" % source_path)
 
     return fs.exists(source_path)
 
@@ -673,7 +667,6 @@ def get_filep(file_bdp_url, sftp_reference=False):
     #logger.debug("mypath=%s" % mypath)
     # query = parse_qsl(o.query)
     # query_settings = dict(x[0:] for x in query)
-
 
     if '@' in location:
         location = location.split('@')[1]

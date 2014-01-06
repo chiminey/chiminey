@@ -275,18 +275,23 @@ def safe_import(path, args, kw):
     except ValueError:
         raise ImproperlyConfigured('%s isn\'t a filter module' % path)
     filter_module, filter_classname = path[:dot], path[dot + 1:]
+    logger.debug("filter_module=%s filter_classname=%s" % (filter_module, filter_classname))
     try:
         mod = import_module(filter_module)
     except ImportError, e:
         raise ImproperlyConfigured('Error importing filter %s: "%s"' %
                                    (filter_module, e))
+    logger.debug("mod=%s" % mod)
     try:
         filter_class = getattr(mod, filter_classname)
     except AttributeError:
         raise ImproperlyConfigured('Filter module "%s" does not define a "%s" class' %
                                    (filter_module, filter_classname))
+    logger.debug("filter_class=%s" % filter_class)
 
     filter_instance = filter_class(*args, **kw)
+    logger.debug("filter_instance=%s" % filter_instance)
+
     return filter_instance
 
 
@@ -421,7 +426,7 @@ class NCIStorage(SFTPStorage):
     def __init__(self, settings=None):
         import pkg_resources
         version = pkg_resources.get_distribution("django_storages").version
-        if not str(version) is "1.1.8":
+        if not str(version) == "1.1.8":
             logger.warn("NCIStorage overrides version 1.1.8 of django_storages. found version %s" % version)
 
         super(NCIStorage, self).__init__()
@@ -565,7 +570,7 @@ def delete_files(url, exceptions=None):
     try:
         current_content = fsys.listdir(path)
     except Exception, e:
-        logger.warn(e)
+        logger.warn("cannot ready directory. %s" %e)
         current_content = []
     logger.debug("current_content=%s" % pformat(current_content))
     current_path_pointer = path
@@ -1139,24 +1144,24 @@ def transfer(old, new):
     return old
 
 
-def check_settings_valid(settings_to_test, user_settings, command):
+def check_settings_valid(settings_to_test, user_settings, thestage):
     """
     Check that the run_settings and stage_settings for a stage are
     valid before scheduling to detect major errors before runtime
     """
 
-    children = models.Stage.objects.filter(parent=command.stage)
+    children = models.Stage.objects.filter(parent=thestage)
     if children:
         stageset = children
     else:
-        stageset = [command.stage]
+        stageset = [thestage]
     for current_stage in stageset:
         stage_settings = current_stage.get_settings()
         settings_to_test = transfer(stage_settings, settings_to_test)
         try:
             stage = safe_import(current_stage.package, [],
                 {'user_settings': user_settings})
-        except ImproperlyConfigured,e:
+        except ImproperlyConfigured, e:
             return (False, "Except in import of stage: %s: %s"
                 % (current_stage.name, e))
         logger.debug("stage=%s", stage)
@@ -1192,8 +1197,8 @@ def make_runcontext_for_directive(platform_name, directive_name,
     # in this situation.
     # command_for_directive = models.Command.objects.get(directive=directive,
     #     platform=platform)
-    command_for_directive = models.Command.objects.get(directive=directive)
-    logger.debug("command_for_directive=%s" % command_for_directive)
+    # command_for_directive = models.Command.objects.get(directive=directive)
+    # logger.debug("command_for_directive=%s" % command_for_directive)
     user_settings = retrieve_settings(profile)
     logger.debug("user_settings=%s" % pformat(user_settings))
     # turn the user's arguments into real command arguments.
@@ -1202,23 +1207,24 @@ def make_runcontext_for_directive(platform_name, directive_name,
         directive_args, user_settings)
     logger.debug("command_args=%s" % pformat(command_args))
 
-    run_settings = _make_run_settings_for_command(command_for_directive,
-        command_args, run_settings)
+    run_settings = _make_run_settings_for_command(command_args, run_settings)
     logger.debug("updated run_settings=%s" % run_settings)
+
+    stage = directive.stage
 
     settings_valid, problem = check_settings_valid(run_settings,
         user_settings,
-        command_for_directive)
+        stage)
     if not settings_valid:
         raise InvalidInputError(problem)
 
     run_settings[u'http://rmit.edu.au/schemas/system'][u'platform'] = platform_name
-    run_settings[u'http://rmit.edu.au/schemas/system'][u'contextid'] =  0
+    run_settings[u'http://rmit.edu.au/schemas/system'][u'contextid'] = 0
 
-    run_context = _make_new_run_context(command_for_directive.stage,
+    run_context = _make_new_run_context(stage,
         profile, directive, parent, run_settings)
     logger.debug("run_context =%s" % run_context)
-    run_context.current_stage = command_for_directive.stage
+    run_context.current_stage = stage
     run_context.save()
 
     run_settings[u'http://rmit.edu.au/schemas/system'][u'contextid'] = run_context.id
@@ -1229,7 +1235,7 @@ def make_runcontext_for_directive(platform_name, directive_name,
 
     run_context.update_run_settings(run_settings)
 
-    logger.debug("command=%s new runcontext=%s" % (command_for_directive, run_context))
+    logger.debug("new runcontext=%s" % (run_context))
     # FIXME: only return command_args and context because they are needed for testcases
     return (run_settings, command_args, run_context)
 
@@ -1318,7 +1324,7 @@ def process_all_contexts():
     return test_info
 
 
-def _make_run_settings_for_command(command, command_args, run_settings):
+def _make_run_settings_for_command(command_args, run_settings):
     """
     Create run_settings for the command to execute with
     """
@@ -1444,7 +1450,7 @@ def get_dataset_name_for_output(settings, url, path):
     try:
         content = get_file(source_url)
     except IOError, e:
-        logger.warn(e)
+        logger.warn("cannot read file %s" %e)
         return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
 
     logger.debug("content=%s" % content)

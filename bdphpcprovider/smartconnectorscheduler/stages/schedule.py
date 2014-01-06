@@ -266,14 +266,21 @@ class Schedule(Stage):
         schedule_package = "bdphpcprovider.smartconnectorscheduler.stages.schedule.Schedule"
         parent_obj = models.Stage.objects.get(package=schedule_package)
         parent_stage = parent_obj.parent
+        logger.debug("local_settings=%s" % local_settings)
+        logger.debug("run_settings=%s" % run_settings)
         try:
             logger.debug('parent_package=%s' % (parent_stage.package))
             stage = hrmcstages.safe_import(parent_stage.package, [],
                                            {'user_settings': local_settings})
+            logger.debug("stage=%s" % stage)
         except ImproperlyConfigured, e:
             logger.debug(e)
             return (False, "Except in import of stage: %s: %s"
                 % (parent_stage.name, e))
+        except Exception, e:
+            logger.error(e)
+            raise
+
         map = stage.get_run_map(local_settings, run_settings=run_settings)
         try:
             isinstance(map, tuple)
