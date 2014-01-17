@@ -275,11 +275,14 @@ def progress_context(context_id):
             if have_lock:
                 logger.debug("releasing lock for %s" % context_id)
                 my_lock.release()
+            else:
+                logger.debug("don't have lock for %s" % context_id)
 
     except SoftTimeLimitExceeded:
         raise
     except Exception, e:
-        logger.debug('tasks.py=%s' % e)
+        # FIXME: is there is unrecoverable error, task must give up lock
+        logger.error('tasks.py %s=%s' % (context_id, e))
         raise
 
 

@@ -543,4 +543,6 @@ def get_job_dir(output_storage_settings, run_settings):
 
 
 def get_scratch_platform():
-    return "file://local@127.0.0.1/"
+    #return "file://local@127.0.0.1/"
+    return "local/"
+

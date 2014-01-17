@@ -594,13 +594,13 @@ class Command(BaseCommand):
         # be removed.
         local_filesys_rootpath = settings.LOCAL_FILESYS_ROOT_PATH
         #local_filesys_rootpath = '/var/cloudenabling/remotesys'
-        nci_filesys_root_path = '/short/h72/BDP/BDP_payload'
+        #nci_filesys_root_path = '/short/h72/BDP/BDP_payload'
         local_platform, _ = models.Platform.objects.get_or_create(name='local',
             root_path=local_filesys_rootpath)
-        nectar_platform, _ = models.Platform.objects.get_or_create(
-            name='nectar', root_path='/home/centos')
-        nci_platform, _ = models.Platform.objects.get_or_create(
-            name='nci', root_path=nci_filesys_root_path)
+        # nectar_platform, _ = models.Platform.objects.get_or_create(
+        #     name='nectar', root_path='/home/centos')
+        # nci_platform, _ = models.Platform.objects.get_or_create(
+        #     name='nci', root_path=nci_filesys_root_path)
 
         logger.debug("local_filesys_rootpath=%s" % local_filesys_rootpath)
 
@@ -611,11 +611,11 @@ class Command(BaseCommand):
         self.define_hrmc()
         self.define_hrmc_sweep()
 
-        self.define_remote_make(nci_platform)
-        self.define_sweep_remotemake(nci_platform)
+        self.define_remote_make()
+        self.define_sweep_remotemake()
 
-        self.define_vasp(nci_platform)
-        self.define_sweep_vasp(nci_platform)
+        self.define_vasp()
+        self.define_sweep_vasp()
 
         self.setup_directive_args()
         print "done"
@@ -942,7 +942,7 @@ class Command(BaseCommand):
         local_fs.save("input/file.txt",
             ContentFile("foobar"))
 
-    def define_vasp(self, nci_platform):
+    def define_vasp(self):
         smartpack = "bdphpcprovider.smartconnectorscheduler.stages"
         self.upload_makefile = smartpack + ".make.movement.MakeUploadStage"
         self.download_makefile = smartpack + ".make.movement.MakeDownloadStage"
@@ -1017,7 +1017,7 @@ class Command(BaseCommand):
         #     schema = models.Schema.objects.get(namespace=sch)
         #     das, _ = models.DirectiveArgSet.objects.get_or_create(directive=vasp, order=i, schema=schema)
 
-    def define_remote_make(self, nci_platform):
+    def define_remote_make(self):
         smartpack = "bdphpcprovider.smartconnectorscheduler.stages"
         self.upload_makefile = smartpack + ".make.movement.MakeUploadStage"
         self.download_makefile = smartpack + ".make.movement.MakeDownloadStage"
@@ -1092,7 +1092,6 @@ class Command(BaseCommand):
         #         ]):
         #     schema = models.Schema.objects.get(namespace=sch)
         #     das, _ = models.DirectiveArgSet.objects.get_or_create(directive=remote_make, order=i, schema=schema)
-
 
     def handle(self, *args, **options):
         self.setup()

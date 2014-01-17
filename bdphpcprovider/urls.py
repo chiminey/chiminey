@@ -36,6 +36,7 @@ from bdphpcprovider.simpleui.views import (
     storage_platform_settings
     )
 
+from bdphpcprovider.simpleui.wizard.views import AddDirective1View
 
 from core.views import (
     UserProfileResource,
@@ -98,6 +99,10 @@ urlpatterns = patterns('',
         name='computation-platform-settings',),
     url(r'^accounts/settings/platform/storage/$', login_required(storage_platform_settings),
         name='storage-platform-settings',),
+
+    url(r'^wizard/$', login_required(AddDirective1View.as_view()),
+        name='wizard',),
+
 
     # # FIXME: this method is deprecated by list_jobs button.
     # url(r'^jobs/finished/edit/(?P<pk>\d+)/$', login_required(uiviews.FinishedContextUpdateView.as_view()),

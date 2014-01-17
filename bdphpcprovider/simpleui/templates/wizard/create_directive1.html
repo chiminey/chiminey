@@ -1,0 +1,331 @@
+{% extends "base.html" %}
+{% load staticfiles %}
+{% load widget_tweaks %}
+{% load parent %}
+
+{% block head %}
+<script type="text/javascript" src="{% static "wizard/underscore.js" %}"></script>
+{% endblock head %}
+
+{% block content %}
+
+
+<div class="container-fluid">
+
+    <div class="page-header"><h1>Add a new directive</h1></div>
+
+    <form class="form-horizontal form-inline" method="post"> {% csrf_token %}
+
+        <fieldset>
+        <legend>Directive Details</legend>
+        <div class="offset1">
+  {% for f in form %}
+  {% if f.errors %}
+            <div class="control-group error row-fluid">
+                <label class="control-label span1">{{ f.label }}</label>
+                    <div class="controls span11">{{f}}</div>
+                    <span class="help-inline">{{f.errors}}</span>
+            </div>
+    {% else %}
+            <div class="control-group row-fluid">
+                <label class="control-label span1">{{ f.label }}</label>
+                    <div class="controls span11">{{f}} </div>
+            </div>
+      {% endif %}
+  {% endfor %}
+  {{ formset_schema.management_form }}
+  {{ formset_dirarg.management_form }}
+  {{ formset_params.management_form }}
+        </div>
+        </fieldset>
+
+        <fieldset>
+        <legend>Schemas</legend>
+            <div class="schemas offset1">
+    {% for schema_form in formset_schema %}
+                <div class="" id="schema-{{ forloop.counter0 }}">
+      {% for f in schema_form %}
+      {% if f.errors %}
+                    <div class="control-group error row-fluid">
+      {% else %}
+                    <div class="control-group row-fluid">
+      {% endif %}
+
+                        <label class="control-label span1">{{ f.label }}</label>
+
+      {% if f.name == "DELETE" %}
+                        <div class="controls span11">{{schema_form.DELETE|attr:"onclick:delete_form(this)" }}</div>
+      {% else %}
+                        <div class="controls span11">{{f}}</div>
+      {% endif %}
+
+      {% if f.errors %}
+                        <span class="help-inline">{{f.errors}}</span>
+      {% endif %}
+                    </div>
+  {% endfor %}
+
+                <div class="params-{{forloop.counter0}}">
+                {% for params_form in formset_params %}
+<!--         <p>counter{{ forloop.counter0}}
+        {% myparent params_form forloop.counter0 as lhs %}
+        lhs {{lhs}}
+        rhs {{ forloop.parentloop.counter0 }}<p>
+ -->
+        {% if lhs == "" or lhs  == forloop.parentloop.counter0 %}
+                    <div  id="param-{{forloop.parentloop.counter0}}-{{ forloop.counter0 }}">
+          {% for f in params_form %}
+
+          {% if f.name == "parent" %}
+
+            {% if f.value != None %}
+                        <input type="hidden" name="param-{{ forloop.parentloop.counter0 }}-parent" id="id_param-{{ forloop.parentloop.counter0 }}-parent" value="{{f.value}}">
+            {% else %}
+                        <input type="hidden" name="param-{{ forloop.parentloop.counter0 }}-parent" id="id_param-{{ forloop.parentloop.counter0 }}-parent" value="{{forloop.parentloop.parentloop.counter0}}">
+
+            {% endif %}
+          {% else %}
+
+
+          {% if f.errors %}
+
+                            <div class="control-group error">
+          {% else %}
+                                <div class="control-group">
+          {% endif %}
+                                    <label class="control-label">{{ f.label }}</label>
+
+            {% if f.name == "DELETE" %}
+                                    <div class="controls">{{params_form.DELETE|attr:"onclick:delete_form(this)" }}</div>
+            {% else %}
+                                    <div class="controls">{{f}}</div>
+            {% endif %}
+
+        {% if f.errors %}
+                                    <span class="help-inline">{{f.errors}}</span>
+              {% endif %}
+                                </div>
+
+          {% endif %}
+
+          {% endfor %}
+
+                            </div>
+            {% endif %}
+
+         {#  <input type="hidden" name="param-{{ forloop.parentloop.counter0}}-{{ forloop.counter0 }}-parent" id="id_param-{{ forloop.parentloop.counter0}}-{{ forloop.counter0 }}-parent" value="{{forloop.parentloop.counter0}}"> #}
+        {% endfor %}
+                        </div>
+                        <div class="control-group">
+                            <div class="controls ">
+                                <a href="#" class="btn btn-info " onclick="add_param({{forloop.counter0}})">Add Param</a>
+                            </div>
+                        </div>
+                    </div>
+    {% endfor %}
+                </div>
+                <div class="offset1">
+                    <div class="control-group row-fluid">
+                        <div class="controls span11">
+                            <a href="#" class="btn btn-info add-schema offset1">Add schema</a>
+                        </div>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset>
+            <legend>Directive Argument</legend>
+            <div class="dirargs offset1">
+        {% for dirarg_form in formset_dirarg %}
+                <div id="dirarg-{{ forloop.counter0 }}">
+        {% for f in dirarg_form %}
+             {% if f.errors %}
+                    <div class="control-group error row-fluid">
+            {% else %}
+                    <div class="control-group row-fluid">
+         {% endif %}
+
+                    <label class="control-label span1">{{ f.label }}</label>
+
+         {% if f.name == "DELETE" %}
+                    <div class="controls span11">{{dirarg_form.DELETE|attr:"onclick:delete_form(this)" }}</div>
+         {% else %}
+                    <div class="controls span11">{{f}}</div>
+         {% endif %}
+
+         {% if f.errors %}
+                    <span class="help-inline">{{f.errors}}</span>
+         {% endif %}
+                </div>
+         {% endfor %}
+            </div>
+       {% endfor %}
+    </div>
+    </fieldset>
+
+    <div class="offset1">
+        <div class="control-group row-fluid">
+            <div class="controls span11">
+                <a href="#" class="btn btn-info add-dirarg offset1">Add dirarg</a>
+            </div>
+        </div>
+    </div>
+
+
+     <script type="text/html" id="schema-template">
+        <div id="schema-<%= id %>" class="">
+            <div class="control-group row-fluid">
+                <label class="control-label span1">Namespace</label>
+                <div class="controls span11">
+                    <input type="text" name="schemas-<%= id %>-namespace" id="id_schemas-<%= id %>-namespace" />
+                </div>
+            </div>
+            <div class="control-group row-fluid">
+                <label class="control-label span1" for="id_schemas-<%= id %>-name">Name</label>
+                <div class="controls span11">
+                    <input type="text" name="schemas-<%= id %>-name" id="id_schemas-<%= id %>-name" />
+                </div>
+            </div>
+            <div class="control-group row-fluid">
+                <label class="control-label span1">Description</label>
+                <div class="controls span11">
+                    <input type="text" name="schemas-<%= id %>-description" id="id_schemas-<%= id %>-description" />
+                </div>
+            </div>
+
+            <div class="control-group row-fluid">
+                <label class="control-label span1">Delete</label>
+                    <div class="controls span11">
+                        <input type="checkbox" name="schemas-<%= id %>-DELETE"  onclick="delete_form(this)">
+                    </div>
+            </div>
+
+            <div class="params-<%= id %>"></div>
+
+            <div class="control-group">
+                <div class="controls">
+                    <a href="#" class="btn btn-info " onclick="add_param(<%= id %>)">Add Param</a>
+                </div>
+    </script>
+
+     <script type="text/html" id="param-template">
+     <div id="param-<%= ind %>-<%= id %>" class="">
+        <div class="control-group">
+            <label class="control-label" >Name</label>
+            <div class="controls">
+                <input type="text" name="param-<%= id %>-name" id="id_param-<%= id %>-name" maxlength="50"/>
+            </div>
+        </div>
+        <div class="control-group">
+            <label class="control-label" >Type</label>
+            <div class="controls">
+                <input type="text" name="param-<%= id %>-type" id="id_param-<%= id %>-type" />
+            </div>
+        </div>
+        <input type="hidden" name="param-<%= id %>-parent" id="id_param-<%= id %>-parent" value="<%= ind %>">
+        <div class="control-group">
+            <label class="control-label">Delete</label>
+            <div class="controls">
+                <input type="checkbox" name="param-<%= id %>-DELETE"  onclick="delete_form(this)">
+            </div>
+        </div>
+    </div>
+    </script>
+
+    <script type="text/html" id="dirarg-template">
+    <div id="dirarg-<%= id %>">
+        <div class="control-group row-fluid">
+            <label class="control-label span1">Namespace</label>
+            <div class="controls span11">
+                <input type="text" name="dirargs-<%= id %>-namespace" id="id_dirargs-<%= id %>-namespace" />
+            </div>
+        </div>
+
+        <input type="hidden" name="dirargs-<%= id %>-directive" id="id_dirargs-<%= id %>-directive">
+        <input type="hidden" name="dirargs-<%= id %>-id" id="id_dirargs-<%= id %>-id">
+
+        <div class="control-group row-fluid">
+            <label class="control-label span1">Delete</label>
+            <div class="controls span11">
+                <input type="checkbox" name="dirarg-<%= id %>-DELETE"  onclick="delete_form(this)">
+            </div>
+        </div>
+    </div>
+    </script>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Create Event</button>
+        </div>
+
+    </form>
+ </div>
+
+ <script>
+   $('.add-schema').click(function(ev){
+     ev.preventDefault();
+     var count = $('.schemas').children().length;
+     var tmplMarkup = $('#schema-template').html();
+     var compiledTmpl = _.template(tmplMarkup, { id : count });
+     $('div.schemas').append(compiledTmpl);
+     // update form count
+     $('#id_schemas-TOTAL_FORMS').attr('value', count+1);
+   });
+
+   $('.add-dirarg').click(function(ev){
+     ev.preventDefault();
+     var count = $('.dirargs').children().length;
+     var tmplMarkup = $('#dirarg-template').html();
+     var compiledTmpl = _.template(tmplMarkup, { id : count });
+     $('div.dirargs').append(compiledTmpl);
+     // update form count
+     $('#id_dirargs-TOTAL_FORMS').attr('value', count+1);
+   });
+
+// {#
+//    $("[class*='add-param-']").click(function(ev){
+//      ev.preventDefault();
+//      var pos = $(this).attr('class').indexOf('add-param-');
+//      alert(pos);
+//      var pos2 = $(this).attr('class').indexOf(' ',pos);
+//      alert(pos2);
+//      var ind = $(this).attr('class').substring(pos+10,pos2);
+//      alert(ind);
+//      var count = $('.param').children().length;
+//      var tmplMarkup = $('#param-template').html();
+//      var compiledTmpl = _.template(tmplMarkup, { id : count });
+//      $('div.param').append(compiledTmpl);
+//      // update form count
+//      $('#id_param-TOTAL_FORMS').attr('value', count+1);
+//    });
+
+//  #}
+
+    function add_param(ind) {
+     // alert(ind);
+     var count = parseInt($('#id_param-TOTAL_FORMS').val(),10)
+     //var count = $('.params-' + ind).children().length;
+     var tmplMarkup = $('#param-template').html();
+     var compiledTmpl = _.template(tmplMarkup, { id : count, ind: ind });
+     $('div.params-' + ind).append(compiledTmpl);
+     // update form count
+     $('#id_param-TOTAL_FORMS').attr('value', (count+1));
+   }
+
+   function delete_form(env) {
+    $(env).parent().parent().parent().hide();
+    $(env).attr('value','on');
+   }
+
+   $(document).ready(function () {
+              $('#mytooltip').tooltip();
+
+          });
+
+ </script>
+
+<pre>
+debug= {{ debug_text}}
+{{ request.POST}}
+</pre>
+
+{% endblock %}
