@@ -31,7 +31,9 @@ from django.views.generic import ListView, UpdateView, CreateView, DeleteView
 from django.views.generic.base import TemplateView
 from django.core.urlresolvers import reverse
 from django.contrib.auth import logout
-from django.http import HttpResponseRedirect
+from django.http import (
+    HttpResponseRedirect, HttpResponsePermanentRedirect
+    )
 from django.template import RequestContext
 from django.shortcuts import redirect
 from django.shortcuts import render_to_response
@@ -118,11 +120,11 @@ def computation_platform_settings(request):
         if cluster_form.is_valid():
             schema = RMIT_SCHEMA + '/platform/computation/cluster/pbs_based'
             post_platform(schema, cluster_form.cleaned_data, request)
-            return HttpResponseRedirect('/accounts/settings/platform/computation/')
+            return HttpResponsePermanentRedirect(reverse('computation-platform-settings'))
         if cloudform.is_valid():
             schema = RMIT_SCHEMA + '/platform/computation/cloud/ec2-based'
             post_platform(schema, cloudform.cleaned_data, request)
-            return HttpResponseRedirect('/accounts/settings/platform/computation/')
+            return HttpResponsePermanentRedirect(reverse('computation-platform-settings'))
 
     #FIXME: consider using non-locahost URL for api_host
     api_host = "http://127.0.0.1"
@@ -182,7 +184,7 @@ def storage_platform_settings(request):
         if unix_form.is_valid():
             schema = RMIT_SCHEMA + '/platform/storage/unix'
             post_platform(schema, unix_form.cleaned_data, request)
-            return HttpResponseRedirect('/accounts/settings/platform/storage')
+            return HttpResponsePermanentRedirect(reverse('storage-platform-settings'))
         mytardis_form, form_data = make_directive_form(
             request=request.POST,
             platform_params=mytardis_params,
@@ -191,7 +193,7 @@ def storage_platform_settings(request):
             logger.debug('valid mytardis')
             schema = RMIT_SCHEMA + '/platform/storage/mytardis'
             post_platform(schema, mytardis_form.cleaned_data, request)
-            return HttpResponseRedirect('/accounts/settings/platform/storage')
+            return HttpResponsePermanentRedirect(reverse('storage-platform-settings'))
 
     #FIXME: consider using non-locahost URL for api_host
     api_host = "http://127.0.0.1"
@@ -1306,6 +1308,17 @@ def get_contexts(request):
                        context_instance=RequestContext(request))
 
 
+from django.http import HttpResponse, iri_to_uri
+
+
+class HttpResponseTemporaryRedirect(HttpResponse):
+    status_code = 307
+
+    def __init__(self, redirect_to):
+        HttpResponse.__init__(self)
+        self['Location'] = iri_to_uri(redirect_to)
+
+
 def submit_directive(request, directive_id):
     try:
         directive_id = int(directive_id)
@@ -1347,10 +1360,10 @@ def submit_directive(request, directive_id):
             logger.debug("form result =%s" % form.cleaned_data)
             valid = submit_job(request, form, directive['name'])
             if valid:
-                return redirect("hrmcjob-list")
+                return HttpResponsePermanentRedirect(reverse("hrmcjob-list"))
             else:
                 logger.debug("invalid")
-                redirect("makedirective", directive_id=directive_id)
+                return HttpResponsePermanentRedirect(reverse("makedirective", directive_id=directive_id))
         else:
             messages.error(request, "Job Failed because of validation errors. See below")
     else:

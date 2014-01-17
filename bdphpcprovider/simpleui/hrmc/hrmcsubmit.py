@@ -5,7 +5,7 @@ from bdphpcprovider.simpleui import validators
 
 class HRMCSubmitForm(forms.Form):
 
-    number_vm_instances = forms.IntegerField(min_value=0,help_text="Ensure tenancy has sufficient resources")
+    number_vm_instances = forms.IntegerField(min_value=0, help_text="Ensure tenancy has sufficient resources")
     minimum_number_vm_instances = forms.IntegerField(
         help_text="Ensure tenancy has sufficient resources", label=("Minimum No. VMs"))
     input_location = forms.CharField(label=_("Input Location"),
