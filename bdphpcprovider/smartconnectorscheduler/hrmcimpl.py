@@ -9,6 +9,8 @@ from bdphpcprovider.smartconnectorscheduler import botocloudconnector
 logger = logging.getLogger(__name__)
 
 
+# FIXME: is this package deprecated?
+
 class Error(Exception):
     pass
 

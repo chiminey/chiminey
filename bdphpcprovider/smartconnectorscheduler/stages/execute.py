@@ -34,12 +34,13 @@ from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputExcepti
 from bdphpcprovider.smartconnectorscheduler \
     import mytardis, models, hrmcstages, sshconnector, smartconnector, platform
 
-from bdphpcprovider.smartconnectorscheduler.stages.composite import (make_graph_paramset, make_paramset)
+from bdphpcprovider.smartconnectorscheduler.mytardis import create_paramset
 
 
 logger = logging.getLogger(__name__)
 
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+
 
 class Execute(Stage):
     """
@@ -523,7 +524,7 @@ class Execute(Stage):
             # would required PUT of paramerset data to existing experiment.
             #fixme uncomment later
             local_settings.update(mytardis_settings)
-            self.experiment_id = mytardis.post_dataset(
+            self.experiment_id = mytardis.create_dataset(
                 settings=local_settings,
                 source_url=source_files_url,
                 exp_id=self.experiment_id,
@@ -531,7 +532,7 @@ class Execute(Stage):
                 dataset_name=_get_dataset_name_for_input,
                 experiment_paramset=[],
                 dataset_paramset=[
-                    make_paramset('hrmcdataset/input', [])])
+                    create_paramset('hrmcdataset/input', [])])
 
         else:
             logger.warn("no mytardis host specified")

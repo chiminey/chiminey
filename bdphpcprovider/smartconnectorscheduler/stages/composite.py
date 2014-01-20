@@ -104,37 +104,5 @@ class ParallelStage(Stage):
         return total_templates
 
 
-# TODO: these methods should be moved to MyTardis specfic package
-def make_graph_paramset(schema_ns,
-    name, graph_info, value_dict, value_keys):
-
-    res = {}
-    res['schema'] = "http://rmit.edu.au/schemas/%s" % schema_ns
-    paramset = []
-
-    def _make_param(x, y):
-        param = {}
-        param['name'] = x
-        param['string_value'] = y
-        return param
-
-    for x, y in (
-        ("graph_info", json.dumps(graph_info)),
-        ("name", name),
-        ('value_dict', json.dumps(value_dict)),
-        ("value_keys", json.dumps(value_keys))):
-
-        paramset.append(_make_param(x, y))
-    res['parameters'] = paramset
-
-    return res
-
-# TODO: these methods should be moved to MyTardis specfic package
-def make_paramset(schema_ns, parameters):
-    res = {}
-    res['schema'] = 'http://rmit.edu.au/schemas/%s' % schema_ns
-    res['parameters'] = parameters
-    return res
-
 
 

@@ -31,8 +31,8 @@ from collections import namedtuple
 
 from boto.ec2.regioninfo import RegionInfo
 from boto.exception import EC2ResponseError
-from bdphpcprovider.smartconnectorscheduler.sshconnector import open_connection,\
-    run_command, is_ssh_ready, AuthError, run_command_with_status
+from bdphpcprovider.smartconnectorscheduler.sshconnector import (
+    open_connection, is_ssh_ready, AuthError, run_command_with_status)
 from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 
 
@@ -213,9 +213,9 @@ def _store_md5_on_instances(all_instances, group_id, settings):
             " % (ip_address, group_id))
             ssh_client = open_connection(ip_address=ip_address, settings=settings)
             group_id_path = os.path.join(settings['group_id_dir'], group_id)
-            run_command(ssh_client, "mkdir %s" % settings['group_id_dir'])
+            stdout, err = run_command_with_status(ssh_client, "mkdir %s" % settings['group_id_dir'])
             logger.info("Group ID directory created")
-            run_command(ssh_client, "touch %s" % group_id_path)
+            stdout, err = run_command_with_status(ssh_client, "touch %s" % group_id_path)
             logger.info("Group ID file created")
             instances_with_groupid.append(instance)
         except Exception as ex:
@@ -443,9 +443,9 @@ def print_all_information(settings, all_instances=None):
             ip = instance.private_ip_address
         try:
             ssh = open_connection(ip, settings)
-            group_name = run_command(ssh, "ls %s " % settings['group_id_dir'])
+            (group_name, err) = run_command_with_status(ssh, "ls %s " % settings['group_id_dir'])
             vm_type = 'Other'
-            res = run_command(ssh, "[ -d %s ] && echo 1\
+            (res, err) = run_command_with_status(ssh, "[ -d %s ] && echo 1\
             " % settings['group_id_dir'])
 
             if '1\n' in res:
@@ -460,7 +460,7 @@ def print_all_information(settings, all_instances=None):
         except AuthError:
             logger.debug("Trying to access VMs that "
                          "are not created with the provided private key")
-        except  Exception, e:
+        except Exception, e:
             logger.error(e)
             pass
 
@@ -589,7 +589,7 @@ def retrieve_node_info(group_id, settings):
         logger.debug("ssh client created %s" % ssh_client)
         # NOTE: assumes use of bash shell
         group_id_path = os.path.join(settings['group_id_dir'], group_id)
-        res = run_command(ssh_client, "[ -f %s ] && echo 1" % group_id_path)
+        (res,err) = run_command_with_status(ssh_client, "[ -f %s ] && echo 1" % group_id_path)
         logger.debug("res=%s" % res)
         if '1\n' in res:
             logger.debug("node %s exists for group %s "

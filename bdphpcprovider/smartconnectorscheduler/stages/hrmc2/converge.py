@@ -32,9 +32,6 @@ from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputExcepti
 from bdphpcprovider.smartconnectorscheduler import mytardis
 from bdphpcprovider.smartconnectorscheduler import models
 
-from bdphpcprovider.smartconnectorscheduler.stages.composite import (make_graph_paramset, make_paramset)
-
-
 logger = logging.getLogger(__name__)
 
 DATA_ERRORS_FILE = "data_errors.dat"
@@ -362,7 +359,7 @@ class Converge(Stage):
             logger.debug("exp_value_keys=%s" % exp_value_keys)
             logger.debug("legends=%s" % legends)
 
-            graph_paramset = [make_graph_paramset("expgraph",
+            graph_paramset = [mytardis.create_graph_paramset("expgraph",
                 name="hrmcexp2",
                 graph_info={"axes": ["step", "ERRGr*wf"], "precision": [0, 2], "legends": legends},
                 value_dict={},
@@ -484,7 +481,7 @@ class Converge(Stage):
                 all_settings = dict(self.boto_settings)
                 all_settings.update(mytardis_settings)
                 all_settings.update(output_storage_settings)
-                self.experiment_id = mytardis.post_dataset(
+                self.experiment_id = mytardis.create_dataset(
                     settings=all_settings,
                     source_url=source_url,
                     exp_name=hrmcstages.get_exp_name_for_output,
@@ -492,15 +489,15 @@ class Converge(Stage):
                     exp_id=self.experiment_id,
                     experiment_paramset=graph_paramset,
                     dataset_paramset=[
-                        make_paramset('hrmcdataset/output', []),
-                        make_graph_paramset('dsetgraph',
+                        mytardis.create_paramset('hrmcdataset/output', []),
+                        mytardis.create_graph_paramset('dsetgraph',
                             name="hrmcdset",
                             graph_info={"axes":["r (Angstroms)", "PSD"],
                                 "legends":["psd", "PSD_exp"],  "type":"line"},
                             value_dict=hrmcdset_val,
                             value_keys=[["hrmcdfile/r1", "hrmcdfile/g1"],
                                 ["hrmcdfile/r2", "hrmcdfile/g2"]]),
-                        make_graph_paramset('dsetgraph',
+                        mytardis.create_graph_paramset('dsetgraph',
                             name='hrmcdset2',
                             graph_info={"axes":["r (Angstroms)", "g(r)"],
                                 "legends":["data_grfinal", "input_gr"],
@@ -508,7 +505,7 @@ class Converge(Stage):
                             value_dict={},
                             value_keys=[["hrmcdfile/r3", "hrmcdfile/g3"],
                                 ["hrmcdfile/r4", "hrmcdfile/g4"]]),
-                        make_graph_paramset('dsetgraph',
+                        mytardis.create_graph_paramset('dsetgraph',
                             name='hrmcdset%s' % m,
                             graph_info={},
                             value_dict={"hrmcdset%s/step" % m: xs,
@@ -516,7 +513,7 @@ class Converge(Stage):
                             value_keys=[]),
                         ],
                     datafile_paramset=[
-                        make_graph_paramset('dfilegraph',
+                        mytardis.create_graph_paramset('dfilegraph',
                             name="hrmcdfile",
                             graph_info={},
                             value_dict={},

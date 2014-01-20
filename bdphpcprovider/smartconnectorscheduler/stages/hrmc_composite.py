@@ -168,7 +168,7 @@ class HRMCParallelStage(ParallelStage):
         return total_templates
 
 
-# def make_graph_paramset(schema_ns,
+# def create_graph_paramset(schema_ns,
 #     name, graph_info, value_dict, value_keys):
 
 #     res = {}
@@ -193,7 +193,7 @@ class HRMCParallelStage(ParallelStage):
 #     return res
 
 
-# def make_paramset(schema_ns, parameters):
+# def create_paramset(schema_ns, parameters):
 #     res = {}
 #     res['schema'] = 'http://rmit.edu.au/schemas/%s' % schema_ns
 #     res['parameters'] = parameters

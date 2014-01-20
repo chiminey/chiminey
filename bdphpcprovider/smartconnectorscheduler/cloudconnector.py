@@ -34,6 +34,9 @@ from libcloud.compute.providers import get_driver
 from bdphpcprovider.smartconnectorscheduler.sshconnector import open_connection, run_command, is_ssh_ready, AuthError
 
 
+# FIXME: is this package deprecated?
+
+
 import libcloud.security
 libcloud.security.VERIFY_SSL_CERT = False
 

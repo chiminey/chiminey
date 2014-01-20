@@ -21,6 +21,8 @@ logger = logging.getLogger(__name__)
 NODE_STATE = ['RUNNING', 'REBOOTING', 'TERMINATED', 'PENDING', 'UNKNOWN']
 
 
+# FIXME:Is this file deprecated and can it be removed?
+
 class Error(Exception):
     pass
 
