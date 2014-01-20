@@ -33,7 +33,7 @@ from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 
 
 from bdphpcprovider.smartconnectorscheduler import mytardis
-from bdphpcprovider.smartconnectorscheduler.stages.composite import (make_graph_paramset, make_paramset)
+# from bdphpcprovider.smartconnectorscheduler.mytardis import (create_graph_paramset, create_paramset)
 from paramiko.ssh_exception import SSHException
 
 
@@ -335,8 +335,8 @@ class MakeFinishedStage(Stage):
                     dataset_name=_get_dataset_name_for_vasp,
                     experiment_paramset=[],
                     dataset_paramset=[
-                        make_paramset("remotemake/output", []),
-                        make_graph_paramset("dsetgraph",
+                        create_paramset("remotemake/output", []),
+                        create_graph_paramset("dsetgraph",
                             name="makedset",
                             graph_info={},
                             value_dict={"makedset/num_kp": num_kp, "makedset/encut": encut, "makedset/toten": toten}
@@ -363,7 +363,7 @@ class MakeFinishedStage(Stage):
                     dataset_name=_get_dataset_name_for_make,
                     experiment_paramset=[],
                     dataset_paramset=[
-                        make_paramset("remotemake/output", [])]
+                        create_paramset("remotemake/output", [])]
                     )
 
     def output(self, run_settings):

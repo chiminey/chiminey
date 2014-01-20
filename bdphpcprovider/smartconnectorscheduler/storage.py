@@ -35,7 +35,6 @@ from paramiko.ssh_exception import SSHException
 
 from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -575,7 +574,8 @@ def put_file(file_url, content):
     elif scheme == "tardis":
         # TODO: do a POST of a new datafile into existing exp and dataset
         # parse file_url to extract tardis host, exp_id and dataset_id
-        mytardis.post_datafile(file_url, content)
+        from bdphpcprovider.smartconnectorscheduler.mytardis import create_datafile
+        create_datafile(file_url, content)
     elif scheme == "file":
         root_path = get_value('root_path', query_settings)
         logger.debug("remote_fs_path=%s" % root_path)
@@ -710,7 +710,8 @@ def get_filep(file_bdp_url, sftp_reference=False):
         # parse file_bdp_url to extract tardis host, exp_id and dataset_id
         exp_id = 0
         dataset_id = 0
-        mytardis.get_datafile(file_bdp_url, exp_id, dataset_id)
+        from bdphpcprovider.smartconnectorscheduler.mytardis import retrieve_datafile
+        retrieve_datafile(file_bdp_url, exp_id, dataset_id)
         # TODO: get content and make a file pointer out of it
         return "a={{a}} b={{b}}"
         raise NotImplementedError("tardis scheme not implemented")

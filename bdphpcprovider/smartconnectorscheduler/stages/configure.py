@@ -29,9 +29,8 @@ from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler import smartconnector, platform
 
-
 from bdphpcprovider.smartconnectorscheduler import mytardis
-from bdphpcprovider.smartconnectorscheduler.stages.composite import (make_graph_paramset, make_paramset)
+
 
 
 logger = logging.getLogger(__name__)
@@ -149,13 +148,13 @@ class Configure(Stage, UI):
 
             ename = _get_exp_name_for_input(output_location)
             logger.debug("ename=%s" % ename)
-            self.experiment_id = mytardis.post_experiment(
+            self.experiment_id = mytardis.create_experiment(
                 settings=mytardis_settings,
                 exp_id=self.experiment_id,
                 expname=ename,
                 experiment_paramset=[
-                    make_paramset("hrmcexp", []),
-                    make_graph_paramset("expgraph",
+                    mytardis.create_paramset("hrmcexp", []),
+                    mytardis.create_graph_paramset("expgraph",
                         name="hrmcexp",
                         graph_info={"axes":["iteration", "criterion"], "legends":["criterion"], "precision":[0, 2]},
                         value_dict={},

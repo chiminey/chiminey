@@ -176,7 +176,7 @@ class TestTardisAPI(unittest.TestCase):
                 self.settings, file_path,
                 is_relative_path=True)
             logger.debug("source_url=%s"  % source_url)
-            exp_id = mytardis.post_dataset(settings=self.settings,
+            exp_id = mytardis.create_dataset(settings=self.settings,
                 source_url=source_url,
                 exp_id=exp_id,
                 dataset_schema="http://rmit.edu.au/schemas/hrmcdataset/output")

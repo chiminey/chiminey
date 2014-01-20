@@ -1,4 +1,4 @@
-# Copyright (C) 2013, RMIT University
+# Copyright (C) 2014, RMIT University
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to
@@ -26,12 +26,108 @@ import json
 import requests
 from requests.auth import HTTPBasicAuth
 
+from bdphpcprovider.smartconnectorscheduler.hrmcstages import (get_value,
+                                                               get_filep,
+                                                               parse_bdpurl,
+                                                               list_all_files)
 
 logger = logging.getLogger(__name__)
 
-from bdphpcprovider.smartconnectorscheduler import hrmcstages
+SCHEMA_PREFIX = "http://rmit.edu.au/schemas"
+
 
 EXP_DATASET_NAME_SPLIT = 2
+
+# def _get_mytardis_data(tardis_url, field_name):
+#     headers = {'content-type': 'application/json'}
+#     cookies = {}  # only pulling public info so don't need auth
+#     url = "%sapi/v1/%s?limit=0&format=json" % (
+#         tardis_url,
+#         field_name)
+#     logger.debug("url=%s" % url)
+#     r = requests.get(url, headers=headers, cookies=cookies)
+#     if r.status_code != 200:
+#         logger.debug('URL=%s' % url)
+#         logger.debug('r.json=%s' % r.json)
+#         #logger.debug('r.text=%s' % pformat(r.text))
+#         #logger.debug('r.headers=%s' % r.headers)
+#         logger.warn("Cannot read %s from %s" % (field_name, tardis_url))
+#         return {}
+#     return r.json()
+
+# def get_parameter_uri(url, name_uri):
+#     res = _get_mytardis_data(url, name_uri + "/")
+#     logger.debug("res=%s" % res)
+#     if not len(res):
+#         return ""
+#     else:
+#         return res['name']
+
+# def extract_id(uri):
+#     if str(uri)[-1] == '/':
+#         return str(uri).split('/')[-2:-1][0]
+#     else:
+#         return str(uri).split('/')[-1]
+
+
+def create_graph_paramset(schema_ns, name, graph_info, value_dict, value_keys):
+    """
+    Construct graph related parameterset
+
+    Notes:
+
+    Args:
+        schema_ns: the schema namespace suffix
+        name: graph name
+        graph_info: attributes for generated graph
+        value_dict: attribute values
+        value_keys: indexes for read attributes
+
+    Returns:
+        Mytardis metadata parameterset format as dict.
+
+    Raises:
+
+    """
+
+    res = {}
+    res['schema'] = "%s/%s" % (SCHEMA_PREFIX, schema_ns)
+    paramset = []
+
+    def _make_param(x, y):
+        param = {}
+        param['name'] = x
+        param['string_value'] = y
+        return param
+
+    for x, y in (
+        ("graph_info", json.dumps(graph_info)),
+        ("name", name),
+        ('value_dict', json.dumps(value_dict)),
+        ("value_keys", json.dumps(value_keys))):
+
+        paramset.append(_make_param(x, y))
+    res['parameters'] = paramset
+
+    return res
+
+
+def create_paramset(schema_ns, parameters):
+    """
+    Construct MyTardis parameterset format
+
+    Args:
+        schema_ns:
+        parameters:
+
+    Returns:
+        Mytardis metadata parameterset format as dict.
+
+    """
+    res = {}
+    res['schema'] = '%s/%s' % (SCHEMA_PREFIX, schema_ns)
+    res['parameters'] = parameters
+    return res
 
 
 def _get_exp_name(settings, url, path):
@@ -49,49 +145,37 @@ def _get_dataset_name(settings, url, path):
     return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
 
 
-def _get_mytardis_data(tardis_url, field_name):
-    headers = {'content-type': 'application/json'}
-    cookies = {}  # only pulling public info so don't need auth
-    url = "%sapi/v1/%s?limit=0&format=json" % (
-        tardis_url,
-        field_name)
-    logger.debug("url=%s" % url)
-    r = requests.get(url, headers=headers, cookies=cookies)
-    if r.status_code != 200:
-        logger.debug('URL=%s' % url)
-        logger.debug('r.json=%s' % r.json)
-        #logger.debug('r.text=%s' % pformat(r.text))
-        #logger.debug('r.headers=%s' % r.headers)
-        logger.warn("Cannot read %s from %s" % (field_name, tardis_url))
-        return {}
-    return r.json()
+def create_experiment(settings, exp_id, expname, experiment_paramset=[]):
+    """
+        Build Experiment on Remote tardis containing files and metadata
 
+        Notes:
+            If exp_id is given, adds to existing experiment, else new created
+            and id returned.  experiment_paramset is appended to any
+            existing metadata and does not overwrite.
+        Args:
+            settings.keys():  ['mytardis_user', 'mytardis_password,
+                               'mytardis_host']
+            exp_id: unique experiment id for existing experiment or 0 for new
+            expname: Name for the experiment
+            experiment_paramset: Metadata package for experiment parameterset
 
-def get_parameter_uri(url, name_uri):
-    res = _get_mytardis_data(url, name_uri + "/")
-    logger.debug("res=%s" % res)
-    if not len(res):
-        return ""
-    else:
-        return res['name']
+        Returns:
+            New mytardis experiment id
 
-
-def extract_id(uri):
-    if str(uri)[-1] == '/':
-        return str(uri).split('/')[-2:-1][0]
-    else:
-        return str(uri).split('/')[-1]
-
-
-def post_experiment(settings,
-    exp_id,
-    expname,
-    experiment_paramset=[]):
+        Raises:
+            IndexError if bad settings
+    """
     # get existing experiment or create new
     new_exp_id = exp_id
-    tardis_user = settings["mytardis_user"]
-    tardis_pass = settings["mytardis_password"]
-    tardis_host_url = "http://%s" % settings["mytardis_host"]
+    try:
+        tardis_user = settings["mytardis_user"]
+        tardis_pass = settings["mytardis_password"]
+        tardis_host_url = "http://%s" % settings["mytardis_host"]
+    except IndexError, e:
+        logger.error(e)
+        raise
+
     logger.debug("experiment_paramset=%s" % experiment_paramset)
     logger.debug(settings)
     exp_id_pat = re.compile(".*/([0-9]+)/$")
@@ -139,14 +223,11 @@ def post_experiment(settings,
         if experiment_paramset:
             logger.debug("updating metadata from existing experiment")
 
-
-
             # exp_obj = _get_mytardis_data(tardis_url, 'experiment/%s' % new_exp_id)
 
             # sch = schema_info['ns']
             # for parameterset in experiment['parameter_sets']:
             #     sch = parameterset['schema']
-
             #     parameter_res = {}
             #     for parameter in parameterset['parameters']:
             #         name = get_parameter_name(url, "parametername/%s" % extract_id(parameter['name']))
@@ -156,7 +237,6 @@ def post_experiment(settings,
             #         parameter_res[name] = text
             #     if parameter_res:
             #         res.append(parameter_res)
-
             # for pset in experiment_paramset:
 
             url = "%s/api/v1/experimentparameterset/?format=json" % tardis_host_url
@@ -188,7 +268,7 @@ def post_experiment(settings,
     return new_exp_id
 
 
-def post_dataset(settings,
+def create_dataset(settings,
         source_url,
         exp_id,
         exp_name=_get_exp_name,
@@ -198,25 +278,34 @@ def post_dataset(settings,
         datafile_paramset=[],
         dfile_extract_func=None):
     """
-    POST to mytardis_host REST API with mytardis_user and mytardis_password
-    credentials to create or update experiment for a new dataset containing
-    datafiles from source_url BDP directory.
 
-    exp_name and dataset_name are supplied functions that break up the
-    experiment and dataset names respectively.
+    Notes:
+        POST to mytardis_host REST API with mytardis_user and mytardis_password
+        credentials to create or update experiment for a new dataset containing
+        datafiles from source_url BDP directory.
 
-    dataset_schema is the namespace of the schema at the mytardis that will
-    be tagged to the dataset.
+    Args:
+        settings:
 
-    FIXME: What if tardis in unavailable?  Connection to mytardis probably
+        source_url: url containing data to be ingested
+        exp_id:
+        [exp_name,dataset_name]:  functions that return new
+    experiment and dataset names respectively based on url and path
+        experiment_paramset: ...
+        dataset_paramset: ...
+        datafile_paramset:
+        dfile_extract_func:
+
+
+    FIXME,TODO: What if tardis in unavailable?  Connection to mytardis probably
     better handled as sperate celery subtask, which can retry until working and
     be async
 
-    FIXME: this method is not generic enough to handle all situations. e.g.,
-    it sets hrmc* schemas which should be parameters like dataset_schema
-
     FIXME: missing all error checking and retrying of connection to mytardis.
+    Reliability framework should be able to supply this?
     """
+
+    #TODO: method should take BDP url source_url not, expanded one.
 
     tardis_user = settings["mytardis_user"]
     tardis_pass = settings["mytardis_password"]
@@ -225,18 +314,18 @@ def post_dataset(settings,
         tardis_host_url))
 
     (source_scheme, source_location, source_path, source_location,
-        query_settings) = hrmcstages.parse_bdpurl(source_url)
+        query_settings) = parse_bdpurl(source_url)
 
     logger.debug("source_path=%s" % source_path)
 
     if source_scheme == "file":
-        root_path = hrmcstages.get_value('root_path', query_settings)
+        root_path = get_value('root_path', query_settings)
     else:
         logger.debug('schema=%s' % source_scheme)
         #raise InvalidInputError("only file source_schema supported for source of mytardis transfer")
 
     expname = exp_name(settings, source_url, source_path)
-    new_exp_id = post_experiment(settings, exp_id, expname, experiment_paramset)
+    new_exp_id = create_experiment(settings, exp_id, expname, experiment_paramset)
 
     new_experiment_uri = "/api/v1/experiment/%s/" % new_exp_id
 
@@ -277,7 +366,7 @@ def post_dataset(settings,
     new_dataset_uri = header_location[len(tardis_host_url):]
 
     # move files across
-    source_files = hrmcstages.list_all_files(source_url)
+    source_files = list_all_files(source_url)
     logger.debug("source_files=%s" % source_files)
     url = "%s/api/v1/dataset_file/" % tardis_host_url
     headers = {'Accept': 'application/json'}
@@ -297,7 +386,7 @@ def post_dataset(settings,
         logger.debug('file_location=%s' % os.path.join(source_location, file_location))
         source_file_url = "%s://%s?%s" % (source_scheme, os.path.join(source_location, file_location), args)
         logger.debug('source_file_url=%s' % source_file_url)
-        source_file, source_file_ref = hrmcstages.get_filep(source_file_url, sftp_reference=True)
+        source_file, source_file_ref = get_filep(source_file_url, sftp_reference=True)
         logger.debug('source_file=%s' % source_file._name)
         #file_path = os.path.join(root_path, file_location)
         #file_path = os.path.join(source_url, file_location)
@@ -401,6 +490,58 @@ def post_dataset(settings,
     return new_exp_id
 
 
+def retrieve_datafile(url):
+    """
+    Retrieve contents from a mytardis datafile based on url
+
+    NB: Has this function been tested?
+
+    """
+
+    (source_scheme, tardis_host_url, source_path, source_location,
+        query_settings) = parse_bdpurl(url)
+
+    query_settings['mytardis_host'] = tardis_host_url
+
+    logger.debug("query_settings=%s" % query_settings)
+
+    exp_name = get_value('exp_name', query_settings)
+    dataset_name = get_value('dataset_name', query_settings)
+    root_path = get_value('root_path', query_settings)
+    fname = get_value('fname', query_settings)
+    tardis_user = get_value('mytardis_username', query_settings)
+    tardis_pass = get_value('mytardis_password', query_settings)
+
+    exp_id, _ = _get_or_create_experiment(query_settings, exp_name)
+    dataset_id, _ = _get_or_create_dataset(query_settings, dataset_name, exp_id)
+
+    url = "http://%s/api/v1/dataset_file/%s/" % (tardis_host_url, dataset_id)
+    headers = {'Accept': 'application/json'}
+
+    logger.debug("fname=%s" % fname)
+    # file_path = os.path.join(root_path, fname)
+    # logger.debug("file_path=%s" % file_path)
+    #logger.debug("content=%s" % open(file_path,'rb').read())
+    # data = json.dumps({
+    #     'dataset': str(new_dataset_uri),
+    #     'filename': os.path.basename(fname),
+    #     'size': os.stat(temp.name).st_size,
+    #     'mimetype': 'text/plain',
+    #     'md5sum': hashlib.md5(temp.read()).hexdigest()
+    #     })
+    # logger.debug("data=%s" % data)
+
+    #temp.seek(0)
+    r = requests.get(url, headers=headers,
+        auth=HTTPBasicAuth(tardis_user, tardis_pass)
+        )
+    # FIXME: need to check for status_code and handle failures.
+
+    # logger.debug("r.js=%s" % r.json)
+    # logger.debug("r.te=%s" % r.text)
+    # logger.debug("r.he=%s" % r.headers)
+    return r.text
+
 def _extract_id_from_location(name, r):
     if 'location' in r.headers:
         id_pat = re.compile(".*/([0-9]+)/$")
@@ -425,7 +566,7 @@ def _extract_id_from_location(name, r):
         return 0
 
 
-def get_or_create_experiment(query_settings, exp_name):
+def _get_or_create_experiment(query_settings, exp_name):
 
     headers = {'content-type': 'application/json'}
     tardis_user = query_settings["mytardis_username"]
@@ -488,7 +629,7 @@ def _get_dataset(settings, dataset_name, exp_id):
     return ids
 
 
-def get_or_create_dataset(settings, dataset_name, exp_id, dataset_schema=None):
+def _get_or_create_dataset(settings, dataset_name, exp_id, dataset_schema=None):
     ids = _get_dataset(settings, dataset_name, exp_id)
 
     if not ids:
@@ -529,75 +670,28 @@ def get_or_create_dataset(settings, dataset_name, exp_id, dataset_schema=None):
         return (ids[0], False)
 
 
-def get_datafile(dest_url):
-
-    (source_scheme, tardis_host_url, source_path, source_location,
-        query_settings) = hrmcstages.parse_bdpurl(dest_url)
-
-    query_settings['mytardis_host'] = tardis_host_url
-
-    logger.debug("query_settings=%s" % query_settings)
-
-    exp_name = hrmcstages.get_value('exp_name', query_settings)
-    dataset_name = hrmcstages.get_value('dataset_name', query_settings)
-    root_path = hrmcstages.get_value('root_path', query_settings)
-    fname = hrmcstages.get_value('fname', query_settings)
-    tardis_user = hrmcstages.get_value('mytardis_username', query_settings)
-    tardis_pass = hrmcstages.get_value('mytardis_password', query_settings)
-
-    exp_id, _ = get_or_create_experiment(query_settings, exp_name)
-    dataset_id, _ = get_or_create_dataset(query_settings, dataset_name, exp_id)
-
-    url = "http://%s/api/v1/dataset_file/%s/" % (tardis_host_url, dataset_id)
-    headers = {'Accept': 'application/json'}
-
-    logger.debug("fname=%s" % fname)
-    # file_path = os.path.join(root_path, fname)
-    # logger.debug("file_path=%s" % file_path)
-    #logger.debug("content=%s" % open(file_path,'rb').read())
-    # data = json.dumps({
-    #     'dataset': str(new_dataset_uri),
-    #     'filename': os.path.basename(fname),
-    #     'size': os.stat(temp.name).st_size,
-    #     'mimetype': 'text/plain',
-    #     'md5sum': hashlib.md5(temp.read()).hexdigest()
-    #     })
-    # logger.debug("data=%s" % data)
-
-    #temp.seek(0)
-    r = requests.get(url, headers=headers,
-        auth=HTTPBasicAuth(tardis_user, tardis_pass)
-        )
-    # FIXME: need to check for status_code and handle failures.
-
-    # logger.debug("r.js=%s" % r.json)
-    # logger.debug("r.te=%s" % r.text)
-    # logger.debug("r.he=%s" % r.headers)
-    return r.text
-
-
-def post_datafile(dest_url, content):
+def _post_datafile(dest_url, content):
     """
        Do post to mytardis to create new datafile and any exp and dataset if
        needed
     """
 
     (source_scheme, tardis_host_url, source_path, source_location,
-        query_settings) = hrmcstages.parse_bdpurl(dest_url)
+        query_settings) = parse_bdpurl(dest_url)
 
     query_settings['mytardis_host'] = tardis_host_url
 
     logger.debug("query_settings=%s" % query_settings)
 
-    exp_name = hrmcstages.get_value('exp_name', query_settings)
-    dataset_name = hrmcstages.get_value('dataset_name', query_settings)
-    root_path = hrmcstages.get_value('root_path', query_settings)
-    fname = hrmcstages.get_value('fname', query_settings)
-    tardis_user = hrmcstages.get_value('mytardis_username', query_settings)
-    tardis_pass = hrmcstages.get_value('mytardis_password', query_settings)
+    exp_name = get_value('exp_name', query_settings)
+    dataset_name = get_value('dataset_name', query_settings)
+    root_path = get_value('root_path', query_settings)
+    fname = get_value('fname', query_settings)
+    tardis_user = get_value('mytardis_username', query_settings)
+    tardis_pass = get_value('mytardis_password', query_settings)
 
-    exp_id, _ = get_or_create_experiment(query_settings, exp_name)
-    dataset_id, _ = get_or_create_dataset(query_settings, dataset_name, exp_id)
+    exp_id, _ = _get_or_create_experiment(query_settings, exp_name)
+    dataset_id, _ = _get_or_create_dataset(query_settings, dataset_name, exp_id)
 
     url = "http://%s/api/v1/dataset_file/" % tardis_host_url
     headers = {'Accept': 'application/json'}
@@ -632,4 +726,6 @@ def post_datafile(dest_url, content):
     # logger.debug("r.js=%s" % r.json)
     # logger.debug("r.te=%s" % r.text)
     # logger.debug("r.he=%s" % r.headers)
+
+
 

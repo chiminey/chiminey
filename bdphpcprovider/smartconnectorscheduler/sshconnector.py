@@ -23,6 +23,9 @@ import paramiko
 import os
 import logging
 
+from bdphpcprovider.smartconnectorscheduler.errors import deprecated
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -109,7 +112,7 @@ def open_connection(ip_address, settings):
     logger.debug("Made connection")
     return ssh_client
 
-
+@deprecated
 def run_command(ssh_client, command, current_dir=None):
     """
     Given a ssh_client, execute command from the current_dir
@@ -128,7 +131,7 @@ def run_command(ssh_client, command, current_dir=None):
         logger.error("run_command_stderr=%s" % stderr.readlines())
     return res
 
-
+@deprecated
 def run_command_with_status(ssh_client, command, current_dir=None):
     """
     Given a ssh_client, execute command from the current_dir
@@ -154,7 +157,7 @@ def run_command_with_status(ssh_client, command, current_dir=None):
         logger.debug("run_command_stderr=%s" % stderr.readlines())
     return (res, errs)
 
-
+@deprecated
 def run_command_with_tty(ssh_client, command, settings, current_dir=None):
     """
         runs a command on remote server, but also creates a pseudotty which is
@@ -220,7 +223,7 @@ def run_command_with_tty(ssh_client, command, settings, current_dir=None):
 
 
 
-
+@deprecated
 def run_sudo_command_with_status(ssh_client, command, settings, instance_id):
     """
     Runs command at the ssh_client remote but also returns error code
@@ -282,7 +285,7 @@ def run_sudo_command_with_status(ssh_client, command, settings, instance_id):
     chan.close()
     return (error_code, full_buff, '')
 
-
+@deprecated
 def run_sudo_command(ssh_client, command, settings, instance_id):
     chan = ssh_client.invoke_shell()
     logger.debug("Channel %s" % chan)
@@ -341,14 +344,14 @@ def install_deps(ssh_client, packages, settings, instance_id):
 
 
 def unpack(ssh_client, environ_dir, package_file):
-    res = run_command(
+    (res, err) = run_command_with_status(
         ssh_client, 'tar --directory=%s --extract --gunzip --verbose --file=%s'
         % (environ_dir, os.path.join(environ_dir, package_file)))
     logger.debug(res)
 
 
 def unzip(ssh_client, zipped_file, destination_dir):
-    res = run_command(
+    (res, err) = run_command_with_status(
         ssh_client, 'unzip -o %s -d %s'
                     % (zipped_file, destination_dir))
     logger.debug(res)
@@ -356,19 +359,19 @@ def unzip(ssh_client, zipped_file, destination_dir):
 
 def compile(ssh_client, environ_dir, compile_file,
             package_dirname, compiler_command):
-    run_command(ssh_client,
+    (res, err) = run_command_with_status(ssh_client,
                 "%s %s.f -o %s " % (compiler_command,
                                     compile_file, compile_file),
                 current_dir=os.path.join(environ_dir, package_dirname))
 
 
 def mkdir(ssh_client, dir):
-    run_command(ssh_client, "mkdir -p %s" % dir)
+    (res, err) = run_command_with_status(ssh_client, "mkdir -p %s" % dir)
 
 
 def find_remote_files(ssh, remote_dir, type='f'):
     command = "find %s -name \"*\" -type %s" % (remote_dir, type)
-    res = run_command(ssh, command)
+    (res, err) = run_command_with_status(ssh, command)
     files = []
     for f in res:
         files.append(f.rstrip())
@@ -432,7 +435,7 @@ def put_payload(ssh_client, source, destination):
 def get_package_pids(ssh_client, command):
     #FIXME: the output of pidof is not entirely clear.,
     logger.debug("get_package_pids")
-    pid_lines = run_command(ssh_client, "/sbin/pidof %s" % command)
+    (pid_lines, err) = run_command_with_status(ssh_client, "/sbin/pidof %s" % command)
     logger.debug("pid_lines=%s" % pid_lines)
     # could return multiple lines so pick first.
     pids = ""

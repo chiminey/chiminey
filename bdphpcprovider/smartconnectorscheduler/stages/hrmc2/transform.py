@@ -31,7 +31,7 @@ from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler import hrmcstages, platform
 from bdphpcprovider.smartconnectorscheduler import mytardis
 from bdphpcprovider.smartconnectorscheduler import models
-from bdphpcprovider.smartconnectorscheduler.stages.composite import (make_graph_paramset, make_paramset)
+from bdphpcprovider.smartconnectorscheduler.mytardis import (create_graph_paramset, create_paramset)
 
 logger = logging.getLogger(__name__)
 
@@ -343,15 +343,15 @@ class Transform(Stage):
 
                 logger.debug('all_settings=%s' % all_settings)
                 logger.debug('output_storage_settings=%s' % output_storage_settings)
-                self.experiment_id = mytardis.post_dataset(
+                self.experiment_id = mytardis.create_dataset(
                     settings=all_settings,
                     source_url=source_url,
                     exp_id=self.experiment_id,
                     exp_name=hrmcstages.get_exp_name_for_output,
                     dataset_name=hrmcstages.get_dataset_name_for_output,
                     dataset_paramset=[
-                        make_paramset("hrmcdataset/output", []),
-                        make_graph_paramset("dsetgraph",
+                        create_paramset("hrmcdataset/output", []),
+                        create_graph_paramset("dsetgraph",
                             name="hrmcdset",
                             graph_info={"axes":["r (Angstroms)", "PSD"],
                                 "legends":["psd", "PSD_exp"], "type":"line"},
@@ -360,7 +360,7 @@ class Transform(Stage):
                             value_keys=[["hrmcdfile/r1", "hrmcdfile/g1"],
                                 ["hrmcdfile/r2", "hrmcdfile/g2"]]
                             ),
-                        make_graph_paramset("dsetgraph",
+                        create_graph_paramset("dsetgraph",
                             name="hrmcdset2",
                             graph_info={"axes":["r (Angstroms)", "g(r)"],
                                 "legends":["data_grfinal", "input_gr"],
@@ -372,7 +372,7 @@ class Transform(Stage):
 
                         ],
                    datafile_paramset=[
-                        make_graph_paramset("dfilegraph",
+                        create_graph_paramset("dfilegraph",
                             name="hrmcdfile",
                             graph_info={},
                             value_dict={},

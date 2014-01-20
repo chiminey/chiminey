@@ -1,4 +1,3 @@
-
 # Copyright (C) 2014, RMIT University
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -19,23 +18,14 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from django import template
-import logging
-logger = logging.getLogger(__name__)
+from bdphpcprovider.smartconnectorscheduler.compute.command import (
+    run_command_with_status,
+    run_command_with_tty,
+    run_sudo_command
+)
 
-register = template.Library()
 
+class ComputeException(Exception):
+    """ A problem in the compute library"""
+    pass
 
-@register.assignment_tag
-def myparent(theform, curr_id):
-
-    key = "parent"
-    #key = 'param-%s-parent' %int(curr_id)
-    for f in theform:
-        if f.name == key:
-            try:
-                return int(f.value())
-            except TypeError:
-                return ""
-    else:
-        return ""
