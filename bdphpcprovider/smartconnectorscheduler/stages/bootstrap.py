@@ -22,10 +22,11 @@ import logging
 from pprint import pformat
 import ast
 
+from bdphpcprovider.cloudconnection import managevms
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import hrmcstages, platform
-from bdphpcprovider.smartconnectorscheduler import sshconnector, botocloudconnector, models
+from bdphpcprovider.smartconnectorscheduler import sshconnector, models
 from bdphpcprovider.smartconnectorscheduler.errors import PackageFailedError
 from bdphpcprovider.smartconnectorscheduler.stages.errors import InsufficientResourceError
 
@@ -87,7 +88,7 @@ class Bootstrap(Stage):
             self.started = 1
 
         else:
-            self.nodes = botocloudconnector.get_rego_nodes(local_settings)
+            self.nodes = managevms.get_registered_vms(local_settings)
             self.error_nodes = []
             for node in self.nodes:
                 node_ip = node.ip_address
@@ -97,7 +98,7 @@ class Bootstrap(Stage):
                                         for x in self.bootstrapped_nodes
                                         if x[1] == node_ip]):
                     continue
-                if not botocloudconnector.is_instance_running(node):
+                if not managevms.is_instance_running(node):
                     # An unlikely situation where the node crashed after is was
                     # detected as registered.
                     #FIXME: should error nodes be counted as finished?
@@ -183,7 +184,7 @@ def start_multi_setup_task(settings):
     Run the package on each of the nodes in the group and grab
     any output as needed
     """
-    nodes = botocloudconnector.get_rego_nodes(settings)
+    nodes = managevms.get_registered_vms(settings)
     logger.debug("nodes=%s" % nodes)
     requested_nodes = 0
     maketarget_nodegroup_pair = {}

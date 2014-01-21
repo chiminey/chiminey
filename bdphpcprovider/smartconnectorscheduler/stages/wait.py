@@ -28,7 +28,6 @@ from bdphpcprovider.smartconnectorscheduler import (hrmcstages,
                                                     smartconnector,
                                                     sshconnector,
                                                     platform)
-
 from bdphpcprovider.reliabilityframework.ftmanager import FTManager
 from bdphpcprovider.reliabilityframework.failuredetection import FailureDetection
 

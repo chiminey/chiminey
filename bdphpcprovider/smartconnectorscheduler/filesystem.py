@@ -20,24 +20,18 @@
 
 
 import os
-import os.path
-import time
 import re
+import shutil
+import logging
 
 from fs.osfs import OSFS
 from fs import path
 from fs.errors import ResourceNotFoundError
-from fs.path import join
-import shutil
-import tempfile
 
-import logging
-import logging.config
 
 
 #from bdphpcprovider.smartconnectorscheduler.hrmcimpl import get_output
-from bdphpcprovider.smartconnectorscheduler.botocloudconnector import get_instance_ip
-from bdphpcprovider.smartconnectorscheduler.sshconnector import put_file, open_connection, find_remote_files, get_file
+from bdphpcprovider.smartconnectorscheduler.sshconnector import put_file
 
 from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 
@@ -263,7 +257,6 @@ class FileSystem(object):
         absolute_path_to_file = os.path.join(self.global_filesystem,
                                              file_to_be_executed)
         if wildcard:
-            import glob  # FIXME: Why is this here?
 
         command.append(absolute_path_to_file)
         proc = subprocess.Popen(command, stdout=subprocess.PIPE)
@@ -286,7 +279,8 @@ class FileSystem(object):
     @deprecated
     def copy_files_with_pattern(self, local_filesystem, source_dir,
                                  dest_dir, pattern, overwrite=True):
-        import fnmatch, fs
+        import fnmatch
+
         pattern_source_dir = path.join(
             local_filesystem, source_dir)
         for file in self.connector_fs.listdir(pattern_source_dir):
