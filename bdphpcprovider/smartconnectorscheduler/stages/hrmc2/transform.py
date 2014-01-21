@@ -29,9 +29,9 @@ import fnmatch
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler import hrmcstages, platform
-from bdphpcprovider.smartconnectorscheduler import mytardis
 from bdphpcprovider.smartconnectorscheduler import models
-from bdphpcprovider.smartconnectorscheduler.mytardis import (create_graph_paramset, create_paramset)
+
+from bdphpcprovider import mytardis
 
 logger = logging.getLogger(__name__)
 
@@ -350,8 +350,8 @@ class Transform(Stage):
                     exp_name=hrmcstages.get_exp_name_for_output,
                     dataset_name=hrmcstages.get_dataset_name_for_output,
                     dataset_paramset=[
-                        create_paramset("hrmcdataset/output", []),
-                        create_graph_paramset("dsetgraph",
+                        mytardis.create_paramset("hrmcdataset/output", []),
+                        mytardis.create_graph_paramset("dsetgraph",
                             name="hrmcdset",
                             graph_info={"axes":["r (Angstroms)", "PSD"],
                                 "legends":["psd", "PSD_exp"], "type":"line"},
@@ -360,7 +360,7 @@ class Transform(Stage):
                             value_keys=[["hrmcdfile/r1", "hrmcdfile/g1"],
                                 ["hrmcdfile/r2", "hrmcdfile/g2"]]
                             ),
-                        create_graph_paramset("dsetgraph",
+                        mytardis.create_graph_paramset("dsetgraph",
                             name="hrmcdset2",
                             graph_info={"axes":["r (Angstroms)", "g(r)"],
                                 "legends":["data_grfinal", "input_gr"],
@@ -372,7 +372,7 @@ class Transform(Stage):
 
                         ],
                    datafile_paramset=[
-                        create_graph_paramset("dfilegraph",
+                        mytardis.create_graph_paramset("dfilegraph",
                             name="hrmcdfile",
                             graph_info={},
                             value_dict={},

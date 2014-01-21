@@ -53,13 +53,16 @@ def run_command_with_status(ssh_client, command, current_dir=None):
 
 
 def run_make(ssh_client, makefile_path, target):
+    logger.debug("makefile_path=%s" % makefile_path)
+    logger.debug("target=%s" % target)
+
     command = "cd %s; make -f Makefile %s" % (makefile_path, target)
     command_out = ''
     errs = ''
     try:
         command_out, errs = run_command_with_status(ssh_client, command)
     except Exception, e:
-        logger.error(e)
+        logger.error("problem with runmake %s" % e)
     logger.debug("command_out2=(%s, %s)" % (command_out, errs))
     return (command_out, errs)
 

@@ -340,7 +340,7 @@ class ContextResource(ModelResource):
 
         except InvalidInputError, e:
             bundle.obj = None
-            smartconnector.error(run_settings, e)
+            #smartconnector.error(run_settings, e)
             logger.error(e)
             raise
         else:

@@ -24,6 +24,8 @@ import logging
 import ast
 import logging.config
 
+from paramiko.ssh_exception import SSHException
+
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import sshconnector
 from bdphpcprovider.smartconnectorscheduler import smartconnector
@@ -31,11 +33,10 @@ from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.smartconnectorscheduler import platform
 from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 
+from bdphpcprovider import mytardis
+from bdphpcprovider import compute
 
-from bdphpcprovider.smartconnectorscheduler import mytardis
-from paramiko.ssh_exception import SSHException
 
-from bdphpcprovider.smartconnectorscheduler import compute
 
 from . import setup_settings
 

@@ -27,17 +27,18 @@ import logging.config
 
 from nose.plugins.skip import SkipTest
 
-
 from django.contrib.auth.models import User
 from django import test as djangotest
 from django.conf import settings
+
 from bdphpcprovider.smartconnectorscheduler.management.commands import view
 from bdphpcprovider.smartconnectorscheduler import models
-from bdphpcprovider.smartconnectorscheduler import mytardis
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.smartconnectorscheduler import smartconnector
-
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
+
+from bdphpcprovider import mytardis
+
 logger = logging.getLogger(__name__)
 
 def error(e):

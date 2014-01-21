@@ -18,7 +18,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from bdphpcprovider.smartconnectorscheduler.compute.command import (
+from bdphpcprovider.compute.command import (
     run_command_with_status,
     run_command_with_tty,
     run_make
@@ -28,4 +28,3 @@ from bdphpcprovider.smartconnectorscheduler.compute.command import (
 class ComputeException(Exception):
     """ A problem in the compute library"""
     pass
-

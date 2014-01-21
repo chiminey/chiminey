@@ -1,4 +1,4 @@
-# Copyright (C) 2013, RMIT University
+# Copyright (C) 2014, RMIT University
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to
@@ -20,21 +20,21 @@
 
 import os
 import logging
-import ast
 import logging.config
 from pprint import pformat
-
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import sshconnector
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.smartconnectorscheduler import platform
+from bdphpcprovider.smartconnectorscheduler.smartconnector import (
+    multilevel_key_exists, get_existing_key)
 
-from bdphpcprovider.smartconnectorscheduler.smartconnector import multilevel_key_exists, get_existing_key
+from bdphpcprovider import compute
+
 from . import setup_settings
 
-from bdphpcprovider.smartconnectorscheduler import compute
 logger = logging.getLogger(__name__)
 
 

@@ -31,7 +31,7 @@ from bdphpcprovider.smartconnectorscheduler import botocloudconnector, sshconnec
 from bdphpcprovider.smartconnectorscheduler import models
 from django.core.exceptions import ImproperlyConfigured
 
-from bdphpcprovider.smartconnectorscheduler import compute
+from bdphpcprovider import compute
 
 logger = logging.getLogger(__name__)
 

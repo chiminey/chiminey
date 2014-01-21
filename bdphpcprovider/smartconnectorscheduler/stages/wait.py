@@ -23,16 +23,21 @@ import ast
 import os
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
-from bdphpcprovider.smartconnectorscheduler \
-    import hrmcstages, models, smartconnector, sshconnector, botocloudconnector, platform
+from bdphpcprovider.smartconnectorscheduler import (hrmcstages,
+                                                    models,
+                                                    smartconnector,
+                                                    sshconnector,
+                                                    platform)
+
 from bdphpcprovider.reliabilityframework.ftmanager import FTManager
 from bdphpcprovider.reliabilityframework.failuredetection import FailureDetection
 
-from bdphpcprovider.smartconnectorscheduler import compute
+from bdphpcprovider import compute
 
 logger = logging.getLogger(__name__)
 
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+
 
 class Wait(Stage):
     """

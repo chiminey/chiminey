@@ -29,7 +29,7 @@ from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler import smartconnector, platform
 
-from bdphpcprovider.smartconnectorscheduler import mytardis
+from bdphpcprovider import mytardis
 
 
 

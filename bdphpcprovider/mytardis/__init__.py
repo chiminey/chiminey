@@ -18,7 +18,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from bdphpcprovider.smartconnectorscheduler.mytardis.mytardis import (
+from bdphpcprovider.mytardis.mytardis import (
     create_experiment,
     create_dataset,
     retrieve_datafile,
@@ -30,4 +30,3 @@ from bdphpcprovider.smartconnectorscheduler.mytardis.mytardis import (
 class MyTardisException(Exception):
     """ A problem in the mytardis library"""
     pass
-

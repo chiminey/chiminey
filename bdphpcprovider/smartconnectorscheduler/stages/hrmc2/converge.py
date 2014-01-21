@@ -29,7 +29,7 @@ from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler import hrmcstages, platform
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
-from bdphpcprovider.smartconnectorscheduler import mytardis
+from bdphpcprovider import mytardis
 from bdphpcprovider.smartconnectorscheduler import models
 
 logger = logging.getLogger(__name__)

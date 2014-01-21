@@ -25,18 +25,22 @@ from pprint import pformat
 import logging
 import json
 import re
-
 from itertools import product
+
 from django.template import Context, Template
+
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler.errors import PackageFailedError
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
-from bdphpcprovider.smartconnectorscheduler \
-    import mytardis, models, hrmcstages, sshconnector, smartconnector, platform
+from bdphpcprovider.smartconnectorscheduler import (models,
+                                                    hrmcstages,
+                                                    sshconnector,
+                                                    smartconnector,
+                                                    platform
+)
 
-from bdphpcprovider.smartconnectorscheduler.mytardis import create_paramset
-
-from bdphpcprovider.smartconnectorscheduler import compute
+from bdphpcprovider import mytardis
+from bdphpcprovider import compute
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +55,6 @@ class Execute(Stage):
         self.numbfile = 0
         self.job_dir = "hrmcrun"
         logger.debug("Execute stage initialized")
-
 
     def triggered(self, run_settings):
         """
@@ -91,7 +94,6 @@ class Execute(Stage):
             self.exec_procs = []
             return True
         return False
-
 
     def process(self, run_settings):
 
@@ -167,7 +169,6 @@ class Execute(Stage):
 
         return pids
 
-
     def _copy_previous_inputs(self, local_settings, output_storage_settings,
                               computation_platform_settings):
         output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
@@ -175,7 +176,7 @@ class Execute(Stage):
         for proc in self.ready_processes:
             source_location = os.path.join(self.job_dir, "input_backup", proc['id'])
             source_files_url = smartconnector.get_url_with_pkey(output_storage_settings,
-                    output_prefix+source_location, is_relative_path=False)
+                    output_prefix + source_location, is_relative_path=False)
 
             dest_files_location = computation_platform_settings['type'] + "@"\
                                   + os.path.join(
@@ -188,7 +189,6 @@ class Execute(Stage):
                 is_relative_path=True, ip_address=proc['ip_address'])
             logger.debug('dest_files_url=%s' % dest_files_url)
             hrmcstages.copy_directories(source_files_url, dest_files_url)
-
 
     def output(self, run_settings):
         """
@@ -309,7 +309,6 @@ class Execute(Stage):
         logger.debug('all_pids=%s' % all_pids)
         return all_pids
 
-
     def _prepare_inputs(self, local_settings, output_storage_settings,
                         computation_platform_settings, mytardis_settings):
             """
@@ -326,7 +325,7 @@ class Execute(Stage):
             output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
                                     output_storage_settings['type'])
             url_with_pkey = smartconnector.get_url_with_pkey(
-                output_storage_settings, output_prefix+self.iter_inputdir, is_relative_path=False)
+                output_storage_settings, output_prefix + self.iter_inputdir, is_relative_path=False)
             logger.debug("url_with_pkey=%s" % url_with_pkey)
             input_dirs = hrmcstages.list_dirs(url_with_pkey)
             if not input_dirs:
@@ -336,9 +335,8 @@ class Execute(Stage):
                 self._upload_variation_inputs(
                     local_settings, self._generate_variations(
                         input_dir, local_settings, output_storage_settings),
-                    processes, input_dir,output_storage_settings,
+                    processes, input_dir, output_storage_settings,
                     computation_platform_settings, mytardis_settings)
-
 
     def _generate_variations(self, input_dir, local_settings, output_storage_settings):
         """
@@ -349,7 +347,7 @@ class Execute(Stage):
         template_pat = re.compile("(.*)_template")
         fname_url_with_pkey = smartconnector.get_url_with_pkey(
             output_storage_settings,
-            output_prefix+os.path.join(self.iter_inputdir, input_dir),
+            output_prefix + os.path.join(self.iter_inputdir, input_dir),
             is_relative_path=False)
         input_files = hrmcstages.list_dirs(fname_url_with_pkey,
             list_files=True)
@@ -450,7 +448,7 @@ class Execute(Stage):
                     #instance special variables into the template context
                     context['run_counter'] = numbfile
                     context['generator_counter'] = generator_counter  # FIXME: not needed?
-                    logger.debug("context=%s"% context)
+                    logger.debug("context=%s" % context)
                     numbfile += 1
                     #logger.debug(context)
                     t = Template(template)
@@ -493,7 +491,7 @@ class Execute(Stage):
 
                 source_url = smartconnector.get_url_with_pkey(
                     output_storage_settings,
-                    output_prefix+os.path.join(output_host, path, "HRMC.inp_values"),
+                    output_prefix + os.path.join(output_host, path, "HRMC.inp_values"),
                     is_relative_path=False)
                 logger.debug("source_url=%s" % source_url)
                 try:
@@ -542,7 +540,7 @@ class Execute(Stage):
                 dataset_name=_get_dataset_name_for_input,
                 experiment_paramset=[],
                 dataset_paramset=[
-                    create_paramset('hrmcdataset/input', [])])
+                    mytardis.create_paramset('hrmcdataset/input', [])])
 
         else:
             logger.warn("no mytardis host specified")
@@ -605,7 +603,7 @@ class Execute(Stage):
                     input_backup = os.path.join(self.job_dir, "input_backup", proc['id'])
                     backup_url = smartconnector.get_url_with_pkey(
                         output_storage_settings,
-                        output_prefix+input_backup, is_relative_path=False)
+                        output_prefix + input_backup, is_relative_path=False)
                     hrmcstages.copy_directories(source_files_url, backup_url)
 
                 # Why do we need to create a tempory file to make this copy?
@@ -622,7 +620,6 @@ class Execute(Stage):
                 logger.debug("value_url=%s" % value_url)
                 hrmcstages.put_file(value_url, json.dumps(values))
 
-
                 #local_settings['platform'] should be replaced
                 # and overwrite on the remote
                 var_fname_remote = computation_platform_settings['type']\
@@ -635,7 +632,6 @@ class Execute(Stage):
                     is_relative_path=True, ip_address=ip)
                 var_content = hrmcstages.get_file(var_url)
                 hrmcstages.put_file(var_fname_pkey, var_content)
-
 
                 logger.debug("var_fname_pkey=%s" % var_fname_pkey)
                 values_fname_pkey = smartconnector.get_url_with_pkey(
@@ -651,14 +647,14 @@ class Execute(Stage):
                 if self.reschedule_failed_procs:
                     value_url = smartconnector.get_url_with_pkey(
                         output_storage_settings,
-                        output_prefix+os.path.join(input_backup, "%s_values" % var_fname),
+                        output_prefix + os.path.join(input_backup, "%s_values" % var_fname),
                         is_relative_path=False)
                     logger.debug("value_url=%s" % value_url)
                     hrmcstages.put_file(value_url, json.dumps(values))
 
                     var_fname_pkey = smartconnector.get_url_with_pkey(
                         output_storage_settings,
-                        output_prefix+os.path.join(input_backup, var_fname),
+                        output_prefix + os.path.join(input_backup, var_fname),
                         is_relative_path=False)
                     var_content = hrmcstages.get_file(var_url)
                     hrmcstages.put_file(var_fname_pkey, var_content)
