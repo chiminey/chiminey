@@ -86,7 +86,7 @@ def create_environ(number_vm_instances, settings):
     """
         Create the Nectar VM instance and return id
     """
-    logger.info("create_environ")
+    logger.info("create_vms")
     all_instances = _create_VM_instances(number_vm_instances, settings)
     logger.debug("Printing ---- %s " % all_instances)
 
@@ -96,7 +96,7 @@ def create_environ(number_vm_instances, settings):
         _customize_prompt(all_running_instances, settings)
         print "Group ID %s" % group_id
         #print 'Created VM instances:'
-        #print_all_information(settings, all_instances=all_running_instances)
+        #print_vms(settings, all_instances=all_running_instances)
         return group_id
 
     return None
@@ -237,7 +237,7 @@ def destroy_environ(settings, all_instances):
             - a group of instances, or
             - a single instance
     """
-    logger.info("destroy_environ")
+    logger.info("destroy_vms")
     if not all_instances:
         logging.error("No running instance(s)")
         sys.exit(1)
@@ -392,7 +392,7 @@ def get_rego_nodes(group_id, settings):
     """
     Returns nectar nodes that are currently packaged enabled.
     """
-    logger.debug("get_rego_nodes")
+    logger.debug("get_registered_vms")
     # get all available nodes
     conn = _create_cloud_connection(settings)
 
@@ -420,5 +420,5 @@ def get_rego_nodes(group_id, settings):
         else:
             logger.debug("NO node for %s exists for group %s "
                          % (instance_id, group_id))
-    logger.debug("get_rego_nodes DONE")
+    logger.debug("get_registered_vms DONE")
     return packaged_node

@@ -24,7 +24,7 @@ import os
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler \
-    import hrmcstages, models, smartconnector, sshconnector, botocloudconnector, platform
+    import hrmcstages, models, smartconnector, sshconnector, platform
 from bdphpcprovider.reliabilityframework.ftmanager import FTManager
 from bdphpcprovider.reliabilityframework.failuredetection import FailureDetection
 

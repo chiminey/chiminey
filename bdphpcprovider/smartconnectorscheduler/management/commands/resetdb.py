@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand, CommandError
-from bdphpcprovider.smartconnectorscheduler import mc
+#from bdphpcprovider.smartconnectorscheduler import mc
 
 from bdphpcprovider.smartconnectorscheduler import models
 
