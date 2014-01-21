@@ -24,9 +24,11 @@ from pprint import pformat
 
 from django.db import transaction
 from django.db import DatabaseError
+from django.core.exceptions import ImproperlyConfigured
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.smartconnectorscheduler import smartconnector
+
 
 import redis
 
@@ -215,8 +217,14 @@ def _process_context(context_id):
         for current_stage in stageset:
 
             # get the actual stage object
-            stage = hrmcstages.safe_import(current_stage.package, [],
+            try:
+                stage = hrmcstages.safe_import(current_stage.package, [],
                 {'user_settings': deepcopy(user_settings)})  # obviously need to cache this
+            except ImproperlyConfigured, e:
+                logger.error(e)
+                smartconnector.error(run_settings, e)
+                raise
+
             logger.debug("process stage=%s", stage)
 
             task_run_settings = deepcopy(run_settings)
@@ -314,6 +322,7 @@ def progress_context_broken(context_id):
                     logger.debug("Context %s removed from other thread" % context_id)
                     return
                 except Exception, e:
+                    logger.error("uknown error")
                     logger.error(e)
                     return
                 else:

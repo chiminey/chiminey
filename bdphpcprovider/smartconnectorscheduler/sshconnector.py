@@ -157,71 +157,6 @@ def run_command_with_status(ssh_client, command, current_dir=None):
         logger.debug("run_command_stderr=%s" % stderr.readlines())
     return (res, errs)
 
-@deprecated
-def run_command_with_tty(ssh_client, command, settings, current_dir=None):
-    """
-        runs a command on remote server, but also creates a pseudotty which is
-        required if sudo command will be executed at any point on the remote server
-    """
-    # TODO: need a proper timeout for this command
-
-    chan = ssh_client.invoke_shell()
-    logger.debug("Channel %s" % chan)
-    #chan.send('sudo -s\n')
-    logger.debug("Sending through channel %s" % chan)
-    full_buff = ''
-    buff = ''
-    command_prompt = settings['custom_prompt']
-
-    # while not command_prompt in buff:
-    #     resp = chan.recv(9999)
-    #     print resp
-    #     buff += resp
-    # logger.debug("buff = %s" % buff)
-    # full_buff += buff
-
-    chan.send("%s\n" % command)
-    logger.debug("Command %s" % command)
-    buff = ''
-
-    #FIXME: need to include timeouts on all these recv calls
-    while not command_prompt in buff:
-        resp = chan.recv(9999)
-        print resp
-        buff += resp
-    logger.debug("buff = %s" % buff)
-    full_buff += buff
-
-    chan.send("echo $!\n")  # NOTE: we assume bash
-    logger.debug("Command %s" % command)
-    buff = ''
-
-    #FIXME: need to include timeouts on all these recv calls
-    while not command_prompt in buff:
-        resp = chan.recv(9999)
-        print resp
-        buff += resp
-    logger.debug("buff = %s" % buff)
-    error_code = buff
-    full_buff += buff
-
-    # TODO: handle stderr
-
-    # chan.send("exit\n")
-    # buff = ''
-
-    # # FIXME: need to include timeouts on all these recv calls
-    # while not command_prompt in buff:
-    #     resp = chan.recv(9999)
-    #     print resp
-    #     buff += resp
-    # logger.debug("buff = %s" % buff)
-    # full_buff += buff
-
-    chan.close()
-    return (error_code, full_buff, '')
-
-
 
 @deprecated
 def run_sudo_command_with_status(ssh_client, command, settings, instance_id):
@@ -333,6 +268,7 @@ def run_sudo_command(ssh_client, command, settings, instance_id):
 #     _, res = self.run_sudo_command_with_status(ssh_client, command, settings, instance_id)
 #     return res
 
+@deprecated
 def install_deps(ssh_client, packages, settings, instance_id):
     for pack in packages:
         logger.debug("Setup %s" % pack)

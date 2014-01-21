@@ -29,6 +29,10 @@ from bdphpcprovider.smartconnectorscheduler import sshconnector, botocloudconnec
 from bdphpcprovider.smartconnectorscheduler.errors import PackageFailedError
 from bdphpcprovider.smartconnectorscheduler.stages.errors import InsufficientResourceError
 
+from bdphpcprovider.smartconnectorscheduler import compute
+
+
+
 logger = logging.getLogger(__name__)
 
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
@@ -230,6 +234,7 @@ def start_setup(instance, ip,  settings, source, destination):
     """
     logger.info("run_task %s" % str(instance))
     hrmcstages.copy_directories(source, destination)
+
     makefile_path = hrmcstages.get_make_path(destination)
 
     # TODO, FIXME:  need to have timeout for yum install make
@@ -241,27 +246,28 @@ def start_setup(instance, ip,  settings, source, destination):
     ssh = ''
     try:
         ssh = sshconnector.open_connection(ip_address=ip, settings=settings)
-        command_out, errs = sshconnector.run_command_with_status(ssh, install_make)
+        command_out, errs = compute.run_command_with_status(ssh, install_make)
     except Exception, e:
         logger.error(e)
+        raise
     finally:
         if ssh:
             ssh.close()
     logger.debug("command_out1=(%s, %s)" % (command_out, errs))
 
-    command = "cd %s; make -f Makefile %s" % (makefile_path, 'setupstart')
-    command_out = ''
-    errs = ''
-    logger.debug("starting command for %s" % ip)
-    try:
-        ssh = sshconnector.open_connection(ip_address=ip, settings=settings)
-        command_out, errs = sshconnector.run_command_with_status(ssh, command)
-    except Exception, e:
-        logger.error(e)
-    finally:
-        if ssh:
-            ssh.close()
-    logger.debug("command_out2=(%s, %s)" % (command_out, errs))
+    compute.run_make(ssh, makefile_path, 'setupstart')
+
+    # command = "cd %s; make -f Makefile %s" % (makefile_path, 'setupstart')
+    # command_out = ''
+    # errs = ''
+    # logger.debug("starting command for %s" % ip)
+    # try:
+    #     ssh = sshconnector.open_connection(ip_address=ip, settings=settings)
+    #     command_out, errs = sshconnector.run_command_with_status(ssh, command)
+    # except Exception, e:
+    #     logger.error(e)
+    # finally:
+    # logger.debug("command_out2=(%s, %s)" % (command_out, errs))
 
 
 def job_finished(ip, settings, destination):
@@ -270,8 +276,11 @@ def job_finished(ip, settings, destination):
     """
     ssh = sshconnector.open_connection(ip_address=ip, settings=settings)
     makefile_path = hrmcstages.get_make_path(destination)
-    command = "cd %s; make -f Makefile %s" % (makefile_path, 'setupdone')
-    command_out, _ = sshconnector.run_command_with_status(ssh, command)
+
+    (command_out, err) = compute.run_make(ssh, makefile_path, 'setupdone')
+
+    # command = "cd %s; make -f Makefile %s" % (makefile_path, 'setupdone')
+    # command_out, _ = sshconnector.run_command_with_status(ssh, command)
     if command_out:
         logger.debug("command_out = %s" % command_out)
         for line in command_out:

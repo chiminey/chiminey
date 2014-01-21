@@ -26,16 +26,18 @@ from django.forms.formsets import formset_factory
 class NewDirectiveForm1(forms.Form):
     name = forms.CharField(max_length=256, help_text="name")
     description = forms.CharField(
-        help_text = "Human Readable name for this directive")
+        help_text="Human Readable name for this directive")
+
 
 class SchemaForm(forms.Form):
     namespace = forms.CharField(
         label="Namespace",
        help_text="A URI that uniquely ids the schema")
     name = forms.SlugField(
-        help_text = "A unique identifier for the schema")
+        help_text="A unique identifier for the schema")
     description = forms.CharField(max_length=80,
                                   help_text="The description of this schema")
+
 
 class ParameterNameForm(forms.Form):
     name = forms.CharField(max_length=50)

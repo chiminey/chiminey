@@ -31,6 +31,7 @@ from bdphpcprovider.smartconnectorscheduler import botocloudconnector, sshconnec
 from bdphpcprovider.smartconnectorscheduler import models
 from django.core.exceptions import ImproperlyConfigured
 
+from bdphpcprovider.smartconnectorscheduler import compute
 
 logger = logging.getLogger(__name__)
 
@@ -309,7 +310,6 @@ class Schedule(Stage):
         logger.debug('all_processes=%s' % self.all_processes)
 
 
-
     def start_reschedule(self, local_settings):
         _, self.current_processes = \
         start_round_robin_reschedule(self.nodes, self.procs_2b_rescheduled,
@@ -457,7 +457,7 @@ def start_round_robin_schedule(nodes, processes, schedule_index, settings):
         logger.debug("starting command for %s" % ip_address)
         try:
             ssh = sshconnector.open_connection(ip_address=ip_address, settings=settings)
-            command_out, errs = sshconnector.run_command_with_status(ssh, command)
+            command_out, errs = compute.run_command_with_status(ssh, command)
         except Exception, e:
             logger.error(e)
         finally:
@@ -517,7 +517,7 @@ def start_round_robin_reschedule(nodes, procs_2b_rescheduled, current_procs, set
         logger.debug("starting command for %s" % ip_address)
         try:
             ssh = sshconnector.open_connection(ip_address=ip_address, settings=settings)
-            command_out, errs = sshconnector.run_command_with_status(ssh, command)
+            command_out, errs = compute.run_command_with_status(ssh, command)
         except Exception, e:
             logger.error(e)
         finally:
@@ -609,7 +609,7 @@ def job_finished(ip, settings, destination):
     command = "cd %s; make %s" % (makefile_path,
                                   'scheduledone IDS=%s' % (
                                       settings['filename_for_PIDs']))
-    command_out, _ = sshconnector.run_command_with_status(ssh, command)
+    command_out, _ = compute.run_command_with_status(ssh, command)
     if command_out:
         logger.debug("command_out = %s" % command_out)
         for line in command_out:

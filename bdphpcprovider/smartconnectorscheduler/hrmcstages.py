@@ -1216,9 +1216,14 @@ def make_runcontext_for_directive(platform_name, directive_name,
 
     stage = directive.stage
 
-    settings_valid, problem = check_settings_valid(run_settings,
-        user_settings,
-        stage)
+    try:
+        settings_valid, problem = check_settings_valid(run_settings,
+            user_settings,
+            stage)
+    except Exception, e:
+        logger.error(e)
+        raise
+
     if not settings_valid:
         raise InvalidInputError(problem)
 
@@ -1263,69 +1268,69 @@ def _make_new_run_context(stage, profile, directive, parent, run_settings):
     return run_context
 
 
-@deprecated
-def process_all_contexts():
-    """
-    The main processing loop.  For each context owned by a user, find the next stage to execute,
-    get the actual code to execute, then update the context and the filesystem as needed, then advance
-    current stage according to the composite stage structure.
-    TODO: this loop will run continuously as celery task to take Directives into commands into contexts
-    for execution.
-    """
-    logger.warn("process_contexts_context is deprecated")
-    test_info = []
-    while (True):
-        run_contexts = models.Context.objects.all()
-        if not run_contexts:
-            break
-        done = None
-        for run_context in run_contexts:
-            # retrive the stage model to process
-            current_stage = run_context.current_stage
-            logger.debug("current_stage=%s" % current_stage)
+# @deprecated
+# def process_all_contexts():
+#     """
+#     The main processing loop.  For each context owned by a user, find the next stage to execute,
+#     get the actual code to execute, then update the context and the filesystem as needed, then advance
+#     current stage according to the composite stage structure.
+#     TODO: this loop will run continuously as celery task to take Directives into commands into contexts
+#     for execution.
+#     """
+#     logger.warn("process_contexts_context is deprecated")
+#     test_info = []
+#     while (True):
+#         run_contexts = models.Context.objects.all()
+#         if not run_contexts:
+#             break
+#         done = None
+#         for run_context in run_contexts:
+#             # retrive the stage model to process
+#             current_stage = run_context.current_stage
+#             logger.debug("current_stage=%s" % current_stage)
 
-            profile = run_context.owner
-            logger.debug("profile=%s" % profile)
+#             profile = run_context.owner
+#             logger.debug("profile=%s" % profile)
 
-            run_settings = run_context.get_context()
-            logger.debug("retrieved run_settings=%s" % run_settings)
+#             run_settings = run_context.get_context()
+#             logger.debug("retrieved run_settings=%s" % run_settings)
 
-            user_settings = retrieve_settings(profile)
-            logger.debug("user_settings=%s" % user_settings)
+#             user_settings = retrieve_settings(profile)
+#             logger.debug("user_settings=%s" % user_settings)
 
-            # FIXME: do we want to combine cont and user_settings to
-            # pass into the stage?  The original code but the problem is separating them
-            # again before they are serialised.
+#             # FIXME: do we want to combine cont and user_settings to
+#             # pass into the stage?  The original code but the problem is separating them
+#             # again before they are serialised.
 
-            # get the actual stage object
-            stage = safe_import(current_stage.package, [],
-             {'user_settings': user_settings})  # obviously need to cache this
-            logger.debug("stage=%s", stage)
+#             # get the actual stage object
+#             stage = safe_import(current_stage.package, [],
+#              {'user_settings': user_settings})  # obviously need to cache this
+#             logger.debug("stage=%s", stage)
 
-            if stage.triggered(run_settings):
-                logger.debug("triggered")
-                stage.process(run_settings)
-                run_settings = stage.output(run_settings)
-                logger.debug("updated run_settings=%s" % run_settings)
-                run_context.update_run_settings(run_settings)
-                logger.debug("run_settings=%s" % run_settings)
-            else:
-                logger.debug("not triggered")
+#             if stage.triggered(run_settings):
+#                 logger.debug("triggered")
+#                 stage.process(run_settings)
+#                 run_settings = stage.output(run_settings)
+#                 logger.debug("updated run_settings=%s" % run_settings)
+#                 run_context.update_run_settings(run_settings)
+#                 logger.debug("run_settings=%s" % run_settings)
+#             else:
+#                 logger.debug("not triggered")
 
-            # advance to the next stage
-            current_stage = run_context.current_stage.get_next_stage(run_settings)
-            if not current_stage:
-                done = run_context
-                break
+#             # advance to the next stage
+#             current_stage = run_context.current_stage.get_next_stage(run_settings)
+#             if not current_stage:
+#                 done = run_context
+#                 break
 
-            # save away new stage to process
-            run_context.current_stage = current_stage
-            run_context.save()
-        if done:
-            test_info.append(run_settings)
-            run_context.delete()
-    logger.debug("finished main loop")
-    return test_info
+#             # save away new stage to process
+#             run_context.current_stage = current_stage
+#             run_context.save()
+#         if done:
+#             test_info.append(run_settings)
+#             run_context.delete()
+#     logger.debug("finished main loop")
+#     return test_info
 
 
 def _make_run_settings_for_command(command_args, run_settings):

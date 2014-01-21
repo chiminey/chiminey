@@ -1,10 +1,12 @@
 import os
 import logging
 
-from bdphpcprovider.smartconnectorscheduler.sshconnector import open_connection, run_command, install_deps, unpack, unzip, compile, mkdir, get_file, put_file
+from bdphpcprovider.smartconnectorscheduler.sshconnector import open_connection, install_deps, unpack, unzip, compile, mkdir, get_file, put_file
 from bdphpcprovider.smartconnectorscheduler.sshconnector import get_package_pids
 from bdphpcprovider.smartconnectorscheduler.sshconnector import find_remote_files
 from bdphpcprovider.smartconnectorscheduler import botocloudconnector
+
+from bdphpcprovider.smartconnectorscheduler import compute
 
 logger = logging.getLogger(__name__)
 
@@ -13,8 +15,6 @@ logger = logging.getLogger(__name__)
 
 class Error(Exception):
     pass
-
-
 
 
 def setup_task(instance_id, settings):
@@ -50,8 +50,6 @@ def setup_task(instance_id, settings):
     res = mkdir(ssh,
                 dir=settings['POST_PROCESSING_DEST_PATH_PREFIX'])
 
-
-
     post_processing_dest = os.path.join(settings['POST_PROCESSING_DEST_PATH_PREFIX'],
                                         settings['POST_PAYLOAD_CLOUD_DIRNAME'])
     res = mkdir(ssh, dir=post_processing_dest)
@@ -74,7 +72,6 @@ def setup_task(instance_id, settings):
             compiler_command=settings['COMPILER'])
 
 
-
 def prepare_input(instance_id, input_dir, settings, seed):
     """
         Take the input_dir and move all the contained files to the
@@ -91,13 +88,13 @@ def prepare_input(instance_id, input_dir, settings, seed):
         _upload_input(ssh, input_dir, fname,
                       os.path.join(settings['PAYLOAD_DESTINATION'],
                                    settings['PAYLOAD_CLOUD_DIRNAME']))
-    run_command(ssh, "cd %s; cp rmcen.inp rmcen.inp.orig" %
+    compute.run_command_with_status(ssh, "cd %s; cp rmcen.inp rmcen.inp.orig" %
                 (os.path.join(settings['PAYLOAD_DESTINATION'],
                               settings['PAYLOAD_CLOUD_DIRNAME'])))
-    run_command(ssh, "cd %s; dos2unix rmcen.inp" %
+    compute.run_command_with_status(ssh, "cd %s; dos2unix rmcen.inp" %
                 (os.path.join(settings['PAYLOAD_DESTINATION'],
                               settings['PAYLOAD_CLOUD_DIRNAME'])))
-    run_command(ssh, "cd %s; sed -i '/^$/d' rmcen.inp" %
+    compute.run_command_with_status(ssh, "cd %s; sed -i '/^$/d' rmcen.inp" %
                 (os.path.join(settings['PAYLOAD_DESTINATION'],
                               settings['PAYLOAD_CLOUD_DIRNAME'])))
 
@@ -161,8 +158,6 @@ def _get_paths(sftp, dir):
                 dirs.append(x)
         dirs.append(os.path.join(dir, item))
     return dirs
-
-
 
 
 def get_post_output(instance_id, output_dir, settings):
@@ -279,16 +274,16 @@ def prepare_multi_input(group_id, input_dir, settings, seed):
                           os.path.join(settings['PAYLOAD_DESTINATION'],
                                        settings['PAYLOAD_CLOUD_DIRNAME']))
 
-        run_command(ssh, "cd %s; cp rmcen.inp rmcen.inp.orig" %
+        compute.run_command_with_status(ssh, "cd %s; cp rmcen.inp rmcen.inp.orig" %
                     (os.path.join(settings['PAYLOAD_DESTINATION'],
                                   settings['PAYLOAD_CLOUD_DIRNAME'])))
-        run_command(ssh, "cd %s; dos2unix rmcen.inp" %
+        compute.run_command_with_status(ssh, "cd %s; dos2unix rmcen.inp" %
                     (os.path.join(settings['PAYLOAD_DESTINATION'],
                                   settings['PAYLOAD_CLOUD_DIRNAME'])))
-        run_command(ssh, "cd %s; sed -i '/^$/d' rmcen.inp" %
+        compute.run_command_with_status(ssh, "cd %s; sed -i '/^$/d' rmcen.inp" %
                     (os.path.join(settings['PAYLOAD_DESTINATION'],
                                   settings['PAYLOAD_CLOUD_DIRNAME'])))
-        run_command(ssh, "cd %s;\
+        compute.run_command_with_status(ssh, "cd %s;\
                     sed -i 's/[0-9]*[ \t]*iseed.*$/%s\tiseed/' rmcen.inp\
                     " % (os.path.join(settings['PAYLOAD_DESTINATION'],
                                       settings['PAYLOAD_CLOUD_DIRNAME']),
@@ -299,13 +294,13 @@ def prepare_multi_input(group_id, input_dir, settings, seed):
             settings['POST_PROCESSING_DEST_PATH_PREFIX'],
             settings['POST_PAYLOAD_CLOUD_DIRNAME'])
 
-        run_command(ssh, "cd %s; cp PSD.inp PSD.inp.orig" %
+        compute.run_command_with_status(ssh, "cd %s; cp PSD.inp PSD.inp.orig" %
                          post_processing_dest)
-        run_command(ssh, "cd %s; dos2unix PSD.inp" %
+        compute.run_command_with_status(ssh, "cd %s; dos2unix PSD.inp" %
                          post_processing_dest)
-        run_command(ssh, "cd %s; sed -i '/^$/d' PSD.inp" %
+        compute.run_command_with_status(ssh, "cd %s; sed -i '/^$/d' PSD.inp" %
                          post_processing_dest)
-        run_command(ssh, "cd %s;\
+        compute.run_command_with_status(ssh, "cd %s;\
                     sed -i 's/[0-9]*[ \t]*iseed.*$/%s\tiseed/' PSD.inp\
                     " % (post_processing_dest,
                          seeds[node]))
@@ -383,12 +378,12 @@ def run_post_task(instance_id, settings):
     post_processing_dest = os.path.join(settings['POST_PROCESSING_DEST_PATH_PREFIX'],
         settings['POST_PAYLOAD_CLOUD_DIRNAME'])
 
-    run_command(ssh, "cp %s %s &\
+    compute.run_command_with_status(ssh, "cp %s %s &\
     " % (os.path.join(settings['PAYLOAD_DESTINATION'],
         settings['PAYLOAD_CLOUD_DIRNAME'],
          "hrmc01.xyz"), post_processing_dest))
 
-    run_command(ssh, "cd %s; ./%s >& %s &\
+    compute.run_command_with_status(ssh, "cd %s; ./%s >& %s &\
     " % (post_processing_dest,
          settings['POST_PAYLOAD_COMPILE_FILE'], "output"))
 

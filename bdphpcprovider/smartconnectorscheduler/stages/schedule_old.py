@@ -7,6 +7,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# TODO, FIXME: is this package deprecated and can it be removed?
 
 class Schedule(Stage):
     def __init__(self):

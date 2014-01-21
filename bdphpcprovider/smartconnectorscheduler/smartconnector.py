@@ -323,6 +323,7 @@ def multilevel_key_exists(context, *parts):
             return False
     return True
 
+
 def get_existing_key(context, schema):
     """
     Extract the schema field from the context, but if not present throw KeyError.
@@ -330,7 +331,7 @@ def get_existing_key(context, schema):
     if multilevel_key_exists(context, os.path.dirname(schema), os.path.basename(schema)):
         res = context[os.path.dirname(schema)][os.path.basename(schema)]
     else:
-        raise KeyError()
+        raise KeyError("Cannot find %s in run_settings" % schema)
     return res
 
 

@@ -33,9 +33,9 @@ from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 
 
 from bdphpcprovider.smartconnectorscheduler import mytardis
-# from bdphpcprovider.smartconnectorscheduler.mytardis import (create_graph_paramset, create_paramset)
 from paramiko.ssh_exception import SSHException
 
+from bdphpcprovider.smartconnectorscheduler import compute
 
 from . import setup_settings
 
@@ -79,41 +79,32 @@ class MakeFinishedStage(Stage):
             url_or_relative_path=remote_path,
             is_relative_path=True,
             ip_address=settings['host'])
+
         (scheme, host, mypath, location, query_settings) = \
             hrmcstages.parse_bdpurl(encoded_d_url)
-        command = "cd %s; make -f Makefile %s" % (os.path.join(
-                query_settings['root_path'], mypath),
-            'running')
-        command_out = ''
-        errs = ''
-        logger.debug("starting command %s for %s" % (command, host))
-        # TODO: need to try this command a few times if fails.
-        ssh = None
+        stderr = ''
+        stdout = ''
         try:
             ssh = sshconnector.open_connection(ip_address=host,
                                                 settings=settings)
-            command_out, errs = sshconnector.run_command_with_status(ssh, command)
+            (stdout, stderr) = compute.run_make(ssh, (os.path.join(
+                query_settings['root_path'], mypath)),
+                'running')
         except Exception, e:
             logger.error(e)
+            raise
         finally:
             if ssh:
                 ssh.close()
-        logger.debug("command_out2=(%s, %s)" % (command_out, errs))
-        if not errs:
-            self.program_success = True
-        else:
-            self.program_success = False
-
+        self.program_success = int(not stderr)
         logger.debug("program_success =%s" % self.program_success)
-
         if not self.program_success:
             logger.debug("command failed, so assuming job still running")
             return False
-
         self.still_running = 0
-        if command_out:
-            logger.debug("command_out = %s" % command_out)
-            for line in command_out:
+        if stdout:
+            logger.debug("stdout = %s" % stdout)
+            for line in stdout:
                 if 'stillrunning' in line:
                     return False
         return True
@@ -327,7 +318,7 @@ class MakeFinishedStage(Stage):
                 mytardis_settings['NUMKP'] = num_kp
                 mytardis_settings['RUNCOUNTER'] = settings['contextid']
 
-                self.experiment_id = mytardis.post_dataset(
+                self.experiment_id = mytardis.create_dataset(
                     settings=mytardis_settings,
                     source_url=encoded_d_url,
                     exp_id=self.experiment_id,
@@ -335,8 +326,8 @@ class MakeFinishedStage(Stage):
                     dataset_name=_get_dataset_name_for_vasp,
                     experiment_paramset=[],
                     dataset_paramset=[
-                        create_paramset("remotemake/output", []),
-                        create_graph_paramset("dsetgraph",
+                        mytardis.create_paramset("remotemake/output", []),
+                        mytardis.create_graph_paramset("dsetgraph",
                             name="makedset",
                             graph_info={},
                             value_dict={"makedset/num_kp": num_kp, "makedset/encut": encut, "makedset/toten": toten}
@@ -355,7 +346,7 @@ class MakeFinishedStage(Stage):
                 def _get_dataset_name_for_make(settings, url, path):
                     return str(os.sep.join(path.split(os.sep)[-1:]))
 
-                self.experiment_id = mytardis.post_dataset(
+                self.experiment_id = mytardis.create_dataset(
                     settings=mytardis_settings,
                     source_url=encoded_d_url,
                     exp_id=self.experiment_id,
@@ -363,7 +354,7 @@ class MakeFinishedStage(Stage):
                     dataset_name=_get_dataset_name_for_make,
                     experiment_paramset=[],
                     dataset_paramset=[
-                        create_paramset("remotemake/output", [])]
+                        mytardis.create_paramset("remotemake/output", [])]
                     )
 
     def output(self, run_settings):

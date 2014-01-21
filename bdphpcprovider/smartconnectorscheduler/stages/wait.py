@@ -28,6 +28,8 @@ from bdphpcprovider.smartconnectorscheduler \
 from bdphpcprovider.reliabilityframework.ftmanager import FTManager
 from bdphpcprovider.reliabilityframework.failuredetection import FailureDetection
 
+from bdphpcprovider.smartconnectorscheduler import compute
+
 logger = logging.getLogger(__name__)
 
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
@@ -108,6 +110,7 @@ class Wait(Stage):
         """
             Return True if package job on instance_id has job_finished
         """
+        # TODO: maybe this should be a reusable library method?
         ip = ip_address
         logger.debug("ip=%s" % ip)
         curr_username = settings['username']
@@ -118,23 +121,13 @@ class Wait(Stage):
             is_relative_path=True,
             ip_address=ip)
         makefile_path = hrmcstages.get_make_path(destination)
-        #makefile_path = settings['payload_destination']
-        command = "cd %s; make -f Makefile %s" % (makefile_path, 'running') # IDS=%s' % (
-                                      #settings['filename_for_PIDs']))
 
-        command_out = ''
-        errs = ''
-        logger.debug("starting command for %s" % ip)
-        logger.debug('command=%s' % command)
-        ssh = None
         try:
             ssh = sshconnector.open_connection(ip_address=ip, settings=settings)
-            command_out, errs = sshconnector.run_command_with_status(ssh, command)
-            ssh.close()
-        except Exception as e:#IO, Network, ...
-            logger.error("ip=%s %s " % (ip_address, e))
-            if ssh:
-                ssh.close()
+            (command_out, errs) = compute.run_make(ssh,
+                                                   makefile_path,
+                                                   "running")
+        except Exception, e:
             # Failure detection and then management
             logger.debug('error is = %s' % e)
             process_failed = False
@@ -170,9 +163,9 @@ class Wait(Stage):
                             self.executed_procs, self.procs_2b_rescheduled)
             else:
                 raise
-        #finally:
-        #    if ssh:
-        #        ssh.close()
+        finally:
+            if ssh:
+                ssh.close()
         logger.debug("command_out2=(%s, %s)" % (command_out, errs))
         if command_out:
             logger.debug("command_out = %s" % command_out)
