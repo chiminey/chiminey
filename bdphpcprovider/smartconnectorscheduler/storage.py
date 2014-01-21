@@ -574,7 +574,7 @@ def put_file(file_url, content):
     elif scheme == "tardis":
         # TODO: do a POST of a new datafile into existing exp and dataset
         # parse file_url to extract tardis host, exp_id and dataset_id
-        from bdphpcprovider.smartconnectorscheduler.mytardis import create_datafile
+        from bdphpcprovider.mytardis import create_datafile
         create_datafile(file_url, content)
     elif scheme == "file":
         root_path = get_value('root_path', query_settings)
@@ -710,7 +710,7 @@ def get_filep(file_bdp_url, sftp_reference=False):
         # parse file_bdp_url to extract tardis host, exp_id and dataset_id
         exp_id = 0
         dataset_id = 0
-        from bdphpcprovider.smartconnectorscheduler.mytardis import retrieve_datafile
+        from bdphpcprovider.mytardis import retrieve_datafile
         retrieve_datafile(file_bdp_url, exp_id, dataset_id)
         # TODO: get content and make a file pointer out of it
         return "a={{a}} b={{b}}"

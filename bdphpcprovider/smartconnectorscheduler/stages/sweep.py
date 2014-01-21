@@ -28,13 +28,8 @@ from pprint import pformat
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
-from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
 from bdphpcprovider.smartconnectorscheduler import models, platform, storage
-from bdphpcprovider.smartconnectorscheduler import mytardis
-from bdphpcprovider.smartconnectorscheduler.mytardis import (
-    create_graph_paramset,
-    create_paramset)
-
+from bdphpcprovider import mytardis
 
 
 logger = logging.getLogger(__name__)
@@ -155,22 +150,22 @@ class Sweep(Stage):
                 run_settings=run_settings,
                 experiment_id=self.experiment_id,
                 experiment_paramset=[
-                    create_paramset("remotemake", []),
-                    create_graph_paramset("expgraph",
+                    mytardis.create_paramset("remotemake", []),
+                    mytardis.create_graph_paramset("expgraph",
                         name="makeexp1",
                         graph_info={"axes":["num_kp", "energy"],
                             "legends":["TOTEN"]},
                         value_dict={},
                         value_keys=[["makedset/num_kp",
                             "makedset/toten"]]),
-                    create_graph_paramset("expgraph",
+                    mytardis.create_graph_paramset("expgraph",
                         name="makeexp2",
                         graph_info={"axes":["encut", "energy"],
                             "legends":["TOTEN"]},
                         value_dict={},
                         value_keys=[["makedset/encut",
                             "makedset/toten"]]),
-                    create_graph_paramset("expgraph",
+                    mytardis.create_graph_paramset("expgraph",
                         name="makeexp3",
                         graph_info={"axes":["num_kp", "encut", "TOTEN"],
                             "legends":["TOTEN"]},
@@ -187,7 +182,7 @@ class Sweep(Stage):
                 run_settings=run_settings,
                 experiment_id=self.experiment_id,
                 experiment_paramset=[
-                    create_paramset("remotemake", [])],
+                    mytardis.create_paramset("remotemake", [])],
                 output_location=self.scratch_platform)
         elif subdirective == "hrmc":
             pass

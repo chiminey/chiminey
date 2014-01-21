@@ -6,7 +6,7 @@ from bdphpcprovider.smartconnectorscheduler.sshconnector import get_package_pids
 from bdphpcprovider.smartconnectorscheduler.sshconnector import find_remote_files
 from bdphpcprovider.smartconnectorscheduler import botocloudconnector
 
-from bdphpcprovider.smartconnectorscheduler import compute
+from bdphpcprovider import compute
 
 logger = logging.getLogger(__name__)
 
