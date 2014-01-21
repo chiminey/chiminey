@@ -83,29 +83,30 @@ class Destroy(smartconnector.Stage):
         comp_pltf_settings = platform.get_platform_settings(computation_platform_url, bdp_username)
         local_settings.update(comp_pltf_settings)
 
-        node_type = 'created_nodes'
+        node_type = []
         if self._exists(run_settings,
             'http://rmit.edu.au/schemas/stages/create',
             u'created_nodes'):
             smartconnector.copy_settings(local_settings, run_settings,
                 'http://rmit.edu.au/schemas/stages/create/created_nodes')
-            all_instances = managevms.get_registered_vms(
-                local_settings, node_type=node_type)
-        else:
-            all_instances = []
+            #all_instances = managevms.get_registered_vms(
+            #    local_settings, node_type=node_type)
+            node_type.append('created_nodes')
+        #else:
+        #    all_instances = []
 
         if self.cleanup_nodes:
             smartconnector.copy_settings(local_settings, run_settings,
             'http://rmit.edu.au/schemas/reliability/cleanup_nodes')
-            node_type = 'cleanup_nodes'
-            all_instances.extend(managevms.get_registered_vms(
-                local_settings, node_type=node_type))
+            node_type.append('cleanup_nodes')
+            #all_instances.extend(managevms.get_registered_vms(
+            #    local_settings, node_type=node_type))
 
-        logger.debug('all_instance=%s' % all_instances)
-        if all_instances:
-            managevms.destroy_vms(local_settings, all_instances)
+        #logger.debug('all_instance=%s' % all_instances)
+        if node_type:
+            managevms.destroy_vms(local_settings, node_types=node_type)
         else:
-            logger.debug('No running VM instances in this context')
+        #    logger.debug('No running VM instances in this context')
             logger.info('Destroy stage completed')
 
     def output(self, run_settings):

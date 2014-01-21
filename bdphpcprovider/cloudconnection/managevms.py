@@ -22,7 +22,6 @@ import time
 import ast
 import hashlib
 import logging
-from collections import namedtuple
 
 from bdphpcprovider.cloudconnection import botoconnector
 from bdphpcprovider.smartconnectorscheduler import sshconnector
@@ -31,31 +30,35 @@ logger = logging.getLogger(__name__)
 
 def create_vms(total_vms, settings):
     """
-        Create the Nectar VM instance and return id
+        Create virtual machines and return id
     """
     logger.info("create_vms")
-    all_instances = botoconnector.create_vm_instances(total_vms, settings)
-    if all_instances:
-        all_running_instances = botoconnector.wait_for_instance_to_start_running(
-            all_instances, settings)
-        if all_running_instances:
-            ssh_ready_vms = _get_ssh_ready_instances(
-                all_running_instances, settings)
+    all_vms = botoconnector.create_vms(total_vms, settings)
+    if all_vms:
+        all_running_vms = botoconnector.wait_for_vms_to_start_running(
+            all_vms, settings)
+        if all_running_vms:
+            ssh_ready_vms = _get_ssh_ready_vms(
+                all_running_vms, settings)
             if ssh_ready_vms:
                 group_id = _generate_group_id(ssh_ready_vms)
                 return (group_id, ssh_ready_vms)
     return ('', [])
 
 
-def destroy_vms(settings, all_instances, ids_of_all_instances=None):
-
+def destroy_vms(settings, node_types=['created_nodes'],
+                ids_of_all_vms=None):
     logger.info("destroy_vms")
-    logger.debug('all_instances(teardown)=%s' % all_instances)
-    terminated_instances = botoconnector.destroy_vm_instances(
-        settings, all_instances,
-        ids_of_all_instances=ids_of_all_instances)
-    botoconnector.wait_for_instance_to_terminate(
-        terminated_instances, settings)
+    all_vms = []
+    for type in node_types:
+        all_vms.extend(get_registered_vms(
+            settings, node_type=type))
+    logger.debug('all_vms(teardown)=%s' % all_vms)
+    terminated_vms = botoconnector.destroy_vms(
+        settings, all_vms,
+        ids_of_all_vms=ids_of_all_vms)
+    botoconnector.wait_for_vms_to_terminate(
+        terminated_vms, settings)
 
 
 def get_registered_vms(settings, node_type='created_nodes'):
@@ -72,65 +75,65 @@ def get_registered_vms(settings, node_type='created_nodes'):
         logger.error("error with parsing created_nodes")
         raise
     for node in nodes:
-        instance = botoconnector.get_this_instance(node[0], settings)
-        if not instance:
-            logger.debug('instance [%s:%s] not found' % (node[0], node[1]))
+        vm = botoconnector.get_this_vm(node[0], settings)
+        if not vm:
+            logger.debug('vm [%s:%s] not found' % (node[0], node[1]))
         else:
-            res.append(instance)
+            res.append(vm)
     logger.debug("nodes=%s" % res)
     return res
 
 
-def print_vms(settings, all_instances=None):
+def print_vms(settings, all_vms=None):
     """
-        Print information about running instances
+        Print information about running vms
             - ID
             - IP
             - VM type
             - list of groups
     """
-    if not all_instances:
-        all_instances = botoconnector.get_running_instances(settings)
-        if not all_instances:
-            logger.info('\t No running instances')
+    if not all_vms:
+        all_vms = botoconnector.get_running_vms(settings)
+        if not all_vms:
+            logger.info('\t No running vms')
             return
 
     counter = 1
     logger.info('\tNo.\tID\t\tIP\t\tPackage\t\tGroup')
-    for instance in all_instances:
-        instance_id = instance.id
-        ip = instance.ip_address
+    for vm in all_vms:
+        vm_id = vm.id
+        ip = vm.ip_address
         if not ip:
-            ip = instance.private_ip_address
-        logger.info('\t%d:\t%s\t%s' % (counter, instance_id, ip))
+            ip = vm.private_ip_address
+        logger.info('\t%d:\t%s\t%s' % (counter, vm_id, ip))
         counter += 1
 
 
-def is_instance_running(instance):
-    return botoconnector.is_instance_running(instance)
+def is_vm_running(vm):
+    return botoconnector.is_vm_running(vm)
 
 
-def get_this_instance(instance_id, settings):
-    return botoconnector.get_this_instance(instance_id, settings)
+def get_this_vm(vm_id, settings):
+    return botoconnector.get_this_vm(vm_id, settings)
 
 
-def _get_ssh_ready_instances(all_instances, settings):
+def _get_ssh_ready_vms(all_vms, settings):
     '''
-        Returns instances that can be reached via ssh
+        Returns vms that can be reached via ssh
     '''
-    ssh_ready_instances = []
-    for instance in all_instances:
-        ip = instance.ip_address
+    ssh_ready_vms = []
+    for vm in all_vms:
+        ip = vm.ip_address
         if not ip:
-            ip = instance.private_ip_address
+            ip = vm.private_ip_address
         try:
             if _is_ssh_ready(settings, ip):
-                ssh_ready_instances.append(instance)
+                ssh_ready_vms.append(vm)
                 logger.debug('[%s] is ssh ready' % ip)
         except Exception as ex:
             logger.debug("[%s] Exception: %s" % (ip, ex))
-        logger.debug('ssh ready instances are %s' % ssh_ready_instances)
-    return ssh_ready_instances
+        logger.debug('ssh ready vms are %s' % ssh_ready_vms)
+    return ssh_ready_vms
 
 
 def _is_ssh_ready(settings, ip_address):
@@ -158,10 +161,10 @@ def _is_ssh_ready(settings, ip_address):
     return ssh_ready
 
 
-def _generate_group_id(all_instances):
+def _generate_group_id(all_vms):
     md5_starter_string = ""
-    for instance in all_instances:
-        md5_starter_string += instance.id
+    for vm in all_vms:
+        md5_starter_string += vm.id
     md5 = hashlib.md5()
     md5.update(md5_starter_string)
     group_id = md5.hexdigest()
