@@ -43,7 +43,7 @@ class FailureDetection(FTManager):
         return False
 
     def node_terminated(self, settings, node_id):
-        node = managevms.get_this_instance(node_id, settings)
+        node = managevms.get_this_vm(node_id, settings)
         if not node:
             return True
         return False

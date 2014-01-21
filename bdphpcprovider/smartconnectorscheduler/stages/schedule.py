@@ -201,7 +201,7 @@ class Schedule(Stage):
                                         if x[1] == node_ip]) \
                     and self.procs_2b_rescheduled:
                     continue
-                if not managevms.is_instance_running(node):
+                if not managevms.is_vm_running(node):
                     # An unlikely situation where the node crashed after is was
                     # detected as registered.
                     #FIXME: should error nodes be counted as finished?

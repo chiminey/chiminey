@@ -536,7 +536,7 @@ class FinishedStageTests(unittest.TestCase):
         flexmock(botocloudconnector).should_receive('get_instance_ip')\
         .and_return(cloudconnector.get_instance_ip(fakenode_state1.id, self.settings))
 
-        flexmock(botocloudconnector).should_receive('is_instance_running')\
+        flexmock(botocloudconnector).should_receive('is_vm_running')\
         .and_return(True)
 
         flexmock(sshconnector) \
@@ -1072,7 +1072,7 @@ class CloudTests(unittest.TestCase):
         flexmock(botocloudconnector).should_receive('get_instance_ip')\
         .and_return(cloudconnector.get_instance_ip(fakenode_state1.id, self.settings))
 
-        flexmock(botocloudconnector).should_receive('is_instance_running')\
+        flexmock(botocloudconnector).should_receive('is_vm_running')\
         .and_return(True)
 
         flexmock(sshconnector).should_receive('get_package_pids') \
