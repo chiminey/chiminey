@@ -96,7 +96,7 @@ class Bootstrap(Stage):
                                         for x in self.bootstrapped_nodes
                                         if x[1] == node_ip]):
                     continue
-                if not managevms.is_instance_running(node):
+                if not managevms.is_vm_running(node):
                     # An unlikely situation where the node crashed after is was
                     # detected as registered.
                     #FIXME: should error nodes be counted as finished?

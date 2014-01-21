@@ -272,7 +272,7 @@ class Wait(Stage):
             retry_left = process['retry_left']
             #ip = botocloudconnector.get_instance_ip(instance_id, self.boto_settings)
             #ssh = open_connection(ip_address=ip, settings=self.boto_settings)
-            #if not botocloudconnector.is_instance_running(node):
+            #if not botocloudconnector.is_vm_running(node):
                 # An unlikely situation where the node crashed after is was
                 # detected as registered.
                 #FIXME: should error nodes be counted as finished?
