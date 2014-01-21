@@ -18,35 +18,11 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from time import sleep
-import paramiko
-import os
 import logging
 
 from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 
-
 logger = logging.getLogger(__name__)
-
-
-@deprecated
-def run_command(ssh_client, command, current_dir=None):
-    """
-    Given a ssh_client, execute command from the current_dir
-    on the remote host and return stdout
-    """
-    # TODO: need a proper timeout for this command
-
-    logger.debug("run_command %s; %s " % (current_dir, command))
-    if current_dir:
-        command = "cd %s;%s" % (current_dir, command)
-    logger.debug(command)
-    stdin, stdout, stderr = ssh_client.exec_command(command)
-    res = stdout.readlines()
-    logger.debug("run_command_stdout=%s" % res)
-    if stderr:
-        logger.error("run_command_stderr=%s" % stderr.readlines())
-    return res
 
 
 def run_command_with_status(ssh_client, command, current_dir=None):
@@ -60,6 +36,7 @@ def run_command_with_status(ssh_client, command, current_dir=None):
     if current_dir:
         command = "cd %s;%s" % (current_dir, command)
     logger.debug(command)
+    stderr = ""
 
     try:
         stdin, stdout, stderr = ssh_client.exec_command(command)
@@ -73,6 +50,18 @@ def run_command_with_status(ssh_client, command, current_dir=None):
     if stderr:
         logger.debug("run_command_stderr=%s" % stderr.readlines())
     return (res, errs)
+
+
+def run_make(ssh_client, makefile_path, target):
+    command = "cd %s; make -f Makefile %s" % (makefile_path, target)
+    command_out = ''
+    errs = ''
+    try:
+        command_out, errs = run_command_with_status(ssh_client, command)
+    except Exception, e:
+        logger.error(e)
+    logger.debug("command_out2=(%s, %s)" % (command_out, errs))
+    return (command_out, errs)
 
 
 @deprecated
@@ -139,107 +128,108 @@ def run_command_with_tty(ssh_client, command, settings, current_dir=None):
     chan.close()
     return (error_code, full_buff, '')
 
-@deprecated
-def run_sudo_command_with_status(ssh_client, command, settings, instance_id):
-    """
-    Runs command at the ssh_client remote but also returns error code
-    """
-    # TODO: need a proper timeout for this command
-    chan = ssh_client.invoke_shell()
-    logger.debug("Channel %s" % chan)
-    chan.send('sudo -s\n')
-    logger.debug("Sending through channel %s" % chan)
-    full_buff = ''
-    buff = ''
-    command_prompt = settings['custom_prompt']
 
-    #FIXME: need to include timeouts on all these recv calls
-    while not command_prompt in buff:
-        resp = chan.recv(9999)
-        print resp
-        buff += resp
-    logger.debug("buff = %s" % buff)
-    full_buff += buff
+# @deprecated
+# def run_sudo_command_with_status(ssh_client, command, settings, instance_id):
+#     """
+#     Runs command at the ssh_client remote but also returns error code
+#     """
+#     # TODO: need a proper timeout for this command
+#     chan = ssh_client.invoke_shell()
+#     logger.debug("Channel %s" % chan)
+#     chan.send('sudo -s\n')
+#     logger.debug("Sending through channel %s" % chan)
+#     full_buff = ''
+#     buff = ''
+#     command_prompt = settings['custom_prompt']
 
-    chan.send("%s\n" % command)
-    logger.debug("Command %s" % command)
-    buff = ''
+#     #FIXME: need to include timeouts on all these recv calls
+#     while not command_prompt in buff:
+#         resp = chan.recv(9999)
+#         print resp
+#         buff += resp
+#     logger.debug("buff = %s" % buff)
+#     full_buff += buff
 
-    #FIXME: need to include timeouts on all these recv calls
-    while not command_prompt in buff:
-        resp = chan.recv(9999)
-        print resp
-        buff += resp
-    logger.debug("buff = %s" % buff)
-    full_buff += buff
+#     chan.send("%s\n" % command)
+#     logger.debug("Command %s" % command)
+#     buff = ''
 
-    chan.send("echo $!\n")  # NOTE: we assume bash
-    logger.debug("Command %s" % command)
-    buff = ''
+#     #FIXME: need to include timeouts on all these recv calls
+#     while not command_prompt in buff:
+#         resp = chan.recv(9999)
+#         print resp
+#         buff += resp
+#     logger.debug("buff = %s" % buff)
+#     full_buff += buff
 
-    #FIXME: need to include timeouts on all these recv calls
-    while not command_prompt in buff:
-        resp = chan.recv(9999)
-        print resp
-        buff += resp
-    logger.debug("buff = %s" % buff)
-    error_code = buff
-    full_buff += buff
+#     chan.send("echo $!\n")  # NOTE: we assume bash
+#     logger.debug("Command %s" % command)
+#     buff = ''
 
-    # TODO: handle stderr
+#     #FIXME: need to include timeouts on all these recv calls
+#     while not command_prompt in buff:
+#         resp = chan.recv(9999)
+#         print resp
+#         buff += resp
+#     logger.debug("buff = %s" % buff)
+#     error_code = buff
+#     full_buff += buff
 
-    chan.send("exit\n")
-    buff = ''
+#     # TODO: handle stderr
 
-    while not command_prompt in buff:
-        resp = chan.recv(9999)
-        print resp
-        buff += resp
-    logger.debug("buff = %s" % buff)
-    full_buff += buff
+#     chan.send("exit\n")
+#     buff = ''
 
-    chan.close()
-    return (error_code, full_buff, '')
+#     while not command_prompt in buff:
+#         resp = chan.recv(9999)
+#         print resp
+#         buff += resp
+#     logger.debug("buff = %s" % buff)
+#     full_buff += buff
 
-@deprecated
-def run_sudo_command(ssh_client, command, settings, instance_id):
-    chan = ssh_client.invoke_shell()
-    logger.debug("Channel %s" % chan)
-    chan.send('sudo -s\n')
-    logger.debug("Sending through channel %s" % chan)
-    full_buff = ''
-    buff = ''
-    command_prompt = settings['custom_prompt']
+#     chan.close()
+#     return (error_code, full_buff, '')
 
-    while not command_prompt in buff:
-        resp = chan.recv(9999)
-        print resp
-        buff += resp
-    logger.debug("buff = %s" % buff)
-    full_buff += buff
+# @deprecated
+# def run_sudo_command(ssh_client, command, settings, instance_id):
+#     chan = ssh_client.invoke_shell()
+#     logger.debug("Channel %s" % chan)
+#     chan.send('sudo -s\n')
+#     logger.debug("Sending through channel %s" % chan)
+#     full_buff = ''
+#     buff = ''
+#     command_prompt = settings['custom_prompt']
 
-    chan.send("%s\n" % command)
-    logger.debug("Command %s" % command)
-    buff = ''
+#     while not command_prompt in buff:
+#         resp = chan.recv(9999)
+#         print resp
+#         buff += resp
+#     logger.debug("buff = %s" % buff)
+#     full_buff += buff
 
-    while not command_prompt in buff:
-        resp = chan.recv(9999)
-        print resp
-        buff += resp
-    logger.debug("buff = %s" % buff)
-    full_buff += buff
+#     chan.send("%s\n" % command)
+#     logger.debug("Command %s" % command)
+#     buff = ''
 
-    # TODO: handle stderr
+#     while not command_prompt in buff:
+#         resp = chan.recv(9999)
+#         print resp
+#         buff += resp
+#     logger.debug("buff = %s" % buff)
+#     full_buff += buff
 
-    chan.send("exit\n")
-    buff = ''
+#     # TODO: handle stderr
 
-    while not command_prompt in buff:
-        resp = chan.recv(9999)
-        print resp
-        buff += resp
-    logger.debug("buff = %s" % buff)
-    full_buff += buff
+#     chan.send("exit\n")
+#     buff = ''
 
-    chan.close()
-    return (full_buff, '')
+#     while not command_prompt in buff:
+#         resp = chan.recv(9999)
+#         print resp
+#         buff += resp
+#     logger.debug("buff = %s" % buff)
+#     full_buff += buff
+
+#     chan.close()
+#     return (full_buff, '')

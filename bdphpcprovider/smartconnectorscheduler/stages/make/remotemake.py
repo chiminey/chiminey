@@ -34,6 +34,7 @@ from bdphpcprovider.smartconnectorscheduler import platform
 from bdphpcprovider.smartconnectorscheduler.smartconnector import multilevel_key_exists, get_existing_key
 from . import setup_settings
 
+from bdphpcprovider.smartconnectorscheduler import compute
 logger = logging.getLogger(__name__)
 
 
@@ -74,7 +75,6 @@ class MakeRunStage(Stage):
 
     def process(self, run_settings):
         settings = setup_settings(run_settings)
-
         smartconnector.info(run_settings, "1: execute starting")
 
         def _get_dest_bdp_url(settings):
@@ -91,40 +91,29 @@ class MakeRunStage(Stage):
             bdp_username)
         logger.debug("comp_pltf_settings=%s" % pformat(comp_pltf_settings))
         settings.update(comp_pltf_settings)
-
         encoded_d_url = smartconnector.get_url_with_pkey(
             settings,
             dest_url,
             is_relative_path=True,
             ip_address=settings['host'])
-
         (scheme, host, mypath, location, query_settings) = \
             hrmcstages.parse_bdpurl(encoded_d_url)
-
-        command = "cd %s; make -f Makefile %s" % (os.path.join(
-                query_settings['root_path'],
-                mypath),
-            'startrun')
-        logger.debug(command)
-        command_out = ''
-        errs = ''
+        stderr = ''
         try:
             ssh = sshconnector.open_connection(
                 ip_address=settings['host'],
                 settings=settings)
-            command_out, errs = sshconnector.run_command_with_status(
-                ssh,
-                command)
+
+            (command_out, stderr) = compute.run_make(ssh, (os.path.join(
+                    query_settings['root_path'],
+                    mypath)), 'startrun')
         except Exception, e:
             logger.error(e)
+            raise
         finally:
             if ssh:
                 ssh.close()
-        logger.debug("command_out2=(%s, %s)" % (command_out, errs))
-        if not errs:
-            self.program_success = 1
-        else:
-            self.program_success = 0
+        self.program_success = int(not stderr)
         logger.debug("program_success =%s" % self.program_success)
         smartconnector.info(run_settings, "1: execute started")
 

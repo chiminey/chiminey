@@ -86,7 +86,6 @@ class MakeUploadStage(Stage):
         map_initial_location = "%s/%s/initial" % (input_prefix, input_offset)
         logger.debug("map_initial_location=%s" % map_initial_location)
 
-
         settings = setup_settings(run_settings)
         logger.debug("settings=%s" % settings)
 

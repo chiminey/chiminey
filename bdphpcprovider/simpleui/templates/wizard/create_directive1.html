@@ -54,7 +54,7 @@
                         <label class="control-label span1">{{ f.label }}</label>
 
       {% if f.name == "DELETE" %}
-                        <div class="controls span11">{{schema_form.DELETE|attr:"onclick:delete_form(this)" }}</div>
+                        <div id="schema_{{forloop.parentloop.counter0}}_del" class="controls span11">{{schema_form.DELETE|attr:"onclick:delete_form(this)" }}</div>
       {% else %}
                         <div class="controls span11">{{f}}</div>
       {% endif %}
@@ -204,7 +204,7 @@
 
             <div class="control-group">
                 <div class="controls">
-                    <a href="#" class="btn btn-info " onclick="add_param(<%= id %>)">Add Param</a>
+                    <a href="#" id="schema_<%= id %>_del" class="btn btn-info " onclick="add_param(<%= id %>)">Add Param</a>
                 </div>
     </script>
 
@@ -316,10 +316,13 @@
     $(env).attr('value','on');
    }
 
+
+
    $(document).ready(function () {
               $('#mytooltip').tooltip();
 
           });
+  // $('input[name$="DELETE"]').delete_form($this);
 
  </script>
 

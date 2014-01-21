@@ -36,6 +36,7 @@ from bdphpcprovider.smartconnectorscheduler \
 
 from bdphpcprovider.smartconnectorscheduler.mytardis import create_paramset
 
+from bdphpcprovider.smartconnectorscheduler import compute
 
 logger = logging.getLogger(__name__)
 
@@ -218,7 +219,6 @@ class Execute(Stage):
 
         return run_settings
 
-
     def run_task(self, ip_address, process_id, settings):
         """
             Start the task on the instance, then hang and
@@ -228,7 +228,7 @@ class Execute(Stage):
         #ip = botocloudconnector.get_instance_ip(instance_id, settings)
         ip = ip_address
         logger.debug("ip=%s" % ip)
-        curr_username = settings['username']
+        # curr_username = settings['username']
         settings['username'] = 'root'
         # ssh = sshconnector.open_connection(ip_address=ip,
         #                                    settings=settings)
@@ -240,23 +240,33 @@ class Execute(Stage):
             is_relative_path=True,
             ip_address=ip)
         makefile_path = hrmcstages.get_make_path(destination)
-        #makefile_path = settings['payload_destination']
-        command = "cd %s; make -f Makefile %s" % (makefile_path, 'startrun IDS=%s' % (
-                                      settings['filename_for_PIDs']))
-        logger.debug('command_exec=%s' % command)
-        command_out = ''
-        errs = ''
-        logger.debug("starting command for %s" % ip)
         try:
             ssh = sshconnector.open_connection(ip_address=ip, settings=settings)
-            command_out, errs = sshconnector.run_command_with_status(ssh, command)
+            command, errs = compute.run_make(ssh,
+                                             makefile_path,
+                                             'startrun IDS=%s' % (
+                                                settings['filename_for_PIDs']))
         except Exception, e:
             logger.error(e)
         finally:
             if ssh:
                 ssh.close()
-        logger.debug("command_out2=(%s, %s)" % (command_out, errs))
 
+        # command = "cd %s; make -f Makefile %s" % (makefile_path, 'startrun IDS=%s' % (
+        #                               settings['filename_for_PIDs']))
+        # logger.debug('command_exec=%s' % command)
+        # command_out = ''
+        # errs = ''
+        # logger.debug("starting command for %s" % ip)
+        # try:
+        #     ssh = sshconnector.open_connection(ip_address=ip, settings=settings)
+        #     command_out, errs = sshconnector.run_command_with_status(ssh, command)
+        # except Exception, e:
+        #     logger.error(e)
+        # finally:
+        #     if ssh:
+        #         ssh.close()
+        # logger.debug("command_out2=(%s, %s)" % (command_out, errs))
 
     def run_multi_task(self, settings):
         """

@@ -21,7 +21,7 @@
 from bdphpcprovider.smartconnectorscheduler.compute.command import (
     run_command_with_status,
     run_command_with_tty,
-    run_sudo_command
+    run_make
 )
 
 

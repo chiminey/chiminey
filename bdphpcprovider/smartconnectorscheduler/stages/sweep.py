@@ -35,6 +35,8 @@ from bdphpcprovider.smartconnectorscheduler.mytardis import (
     create_graph_paramset,
     create_paramset)
 
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -300,6 +302,7 @@ class Sweep(Stage):
 
             # Need to load up existing values, because original input_dir could
             # have contained values for the whole run
+            error_detected = False
             if self._exists(run_settings,
                 RMIT_SCHEMA + '/stages/sweep',
                 'template_name'):
@@ -376,9 +379,15 @@ class Sweep(Stage):
                 'offset'] = input_storage_offset
 
             logger.debug("run_settings=%s" % pformat(run_settings))
+            try:
+                _submit_subtask("nectar", subdirective, run_settings, user, current_context)
+            except Exception, e:
+                logger.error(e)
+                smartconnector.error(run_settings, e)
+                error_detected = True
 
-            _submit_subtask("nectar", subdirective, run_settings, user, current_context)
-        smartconnector.success(run_settings, "0: creating sub jobs")
+        if not error_detected:
+            smartconnector.success(run_settings, "0: creating sub jobs")
 
     def output(self, run_settings):
         logger.debug("sweep output")
@@ -432,13 +441,11 @@ def _submit_subtask(platform, directive_name, data, user, parentcontext):
     directive_args = [directive_args]
     logger.debug("directive_args=%s" % pformat(directive_args))
     logger.debug('directive_name=%s' % directive_name)
-    try:
-        (task_run_settings, command_args, run_context) \
-            = hrmcstages.make_runcontext_for_directive(
-                platform,
-                directive_name, directive_args, {}, user, parent=parentcontext)
-    except InvalidInputError, e:
-        logger.error(str(e))
+    (task_run_settings, command_args, run_context) \
+        = hrmcstages.make_runcontext_for_directive(
+            platform,
+            directive_name, directive_args, {}, user, parent=parentcontext)
+
     logger.debug("sweep process done")
 
 

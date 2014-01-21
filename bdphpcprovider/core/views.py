@@ -66,6 +66,8 @@ from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.smartconnectorscheduler import platform
 from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 
+from bdphpcprovider.smartconnectorscheduler import smartconnector
+
 
 logger = logging.getLogger(__name__)
 
@@ -338,10 +340,14 @@ class ContextResource(ModelResource):
 
         except InvalidInputError, e:
             bundle.obj = None
+            smartconnector.error(run_settings, e)
             logger.error(e)
+            raise
         else:
             logger.debug("run_context=%s" % run_context)
             mess = "info, job started"
+            # We bypass normal message interface because we want message to
+            # appear before next page is rendered.
             message, was_created = models.ContextMessage.objects.get_or_create(
                 context=run_context)
             message.message = mess
