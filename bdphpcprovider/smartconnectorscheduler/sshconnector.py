@@ -34,31 +34,6 @@ class AuthError(Error):
     pass
 
 
-def is_ssh_ready(settings, ip_address):
-    ssh_ready = False
-    #maximum rwait time 30 minutes
-    minutes = 30 #fixme avoid hard coding; move to settings.py
-    max_retries = (minutes * 60)/settings['cloud_sleep_interval']
-    retries = 0
-    while not ssh_ready and retries < max_retries:
-        logger.debug("Connecting to %s in progress ..." % ip_address)
-        try:
-            open_connection(ip_address, settings)
-            ssh_ready = True
-        except Exception as ex:
-            logger.debug("[%s] Exception: %s" % (ip_address, ex))
-            if 'Connection refused' in ex:
-                # FIXME: this doesn't always work.
-                pass
-            elif 'Authentication failed' in ex:
-                pass
-            else:
-                retries += 1
-            sleep(settings['cloud_sleep_interval'])
-    logger.debug("Connecting to %s completed" % ip_address)
-    # TODO: need way of exiting polling loop if vm connection is borked.
-    return ssh_ready
-
 
 def open_connection(ip_address, settings):
     """

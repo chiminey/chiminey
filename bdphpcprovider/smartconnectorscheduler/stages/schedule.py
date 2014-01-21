@@ -21,15 +21,15 @@
 import logging
 import ast
 import os
-
 from pprint import pformat
 
+from django.core.exceptions import ImproperlyConfigured
 
+from bdphpcprovider.cloudconnection import managevms
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import smartconnector, hrmcstages, platform
-from bdphpcprovider.smartconnectorscheduler import botocloudconnector, sshconnector
+from bdphpcprovider.smartconnectorscheduler import sshconnector
 from bdphpcprovider.smartconnectorscheduler import models
-from django.core.exceptions import ImproperlyConfigured
 
 
 logger = logging.getLogger(__name__)
@@ -168,7 +168,7 @@ class Schedule(Stage):
             self.started = 0
         local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
         retrieve_local_settings(run_settings, local_settings)
-        self.nodes = botocloudconnector.get_rego_nodes(
+        self.nodes = managevms.get_registered_vms(
                 local_settings, node_type='bootstrapped_nodes')
 
         if not self.started:
@@ -201,7 +201,7 @@ class Schedule(Stage):
                                         if x[1] == node_ip]) \
                     and self.procs_2b_rescheduled:
                     continue
-                if not botocloudconnector.is_instance_running(node):
+                if not managevms.is_instance_running(node):
                     # An unlikely situation where the node crashed after is was
                     # detected as registered.
                     #FIXME: should error nodes be counted as finished?

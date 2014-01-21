@@ -47,7 +47,7 @@ def create_environ(number_vm_instances, settings):
     """
         Create the Nectar VM instance and return id
     """
-    logger.info("create_environ")
+    logger.info("create_vms")
     conn = _create_cloud_connection(settings)
     images = conn.list_images()
     sizes = conn.list_sizes()
@@ -320,7 +320,7 @@ def destroy_environ(settings, all_instances):
             - a group of instances, or
             - a single instance
     """
-    logger.info("destroy_environ")
+    logger.info("destroy_vms")
     if not all_instances:
         logging.error("No running instance(s)")
         sys.exit(1)

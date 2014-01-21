@@ -21,11 +21,9 @@
 
 import logging
 import ast
-import os
 
 from bdphpcprovider.smartconnectorscheduler import smartconnector, models, platform
-from bdphpcprovider.smartconnectorscheduler.botocloudconnector \
-    import collect_instances, destroy_environ
+from bdphpcprovider.cloudconnection import managevms
 
 logger = logging.getLogger(__name__)
 
@@ -91,8 +89,8 @@ class Destroy(smartconnector.Stage):
             u'created_nodes'):
             smartconnector.copy_settings(local_settings, run_settings,
                 'http://rmit.edu.au/schemas/stages/create/created_nodes')
-            all_instances = collect_instances(local_settings,
-                registered=True, node_type=node_type)
+            all_instances = managevms.get_registered_vms(
+                local_settings, node_type=node_type)
         else:
             all_instances = []
 
@@ -100,12 +98,12 @@ class Destroy(smartconnector.Stage):
             smartconnector.copy_settings(local_settings, run_settings,
             'http://rmit.edu.au/schemas/reliability/cleanup_nodes')
             node_type = 'cleanup_nodes'
-            all_instances.extend(collect_instances(local_settings,
-            registered=True, node_type=node_type))
+            all_instances.extend(managevms.get_registered_vms(
+                local_settings, node_type=node_type))
 
         logger.debug('all_instance=%s' % all_instances)
         if all_instances:
-            destroy_environ(local_settings, all_instances)
+            managevms.destroy_vms(local_settings, all_instances)
         else:
             logger.debug('No running VM instances in this context')
             logger.info('Destroy stage completed')
