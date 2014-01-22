@@ -26,11 +26,10 @@ from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import (hrmcstages,
                                                     models,
                                                     smartconnector,
-                                                    sshconnector,
                                                     platform)
 from bdphpcprovider.reliabilityframework.ftmanager import FTManager
 from bdphpcprovider.reliabilityframework.failuredetection import FailureDetection
-from bdphpcprovider.sshconnection import open_connection, run_command_with_status
+from bdphpcprovider.sshconnection import open_connection
 
 from bdphpcprovider import compute
 

@@ -34,11 +34,10 @@ from bdphpcprovider.smartconnectorscheduler.errors import PackageFailedError
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
 from bdphpcprovider.smartconnectorscheduler import (models,
                                                     hrmcstages,
-                                                    sshconnector,
                                                     smartconnector,
                                                     platform
 )
-from bdphpcprovider.sshconnection import open_connection, run_command_with_status
+from bdphpcprovider.sshconnection import open_connection
 from bdphpcprovider import mytardis
 from bdphpcprovider import compute
 

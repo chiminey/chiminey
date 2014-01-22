@@ -19,4 +19,4 @@
 # IN THE SOFTWARE.
 
 from bdphpcprovider.sshconnection.manageconnection import open_connection
-from bdphpcprovider.sshconnection.paramikoconnector import run_command_with_status, AuthError
+from bdphpcprovider.sshconnection.paramikoconnector import AuthError

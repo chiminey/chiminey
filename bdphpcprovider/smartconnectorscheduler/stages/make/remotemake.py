@@ -32,7 +32,7 @@ from bdphpcprovider.smartconnectorscheduler.smartconnector import (
 from bdphpcprovider import compute
 
 from . import setup_settings
-from bdphpcprovider.sshconnection import open_connection, run_command_with_status
+from bdphpcprovider.sshconnection import open_connection
 
 logger = logging.getLogger(__name__)
 

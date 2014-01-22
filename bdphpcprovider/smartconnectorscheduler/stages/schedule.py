@@ -29,9 +29,8 @@ from bdphpcprovider.cloudconnection import get_registered_vms, is_vm_running
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import smartconnector, hrmcstages, platform
 from bdphpcprovider.smartconnectorscheduler import models
-from bdphpcprovider.sshconnection import open_connection, run_command_with_status
-
-from bdphpcprovider import compute
+from bdphpcprovider.sshconnection import open_connection
+from bdphpcprovider.compute import run_command_with_status
 
 logger = logging.getLogger(__name__)
 
@@ -457,7 +456,7 @@ def start_round_robin_schedule(nodes, processes, schedule_index, settings):
         logger.debug("starting command for %s" % ip_address)
         try:
             ssh = open_connection(ip_address=ip_address, settings=settings)
-            command_out, errs = compute.run_command_with_status(ssh, command)
+            command_out, errs = run_command_with_status(ssh, command)
         except Exception, e:
             logger.error(e)
         finally:
@@ -517,7 +516,7 @@ def start_round_robin_reschedule(nodes, procs_2b_rescheduled, current_procs, set
         logger.debug("starting command for %s" % ip_address)
         try:
             ssh = open_connection(ip_address=ip_address, settings=settings)
-            command_out, errs = compute.run_command_with_status(ssh, command)
+            command_out, errs = run_command_with_status(ssh, command)
         except Exception, e:
             logger.error(e)
         finally:
@@ -609,7 +608,7 @@ def job_finished(ip, settings, destination):
     command = "cd %s; make %s" % (makefile_path,
                                   'scheduledone IDS=%s' % (
                                       settings['filename_for_PIDs']))
-    command_out, _ = compute.run_command_with_status(ssh, command)
+    command_out, _ = run_command_with_status(ssh, command)
     if command_out:
         logger.debug("command_out = %s" % command_out)
         for line in command_out:

@@ -29,7 +29,8 @@ from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler.platform import \
     retrieve_platform_paramsets, create_platform_paramset, delete_platform_paramsets
 from bdphpcprovider.smartconnectorscheduler.storage import RemoteStorage, get_bdp_root_path
-from bdphpcprovider.sshconnection import open_connection, run_command_with_status
+from bdphpcprovider.sshconnection import open_connection
+from bdphpcprovider.compute import run_command_with_status
 
 
 class Command(BaseCommand):
