@@ -26,9 +26,9 @@ setup(
         'django-bootstrap-form',
         #'celery==2.5.5',           # Delayed tasks and queues
         #'django-celery==2.5.5',
-        'celery',           # Delayed tasks and queues
-        'django-celery',
-        'django-kombu',
+        'celery==3.1.7',           # Delayed tasks and queues
+        'django-celery==3.1.1',
+        'django-kombu==0.9.4',
         'decisiontree',
         'django-mptt',
         'django-storages',
