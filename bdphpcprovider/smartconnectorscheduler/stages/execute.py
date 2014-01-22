@@ -1,4 +1,4 @@
-# Copyright (C) 2013, RMIT University
+# Copyright (C) 2014, RMIT University
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to
@@ -32,9 +32,10 @@ from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler.errors import PackageFailedError
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
 from bdphpcprovider.smartconnectorscheduler \
-    import mytardis, models, hrmcstages, sshconnector, smartconnector, platform
+    import mytardis, models, hrmcstages, smartconnector, platform
 
-from bdphpcprovider.smartconnectorscheduler.stages.composite import (make_graph_paramset, make_paramset)
+from bdphpcprovider.smartconnectorscheduler.stages.composite import ( make_paramset)
+from bdphpcprovider.sshconnection import open_connection, run_command_with_status
 
 
 logger = logging.getLogger(__name__)
@@ -247,8 +248,8 @@ class Execute(Stage):
         errs = ''
         logger.debug("starting command for %s" % ip)
         try:
-            ssh = sshconnector.open_connection(ip_address=ip, settings=settings)
-            command_out, errs = sshconnector.run_command_with_status(ssh, command)
+            ssh = open_connection(ip_address=ip, settings=settings)
+            command_out, errs = run_command_with_status(ssh, command)
         except Exception, e:
             logger.error(e)
         finally:

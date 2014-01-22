@@ -1,4 +1,4 @@
-# Copyright (C) 2013, RMIT University
+# Copyright (C) 2014, RMIT University
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to
@@ -24,9 +24,10 @@ import os
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler \
-    import hrmcstages, models, smartconnector, sshconnector, platform
+    import hrmcstages, models, smartconnector, platform
 from bdphpcprovider.reliabilityframework.ftmanager import FTManager
 from bdphpcprovider.reliabilityframework.failuredetection import FailureDetection
+from bdphpcprovider.sshconnection import open_connection, run_command_with_status
 
 logger = logging.getLogger(__name__)
 
@@ -128,8 +129,8 @@ class Wait(Stage):
         logger.debug('command=%s' % command)
         ssh = None
         try:
-            ssh = sshconnector.open_connection(ip_address=ip, settings=settings)
-            command_out, errs = sshconnector.run_command_with_status(ssh, command)
+            ssh = open_connection(ip_address=ip, settings=settings)
+            command_out, errs = run_command_with_status(ssh, command)
             ssh.close()
         except Exception as e:#IO, Network, ...
             logger.error("ip=%s %s " % (ip_address, e))
