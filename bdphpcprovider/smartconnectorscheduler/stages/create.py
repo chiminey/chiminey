@@ -20,7 +20,7 @@
 
 import logging
 
-from bdphpcprovider.cloudconnection import managevms
+from bdphpcprovider.cloudconnection import create_vms, print_vms
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler import platform
@@ -96,7 +96,7 @@ class Create(Stage):
         min_number_vms = run_settings[RMIT_SCHEMA + '/input/system/cloud'][u'minimum_number_vm_instances']
         logger.debug("VM instance %d" % number_vm_instances)
         self.platform_type = local_settings['platform_type']
-        self.group_id, self.nodes = managevms.create_vms(
+        self.group_id, self.nodes = create_vms(
             number_vm_instances,
             local_settings)
         logger.debug('node initialisation done')
@@ -113,8 +113,7 @@ class Create(Stage):
                             "Increase your quota or decrease your minimum requirement")
                 return
 
-        managevms.print_vms(
-            local_settings, all_instances=self.nodes)
+        print_vms(local_settings, all_instances=self.nodes)
         smartconnector.info(run_settings, "1: create (%s nodes created)" % len(self.nodes))
 
         #Fixme: the following should transfer power to FT managers
