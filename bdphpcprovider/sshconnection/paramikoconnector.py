@@ -73,29 +73,3 @@ def open_connection(ip_address, settings):
         raise
     logger.debug("Made connection")
     return ssh_client
-
-# moved to compute class
-def run_command_with_status(ssh_client, command, current_dir=None):
-    """
-    Given a ssh_client, execute command from the current_dir
-    on the remote host and return stdout and stderr
-    """
-    # TODO: need a proper timeout for this command
-
-    logger.debug("run_command %s; %s " % (current_dir, command))
-    if current_dir:
-        command = "cd %s;%s" % (current_dir, command)
-    logger.debug(command)
-
-    try:
-        stdin, stdout, stderr = ssh_client.exec_command(command)
-        res = stdout.readlines()
-        errs = stderr.readlines()
-    except Exception, e:
-        logger.error(e)
-        errs = [str(e)]
-        res = []
-    logger.debug("run_command_stdout=%s" % res)
-    if stderr:
-        logger.debug("run_command_stderr=%s" % stderr.readlines())
-    return (res, errs)

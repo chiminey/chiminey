@@ -25,6 +25,7 @@ import socket
 import boto
 import paramiko
 import requests
+#fixme import boto exception in coudconnection/init.py
 from boto.ec2.regioninfo import RegionInfo
 from boto.exception import EC2ResponseError
 from requests.auth import HTTPBasicAuth
@@ -36,7 +37,8 @@ from django.core.files.base import ContentFile
 
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler import storage
-from bdphpcprovider.sshconnection import open_connection, run_command_with_status, AuthError
+from bdphpcprovider.sshconnection import open_connection, AuthError
+from bdphpcprovider.compute import run_command_with_status
 
 
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
@@ -346,7 +348,7 @@ def generate_key(platform_type, parameters):
     else:
         return False, 'Unknown platform type [%s]' % platform_type
 
-
+#fixme refactor method to use managevms instead of boto
 def generate_cloud_key(parameters):
     logger.debug('generating key')
     key_generated = True

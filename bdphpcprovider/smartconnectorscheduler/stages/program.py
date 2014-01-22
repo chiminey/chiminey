@@ -24,7 +24,8 @@ from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
-from bdphpcprovider.sshconnection import open_connection, run_command_with_status
+from bdphpcprovider.sshconnection import open_connection
+from bdphpcprovider.compute import run_command_with_status
 
 logger = logging.getLogger(__name__)
 
