@@ -113,7 +113,7 @@ class Create(Stage):
                             "Increase your quota or decrease your minimum requirement")
                 return
 
-        print_vms(local_settings, all_instances=self.nodes)
+        print_vms(local_settings, all_vms=self.nodes)
         smartconnector.info(run_settings, "1: create (%s nodes created)" % len(self.nodes))
 
         #Fixme: the following should transfer power to FT managers
