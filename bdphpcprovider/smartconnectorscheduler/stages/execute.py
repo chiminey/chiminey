@@ -1,4 +1,4 @@
-# Copyright (C) 2013, RMIT University
+# Copyright (C) 2014, RMIT University
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to
@@ -38,7 +38,7 @@ from bdphpcprovider.smartconnectorscheduler import (models,
                                                     smartconnector,
                                                     platform
 )
-
+from bdphpcprovider.sshconnection import open_connection, run_command_with_status
 from bdphpcprovider import mytardis
 from bdphpcprovider import compute
 
@@ -241,7 +241,7 @@ class Execute(Stage):
             ip_address=ip)
         makefile_path = hrmcstages.get_make_path(destination)
         try:
-            ssh = sshconnector.open_connection(ip_address=ip, settings=settings)
+            ssh = open_connection(ip_address=ip, settings=settings)
             command, errs = compute.run_make(ssh,
                                              makefile_path,
                                              'startrun IDS=%s' % (

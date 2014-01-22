@@ -19,13 +19,12 @@
 # IN THE SOFTWARE.
 
 import logging
-import logging.config
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
-from bdphpcprovider.smartconnectorscheduler import sshconnector
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
+from bdphpcprovider.sshconnection import open_connection, run_command_with_status
 
 logger = logging.getLogger(__name__)
 
@@ -92,12 +91,12 @@ class LocalProgramStage(Stage):
             remote_host = run_settings[u'http://rmit.edu.au/schemas/program/config'][u'remotehost']
 
 
-            ssh = sshconnector.open_connection(ip_address=remote_host, settings={
+            ssh = open_connection(ip_address=remote_host, settings={
                 'private_key': self.user_settings['nci_private_key'],
                 'username': self.user_settings['nci_user'],
                 'password': self.user_settings['nci_password']})
 
-            res, errs = sshconnector.run_command_with_status(ssh, command,
+            res, errs = run_command_with_status(ssh, command,
                 current_dir=platform.root_path)
             if not errs:
                 self.program_success = True

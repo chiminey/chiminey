@@ -18,9 +18,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import random
 import os
-import time
 import unittest
 import logging
 import json
@@ -30,15 +28,11 @@ import sys
 from flexmock import flexmock
 import paramiko
 
-from bdphpcprovider.cloudconnection import botoconnector
-from bdphpcprovider.smartconnectorscheduler.cloudconnector import *
 
 #from sshconnector import get_package_pids
 
-from bdphpcprovider.smartconnectorscheduler import cloudconnector
 
 #import   bdphpcprovider.smartconnectorscheduler.sshconnector
-from bdphpcprovider.smartconnectorscheduler import sshconnector
 #import hrmcimpl
 
 #from hrmcstages import get_filesys
@@ -46,7 +40,6 @@ from bdphpcprovider.smartconnectorscheduler import sshconnector
 from bdphpcprovider.smartconnectorscheduler.hrmcstages import get_run_info, get_settings
 
 
-from libcloud.compute.drivers.ec2 import EucNodeDriver
 
 logger = logging.getLogger(__name__)
 
@@ -62,12 +55,9 @@ from bdphpcprovider.smartconnectorscheduler.stages.configure import Configure
 #from bdphpcprovider.smartconnectorscheduler.stages.finished import Finished
 #from bdphpcprovider.smartconnectorscheduler.stages.finished import packages_complete
 
-from bdphpcprovider.smartconnectorscheduler.stages.schedule_old import Schedule
-from bdphpcprovider.smartconnectorscheduler.stages.hrmc.transform import Transform
-from bdphpcprovider.smartconnectorscheduler.stages.hrmc.converge import Converge
 #from hrmcstages import Teardown
 
-from bdphpcprovider.smartconnectorscheduler.filesystem import DataObject, FileSystem
+
 
 from fs import path
 
@@ -609,6 +599,7 @@ class FinishedStageTests(unittest.TestCase):
         #    "setup_finished": 1})
 '''
 
+'''
 class FileSystemTests(unittest.TestCase):
     #FIXME: These testcases should not know about the underlying filesystem implementation
     HOME_DIR = os.path.expanduser("~")
@@ -712,7 +703,7 @@ class FileSystemTests(unittest.TestCase):
         else:
             self.fail('ExpectedException not thrown')
 
-    '''
+
     def test_simpletest(self):
         fsys = FileSystem()
 
@@ -733,9 +724,9 @@ class FileSystemTests(unittest.TestCase):
 
         fsys.delete("a/b/c")
         #assert statement
-    '''
 
 
+'''
 class ConnectorTests(unittest.TestCase):
 
     def setUp(self):
@@ -836,7 +827,7 @@ class CloudTests(unittest.TestCase):
             "POST_PROCESSING_DEST_PATH_PREFIX": "",
             "POST_PAYLOAD_CLOUD_DIRNAME": "", "PAYLOAD_DESTINATION": "",
             "POST_PAYLOAD_COMPILE_FILE": ""}
-
+    '''
     def test_create_connection(self):
 
         # Make fake ssh connection
@@ -886,7 +877,7 @@ class CloudTests(unittest.TestCase):
 
         self.assertEquals(create_environ(1, self.settings), group_id)
 
-    '''
+
     def test_prepare_multi_input(self):
 
         logger.debug("test_prepare_multi_input")
@@ -1157,7 +1148,7 @@ class CloudTests(unittest.TestCase):
         #TODO: remove the next line when list_nodes() API is fixed
         res[0].id = "foo"
         self.assertEquals(res[0].id, "foo")
-    '''
+
     def test_destroy_environ(self):
         logger.debug("test_destroy_environ")
         # first node starts terminated, and second is there after one check
@@ -1182,7 +1173,7 @@ class CloudTests(unittest.TestCase):
         res = destroy_environ(self.settings, [fakenode1, fakenode2_state1])
 
         self.assertEquals(res, None)
-
+    '''
 
 class SchedulerStageTest(unittest.TestCase):
     HOME_DIR = os.path.expanduser("~")
@@ -1232,6 +1223,7 @@ class SchedulerStageTest(unittest.TestCase):
         print("\n\n")
         print("Number of nodes created: ", root_node.how_many_nodes())
 
+    '''
     def test_simple(self):
         context = {}
 
@@ -1259,6 +1251,7 @@ class SchedulerStageTest(unittest.TestCase):
         run_info = get_run_info(context)
         provider = run_info['PROVIDER']
         self.assertEquals(provider, "nectar")
+    '''
 
 
 class TransformStageTests(unittest.TestCase):
@@ -1295,7 +1288,7 @@ class TransformStageTests(unittest.TestCase):
         else:
             logger.warn("Keeping directory %s" % self.global_filesystem)
         pass
-
+    '''
     def test_stage(self):
 
         s1 = Transform()
@@ -1410,7 +1403,7 @@ class TransformStageTests(unittest.TestCase):
         for f in ['pore.xyz', 'sqexp.dat']:
             ff = fs.retrieve_new(path.join("input_%s" % (id_to_test + 1), node_1), f)
             self.assertEquals(ff.getContent(), default_output_content)
-
+    '''
 
 class ConvergeStageTests(unittest.TestCase):
 
@@ -1446,7 +1439,7 @@ class ConvergeStageTests(unittest.TestCase):
         else:
             logger.warn("Keeping directory %s" % self.global_filesystem)
         pass
-
+    '''
     def test_nonconverge(self):
         """
         Test situation where the convergence has not been met
@@ -1628,6 +1621,6 @@ class ConvergeStageTests(unittest.TestCase):
 
         criterion = float(content['criterion'])
         self.assertTrue(criterion > s1.prev_criterion)
-
+    '''
 if __name__ == '__main__':
      unittest.main()

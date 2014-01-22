@@ -23,7 +23,7 @@ import logging
 import ast
 
 from bdphpcprovider.smartconnectorscheduler import smartconnector, models, platform
-from bdphpcprovider.cloudconnection import managevms
+from bdphpcprovider.cloudconnection import destroy_vms
 
 logger = logging.getLogger(__name__)
 
@@ -104,7 +104,7 @@ class Destroy(smartconnector.Stage):
 
         #logger.debug('all_instance=%s' % all_instances)
         if node_type:
-            managevms.destroy_vms(local_settings, node_types=node_type)
+            destroy_vms(local_settings, node_types=node_type)
         else:
         #    logger.debug('No running VM instances in this context')
             logger.info('Destroy stage completed')

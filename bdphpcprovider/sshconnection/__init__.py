@@ -18,7 +18,5 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from bdphpcprovider.cloudconnection.managevms import (
-    create_vms, destroy_vms, get_registered_vms,
-    print_vms, is_vm_running, get_this_vm
-)
+from bdphpcprovider.sshconnection.manageconnection import open_connection
+from bdphpcprovider.sshconnection.paramikoconnector import run_command_with_status, AuthError

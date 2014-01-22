@@ -44,8 +44,6 @@ from paramiko.ssh_exception import SSHException
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, UI, SmartConnector, get_url_with_pkey
 from bdphpcprovider.smartconnectorscheduler.filesystem import FileSystem, DataObject
-from bdphpcprovider.cloudconnection.managevms import create_vms, \
-     destroy_vms
 from bdphpcprovider.smartconnectorscheduler.errors import ContextKeyMissing, InvalidInputError
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
 from bdphpcprovider.smartconnectorscheduler import models

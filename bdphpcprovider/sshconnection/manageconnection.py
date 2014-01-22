@@ -18,7 +18,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from bdphpcprovider.cloudconnection.managevms import (
-    create_vms, destroy_vms, get_registered_vms,
-    print_vms, is_vm_running, get_this_vm
-)
+from bdphpcprovider.sshconnection import paramikoconnector
+
+def open_connection(ip_address, settings):
+    return paramikoconnector.open_connection(ip_address, settings)

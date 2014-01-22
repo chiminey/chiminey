@@ -25,11 +25,11 @@ from pprint import pformat
 
 from django.core.exceptions import ImproperlyConfigured
 
-from bdphpcprovider.cloudconnection import managevms
+from bdphpcprovider.cloudconnection import get_registered_vms, is_vm_running
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import smartconnector, hrmcstages, platform
-from bdphpcprovider.smartconnectorscheduler import sshconnector
 from bdphpcprovider.smartconnectorscheduler import models
+from bdphpcprovider.sshconnection import open_connection, run_command_with_status
 
 from bdphpcprovider import compute
 
@@ -169,7 +169,7 @@ class Schedule(Stage):
             self.started = 0
         local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
         retrieve_local_settings(run_settings, local_settings)
-        self.nodes = managevms.get_registered_vms(
+        self.nodes = get_registered_vms(
                 local_settings, node_type='bootstrapped_nodes')
 
         if not self.started:
@@ -202,7 +202,7 @@ class Schedule(Stage):
                                         if x[1] == node_ip]) \
                     and self.procs_2b_rescheduled:
                     continue
-                if not managevms.is_vm_running(node):
+                if not is_vm_running(node):
                     # An unlikely situation where the node crashed after is was
                     # detected as registered.
                     #FIXME: should error nodes be counted as finished?
@@ -456,7 +456,7 @@ def start_round_robin_schedule(nodes, processes, schedule_index, settings):
         errs = ''
         logger.debug("starting command for %s" % ip_address)
         try:
-            ssh = sshconnector.open_connection(ip_address=ip_address, settings=settings)
+            ssh = open_connection(ip_address=ip_address, settings=settings)
             command_out, errs = compute.run_command_with_status(ssh, command)
         except Exception, e:
             logger.error(e)
@@ -516,7 +516,7 @@ def start_round_robin_reschedule(nodes, procs_2b_rescheduled, current_procs, set
         errs = ''
         logger.debug("starting command for %s" % ip_address)
         try:
-            ssh = sshconnector.open_connection(ip_address=ip_address, settings=settings)
+            ssh = open_connection(ip_address=ip_address, settings=settings)
             command_out, errs = compute.run_command_with_status(ssh, command)
         except Exception, e:
             logger.error(e)
@@ -604,7 +604,7 @@ def job_finished(ip, settings, destination):
     """
         Return True if package job on instance_id has job_finished
     """
-    ssh = sshconnector.open_connection(ip_address=ip, settings=settings)
+    ssh = open_connection(ip_address=ip, settings=settings)
     makefile_path = hrmcstages.get_make_path(destination)
     command = "cd %s; make %s" % (makefile_path,
                                   'scheduledone IDS=%s' % (
