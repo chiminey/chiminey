@@ -24,7 +24,7 @@ import hashlib
 import logging
 
 from bdphpcprovider.cloudconnection import botoconnector
-from bdphpcprovider.smartconnectorscheduler import sshconnector
+from bdphpcprovider.sshconnection import open_connection
 
 logger = logging.getLogger(__name__)
 
@@ -145,7 +145,7 @@ def _is_ssh_ready(settings, ip_address):
     while not ssh_ready and retries < max_retries:
         logger.debug("Connecting to %s in progress ..." % ip_address)
         try:
-            sshconnector.open_connection(ip_address, settings)
+            open_connection(ip_address, settings)
             ssh_ready = True
         except Exception as ex:
             logger.debug("[%s] Exception: %s" % (ip_address, ex))

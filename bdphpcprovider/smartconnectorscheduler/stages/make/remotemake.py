@@ -20,19 +20,17 @@
 
 import os
 import logging
-import ast
-import logging.config
 from pprint import pformat
 
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
-from bdphpcprovider.smartconnectorscheduler import sshconnector
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.smartconnectorscheduler import platform
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import multilevel_key_exists, get_existing_key
 from . import setup_settings
+from bdphpcprovider.sshconnection import open_connection, run_command_with_status
 
 logger = logging.getLogger(__name__)
 
@@ -109,10 +107,10 @@ class MakeRunStage(Stage):
         command_out = ''
         errs = ''
         try:
-            ssh = sshconnector.open_connection(
+            ssh = open_connection(
                 ip_address=settings['host'],
                 settings=settings)
-            command_out, errs = sshconnector.run_command_with_status(
+            command_out, errs = run_command_with_status(
                 ssh,
                 command)
         except Exception, e:
