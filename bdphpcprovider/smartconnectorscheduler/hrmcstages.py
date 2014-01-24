@@ -43,9 +43,6 @@ from storages.backends.sftpstorage import SFTPStorage
 from paramiko.ssh_exception import SSHException
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, UI, SmartConnector, get_url_with_pkey
-from bdphpcprovider.smartconnectorscheduler.filesystem import FileSystem, DataObject
-from bdphpcprovider.smartconnectorscheduler.botocloudconnector import create_environ, \
-    collect_instances, destroy_environ
 from bdphpcprovider.smartconnectorscheduler.errors import ContextKeyMissing, InvalidInputError
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
 from bdphpcprovider.smartconnectorscheduler import models
@@ -1189,8 +1186,8 @@ def make_runcontext_for_directive(platform_name, directive_name,
     profile = models.UserProfile.objects.get(user=user)
     logger.debug("profile=%s" % profile)
 
-    platform = models.Platform.objects.get(name=platform_name)
-    logger.debug("platform=%s" % platform)
+    #platform = models.Platform.objects.get(name=platform_name)
+    #logger.debug("platform=%s" % platform)
 
     run_settings = dict(initial_settings)  # we may share initial_settings
 

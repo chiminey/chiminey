@@ -22,23 +22,20 @@ import os
 import json
 import logging
 import ast
-import logging.config
+
+from paramiko.ssh_exception import SSHException
 
 from paramiko.ssh_exception import SSHException
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
-from bdphpcprovider.smartconnectorscheduler import sshconnector
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.smartconnectorscheduler import platform
-from bdphpcprovider.smartconnectorscheduler.errors import deprecated
-
 from bdphpcprovider import mytardis
 from bdphpcprovider import compute
-
-
-
 from . import setup_settings
+from bdphpcprovider.sshconnection import open_connection
+
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +83,7 @@ class MakeFinishedStage(Stage):
         stderr = ''
         stdout = ''
         try:
-            ssh = sshconnector.open_connection(ip_address=host,
+            ssh = open_connection(ip_address=host,
                                                 settings=settings)
             (stdout, stderr) = compute.run_make(ssh, (os.path.join(
                 query_settings['root_path'], mypath)),

@@ -22,14 +22,15 @@ import logging
 from pprint import pformat
 import ast
 
+from bdphpcprovider.cloudconnection import get_registered_vms, is_vm_running
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import hrmcstages, platform
-from bdphpcprovider.smartconnectorscheduler import sshconnector, botocloudconnector, models
+from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler.errors import PackageFailedError
 from bdphpcprovider.smartconnectorscheduler.stages.errors import InsufficientResourceError
-
-from bdphpcprovider import compute
+from bdphpcprovider.sshconnection import open_connection
+from bdphpcprovider.compute import run_command_with_status, run_make
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +88,7 @@ class Bootstrap(Stage):
             self.started = 1
 
         else:
-            self.nodes = botocloudconnector.get_rego_nodes(local_settings)
+            self.nodes = get_registered_vms(local_settings)
             self.error_nodes = []
             for node in self.nodes:
                 node_ip = node.ip_address
@@ -97,7 +98,7 @@ class Bootstrap(Stage):
                                         for x in self.bootstrapped_nodes
                                         if x[1] == node_ip]):
                     continue
-                if not botocloudconnector.is_instance_running(node):
+                if not is_vm_running(node):
                     # An unlikely situation where the node crashed after is was
                     # detected as registered.
                     #FIXME: should error nodes be counted as finished?
@@ -183,7 +184,7 @@ def start_multi_setup_task(settings):
     Run the package on each of the nodes in the group and grab
     any output as needed
     """
-    nodes = botocloudconnector.get_rego_nodes(settings)
+    nodes = get_registered_vms(settings)
     logger.debug("nodes=%s" % nodes)
     requested_nodes = 0
     maketarget_nodegroup_pair = {}
@@ -241,10 +242,10 @@ def start_setup(instance, ip,  settings, source, destination):
     logger.debug("starting command for %s" % ip)
     ssh = ''
     try:
-        ssh = sshconnector.open_connection(ip_address=ip, settings=settings)
-        command_out, errs = compute.run_command_with_status(ssh, install_make)
+        ssh = open_connection(ip_address=ip, settings=settings)
+        command_out, errs = run_command_with_status(ssh, install_make)
         logger.debug("command_out1=(%s, %s)" % (command_out, errs))
-        compute.run_make(ssh, makefile_path, 'setupstart')
+        run_make(ssh, makefile_path, 'setupstart')
     except Exception, e:
         logger.error(e)
         raise
@@ -257,9 +258,9 @@ def job_finished(ip, settings, destination):
     """
         Return True if package job on instance_id has job_finished
     """
-    ssh = sshconnector.open_connection(ip_address=ip, settings=settings)
+    ssh = open_connection(ip_address=ip, settings=settings)
     makefile_path = hrmcstages.get_make_path(destination)
-    (command_out, err) = compute.run_make(ssh, makefile_path, 'setupdone')
+    (command_out, err) = run_make(ssh, makefile_path, 'setupdone')
     if command_out:
         logger.debug("command_out = %s" % command_out)
         for line in command_out:

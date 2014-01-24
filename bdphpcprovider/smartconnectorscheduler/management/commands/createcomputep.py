@@ -19,15 +19,18 @@
 # IN THE SOFTWARE.
 
 import os.path
-from django.core.management.base import BaseCommand, CommandError
+
+from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
 from django.db import transaction
+from django.db.models import ObjectDoesNotExist
 
-from bdphpcprovider.smartconnectorscheduler import models, sshconnector
+from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler.platform import \
     retrieve_platform_paramsets, create_platform_paramset, delete_platform_paramsets
-from bdphpcprovider.smartconnectorscheduler.storage import RemoteStorage, get_bdp_root_path, LocalStorage
-from django.db.models import ObjectDoesNotExist
+from bdphpcprovider.smartconnectorscheduler.storage import RemoteStorage, get_bdp_root_path
+from bdphpcprovider.sshconnection import open_connection
+from bdphpcprovider.compute import run_command_with_status
 
 
 class Command(BaseCommand):
@@ -208,16 +211,16 @@ class Command(BaseCommand):
             f.close()
             fs = RemoteStorage(settings=storage_settings)
             fs.save(remote_key_path, ContentFile(public_key_content))
-            ssh_client = sshconnector.open_connection(parameters['ip_address'], ssh_settings)
+            ssh_client = open_connection(parameters['ip_address'], ssh_settings)
             command = 'cat %s >> %s' % (remote_key_path, authorized_remote_path)
-            command_out, errs = sshconnector.run_command_with_status(ssh_client, command)
+            command_out, errs = run_command_with_status(ssh_client, command)
             if errs:
                 if 'Permission denied' in errs:
                     key_generated = False
                     message = 'Permission denied to copy public key to %s/.ssh/authorized_keys' % parameters['home_path']
                 else:
                     raise IOError
-        except sshconnector.AuthError:
+        except AuthError:
             key_generated = False
             message = 'Unauthorized access to %s' % parameters['ip_address']
         except socket.gaierror, e:

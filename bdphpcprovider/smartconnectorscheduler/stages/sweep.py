@@ -394,7 +394,7 @@ class Sweep(Stage):
         if '%s/input/mytardis' % RMIT_SCHEMA in run_settings:
                 run_settings[RMIT_SCHEMA + '/input/mytardis'][
             'experiment_id'] = str(self.experiment_id)
-
+        smartconnector.success(run_settings, "0: completed")
         return run_settings
 
     def _make_mytardis_exp(
