@@ -253,10 +253,10 @@ SFTP_STORAGE_PARAMS = {}
 #CELERYBEAT_SCHEDULER="djcelery.schedulers.DatabaseScheduler"
 # Warning: celeryd is not safe for muliple workers when backed by sqlite
 CELERYBEAT_SCHEDULE = {
-    #"test": {
-    #    "task": "smartconnectorscheduler.test",
-    #    "schedule": timedelta(seconds=15),
-    #},
+    "test": {
+        "task": "smartconnectorscheduler.test",
+        "schedule": timedelta(seconds=15),
+    },
     "run_contexts": {
         "task": "smartconnectorscheduler.run_contexts",
         "schedule": timedelta(seconds=15)
@@ -288,7 +288,7 @@ VM_IMAGES = {'csrack': {'placement': None, 'vm_image': "ami-00000004"},
 
 
 # CELERY CONFIGURATRION
-
+CELERY_DEFAULT_QUEUE = 'default'
 CELERY_QUEUES = {
   "hightasks": {
       "binding_key": "high",
@@ -317,7 +317,6 @@ CELERY_ROUTES = {
 #BROKER_TRANSPORT = 'django'
 BROKER_URL = 'redis://localhost:6379/0'
 CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
-
 
 djcelery.setup_loader()
 
