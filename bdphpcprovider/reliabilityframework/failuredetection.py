@@ -19,9 +19,9 @@
 # IN THE SOFTWARE.
 
 import logging
+from bdphpcprovider.cloudconnection import get_this_vm
 
 from bdphpcprovider.reliabilityframework.ftmanager import FTManager
-from bdphpcprovider.smartconnectorscheduler import botocloudconnector
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ class FailureDetection(FTManager):
         return False
 
     def node_terminated(self, settings, node_id):
-        node = botocloudconnector.get_this_instance(node_id, settings)
+        node = get_this_vm(node_id, settings)
         if not node:
             return True
         return False

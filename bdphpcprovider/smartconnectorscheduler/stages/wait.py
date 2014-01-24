@@ -1,4 +1,4 @@
-# Copyright (C) 2013, RMIT University
+# Copyright (C) 2014, RMIT University
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to
@@ -26,11 +26,10 @@ from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import (hrmcstages,
                                                     models,
                                                     smartconnector,
-                                                    sshconnector,
                                                     platform)
-
 from bdphpcprovider.reliabilityframework.ftmanager import FTManager
 from bdphpcprovider.reliabilityframework.failuredetection import FailureDetection
+from bdphpcprovider.sshconnection import open_connection
 
 from bdphpcprovider import compute
 
@@ -128,7 +127,7 @@ class Wait(Stage):
         makefile_path = hrmcstages.get_make_path(destination)
 
         try:
-            ssh = sshconnector.open_connection(ip_address=ip, settings=settings)
+            ssh = open_connection(ip_address=ip, settings=settings)
             (command_out, errs) = compute.run_make(ssh,
                                                    makefile_path,
                                                    "running")
@@ -270,7 +269,7 @@ class Wait(Stage):
             retry_left = process['retry_left']
             #ip = botocloudconnector.get_instance_ip(instance_id, self.boto_settings)
             #ssh = open_connection(ip_address=ip, settings=self.boto_settings)
-            #if not botocloudconnector.is_instance_running(node):
+            #if not botocloudconnector.is_vm_running(node):
                 # An unlikely situation where the node crashed after is was
                 # detected as registered.
                 #FIXME: should error nodes be counted as finished?

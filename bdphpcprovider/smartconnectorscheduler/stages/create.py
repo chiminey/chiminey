@@ -20,10 +20,10 @@
 
 import logging
 
+from bdphpcprovider.cloudconnection import create_vms, print_vms
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler import platform
-from bdphpcprovider.smartconnectorscheduler import botocloudconnector
 from bdphpcprovider.reliabilityframework.failuredetection import FailureDetection
 from bdphpcprovider.reliabilityframework.failurerecovery import FailureRecovery
 
@@ -96,7 +96,7 @@ class Create(Stage):
         min_number_vms = run_settings[RMIT_SCHEMA + '/input/system/cloud'][u'minimum_number_vm_instances']
         logger.debug("VM instance %d" % number_vm_instances)
         self.platform_type = local_settings['platform_type']
-        self.nodes = botocloudconnector.create_environ(
+        self.group_id, self.nodes = create_vms(
             number_vm_instances,
             local_settings)
         logger.debug('node initialisation done')
@@ -112,16 +112,8 @@ class Create(Stage):
                 logger.info("Sufficient number VMs cannot be created for this computation."
                             "Increase your quota or decrease your minimum requirement")
                 return
-        if self.nodes:
-            self.nodes = botocloudconnector.get_ssh_ready_instances(
-                self.nodes, local_settings)
 
-        if self.nodes:
-            self.group_id, self.nodes = botocloudconnector.brand_instances(
-                self.nodes, local_settings)
-
-        botocloudconnector.print_all_information(
-            local_settings, all_instances=self.nodes)
+        print_vms(local_settings, all_vms=self.nodes)
         smartconnector.info(run_settings, "1: create (%s nodes created)" % len(self.nodes))
 
         #Fixme: the following should transfer power to FT managers

@@ -20,11 +20,12 @@
 
 import os
 import logging
+import socket
+
 import boto
 import paramiko
-import socket
 import requests
-
+#fixme import boto exception in coudconnection/init.py
 from boto.ec2.regioninfo import RegionInfo
 from boto.exception import EC2ResponseError
 from requests.auth import HTTPBasicAuth
@@ -34,8 +35,11 @@ from django.db.utils import IntegrityError
 from django.db import transaction
 from django.core.files.base import ContentFile
 
-from bdphpcprovider.smartconnectorscheduler import models, sshconnector
+from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler import storage
+from bdphpcprovider.sshconnection import open_connection, AuthError
+from bdphpcprovider.compute import run_command_with_status
+
 
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
@@ -344,7 +348,7 @@ def generate_key(platform_type, parameters):
     else:
         return False, 'Unknown platform type [%s]' % platform_type
 
-
+#fixme refactor method to use managevms instead of boto
 def generate_cloud_key(parameters):
     logger.debug('generating key')
     key_generated = True
@@ -459,20 +463,20 @@ def generate_unix_key(parameters):
         f.close()
         fs = storage.RemoteStorage(settings=storage_settings)
         fs.save(remote_key_path, ContentFile(public_key_content))
-        ssh_client = sshconnector.open_connection(parameters['ip_address'], ssh_settings)
+        ssh_client = open_connection(parameters['ip_address'], ssh_settings)
         #command = 'cat %s >> %s' % (remote_key_path, authorized_remote_path)
         space = " "
         command = 'echo %s >> %s; echo %s >> %s;  echo %s >> %s' % (
             space, authorized_remote_path, public_key_content,
             authorized_remote_path, space, authorized_remote_path)
-        command_out, errs = sshconnector.run_command_with_status(ssh_client, command)
+        command_out, errs = run_command_with_status(ssh_client, command)
         if errs:
             if 'Permission denied' in errs:
                 key_generated = False
                 message = 'Permission denied to copy public key to %s/.ssh/authorized_keys' % parameters['home_path']
             else:
                 raise IOError
-    except sshconnector.AuthError:
+    except AuthError:
         key_generated = False
         message = 'Unauthorized access to %s' % parameters['ip_address']
     except socket.gaierror, e:

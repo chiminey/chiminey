@@ -20,11 +20,9 @@
 
 import os
 import logging
-import logging.config
 from pprint import pformat
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
-from bdphpcprovider.smartconnectorscheduler import sshconnector
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.smartconnectorscheduler import platform
@@ -34,6 +32,7 @@ from bdphpcprovider.smartconnectorscheduler.smartconnector import (
 from bdphpcprovider import compute
 
 from . import setup_settings
+from bdphpcprovider.sshconnection import open_connection
 
 logger = logging.getLogger(__name__)
 
@@ -100,10 +99,9 @@ class MakeRunStage(Stage):
             hrmcstages.parse_bdpurl(encoded_d_url)
         stderr = ''
         try:
-            ssh = sshconnector.open_connection(
+            ssh = open_connection(
                 ip_address=settings['host'],
                 settings=settings)
-
             (command_out, stderr) = compute.run_make(ssh, (os.path.join(
                     query_settings['root_path'],
                     mypath)), 'startrun')
