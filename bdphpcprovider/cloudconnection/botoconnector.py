@@ -190,6 +190,53 @@ def get_running_vms(settings):
             running_vms.append(vm)
     return running_vms
 
+import os
+def create_key_pair(settings):
+    connection = _create_cloud_connection(settings)
+    unique_key = False
+    counter = 1
+    key_name = settings['private_key']
+    key_dir = settings['key_dir']
+    while not unique_key:
+        try:
+            if not os.path.exists(os.path.join(key_dir, key_name)):
+                key_pair = connection.create_key_pair(key_name)
+                key_pair.save(key_dir)
+                settings['private_key'] = key_name
+                logger.debug('key_pair=%s' % key_pair)
+                unique_key = True
+        except EC2ResponseError, e:
+            if 'InvalidKeyPair.Duplicate' in e.error_code:
+                pass
+            else:
+                logger.exception(e)
+                raise
+        key_name = '%s_%d' % (settings['private_key'], counter)
+        counter += 1
+    settings['private_key_path'] = os.path.join(
+        os.path.dirname(settings['private_key_path']),
+        '%s.pem' % settings['private_key'])
+
+
+def create_ssh_security_group(settings):
+    connection = _create_cloud_connection(settings)
+    security_group_name = settings['security_group']
+    try:
+        if not connection.get_all_security_groups([security_group_name]):
+            _create_ssh_group(connection, security_group_name)
+    except EC2ResponseError as e:
+        if 'SecurityGroupNotFoundForProject' in e.error_code:
+            _create_security_group(connection, security_group_name)
+        else:
+            logger.exception(e)
+            raise
+
+
+def _create_ssh_group(connection, security_group_name):
+    security_group = connection.create_security_group(
+        security_group_name, "SSH security group of the BDP HPC Provider")
+    security_group.authorize('tcp', 22, 22, '0.0.0.0/0')
+
 
 def _create_cloud_connection(settings):
     provider = settings['platform_type']

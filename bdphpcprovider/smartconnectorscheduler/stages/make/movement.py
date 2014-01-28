@@ -27,13 +27,12 @@ import os
 import logging.config
 from pprint import pformat
 from itertools import product
-
+from bdphpcprovider.platform import manage
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import (
     Stage, get_url_with_pkey)
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.smartconnectorscheduler import smartconnector
-from bdphpcprovider.smartconnectorscheduler import platform
 from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 
 from django.template import TemplateSyntaxError
@@ -74,7 +73,7 @@ class MakeUploadStage(Stage):
         input_storage_url = run_settings[
             RMIT_SCHEMA + '/platform/storage/input']['platform_url']
         logger.debug("input_storage_url=%s" % input_storage_url)
-        input_storage_settings = platform.get_platform_settings(
+        input_storage_settings = manage.get_platform_settings(
             input_storage_url,
             bdp_username)
         logger.debug("input_storage_settings=%s" % pformat(input_storage_settings))
@@ -127,7 +126,7 @@ def _upload_payload(settings, source_url, values_map):
     dest_url = _get_dest_bdp_url(settings)
     computation_platform_url = settings['comp_platform_url']
     bdp_username = settings['bdp_username']
-    comp_pltf_settings = platform.get_platform_settings(
+    comp_pltf_settings = manage.get_platform_settings(
         computation_platform_url,
         bdp_username)
     logger.debug("comp_pltf_settings=%s" % pformat(comp_pltf_settings))
@@ -163,7 +162,7 @@ def _upload_variations_inputs(settings, source_url_initial, values_map):
 
     computation_platform_url = settings['comp_platform_url']
     bdp_username = settings['bdp_username']
-    comp_pltf_settings = platform.get_platform_settings(
+    comp_pltf_settings = manage.get_platform_settings(
         computation_platform_url,
         bdp_username)
     settings.update(comp_pltf_settings)

@@ -19,13 +19,13 @@
 # IN THE SOFTWARE.
 
 import unittest
-import getpass
+from urlparse import urlparse
 
 from django.contrib.auth.models import User, Group
-from urlparse import urlparse
 from django.template.defaultfilters import slugify
+
 from bdphpcprovider.smartconnectorscheduler import models
-from bdphpcprovider.smartconnectorscheduler.platform \
+from bdphpcprovider.platform.manage \
     import create_platform_paramset, retrieve_platform_paramsets, delete_platform_paramsets,\
     update_platform_paramset, is_unique_platform_paramset, get_platform_and_schema,\
     filter_platform_paramsets, get_owner, all_params_present, required_param_exists

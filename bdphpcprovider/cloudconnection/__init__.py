@@ -18,7 +18,13 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from bdphpcprovider.cloudconnection.managevms import (
+from bdphpcprovider.cloudconnection.manage import (
     create_vms, destroy_vms, get_registered_vms,
     print_vms, is_vm_running, get_this_vm
 )
+from bdphpcprovider.cloudconnection.botoconnector import \
+    create_ssh_security_group, create_key_pair
+
+import boto
+class EC2ResponseError(boto.exception.EC2ResponseError):
+    pass
