@@ -75,7 +75,7 @@ class Command(BaseCommand):
                 {
                 #u'name': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':6, 'help_text':''},
                 u'operation': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': '', 'initial': 'update',  'ranking': 0, 'help_text': ''},
-                u'filter': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': '', 'initial': '', 'ranking': 3, 'help_text': ''},
+                u'filters': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': '', 'initial': '', 'ranking': 3, 'help_text': ''},
                 u'platform_type': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': 'Platform type', 'initial': 'mytardis', 'ranking': 6, 'help_text': ''},
                 u'platform_name': {'type': models.ParameterName.STRING, 'subtype': '', 'description': 'Platform name', 'initial': '',  'ranking': 10, 'help_text': ''},
                 u'ip_address': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'IP address or Hostname', 'ranking':15, 'help_text':''},
@@ -88,7 +88,7 @@ class Command(BaseCommand):
                 [u'schema for Unix storage platform instances',
                 {
                 u'operation': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': '', 'initial': 'update',  'ranking': 0, 'help_text': ''},
-                u'filter': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': '', 'initial': '', 'ranking': 3, 'help_text': ''},
+                u'filters': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': '', 'initial': '', 'ranking': 3, 'help_text': ''},
                 u'platform_type': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': 'Platform type', 'initial': 'unix',  'ranking': 6, 'help_text': ''},
                 u'platform_name': {'type': models.ParameterName.STRING, 'subtype': '', 'description': 'Platform name', 'initial': '',  'ranking': 10, 'help_text': ''},
                 u'ip_address': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'IP address or Hostname', 'ranking':15, 'help_text':''},

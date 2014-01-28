@@ -18,5 +18,25 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from bdphpcprovider.sshconnection.manage import open_connection
-from bdphpcprovider.sshconnection.paramikoconnector import AuthError
+import os
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+def configure_nectar_platform(platform_type, username, parameters):
+    key_name = 'bdp_%s' % parameters['platform_name']
+    key_relative_path = '%s.pem' % os.path.join(
+        '.ssh', username, platform_type, key_name)
+    parameters['private_key'] = key_name
+    parameters['private_key_path'] = key_relative_path
+    parameters['security_group'] = 'bdp_ssh_group'
+    if not parameters['vm_image_size']:
+        parameters['vm_image_size'] = 'm1.small'
+
+
+def configure_unix_platform(platform_type, username, parameters):
+    key_name = 'bdp_%s' % parameters['platform_name']
+    key_relative_path = os.path.join(
+        '.ssh', username, platform_type, key_name)
+    parameters['private_key_path'] = key_relative_path

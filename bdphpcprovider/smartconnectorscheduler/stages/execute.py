@@ -28,15 +28,15 @@ import re
 from itertools import product
 
 from django.template import Context, Template
+from bdphpcprovider.platform import manage
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler.errors import PackageFailedError
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
 from bdphpcprovider.smartconnectorscheduler import (models,
                                                     hrmcstages,
-                                                    smartconnector,
-                                                    platform
-)
+                                                    smartconnector
+                                                    )
 from bdphpcprovider.sshconnection import open_connection
 from bdphpcprovider import mytardis
 from bdphpcprovider import compute
@@ -102,8 +102,9 @@ class Execute(Stage):
 
         self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
         output_storage_url = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['platform_url']
-        output_storage_settings = platform.get_platform_settings(output_storage_url, local_settings['bdp_username'])
-        self.job_dir = platform.get_job_dir(output_storage_settings, run_settings)
+        output_storage_settings = manage.get_platform_settings(output_storage_url, local_settings['bdp_username'])
+        offset = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset']
+        self.job_dir = manage.get_job_dir(output_storage_settings, offset)
         # TODO: we assume initial input is in "%s/input_0" % self.job_dir
         # in configure stage we could copy initial data in 'input_location' into this location
         try:
@@ -142,10 +143,10 @@ class Execute(Stage):
         logger.debug("process run_settings=%s" % pformat(run_settings))
 
         computation_platform_url = run_settings['http://rmit.edu.au/schemas/platform/computation']['platform_url']
-        comp_pltf_settings = platform.get_platform_settings(computation_platform_url, local_settings['bdp_username'])
+        comp_pltf_settings = manage.get_platform_settings(computation_platform_url, local_settings['bdp_username'])
 
         mytardis_url = run_settings['http://rmit.edu.au/schemas/input/mytardis']['mytardis_platform']
-        mytardis_settings = platform.get_platform_settings(mytardis_url, local_settings['bdp_username'])
+        mytardis_settings = manage.get_platform_settings(mytardis_url, local_settings['bdp_username'])
 
         #generic_output_schema = 'http://rmit.edu.au/schemas/platform/storage/output'
 

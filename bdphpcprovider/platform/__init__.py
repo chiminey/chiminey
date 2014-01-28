@@ -18,5 +18,5 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from bdphpcprovider.sshconnection.manage import open_connection
-from bdphpcprovider.sshconnection.paramikoconnector import AuthError
+from bdphpcprovider.platform.manage import \
+    create_platform, update_platform, delete_platform

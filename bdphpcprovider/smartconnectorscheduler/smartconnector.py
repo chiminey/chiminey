@@ -31,7 +31,7 @@ from urlparse import urlparse
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
 from bdphpcprovider.smartconnectorscheduler.errors import deprecated
-from bdphpcprovider.smartconnectorscheduler.platform import retrieve_platform
+from bdphpcprovider.platform.manage import retrieve_platform
 from django.contrib import messages
 
 

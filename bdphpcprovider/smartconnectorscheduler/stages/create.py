@@ -21,9 +21,9 @@
 import logging
 
 from bdphpcprovider.cloudconnection import create_vms, print_vms
+from bdphpcprovider.platform import manage
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import smartconnector
-from bdphpcprovider.smartconnectorscheduler import platform
 from bdphpcprovider.reliabilityframework.failuredetection import FailureDetection
 from bdphpcprovider.reliabilityframework.failurerecovery import FailureRecovery
 
@@ -83,7 +83,7 @@ class Create(Stage):
         computation_platform_url = run_settings['http://rmit.edu.au/schemas/platform/computation']['platform_url']
         bdp_username = run_settings['http://rmit.edu.au/schemas/bdp_userprofile']['username']
         try:
-            comp_pltf_settings = platform.get_platform_settings(computation_platform_url, bdp_username)
+            comp_pltf_settings = manage.get_platform_settings(computation_platform_url, bdp_username)
         except KeyError:
             #Fixme: the following should transfer power to FT managers
             self.group_id = 'UNKNOWN'

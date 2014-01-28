@@ -19,14 +19,13 @@
 # IN THE SOFTWARE.
 import logging
 import json
-import requests
 import itertools
 import ast
 from pprint import pformat
-import dateutil.parser
 from urllib2 import URLError, HTTPError
 
-
+import requests
+import dateutil.parser
 from django.views.generic import ListView, UpdateView, CreateView, DeleteView
 from django.views.generic.base import TemplateView
 from django.core.urlresolvers import reverse
@@ -47,17 +46,17 @@ from django import forms
 from django.http import Http404
 
 from tastypie.models import ApiKey
-
+from bdphpcprovider.platform import manage
 from bdphpcprovider.simpleui import validators
 from bdphpcprovider.simpleui.hrmc.hrmcsubmit import HRMCSubmitForm
 from bdphpcprovider.simpleui.makeform import MakeSubmitForm
 from bdphpcprovider.simpleui.sweepform import SweepSubmitForm
 from bdphpcprovider.simpleui.hrmc.copy import CopyForm
 
+
 #TODO,FIXME: simpleui shouldn't refer to anything in smartconnectorscheduler
 #and should be using its own models and use the REST API for all information.
 from bdphpcprovider.smartconnectorscheduler import models
-from bdphpcprovider.smartconnectorscheduler import platform
 from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 
 logger = logging.getLogger(__name__)
@@ -239,8 +238,8 @@ def post_platform(schema, form_data, request, type=None):
     platform_name = form_data['platform_name']
 
     if form_data['operation'] == 'update':
-        platform_name = form_data['filter']
-        form_data['filter'] = ''
+        platform_name = form_data['filters']
+        form_data['filters'] = ''
     data = json.dumps({'operation': form_data['operation'],
                        'parameters': form_data,
                        'schema': schema,
@@ -254,8 +253,8 @@ def post_platform(schema, form_data, request, type=None):
         if r.status_code == 409:
             messages.error(request, "%s" % r.headers['message'])
         else:
-            messages.error(request, "Task Failed with status code %s: %s"
-                % (r.status_code, r.headers['message']))
+            messages.error(request, "Task Failed with status code %s: "#%s"
+                % (r.status_code))#, r.headers['message']))
         return False
     else:
         messages.success(request, "%s" % r.headers['message'])
@@ -815,7 +814,7 @@ def make_dynamic_field(parameter, **kwargs):
                     schema = RMIT_SCHEMA + '/platform/storage/mytardis'
 
                 if 'username' in kwargs:
-                    platforms = platform.retrieve_all_platforms(kwargs['username'],
+                    platforms = manage.retrieve_all_platforms(kwargs['username'],
                      schema_namespace_prefix=schema)
                     if platforms:
                         field_params['initial'] = platforms[0]['platform_name']
@@ -824,7 +823,7 @@ def make_dynamic_field(parameter, **kwargs):
                     logger.debug("initial=%s" % field_params['initial'])
                     # TODO: retrieve_platform_paramset should be an API call
                     platform_name_choices = [(x['platform_name'], x['platform_name'])
-                        for x in platform.retrieve_all_platforms(
+                        for x in manage.retrieve_all_platforms(
                             kwargs['username'], schema_namespace_prefix=schema)]
                     logger.debug("platform_name_choices=%s" % platform_name_choices)
                     field_params['choices'] = platform_name_choices
@@ -847,7 +846,7 @@ def make_dynamic_field(parameter, **kwargs):
         field_params['initial'] = str(parameter['initial'])
         if parameter['subtype'] == 'nectar_platform':
             schema = RMIT_SCHEMA + '/platform/computation/nectar'
-            platforms = platform.retrieve_all_platforms(kwargs['username'],
+            platforms = manage.retrieve_all_platforms(kwargs['username'],
                      schema_namespace_prefix=schema)
             if platforms:
                 field_params['initial'] = platforms[0]['name']
@@ -855,7 +854,7 @@ def make_dynamic_field(parameter, **kwargs):
                 field_params['initial'] = ''
         elif parameter['subtype'] == 'mytardis':
             schema = RMIT_SCHEMA + '/platform/storage/mytardis'
-            platforms = platform.retrieve_all_platforms(kwargs['username'],
+            platforms = manage.retrieve_all_platforms(kwargs['username'],
                      schema_namespace_prefix=schema)
             if platforms:
                 field_params['initial'] = platforms[0]['name']
@@ -863,7 +862,7 @@ def make_dynamic_field(parameter, **kwargs):
                 field_params['initial'] = ''
         elif parameter['subtype'] == 'storage_bdpurl':
             schema = RMIT_SCHEMA + '/platform/storage/unix'
-            platforms = platform.retrieve_all_platforms(kwargs['username'],
+            platforms = manage.retrieve_all_platforms(kwargs['username'],
                      schema_namespace_prefix=schema)
             if platforms:
                 field_params['initial'] = platforms[0]['platform_name']

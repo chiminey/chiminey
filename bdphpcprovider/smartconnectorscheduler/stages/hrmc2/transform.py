@@ -25,10 +25,11 @@ import json
 import logging
 from collections import namedtuple
 import fnmatch
+from bdphpcprovider.platform import manage
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import smartconnector
-from bdphpcprovider.smartconnectorscheduler import hrmcstages, platform
+from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.smartconnectorscheduler import models
 
 from bdphpcprovider import mytardis
@@ -176,10 +177,11 @@ class Transform(Stage):
         self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
         bdp_username = self.boto_settings['bdp_username']
         output_storage_url = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['platform_url']
-        output_storage_settings = platform.get_platform_settings(output_storage_url, bdp_username)
+        output_storage_settings = manage.get_platform_settings(output_storage_url, bdp_username)
         output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
                                     output_storage_settings['type'])
-        self.job_dir = platform.get_job_dir(output_storage_settings, run_settings)
+        offset = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset']
+        self.job_dir = manage.get_job_dir(output_storage_settings, offset)
 
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/system', u'id'):
             self.id = run_settings['http://rmit.edu.au/schemas/system'][u'id']
@@ -252,7 +254,7 @@ class Transform(Stage):
         logger.debug("outputs=%s" % outputs)
 
         mytardis_url = run_settings['http://rmit.edu.au/schemas/input/mytardis']['mytardis_platform']
-        mytardis_settings = platform.get_platform_settings(mytardis_url, bdp_username)
+        mytardis_settings = manage.get_platform_settings(mytardis_url, bdp_username)
 
         if mytardis_settings['mytardis_host']:
             for i, node_output_dir in enumerate(node_output_dirs):
