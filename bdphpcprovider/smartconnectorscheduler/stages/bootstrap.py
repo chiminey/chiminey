@@ -23,9 +23,10 @@ from pprint import pformat
 import ast
 
 from bdphpcprovider.cloudconnection import get_registered_vms, is_vm_running
+from bdphpcprovider.platform import manage
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
-from bdphpcprovider.smartconnectorscheduler import hrmcstages, platform
+from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler.errors import PackageFailedError
 from bdphpcprovider.smartconnectorscheduler.stages.errors import InsufficientResourceError
@@ -175,7 +176,7 @@ def retrieve_local_settings(run_settings, local_settings):
         RMIT_SCHEMA + '/bdp_userprofile']['username']
     computation_platform_url = run_settings['http://rmit.edu.au/schemas/platform/computation']['platform_url']
     logger.debug("computation_platform_url=%s" % computation_platform_url)
-    comp_pltf_settings = platform.get_platform_settings(computation_platform_url, local_settings['bdp_username'])
+    comp_pltf_settings = manage.get_platform_settings(computation_platform_url, local_settings['bdp_username'])
     local_settings.update(comp_pltf_settings)
 
     logger.debug("local_settings=%s" % local_settings)

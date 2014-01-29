@@ -28,13 +28,13 @@ import logging.config
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import smartconnector
-from bdphpcprovider.smartconnectorscheduler import platform
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
-from bdphpcprovider import mytardis
 
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler import storage
 
+from bdphpcprovider import mytardis
+from bdphpcprovider.platform import manage
 from bdphpcprovider import messages
 
 logger = logging.getLogger(__name__)
@@ -194,12 +194,13 @@ class Converge(Stage):
         self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
         bdp_username = self.boto_settings['bdp_username']
         output_storage_url = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['platform_url']
-        output_storage_settings = platform.get_platform_settings(output_storage_url, bdp_username)
+        output_storage_settings = manage.get_platform_settings(output_storage_url, bdp_username)
         output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
                                       output_storage_settings['type'])
-        self.job_dir = platform.get_job_dir(output_storage_settings, run_settings)
+        offset = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset']
+        self.job_dir = manage.get_job_dir(output_storage_settings, offset)
         mytardis_url = run_settings['http://rmit.edu.au/schemas/input/mytardis']['mytardis_platform']
-        mytardis_settings = platform.get_platform_settings(mytardis_url, bdp_username)
+        mytardis_settings = manage.get_platform_settings(mytardis_url, bdp_username)
 
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/system', u'id'):
             self.id = run_settings['http://rmit.edu.au/schemas/system'][u'id']

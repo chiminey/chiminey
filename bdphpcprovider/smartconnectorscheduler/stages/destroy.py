@@ -21,8 +21,9 @@
 
 import logging
 import ast
+from bdphpcprovider.platform import manage
 
-from bdphpcprovider.smartconnectorscheduler import smartconnector, models, platform
+from bdphpcprovider.smartconnectorscheduler import smartconnector, models
 from bdphpcprovider.cloudconnection import destroy_vms
 
 logger = logging.getLogger(__name__)
@@ -80,7 +81,7 @@ class Destroy(smartconnector.Stage):
 
         bdp_username = run_settings['http://rmit.edu.au/schemas/bdp_userprofile']['username']
         computation_platform_url = run_settings['http://rmit.edu.au/schemas/platform/computation']['platform_url']
-        comp_pltf_settings = platform.get_platform_settings(computation_platform_url, bdp_username)
+        comp_pltf_settings = manage.get_platform_settings(computation_platform_url, bdp_username)
         local_settings.update(comp_pltf_settings)
 
         node_type = []

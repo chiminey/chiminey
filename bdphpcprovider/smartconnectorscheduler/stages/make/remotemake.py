@@ -24,10 +24,8 @@ from pprint import pformat
 
 # from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import smartconnector
-from bdphpcprovider.smartconnectorscheduler import platform
-# from bdphpcprovider.smartconnectorscheduler.smartconnector import (
-#     multilevel_key_exists, get_existing_key)
 
+from bdphpcprovider.platform import manage
 from bdphpcprovider import messages
 from bdphpcprovider import compute
 from bdphpcprovider import storage
@@ -87,7 +85,7 @@ class MakeRunStage(smartconnector.Stage):
         dest_url = _get_dest_bdp_url(settings)
         computation_platform_url = settings['comp_platform_url']
         bdp_username = settings['bdp_username']
-        comp_pltf_settings = platform.get_platform_settings(
+        comp_pltf_settings = manage.get_platform_settings(
             computation_platform_url,
             bdp_username)
         logger.debug("comp_pltf_settings=%s" % pformat(comp_pltf_settings))

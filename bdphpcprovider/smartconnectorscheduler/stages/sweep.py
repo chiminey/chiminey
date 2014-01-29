@@ -20,19 +20,17 @@
 
 import os
 import logging
-import logging.config
 import json
 from itertools import product
 from pprint import pformat
 
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
-
-from bdphpcprovider.smartconnectorscheduler import models, platform
-
+from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
 
 from bdphpcprovider import messages
+from bdphpcprovider.platform import manage
 from bdphpcprovider import storage
 from bdphpcprovider import mytardis
 
@@ -125,7 +123,7 @@ class Sweep(Stage):
         logger.debug("bdp_username=%s" % bdp_username)
         input_storage_url = run_settings[
             RMIT_SCHEMA + '/platform/storage/input']['platform_url']
-        input_storage_settings = platform.get_platform_settings(
+        input_storage_settings = manage.get_platform_settings(
             input_storage_url,
             bdp_username)
         run_settings[RMIT_SCHEMA + '/platform/storage/input'][
@@ -145,7 +143,7 @@ class Sweep(Stage):
         user = current_context.owner.user.username
         # TODO: replace with scratch space computation platform space
         self.scratch_platform = '%ssweep%s' % (
-            platform.get_scratch_platform(),
+            manage.get_scratch_platform(),
             contextid)
 
         # TODO: this is domain-specific so should be a parameter of the
@@ -373,7 +371,7 @@ class Sweep(Stage):
                 'username']
             input_storage_url = run_settings[
                 RMIT_SCHEMA + '/platform/storage/input']['platform_url']
-            input_storage_settings = platform.get_platform_settings(
+            input_storage_settings = manage.get_platform_settings(
                 input_storage_url,
                 bdp_username)
             run_settings[RMIT_SCHEMA + '/platform/storage/input'][
@@ -411,7 +409,7 @@ class Sweep(Stage):
             RMIT_SCHEMA + '/bdp_userprofile']['username']
         mytardis_url = run_settings[
             RMIT_SCHEMA + '/input/mytardis']['mytardis_platform']
-        mytardis_settings = platform.get_platform_settings(
+        mytardis_settings = manage.get_platform_settings(
             mytardis_url,
             bdp_username)
         logger.debug(mytardis_settings)

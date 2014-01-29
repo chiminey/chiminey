@@ -60,10 +60,10 @@ from django.http import (
 
 from bdphpcprovider.core import serverside_validators
 from bdphpcprovider.core.auth import logged_in_or_basicauth
+from bdphpcprovider.platform import create_platform, update_platform, delete_platform
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
-from bdphpcprovider.smartconnectorscheduler import platform
 from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 
 
@@ -703,6 +703,7 @@ class PlatformParameterSetResource(ModelResource):
             # else:
             #     return http.HttpBadRequest()
         except Exception, e:
+            logger.error(bundle.data)
             logger.error(e)
             raise ImmediateHttpResponse(http.HttpBadRequest(e))
         response = http.HttpCreated(location=location)
@@ -715,7 +716,7 @@ class PlatformParameterSetResource(ModelResource):
         schema_namespace = bundle.data['schema']
         parameters = bundle.data['parameters']
         platform_name = bundle.data['platform_name']
-        created, message = platform.create_platform(
+        created, message = create_platform(
             platform_name, username, schema_namespace, parameters)
         logger.debug('created=%s' % created)
         return created, message
@@ -724,7 +725,7 @@ class PlatformParameterSetResource(ModelResource):
         username = bundle.data['username']
         updated_parameters = bundle.data['parameters']
         platform_name = bundle.data['platform_name']
-        updated, message = platform.update_platform(platform_name,
+        updated, message = update_platform(platform_name,
             username, updated_parameters)
         logger.debug('updated=%s' % updated)
         return updated, message
@@ -732,7 +733,7 @@ class PlatformParameterSetResource(ModelResource):
     def _delete_platform(self, bundle):
         username = bundle.data['username']
         platform_name = bundle.data['platform_name']
-        deleted, message = platform.delete_platform(platform_name, username)
+        deleted, message = delete_platform(platform_name, username)
         logger.debug('deleted=%s' % deleted)
         return deleted, message
 
