@@ -25,7 +25,7 @@ import json
 import logging
 from django.core.validators import ValidationError
 
-from bdphpcprovider.smartconnectorscheduler.platform import retrieve_platform
+from bdphpcprovider.platform.manage import retrieve_platform
 
 logger = logging.getLogger(__name__)
 

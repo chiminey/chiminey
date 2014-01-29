@@ -21,7 +21,7 @@
 import logging
 import ast
 import os
-
+from bdphpcprovider.platform import manage
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import (models,
                                                     smartconnector,
@@ -228,11 +228,12 @@ class Wait(Stage):
 
         self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
         output_storage_url = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['platform_url']
-        output_storage_settings = platform.get_platform_settings(output_storage_url, local_settings['bdp_username'])
+        output_storage_settings = manage.get_platform_settings(output_storage_url, local_settings['bdp_username'])
         # FIXME: Need to be consistent with how we handle settings here.  Prob combine all into
         # single local_settings for simplicity.
         output_storage_settings['bdp_username'] = local_settings['bdp_username']
-        self.job_dir = platform.get_job_dir(output_storage_settings, run_settings)
+        offset = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset']
+        self.job_dir = manage.get_job_dir(output_storage_settings, offset)
         try:
             self.finished_nodes = smartconnector.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/stages/run/finished_nodes')
@@ -258,7 +259,7 @@ class Wait(Stage):
         self.finished_nodes = ast.literal_eval(self.finished_nodes)
 
         computation_platform_url = run_settings['http://rmit.edu.au/schemas/platform/computation']['platform_url']
-        comp_pltf_settings = platform.get_platform_settings(computation_platform_url, local_settings['bdp_username'])
+        comp_pltf_settings = manage.get_platform_settings(computation_platform_url, local_settings['bdp_username'])
         local_settings.update(comp_pltf_settings)
         comp_pltf_settings['bdp_username'] = local_settings['bdp_username']
 

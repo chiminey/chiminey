@@ -22,11 +22,11 @@
 import os
 import logging
 from pprint import pformat
-
+from bdphpcprovider.platform import manage
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, UI
 from bdphpcprovider.smartconnectorscheduler import models
-from bdphpcprovider.smartconnectorscheduler import smartconnector, platform
+from bdphpcprovider.smartconnectorscheduler import smartconnector
 
 
 from bdphpcprovider import mytardis
@@ -80,11 +80,11 @@ class Configure(Stage, UI):
 
         bdp_username = run_settings['http://rmit.edu.au/schemas/bdp_userprofile']['username']
         output_storage_url = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['platform_url']
-        output_storage_settings = platform.get_platform_settings(output_storage_url, bdp_username)
+        output_storage_settings = manage.get_platform_settings(output_storage_url, bdp_username)
 
         input_storage_url = run_settings[
             RMIT_SCHEMA + '/platform/storage/input']['platform_url']
-        input_storage_settings = platform.get_platform_settings(
+        input_storage_settings = manage.get_platform_settings(
             input_storage_url,
             bdp_username)
         input_offset = run_settings[RMIT_SCHEMA + "/platform/storage/input"]['offset']
@@ -107,8 +107,8 @@ class Configure(Stage, UI):
         except KeyError:
             pass
         run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset'] = self.output_loc_offset
-
-        self.job_dir = platform.get_job_dir(output_storage_settings, run_settings)
+        offset = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset']
+        self.job_dir = manage.get_job_dir(output_storage_settings, offset)
         iter_inputdir = os.path.join(self.job_dir, "input_0")
         logger.debug("iter_inputdir=%s" % iter_inputdir)
         #todo: input location will evenatually be replaced by the scratch space that was used by the sweep
@@ -137,7 +137,7 @@ class Configure(Stage, UI):
             self.experiment_id = 0
 
         mytardis_url = run_settings['http://rmit.edu.au/schemas/input/mytardis']['mytardis_platform']
-        mytardis_settings = platform.get_platform_settings(mytardis_url, bdp_username)
+        mytardis_settings = manage.get_platform_settings(mytardis_url, bdp_username)
         logger.debug(mytardis_settings)
         #local_settings.update(mytardis_settings)
 

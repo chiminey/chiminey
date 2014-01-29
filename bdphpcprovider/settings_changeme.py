@@ -285,6 +285,7 @@ LOCAL_FILESYS_ROOT_PATH = "/var/cloudenabling/remotesys"
 # CLOUD CONFIGURATION
 
 
+
 #VM_IMAGES = {'csrack': {'placement': None, 'vm_image': "ami-00000004"},
 #             'nectar': {'placement': 'monash', 'vm_image': "ami-0000000d"}}
 

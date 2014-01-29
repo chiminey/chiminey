@@ -242,6 +242,7 @@ function submitForm(description, form_id) {
     var form = '#' + form_id;
     var operation = $(form + ' #id_operation');
     operation.val(description);
+    $("form select[id]").removeAttr("disabled");
     form.validate();
     if (form.valid()){
         form.submit()
@@ -271,7 +272,7 @@ function updatePlatform(parameters, platform_type) {
         $('form '+ param_id).val(value)
     };
     current_platform_name =  $('form #id_platform_name').val();
-    $('form #id_filter').val(current_platform_name);
+    $('form #id_filters').val(current_platform_name);
 }
 
 //consider merging the ff method with updatePlatform

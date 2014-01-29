@@ -30,6 +30,7 @@ from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler import platform
 
 from bdphpcprovider import messages
+from bdphpcprovider.platform import manage
 from bdphpcprovider import mytardis
 from bdphpcprovider import storage
 from bdphpcprovider import compute
@@ -132,7 +133,7 @@ class MakeFinishedStage(Stage):
         dest_url = _get_dest_bdp_url(settings)
         computation_platform_url = settings['comp_platform_url']
         bdp_username = settings['bdp_username']
-        comp_pltf_settings = platform.get_platform_settings(
+        comp_pltf_settings = manage.get_platform_settings(
             computation_platform_url,
             bdp_username)
         settings.update(comp_pltf_settings)
@@ -171,7 +172,7 @@ class MakeFinishedStage(Stage):
 
         computation_platform_url = settings['comp_platform_url']
         bdp_username = settings['bdp_username']
-        comp_pltf_settings = platform.get_platform_settings(
+        comp_pltf_settings = manage.get_platform_settings(
             computation_platform_url,
             bdp_username)
         settings.update(comp_pltf_settings)
@@ -189,7 +190,7 @@ class MakeFinishedStage(Stage):
 
         output_storage_url = settings['storeout_platform_url']
         logger.debug("output_storage_url=%s" % output_storage_url)
-        output_storage_settings = platform.get_platform_settings(output_storage_url, bdp_username)
+        output_storage_settings = manage.get_platform_settings(output_storage_url, bdp_username)
         settings.update(output_storage_settings)
         logger.debug("output_storage_settings=%s" % output_storage_settings)
 
@@ -217,7 +218,7 @@ class MakeFinishedStage(Stage):
 
         def _get_mytardis_settings(settings, bdp_username):
             mytardis_url = settings['mytardis_platform']
-            return platform.get_platform_settings(mytardis_url, bdp_username)
+            return manage.get_platform_settings(mytardis_url, bdp_username)
 
         mytardis_settings = _get_mytardis_settings(settings, bdp_username)
         logger.debug(mytardis_settings)

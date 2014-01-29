@@ -26,8 +26,9 @@ from pprint import pformat
 from django.core.exceptions import ImproperlyConfigured
 
 from bdphpcprovider.cloudconnection import get_registered_vms, is_vm_running
+from bdphpcprovider.platform import manage
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
-from bdphpcprovider.smartconnectorscheduler import smartconnector, hrmcstages, platform
+from bdphpcprovider.smartconnectorscheduler import smartconnector, hrmcstages
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.sshconnection import open_connection
 from bdphpcprovider.compute import run_command_with_status
@@ -293,9 +294,9 @@ class Schedule(Stage):
 
         bdp_username = run_settings['http://rmit.edu.au/schemas/bdp_userprofile']['username']
         output_storage_url = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['platform_url']
-        output_storage_settings = platform.get_platform_settings(output_storage_url, bdp_username)
-
-        job_dir = platform.get_job_dir(output_storage_settings, run_settings)
+        output_storage_settings = manage.get_platform_settings(output_storage_url, bdp_username)
+        offset = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset']
+        job_dir = manage.get_job_dir(output_storage_settings, offset)
         self.total_processes = stage.get_total_templates(
             [self.run_map], run_settings=run_settings,
             output_storage_settings=output_storage_settings, job_dir=job_dir)
@@ -403,7 +404,7 @@ def retrieve_local_settings(run_settings, local_settings):
         RMIT_SCHEMA + '/bdp_userprofile']['username']
 
     computation_platform_url = run_settings['http://rmit.edu.au/schemas/platform/computation']['platform_url']
-    comp_pltf_settings = platform.get_platform_settings(computation_platform_url, local_settings['bdp_username'])
+    comp_pltf_settings = manage.get_platform_settings(computation_platform_url, local_settings['bdp_username'])
     local_settings.update(comp_pltf_settings)
 
     logger.debug('retrieve completed %s' % pformat(local_settings))
