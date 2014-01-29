@@ -24,10 +24,10 @@ import os
 from bdphpcprovider.platform import manage
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
-from bdphpcprovider.smartconnectorscheduler import (hrmcstages,
-                                                    models,
-                                                    smartconnector )
+from bdphpcprovider.smartconnectorscheduler import \
+    hrmcstages, models, smartconnector
 from bdphpcprovider.reliabilityframework.ftmanager import FTManager
+
 from bdphpcprovider.reliabilityframework.failuredetection import FailureDetection
 from bdphpcprovider.sshconnection import open_connection
 
@@ -62,6 +62,7 @@ class Wait(Stage):
         except KeyError, e:
             logger.debug(e)
             self.failed_nodes = []
+        #todo: remove executed try ... except
         try:
             executed_procs_str = run_settings['http://rmit.edu.au/schemas/stages/execute'][u'executed_procs']
             self.executed_procs = ast.literal_eval(executed_procs_str)
@@ -100,7 +101,7 @@ class Wait(Stage):
 
         self.reschedule_failed_procs = run_settings['http://rmit.edu.au/schemas/input/reliability'][u'reschedule_failed_processes']
         self.failed_processes = self.ftmanager.\
-                    get_total_failed_processes(self.executed_procs)
+                    get_total_failed_processes(self.current_processes)#self.executed_procs)
 
         # if we have no runs_left then we must have finished all the runs
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run', u'runs_left'):
@@ -125,7 +126,7 @@ class Wait(Stage):
             is_relative_path=True,
             ip_address=ip)
         makefile_path = hrmcstages.get_make_path(destination)
-
+        ssh = None
         try:
             ssh = open_connection(ip_address=ip, settings=settings)
             (command_out, errs) = compute.run_make(ssh,
@@ -138,6 +139,12 @@ class Wait(Stage):
             node_failed = False
             if self.failure_detector.ssh_timed_out(e):
                 node = [x for x in self.created_nodes if x[1] == ip_address]
+                self.failed_processes, rescheduled_prcs = self.ftmanager.manage_failed_process(
+                    settings, process_id, node[0], node[0][0], ip_address,
+                    self.failed_nodes, self.executed_procs, self.current_processes,
+                    self.all_processes)
+                self.procs_2b_rescheduled.update(rescheduled_prcs)
+                '''
                 if self.failure_detector.node_terminated(settings, node[0][0]):
                     if not self.failure_detector.recorded_failed_node(
                             self.failed_nodes, ip_address):
@@ -165,6 +172,8 @@ class Wait(Stage):
                     if self.reschedule_failed_procs:
                         self.ftmanager.collect_failed_processes(
                             self.executed_procs, self.procs_2b_rescheduled)
+
+                '''
             else:
                 raise
         finally:
@@ -251,7 +260,8 @@ class Wait(Stage):
         logger.debug("run_settings=%s" % run_settings)
         logger.debug("Wait stage process began")
 
-        processes = self.executed_procs
+        #processes = self.executed_procs
+        processes = [x for x in self.current_processes if x['status'] != 'ready']
         self.error_nodes = []
         # TODO: parse finished_nodes input
         logger.debug('self.finished_nodes=%s' % self.finished_nodes)
@@ -314,7 +324,8 @@ class Wait(Stage):
                         if int(p['id']) == int(process_id) and p['status'] == 'running':
                             self.current_processes[iterator]['status'] = 'completed'
                     smartconnector.info(run_settings, "%s: waiting (%s process left)" % (
-                        self.id + 1, len(self.executed_procs) - (len(self.finished_nodes) + self.failed_processes)))
+                        #self.id + 1, len(self.executed_procs) - (len(self.finished_nodes) + self.failed_processes)))
+                        self.id + 1, len(processes) - (len(self.finished_nodes) + self.failed_processes)))
                 else:
                     logger.info("We have already "
                         + "processed output of %s on node %s" % (process_id, ip_address))
@@ -327,11 +338,14 @@ class Wait(Stage):
         Output new runs_left value (including zero value)
         """
         logger.debug("finished stage output")
-        nodes_working = len(self.executed_procs) - (len(self.finished_nodes) + self.failed_processes)
+        executing_procs = [x for x in self.current_processes if x['status'] != 'ready']
+        #nodes_working = len(self.executed_procs) - (len(self.finished_nodes) + self.failed_processes)
+        nodes_working = len(executing_procs) - (len(self.finished_nodes) + self.failed_processes)
         #if len(self.finished_nodes) == 0 and self.failed_processes == 0:
         #    nodes_working = 0
         logger.debug("%d %d " %(len(self.finished_nodes), self.failed_processes))
-        logger.debug("self.executed_procs=%s" % self.executed_procs)
+        #logger.debug("self.executed_procs=%s" % self.executed_procs)
+        logger.debug("self.executed_procs=%s" % executing_procs)
         logger.debug("self.finished_nodes=%s" % self.finished_nodes)
 
         #FIXME: nodes_working can be negative
@@ -377,7 +391,8 @@ class Wait(Stage):
             run_settings.setdefault(
             'http://rmit.edu.au/schemas/stages/create', {})[u'failed_nodes'] = self.failed_nodes
 
-        completed_procs = [x for x in self.executed_procs if x['status'] == 'completed']
+        #completed_procs = [x for x in self.executed_procs if x['status'] == 'completed']
+        completed_procs = [x for x in self.current_processes if x['status'] == 'completed']
         smartconnector.info(run_settings, "%s: waiting (%s of %s processes done)"
             % (self.id + 1, len(completed_procs), len(self.current_processes)))
 

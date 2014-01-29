@@ -368,6 +368,7 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/input/mytardis':
                 [u'MyTardis',
                 {
+                u'curate_data': {'type':models.ParameterName.NUMERIC, 'subtype':'bool', 'ranking':2, 'initial':1, 'description': 'Curate execution output', 'help_text': 'Curate data using selected MyTardis'},
                 u'mytardis_platform': {'type':models.ParameterName.STRLIST, 'subtype':'mytardis', 'initial': 0, 'description':'MyTardis Platform', 'ranking':1, 'help_text':'Select MyTardis platfrom name'},
                 u'experiment_id': {'type':models.ParameterName.NUMERIC, 'subtype':'natural', 'initial': 0, 'description':'MyTardis experiment ID', 'ranking':0, 'help_text':'Use 0 for new experiment'},
                 }
@@ -739,7 +740,7 @@ class Command(BaseCommand):
         #     directive=hrmc_smart_dir, stage=hrmc_composite_stage)
         print "done"
 
-    def define_sweep_vasp(self, local_platform):
+    def define_sweep_vasp(self):
 
         sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep_make",
             description="Sweep Test",
@@ -780,7 +781,7 @@ class Command(BaseCommand):
             defaults={'description': "HRMC Sweep Connector"},
             stage=sweep_stage)
 
-    def define_sweep_remotemake(self, local_platform):
+    def define_sweep_remotemake(self):
 
         sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep_make",
             description="Sweep Test",

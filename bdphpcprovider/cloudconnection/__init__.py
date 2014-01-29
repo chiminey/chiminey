@@ -20,7 +20,7 @@
 
 from bdphpcprovider.cloudconnection.manage import (
     create_vms, destroy_vms, get_registered_vms,
-    print_vms, is_vm_running, get_this_vm
+    print_vms, is_vm_running, get_this_vm, get_vm_ip
 )
 from bdphpcprovider.cloudconnection.botoconnector import \
     create_ssh_security_group, create_key_pair

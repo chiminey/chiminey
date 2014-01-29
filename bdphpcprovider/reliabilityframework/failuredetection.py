@@ -1,4 +1,4 @@
-# Copyright (C) 2013, RMIT University
+# Copyright (C) 2014, RMIT University
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to
@@ -21,12 +21,11 @@
 import logging
 from bdphpcprovider.cloudconnection import get_this_vm
 
-from bdphpcprovider.reliabilityframework.ftmanager import FTManager
 
 logger = logging.getLogger(__name__)
 
 
-class FailureDetection(FTManager):
+class FailureDetection():
     def sufficient_vms(self, created_vms, min_number_vms):
         if int(created_vms) < int(min_number_vms):
             logger.error('Insufficient no. VMs created')
