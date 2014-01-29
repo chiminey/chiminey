@@ -409,16 +409,22 @@ class Sweep(Stage):
             mytardis_url,
             bdp_username)
         logger.debug(mytardis_settings)
-        if mytardis_settings['mytardis_host']:
-            def _get_exp_name_for_input(path):
-                return str(os.sep.join(path.split(os.sep)[-1:]))
-            ename = _get_exp_name_for_input(output_location)
-            logger.debug("ename=%s" % ename)
-            experiment_id = mytardis.create_experiment(
-                settings=mytardis_settings,
-                exp_id=self.experiment_id,
-                experiment_paramset=experiment_paramset,
-                expname=ename)
+        curate_data = run_settings['http://rmit.edu.au/schemas/input/mytardis']['curate_data']
+        if curate_data:
+            if mytardis_settings['mytardis_host']:
+                def _get_exp_name_for_input(path):
+                    return str(os.sep.join(path.split(os.sep)[-1:]))
+                ename = _get_exp_name_for_input(output_location)
+                logger.debug("ename=%s" % ename)
+                experiment_id = mytardis.create_experiment(
+                    settings=mytardis_settings,
+                    exp_id=self.experiment_id,
+                    experiment_paramset=experiment_paramset,
+                    expname=ename)
+            else:
+                logger.warn("no mytardis host specified")
+        else:
+            logger.warn('Data curation is off')
         return experiment_id
 
 

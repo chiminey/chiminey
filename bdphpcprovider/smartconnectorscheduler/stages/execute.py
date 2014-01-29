@@ -209,10 +209,14 @@ class Execute(Stage):
         if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run'):
             run_settings['http://rmit.edu.au/schemas/stages/run'] = {}
 
-        completed_processes = [x for x in self.exec_procs if x['status'] == 'completed']
+        #completed_processes = [x for x in self.exec_procs if x['status'] == 'completed']
+        completed_processes = [x for x in self.schedule_procs if x['status'] == 'completed']
+        running_processes = [x for x in self.schedule_procs if x['status'] == 'running']
         logger.debug('completed_processes=%d' % len(completed_processes))
+        logger.debug('running_processes=%d' % len(running_processes))
         run_settings['http://rmit.edu.au/schemas/stages/run'][u'runs_left'] =\
-            len(self.exec_procs) - len(completed_processes)
+            len(running_processes)
+            # len(self.exec_procs) - len(completed_processes)
         run_settings['http://rmit.edu.au/schemas/stages/run'][u'initial_numbfile'] = self.initial_numbfile
         run_settings['http://rmit.edu.au/schemas/stages/run'][u'rand_index'] = self.rand_index
         run_settings['http://rmit.edu.au/schemas/input/mytardis']['experiment_id'] = str(self.experiment_id)
@@ -293,7 +297,7 @@ class Execute(Stage):
             try:
                 pids_for_task = self.run_task(ip_address, process_id, settings)
                 proc['status'] = 'running'
-                self.exec_procs.append(proc)
+                #self.exec_procs.append(proc)
                 for iterator, process in enumerate(self.all_processes):
                     if int(process['id']) == int(process_id) and process['status'] == 'ready':
                         self.all_processes[iterator]['status'] = 'running'
@@ -479,72 +483,73 @@ class Execute(Stage):
         #file://127.0.0.1/sweephrmc261/hrmcrun262/input_0/initial?root_path=/var/cloudenabling/remotesys
         # Copy input directory to mytardis only after saving locally, so if
         # something goes wrong we still have the results
+        if local_settings['curate_data']:
+            if mytardis_settings['mytardis_host']:
+                EXP_DATASET_NAME_SPLIT = 2
 
-        if mytardis_settings['mytardis_host']:
-            EXP_DATASET_NAME_SPLIT = 2
+                def _get_exp_name_for_input(settings, url, path):
+                    return str(os.sep.join(path.split(os.sep)[:-EXP_DATASET_NAME_SPLIT]))
 
-            def _get_exp_name_for_input(settings, url, path):
-                return str(os.sep.join(path.split(os.sep)[:-EXP_DATASET_NAME_SPLIT]))
+                def _get_dataset_name_for_input(settings, url, path):
+                    logger.debug("path=%s" % path)
 
-            def _get_dataset_name_for_input(settings, url, path):
-                logger.debug("path=%s" % path)
+                    source_url = smartconnector.get_url_with_pkey(
+                        output_storage_settings,
+                        output_prefix + os.path.join(output_host, path, "HRMC.inp_values"),
+                        is_relative_path=False)
+                    logger.debug("source_url=%s" % source_url)
+                    try:
+                        content = hrmcstages.get_file(source_url)
+                    except IOError:
+                        return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
 
-                source_url = smartconnector.get_url_with_pkey(
-                    output_storage_settings,
-                    output_prefix + os.path.join(output_host, path, "HRMC.inp_values"),
-                    is_relative_path=False)
-                logger.debug("source_url=%s" % source_url)
-                try:
-                    content = hrmcstages.get_file(source_url)
-                except IOError:
-                    return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
+                    logger.debug("content=%s" % content)
+                    try:
+                        values_map = dict(json.loads(str(content)))
+                    except Exception, e:
+                        logger.warn("cannot load %s: %s" % (content, e))
+                        return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
 
-                logger.debug("content=%s" % content)
-                try:
-                    values_map = dict(json.loads(str(content)))
-                except Exception, e:
-                    logger.warn("cannot load %s: %s" % (content, e))
-                    return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
+                    try:
+                        iteration = str(path.split(os.sep)[-2:-1][0])
+                    except Exception, e:
+                        logger.error(e)
+                        iteration = ""
 
-                try:
-                    iteration = str(path.split(os.sep)[-2:-1][0])
-                except Exception, e:
-                    logger.error(e)
-                    iteration = ""
+                    if "_" in iteration:
+                        iteration = iteration.split("_")[1]
+                    else:
+                        iteration = "initial"
 
-                if "_" in iteration:
-                    iteration = iteration.split("_")[1]
-                else:
-                    iteration = "initial"
+                    if 'run_counter' in values_map:
+                        run_counter = values_map['run_counter']
+                    else:
+                        run_counter = 0
 
-                if 'run_counter' in values_map:
-                    run_counter = values_map['run_counter']
-                else:
-                    run_counter = 0
+                    dataset_name = "%s_%s" % (iteration,
+                        run_counter)
+                    logger.debug("dataset_name=%s" % dataset_name)
+                    return dataset_name
 
-                dataset_name = "%s_%s" % (iteration,
-                    run_counter)
-                logger.debug("dataset_name=%s" % dataset_name)
-                return dataset_name
+                # FIXME: better to create experiment_paramsets
+                # later closer to when corresponding datasets are created, but
+                # would required PUT of paramerset data to existing experiment.
+                #fixme uncomment later
+                local_settings.update(mytardis_settings)
+                self.experiment_id = mytardis.create_dataset(
+                    settings=local_settings,
+                    source_url=source_files_url,
+                    exp_id=self.experiment_id,
+                    exp_name=_get_exp_name_for_input,
+                    dataset_name=_get_dataset_name_for_input,
+                    experiment_paramset=[],
+                    dataset_paramset=[
+                        mytardis.create_paramset('hrmcdataset/input', [])])
 
-            # FIXME: better to create experiment_paramsets
-            # later closer to when corresponding datasets are created, but
-            # would required PUT of paramerset data to existing experiment.
-            #fixme uncomment later
-            local_settings.update(mytardis_settings)
-            self.experiment_id = mytardis.create_dataset(
-                settings=local_settings,
-                source_url=source_files_url,
-                exp_id=self.experiment_id,
-                exp_name=_get_exp_name_for_input,
-                dataset_name=_get_dataset_name_for_input,
-                experiment_paramset=[],
-                dataset_paramset=[
-                    mytardis.create_paramset('hrmcdataset/input', [])])
-
+            else:
+                logger.warn("no mytardis host specified")
         else:
-            logger.warn("no mytardis host specified")
-
+            logger.warn('Data curation is off')
         #proc_ind = 0
         for var_fname in variations.keys():
             logger.debug("var_fname=%s" % var_fname)
@@ -710,6 +715,7 @@ def retrieve_boto_settings(run_settings, local_settings):
         'http://rmit.edu.au/schemas/system/random_numbers')
     smartconnector.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/system/id')
+    local_settings['curate_data'] = run_settings['http://rmit.edu.au/schemas/input/mytardis']['curate_data']
     local_settings['bdp_username'] = run_settings[
         RMIT_SCHEMA + '/bdp_userprofile']['username']
 

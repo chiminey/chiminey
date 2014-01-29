@@ -117,6 +117,10 @@ def get_this_vm(vm_id, settings):
     return botoconnector.get_this_vm(vm_id, settings)
 
 
+def get_vm_ip(vm_id, settings):
+    return botoconnector.get_vm_ip(vm_id, settings)
+
+
 def _get_ssh_ready_vms(all_vms, settings):
     '''
         Returns vms that can be reached via ssh

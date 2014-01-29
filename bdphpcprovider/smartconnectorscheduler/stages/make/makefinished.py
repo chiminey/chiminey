@@ -221,139 +221,144 @@ class MakeFinishedStage(Stage):
 
         mytardis_settings = _get_mytardis_settings(settings, bdp_username)
         logger.debug(mytardis_settings)
+        if settings['curate_data']:
+            if mytardis_settings['mytardis_host']:
 
-        if mytardis_settings['mytardis_host']:
+                if directive == "vasp":
 
-            if directive == "vasp":
+                 # TODO: this is very domain specific
 
-             # TODO: this is very domain specific
+                    OUTCAR_FILE = "OUTCAR"
+                    VALUES_FILE = "values"
 
-                OUTCAR_FILE = "OUTCAR"
-                VALUES_FILE = "values"
+                    outcar_url = smartconnector.get_url_with_pkey(settings,
+                        os.path.join(dest_url, OUTCAR_FILE), is_relative_path=False)
+                    logger.debug("outcar_url=%s" % outcar_url)
 
-                outcar_url = smartconnector.get_url_with_pkey(settings,
-                    os.path.join(dest_url, OUTCAR_FILE), is_relative_path=False)
-                logger.debug("outcar_url=%s" % outcar_url)
-
-                try:
-                    outcar_content = hrmcstages.get_file(outcar_url)
-                except IOError, e:
-                    logger.error(e)
-                    toten = None
-                else:
-                    toten = None
-                    for line in outcar_content.split('\n'):
-                        #logger.debug("line=%s" % line)
-                        if 'e  en' in line:
-                            logger.debug("found")
-                            try:
-                                toten = float(line.rsplit(' ', 2)[-2])
-                            except ValueError, e:
-                                logger.error(e)
-                                pass
-                            break
-
-                logger.debug("toten=%s" % toten)
-
-                values_url = smartconnector.get_url_with_pkey(settings,
-                    os.path.join(dest_url, VALUES_FILE), is_relative_path=False)
-                logger.debug("values_url=%s" % values_url)
-                try:
-                    values_content = hrmcstages.get_file(values_url)
-                except IOError, e:
-                    logger.error(e)
-                    values = None
-                else:
-                    values = None
                     try:
-                        values = dict(json.loads(values_content))
-                    except Exception, e:
+                        outcar_content = hrmcstages.get_file(outcar_url)
+                    except IOError, e:
                         logger.error(e)
-                        pass
+                        toten = None
+                    else:
+                        toten = None
+                        for line in outcar_content.split('\n'):
+                            #logger.debug("line=%s" % line)
+                            if 'e  en' in line:
+                                logger.debug("found")
+                                try:
+                                    toten = float(line.rsplit(' ', 2)[-2])
+                                except ValueError, e:
+                                    logger.error(e)
+                                    pass
+                                break
 
-                logger.debug("values=%s" % values)
+                    logger.debug("toten=%s" % toten)
 
-                # FIXME: all values from map are strings initially, so need to know
-                # type to coerce.
-                num_kp = None
-                if 'num_kp' in values:
+                    values_url = smartconnector.get_url_with_pkey(settings,
+                        os.path.join(dest_url, VALUES_FILE), is_relative_path=False)
+                    logger.debug("values_url=%s" % values_url)
                     try:
-                        num_kp = int(values['num_kp'])
-                    except IndexError:
-                        pass
-                    except ValueError:
-                        pass
+                        values_content = hrmcstages.get_file(values_url)
+                    except IOError, e:
+                        logger.error(e)
+                        values = None
+                    else:
+                        values = None
+                        try:
+                            values = dict(json.loads(values_content))
+                        except Exception, e:
+                            logger.error(e)
+                            pass
 
-                logger.debug("num_kp=%s" % num_kp)
+                    logger.debug("values=%s" % values)
 
-                encut = None
-                if 'encut' in values:
-                    try:
-                        encut = int(values['encut'])
-                    except IndexError:
-                        pass
-                    except ValueError:
-                        pass
-                logger.debug("encut=%s" % encut)
+                    # FIXME: all values from map are strings initially, so need to know
+                    # type to coerce.
+                    num_kp = None
+                    if 'num_kp' in values:
+                        try:
+                            num_kp = int(values['num_kp'])
+                        except IndexError:
+                            pass
+                        except ValueError:
+                            pass
 
-                def _get_exp_name_for_vasp(settings, url, path):
-                    """
-                    Break path based on EXP_DATASET_NAME_SPLIT
-                    """
-                    return str(os.sep.join(path.split(os.sep)[-2:-1]))
+                    logger.debug("num_kp=%s" % num_kp)
 
-                def _get_dataset_name_for_vasp(settings, url, path):
-                    """
-                    Break path based on EXP_DATASET_NAME_SPLIT
-                    """
-                    encut = settings['ENCUT']
-                    numkp = settings['NUMKP']
-                    runcounter = settings['RUNCOUNTER']
-                    return "%s:encut=%s,num_kp=%s" % (runcounter, encut, numkp)
-                    #return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
+                    encut = None
+                    if 'encut' in values:
+                        try:
+                            encut = int(values['encut'])
+                        except IndexError:
+                            pass
+                        except ValueError:
+                            pass
+                    logger.debug("encut=%s" % encut)
 
-                mytardis_settings['ENCUT'] = encut
-                mytardis_settings['NUMKP'] = num_kp
-                mytardis_settings['RUNCOUNTER'] = settings['contextid']
+                    def _get_exp_name_for_vasp(settings, url, path):
+                        """
+                        Break path based on EXP_DATASET_NAME_SPLIT
+                        """
+                        return str(os.sep.join(path.split(os.sep)[-2:-1]))
 
-                self.experiment_id = mytardis.create_dataset(
-                    settings=mytardis_settings,
-                    source_url=encoded_d_url,
-                    exp_id=self.experiment_id,
-                    exp_name=_get_exp_name_for_vasp,
-                    dataset_name=_get_dataset_name_for_vasp,
-                    experiment_paramset=[],
-                    dataset_paramset=[
-                        mytardis.create_paramset("remotemake/output", []),
-                        mytardis.create_graph_paramset("dsetgraph",
-                            name="makedset",
-                            graph_info={},
-                            value_dict={"makedset/num_kp": num_kp, "makedset/encut": encut, "makedset/toten": toten}
-                                if (num_kp is not None)
-                                    and (encut is not None)
-                                    and (toten is not None) else {},
-                            value_keys=[]
-                            ),
-                        ]
-                    )
-            elif directive == "remotemake":
+                    def _get_dataset_name_for_vasp(settings, url, path):
+                        """
+                        Break path based on EXP_DATASET_NAME_SPLIT
+                        """
+                        encut = settings['ENCUT']
+                        numkp = settings['NUMKP']
+                        runcounter = settings['RUNCOUNTER']
+                        return "%s:encut=%s,num_kp=%s" % (runcounter, encut, numkp)
+                        #return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
 
-                def _get_exp_name_for_make(settings, url, path):
-                    return str(os.sep.join(path.split(os.sep)[-2:-1]))
+                    mytardis_settings['ENCUT'] = encut
+                    mytardis_settings['NUMKP'] = num_kp
+                    mytardis_settings['RUNCOUNTER'] = settings['contextid']
 
-                def _get_dataset_name_for_make(settings, url, path):
-                    return str(os.sep.join(path.split(os.sep)[-1:]))
+                    self.experiment_id = mytardis.create_dataset(
+                        settings=mytardis_settings,
+                        source_url=encoded_d_url,
+                        exp_id=self.experiment_id,
+                        exp_name=_get_exp_name_for_vasp,
+                        dataset_name=_get_dataset_name_for_vasp,
+                        experiment_paramset=[],
+                        dataset_paramset=[
+                            mytardis.create_paramset("remotemake/output", []),
+                            mytardis.create_graph_paramset("dsetgraph",
+                                name="makedset",
+                                graph_info={},
+                                value_dict={"makedset/num_kp": num_kp, "makedset/encut": encut, "makedset/toten": toten}
+                                    if (num_kp is not None)
+                                        and (encut is not None)
+                                        and (toten is not None) else {},
+                                value_keys=[]
+                                ),
+                            ]
+                        )
+                elif directive == "remotemake":
 
-                self.experiment_id = mytardis.create_dataset(
-                    settings=mytardis_settings,
-                    source_url=encoded_d_url,
-                    exp_id=self.experiment_id,
-                    exp_name=_get_exp_name_for_make,
-                    dataset_name=_get_dataset_name_for_make,
-                    experiment_paramset=[],
-                    dataset_paramset=[
-                        mytardis.create_paramset("remotemake/output", [])]
-                    )
+                    def _get_exp_name_for_make(settings, url, path):
+                        return str(os.sep.join(path.split(os.sep)[-2:-1]))
+
+                    def _get_dataset_name_for_make(settings, url, path):
+                        return str(os.sep.join(path.split(os.sep)[-1:]))
+
+                    self.experiment_id = mytardis.create_dataset(
+                        settings=mytardis_settings,
+                        source_url=encoded_d_url,
+                        exp_id=self.experiment_id,
+                        exp_name=_get_exp_name_for_make,
+                        dataset_name=_get_dataset_name_for_make,
+                        experiment_paramset=[],
+                        dataset_paramset=[
+                            mytardis.create_paramset("remotemake/output", [])]
+                        )
+            else:
+                logger.warn("no mytardis host specified")
+        else:
+            logger.warn('Data curation is off')
+
 
     def output(self, run_settings):
         run_settings['http://rmit.edu.au/schemas/stages/make']['runs_left']  \

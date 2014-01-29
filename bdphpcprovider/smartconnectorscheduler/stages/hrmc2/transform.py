@@ -253,142 +253,145 @@ class Transform(Stage):
         outputs.sort(key=lambda x: int(x.criterion))
         logger.debug("outputs=%s" % outputs)
 
-        mytardis_url = run_settings['http://rmit.edu.au/schemas/input/mytardis']['mytardis_platform']
-        mytardis_settings = manage.get_platform_settings(mytardis_url, bdp_username)
+        curate_data = run_settings['http://rmit.edu.au/schemas/input/mytardis']['curate_data']
+        if curate_data:
+            mytardis_url = run_settings['http://rmit.edu.au/schemas/input/mytardis']['mytardis_platform']
+            mytardis_settings = manage.get_platform_settings(mytardis_url, bdp_username)
+            if mytardis_settings['mytardis_host']:
+                for i, node_output_dir in enumerate(node_output_dirs):
+                    crit = None  # is there an infinity criterion
+                    for ni in outputs:
+                        if ni.dir == node_output_dir:
+                            crit = ni.criterion
+                            break
+                    else:
+                        logger.debug("criterion not found")
+                        continue
+                    logger.debug("crit=%s" % crit)
+                    source_url = smartconnector.get_url_with_pkey(
+                        output_storage_settings,
+                        output_prefix + os.path.join(self.output_dir, node_output_dir),
+                        is_relative_path=False)
+                    logger.debug("source_url=%s" % source_url)
+                    graph_params = []
 
-        if mytardis_settings['mytardis_host']:
-            for i, node_output_dir in enumerate(node_output_dirs):
-                crit = None  # is there an infinity criterion
-                for ni in outputs:
-                    if ni.dir == node_output_dir:
-                        crit = ni.criterion
-                        break
-                else:
-                    logger.debug("criterion not found")
-                    continue
-                logger.debug("crit=%s" % crit)
-                source_url = smartconnector.get_url_with_pkey(
-                    output_storage_settings,
-                    output_prefix + os.path.join(self.output_dir, node_output_dir),
-                    is_relative_path=False)
-                logger.debug("source_url=%s" % source_url)
-                graph_params = []
+                    def extract_psd_func(fp):
+                        res = []
+                        xs = []
+                        ys = []
+                        for i, line in enumerate(fp):
+                            columns = line.split()
+                            xs.append(float(columns[0]))
+                            ys.append(float(columns[1]))
+                        res = {"hrmcdfile/r1": xs, "hrmcdfile/g1": ys}
+                        return res
 
-                def extract_psd_func(fp):
-                    res = []
-                    xs = []
-                    ys = []
-                    for i, line in enumerate(fp):
-                        columns = line.split()
-                        xs.append(float(columns[0]))
-                        ys.append(float(columns[1]))
-                    res = {"hrmcdfile/r1": xs, "hrmcdfile/g1": ys}
-                    return res
+                    def extract_psdexp_func(fp):
+                        res = []
+                        xs = []
+                        ys = []
+                        for i, line in enumerate(fp):
+                            columns = line.split()
+                            xs.append(float(columns[0]))
+                            ys.append(float(columns[1]))
+                        res = {"hrmcdfile/r2": xs, "hrmcdfile/g2": ys}
+                        return res
 
-                def extract_psdexp_func(fp):
-                    res = []
-                    xs = []
-                    ys = []
-                    for i, line in enumerate(fp):
-                        columns = line.split()
-                        xs.append(float(columns[0]))
-                        ys.append(float(columns[1]))
-                    res = {"hrmcdfile/r2": xs, "hrmcdfile/g2": ys}
-                    return res
+                    def extract_grfinal_func(fp):
+                        res = []
+                        xs = []
+                        ys = []
+                        for i, line in enumerate(fp):
+                            columns = line.split()
+                            xs.append(float(columns[0]))
+                            ys.append(float(columns[1]))
+                        #FIXME: len(xs) == len(ys) for this to work.
+                        #TODO: hack to handle when xs and ys are too
+                        # large to fit in Parameter with db_index.
+                        # solved by function call at destination
+                        cut_xs = [xs[i] for i, x in enumerate(xs)
+                            if (i % (len(xs) / 20) == 0)]
+                        cut_ys = [ys[i] for i, x in enumerate(ys)
+                            if (i % (len(ys) / 20) == 0)]
 
-                def extract_grfinal_func(fp):
-                    res = []
-                    xs = []
-                    ys = []
-                    for i, line in enumerate(fp):
-                        columns = line.split()
-                        xs.append(float(columns[0]))
-                        ys.append(float(columns[1]))
-                    #FIXME: len(xs) == len(ys) for this to work.
-                    #TODO: hack to handle when xs and ys are too
-                    # large to fit in Parameter with db_index.
-                    # solved by function call at destination
-                    cut_xs = [xs[i] for i, x in enumerate(xs)
-                        if (i % (len(xs) / 20) == 0)]
-                    cut_ys = [ys[i] for i, x in enumerate(ys)
-                        if (i % (len(ys) / 20) == 0)]
+                        res = {"hrmcdfile/r3": cut_xs, "hrmcdfile/g3": cut_ys}
+                        return res
 
-                    res = {"hrmcdfile/r3": cut_xs, "hrmcdfile/g3": cut_ys}
-                    return res
+                    def extract_inputgr_func(fp):
+                        res = []
+                        xs = []
+                        ys = []
+                        for i, line in enumerate(fp):
+                            columns = line.split()
+                            xs.append(float(columns[0]))
+                            ys.append(float(columns[1]))
+                        #FIXME: len(xs) == len(ys) for this to work.
+                        #TODO: hack to handle when xs and ys are too
+                        # large to fit in Parameter with db_index.
+                        # solved by function call at destination
+                        cut_xs = [xs[i] for i, x in enumerate(xs)
+                            if (i % (len(xs) / 20) == 0)]
+                        cut_ys = [ys[i] for i, x in enumerate(ys)
+                            if (i % (len(ys) / 20) == 0)]
 
-                def extract_inputgr_func(fp):
-                    res = []
-                    xs = []
-                    ys = []
-                    for i, line in enumerate(fp):
-                        columns = line.split()
-                        xs.append(float(columns[0]))
-                        ys.append(float(columns[1]))
-                    #FIXME: len(xs) == len(ys) for this to work.
-                    #TODO: hack to handle when xs and ys are too
-                    # large to fit in Parameter with db_index.
-                    # solved by function call at destination
-                    cut_xs = [xs[i] for i, x in enumerate(xs)
-                        if (i % (len(xs) / 20) == 0)]
-                    cut_ys = [ys[i] for i, x in enumerate(ys)
-                        if (i % (len(ys) / 20) == 0)]
+                        res = {"hrmcdfile/r4": cut_xs, "hrmcdfile/g4": cut_ys}
+                        return res
 
-                    res = {"hrmcdfile/r4": cut_xs, "hrmcdfile/g4": cut_ys}
-                    return res
+                    #TODO: hrmcexp graph should be tagged to input directories (not output directories)
+                    #because we want the result after pruning.
+                    #todo: replace self.boto_setttings with mytardis_settings
+                    all_settings = dict(self.boto_settings)
+                    all_settings.update(mytardis_settings)
+                    all_settings.update(output_storage_settings)
 
-                #TODO: hrmcexp graph should be tagged to input directories (not output directories)
-                #because we want the result after pruning.
-                #todo: replace self.boto_setttings with mytardis_settings
-                all_settings = dict(self.boto_settings)
-                all_settings.update(mytardis_settings)
-                all_settings.update(output_storage_settings)
+                    logger.debug('all_settings=%s' % all_settings)
+                    logger.debug('output_storage_settings=%s' % output_storage_settings)
+                    self.experiment_id = mytardis.create_dataset(
+                        settings=all_settings,
+                        source_url=source_url,
+                        exp_id=self.experiment_id,
+                        exp_name=hrmcstages.get_exp_name_for_output,
+                        dataset_name=hrmcstages.get_dataset_name_for_output,
+                        dataset_paramset=[
+                            mytardis.create_paramset("hrmcdataset/output", []),
+                            mytardis.create_graph_paramset("dsetgraph",
+                                name="hrmcdset",
+                                graph_info={"axes":["r (Angstroms)", "PSD"],
+                                    "legends":["psd", "PSD_exp"], "type":"line"},
+                                value_dict={"hrmcdset/it": self.id,
+                                     "hrmcdset/crit": crit},
+                                value_keys=[["hrmcdfile/r1", "hrmcdfile/g1"],
+                                    ["hrmcdfile/r2", "hrmcdfile/g2"]]
+                                ),
+                            mytardis.create_graph_paramset("dsetgraph",
+                                name="hrmcdset2",
+                                graph_info={"axes":["r (Angstroms)", "g(r)"],
+                                    "legends":["data_grfinal", "input_gr"],
+                                    "type":"line"},
+                                value_dict={},
+                                value_keys=[["hrmcdfile/r3", "hrmcdfile/g3"],
+                                    ["hrmcdfile/r4", "hrmcdfile/g4"]]
+                                ),
 
-                logger.debug('all_settings=%s' % all_settings)
-                logger.debug('output_storage_settings=%s' % output_storage_settings)
-                self.experiment_id = mytardis.create_dataset(
-                    settings=all_settings,
-                    source_url=source_url,
-                    exp_id=self.experiment_id,
-                    exp_name=hrmcstages.get_exp_name_for_output,
-                    dataset_name=hrmcstages.get_dataset_name_for_output,
-                    dataset_paramset=[
-                        mytardis.create_paramset("hrmcdataset/output", []),
-                        mytardis.create_graph_paramset("dsetgraph",
-                            name="hrmcdset",
-                            graph_info={"axes":["r (Angstroms)", "PSD"],
-                                "legends":["psd", "PSD_exp"], "type":"line"},
-                            value_dict={"hrmcdset/it": self.id,
-                                 "hrmcdset/crit": crit},
-                            value_keys=[["hrmcdfile/r1", "hrmcdfile/g1"],
-                                ["hrmcdfile/r2", "hrmcdfile/g2"]]
-                            ),
-                        mytardis.create_graph_paramset("dsetgraph",
-                            name="hrmcdset2",
-                            graph_info={"axes":["r (Angstroms)", "g(r)"],
-                                "legends":["data_grfinal", "input_gr"],
-                                "type":"line"},
-                            value_dict={},
-                            value_keys=[["hrmcdfile/r3", "hrmcdfile/g3"],
-                                ["hrmcdfile/r4", "hrmcdfile/g4"]]
-                            ),
-
-                        ],
-                   datafile_paramset=[
-                        mytardis.create_graph_paramset("dfilegraph",
-                            name="hrmcdfile",
-                            graph_info={},
-                            value_dict={},
-                            value_keys=[])
-                        ],
-                   # TODO: move extract function into paramset structure
-                   dfile_extract_func={'psd.dat': extract_psd_func,
-                        'PSD_exp.dat': extract_psdexp_func,
-                        'data_grfinal.dat': extract_grfinal_func,
-                        'input_gr.dat': extract_inputgr_func}
-
-                   )
+                            ],
+                       datafile_paramset=[
+                            mytardis.create_graph_paramset("dfilegraph",
+                                name="hrmcdfile",
+                                graph_info={},
+                                value_dict={},
+                                value_keys=[])
+                            ],
+                       # TODO: move extract function into paramset structure
+                       dfile_extract_func={'psd.dat': extract_psd_func,
+                            'PSD_exp.dat': extract_psdexp_func,
+                            'data_grfinal.dat': extract_grfinal_func,
+                            'input_gr.dat': extract_inputgr_func}
+                       )
+            else:
+                logger.warn("no mytardis host specified")
         else:
-            logger.warn("no mytardis host specified")
+            logger.warn('Data curation is off')
+
         logger.debug('threshold=%s' % self.threshold)
         total_picks = 1
         if len(self.threshold) > 1:
