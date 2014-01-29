@@ -32,7 +32,7 @@ def create_vms(total_vms, settings):
     """
         Create virtual machines and return id
     """
-    logger.info("create_vms")
+    logger.debug("create_vms")
     all_vms = botoconnector.create_vms(total_vms, settings)
     if all_vms:
         all_running_vms = botoconnector.wait_for_vms_to_start_running(

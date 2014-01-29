@@ -32,6 +32,9 @@ from bdphpcprovider.smartconnectorscheduler.stages.errors import InsufficientRes
 from bdphpcprovider.sshconnection import open_connection
 from bdphpcprovider.compute import run_command_with_status, run_make
 
+from bdphpcprovider import messages
+from bdphpcprovider import storage
+
 logger = logging.getLogger(__name__)
 
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
@@ -71,7 +74,7 @@ class Bootstrap(Stage):
         except KeyError:
             self.started = 0
         logger.debug('self.started=%d' % self.started)
-        smartconnector.info(run_settings, "bootstrapping nodes")
+        messages.info(run_settings, "bootstrapping nodes")
         local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
         retrieve_local_settings(run_settings, local_settings)
         logger.debug("local_settings=%s" % pformat(local_settings))
@@ -134,7 +137,7 @@ class Bootstrap(Stage):
                     else:
                         logger.info("We have already "
                             + "bootstrapped node %s" % node_ip)
-                    smartconnector.info(run_settings, "bootstrapping nodes (%s nodes done)"
+                    messages.info(run_settings, "bootstrapping nodes (%s nodes done)"
                         % len(self.bootstrapped_nodes))
                 else:
                     print "job still running on %s" % node_ip
@@ -232,8 +235,8 @@ def start_setup(instance, ip,  settings, source, destination):
         Start the task on the instance, then return
     """
     logger.info("run_task %s" % str(instance))
-    hrmcstages.copy_directories(source, destination)
-    makefile_path = hrmcstages.get_make_path(destination)
+    storage.copy_directories(source, destination)
+    makefile_path = storage.get_make_path(destination)
     # TODO, FIXME:  need to have timeout for yum install make
     # and then test can access, otherwise, loop.
     install_make = 'yum install -y make'
@@ -259,7 +262,7 @@ def job_finished(ip, settings, destination):
         Return True if package job on instance_id has job_finished
     """
     ssh = open_connection(ip_address=ip, settings=settings)
-    makefile_path = hrmcstages.get_make_path(destination)
+    makefile_path = storage.get_make_path(destination)
     (command_out, err) = run_make(ssh, makefile_path, 'setupdone')
     if command_out:
         logger.debug("command_out = %s" % command_out)

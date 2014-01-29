@@ -20,7 +20,6 @@
 
 
 from bdphpcprovider.smartconnectorscheduler import models
-from bdphpcprovider.smartconnectorscheduler import hrmcstages
 
 
 def setup_settings(run_settings):

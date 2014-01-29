@@ -22,22 +22,24 @@ import os
 import logging
 from pprint import pformat
 
-from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
+# from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import smartconnector
-from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.smartconnectorscheduler import platform
-from bdphpcprovider.smartconnectorscheduler.smartconnector import (
-    multilevel_key_exists, get_existing_key)
+# from bdphpcprovider.smartconnectorscheduler.smartconnector import (
+#     multilevel_key_exists, get_existing_key)
 
+from bdphpcprovider import messages
 from bdphpcprovider import compute
+from bdphpcprovider import storage
 
 from . import setup_settings
 from bdphpcprovider.sshconnection import open_connection
 
+
 logger = logging.getLogger(__name__)
 
 
-class MakeRunStage(Stage):
+class MakeRunStage(smartconnector.Stage):
     """
     Execute a program using arguments which are local
     """
@@ -49,12 +51,12 @@ class MakeRunStage(Stage):
             return (True, "ok")
 
     def triggered(self, run_settings):
-        if multilevel_key_exists(
+        if smartconnector.multilevel_key_exists(
             run_settings,
             'http://rmit.edu.au/schemas/stages/upload_makefile',
             'done'):
             try:
-                upload_makefile_done = int(get_existing_key(run_settings,
+                upload_makefile_done = int(smartconnector.get_existing_key(run_settings,
                     'http://rmit.edu.au/schemas/stages/upload_makefile/done'))
             except ValueError, e:
                 logger.error(e)
@@ -74,7 +76,7 @@ class MakeRunStage(Stage):
 
     def process(self, run_settings):
         settings = setup_settings(run_settings)
-        smartconnector.info(run_settings, "1: execute starting")
+        messages.info(run_settings, "1: execute starting")
 
         def _get_dest_bdp_url(settings):
             return "%s@%s" % (
@@ -96,7 +98,7 @@ class MakeRunStage(Stage):
             is_relative_path=True,
             ip_address=settings['host'])
         (scheme, host, mypath, location, query_settings) = \
-            hrmcstages.parse_bdpurl(encoded_d_url)
+            storage.parse_bdpurl(encoded_d_url)
         stderr = ''
         try:
             ssh = open_connection(
@@ -113,7 +115,7 @@ class MakeRunStage(Stage):
                 ssh.close()
         self.program_success = int(not stderr)
         logger.debug("program_success =%s" % self.program_success)
-        smartconnector.info(run_settings, "1: execute started")
+        messages.info(run_settings, "1: execute started")
 
     def output(self, run_settings):
         run_settings.setdefault(

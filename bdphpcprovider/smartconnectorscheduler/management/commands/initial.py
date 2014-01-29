@@ -739,7 +739,7 @@ class Command(BaseCommand):
         #     directive=hrmc_smart_dir, stage=hrmc_composite_stage)
         print "done"
 
-    def define_sweep_vasp(self, local_platform):
+    def define_sweep_vasp(self):
 
         sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep_make",
             description="Sweep Test",
@@ -780,7 +780,7 @@ class Command(BaseCommand):
             defaults={'description': "HRMC Sweep Connector"},
             stage=sweep_stage)
 
-    def define_sweep_remotemake(self, local_platform):
+    def define_sweep_remotemake(self):
 
         sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep_make",
             description="Sweep Test",

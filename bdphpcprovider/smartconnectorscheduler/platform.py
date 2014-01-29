@@ -509,7 +509,7 @@ def _update_platform_settings(settings):
         settings['private_key_name'] = settings['private_key']
         settings['private_key'] = os.path.join(storage.get_bdp_root_path(),
                                                settings['private_key_path'])
-        settings['root_path'] = '/home/centos'  # fixme avoid hardcoding
+        settings['root_path'] = '/home/ec2-user'  # fixme avoid hardcoding
         settings['scheme'] = 'ssh'
 
     elif platform_type == 'nci':

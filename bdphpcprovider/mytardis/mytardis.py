@@ -26,10 +26,7 @@ import json
 import requests
 from requests.auth import HTTPBasicAuth
 
-from bdphpcprovider.smartconnectorscheduler.hrmcstages import (get_value,
-                                                               get_filep,
-                                                               parse_bdpurl,
-                                                               list_all_files)
+from bdphpcprovider import storage
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +65,21 @@ EXP_DATASET_NAME_SPLIT = 2
 #         return str(uri).split('/')[-2:-1][0]
 #     else:
 #         return str(uri).split('/')[-1]
+
+
+
+
+def _get_value(key, dictionary):
+    """
+    Return the value for the key in the dictionary, or a blank
+    string
+    """
+    try:
+        return dictionary[key]
+    except KeyError, e:
+        logger.debug(e)
+        return u''
+
 
 
 def create_graph_paramset(schema_ns, name, graph_info, value_dict, value_keys):
@@ -307,19 +319,20 @@ def create_dataset(settings,
 
     #TODO: method should take BDP url source_url not, expanded one.
 
+    logger.debug("post_dataset")
     tardis_user = settings["mytardis_user"]
     tardis_pass = settings["mytardis_password"]
     tardis_host_url = "http://%s" % settings["mytardis_host"]
-    logger.debug("posting dataset from %s to mytardis at %s" % (source_url,
-        tardis_host_url))
+    logger.debug("posting dataset from %s to mytardis at %s with %s" % (source_url,
+        tardis_host_url, tardis_pass))
 
     (source_scheme, source_location, source_path, source_location,
-        query_settings) = parse_bdpurl(source_url)
+        query_settings) = storage.parse_bdpurl(source_url)
 
     logger.debug("source_path=%s" % source_path)
 
     if source_scheme == "file":
-        root_path = get_value('root_path', query_settings)
+        root_path = _get_value('root_path', query_settings)
     else:
         logger.debug('schema=%s' % source_scheme)
         #raise InvalidInputError("only file source_schema supported for source of mytardis transfer")
@@ -356,6 +369,7 @@ def create_dataset(settings,
        "parameter_sets": schemas
            })
     logger.debug("data=%s" % data)
+    logger.debug("post to %s" % url)
     r = requests.post(url, data=data, headers=headers, auth=HTTPBasicAuth(tardis_user, tardis_pass))
     # FIXME: need to check for status_code and handle failures.
 
@@ -366,7 +380,7 @@ def create_dataset(settings,
     new_dataset_uri = header_location[len(tardis_host_url):]
 
     # move files across
-    source_files = list_all_files(source_url)
+    source_files = storage.list_all_files(source_url)
     logger.debug("source_files=%s" % source_files)
     url = "%s/api/v1/dataset_file/" % tardis_host_url
     headers = {'Accept': 'application/json'}
@@ -380,13 +394,13 @@ def create_dataset(settings,
                             node_output_dir, "PSD_output", "psd.dat"), is_relative_path=False)
         logger.debug('psd_url=%s' % psd_url)
 
-        psd = hrmcstages.get_filep(psd_url)
+        psd = hrmcstages.storage.get_filep(psd_url)
     '''
     for file_location in source_files:
         logger.debug('file_location=%s' % os.path.join(source_location, file_location))
         source_file_url = "%s://%s?%s" % (source_scheme, os.path.join(source_location, file_location), args)
         logger.debug('source_file_url=%s' % source_file_url)
-        source_file, source_file_ref = get_filep(source_file_url, sftp_reference=True)
+        source_file, source_file_ref = storage.get_filep(source_file_url, sftp_reference=True)
         logger.debug('source_file=%s' % source_file._name)
         #file_path = os.path.join(root_path, file_location)
         #file_path = os.path.join(source_url, file_location)
@@ -499,18 +513,18 @@ def retrieve_datafile(url):
     """
 
     (source_scheme, tardis_host_url, source_path, source_location,
-        query_settings) = parse_bdpurl(url)
+        query_settings) = storage.parse_bdpurl(url)
 
     query_settings['mytardis_host'] = tardis_host_url
 
     logger.debug("query_settings=%s" % query_settings)
 
-    exp_name = get_value('exp_name', query_settings)
-    dataset_name = get_value('dataset_name', query_settings)
-    root_path = get_value('root_path', query_settings)
-    fname = get_value('fname', query_settings)
-    tardis_user = get_value('mytardis_username', query_settings)
-    tardis_pass = get_value('mytardis_password', query_settings)
+    exp_name = _get_value('exp_name', query_settings)
+    dataset_name = _get_value('dataset_name', query_settings)
+    root_path = _get_value('root_path', query_settings)
+    fname = _get_value('fname', query_settings)
+    tardis_user = _get_value('mytardis_username', query_settings)
+    tardis_pass = _get_value('mytardis_password', query_settings)
 
     exp_id, _ = _get_or_create_experiment(query_settings, exp_name)
     dataset_id, _ = _get_or_create_dataset(query_settings, dataset_name, exp_id)
@@ -677,18 +691,18 @@ def _post_datafile(dest_url, content):
     """
 
     (source_scheme, tardis_host_url, source_path, source_location,
-        query_settings) = parse_bdpurl(dest_url)
+        query_settings) = storage.parse_bdpurl(dest_url)
 
     query_settings['mytardis_host'] = tardis_host_url
 
     logger.debug("query_settings=%s" % query_settings)
 
-    exp_name = get_value('exp_name', query_settings)
-    dataset_name = get_value('dataset_name', query_settings)
-    root_path = get_value('root_path', query_settings)
-    fname = get_value('fname', query_settings)
-    tardis_user = get_value('mytardis_username', query_settings)
-    tardis_pass = get_value('mytardis_password', query_settings)
+    exp_name = _get_value('exp_name', query_settings)
+    dataset_name = _get_value('dataset_name', query_settings)
+    root_path = _get_value('root_path', query_settings)
+    fname = _get_value('fname', query_settings)
+    tardis_user = _get_value('mytardis_username', query_settings)
+    tardis_pass = _get_value('mytardis_password', query_settings)
 
     exp_id, _ = _get_or_create_experiment(query_settings, exp_name)
     dataset_id, _ = _get_or_create_dataset(query_settings, dataset_name, exp_id)

@@ -25,12 +25,13 @@ from pprint import pformat
 
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, UI
-from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler import smartconnector, platform
 
-from bdphpcprovider import mytardis
 
+from bdphpcprovider import mytardis
+from bdphpcprovider import messages
+from bdphpcprovider import storage
 
 
 logger = logging.getLogger(__name__)
@@ -60,7 +61,7 @@ class Configure(Stage, UI):
     def process(self, run_settings):
         logger.debug('run_settings=%s' % run_settings)
 
-        smartconnector.info(run_settings, "1: configure")
+        messages.info(run_settings, "1: configure")
         local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
         logger.debug("settings=%s" % pformat(run_settings))
         smartconnector.copy_settings(local_settings, run_settings,
@@ -124,7 +125,7 @@ class Configure(Stage, UI):
                              iter_inputdir),
             is_relative_path=False)
         logger.debug("destination_url=%s" % destination_url)
-        hrmcstages.copy_directories(source_url, destination_url)
+        storage.copy_directories(source_url, destination_url)
 
         output_location = self.output_loc_offset  # run_settings[RMIT_SCHEMA + '/input/system'][u'output_location']
         try:

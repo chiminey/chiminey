@@ -215,7 +215,7 @@ def _create_nectar_connection(settings):
         port=8773,
         path="/services/Cloud")
     #logger.info("settings %s" % settings)
-    logger.info("Connecting to... %s" % region.name)
+    logger.debug("Connecting to... %s" % region.name)
     return connection
 
 

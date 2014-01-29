@@ -31,13 +31,14 @@ from itertools import product
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import (
     Stage, get_url_with_pkey)
-from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler import platform
-from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 
 from django.template import TemplateSyntaxError
 from django.template import Context, Template
+
+from bdphpcprovider import messages
+from bdphpcprovider import storage
 
 from . import setup_settings
 
@@ -96,7 +97,7 @@ class MakeUploadStage(Stage):
             map_initial_location, values_map)
         _upload_payload(settings, settings['payload_source'], values_map)
 
-        smartconnector.info(run_settings, "1: upload done")
+        messages.info(run_settings, "1: upload done")
 
     def output(self, run_settings):
         """ produce the resulting datfiles and metadata
@@ -136,7 +137,7 @@ def _upload_payload(settings, source_url, values_map):
     encoded_d_url = smartconnector.get_url_with_pkey(settings,
         dest_url, is_relative_path=True, ip_address=settings['host'])
 
-    hrmcstages.copy_directories(encoded_s_url, encoded_d_url)
+    storage.copy_directories(encoded_s_url, encoded_d_url)
 
     for content_fname, content in _instantiate_context(
             source_url,
@@ -148,7 +149,7 @@ def _upload_payload(settings, source_url, values_map):
             os.path.join(dest_url, content_fname),
             is_relative_path=True, ip_address=settings['host'])
         logger.debug("content_url=%s" % content_url)
-        hrmcstages.put_file(content_url, content.encode('utf-8'))
+        storage.put_file(content_url, content.encode('utf-8'))
 
     logger.debug("done payload upload")
 
@@ -171,7 +172,7 @@ def _upload_variations_inputs(settings, source_url_initial, values_map):
     encoded_d_url = smartconnector.get_url_with_pkey(settings,
         dest_url, is_relative_path=True, ip_address=settings['host'])
 
-    hrmcstages.copy_directories(encoded_s_url, encoded_d_url)
+    storage.copy_directories(encoded_s_url, encoded_d_url)
 
     for content_fname, content in _instantiate_context(
             source_url_initial,
@@ -183,7 +184,7 @@ def _upload_variations_inputs(settings, source_url_initial, values_map):
             os.path.join(dest_url, content_fname),
             is_relative_path=True, ip_address=settings['host'])
         logger.debug("content_url=%s" % content_url)
-        hrmcstages.put_file(content_url, content.encode('utf-8'))
+        storage.put_file(content_url, content.encode('utf-8'))
 
     _save_values(settings, dest_url, values_map)
 
@@ -194,7 +195,7 @@ def _save_values(settings, url, context):
     values_url = smartconnector.get_url_with_pkey(settings,
         os.path.join(url, VALUES_FNAME),
         is_relative_path=True, ip_address=settings['host'])
-    hrmcstages.put_file(values_url, json.dumps(context))
+    storage.put_file(values_url, json.dumps(context))
 
 
 def _instantiate_context(source_url, settings, context):
@@ -204,7 +205,7 @@ def _instantiate_context(source_url, settings, context):
         source_url, is_relative_path=False)
 
     logger.debug("encoded_s_url=%s" % encoded_s_url)
-    fnames = hrmcstages.list_dirs(encoded_s_url, list_files=True)
+    fnames = storage.list_dirs(encoded_s_url, list_files=True)
 
     logger.debug("fnames=%s" % fnames)
     new_content = {}
@@ -220,7 +221,7 @@ def _instantiate_context(source_url, settings, context):
                     fname),
                 is_relative_path=False)
             logger.debug("basename_url_with_pkey=%s" % basename_url_with_pkey)
-            cont = hrmcstages.get_file(basename_url_with_pkey)
+            cont = storage.get_file(basename_url_with_pkey)
             try:
                 t = Template(cont)
             except TemplateSyntaxError, e:
@@ -242,7 +243,7 @@ def _load_values_map(settings, url):
             settings,
             "%s/%s" % (url, VALUES_FNAME))
         logger.debug("values_file=%s" % enc_url)
-        values_content = hrmcstages.get_file(enc_url)
+        values_content = storage.get_file(enc_url)
     except IOError:
         logger.warn("no values file found")
     else:
