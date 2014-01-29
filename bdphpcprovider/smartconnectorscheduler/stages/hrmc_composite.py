@@ -22,12 +22,13 @@
 import logging
 import ast
 import os
-import json
 
 from bdphpcprovider.smartconnectorscheduler.stages.composite import ParallelStage
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadSpecificationError
 from bdphpcprovider.smartconnectorscheduler import hrmcstages, smartconnector
 
+
+from bdphpcprovider import storage
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +37,13 @@ class HRMCParallelStage(ParallelStage):
     """
         A list of stages
     """
+
+    def __init__(self, user_settings=None):
+        logger.debug("HRMCParallelStage")
+        pass
+
+    def triggered(self, context):
+        return False
 
     def __unicode__(self):
         return u"HRMCParallelStage"
@@ -154,7 +162,7 @@ class HRMCParallelStage(ParallelStage):
                             iter_inputdir),
             is_relative_path=False)
         logger.debug(url_with_pkey)
-        input_dirs = hrmcstages.list_dirs(url_with_pkey)
+        input_dirs = storage.list_dirs(url_with_pkey)
         for iter, template_map in enumerate(maps):
             logger.debug("template_map=%s" % template_map)
             map_keys = template_map.keys()
@@ -166,38 +174,4 @@ class HRMCParallelStage(ParallelStage):
             total_templates = product * len(input_dirs)
             logger.debug("total_templates=%d" % (total_templates))
         return total_templates
-
-
-# def create_graph_paramset(schema_ns,
-#     name, graph_info, value_dict, value_keys):
-
-#     res = {}
-#     res['schema'] = "http://rmit.edu.au/schemas/%s" % schema_ns
-#     paramset = []
-
-#     def _make_param(x,y):
-#         param = {}
-#         param['name'] = x
-#         param['string_value'] = y
-#         return param
-
-#     for x, y in (
-#         ("graph_info", json.dumps(graph_info)),
-#         ("name", name),
-#         ('value_dict', json.dumps(value_dict)),
-#         ("value_keys", json.dumps(value_keys))):
-
-#         paramset.append(_make_param(x, y))
-#     res['parameters'] = paramset
-
-#     return res
-
-
-# def create_paramset(schema_ns, parameters):
-#     res = {}
-#     res['schema'] = 'http://rmit.edu.au/schemas/%s' % schema_ns
-#     res['parameters'] = parameters
-#     return res
-
-
 

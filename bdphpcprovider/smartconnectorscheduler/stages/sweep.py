@@ -25,10 +25,15 @@ import json
 from itertools import product
 from pprint import pformat
 
-from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import smartconnector
+from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
+
+from bdphpcprovider.smartconnectorscheduler import models, platform
+
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
-from bdphpcprovider.smartconnectorscheduler import models, platform, storage
+
+from bdphpcprovider import messages
+from bdphpcprovider import storage
 from bdphpcprovider import mytardis
 
 
@@ -145,6 +150,7 @@ class Sweep(Stage):
 
         # TODO: this is domain-specific so should be a parameter of the
         # stage.
+
         if subdirective == "vasp":
             self.experiment_id = self._make_mytardis_exp(
                 run_settings=run_settings,
@@ -235,15 +241,15 @@ class Sweep(Stage):
             values_url = smartconnector.get_url_with_pkey(
                 input_storage_settings,
                 input_prefix + os.path.join(input_storage_settings['ip_address'],
-                input_storage_offset, "initial", "values"),
-            is_relative_path=False)
+                    input_storage_offset, "initial", "values"),
+                is_relative_path=False)
             logger.debug("values_url=%s" % values_url)
             values_e_url = smartconnector.get_url_with_pkey(
                 local_settings,
                 values_url,
                 is_relative_path=False)
             logger.debug("values_url=%s" % values_e_url)
-            values_content = hrmcstages.get_file(values_e_url)
+            values_content = storage.get_file(values_e_url)
             logger.debug("values_content=%s" % values_content)
             starting_map = dict(json.loads(values_content))
         except IOError:
@@ -316,7 +322,7 @@ class Sweep(Stage):
                             '%s_values' % template_name),
                         is_relative_path=False)
                     logger.debug("values_url=%s" % values_url)
-                    values_content = hrmcstages.get_file(values_url)
+                    values_content = storage.get_file(values_url)
                     logger.debug("values_content=%s" % values_content)
                     v_map = dict(json.loads(values_content), indent=4)
                 except IOError:
@@ -324,7 +330,7 @@ class Sweep(Stage):
                 v_map.update(starting_map)
                 v_map.update(context)
                 logger.debug("new v_map=%s" % v_map)
-                hrmcstages.put_file(values_url, json.dumps(v_map, indent=4))
+                storage.put_file(values_url, json.dumps(v_map, indent=4))
 
             v_map = {}
             try:
@@ -334,7 +340,7 @@ class Sweep(Stage):
                         'values'),
                     is_relative_path=False)
                 logger.debug("values_url=%s" % values_url)
-                values_content = hrmcstages.get_file(values_url)
+                values_content = storage.get_file(values_url)
                 logger.debug("values_content=%s" % values_content)
                 v_map = dict(json.loads(values_content), )
             except IOError:
@@ -342,7 +348,7 @@ class Sweep(Stage):
             v_map.update(starting_map)
             v_map.update(context)
             logger.debug("new v_map=%s" % v_map)
-            hrmcstages.put_file(values_url, json.dumps(v_map, indent=4))
+            storage.put_file(values_url, json.dumps(v_map, indent=4))
 
             # Prepare subdirective run_settings
             logger.debug("run_settings=%s" % pformat(run_settings))
@@ -378,11 +384,11 @@ class Sweep(Stage):
                 _submit_subtask("nectar", subdirective, run_settings, user, current_context)
             except Exception, e:
                 logger.error(e)
-                smartconnector.error(run_settings, e)
+                messages.error(run_settings, e)
                 error_detected = True
 
         if not error_detected:
-            smartconnector.success(run_settings, "0: creating sub jobs")
+            messages.success(run_settings, "0: creating sub jobs")
 
     def output(self, run_settings):
         logger.debug("sweep output")
@@ -394,7 +400,7 @@ class Sweep(Stage):
         if '%s/input/mytardis' % RMIT_SCHEMA in run_settings:
                 run_settings[RMIT_SCHEMA + '/input/mytardis'][
             'experiment_id'] = str(self.experiment_id)
-        smartconnector.success(run_settings, "0: completed")
+        messages.success(run_settings, "0: completed")
         return run_settings
 
     def _make_mytardis_exp(
@@ -436,6 +442,8 @@ def _submit_subtask(platform, directive_name, data, user, parentcontext):
     directive_args = [directive_args]
     logger.debug("directive_args=%s" % pformat(directive_args))
     logger.debug('directive_name=%s' % directive_name)
+
+
     (task_run_settings, command_args, run_context) \
         = hrmcstages.make_runcontext_for_directive(
             platform,

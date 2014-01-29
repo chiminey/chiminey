@@ -33,6 +33,8 @@ from bdphpcprovider.sshconnection import open_connection
 from bdphpcprovider.compute import run_command_with_status
 
 
+# FIXME: Is this command deprecated?
+
 class Command(BaseCommand):
     args = 'i'
     help = 'Fires one run_contexts task (for debugging without celerybeat'

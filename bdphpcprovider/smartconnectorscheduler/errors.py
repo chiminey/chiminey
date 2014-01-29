@@ -24,15 +24,26 @@ import logging.config
 logger = logging.getLogger(__name__)
 
 
-class ContextKeyMissing(Exception):
+# This exceptions are used by the internal BDP system and not the stages
+
+class BDPException(Exception):
+    """ A problem with the BDP system"""
     pass
 
 
-class PackageFailedError(Exception):
+class ContextKeyMissing(BDPException):
     pass
 
 
-class InvalidInputError(Exception):
+class PackageFailedError(BDPException):
+    pass
+
+
+class InvalidInputError(BDPException):
+    pass
+
+
+class PackageFailedError(BDPException):
     pass
 
 

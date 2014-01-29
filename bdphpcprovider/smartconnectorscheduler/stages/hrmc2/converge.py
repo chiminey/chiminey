@@ -22,15 +22,20 @@
 import re
 import os
 import logging
+import json
 import sys
 import logging.config
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import smartconnector
-from bdphpcprovider.smartconnectorscheduler import hrmcstages, platform
+from bdphpcprovider.smartconnectorscheduler import platform
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
 from bdphpcprovider import mytardis
+
 from bdphpcprovider.smartconnectorscheduler import models
+from bdphpcprovider.smartconnectorscheduler import storage
+
+from bdphpcprovider import messages
 
 logger = logging.getLogger(__name__)
 
@@ -220,8 +225,8 @@ class Converge(Stage):
             output_prefix + self.iter_inputdir, is_relative_path=False)
         logger.debug('input_dir_url=%s' % inputdir_url)
 
-        (scheme, host, mypath, location, query_settings) = hrmcstages.parse_bdpurl(inputdir_url)
-        fsys = hrmcstages.get_filesystem(inputdir_url)
+        (scheme, host, mypath, location, query_settings) = storage.parse_bdpurl(inputdir_url)
+        fsys = storage.get_filesystem(inputdir_url)
         logger.debug('mypath=%s' % mypath)
         input_dirs, _ = fsys.listdir(mypath)
         logger.debug('input_dirs=%s' % input_dirs)
@@ -240,7 +245,7 @@ class Converge(Stage):
 
             audit_url = smartconnector.get_url_with_pkey(output_storage_settings,
                 output_prefix + os.path.join(self.iter_inputdir, input_dir, 'audit.txt'), is_relative_path=False)
-            audit_content = hrmcstages.get_file(audit_url)
+            audit_content = storage.get_file(audit_url)
             logger.debug('audit_url=%s' % audit_url)
             # extract the best criterion error
             # FIXME: audit.txt is potentially debug file so format may not be fixed.
@@ -306,7 +311,7 @@ class Converge(Stage):
         if self.done_iterating:
             logger.debug("Total Iterations: %d" % self.id)
             self._ready_final_output(min_crit_node, min_crit_index, output_storage_settings, mytardis_settings)
-            smartconnector.success(run_settings, "%s: finished" % (self.id + 1))
+            messages.success(run_settings, "%s: finished" % (self.id + 1))
 
         logger.error('Current min criterion: %f, Prev '
                      'criterion: %f' % (min_crit, self.prev_criterion))
@@ -331,12 +336,58 @@ class Converge(Stage):
         dest_url = smartconnector.get_url_with_pkey(output_storage_settings,
             output_prefix + os.path.join(new_output_dir), is_relative_path=False)
 
-        hrmcstages.copy_directories(source_url, dest_url)
+        storage.copy_directories(source_url, dest_url)
 
-        node_dirs = hrmcstages.list_dirs(dest_url)
+        node_dirs = storage.list_dirs(dest_url)
         logger.debug("node_dirs=%s" % node_dirs)
 
         if mytardis_settings['mytardis_host']:
+
+
+            EXP_DATASET_NAME_SPLIT = 2
+
+            def get_exp_name_for_output(settings, url, path):
+                return str(os.sep.join(path.split(os.sep)[:-EXP_DATASET_NAME_SPLIT]))
+
+            def get_dataset_name_for_output(settings, url, path):
+                logger.debug("path=%s" % path)
+
+                host = settings['host']
+                prefix = 'ssh://%s@%s' % (settings['type'], host)
+
+                source_url = smartconnector.get_url_with_pkey(
+                    settings, os.path.join(prefix, path, "HRMC.inp_values"),
+                    is_relative_path=False)
+                logger.debug("source_url=%s" % source_url)
+                try:
+                    content = storage.get_file(source_url)
+                except IOError, e:
+                    logger.warn("cannot read file %s" %e)
+                    return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
+
+                logger.debug("content=%s" % content)
+                try:
+                    values_map = dict(json.loads(str(content)))
+                except Exception, e:
+                    logger.error("cannot load values_map %s: from %s.  Error=%s" % (content, source_url, e))
+                    return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
+
+                try:
+                    iteration = str(path.split(os.sep)[-2:-1][0])
+                except Exception, e:
+                    logger.error(e)
+                    iteration = ""
+
+                if "_" in iteration:
+                    iteration = iteration.split("_")[1]
+                else:
+                    iteration = "final"
+
+                dataset_name = "%s_%s_%s" % (iteration,
+                    values_map['generator_counter'],
+                    values_map['run_counter'])
+                logger.debug("dataset_name=%s" % dataset_name)
+                return dataset_name
 
             re_dbl_fort = re.compile(r'(\d*\.\d+)[dD]([-+]?\d+)')
 
@@ -350,10 +401,10 @@ class Converge(Stage):
                     output_prefix + os.path.join(new_output_dir, node_dir), is_relative_path=False)
 
                 (source_scheme, source_location, source_path, source_location,
-                    query_settings) = hrmcstages.parse_bdpurl(source_url)
+                    query_settings) = storage.parse_bdpurl(source_url)
                 logger.debug("source_url=%s" % source_url)
                 legends.append(
-                    hrmcstages.get_dataset_name_for_output(
+                    get_dataset_name_for_output(
                         output_storage_settings, "", source_path))
 
             logger.debug("exp_value_keys=%s" % exp_value_keys)
@@ -369,7 +420,7 @@ class Converge(Stage):
 
                 dataerrors_url = smartconnector.get_url_with_pkey(output_storage_settings,
                     output_prefix + os.path.join(new_output_dir, node_dir, DATA_ERRORS_FILE), is_relative_path=False)
-                dataerrors_content = hrmcstages.get_file(dataerrors_url)
+                dataerrors_content = storage.get_file(dataerrors_url)
                 xs = []
                 ys = []
                 for i, line in enumerate(dataerrors_content.splitlines()):
@@ -399,7 +450,7 @@ class Converge(Stage):
                 crit_url = smartconnector.get_url_with_pkey(output_storage_settings,
                     output_prefix + os.path.join(new_output_dir, node_dir, "criterion.txt"), is_relative_path=False)
                 try:
-                    crit = hrmcstages.get_file(crit_url)
+                    crit = storage.get_file(crit_url)
                 except ValueError:
                     crit = None
                 except IOError:
@@ -484,8 +535,8 @@ class Converge(Stage):
                 self.experiment_id = mytardis.create_dataset(
                     settings=all_settings,
                     source_url=source_url,
-                    exp_name=hrmcstages.get_exp_name_for_output,
-                    dataset_name=hrmcstages.get_dataset_name_for_output,
+                    exp_name=get_exp_name_for_output,
+                    dataset_name=get_dataset_name_for_output,
                     exp_id=self.experiment_id,
                     experiment_paramset=graph_paramset,
                     dataset_paramset=[

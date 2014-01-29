@@ -40,6 +40,8 @@ from bdphpcprovider.smartconnectorscheduler import (models,
 from bdphpcprovider.sshconnection import open_connection
 from bdphpcprovider import mytardis
 from bdphpcprovider import compute
+from bdphpcprovider import storage
+from bdphpcprovider import messages
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +68,6 @@ class Execute(Stage):
             self.all_processes = ast.literal_eval(smartconnector.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/stages/schedule/all_processes'))
         except KeyError, e:
-            logger.error(e)
             return False
         if not schedule_completed:
             return False
@@ -113,7 +114,7 @@ class Execute(Stage):
         except KeyError, e:
             self.id = 0
             self.iter_inputdir = os.path.join(self.job_dir, "input_location")
-        smartconnector.info(run_settings, "%s: execute" % (self.id + 1))
+        messages.info(run_settings, "%s: execute" % (self.id + 1))
         logger.debug("id = %s" % self.id)
         try:
             self.initial_numbfile = int(smartconnector.get_existing_key(run_settings,
@@ -187,7 +188,7 @@ class Execute(Stage):
                 computation_platform_settings, dest_files_location,
                 is_relative_path=True, ip_address=proc['ip_address'])
             logger.debug('dest_files_url=%s' % dest_files_url)
-            hrmcstages.copy_directories(source_files_url, dest_files_url)
+            storage.copy_directories(source_files_url, dest_files_url)
 
     def output(self, run_settings):
         """
@@ -223,7 +224,7 @@ class Execute(Stage):
             Start the task on the instance, then hang and
             periodically check its state.
         """
-        logger.info("run_task %s" % ip_address)
+        logger.debug("run_task %s" % ip_address)
         #ip = botocloudconnector.get_instance_ip(instance_id, settings)
         ip = ip_address
         logger.debug("ip=%s" % ip)
@@ -238,7 +239,7 @@ class Execute(Stage):
             relative_path,
             is_relative_path=True,
             ip_address=ip)
-        makefile_path = hrmcstages.get_make_path(destination)
+        makefile_path = storage.get_make_path(destination)
         try:
             ssh = open_connection(ip_address=ip, settings=settings)
             command, errs = compute.run_make(ssh,
@@ -326,7 +327,7 @@ class Execute(Stage):
             url_with_pkey = smartconnector.get_url_with_pkey(
                 output_storage_settings, output_prefix + self.iter_inputdir, is_relative_path=False)
             logger.debug("url_with_pkey=%s" % url_with_pkey)
-            input_dirs = hrmcstages.list_dirs(url_with_pkey)
+            input_dirs = storage.list_dirs(url_with_pkey)
             if not input_dirs:
                 raise BadInputException("require an initial subdirectory of input directory")
             for input_dir in sorted(input_dirs):
@@ -348,7 +349,7 @@ class Execute(Stage):
             output_storage_settings,
             output_prefix + os.path.join(self.iter_inputdir, input_dir),
             is_relative_path=False)
-        input_files = hrmcstages.list_dirs(fname_url_with_pkey,
+        input_files = storage.list_dirs(fname_url_with_pkey,
             list_files=True)
 
         variations = {}
@@ -367,7 +368,7 @@ class Execute(Stage):
                     output_storage_settings,
                     output_prefix + os.path.join(self.iter_inputdir, input_dir, fname),
                     is_relative_path=False)
-                template = hrmcstages.get_file(basename_url_with_pkey)
+                template = storage.get_file(basename_url_with_pkey)
                 base_fname = template_mat.group(1)
                 logger.debug("base_fname=%s" % base_fname)
 
@@ -382,7 +383,7 @@ class Execute(Stage):
                         is_relative_path=False)
 
                     logger.debug("values_file=%s" % values_url_with_pkey)
-                    values_content = hrmcstages.get_file(values_url_with_pkey)
+                    values_content = storage.get_file(values_url_with_pkey)
                 except IOError:
                     logger.warn("no values file found")
                 else:
@@ -494,7 +495,7 @@ class Execute(Stage):
                     is_relative_path=False)
                 logger.debug("source_url=%s" % source_url)
                 try:
-                    content = hrmcstages.get_file(source_url)
+                    content = storage.get_file(source_url)
                 except IOError:
                     return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
 
@@ -596,14 +597,14 @@ class Execute(Stage):
                               'Makefile', 'running.sh',
                               'process_scheduledone.sh', 'process_schedulestart.sh']
                 #hrmcstages.delete_files(dest_files_url, exceptions=exceptions) #FIXme: uncomment as needed
-                hrmcstages.copy_directories(source_files_url, dest_files_url)
+                storage.copy_directories(source_files_url, dest_files_url)
 
                 if self.reschedule_failed_procs:
                     input_backup = os.path.join(self.job_dir, "input_backup", proc['id'])
                     backup_url = smartconnector.get_url_with_pkey(
                         output_storage_settings,
                         output_prefix + input_backup, is_relative_path=False)
-                    hrmcstages.copy_directories(source_files_url, backup_url)
+                    storage.copy_directories(source_files_url, backup_url)
 
                 # Why do we need to create a tempory file to make this copy?
                 import uuid
@@ -612,12 +613,12 @@ class Execute(Stage):
                 var_url = smartconnector.get_url_with_pkey(local_settings, os.path.join("tmp%s" % randsuffix, "var"),
                     is_relative_path=True)
                 logger.debug("var_url=%s" % var_url)
-                hrmcstages.put_file(var_url, var_content.encode('utf-8'))
+                storage.put_file(var_url, var_content.encode('utf-8'))
 
                 value_url = smartconnector.get_url_with_pkey(local_settings, os.path.join("tmp%s" % randsuffix, "value"),
                     is_relative_path=True)
                 logger.debug("value_url=%s" % value_url)
-                hrmcstages.put_file(value_url, json.dumps(values))
+                storage.put_file(value_url, json.dumps(values))
 
                 #local_settings['platform'] should be replaced
                 # and overwrite on the remote
@@ -629,8 +630,8 @@ class Execute(Stage):
                 var_fname_pkey = smartconnector.get_url_with_pkey(
                     computation_platform_settings, var_fname_remote,
                     is_relative_path=True, ip_address=ip)
-                var_content = hrmcstages.get_file(var_url)
-                hrmcstages.put_file(var_fname_pkey, var_content)
+                var_content = storage.get_file(var_url)
+                storage.put_file(var_fname_pkey, var_content)
 
                 logger.debug("var_fname_pkey=%s" % var_fname_pkey)
                 values_fname_pkey = smartconnector.get_url_with_pkey(
@@ -638,8 +639,8 @@ class Execute(Stage):
                     os.path.join(dest_files_location,
                                  "%s_values" % var_fname),
                     is_relative_path=True, ip_address=ip)
-                values_content = hrmcstages.get_file(value_url)
-                hrmcstages.put_file(values_fname_pkey, values_content)
+                values_content = storage.get_file(value_url)
+                storage.put_file(values_fname_pkey, values_content)
                 logger.debug("values_fname_pkey=%s" % values_fname_pkey)
 
                 #copying values and var_content to backup folder
@@ -649,14 +650,14 @@ class Execute(Stage):
                         output_prefix + os.path.join(input_backup, "%s_values" % var_fname),
                         is_relative_path=False)
                     logger.debug("value_url=%s" % value_url)
-                    hrmcstages.put_file(value_url, json.dumps(values))
+                    storage.put_file(value_url, json.dumps(values))
 
                     var_fname_pkey = smartconnector.get_url_with_pkey(
                         output_storage_settings,
                         output_prefix + os.path.join(input_backup, var_fname),
                         is_relative_path=False)
-                    var_content = hrmcstages.get_file(var_url)
-                    hrmcstages.put_file(var_fname_pkey, var_content)
+                    var_content = storage.get_file(var_url)
+                    storage.put_file(var_fname_pkey, var_content)
 
                 # cleanup
                 tmp_url = smartconnector.get_url_with_pkey(local_settings, os.path.join("tmp%s" % randsuffix),

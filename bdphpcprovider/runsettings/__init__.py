@@ -19,13 +19,11 @@
 # IN THE SOFTWARE.
 
 
-# from bdphpcprovider.smartconnectorscheduler.stages import (
-#     dummy
-# )
+from bdphpcprovider.runsettings.run_settings import (
+    dummy
+)
 
 
-# class StageException(Exception):
-#     """ A problem in the stage library"""
-#     pass
-
-__author__ = 'iman'
+class RunsettingsException(Exception):
+    """ A problem in the run_settings library"""
+    pass

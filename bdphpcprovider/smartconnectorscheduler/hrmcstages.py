@@ -34,7 +34,6 @@ from django.db import transaction
 
 from django.utils.importlib import import_module
 from django.core.exceptions import ImproperlyConfigured
-from django.template import Context, Template
 from django.core.files.base import ContentFile
 from django.contrib.auth.models import User
 from django.core.files.storage import FileSystemStorage
@@ -42,61 +41,41 @@ from storages.backends.sftpstorage import SFTPStorage
 
 from paramiko.ssh_exception import SSHException
 
-from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, UI, SmartConnector, get_url_with_pkey
-from bdphpcprovider.smartconnectorscheduler.errors import ContextKeyMissing, InvalidInputError
+from bdphpcprovider.smartconnectorscheduler.errors import ContextKeyMissing, InvalidInputError, deprecated
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler import smartconnector
-from bdphpcprovider.smartconnectorscheduler.errors import deprecated
-
+from bdphpcprovider.smartconnectorscheduler import storage
 
 logger = logging.getLogger(__name__)
 
 
-#FIXme: understand how absolute path are extracted
-def get_make_path(destination):
-    destination = get_http_url(destination)
-    url = urlparse(destination)
-    query = parse_qsl(url.query)
-    query_settings = dict(x[0:] for x in query)
-    path = url.path
-    if path[0] == os.path.sep:
-        path = path[1:]
-    make_path = os.path.join(query_settings['root_path'], path)
-    logger.debug("Makefile path %s %s %s " % (make_path, query_settings['root_path'], path))
-    return make_path
+
+# @deprecated
+# def get_filesys(context):
+#     """
+#     Return the filesys in the context
+#     """
+#     try:
+#         val = context['filesys']
+#     except KeyError:
+#         message = 'Context missing "filesys" key'
+#         logger.exception(message)
+#         raise ContextKeyMissing(message)
+#     return val
 
 
-def get_bdp_root_path():
-    bdp_root_path = '/var/cloudenabling/remotesys' #fixme avoid hard coding; systematically determine bdp_root_path
-    return bdp_root_path
-
-
-@deprecated
-def get_filesys(context):
-    """
-    Return the filesys in the context
-    """
-    try:
-        val = context['filesys']
-    except KeyError:
-        message = 'Context missing "filesys" key'
-        logger.exception(message)
-        raise ContextKeyMissing(message)
-    return val
-
-
-@deprecated
-def _load_file(fsys, fname):
-    """
-    Returns the dataobject for fname in fsys, or empty data object if error
-    """
-    try:
-        config = fsys.retrieve(fname)
-    except KeyError, e:
-        config = DataObject(fname, '')
-        logger.warn("Cannot load %s %s" % (fname, e))
-    return config
+# @deprecated
+# def _load_file(fsys, fname):
+#     """
+#     Returns the dataobject for fname in fsys, or empty data object if error
+#     """
+#     try:
+#         config = fsys.retrieve(fname)
+#     except KeyError, e:
+#         config = DataObject(fname, '')
+#         logger.warn("Cannot load %s %s" % (fname, e))
+#     return config
 
 
 def retrieve_settings(profile):
@@ -116,16 +95,18 @@ def retrieve_settings(profile):
 
     return settings
 
-@deprecated
-def get_file_from_context(context, fname):
-    """
-    Retrieve the content of a remote file with fname
-    """
-    fsys_path = context['fsys']
-    remote_fs = FileSystemStorage(location=fsys_path)
-    f = context[fname]
-    content = remote_fs.open(f).read()
-    return content
+
+# @deprecated
+# def get_file_from_context(context, fname):
+#     """
+#     Retrieve the content of a remote file with fname
+#     """
+#     fsys_path = context['fsys']
+#     remote_fs = FileSystemStorage(location=fsys_path)
+#     f = context[fname]
+#     content = remote_fs.open(f).read()
+#     return content
+
 
 @deprecated
 def get_settings(context):
@@ -146,116 +127,118 @@ def get_settings(context):
         logger.debug('ContextKeyMissing exception')
         raise
 
-@deprecated
-def _get_run_info_file(context):
-    """
-    Returns the actual runinfo data object. If problem, return blank data object
-    """
-    fsys = get_filesys(context)
-    #logger.debug("fsys= %s" % fsys)
-    config = _load_file(fsys, "default/runinfo.sys")
-    #logger.debug("config= %s" % config)
-    return config
+
+# @deprecated
+# def _get_run_info_file(context):
+#     """
+#     Returns the actual runinfo data object. If problem, return blank data object
+#     """
+#     fsys = get_filesys(context)
+#     #logger.debug("fsys= %s" % fsys)
+#     config = _load_file(fsys, "default/runinfo.sys")
+#     #logger.debug("config= %s" % config)
+#     return config
 
 
-@deprecated
-def get_run_info(context):
-    """
-    Returns the content of the run info as file a dict. If problem, return {}
-    """
-    try:
-        get_filesys(context)
-    except ContextKeyMissing:
-        return {}
-    #logger.debug("fsys= %s" % fsys)
-    config = _get_run_info_file(context)
-    #logger.debug("config= %s" % config)
-    if config:
-        settings_text = config.retrieve()
-        #logger.debug("runinfo_text= %s" % settings_text)
-        res = json.loads(settings_text)
-        #logger.debug("res=%s" % dict(res))
-        return dict(res)
-    return {}
+# @deprecated
+# def get_run_info(context):
+#     """
+#     Returns the content of the run info as file a dict. If problem, return {}
+#     """
+#     try:
+#         get_filesys(context)
+#     except ContextKeyMissing:
+#         return {}
+#     #logger.debug("fsys= %s" % fsys)
+#     config = _get_run_info_file(context)
+#     #logger.debug("config= %s" % config)
+#     if config:
+#         settings_text = config.retrieve()
+#         #logger.debug("runinfo_text= %s" % settings_text)
+#         res = json.loads(settings_text)
+#         #logger.debug("res=%s" % dict(res))
+#         return dict(res)
+#     return {}
 
 
-@deprecated
-def get_all_settings(context):
-    """
-    Returns a single dict containing content of config.sys and runinfo.sys
-    """
-    settings = get_settings(context)
-    run_info = get_run_info(context)
-    settings.update(run_info)
-    settings.update(context)
-    return settings
+# # @deprecated
+# # def get_all_settings(context):
+# #     """
+# #     Returns a single dict containing content of config.sys and runinfo.sys
+# #     """
+# #     settings = get_settings(context)
+# #     run_info = get_run_info(context)
+# #     settings.update(run_info)
+# #     settings.update(context)
+# #     return settings
 
 
-@deprecated
-def update_key(key, value, context):
-    """
-    Updates key from the filesystem runinfo.sys file to a new values
-    """
-    filesystem = get_filesys(context)
-    logger.debug("filesystem= %s" % filesystem)
+# @deprecated
+# def update_key(key, value, context):
+#     """
+#     Updates key from the filesystem runinfo.sys file to a new values
+#     """
+#     filesystem = get_filesys(context)
+#     logger.debug("filesystem= %s" % filesystem)
 
-    run_info_file = _load_file(filesystem, "default/runinfo.sys")
-    logger.debug("run_info_file= %s" % run_info_file)
+#     run_info_file = _load_file(filesystem, "default/runinfo.sys")
+#     logger.debug("run_info_file= %s" % run_info_file)
 
-    run_info_file_content = run_info_file.retrieve()
-    logger.debug("runinfo_content= %s" % run_info_file_content)
+#     run_info_file_content = run_info_file.retrieve()
+#     logger.debug("runinfo_content= %s" % run_info_file_content)
 
-    settings = json.loads(run_info_file_content)
-    logger.debug("removing %s" % key)
-    settings[key] = value  # FIXME: possible race condition?
-    logger.debug("configuration=%s" % settings)
+#     settings = json.loads(run_info_file_content)
+#     logger.debug("removing %s" % key)
+#     settings[key] = value  # FIXME: possible race condition?
+#     logger.debug("configuration=%s" % settings)
 
-    run_info_content_blob = json.dumps(settings)
-    run_info_file.setContent(run_info_content_blob)
-    filesystem.update("default", run_info_file)
-
-@deprecated
-def delete_key(key, context):
-    """
-    Removes key from the filesystem runinfo.sys file
-    """
-    filesystem = get_filesys(context)
-    logger.debug("filesystem= %s" % filesystem)
-
-    run_info_file = _load_file(filesystem, "default/runinfo.sys")
-    logger.debug("run_info_file= %s" % run_info_file)
-
-    run_info_file_content = run_info_file.retrieve()
-    logger.debug("runinfo_content= %s" % run_info_file_content)
-
-    settings = json.loads(run_info_file_content)
-    del settings[key]
-    logger.debug("configuration=%s" % settings)
-
-    run_info_content_blob = json.dumps(settings)
-    run_info_file.setContent(run_info_content_blob)
-    filesystem.update("default", run_info_file)
+#     run_info_content_blob = json.dumps(settings)
+#     run_info_file.setContent(run_info_content_blob)
+#     filesystem.update("default", run_info_file)
 
 
-def get_fanout(parameter_value_list):
-    '''
-    total_fanout = 1
-    if len(self.threshold) > 1:
-        for i in self.threshold:
-            total_fanout *= self.threshold[i]
-    else:
-        total_picks = self.threshold[0]
-    '''
-    pass
+# @deprecated
+# def delete_key(key, context):
+#     """
+#     Removes key from the filesystem runinfo.sys file
+#     """
+#     filesystem = get_filesys(context)
+#     logger.debug("filesystem= %s" % filesystem)
 
-@deprecated
-def get_job_dir_old(run_settings):
-    output_storage_schema = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['namespace']
-    ip_address = run_settings[output_storage_schema][u'ip_address']
-    offset = run_settings[output_storage_schema][u'offset']
-    job_dir = os.path.join(ip_address, offset)
-    return job_dir
+#     run_info_file = _load_file(filesystem, "default/runinfo.sys")
+#     logger.debug("run_info_file= %s" % run_info_file)
 
+#     run_info_file_content = run_info_file.retrieve()
+#     logger.debug("runinfo_content= %s" % run_info_file_content)
+
+#     settings = json.loads(run_info_file_content)
+#     del settings[key]
+#     logger.debug("configuration=%s" % settings)
+
+#     run_info_content_blob = json.dumps(settings)
+#     run_info_file.setContent(run_info_content_blob)
+#     filesystem.update("default", run_info_file)
+
+
+# def get_fanout(parameter_value_list):
+#     '''
+#     total_fanout = 1
+#     if len(self.threshold) > 1:
+#         for i in self.threshold:
+#             total_fanout *= self.threshold[i]
+#     else:
+#         total_picks = self.threshold[0]
+#     '''
+#     pass
+
+
+# @deprecated
+# def get_job_dir_old(run_settings):
+#     output_storage_schema = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['namespace']
+#     ip_address = run_settings[output_storage_schema][u'ip_address']
+#     offset = run_settings[output_storage_schema][u'offset']
+#     job_dir = os.path.join(ip_address, offset)
+#     return job_dir
 
 
 def get_threshold():
@@ -277,7 +260,7 @@ def safe_import(path, args, kw):
     try:
         mod = import_module(filter_module)
     except ImportError, e:
-        raise ImproperlyConfigured('Error importing filter %s: "%s"' %
+        raise ImproperlyConfigured('Error importing stage %s: "%s"' %
                                    (filter_module, e))
     logger.debug("mod=%s" % mod)
     try:
@@ -302,34 +285,34 @@ def values_match_schema(schema, values):
     return True
 
 
-def get_new_local_url(url):
-    """
-    Create local resource to hold instantiated template for command execution.
+# def get_new_local_url(url):
+#     """
+#     Create local resource to hold instantiated template for command execution.
 
-    """
+#     """
 
-    # # The top of the remote filesystem that will hold a user's files
-    remote_base_path = os.path.join("centos")
+#     # # The top of the remote filesystem that will hold a user's files
+#     remote_base_path = os.path.join("centos")
 
-    o = urlparse(url)
-    file_path = o.path.decode('utf-8')
-    logger.debug("file_path=%s" % file_path)
-    # if file_path[0] == os.path.sep:
-    #     file_path = file_path[:-1]
-    import uuid
-    randsuffix = unicode(uuid.uuid4())  # should use some job id here
+#     o = urlparse(url)
+#     file_path = o.path.decode('utf-8')
+#     logger.debug("file_path=%s" % file_path)
+#     # if file_path[0] == os.path.sep:
+#     #     file_path = file_path[:-1]
+#     import uuid
+#     randsuffix = unicode(uuid.uuid4())  # should use some job id here
 
-    relpath = u"%s_%s" % (file_path, randsuffix)
+#     relpath = u"%s_%s" % (file_path, randsuffix)
 
-    if relpath[0] == os.path.sep:
-        relpath = relpath[1:]
-    logger.debug("relpath=%s" % relpath)
+#     if relpath[0] == os.path.sep:
+#         relpath = relpath[1:]
+#     logger.debug("relpath=%s" % relpath)
 
-    # FIXME: for django storage, do we need to create
-    # intermediate directories
-    dest_path = os.path.join(remote_base_path, relpath)
-    logger.debug("dest_path=%s" % dest_path)
-    return u'file://%s' % dest_path.decode('utf8')
+#     # FIXME: for django storage, do we need to create
+#     # intermediate directories
+#     dest_path = os.path.join(remote_base_path, relpath)
+#     logger.debug("dest_path=%s" % dest_path)
+#     return u'file://%s' % dest_path.decode('utf8')
 
 
 def _get_command_actual_args(directive_args, user_settings):
@@ -376,7 +359,7 @@ def _get_command_actual_args(directive_args, user_settings):
                         try:
                             typed_val = int(v)
                         except ValueError:
-                           typed_val = v.decode('utf8')  # as a string
+                            typed_val = v.decode('utf8')  # as a string
                         except TypeError:
                             typed_val = ""
 
@@ -419,717 +402,91 @@ def _get_command_actual_args(directive_args, user_settings):
     return command_args
 
 
-class NCIStorage(SFTPStorage):
+# @deprecated
+# class NCIStorage(SFTPStorage):
+
+#     def __init__(self, settings=None):
+#         import pkg_resources
+#         version = pkg_resources.get_distribution("django_storages").version
+#         if not str(version) == "1.1.8":
+#             logger.warn("NCIStorage overrides version 1.1.8 of django_storages. found version %s" % version)
+
+#         super(NCIStorage, self).__init__()
+#         if 'params' in settings:
+#             super(NCIStorage, self).__dict__["_params"] = settings['params']
+#         if 'root' in settings:
+#             super(NCIStorage, self).__dict__["_root_path"] = settings['root']
+#         if 'host' in settings:
+#             super(NCIStorage, self).__dict__["_host"] = settings['host']
+#         super(NCIStorage, self).__dict__["_dir_mode"] = 0700
+#         print super(NCIStorage, self)
+
+#     def _connect(self):
+#         """ Overrides internal behaviour to not store host keys
+#             Warning: may stop working for later version of SFTPStorage
+#             FIXME: this approach is brittle for later version of SFTPStorage
+#         """
+#         self._ssh = paramiko.SSHClient()
+
+#         if self._known_host_file is not None:
+#             self._ssh.load_host_keys(self._known_host_file)
+#         else:
+#             # warn BUT DONT ADD host keys from current user.
+#             self._ssh.load_host_keys(os.path.expanduser(os.path.join("~", ".ssh", "known_hosts")))
+
+#         # and automatically add new host keys for hosts we haven't seen before.
+#         self._ssh.set_missing_host_key_policy(paramiko.WarningPolicy())
+
+#         try:
+#             self._ssh.connect(self._host, **self._params)
+#         except paramiko.AuthenticationException, e:
+#             if self._interactive and 'password' not in self._params:
+#                 # If authentication has failed, and we haven't already tried
+#                 # username/password, and configuration allows it, then try
+#                 # again with username/password.
+#                 if 'username' not in self._params:
+#                     self._params['username'] = getpass.getuser()
+#                 self._params['password'] = getpass.getpass()
+#                 self._connect()
+#             else:
+#                 raise paramiko.AuthenticationException, e
+#         except Exception, e:
+#             print e
+
+#         if not hasattr(self, '_sftp'):
+#             self._sftp = self._ssh.open_sftp()
+
+#     def get_available_name(self, name):
+#         """
+#         Returns a filename that's free on the target storage system, and
+#         available for new content to be written to.
+#         """
+#         if self.exists(name):
+#             self.delete(name)
+#         return name
+
+
+# @deprecated
+# class LocalStorage(FileSystemStorage):
+#     def __init__(self, location=None, base_url=None):
+#         super(LocalStorage, self).__init__(location, base_url)
+
+#     def get_available_name(self, name):
+#         """
+#         Returns a filename that's free on the target storage system, and
+#         available for new content to be written to.
+#         """
+#         if self.exists(name):
+#             self.delete(name)
+#         return name
+
+
+# @deprecated
+# def get_http_url(non_http_url):
+#     curr_scheme = non_http_url.split(':')[0]
+#     http_url = "http" + non_http_url[len(curr_scheme):]
+#     return http_url
 
-    def __init__(self, settings=None):
-        import pkg_resources
-        version = pkg_resources.get_distribution("django_storages").version
-        if not str(version) == "1.1.8":
-            logger.warn("NCIStorage overrides version 1.1.8 of django_storages. found version %s" % version)
-
-        super(NCIStorage, self).__init__()
-        if 'params' in settings:
-            super(NCIStorage, self).__dict__["_params"] = settings['params']
-        if 'root' in settings:
-            super(NCIStorage, self).__dict__["_root_path"] = settings['root']
-        if 'host' in settings:
-            super(NCIStorage, self).__dict__["_host"] = settings['host']
-        super(NCIStorage, self).__dict__["_dir_mode"] = 0700
-        print super(NCIStorage, self)
-
-
-    def _connect(self):
-        """ Overrides internal behaviour to not store host keys
-            Warning: may stop working for later version of SFTPStorage
-            FIXME: this approach is brittle for later version of SFTPStorage
-        """
-        self._ssh = paramiko.SSHClient()
-
-        if self._known_host_file is not None:
-            self._ssh.load_host_keys(self._known_host_file)
-        else:
-            # warn BUT DONT ADD host keys from current user.
-            self._ssh.load_host_keys(os.path.expanduser(os.path.join("~", ".ssh", "known_hosts")))
-
-        # and automatically add new host keys for hosts we haven't seen before.
-        self._ssh.set_missing_host_key_policy(paramiko.WarningPolicy())
-
-        try:
-            self._ssh.connect(self._host, **self._params)
-        except paramiko.AuthenticationException, e:
-            if self._interactive and 'password' not in self._params:
-                # If authentication has failed, and we haven't already tried
-                # username/password, and configuration allows it, then try
-                # again with username/password.
-                if 'username' not in self._params:
-                    self._params['username'] = getpass.getuser()
-                self._params['password'] = getpass.getpass()
-                self._connect()
-            else:
-                raise paramiko.AuthenticationException, e
-        except Exception, e:
-            print e
-
-        if not hasattr(self, '_sftp'):
-            self._sftp = self._ssh.open_sftp()
-
-
-    def get_available_name(self, name):
-        """
-        Returns a filename that's free on the target storage system, and
-        available for new content to be written to.
-        """
-        if self.exists(name):
-            self.delete(name)
-        return name
-
-
-class LocalStorage(FileSystemStorage):
-    def __init__(self, location=None, base_url=None):
-        super(LocalStorage, self).__init__(location, base_url)
-
-    def get_available_name(self, name):
-        """
-        Returns a filename that's free on the target storage system, and
-        available for new content to be written to.
-        """
-        if self.exists(name):
-            self.delete(name)
-        return name
-
-
-def get_value(key, dictionary):
-    """
-    Return the value for the key in the dictionary, or a blank
-    string
-    """
-    try:
-        return dictionary[key]
-    except KeyError, e:
-        logger.debug(e)
-        return u''
-
-
-def get_http_url(non_http_url):
-    curr_scheme = non_http_url.split(':')[0]
-    http_url = "http" + non_http_url[len(curr_scheme):]
-    return http_url
-
-
-def parse_bdpurl(bdp_url):
-    """
-    Break down a BDP url into component parts via http protocol and urlparse
-    """
-    scheme = urlparse(bdp_url).scheme
-    http_file_url = get_http_url(bdp_url)
-    o = urlparse(http_file_url)
-    mypath = o.path
-    location = o.netloc
-    host = o.hostname
-    if mypath[0] == os.path.sep:
-        mypath = mypath[1:]
-    logger.debug("mypath=%s" % mypath)
-    query = parse_qsl(o.query)
-    query_settings = dict(x[0:] for x in query)
-    logger.debug('bdp_url=%s' % bdp_url)
-    logger.debug('query_settings=%s' % query_settings)
-    return (scheme, host, mypath, location, query_settings)
-
-
-def get_remote_path(bdp_url):
-    """
-    Get the actual path for the bdp_url
-    """
-    logger.debug("bdp_url=%s" % bdp_url)
-    (scheme, host, mypath, location, query_setting) = parse_bdpurl(bdp_url)
-    root_path = query_setting['root_path']
-    remote_path = os.path.join(root_path, mypath)
-    logger.debug("remote_path=%s" % remote_path)
-    return remote_path
-
-
-def delete_files(url, exceptions=None):
-    """
-    Supports only file and ssh schemes
-    :param url:
-    :param exceptions:
-    :return:
-    """
-    logger.debug("delete_files")
-    # http_url = get_http_url(url)
-    # path = urlparse(http_url).path
-    # if path[0] == os.path.sep:
-    #     path = path[1:]
-    (scheme, host, path, location, query_settings) = parse_bdpurl(url)
-    logger.debug('Path %s ' % path)
-
-    fsys = get_filesystem(url)
-    logger.debug("fsys=%s" % pformat(fsys))
-    try:
-        current_content = fsys.listdir(path)
-    except Exception, e:
-        logger.warn("cannot ready directory. %s" %e)
-        current_content = []
-    logger.debug("current_content=%s" % pformat(current_content))
-    current_path_pointer = path
-    file_path_holder = []
-    dir_path_holder = []
-    while len(current_content) > 0:
-        logger.debug("Current Content %s " % pformat(current_content))
-        for fname in current_content[1]:
-            logger.debug("fname=%s" % fname)
-            if fname in exceptions:
-                logger.debug("not deleting %s" % fname)
-                continue
-            file_path = str(os.path.join(current_path_pointer, fname))
-            logger.debug("file_path=%s" % file_path)
-            file_path_holder.append(file_path)
-            # FIXME: detect permission/existnce of file_path
-            fsys.delete(file_path)
-            logger.debug('filepath=%s deleted' % file_path)
-            #content = fs.open(file_path).read()
-            #updated_file_path = file_path[len(source_path)+1:]
-            #curr_dest_url = os.path.join(destination_prefix, updated_file_path) \
-            #                + destination_suffix
-            #logger.debug("Current destination url %s" % curr_dest_url)
-            #put_file(curr_dest_url, content)
-        for dirname in current_content[0]:
-            abs_dirname = [os.path.join(current_path_pointer, dirname), True]
-            dir_path_holder.append(abs_dirname)
-
-        current_content = []
-        for k in dir_path_holder:
-            if k[1]:
-                k[1] = False
-                current_path_pointer = k[0]
-                current_content = fsys.listdir(current_path_pointer)
-                logger.debug("Current pointer %s " % current_path_pointer)
-                break
-
-
-def list_dirs(url, list_files=False):
-    logger.debug("url=%s" % url)
-    http_url = get_http_url(url)
-    logger.debug("http_url=%s", http_url)
-    logger.debug("list_files=%s", list_files)
-    path = urlparse(http_url).path
-    if path[0] == os.path.sep:
-        path = path[1:]
-    logger.debug('Path %s ' % path)
-    fsys = get_filesystem(url)
-
-    if list_files:
-        l = fsys.listdir(path)[1]
-    else:
-        l = fsys.listdir(path)[0]
-
-    logger.debug("Directory (File) list %s" % l)
-    return l
-
-
-def get_filesystem(bdp_url):
-    """
-    """
-    # scheme = urlparse(url).scheme
-    # http_url = get_http_url(url)
-    # parsed_url = urlparse(http_url)
-    # query = parse_qsl(parsed_url.query)
-    # query_settings = dict(x[0:] for x in query)
-    (scheme, host, mpath, location, query_settings) = parse_bdpurl(bdp_url)
-    logger.debug("mpath=%s" % mpath)
-    if scheme == "file":
-        root_path = get_value('root_path', query_settings)
-        logger.debug("self.root_path=%s" % root_path)
-        fs = LocalStorage(location=root_path + "/")
-    elif scheme == "ssh":
-        logger.debug("getting from ssh")
-        key_file = get_value('key_file', query_settings)
-        username = get_value('username', query_settings)
-        password = get_value('password', query_settings)
-        root_path = get_value('root_path', query_settings)
-        logger.debug("root_path=%s" % root_path)
-        paramiko_settings = {'username': username,
-            'password': password}
-        if key_file:
-            paramiko_settings['key_filename'] = key_file
-        ssh_settings = {'params': paramiko_settings,
-                        'host': host,
-                        'root': str(root_path) + "/"}
-        logger.debug("nci_settings=%s" % pformat(ssh_settings))
-        fs = NCIStorage(settings=ssh_settings)
-        logger.debug("fs=%s" % fs)
-    else:
-        logger.warn("scheme: %s not supported" % scheme)
-        return
-    return fs
-
-
-
-
-def list_all_files(source_url):
-    """
-    Supports only file and ssh schemes
-    :param source_url:
-    :return:
-    """
-    """
-    # FIXME: will not copy individual files
-
-    source_scheme = urlparse(source_url).scheme
-    logger.debug("source_scheme=%s" % source_scheme)
-    http_source_url = get_http_url(source_url)
-    logger.debug("http_source_url=%s" % http_source_url)
-    source = urlparse(http_source_url)
-    source_location = source.netloc
-    logger.debug("source_location=%s" % source_location)
-    source_path = source.path
-    logger.debug("source_path=%s" % source_path)
-    query = parse_qsl(source.query)
-    query_settings = dict(x[0:] for x in query)
-
-    if source_path[0] == os.path.sep:
-        source_path = source_path[1:]
-
-    """
-    logger.debug("list_all_files")
-    (source_scheme, source_location, source_path, source_location, query_settings) = parse_bdpurl(source_url)
-
-
-    if source_scheme == "file":
-        root_path = get_value('root_path', query_settings)
-        logger.debug("self.root_path=%s" % root_path)
-        fs = LocalStorage(location=root_path + "/")
-    elif source_scheme == "ssh":
-        logger.debug("getting from ssh")
-        key_file = get_value('key_file', query_settings)
-        username = get_value('username', query_settings)
-        password = get_value('password', query_settings)
-        root_path = get_value('root_path', query_settings)
-        logger.debug("root_path=%s" % root_path)
-        paramiko_settings = {'username': username,
-            'password': password}
-        if key_file:
-            paramiko_settings['key_filename'] = key_file
-        ssh_settings = {'params': paramiko_settings,
-                        'host': source_location,
-                        'root': str(root_path) + "/"}
-        logger.debug("nci_settings=%s" % pformat(ssh_settings))
-        fs = NCIStorage(settings=ssh_settings)
-        logger.debug("fs=%s" % fs)
-    else:
-        logger.warn("scheme: %s not supported" % source_scheme)
-        return
-
-    logger.debug("source_path=%s"  % source_path)
-
-    if fs.exists(source_path):
-        logger.debug("source_path exists")
-        current_content = fs.listdir(source_path)
-    else:
-        return []
-    #logger.debug("current_content=%s" % current_content)
-    current_path_pointer = source_path
-    dir_path_holder = []
-    file_paths = []
-    while len(current_content) > 0:
-        for i in current_content[1]:
-            file_path = str(os.path.join(current_path_pointer, i))
-            file_paths.append(file_path)
-        for j in current_content[0]:
-            list = [os.path.join(current_path_pointer, j), True]
-            dir_path_holder.append(list)
-        current_content = []
-        for k in dir_path_holder:
-            if k[1]:
-                k[1] = False
-                current_path_pointer = k[0]
-                current_content = fs.listdir(current_path_pointer)
-                logger.debug("Current pointer %s " % current_path_pointer)
-                break
-
-    return sorted(file_paths)
-
-
-
-def copy_directories(source_url, destination_url):
-    """
-    Supports only file and ssh schemes
-    :param source_url:
-    :param destination_url:
-    :return:
-    """
-    # FIXME: Will not work with individual files, only directories
-    # TODO: replace with parse_bdpurl()
-    logger.debug("copy_directories %s -> %s" % (source_url, destination_url))
-
-    (source_scheme, host, source_path,
-        source_location, query_settings) = parse_bdpurl(source_url)
-
-    http_source_url = get_http_url(source_url)
-    source_prefix = source_url.split('?')[0]
-    logger.debug("source_prefix=%s" % source_prefix)
-    source = urlparse(http_source_url)
-    source_query = source.query
-
-    if source_query:
-        source_suffix = "?" + source_url.split('?')[1]
-    else:
-        source_suffix = ""
-    logger.debug("source_suffix=%s" % source_suffix)
-
-    http_destination_url = get_http_url(destination_url)
-    destination_prefix = destination_url.split('?')[0]
-    logger.debug("destination_prefix=%s" % destination_prefix)
-
-    destination = urlparse(http_destination_url)
-    destination_query = destination.query
-
-    if destination_query:
-        destination_suffix = "?" + destination_url.split('?')[1]
-    else:
-        destination_suffix = ""
-    logger.debug("destination_suffix=%s" % destination_suffix)
-
-    # TODO: replace with call to get_filesystem
-    if source_scheme == "file":
-        root_path = get_value('root_path', query_settings)
-        logger.debug("self.root_path=%s" % root_path)
-        fs = LocalStorage(location=root_path + "/")
-    elif source_scheme == "ssh":
-        logger.debug("getting from ssh")
-        key_file = get_value('key_file', query_settings)
-        username = get_value('username', query_settings)
-        password = get_value('password', query_settings)
-        root_path = get_value('root_path', query_settings)
-        logger.debug("root_path=%s" % root_path)
-        paramiko_settings = {'username': username,
-            'password': password}
-        if key_file:
-            paramiko_settings['key_filename'] = key_file
-        ssh_settings = {'params': paramiko_settings,
-                        'host': source_location,
-                        'root': str(root_path) + "/"}
-        logger.debug("nci_settings=%s" % pformat(ssh_settings))
-        fs = NCIStorage(settings=ssh_settings)
-        logger.debug("fs=%s" % fs)
-    else:
-        logger.warn("scheme: %s not supported" % source_scheme)
-        return
-
-    if source_path[0] == os.path.sep:
-        source_path = source_path[1:]
-    if source_path[-1] == os.path.sep:
-        source_path = source_path[:-1]
-    logger.debug("source_path=%s" % source_path)
-
-    dir_file_info = fs.listdir(source_path)
-    if dir_file_info:
-        logger.debug("dir_file_info=%s" % pformat(dir_file_info))
-    current_dirname = source_path
-    logger.debug("current_dirname=%s" % current_dirname)
-    file_paths = []
-    dir_paths = []
-    while len(dir_file_info) > 0:
-        # for each file in current directory
-        for fname in dir_file_info[1]:
-            logger.debug("fname=%s" % fname)
-            file_path = str(os.path.join(current_dirname, fname))
-            logger.debug("file_path=%s" % file_path)
-            file_paths.append(file_path)
-            logger.debug("file_paths=%s" % file_paths)
-            updated_file_path = file_path[len(source_path) + 1:]
-            logger.debug("updated_file_path=%s" % updated_file_path)
-
-            curr_source_url = os.path.join(source_prefix, updated_file_path) \
-                + source_suffix
-            logger.debug("Current source url %s" % curr_source_url)
-
-            fail = False
-            delay = 1
-            #fixme move to ftmanager
-            for i in xrange(1, 10):
-                try:
-                    content = get_file(curr_source_url)
-                except SSHException, e:
-                    logger.error(e)
-                    fail = True
-                except Exception, e:
-                    logger.error(e)
-                    fail = True
-                else:
-                    fail = False
-                if not fail:
-                    break
-                logger.warn("problem with getfile, sleeping %s" % delay)
-                time.sleep(delay)
-                delay += delay
-            if fail:
-                raise e
-
-            # FIXME: file_path is a relative path from fs.  Is that compabible with myTardis?
-            #content = fs.open(file_path).read()  # Can't we just call get_file ?
-            logger.debug("content loaded")
-            curr_dest_url = os.path.join(destination_prefix, updated_file_path) \
-                            + destination_suffix
-            logger.debug("Current destination url %s" % curr_dest_url)
-            put_file(curr_dest_url, content)
-        # for each directory below current directory
-        for directory in dir_file_info[0]:
-            logger.debug("directory=%s" % directory)
-            list = [os.path.join(current_dirname, directory), True]
-            logger.debug("list=%s" % list)
-            dir_paths.append(list)
-            logger.debug("dir_paths=%s" % dir_paths)
-
-        dir_file_info = []
-        for k in dir_paths:
-            if k[1]:
-                k[1] = False
-                current_dirname = k[0]
-                dir_file_info = fs.listdir(current_dirname)
-                logger.debug("Current pointer %s " % current_dirname)
-                break
-    logger.debug("All files")
-    logger.debug(file_paths)
-    logger.debug(dir_paths)
-    logger.debug("end of copy_directories")
-
-# def copy_files_with_pattern(self, local_filesystem, source_dir,
-#                              dest_dir, pattern, overwrite=True):
-#     import fnmatch, fs
-#     pattern_source_dir = path.join(
-#         local_filesystem, source_dir)
-#     for file in self.connector_fs.listdir(pattern_source_dir):
-#         if fnmatch.fnmatch(file, pattern):
-#             try:
-#                 logger.debug("To be copied %s " % os.path.join(pattern_source_dir,
-#                     file))
-#                 logger.debug("Dest %s " % os.path.join(dest_dir, file))
-#                 self.connector_fs.copy(path.join(pattern_source_dir,
-#                     file),
-#                     path.join(dest_dir, file),
-#                     overwrite)
-#             except ResourceNotFoundError, e:
-#                 import sys, traceback
-#                 traceback.print_exc(file=sys.stdout)
-
-#                 raise IOError(e)  # FIXME: make filesystem specfic exceptions
-
-
-def put_file(file_url, content):
-    """
-    Writes out the content to the file_url using config info from user_settings. Note that content is bytecodes
-    """
-    logger.debug("file_url=%s" % file_url)
-    #logger.debug('content=%s' % content)
-    if '..' in file_url:
-        # .. allow url to potentially leave the user filesys. This would be bad.
-        raise InvalidInputError(".. not allowed in urls")
-    scheme = urlparse(file_url).scheme
-    http_file_url = get_http_url(file_url)
-    # TODO: replace with parse_bdp_url()
-    o = urlparse(http_file_url)
-    mypath = o.path
-    location = o.netloc
-    if mypath[0] == os.path.sep:
-        mypath = mypath[1:]
-    logger.debug("mypath=%s" % mypath)
-    query = parse_qsl(o.query)
-    query_settings = dict(x[0:] for x in query)
-
-
-    if '@' in location:
-        location = location.split('@')[1]
-
-    if scheme == 'http':
-        # TODO: test
-        import urllib
-        import urllib2
-        values = {'name': 'Michael Foord',
-          'location': 'Northampton',
-          'language': 'Python'}
-        data = urllib.urlencode(values)
-        req = urllib2.Request(file_url, data)
-        response = urllib2.urlopen(req)
-        res = response.read()
-        logger.debug("response=%s" % res)
-    elif scheme == "ssh":
-        key_file = get_value('key_file', query_settings)
-        if not key_file:
-            key_file = None  # require None for ssh_settings to skip keys
-        username = get_value('username', query_settings)
-        password = get_value('password', query_settings)
-        root_path = get_value('root_path', query_settings)
-        logger.debug("key_file=%s" % key_file)
-        logger.debug("root_path=%s" % root_path)
-        paramiko_settings = {'username': username,
-            'password': password}
-        if key_file:
-            paramiko_settings['key_filename'] = key_file
-        ssh_settings = {'params': paramiko_settings,
-                        'host': location,
-                        'root': str(root_path) + "/"}
-        logger.debug("ssh_settings=%s" % ssh_settings)
-        fs = NCIStorage(settings=ssh_settings)
-         # FIXME: does this overwrite?
-        fs.save(mypath, ContentFile(content))  # NB: ContentFile only takes bytes
-        logger.debug("File to be written on %s" % location)
-    elif scheme == "tardis":
-        # TODO: do a POST of a new datafile into existing exp and dataset
-        # parse file_url to extract tardis host, exp_id and dataset_id
-        from bdphpcprovider.mytardis import create_datafile
-        create_datafile(file_url, content)
-    elif scheme == "file":
-        root_path = get_value('root_path', query_settings)
-        logger.debug("remote_fs_path=%s" % root_path)
-        fs = LocalStorage(location=root_path)
-        dest_path = fs.save(mypath, ContentFile(content))  # NB: ContentFile only takes bytes
-        logger.debug("dest_path=%s" % dest_path)
-    return content
-
-
-def dir_exists(dir_url):
-    # Can't use exists here because directories cannot be accessed directly
-    # FIXME: this can be slow
-    logger.debug("dir_url=%s" % dir_url)
-    try:
-        file_paths = list_all_files(dir_url)
-    except OSError:
-        return False
-    logger.debug("file_paths=%s" % pformat(file_paths))
-    return len(file_paths) > 0
-
-
-def file_exists(bdp_file_url):
-    logger.debug("bdp_file_url=%s" % bdp_file_url)
-    (source_scheme, source_location, source_path, source_location, query_settings) = parse_bdpurl(bdp_file_url)
-    if source_scheme == "file":
-        root_path = get_value('root_path', query_settings)
-        logger.debug("self.root_path=%s" % root_path)
-        fs = LocalStorage(location=root_path + "/")
-    elif source_scheme == "ssh":
-        logger.debug("getting from ssh")
-        key_file = get_value('key_file', query_settings)
-        username = get_value('username', query_settings)
-        password = get_value('password', query_settings)
-        root_path = get_value('root_path', query_settings)
-        logger.debug("root_path=%s" % root_path)
-        paramiko_settings = {'username': username,
-            'password': password}
-        if key_file:
-            paramiko_settings['key_filename'] = key_file
-        ssh_settings = {'params': paramiko_settings,
-                        'host': source_location,
-                        'root': str(root_path) + "/"}
-        logger.debug("nci_settings=%s" % pformat(ssh_settings))
-        fs = NCIStorage(settings=ssh_settings)
-        logger.debug("fs=%s" % fs)
-    else:
-        logger.warn("scheme: %s not supported" % source_scheme)
-        return
-
-    logger.debug("source_path=%s"  % source_path)
-
-    return fs.exists(source_path)
-
-
-def get_file(file_url):
-    """
-    Reads in content at file_url using config info from user_settings
-    Returns byte strings
-    """
-    fp = get_filep(file_url)
-    content = fp.read()
-
-    if content and (len(content) > 100):
-        logger.debug("content(abbrev)=\n%s\n ... \n%s\nEOF\n" % (content[:100], content[-100:]))
-    else:
-        logger.debug("content=%s" % content)
-    return content
-
-
-def get_filep(file_bdp_url, sftp_reference=False):
-    """
-    opens a django file pointer to file_bdp_url
-    """
-    logger.debug("file_bdp_url=%s" % file_bdp_url)
-    if '..' in file_bdp_url:
-        # .. allow url to potentially leave the user filesys. This would be bad.
-        raise InvalidInputError(".. not allowed in urls")
-
-    # scheme = urlparse(file_bdp_url).scheme
-    # http_file_url = get_http_url(file_bdp_url)
-    # o = urlparse(http_file_url)
-    # mypath = str(o.path)
-    # location = o.netloc
-    (scheme, host, mypath, location, query_settings) = parse_bdpurl(file_bdp_url)
-    logger.debug("scheme=%s" % scheme)
-    logger.debug("mypath=%s" % mypath)
-    #if mypath[0] == os.path.sep:
-    #    mypath = str(mypath[1:])
-    #logger.debug("mypath=%s" % mypath)
-    # query = parse_qsl(o.query)
-    # query_settings = dict(x[0:] for x in query)
-
-
-    if '@' in location:
-        location = location.split('@')[1]
-
-    if scheme == 'http':
-        import urllib2
-        req = urllib2.Request(o)
-        fp = urllib2.urlopen(req)
-
-        #content = response.read()
-    elif scheme == "ssh":
-        logger.debug("getting from hpc")
-        key_file = get_value('key_file', query_settings)
-        logger.debug('key_file=%s' % key_file)
-        if not key_file:
-            key_file = None  # require None for ssh_settinglesss to skip keys
-
-        username = get_value('username', query_settings)
-        password = get_value('password', query_settings)
-        root_path = get_value('root_path', query_settings)
-        logger.debug("root_path=%s" % root_path)
-        paramiko_settings = {'username': username,
-            'password': password}
-        if key_file:
-            paramiko_settings['key_filename'] = key_file
-
-        ssh_settings = {'params': paramiko_settings,
-                        'host': location,
-                        'root': root_path + "/"}
-        logger.debug("ssh_settings=%s" % ssh_settings)
-        fs = NCIStorage(settings=ssh_settings)
-        logger.debug("fs=%s" % fs)
-        logger.debug("mypath=%s" % mypath)
-        fp = fs.open(mypath)
-        logger.debug("fp opened")
-        logger.debug("fp_dict %s" % fp.__dict__)
-        #content = fp.read()
-        #logger.debug("content=%s" % content)
-    elif scheme == "tardis":
-        # TODO: implement GET of a datafile in a given exp and dataset
-        # parse file_bdp_url to extract tardis host, exp_id and dataset_id
-        exp_id = 0
-        dataset_id = 0
-        from bdphpcprovider.mytardis import retrieve_datafile
-
-        retrieve_datafile(file_bdp_url, exp_id, dataset_id)
-        # TODO: get content and make a file pointer out of it
-        return "a={{a}} b={{b}}"
-        raise NotImplementedError("tardis scheme not implemented")
-    elif scheme == "file":
-        root_path = get_value('root_path', query_settings)
-        logger.debug("self.root_path=%s" % root_path)
-        fs = LocalStorage(location=root_path + "/")
-        fp = fs.open(mypath)
-        #content = fs.open(mypath).read()
-        #logger.debug("content=%s" % content)
-    if sftp_reference:
-        return fp, fs
-    return fp
 
 
 def transfer(old, new):
@@ -1158,6 +515,8 @@ def check_settings_valid(settings_to_test, user_settings, thestage):
         stageset = [thestage]
     for current_stage in stageset:
         stage_settings = current_stage.get_settings()
+        logger.debug("stage_settings=%s" % stage_settings)
+        logger.debug("current_stage.package=%s" % current_stage.package)
         settings_to_test = transfer(stage_settings, settings_to_test)
         try:
             stage = safe_import(current_stage.package, [],
@@ -1360,33 +719,33 @@ def _make_run_settings_for_command(command_args, run_settings):
     return run_settings
 
 
-def retrieve_private_key(settings, private_key_url):
-    """
-    Gets the private key from url and stores in local file
-    """
-    # TODO: cache this result, because function used often
-    # TODO/FIXME: need ability to delete this key, because
-    # is senstive.  For example, delete at end of each stage execution.
-    url = smartconnector.get_url_with_pkey(settings,
-        private_key_url)
-    logger.debug("url=%s" % url)
-    key_contents = get_file(url)
-    local_url = smartconnector.de(settings,
-        os.path.join("centos", 'key'), is_relative_path=True)
-    logger.debug("local_url=%s" % local_url)
-    put_file(local_url, key_contents)
-    private_key_file = get_remote_path(local_url)
-    logger.debug("private_key_file=%s" % private_key_file)
-    return private_key_file
+# def retrieve_private_key(settings, private_key_url):
+#     """
+#     Gets the private key from url and stores in local file
+#     """
+#     # TODO: cache this result, because function used often
+#     # TODO/FIXME: need ability to delete this key, because
+#     # is senstive.  For example, delete at end of each stage execution.
+#     url = smartconnector.get_url_with_pkey(settings,
+#         private_key_url)
+#     logger.debug("url=%s" % url)
+#     key_contents = get_file(url)
+#     local_url = smartconnector.get_url_with_pkey(settings,
+#         os.path.join("centos", 'key'), is_relative_path=True)
+#     logger.debug("local_url=%s" % local_url)
+#     put_file(local_url, key_contents)
+#     private_key_file = get_remote_path(local_url)
+#     logger.debug("private_key_file=%s" % private_key_file)
+#     return private_key_file
 
 
 def generate_rands(settings, start_range,  end_range, num_required, start_index):
     # FIXME: there must be an third party library that does this more
     # effectively.
     rand_nums = []
-    num_url = get_url_with_pkey(settings, settings['random_numbers'],
+    num_url = smartconnector.get_url_with_pkey(settings, settings['random_numbers'],
         is_relative_path=False)
-    random_content = get_file(num_url)
+    random_content = storage.get_file(num_url)
     # FIXME: this loads the entire file, which could be very large.
     numbers = random_content.split('\n')
 
@@ -1435,53 +794,6 @@ def test_task():
     print "Hello World"
 
 
-
-EXP_DATASET_NAME_SPLIT = 2
-
-
-def get_exp_name_for_output(settings, url, path):
-    return str(os.sep.join(path.split(os.sep)[:-EXP_DATASET_NAME_SPLIT]))
-
-
-def get_dataset_name_for_output(settings, url, path):
-    logger.debug("path=%s" % path)
-
-    host = settings['host']
-    prefix = 'ssh://%s@%s' % (settings['type'], host)
-
-    source_url = smartconnector.get_url_with_pkey(
-        settings, os.path.join(prefix, path, "HRMC.inp_values"),
-        is_relative_path=False)
-    logger.debug("source_url=%s" % source_url)
-    try:
-        content = get_file(source_url)
-    except IOError, e:
-        logger.warn("cannot read file %s" %e)
-        return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
-
-    logger.debug("content=%s" % content)
-    try:
-        values_map = dict(json.loads(str(content)))
-    except Exception, e:
-        logger.warn("cannot load %s: %s" % (content, e))
-        return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
-
-    try:
-        iteration = str(path.split(os.sep)[-2:-1][0])
-    except Exception, e:
-        logger.error(e)
-        iteration = ""
-
-    if "_" in iteration:
-        iteration = iteration.split("_")[1]
-    else:
-        iteration = "final"
-
-    dataset_name = "%s_%s_%s" % (iteration,
-        values_map['generator_counter'],
-        values_map['run_counter'])
-    logger.debug("dataset_name=%s" % dataset_name)
-    return dataset_name
 
 def get_parent_stage(child_package, settings):
     parent_obj = models.Stage.objects.get(package=child_package)

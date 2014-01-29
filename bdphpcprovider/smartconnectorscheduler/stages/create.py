@@ -27,6 +27,7 @@ from bdphpcprovider.smartconnectorscheduler import platform
 from bdphpcprovider.reliabilityframework.failuredetection import FailureDetection
 from bdphpcprovider.reliabilityframework.failurerecovery import FailureRecovery
 
+from bdphpcprovider import messages
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +40,6 @@ class Create(Stage):
         self.group_id = ''
         self.platform_type = None
         logger.debug("Create stage initialized")
-
 
     def triggered(self, run_settings):
         """
@@ -65,7 +65,7 @@ class Create(Stage):
         """
         Make new VMS and store group_id
         """
-        smartconnector.info(run_settings, "1: create")
+        messages.info(run_settings, "1: create")
         local_settings = {}
         #todo: remove system/platform dependency
         smartconnector.copy_settings(local_settings, run_settings,
@@ -108,13 +108,13 @@ class Create(Stage):
         if not failure_detection.sufficient_vms(len(self.nodes), min_number_vms):
             if not failure_recovery.recovered_insufficient_vms_failure():
                 self.group_id = 'UNKNOWN'  # FIXME: do we we mean '' or None here?
-                smartconnector.error(run_settings, "error: sufficient VMS cannot be created")
+                messages.error(run_settings, "error: sufficient VMS cannot be created")
                 logger.info("Sufficient number VMs cannot be created for this computation."
                             "Increase your quota or decrease your minimum requirement")
                 return
 
         print_vms(local_settings, all_vms=self.nodes)
-        smartconnector.info(run_settings, "1: create (%s nodes created)" % len(self.nodes))
+        messages.info(run_settings, "1: create (%s nodes created)" % len(self.nodes))
 
         #Fixme: the following should transfer power to FT managers
         if not self.group_id:
@@ -132,7 +132,7 @@ class Create(Stage):
             = self.group_id
 
         run_settings.setdefault(
-            RMIT_SCHEMA+'/system', {})[u'platform'] \
+            RMIT_SCHEMA + '/system', {})[u'platform'] \
             = self.platform_type
 
         if not self.nodes:
