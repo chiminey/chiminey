@@ -257,7 +257,7 @@ def _generate_key(platform_type, parameters):
 def get_platform_settings(platform_url, username):
     platform_name = platform_url.split('/')[0]
     if platform_name == "local":
-        return {"scheme": 'file', 'type': 'local'}
+        return {"scheme": 'file', 'type': 'local', 'host': '127.0.0.1'}
     record, schema_namespace = retrieve_platform(platform_name, username)
     _update_platform_settings(record)
     record['bdp_username'] = username
