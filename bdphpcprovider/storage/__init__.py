@@ -19,13 +19,28 @@
 # IN THE SOFTWARE.
 
 
-# from bdphpcprovider.smartconnectorscheduler.stages import (
-#     dummy
-# )
+from bdphpcprovider.storage.storage import (
+    get_make_path,
+    copy_directories,
+    put_file,
+    list_dirs,
+    get_file,
+    get_filesystem,
+
+    file_exists,
+    dir_exists,
+
+    get_value,
+    parse_bdpurl,
+
+    get_remote_path,
+    get_filep,
+    list_all_files,
+    get_bdp_root_path,
+    RemoteStorage
+)
 
 
-# class StageException(Exception):
-#     """ A problem in the stage library"""
-#     pass
-
-__author__ = 'iman'
+class StorageException(Exception):
+    """ A problem in the storage library"""
+    pass

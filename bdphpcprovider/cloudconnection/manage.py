@@ -32,7 +32,7 @@ def create_vms(total_vms, settings):
     """
         Create virtual machines and return id
     """
-    logger.info("create_vms")
+    logger.debug("create_vms")
     all_vms = botoconnector.create_vms(total_vms, settings)
     if all_vms:
         all_running_vms = botoconnector.wait_for_vms_to_start_running(
@@ -75,11 +75,11 @@ def get_registered_vms(settings, node_type='created_nodes'):
         logger.error("error with parsing created_nodes")
         raise
     for node in nodes:
-        vm = botoconnector.get_this_vm(node[0], settings)
-        if not vm:
+        try:
+           vm = botoconnector.get_this_vm(node[0], settings)
+           res.append(vm)
+        except Exception:
             logger.debug('vm [%s:%s] not found' % (node[0], node[1]))
-        else:
-            res.append(vm)
     logger.debug("nodes=%s" % res)
     return res
 

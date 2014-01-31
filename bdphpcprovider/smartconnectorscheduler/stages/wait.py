@@ -22,16 +22,18 @@ import logging
 import ast
 import os
 from bdphpcprovider.platform import manage
-
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
-from bdphpcprovider.smartconnectorscheduler import \
-    hrmcstages, models, smartconnector
+from bdphpcprovider.smartconnectorscheduler import (models,
+                                                    smartconnector,
+                                                    platform)
 from bdphpcprovider.reliabilityframework.ftmanager import FTManager
 
 from bdphpcprovider.reliabilityframework.failuredetection import FailureDetection
 from bdphpcprovider.sshconnection import open_connection
 
 from bdphpcprovider import compute
+from bdphpcprovider import messages
+from bdphpcprovider import storage
 
 logger = logging.getLogger(__name__)
 
@@ -125,25 +127,36 @@ class Wait(Stage):
             relative_path,
             is_relative_path=True,
             ip_address=ip)
-        makefile_path = hrmcstages.get_make_path(destination)
+        makefile_path = storage.get_make_path(destination)
         ssh = None
         try:
+            logger.debug('trying ssh')
             ssh = open_connection(ip_address=ip, settings=settings)
+            logger.debug('successful ssh')
             (command_out, errs) = compute.run_make(ssh,
                                                    makefile_path,
                                                    "running")
+            ssh.close()
+            logger.debug("command_out2=(%s, %s)" % (command_out, errs))
+            if command_out:
+                logger.debug("command_out = %s" % command_out)
+                for line in command_out:
+                    if "stopped" in line:
+                        return True
         except Exception, e:
+
             # Failure detection and then management
             logger.debug('error is = %s' % e)
             process_failed = False
             node_failed = False
-            if self.failure_detector.ssh_timed_out(e):
+            logger.debug('Is there error? %s' % self.failure_detector.failed_ssh_connection(e))
+            if self.failure_detector.failed_ssh_connection(e):
                 node = [x for x in self.created_nodes if x[1] == ip_address]
-                self.failed_processes, rescheduled_prcs = self.ftmanager.manage_failed_process(
+                self.failed_processes = self.ftmanager.manage_failed_process(
                     settings, process_id, node[0], node[0][0], ip_address,
                     self.failed_nodes, self.executed_procs, self.current_processes,
-                    self.all_processes)
-                self.procs_2b_rescheduled.update(rescheduled_prcs)
+                    self.all_processes, self.procs_2b_rescheduled)
+                #self.procs_2b_rescheduled.extend(rescheduled_prcs)
                 '''
                 if self.failure_detector.node_terminated(settings, node[0][0]):
                     if not self.failure_detector.recorded_failed_node(
@@ -179,13 +192,6 @@ class Wait(Stage):
         finally:
             if ssh:
                 ssh.close()
-        logger.debug("command_out2=(%s, %s)" % (command_out, errs))
-        if command_out:
-            logger.debug("command_out = %s" % command_out)
-            for line in command_out:
-                if "stopped" in line:
-                    return True
-        #return True  # FIXME: this may be undesirable
         return False
 
     def get_output(self, ip_address, process_id, output_dir, local_settings,
@@ -193,7 +199,7 @@ class Wait(Stage):
         """
             Retrieve the output from the task on the node
         """
-        logger.info("get_output of process %s on %s" % (process_id, ip_address))
+        logger.debug("get_output of process %s on %s" % (process_id, ip_address))
         output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
                                     output_storage_settings['type'])
         cloud_path = os.path.join(local_settings['payload_destination'],
@@ -221,7 +227,7 @@ class Wait(Stage):
         #hrmcstages.delete_files(dest_files_url, exceptions=[]) #FIXme: uncomment as needed
         # FIXME: might want to turn on paramiko compress function
         # to speed up this transfer
-        hrmcstages.copy_directories(source_files_url, dest_files_url)
+        storage.copy_directories(source_files_url, dest_files_url)
 
 
     def process(self, run_settings):
@@ -261,7 +267,8 @@ class Wait(Stage):
         logger.debug("Wait stage process began")
 
         #processes = self.executed_procs
-        processes = [x for x in self.current_processes if x['status'] != 'ready']
+        processes = [x for x in self.current_processes if x['status'] == 'running']
+        not_failed_processes = [x for x in self.current_processes if x['status'] != 'failed']
         self.error_nodes = []
         # TODO: parse finished_nodes input
         logger.debug('self.finished_nodes=%s' % self.finished_nodes)
@@ -308,7 +315,7 @@ class Wait(Stage):
                         comp_pltf_settings, os.path.join(
                             self.output_dir, process_id, "audit.txt"),
                         is_relative_path=True)
-                    fsys = hrmcstages.get_filesystem(audit_url)
+                    fsys = storage.get_filesystem(audit_url)
                     logger.debug("Audit file url %s" % audit_url)
                     if fsys.exists(audit_url):
                         fsys.delete(audit_url)
@@ -323,11 +330,11 @@ class Wait(Stage):
                     for iterator, p in enumerate(self.current_processes):
                         if int(p['id']) == int(process_id) and p['status'] == 'running':
                             self.current_processes[iterator]['status'] = 'completed'
-                    smartconnector.info(run_settings, "%s: waiting (%s process left)" % (
+                    messages.info(run_settings, "%s: waiting (%s process left)" % (
                         #self.id + 1, len(self.executed_procs) - (len(self.finished_nodes) + self.failed_processes)))
-                        self.id + 1, len(processes) - (len(self.finished_nodes) + self.failed_processes)))
+                        self.id + 1, len(not_failed_processes) - (len(self.finished_nodes))))
                 else:
-                    logger.info("We have already "
+                    logger.warn("We have already "
                         + "processed output of %s on node %s" % (process_id, ip_address))
             else:
                 print "job %s at %s not completed" % (process_id, ip_address)
@@ -390,11 +397,10 @@ class Wait(Stage):
         if self.failed_nodes:
             run_settings.setdefault(
             'http://rmit.edu.au/schemas/stages/create', {})[u'failed_nodes'] = self.failed_nodes
-
         #completed_procs = [x for x in self.executed_procs if x['status'] == 'completed']
         completed_procs = [x for x in self.current_processes if x['status'] == 'completed']
-        smartconnector.info(run_settings, "%s: waiting (%s of %s processes done)"
-            % (self.id + 1, len(completed_procs), len(self.current_processes)))
+        messages.info(run_settings, "%s: waiting (%s of %s processes done)"
+            % (self.id + 1, len(completed_procs), len(self.current_processes) - (self.failed_processes)))
 
 
         if self.procs_2b_rescheduled:

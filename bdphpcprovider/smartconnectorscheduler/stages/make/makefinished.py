@@ -25,14 +25,16 @@ import ast
 
 from paramiko.ssh_exception import SSHException
 
-from paramiko.ssh_exception import SSHException
-from bdphpcprovider.platform import manage
-
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import smartconnector
-from bdphpcprovider.smartconnectorscheduler import hrmcstages
+from bdphpcprovider.smartconnectorscheduler import platform
+
+from bdphpcprovider import messages
+from bdphpcprovider.platform import manage
 from bdphpcprovider import mytardis
+from bdphpcprovider import storage
 from bdphpcprovider import compute
+
 from . import setup_settings
 from bdphpcprovider.sshconnection import open_connection
 
@@ -79,9 +81,10 @@ class MakeFinishedStage(Stage):
             ip_address=settings['host'])
 
         (scheme, host, mypath, location, query_settings) = \
-            hrmcstages.parse_bdpurl(encoded_d_url)
-        stderr = ''
+            storage.parse_bdpurl(encoded_d_url)
         stdout = ''
+        stderr = ''
+
         try:
             ssh = open_connection(ip_address=host,
                                                 settings=settings)
@@ -111,7 +114,7 @@ class MakeFinishedStage(Stage):
         self.experiment_id = 0
         settings = setup_settings(run_settings)
         self.experiment_id = settings['experiment_id']
-        smartconnector.info(run_settings, "1: waiting for completion")
+        messages.info(run_settings, "1: waiting for completion")
         logger.debug("settings=%s" % settings)
         if self._exists(run_settings,
             'http://rmit.edu.au/schemas/stages/make',
@@ -142,7 +145,8 @@ class MakeFinishedStage(Stage):
             ip_address=settings['host'])
 
         (scheme, host, mypath, location, query_settings) = \
-            hrmcstages.parse_bdpurl(encoded_d_url)
+            storage.parse_bdpurl(encoded_d_url)
+
 
         if self.runs_left:
             job_finished = self._job_finished(
@@ -156,7 +160,7 @@ class MakeFinishedStage(Stage):
             self.runs_left -= 1
 
         if self.runs_left <= 0:
-            smartconnector.success(run_settings, "%s: finished" % (1))
+            messages.success(run_settings, "%s: finished" % (1))
 
         logger.debug("processing finished")
 
@@ -180,7 +184,7 @@ class MakeFinishedStage(Stage):
             ip_address=settings['host'])
 
         (scheme, host, mypath, location, query_settings) = \
-            hrmcstages.parse_bdpurl(encoded_s_url)
+            storage.parse_bdpurl(encoded_s_url)
         make_path = os.path.join(query_settings['root_path'], mypath)
         logger.debug("make_path=%s" % make_path)
 
@@ -200,19 +204,16 @@ class MakeFinishedStage(Stage):
         settings.update(output_storage_settings)
         encoded_d_url = smartconnector.get_url_with_pkey(settings, dest_url)
         logger.debug("encoded_d_url=%s" % encoded_d_url)
-
-        #hrmcstages.delete_files(encoded_d_url, exceptions=[])
-
         # FIXME: might want to turn on paramiko compress function
+        #storage_files(encoded_d_url, exceptions=[])
         # to speed up this transfer
         try:
-            hrmcstages.copy_directories(encoded_s_url, encoded_d_url)
+            storage.copy_directories(encoded_s_url, encoded_d_url)
         except SSHException, e:
             logger.error(e)
             # FIXME: Could just exit, but need to flag that this data has not
             # been transferred.
             raise
-
         directive = settings['directive']
 
         def _get_mytardis_settings(settings, bdp_username):
@@ -236,7 +237,7 @@ class MakeFinishedStage(Stage):
                     logger.debug("outcar_url=%s" % outcar_url)
 
                     try:
-                        outcar_content = hrmcstages.get_file(outcar_url)
+                        outcar_content =storage.get_file(outcar_url)
                     except IOError, e:
                         logger.error(e)
                         toten = None
@@ -259,7 +260,7 @@ class MakeFinishedStage(Stage):
                         os.path.join(dest_url, VALUES_FILE), is_relative_path=False)
                     logger.debug("values_url=%s" % values_url)
                     try:
-                        values_content = hrmcstages.get_file(values_url)
+                        values_content =storage.get_file(values_url)
                     except IOError, e:
                         logger.error(e)
                         values = None
@@ -270,7 +271,6 @@ class MakeFinishedStage(Stage):
                         except Exception, e:
                             logger.error(e)
                             pass
-
                     logger.debug("values=%s" % values)
 
                     # FIXME: all values from map are strings initially, so need to know

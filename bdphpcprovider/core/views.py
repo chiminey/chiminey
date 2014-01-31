@@ -66,8 +66,6 @@ from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 
-from bdphpcprovider.smartconnectorscheduler import smartconnector
-
 
 logger = logging.getLogger(__name__)
 
@@ -340,7 +338,7 @@ class ContextResource(ModelResource):
 
         except InvalidInputError, e:
             bundle.obj = None
-            #smartconnector.error(run_settings, e)
+            #messages.error(run_settings, e)
             logger.error(e)
             raise
         else:

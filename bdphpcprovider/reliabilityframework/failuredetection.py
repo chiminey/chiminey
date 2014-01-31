@@ -20,7 +20,9 @@
 
 import logging
 from bdphpcprovider.cloudconnection import get_this_vm
-
+#from paramiko import BadHostKeyException, AuthenticationException, SSHException
+from bdphpcprovider.sshconnection import AuthError, BadHostKeyException, AuthenticationException, SSHException
+import socket
 
 logger = logging.getLogger(__name__)
 
@@ -34,18 +36,24 @@ class FailureDetection():
             return False
         return True
 
-    def ssh_timed_out(self, error_message):
-        if 'Connection timed out' in error_message:
+    def failed_ssh_connection(self, exception):
+        logger.debug('exception is %s ' % exception.__class__)
+        try:
+            logger.debug(exception.__class__)
+            raise exception.__class__
+        except (AuthError, BadHostKeyException, AuthenticationException,
+                SSHException, socket.error):
             return True
-        if 'No route to host' in error_message:
-            return True
+        except Exception:
+            return False
         return False
 
     def node_terminated(self, settings, node_id):
-        node = get_this_vm(node_id, settings)
-        if not node:
-            return True
-        return False
+        try:
+            get_this_vm(node_id, settings)
+            return False
+        except Exception, e:
+           return True
 
     def recorded_failed_node(self, failed_nodes, ip_address):
         if ip_address in [x[1] for x in failed_nodes if x[1] == ip_address]:

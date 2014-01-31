@@ -172,7 +172,6 @@ INSTALLED_APPS = (
 ) + OUR_APPS
 
 
-
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -181,57 +180,75 @@ LOGGING = {
             'format': ' [%(asctime)s: %(levelname)s/%(processName)s] %(message)s'
            # 'format': '%(asctime)s-%(filename)s-%(lineno)s-%(levelname)s: %(message)s'
         },
-    'celery': {
-            'format': ' [%(asctime)s: %(levelname)s/%(task_name)s] %(message)s'
-    }
-
     },
 
     'handlers': {
-        'file': {
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': '/var/log/cloudenabling/bdphpcprovider.log',
-            'formatter': 'timestamped',
+    'file': {
+    'class': 'logging.handlers.RotatingFileHandler',
+    'filename': '/var/log/cloudenabling/bdphpcprovider.log',
+    'formatter': 'timestamped',
             'maxBytes': 1024 * 1024 * 100,  # 100 mb
             'backupCount': 2
-        },
-        'celeryd': {
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': '/var/log/cloudenabling/celery/celeryd.log',
-            'formatter': 'celery',
-            'maxBytes': 1024 * 1024 * 100,  # 100 mb
-            'backupCount': 2
-        },
+            },
     },
     'loggers': {
-        'bdphpcprovider.smartconnectorscheduler': {
-            'level': 'WARN',
-            'handlers': ['file'],
-            },
-        'bdphpcprovider.reliabilityframework': {
-            'level': 'WARN',
-                'handlers': ['file'],
-            },
-        'bdphpcprovider.simpleui': {
-            'level': 'WARN',
-                'handlers': ['file'],
-            },
-        'bdphpcprovider.core': {
-            'level': 'WARN',
-                'handlers': ['file'],
-            },
-        'bdphpcprovider.smartconnectorscheduler.tasks': {
-            'level': 'WARN',
-            'handlers': ['file'],
-            },
-        'celery.task': {
-                'level': 'ERROR',
-                'handlers': ['file'],
-            },
-        'django.db.backends': {
-                'level': 'WARN',
-                'handlers': ['file'],
-        },
+
+    'bdphpcprovider': {
+    'level': 'DEBUG',
+    'handlers': ['file'],
+    },
+    'bdphpcprovider.smartconnectorscheduler': {
+    'level': 'DEBUG',
+    'handlers': ['file'],
+    },
+    'bdphpcprovider.sshconnection': {
+    'level': 'DEBUG',
+    'handlers': ['file'],
+    },
+    'bdphpcprovider.platform': {
+    'level': 'DEBUG',
+    'handlers': ['file'],
+    },
+    'bdphpcprovider.cloudconnection': {
+    'level': 'DEBUG',
+    'handlers': ['file'],
+    },
+    'bdphpcprovider.reliabilityframework': {
+    'level': 'DEBUG',
+    'handlers': ['file'],
+    },
+    'bdphpcprovider.simpleui': {
+    'level': 'DEBUG',
+    'handlers': ['file'],
+    },
+    'bdphpcprovider.mytardis': {
+    'level': 'DEBUG',
+    'handlers': ['file'],
+    },
+    'bdphpcprovider.storage': {
+    'level': 'DEBUG',
+    'handlers': ['file'],
+    },
+    'bdphpcprovider.sshconnector': {
+    'level': 'DEBUG',
+    'handlers': ['file'],
+    },
+    'bdphpcprovider.core': {
+    'level': 'DEBUG',
+    'handlers': ['file'],
+    },
+    'bdphpcprovider.smartconnectorscheduler.tasks': {
+    'level': 'WARN',
+    'handlers': ['file'],
+    },
+    'celery.task': {
+    'level': 'DEBUG',
+    'handlers': ['file'],
+    },
+    'django.db.backends': {
+    'level': 'WARN',
+    'handlers': ['file'],
+    },
 }
 }
 
@@ -253,21 +270,19 @@ SFTP_STORAGE_PARAMS = {}
 #CELERYBEAT_SCHEDULER="djcelery.schedulers.DatabaseScheduler"
 # Warning: celeryd is not safe for muliple workers when backed by sqlite
 CELERYBEAT_SCHEDULE = {
-    "test": {
-        "task": "smartconnectorscheduler.test",
-        "schedule": timedelta(seconds=15),
-    },
+    # "test": {
+    #     "task": "smartconnectorscheduler.test",
+    #     "schedule": timedelta(seconds=15),
+    # },
     "run_contexts": {
         "task": "smartconnectorscheduler.run_contexts",
-        "schedule": timedelta(seconds=15)
+        "schedule": timedelta(seconds=10)
         #"schedule": timedelta(seconds=60)
       },
     }
 
 
 INTERNAL_IPS = ('127.0.0.1',)
-
-#CELERYD_OPTS = "--time-limit=10"
 
 FILE_UPLOAD_PERMISSIONS = 0700
 
@@ -282,9 +297,13 @@ LOCAL_FILESYS_ROOT_PATH = "/var/cloudenabling/remotesys"
 # CLOUD CONFIGURATION
 
 
-VM_IMAGES = {'csrack': {'placement': None, 'vm_image': "ami-00000004"},
-             'nectar': {'placement': 'monash', 'vm_image': "ami-00001c06"}}
 
+#VM_IMAGES = {'csrack': {'placement': None, 'vm_image': "ami-00000004"},
+#             'nectar': {'placement': 'monash', 'vm_image': "ami-0000000d"}}
+
+# According to Nectar Image Catalog 24/1/14
+VM_IMAGES = {'csrack': {'placement': None, 'vm_image': "ami-00000004"},
+              'nectar': {'placement': 'monash', 'vm_image': "ami-00001c06"}}
 
 
 # CELERY CONFIGURATRION
@@ -319,5 +338,4 @@ BROKER_URL = 'redis://localhost:6379/0'
 CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 
 djcelery.setup_loader()
-
 

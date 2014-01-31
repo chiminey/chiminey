@@ -162,13 +162,13 @@ class TestFailureDetection(unittest.TestCase):
 
     def test_ssh_timed_out(self):
         error_message = 'Connection timed out'
-        time_out = self.failuredetection.ssh_timed_out(error_message)
+        time_out = self.failuredetection.failed_ssh_connection(error_message)
         self.assertTrue(time_out)
         error_message = 'No route to host'
-        time_out = self.failuredetection.ssh_timed_out(error_message)
+        time_out = self.failuredetection.failed_ssh_connection(error_message)
         self.assertTrue(time_out)
         error_message = 'Division by zero'
-        time_out = self.failuredetection.ssh_timed_out(error_message)
+        time_out = self.failuredetection.failed_ssh_connection(error_message)
         self.assertFalse(time_out)
 
     def test_node_terminated(self):

@@ -18,14 +18,15 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+from bdphpcprovider.messages.message import (
+    debug,
+    info,
+    success,
+    warn,
+    error
+)
 
-# from bdphpcprovider.smartconnectorscheduler.stages import (
-#     dummy
-# )
 
-
-# class StageException(Exception):
-#     """ A problem in the stage library"""
-#     pass
-
-__author__ = 'iman'
+class MessagesException(Exception):
+    """ A problem in the messages library"""
+    pass

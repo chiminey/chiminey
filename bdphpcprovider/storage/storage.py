@@ -38,11 +38,13 @@ from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
 logger = logging.getLogger(__name__)
 
 
+def get_bdp_root_path():
+    bdp_root_path = '/var/cloudenabling/remotesys'  # fixme avoid hard coding; systematically determine bdp_root_path
+    return bdp_root_path
 
 
-#FIXme: understand how absolute path are extracted
 def get_make_path(destination):
-    destination = get_http_url(destination)
+    destination = _get_http_url(destination)
     url = urlparse(destination)
     query = parse_qsl(url.query)
     query_settings = dict(x[0:] for x in query)
@@ -52,11 +54,6 @@ def get_make_path(destination):
     make_path = os.path.join(query_settings['root_path'], path)
     logger.debug("Makefile path %s %s %s " % (make_path, query_settings['root_path'], path))
     return make_path
-
-
-def get_bdp_root_path():
-    bdp_root_path = '/var/cloudenabling/remotesys'  # fixme avoid hard coding; systematically determine bdp_root_path
-    return bdp_root_path
 
 
 class RemoteStorage(SFTPStorage):
@@ -145,7 +142,7 @@ def get_value(key, dictionary):
         return u''
 
 
-def get_http_url(non_http_url):
+def _get_http_url(non_http_url):
     curr_scheme = non_http_url.split(':')[0]
     http_url = "http" + non_http_url[len(curr_scheme):]
     return http_url
@@ -156,7 +153,7 @@ def parse_bdpurl(bdp_url):
     Break down a BDP url into component parts via http protocol and urlparse
     """
     scheme = urlparse(bdp_url).scheme
-    http_file_url = get_http_url(bdp_url)
+    http_file_url = _get_http_url(bdp_url)
     o = urlparse(http_file_url)
     mypath = o.path
     location = o.netloc
@@ -191,7 +188,7 @@ def delete_files(url, exceptions=None):
     :return:
     """
     logger.debug("delete_files")
-    # http_url = get_http_url(url)
+    # http_url = _get_http_url(url)
     # path = urlparse(http_url).path
     # if path[0] == os.path.sep:
     #     path = path[1:]
@@ -244,7 +241,7 @@ def delete_files(url, exceptions=None):
 
 def list_dirs(url, list_files=False):
     logger.debug("url=%s" % url)
-    http_url = get_http_url(url)
+    http_url = _get_http_url(url)
     logger.debug("http_url=%s", http_url)
     logger.debug("list_files=%s", list_files)
     path = urlparse(http_url).path
@@ -266,7 +263,7 @@ def get_filesystem(bdp_url):
     """
     """
     # scheme = urlparse(url).scheme
-    # http_url = get_http_url(url)
+    # http_url = _get_http_url(url)
     # parsed_url = urlparse(http_url)
     # query = parse_qsl(parsed_url.query)
     # query_settings = dict(x[0:] for x in query)
@@ -310,7 +307,7 @@ def list_all_files(source_url):
 
     source_scheme = urlparse(source_url).scheme
     logger.debug("source_scheme=%s" % source_scheme)
-    http_source_url = get_http_url(source_url)
+    http_source_url = _get_http_url(source_url)
     logger.debug("http_source_url=%s" % http_source_url)
     source = urlparse(http_source_url)
     source_location = source.netloc
@@ -353,7 +350,7 @@ def list_all_files(source_url):
         logger.warn("scheme: %s not supported" % source_scheme)
         return
 
-    logger.debug("source_path=%s" % source_path)
+    logger.debug("source_path=%s"  % source_path)
 
     if fs.exists(source_path):
         logger.debug("source_path exists")
@@ -397,7 +394,7 @@ def copy_directories(source_url, destination_url):
     (source_scheme, host, source_path,
         source_location, query_settings) = parse_bdpurl(source_url)
 
-    http_source_url = get_http_url(source_url)
+    http_source_url = _get_http_url(source_url)
     source_prefix = source_url.split('?')[0]
     logger.debug("source_prefix=%s" % source_prefix)
     source = urlparse(http_source_url)
@@ -409,7 +406,7 @@ def copy_directories(source_url, destination_url):
         source_suffix = ""
     logger.debug("source_suffix=%s" % source_suffix)
 
-    http_destination_url = get_http_url(destination_url)
+    http_destination_url = _get_http_url(destination_url)
     destination_prefix = destination_url.split('?')[0]
     logger.debug("destination_prefix=%s" % destination_prefix)
 
@@ -540,7 +537,7 @@ def put_file(file_url, content):
         # .. allow url to potentially leave the user filesys. This would be bad.
         raise InvalidInputError(".. not allowed in urls")
     scheme = urlparse(file_url).scheme
-    http_file_url = get_http_url(file_url)
+    http_file_url = _get_http_url(file_url)
     # TODO: replace with parse_bdp_url()
     o = urlparse(http_file_url)
     mypath = o.path
@@ -671,7 +668,7 @@ def get_filep(file_bdp_url, sftp_reference=False):
         raise InvalidInputError(".. not allowed in urls")
 
     # scheme = urlparse(file_bdp_url).scheme
-    # http_file_url = get_http_url(file_bdp_url)
+    # http_file_url = _get_http_url(file_bdp_url)
     # o = urlparse(http_file_url)
     # mypath = str(o.path)
     # location = o.netloc

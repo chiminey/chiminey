@@ -170,7 +170,6 @@ def get_this_vm(vm_id, settings):
 
 
 def get_vm_ip(vm_id, settings):
-    ip_address = ''
     connection = _create_cloud_connection(settings)
     try:
         reservation_list = connection.get_all_instances(
@@ -180,8 +179,7 @@ def get_vm_ip(vm_id, settings):
                 ip_address = vm.ip_address
                 if not ip_address:
                     ip_address = vm.private_ip_address
-                break
-        return ip_address
+                return ip_address
     except Exception, e:
         logger.debug(e)
         raise
@@ -281,7 +279,7 @@ def _create_nectar_connection(settings):
         port=8773,
         path="/services/Cloud")
     #logger.info("settings %s" % settings)
-    logger.info("Connecting to... %s" % region.name)
+    logger.debug("Connecting to... %s" % region.name)
     return connection
 
 

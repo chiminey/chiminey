@@ -18,14 +18,5 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-
-# from bdphpcprovider.smartconnectorscheduler.stages import (
-#     dummy
-# )
-
-
-# class StageException(Exception):
-#     """ A problem in the stage library"""
-#     pass
-
-__author__ = 'iman'
+def dummy():
+    pass

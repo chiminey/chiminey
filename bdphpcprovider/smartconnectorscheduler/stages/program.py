@@ -23,13 +23,18 @@ import logging
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler import models
-from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.sshconnection import open_connection
 from bdphpcprovider.compute import run_command_with_status
+from bdphpcprovider.smartconnectorscheduler.errors import deprecated
+
+
+from bdphpcprovider import storage
 
 logger = logging.getLogger(__name__)
 
 
+# THis could be superseeded by remotemake (if destination is local)
+@deprecated
 class LocalProgramStage(Stage):
     """
     Execute a program using arguments which are local
@@ -81,7 +86,7 @@ class LocalProgramStage(Stage):
         if platform.name == 'nci':
             bdp_urls = [smartconnector.get_url_with_pkey(self.user_settings, x) for x in param_urls]
             logger.debug("bdp_urls=%s" % bdp_urls)
-            param_paths = [hrmcstages.get_remote_path(x) for x in bdp_urls]
+            param_paths = [storage.get_remote_path(x) for x in bdp_urls]
             # FIXME: check that these param_paths are actually local to NCI and not elsewhere
             logger.debug("remote paths=%s" % param_paths)
             # TODO: implement handling of config arguments
