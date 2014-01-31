@@ -27,8 +27,8 @@ from django.db import DatabaseError
 from django.core.exceptions import ImproperlyConfigured
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
-from bdphpcprovider.smartconnectorscheduler import smartconnector
 
+from bdphpcprovider import messages
 
 import redis
 
@@ -79,7 +79,7 @@ def delete(context_id):
 
 @task(name="smartconnectorscheduler.run_contexts", time_limit=CELERY_TIMEOUT, ignore_result=True)
 def run_contexts():
-    # Collect all valid contexts and process all before getting new set. This
+    # Collect all valid contexts and process all         getting new set. This
     # should ensure that difficult for one user to monopolise processor, though
     # still not effective against DoS attack of job submission requests...
     logger.debug("run_contexts")
@@ -216,13 +216,14 @@ def _process_context(context_id):
         triggered = 0
         for current_stage in stageset:
 
+            logger.debug("checking stage %s for trigger" % current_stage.name)
             # get the actual stage object
             try:
                 stage = hrmcstages.safe_import(current_stage.package, [],
                 {'user_settings': deepcopy(user_settings)})  # obviously need to cache this
             except ImproperlyConfigured, e:
                 logger.error(e)
-                smartconnector.error(run_settings, e)
+                messages.error(run_settings, e)
                 raise
 
             logger.debug("process stage=%s", stage)
@@ -254,7 +255,8 @@ def _process_context(context_id):
                 else:
                     logger.debug("Stage '%s' NOT TRIGGERED" % current_stage.name)
             except Exception, e:
-                smartconnector.error(run_settings, "0: internal error:%s" % e)
+                logger.error("0: internal error (%s stage):%s" % (str(current_stage.name), e))
+                messages.error(run_settings, "0: internal error (%s stage):%s" % (str(current_stage.name), e))
         if not triggered:
             logger.debug("No stages triggered")
             test_info = task_run_settings
@@ -390,7 +392,7 @@ def progress_context_broken(context_id):
                         else:
                             logger.debug("Stage '%s' NOT TRIGGERED" % current_stage.name)
                     except Exception, e:
-                        smartconnector.error(run_settings, "0: internal error:%s" % e)
+                        messages.error(run_settings, "0: internal error:%s" % e)
                 if not triggered:
                     logger.debug("No stages triggered")
                     test_info = task_run_settings

@@ -225,3 +225,8 @@ input[type=text], input[type=password] {
     height: 28px !important;
 }
 
+
+.platform_table {
+    table-layout: fixed;
+    word-wrap: break-word;
+}

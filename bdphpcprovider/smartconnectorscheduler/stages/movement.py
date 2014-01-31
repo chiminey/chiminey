@@ -23,10 +23,9 @@ import logging
 import logging.config
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import (
-    Stage, get_url_with_pkey)
-from bdphpcprovider.smartconnectorscheduler import models
-from bdphpcprovider.smartconnectorscheduler import hrmcstages
-from bdphpcprovider.smartconnectorscheduler import smartconnector
+    Stage, get_url_with_pkey, copy_settings)
+
+from bdphpcprovider import storage
 
 
 logger = logging.getLogger(__name__)
@@ -61,13 +60,13 @@ class CopyDirectoryStage(Stage):
         dest_url = run_settings['http://rmit.edu.au/schemas/copy/files']['file1']
         logger.debug("dest_url=%s" % dest_url)
 
-        smartconnector.copy_settings(self.boto_settings, run_settings,
+        copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/system/platform')
 
         dir_exists = False
         try:
             encoded_d_url = get_url_with_pkey(self.boto_settings, dest_url)
-            dir_exists = hrmcstages.dir_exists(encoded_d_url)
+            dir_exists = storage.dir_exists(encoded_d_url)
             logger.debug("dir_exists=%s" % dir_exists)
         except IOError:
             # TODO: should check checksum of dest to make sure we have correct transfer
@@ -94,7 +93,7 @@ class CopyDirectoryStage(Stage):
         logger.debug("dest_url=%s" % dest_url)
         encoded_d_url = get_url_with_pkey(self.boto_settings, dest_url)
 
-        hrmcstages.copy_directories(encoded_s_url, encoded_d_url)
+        storage.copy_directories(encoded_s_url, encoded_d_url)
 
         # content = hrmcstages.get_file(encoded_s_url)  # we assume text files
         # logger.debug("content=%s" % content)
@@ -145,13 +144,13 @@ class CopyFileStage(Stage):
         dest_url = run_settings['http://rmit.edu.au/schemas/copy/files']['file1']
         logger.debug("dest_url=%s" % dest_url)
 
-        smartconnector.copy_settings(self.boto_settings, run_settings,
+        copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/system/platform')
 
         file_exists = False
         try:
             encoded_d_url = get_url_with_pkey(self.boto_settings, dest_url)
-            file_exists = hrmcstages.file_exists(encoded_d_url)
+            file_exists = storage.file_exists(encoded_d_url)
             logger.debug("file_exists=%s" % file_exists)
         except IOError:
             # TODO: should check checksum of dest to make sure we have correct transfer
@@ -175,9 +174,9 @@ class CopyFileStage(Stage):
         logger.debug("dest_url=%s" % dest_url)
         encoded_d_url = get_url_with_pkey(self.boto_settings, dest_url)
 
-        content = hrmcstages.get_file(encoded_s_url)  # we assume text files
+        content = storage.get_file(encoded_s_url)  # we assume text files
         logger.debug("content=%s" % content)
-        hrmcstages.put_file(encoded_d_url, content.encode('utf-8'))  # we assume text files
+        storage.put_file(encoded_d_url, content.encode('utf-8'))  # we assume text files
 
     def output(self, run_settings):
         """ produce the resulting datfiles and metadata

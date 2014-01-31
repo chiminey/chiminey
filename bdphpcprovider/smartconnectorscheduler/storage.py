@@ -38,6 +38,22 @@ from bdphpcprovider.smartconnectorscheduler.errors import InvalidInputError
 logger = logging.getLogger(__name__)
 
 
+
+
+#FIXme: understand how absolute path are extracted
+def get_make_path(destination):
+    destination = get_http_url(destination)
+    url = urlparse(destination)
+    query = parse_qsl(url.query)
+    query_settings = dict(x[0:] for x in query)
+    path = url.path
+    if path[0] == os.path.sep:
+        path = path[1:]
+    make_path = os.path.join(query_settings['root_path'], path)
+    logger.debug("Makefile path %s %s %s " % (make_path, query_settings['root_path'], path))
+    return make_path
+
+
 def get_bdp_root_path():
     bdp_root_path = '/var/cloudenabling/remotesys'  # fixme avoid hard coding; systematically determine bdp_root_path
     return bdp_root_path
@@ -337,7 +353,7 @@ def list_all_files(source_url):
         logger.warn("scheme: %s not supported" % source_scheme)
         return
 
-    logger.debug("source_path=%s"  % source_path)
+    logger.debug("source_path=%s" % source_path)
 
     if fs.exists(source_path):
         logger.debug("source_path exists")

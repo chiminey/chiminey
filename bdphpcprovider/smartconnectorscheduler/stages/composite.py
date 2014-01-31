@@ -20,7 +20,6 @@
 
 
 import logging
-import json
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from itertools import product
 
@@ -28,6 +27,7 @@ from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 
 
 logger = logging.getLogger(__name__)
+
 
 class ParallelStage(Stage):
     """

@@ -33,9 +33,12 @@ from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.sshconnection import open_connection
 from bdphpcprovider.compute import run_command_with_status
 
+from bdphpcprovider import storage
+
 logger = logging.getLogger(__name__)
 
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+
 
 class Schedule(Stage):
     """
@@ -63,7 +66,6 @@ class Schedule(Stage):
             if not bootstrap_done:
                 return False
         except KeyError, e:
-            logger.error(e)
             return False
         bootstrapped_str = run_settings['http://rmit.edu.au/schemas/stages/bootstrap'][u'bootstrapped_nodes']
         self.bootstrapped_nodes = ast.literal_eval(bootstrapped_str)
@@ -169,9 +171,10 @@ class Schedule(Stage):
             self.started = 0
         local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
         retrieve_local_settings(run_settings, local_settings)
+        logger.debug('Schedule here')
         self.nodes = get_registered_vms(
                 local_settings, node_type='bootstrapped_nodes')
-
+        logger.debug('Schedule there')
         if not self.started:
             try:
                 self.schedule_index = int(smartconnector.get_existing_key(run_settings,
@@ -180,7 +183,7 @@ class Schedule(Stage):
                 self.schedule_index = 0
 
             if self.procs_2b_rescheduled:
-                self.start_reschedule(run_settings)
+                self.start_reschedule(run_settings, local_settings)
             else:
                 self.start_schedule(run_settings, local_settings)
 
@@ -309,11 +312,13 @@ class Schedule(Stage):
                  self.all_processes, new_processes=self.current_processes)
         logger.debug('all_processes=%s' % self.all_processes)
 
-
-    def start_reschedule(self, local_settings):
+    def start_reschedule(self, run_settings, local_settings):
+        bdp_username = run_settings['http://rmit.edu.au/schemas/bdp_userprofile']['username']
+        output_storage_url = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['platform_url']
+        output_storage_settings = manage.get_platform_settings(output_storage_url, bdp_username)
         _, self.current_processes = \
         start_round_robin_reschedule(self.nodes, self.procs_2b_rescheduled,
-                                     self.current_processes, local_settings)
+                                     self.current_processes, local_settings, output_storage_settings)
         self.all_processes = update_lookup_table(
                  self.all_processes,
                  new_processes=self.current_processes, reschedule=True)
@@ -447,7 +452,7 @@ def start_round_robin_schedule(nodes, processes, schedule_index, settings):
             is_relative_path=True,
             ip_address=ip_address)
         logger.debug('schedule destination=%s' % destination)
-        makefile_path = hrmcstages.get_make_path(destination)
+        makefile_path = storage.get_make_path(destination)
         logger.debug('makefile_path=%s' % makefile_path)
         command = "cd %s; make %s" % (makefile_path,
             'schedulestart PAYLOAD_NAME=%s IDS=%s' % (
@@ -468,7 +473,9 @@ def start_round_robin_schedule(nodes, processes, schedule_index, settings):
     logger.debug('current_processes=%s' % new_processes)
     return index, new_processes
 
-def start_round_robin_reschedule(nodes, procs_2b_rescheduled, current_procs, settings):
+
+def start_round_robin_reschedule(nodes, procs_2b_rescheduled,
+                                 current_procs, settings, output_storage_settings):
     total_nodes = len(nodes)
     all_nodes = list(nodes)
     processes = len(procs_2b_rescheduled)
@@ -483,11 +490,12 @@ def start_round_robin_reschedule(nodes, procs_2b_rescheduled, current_procs, set
     new_processes = current_procs
     rescheduled_procs = list(procs_2b_rescheduled)
     for cur_node in all_nodes:
+        logger.debug('Schedule here %s' % cur_node)
         ip_address = cur_node.ip_address
         if not ip_address:
             ip_address = cur_node.private_ip_address
         logger.debug('ip_address=%s' % ip_address)
-        relative_path = settings['type'] + '@' + settings['payload_destination']
+        relative_path = output_storage_settings['type'] + '@' + settings['payload_destination']
         procs_on_cur_node = proc_per_node
         if remaining_procs:
             procs_on_cur_node = proc_per_node + 1
@@ -507,7 +515,7 @@ def start_round_robin_reschedule(nodes, procs_2b_rescheduled, current_procs, set
             is_relative_path=True,
             ip_address=ip_address)
         logger.debug('schedule destination=%s' % destination)
-        makefile_path = hrmcstages.get_make_path(destination)
+        makefile_path = storage.get_make_path(destination)
         logger.debug('makefile_path=%s' % makefile_path)
         command = "cd %s; make %s" % (makefile_path,
             'schedulestart PAYLOAD_NAME=%s IDS=%s' % (
@@ -534,7 +542,7 @@ def get_procs_ids(process, **kwargs):
     try:
         index = kwargs['index']
         for i in range(process):
-            ids.append(index+1)
+            ids.append(index + 1)
             index += 1
     except KeyError, e:
         logger.debug(e)
@@ -565,7 +573,7 @@ def put_proc_ids(relative_path, ids, ip, settings):
     logger.debug('ids_str=%s' % ids_str)
     logger.debug('proc_ids=%s' % proc_ids)
     logger.debug('encoded=%s' % proc_ids.encode('utf-8'))
-    hrmcstages.put_file(destination, proc_ids.encode('utf-8'))
+    storage.put_file(destination, proc_ids.encode('utf-8'))
 
 
 def construct_lookup_table(ids, ip_address, new_processes, maximum_retry=1, status='ready'):
@@ -605,7 +613,7 @@ def job_finished(ip, settings, destination):
         Return True if package job on instance_id has job_finished
     """
     ssh = open_connection(ip_address=ip, settings=settings)
-    makefile_path = hrmcstages.get_make_path(destination)
+    makefile_path = storage.get_make_path(destination)
     command = "cd %s; make %s" % (makefile_path,
                                   'scheduledone IDS=%s' % (
                                       settings['filename_for_PIDs']))
@@ -616,5 +624,3 @@ def job_finished(ip, settings, destination):
             if 'All processes are scheduled' in line:
                 return True
     return False
-
-
