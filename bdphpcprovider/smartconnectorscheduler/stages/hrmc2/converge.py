@@ -24,10 +24,9 @@ import os
 import logging
 import json
 import sys
-import logging.config
+from bdphpcprovider.corestages import stage
 
-from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
-from bdphpcprovider.smartconnectorscheduler import smartconnector
+from bdphpcprovider.corestages.stage import Stage
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
 
 from bdphpcprovider.smartconnectorscheduler import models
@@ -91,7 +90,7 @@ class IterationConverge(Stage):
         """
         """
         if self.number_of_remaining_iterations > 0:
-            # trigger first of iteration stages
+            # trigger first of iteration corestages
             logger.debug("nonconvergence")
 
             # delete_key('runs_left', context)
@@ -111,7 +110,7 @@ class IterationConverge(Stage):
             # update_key('converged', True, context)
             run_settings['http://rmit.edu.au/stages/converge']['converged'] = True
 
-            # we are done, so don't trigger iteration stages
+            # we are done, so don't trigger iteration corestages
 
         #delete_key('transformed', context)
         transform = run_settings['http://rmit.edu.au/schemas/stages/transform']
@@ -158,33 +157,33 @@ class Converge(Stage):
 
         self.boto_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
 
-        smartconnector.copy_settings(self.boto_settings, run_settings,
+        stage.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/setup/payload_source')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
+        stage.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/setup/payload_destination')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
+        stage.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/system/platform')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
+        stage.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/create/custom_prompt')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
+        stage.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/create/cloud_sleep_interval')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
+        stage.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/create/created_nodes')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
+        stage.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/run/payload_cloud_dirname')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
+        stage.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/system/max_seed_int')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
+        stage.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/run/compile_file')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
+        stage.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/run/retry_attempts')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
+        stage.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/input/system/cloud/number_vm_instances')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
+        stage.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/input/hrmc/iseed')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
+        stage.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/input/hrmc/optimisation_scheme')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
+        stage.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/input/hrmc/threshold')
         self.boto_settings['bdp_username'] = run_settings[
             RMIT_SCHEMA + '/bdp_userprofile']['username']
@@ -222,7 +221,7 @@ class Converge(Stage):
         else:
             self.experiment_id = 0
 
-        inputdir_url = smartconnector.get_url_with_pkey(output_storage_settings,
+        inputdir_url = stage.get_url_with_pkey(output_storage_settings,
             output_prefix + self.iter_inputdir, is_relative_path=False)
         logger.debug('input_dir_url=%s' % inputdir_url)
 
@@ -244,7 +243,7 @@ class Converge(Stage):
         for input_dir in input_dirs:
             # Retrieve audit file
 
-            audit_url = smartconnector.get_url_with_pkey(output_storage_settings,
+            audit_url = stage.get_url_with_pkey(output_storage_settings,
                 output_prefix + os.path.join(self.iter_inputdir, input_dir, 'audit.txt'), is_relative_path=False)
             audit_content = storage.get_file(audit_url)
             logger.debug('audit_url=%s' % audit_url)
@@ -331,9 +330,9 @@ class Converge(Stage):
         # logger.debug("Convergence Source %s Destination %s " % (source, dest))
         # shutil.copytree(source, dest)
 
-        source_url = smartconnector.get_url_with_pkey(output_storage_settings,
+        source_url = stage.get_url_with_pkey(output_storage_settings,
             output_prefix + os.path.join(self.output_dir), is_relative_path=False)
-        dest_url = smartconnector.get_url_with_pkey(output_storage_settings,
+        dest_url = stage.get_url_with_pkey(output_storage_settings,
             output_prefix + os.path.join(new_output_dir), is_relative_path=False)
 
         storage.copy_directories(source_url, dest_url)
@@ -356,7 +355,7 @@ class Converge(Stage):
                     host = settings['host']
                     prefix = 'ssh://%s@%s' % (settings['type'], host)
 
-                    source_url = smartconnector.get_url_with_pkey(
+                    source_url = stage.get_url_with_pkey(
                         settings, os.path.join(prefix, path, "HRMC.inp_values"),
                         is_relative_path=False)
                     logger.debug("source_url=%s" % source_url)
@@ -398,7 +397,7 @@ class Converge(Stage):
                 for m, node_dir in enumerate(node_dirs):
                     exp_value_keys.append(["hrmcdset%s/step" % m, "hrmcdset%s/err" % m])
 
-                    source_url = smartconnector.get_url_with_pkey(output_storage_settings,
+                    source_url = stage.get_url_with_pkey(output_storage_settings,
                         output_prefix + os.path.join(new_output_dir, node_dir), is_relative_path=False)
 
                     (source_scheme, source_location, source_path, source_location,
@@ -419,7 +418,7 @@ class Converge(Stage):
 
                 for m, node_dir in enumerate(node_dirs):
 
-                    dataerrors_url = smartconnector.get_url_with_pkey(output_storage_settings,
+                    dataerrors_url = stage.get_url_with_pkey(output_storage_settings,
                         output_prefix + os.path.join(new_output_dir, node_dir, DATA_ERRORS_FILE), is_relative_path=False)
                     dataerrors_content = storage.get_file(dataerrors_url)
                     xs = []
@@ -448,7 +447,7 @@ class Converge(Stage):
                     logger.debug("xs=%s" % xs)
                     logger.debug("ys=%s" % ys)
 
-                    crit_url = smartconnector.get_url_with_pkey(output_storage_settings,
+                    crit_url = stage.get_url_with_pkey(output_storage_settings,
                         output_prefix + os.path.join(new_output_dir, node_dir, "criterion.txt"), is_relative_path=False)
                     try:
                         crit = storage.get_file(crit_url)
@@ -462,7 +461,7 @@ class Converge(Stage):
                     else:
                         hrmcdset_val = {}
 
-                    source_url = smartconnector.get_url_with_pkey(
+                    source_url = stage.get_url_with_pkey(
                         output_storage_settings,
                         output_prefix + os.path.join(new_output_dir, node_dir), is_relative_path=False)
                     logger.debug("source_url=%s" % source_url)
@@ -594,7 +593,7 @@ class Converge(Stage):
         run_settings['http://rmit.edu.au/schemas/input/mytardis']['experiment_id'] = str(self.experiment_id)
 
         if not self.done_iterating:
-            # trigger first of iteration stages
+            # trigger first of iteration corestages
             logger.debug("nonconvergence")
 
             run_settings.setdefault(
@@ -638,7 +637,7 @@ class Converge(Stage):
             # we are done, so trigger next stage outside of converge
             #update_key('converged', True, context)
             run_settings['http://rmit.edu.au/schemas/stages/converge'][u'converged'] = 1
-            # we are done, so don't trigger iteration stages
+            # we are done, so don't trigger iteration corestages
 
         #update_key('criterion', self.criterion, context)
         run_settings['http://rmit.edu.au/schemas/stages/converge'][u'criterion'] = unicode(self.criterion)

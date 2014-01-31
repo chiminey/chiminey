@@ -23,11 +23,10 @@ import os
 import logging
 from pprint import pformat
 from bdphpcprovider.platform import manage
+from bdphpcprovider.corestages import stage
 
-from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, UI
+from bdphpcprovider.corestages.stage import Stage, UI
 from bdphpcprovider.smartconnectorscheduler import models
-from bdphpcprovider.smartconnectorscheduler import smartconnector
-
 
 from bdphpcprovider import mytardis
 from bdphpcprovider import messages
@@ -64,11 +63,11 @@ class Configure(Stage, UI):
         messages.info(run_settings, "1: configure")
         local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
         logger.debug("settings=%s" % pformat(run_settings))
-        smartconnector.copy_settings(local_settings, run_settings,
+        stage.copy_settings(local_settings, run_settings,
             RMIT_SCHEMA + '/system/platform')
-        smartconnector.copy_settings(local_settings, run_settings,
+        stage.copy_settings(local_settings, run_settings,
             RMIT_SCHEMA + '/input/hrmc/optimisation_scheme')
-        smartconnector.copy_settings(local_settings, run_settings,
+        stage.copy_settings(local_settings, run_settings,
             RMIT_SCHEMA + '/input/hrmc/threshold')
         local_settings['bdp_username'] = run_settings[
             RMIT_SCHEMA + '/bdp_userprofile']['username']
@@ -114,11 +113,11 @@ class Configure(Stage, UI):
         #todo: input location will evenatually be replaced by the scratch space that was used by the sweep
         #todo: the sweep will indicate the location of the scratch space in the run_settings
         #todo: add scheme (ssh) to inputlocation
-        source_url = smartconnector.get_url_with_pkey(local_settings,
+        source_url = stage.get_url_with_pkey(local_settings,
             input_location)
         logger.debug("source_url=%s" % source_url)
 
-        destination_url = smartconnector.get_url_with_pkey(
+        destination_url = stage.get_url_with_pkey(
             output_storage_settings,
             '%s://%s@%s' % (output_storage_settings['scheme'],
                              output_storage_settings['type'],
@@ -129,7 +128,7 @@ class Configure(Stage, UI):
 
         output_location = self.output_loc_offset  # run_settings[RMIT_SCHEMA + '/input/system'][u'output_location']
         try:
-            self.experiment_id = int(smartconnector.get_existing_key(run_settings,
+            self.experiment_id = int(stage.get_existing_key(run_settings,
                 RMIT_SCHEMA + '/input/mytardis/experiment_id'))
         except KeyError:
             self.experiment_id = 0

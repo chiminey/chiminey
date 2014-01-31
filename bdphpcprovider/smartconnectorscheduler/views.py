@@ -47,10 +47,10 @@ logger = logging.getLogger(__name__)
 #     context = RequestContext(request, {})
 #     if request.method == 'POST':
 #         input_parameters = request.POST
-#         stages = input_parameters['stages']
+#         corestages = input_parameters['stages']
 #         experiment_id = input_parameters['experiment_id']
 #         group_id = str(input_parameters['group_id'])
-#         requested_stages_list=str(stages).split("'")
+#         requested_stages_list=str(corestages).split("'")
 #         STAGES = ['Create', 'Setup', 'Run', 'Terminate']
 
 #         for stage in STAGES:

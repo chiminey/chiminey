@@ -258,7 +258,7 @@ def _process_context(context_id):
                 logger.error("0: internal error (%s stage):%s" % (str(current_stage.name), e))
                 messages.error(run_settings, "0: internal error (%s stage):%s" % (str(current_stage.name), e))
         if not triggered:
-            logger.debug("No stages triggered")
+            logger.debug("No corestages triggered")
             test_info = task_run_settings
             run_context.deleted = True
             run_context.save()
@@ -394,7 +394,7 @@ def progress_context_broken(context_id):
                     except Exception, e:
                         messages.error(run_settings, "0: internal error:%s" % e)
                 if not triggered:
-                    logger.debug("No stages triggered")
+                    logger.debug("No corestages triggered")
                     test_info = task_run_settings
                     run_context.deleted = True
                     run_context.save()

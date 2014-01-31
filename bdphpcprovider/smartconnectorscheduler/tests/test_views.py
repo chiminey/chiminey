@@ -88,7 +88,7 @@ class SmartConnectorSchedulerTest(TestCase):
         print response.content
 
         current_stage = 'Create'
-        self.input_parameters['stages'] = [current_stage]
+        self.input_parameters['corestages'] = [current_stage]
         create_parameters = [lower(current_stage), '-v', self.number_of_cores]
         message = "Your group ID is %s" % self.group_id
 
@@ -105,7 +105,7 @@ class SmartConnectorSchedulerTest(TestCase):
     # Testing Setup Stage
     def test_index_setup(self):
         current_stage = 'Setup'
-        self.input_parameters['stages'] = [current_stage]
+        self.input_parameters['corestages'] = [current_stage]
         setup_parameters = [lower(current_stage), '-g', self.group_id]
         message = "Setup stage completed"
 
@@ -176,7 +176,7 @@ class SmartConnectorSchedulerTest(TestCase):
         .and_return(True)
 
         current_stage = 'Run'
-        self.input_parameters['stages'] = [current_stage]
+        self.input_parameters['corestages'] = [current_stage]
         self.input_parameters['input_dir'] = b64_encoded
         message = "Run stage completed. Results are ready"
 
@@ -192,7 +192,7 @@ class SmartConnectorSchedulerTest(TestCase):
     # Testing Terminate Stage
     def test_index_terminate(self):
         current_stage = 'Terminate'
-        self.input_parameters['stages'] = [current_stage]
+        self.input_parameters['corestages'] = [current_stage]
         terminate_parameters = ['teardown', '-g', self.group_id, 'yes']
         message = "Terminate stage completed"
 
@@ -324,7 +324,7 @@ class TestCommandContextLoop(TestCase):
     #             }
     #             ],
     #         # we might want to reuse schemas in muliple contextsets
-    #         # hence we could merge next too stages, for example.
+    #         # hence we could merge next too corestages, for example.
     #         # However, current ContextParameterSets are unamed in the
     #         # URI so we can't identify which one to use.
     #         u'http://rmit.edu.au/schemas/stages/null/testing':
@@ -545,9 +545,9 @@ class TestCommandContextLoop(TestCase):
     #     directive = models.Directive(name="smartconnector1")
     #     directive.save()
 
-    #     self.null_package = "bdphpcprovider.smartconnectorscheduler.stages.nullstage.NullStage"
-    #     self.parallel_package = "bdphpcprovider.smartconnectorscheduler.stages.composite.ParallelStage"
-    #     # Define all the stages that will make up the command.  This structure
+    #     self.null_package = "bdphpcprovider.smartconnectorscheduler.corestages.nullstage.NullStage"
+    #     self.parallel_package = "bdphpcprovider.smartconnectorscheduler.corestages.composite.ParallelStage"
+    #     # Define all the corestages that will make up the command.  This structure
     #     # has two layers of composition
     #     composite_stage = models.Stage.objects.create(name="basic_connector",
     #          description="encapsulates a workflow",
@@ -559,7 +559,7 @@ class TestCommandContextLoop(TestCase):
     #         package=self.null_package,
     #         order=0)
 
-    #     # stage settings are usable from subsequent stages in a run so only
+    #     # stage settings are usable from subsequent corestages in a run so only
     #     # need to define once for first null or parallel stage
     #     setup_stage.update_settings(
     #         {
@@ -598,8 +598,8 @@ class TestCommandContextLoop(TestCase):
     #         description="And here we finish everything off",
     #         package=self.null_package,
     #         order=3)
-    #     logger.debug("stages=%s" % models.Stage.objects.all())
-    #     # NB: We could remote command and have direcives map directly to stages
+    #     logger.debug("corestages=%s" % models.Stage.objects.all())
+    #     # NB: We could remote command and have direcives map directly to corestages
     #     # except that we still have to store platform somewhere and then every stage
     #     # (including those "hidden" inside composites have extra foreign key).
     #     comm = models.Command(platform=platform, directive=directive, stage=composite_stage)
@@ -743,7 +743,7 @@ class TestCommandContextLoop(TestCase):
                 }
                 ],
             # we might want to reuse schemas in muliple contextsets
-            # hence we could merge next too stages, for example.
+            # hence we could merge next too corestages, for example.
             # However, current ContextParameterSets are unamed in the
             # URI so we can't identify which one to use.
             u'http://rmit.edu.au/schemas/stages/null/testing':
@@ -1022,9 +1022,9 @@ class TestCommandContextLoop(TestCase):
         program_dir = models.Directive(name="program")
         program_dir.save()
 
-        self.movement_stage = "bdphpcprovider.smartconnectorscheduler.stages.movement.CopyFileStage"
-        self.program_stage = "bdphpcprovider.smartconnectorscheduler.stages.program.LocalProgramStage"
-        # Define all the stages that will make up the command.  This structure
+        self.movement_stage = "bdphpcprovider.smartconnectorscheduler.corestages.movement.CopyFileStage"
+        self.program_stage = "bdphpcprovider.smartconnectorscheduler.corestages.program.LocalProgramStage"
+        # Define all the corestages that will make up the command.  This structure
         # has two layers of composition
         copy_stage = models.Stage.objects.create(name="copy",
              description="data movemement operation",
@@ -1047,7 +1047,7 @@ class TestCommandContextLoop(TestCase):
         #        u'output':0
         #        }})
 
-        logger.debug("stages=%s" % models.Stage.objects.all())
+        logger.debug("corestages=%s" % models.Stage.objects.all())
         # Make a new command that reliases composite_stage
         # TODO: add the command program to the model
         comm = models.Command(platform=self.platform, directive=copy_dir, stage=copy_stage)
@@ -1055,7 +1055,7 @@ class TestCommandContextLoop(TestCase):
         comm = models.Command(platform=self.platform, directive=program_dir, stage=program_stage)
         comm.save()
 
-        # We could make one command with a composite containing three stages or
+        # We could make one command with a composite containing three corestages or
         # three commands each containing a single stage.
 
         # done setup
@@ -1125,7 +1125,7 @@ class TestCommandContextLoop(TestCase):
 
             test_initial_run_settings.append((directive_name, run_settings))
 
-            # do all the processing of stages for all available contexts for all users.
+            # do all the processing of corestages for all available contexts for all users.
             # NB: a user can have multiple run contexts, but they will be processed
             # in a undefined order. TODO: build a run_context sequence model of some kind.
 
@@ -1198,9 +1198,9 @@ class TestCommandContextLoop(TestCase):
         directive = models.Directive(name="smartconnector1")
         directive.save()
 
-        self.null_package = "bdphpcprovider.smartconnectorscheduler.stages.nullstage.NullStage"
-        self.parallel_package = "bdphpcprovider.smartconnectorscheduler.stages.composite.ParallelStage"
-        # Define all the stages that will make up the command.  This structure
+        self.null_package = "bdphpcprovider.smartconnectorscheduler.corestages.nullstage.NullStage"
+        self.parallel_package = "bdphpcprovider.smartconnectorscheduler.corestages.composite.ParallelStage"
+        # Define all the corestages that will make up the command.  This structure
         # has two layers of composition
         composite_stage = models.Stage.objects.create(name="basic_connector",
              description="encapsulates a workflow",
@@ -1212,7 +1212,7 @@ class TestCommandContextLoop(TestCase):
             package=self.null_package,
             order=0)
 
-        # stage settings are usable from subsequent stages in a run so only
+        # stage settings are usable from subsequent corestages in a run so only
         # need to define once for first null or parallel stage
         setup_stage.update_settings(
             {
@@ -1251,8 +1251,8 @@ class TestCommandContextLoop(TestCase):
             description="And here we finish everything off",
             package=self.null_package,
             order=3)
-        logger.debug("stages=%s" % models.Stage.objects.all())
-        # NB: We could remote command and have direcives map directly to stages
+        logger.debug("corestages=%s" % models.Stage.objects.all())
+        # NB: We could remote command and have direcives map directly to corestages
         # except that we still have to store platform somewhere and then every stage
         # (including those "hidden" inside composites have extra foreign key).
         comm = models.Command(platform=self.platform, directive=directive, stage=composite_stage)

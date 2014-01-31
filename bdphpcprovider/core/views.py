@@ -330,6 +330,7 @@ class ContextResource(ModelResource):
                 raise ImmediateHttpResponse(http.HttpBadRequest(e))
         location = []
         try:
+            logger.debug(directive_args)
             (run_settings, command_args, run_context) \
                  = hrmcstages.make_runcontext_for_directive(
                  myplatform,

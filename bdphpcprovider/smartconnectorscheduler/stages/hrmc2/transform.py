@@ -25,10 +25,9 @@ import json
 import logging
 from collections import namedtuple
 import fnmatch
+from bdphpcprovider.corestages import stage
 
-from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
-from bdphpcprovider.smartconnectorscheduler import smartconnector
-from bdphpcprovider.smartconnectorscheduler import platform
+from bdphpcprovider.corestages.stage import Stage
 from bdphpcprovider.smartconnectorscheduler import models
 
 from bdphpcprovider.platform import manage
@@ -67,7 +66,7 @@ class Transform(Stage):
             logger.debug(e)
 
         try:
-            current_processes = ast.literal_eval(smartconnector.get_existing_key(run_settings,
+            current_processes = ast.literal_eval(stage.get_existing_key(run_settings,
                     'http://rmit.edu.au/schemas/stages/schedule/current_processes'))
             executed_not_running = [x for x in current_processes if x['status'] == 'ready']
             if executed_not_running:
@@ -127,9 +126,9 @@ class Transform(Stage):
         _, fnames = fsys.listdir(mypath)
         for f in fnames:
             if fnmatch.fnmatch(f, pattern):
-                source_url = smartconnector.get_url_with_pkey(output_storage_settings,
+                source_url = stage.get_url_with_pkey(output_storage_settings,
                     output_prefix + os.path.join(source_path, f), is_relative_path=False)
-                dest_url = smartconnector.get_url_with_pkey(output_storage_settings,
+                dest_url = stage.get_url_with_pkey(output_storage_settings,
                     output_prefix + os.path.join(dest_path, f), is_relative_path=False)
                 logger.debug('source_url=%s, dest_url=%s' % (source_url, dest_url))
                 content = storage.get_file(source_url)
@@ -138,33 +137,33 @@ class Transform(Stage):
     def retrieve_local_settings(self, run_settings):
         self.boto_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
 
-        smartconnector.copy_settings(self.boto_settings, run_settings,
+        stage.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/setup/payload_source')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
+        stage.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/setup/payload_destination')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
+        stage.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/system/platform')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
+        stage.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/create/custom_prompt')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
+        stage.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/create/cloud_sleep_interval')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
+        stage.copy_settings(self.boto_settings, run_settings,
           'http://rmit.edu.au/schemas/stages/create/created_nodes')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
+        stage.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/run/payload_cloud_dirname')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
+        stage.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/system/max_seed_int')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
+        stage.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/run/compile_file')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
+        stage.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/run/retry_attempts')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
+        stage.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/input/system/cloud/number_vm_instances')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
+        stage.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/input/hrmc/iseed')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
+        stage.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/input/hrmc/optimisation_scheme')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
+        stage.copy_settings(self.boto_settings, run_settings,
             'http://rmit.edu.au/schemas/input/hrmc/threshold')
         self.boto_settings['bdp_username'] = run_settings[
             RMIT_SCHEMA + '/bdp_userprofile']['username']
@@ -190,7 +189,7 @@ class Transform(Stage):
             self.input_dir = os.path.join(os.path.join(self.job_dir, "input_%d" % self.id))
             self.new_input_dir = os.path.join(os.path.join(self.job_dir, "input_%d" % (self.id + 1)))
         else:
-            # FIXME: Not clear that this a valid path through stages
+            # FIXME: Not clear that this a valid path through corestages
             self.output_dir = os.path.join(os.path.join(self.job_dir, "output"))
             self.output_dir = os.path.join(os.path.join(self.job_dir, "input"))
             self.new_input_dir = os.path.join(os.path.join(self.job_dir, "input_1"))
@@ -208,7 +207,7 @@ class Transform(Stage):
         # logger.debug("Start time %f "% start_time)
 
         logger.debug("output_storage_settings=%s" % output_storage_settings)
-        output_url = smartconnector.get_url_with_pkey(
+        output_url = stage.get_url_with_pkey(
             output_storage_settings,
             output_prefix + self.output_dir, is_relative_path=False)
 
@@ -231,7 +230,7 @@ class Transform(Stage):
         for node_output_dir in node_output_dirs:
             base_fname = "HRMC.inp"
             try:
-                values_url = smartconnector.get_url_with_pkey(
+                values_url = stage.get_url_with_pkey(
                     output_storage_settings,
                     output_prefix + os.path.join(self.output_dir, node_output_dir,
                     '%s_values' % base_fname), is_relative_path=False)
@@ -269,7 +268,7 @@ class Transform(Stage):
                         logger.debug("criterion not found")
                         continue
                     logger.debug("crit=%s" % crit)
-                    source_url = smartconnector.get_url_with_pkey(
+                    source_url = stage.get_url_with_pkey(
                         output_storage_settings,
                         output_prefix + os.path.join(self.output_dir, node_output_dir),
                         is_relative_path=False)
@@ -356,7 +355,7 @@ class Transform(Stage):
                         host = settings['host']
                         prefix = 'ssh://%s@%s' % (settings['type'], host)
 
-                        source_url = smartconnector.get_url_with_pkey(
+                        source_url = stage.get_url_with_pkey(
                             settings, os.path.join(prefix, path, "HRMC.inp_values"),
                             is_relative_path=False)
                         logger.debug("source_url=%s" % source_url)
@@ -461,10 +460,10 @@ class Transform(Stage):
 
             # Move all existing domain input files unchanged to next input directory
             for f in self.domain_input_files:
-                source_url = smartconnector.get_url_with_pkey(
+                source_url = stage.get_url_with_pkey(
                     output_storage_settings,
                     output_prefix + os.path.join(self.output_dir, Node_info.dir, f), is_relative_path=False)
-                dest_url = smartconnector.get_url_with_pkey(
+                dest_url = stage.get_url_with_pkey(
                     output_storage_settings,
                     output_prefix + os.path.join(self.new_input_node_dir, f),
                     is_relative_path=False)
@@ -489,7 +488,7 @@ class Transform(Stage):
             # NB: Converge stage triggers based on criterion value from audit.
 
             info = "Run %s preserved (error %s)\n" % (Node_info.number, Node_info.criterion)
-            audit_url = smartconnector.get_url_with_pkey(
+            audit_url = stage.get_url_with_pkey(
                 output_storage_settings,
                     output_prefix + os.path.join(self.new_input_node_dir, 'audit.txt'), is_relative_path=False)
             storage.put_file(audit_url, info)
@@ -497,17 +496,17 @@ class Transform(Stage):
             self.audit += info
 
             # move xyz_final.xyz to initial.xyz
-            source_url = smartconnector.get_url_with_pkey(
+            source_url = stage.get_url_with_pkey(
                 output_storage_settings,
                 output_prefix + os.path.join(self.output_dir, Node_info.dir, "xyz_final.xyz"), is_relative_path=False)
-            dest_url = smartconnector.get_url_with_pkey(
+            dest_url = stage.get_url_with_pkey(
                 output_storage_settings,
                 output_prefix + os.path.join(self.new_input_node_dir, 'input_initial.xyz'), is_relative_path=False)
             content = storage.get_file(source_url)
             storage.put_file(dest_url, content)
             self.audit += "spawning diamond runs\n"
 
-        audit_url = smartconnector.get_url_with_pkey(
+        audit_url = stage.get_url_with_pkey(
             output_storage_settings,
                         output_prefix + os.path.join(self.new_input_dir, 'audit.txt'), is_relative_path=False)
         storage.put_file(audit_url, self.audit)
@@ -528,7 +527,7 @@ class Transform(Stage):
                                     output_storage_settings['type'])
         grerr_file = 'grerr%s.dat' % str(number).zfill(2)
         logger.debug("grerr_file=%s " % grerr_file)
-        grerr_url = smartconnector.get_url_with_pkey(
+        grerr_url = stage.get_url_with_pkey(
             output_storage_settings,
                         output_prefix + os.path.join(self.output_dir,
                             node_output_dir, 'grerr%s.dat' % str(number).zfill(2)), is_relative_path=False)
@@ -557,7 +556,7 @@ class Transform(Stage):
         output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
                                     output_storage_settings['type'])
         logger.debug('compute psd---')
-        psd_url = smartconnector.get_url_with_pkey(output_storage_settings,
+        psd_url = stage.get_url_with_pkey(output_storage_settings,
                         output_prefix + os.path.join(self.output_dir,
                             node_output_dir, "PSD_output", "psd.dat"), is_relative_path=False)
         logger.debug('psd_url=%s' % psd_url)
@@ -568,7 +567,7 @@ class Transform(Stage):
         # psd_exp = os.path.join(globalFileSystem,
         #                        self.output_dir, node_output_dir,
         #                        "PSD_output/PSD_exp.dat")
-        psd_url = smartconnector.get_url_with_pkey(
+        psd_url = stage.get_url_with_pkey(
             output_storage_settings,
                         output_prefix + os.path.join(self.output_dir,
                             node_output_dir, "PSD_output", "PSD_exp.dat"), is_relative_path=False)
@@ -604,7 +603,7 @@ class Transform(Stage):
             criterion += math.pow((y1_axis[i] - y2_axis[i]), 2)
         logger.debug("Criterion %f" % criterion)
 
-        criterion_url = smartconnector.get_url_with_pkey(
+        criterion_url = stage.get_url_with_pkey(
             output_storage_settings,
             output_prefix + os.path.join(self.output_dir, node_output_dir, "PSD_output", "criterion.txt"),
             is_relative_path=False)

@@ -20,10 +20,7 @@
 
 
 import logging
-from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
-from itertools import product
-
-from bdphpcprovider.smartconnectorscheduler.errors import deprecated
+from bdphpcprovider.corestages.stage import Stage
 
 
 logger = logging.getLogger(__name__)
@@ -31,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 class ParallelStage(Stage):
     """
-        A list of stages
+        A list of corestages
     """
     def __init__(self, user_settings=None):
         logger.debug("ps__init")

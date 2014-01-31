@@ -23,21 +23,22 @@ import logging
 import ast
 from bdphpcprovider.platform import manage
 
-from bdphpcprovider.smartconnectorscheduler import smartconnector, models
+from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.cloudconnection import destroy_vms
+from bdphpcprovider.corestages import stage
 
 logger = logging.getLogger(__name__)
 
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
-class Destroy(smartconnector.Stage):
+class Destroy(stage.Stage):
 
     def __init__(self, user_settings=None):
         logger.debug('Destroy stage initialised')
 
     def triggered(self, run_settings):
         try:
-            cleanup_nodes_str = smartconnector.get_existing_key(run_settings,
+            cleanup_nodes_str = stage.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/reliability/cleanup_nodes')
             self.cleanup_nodes = ast.literal_eval(cleanup_nodes_str)
             if self.cleanup_nodes:
@@ -68,9 +69,9 @@ class Destroy(smartconnector.Stage):
 
     def process(self, run_settings):
         local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
-        smartconnector.copy_settings(local_settings, run_settings,
+        stage.copy_settings(local_settings, run_settings,
             'http://rmit.edu.au/schemas/system/platform')
-        smartconnector.copy_settings(local_settings, run_settings,
+        stage.copy_settings(local_settings, run_settings,
             'http://rmit.edu.au/schemas/stages/create/cloud_sleep_interval')
         local_settings['bdp_username'] = run_settings[
             RMIT_SCHEMA + '/bdp_userprofile']['username']
@@ -88,7 +89,7 @@ class Destroy(smartconnector.Stage):
         if self._exists(run_settings,
             'http://rmit.edu.au/schemas/stages/create',
             u'created_nodes'):
-            smartconnector.copy_settings(local_settings, run_settings,
+            stage.copy_settings(local_settings, run_settings,
                 'http://rmit.edu.au/schemas/stages/create/created_nodes')
             #all_instances = managevms.get_registered_vms(
             #    local_settings, node_type=node_type)
@@ -97,7 +98,7 @@ class Destroy(smartconnector.Stage):
         #    all_instances = []
 
         if self.cleanup_nodes:
-            smartconnector.copy_settings(local_settings, run_settings,
+            stage.copy_settings(local_settings, run_settings,
             'http://rmit.edu.au/schemas/reliability/cleanup_nodes')
             node_type.append('cleanup_nodes')
             #all_instances.extend(managevms.get_registered_vms(

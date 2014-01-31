@@ -23,7 +23,7 @@ import logging
 from pprint import pformat
 
 
-from bdphpcprovider.smartconnectorscheduler.smartconnector import (
+from bdphpcprovider.corestages.stage import (
     get_existing_key
 )
 
@@ -47,7 +47,7 @@ def addMessage(run_settings, level, msg):
     logger.debug("mess=%s" % mess)
     # Cannot write ContextMessage in same process as tasks.py
     # holds lock on all tables, so would get all messages
-    # within a stages at the end of the stages process
+    # within a corestages at the end of the corestages process
     # With celery task, then some other worker (if available)
     # can do the task ASAP.
     # FIXME: this is circular import at global level

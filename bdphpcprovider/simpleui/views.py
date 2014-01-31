@@ -1223,7 +1223,7 @@ def get_contexts(request):
                     contexts.append(val)
         logger.debug("contexts=%s" % contexts)
         # TODO: schedule celery tasks to delete each context, as background
-        # process because stages may already have write lock on context.
+        # process because corestages may already have write lock on context.
         from bdphpcprovider.smartconnectorscheduler import tasks
         for context_id in contexts:
             logger.debug("scheduling deletion of %s" % context_id)

@@ -25,17 +25,17 @@ import os
 
 from bdphpcprovider.smartconnectorscheduler.stages.composite import ParallelStage
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadSpecificationError
-from bdphpcprovider.smartconnectorscheduler import hrmcstages, smartconnector
-
+from bdphpcprovider.smartconnectorscheduler import hrmcstages
 
 from bdphpcprovider import storage
+from bdphpcprovider.corestages import stage
 
 logger = logging.getLogger(__name__)
 
 
 class HRMCParallelStage(ParallelStage):
     """
-        A list of stages
+        A list of corestages
     """
 
     def __init__(self, user_settings=None):
@@ -58,19 +58,19 @@ class HRMCParallelStage(ParallelStage):
         try:
             run_settings = kwargs['run_settings']
             logger.debug('run_settings=%s' % run_settings)
-            smartconnector.copy_settings(local_settings, run_settings,
+            stage.copy_settings(local_settings, run_settings,
                 'http://rmit.edu.au/schemas/input/hrmc/fanout_per_kept_result')
-            smartconnector.copy_settings(local_settings, run_settings,
+            stage.copy_settings(local_settings, run_settings,
             'http://rmit.edu.au/schemas/input/hrmc/optimisation_scheme')
-            smartconnector.copy_settings(local_settings, run_settings,
+            stage.copy_settings(local_settings, run_settings,
                 'http://rmit.edu.au/schemas/input/hrmc/threshold')
-            smartconnector.copy_settings(local_settings, run_settings,
+            stage.copy_settings(local_settings, run_settings,
                 'http://rmit.edu.au/schemas/input/hrmc/pottype')
-            smartconnector.copy_settings(local_settings, run_settings,
+            stage.copy_settings(local_settings, run_settings,
                 'http://rmit.edu.au/schemas/system/max_seed_int')
-            smartconnector.copy_settings(local_settings, run_settings,
+            stage.copy_settings(local_settings, run_settings,
                 'http://rmit.edu.au/schemas/system/random_numbers')
-            smartconnector.copy_settings(local_settings, run_settings,
+            stage.copy_settings(local_settings, run_settings,
                 'http://rmit.edu.au/schemas/system/id')
         except KeyError, e:
             logger.debug(e)
@@ -149,13 +149,13 @@ class HRMCParallelStage(ParallelStage):
         output_storage_settings = kwargs['output_storage_settings']
         job_dir = kwargs['job_dir']
         try:
-            id = smartconnector.get_existing_key(
+            id = stage.get_existing_key(
                 run_settings, 'http://rmit.edu.au/schemas/system/id')
         except KeyError, e:
             logger.error(e)
             id = 0
         iter_inputdir = os.path.join(job_dir, "input_%s" % id)
-        url_with_pkey = smartconnector.get_url_with_pkey(
+        url_with_pkey = stage.get_url_with_pkey(
             output_storage_settings,
             '%s://%s@%s' % (output_storage_settings['scheme'],
                            output_storage_settings['type'],

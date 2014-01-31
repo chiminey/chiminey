@@ -21,12 +21,7 @@
 import os
 import unittest
 import logging
-import json
 import tempfile
-import sys
-
-from flexmock import flexmock
-import paramiko
 
 
 #from sshconnector import get_package_pids
@@ -43,23 +38,21 @@ from bdphpcprovider.smartconnectorscheduler.hrmcstages import get_run_info, get_
 
 logger = logging.getLogger(__name__)
 
-from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, SequentialStage
+from bdphpcprovider.corestages.stage import Stage, SequentialStage
 #from smartconnector import SmartConnector
 #from hrmcstages import Create,
 
 
-from bdphpcprovider.smartconnectorscheduler.stages.configure import Configure
+from bdphpcprovider.corestages.configure import Configure
 
-#from bdphpcprovider.smartconnectorscheduler.stages.setup import Setup
-#from bdphpcprovider.smartconnectorscheduler.stages.run import Run
-#from bdphpcprovider.smartconnectorscheduler.stages.finished import Finished
-#from bdphpcprovider.smartconnectorscheduler.stages.finished import packages_complete
+#from bdphpcprovider.smartconnectorscheduler.corestages.setup import Setup
+#from bdphpcprovider.smartconnectorscheduler.corestages.run import Run
+#from bdphpcprovider.smartconnectorscheduler.corestages.finished import Finished
+#from bdphpcprovider.smartconnectorscheduler.corestages.finished import packages_complete
 
 #from hrmcstages import Teardown
 
 
-
-from fs import path
 
 #TODO: need to split up these tests into separate files in a tests directory
 

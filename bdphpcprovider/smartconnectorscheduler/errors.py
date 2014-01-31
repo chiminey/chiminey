@@ -24,7 +24,7 @@ import logging.config
 logger = logging.getLogger(__name__)
 
 
-# This exceptions are used by the internal BDP system and not the stages
+# This exceptions are used by the internal BDP system and not the corestages
 
 class BDPException(Exception):
     """ A problem with the BDP system"""

@@ -23,7 +23,6 @@ import logging
 from pprint import pformat
 
 # from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
-from bdphpcprovider.smartconnectorscheduler import smartconnector
 
 from bdphpcprovider.platform import manage
 from bdphpcprovider import messages
@@ -32,12 +31,13 @@ from bdphpcprovider import storage
 
 from . import setup_settings
 from bdphpcprovider.sshconnection import open_connection
+from bdphpcprovider.corestages import stage
 
 
 logger = logging.getLogger(__name__)
 
 
-class MakeRunStage(smartconnector.Stage):
+class MakeRunStage(stage.Stage):
     """
     Execute a program using arguments which are local
     """
@@ -49,12 +49,12 @@ class MakeRunStage(smartconnector.Stage):
             return (True, "ok")
 
     def triggered(self, run_settings):
-        if smartconnector.multilevel_key_exists(
+        if stage.multilevel_key_exists(
             run_settings,
             'http://rmit.edu.au/schemas/stages/upload_makefile',
             'done'):
             try:
-                upload_makefile_done = int(smartconnector.get_existing_key(run_settings,
+                upload_makefile_done = int(stage.get_existing_key(run_settings,
                     'http://rmit.edu.au/schemas/stages/upload_makefile/done'))
             except ValueError, e:
                 logger.error(e)
@@ -90,7 +90,7 @@ class MakeRunStage(smartconnector.Stage):
             bdp_username)
         logger.debug("comp_pltf_settings=%s" % pformat(comp_pltf_settings))
         settings.update(comp_pltf_settings)
-        encoded_d_url = smartconnector.get_url_with_pkey(
+        encoded_d_url = stage.get_url_with_pkey(
             settings,
             dest_url,
             is_relative_path=True,

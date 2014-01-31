@@ -1,9 +1,10 @@
-from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
+import json
+import logging
+
+from bdphpcprovider.corestages.stage import Stage
 from bdphpcprovider.smartconnectorscheduler.filesystem import DataObject
 from bdphpcprovider.smartconnectorscheduler.hrmcstages import get_filesys, get_run_info, get_settings
 
-import json
-import logging
 
 logger = logging.getLogger(__name__)
 

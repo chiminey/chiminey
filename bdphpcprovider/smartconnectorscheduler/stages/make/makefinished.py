@@ -24,10 +24,9 @@ import logging
 import ast
 
 from paramiko.ssh_exception import SSHException
+from bdphpcprovider.corestages import stage
 
-from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
-from bdphpcprovider.smartconnectorscheduler import smartconnector
-from bdphpcprovider.smartconnectorscheduler import platform
+from bdphpcprovider.corestages.stage import Stage
 
 from bdphpcprovider import messages
 from bdphpcprovider.platform import manage
@@ -74,7 +73,7 @@ class MakeFinishedStage(Stage):
 
     def _job_finished(self, settings, remote_path):
 
-        encoded_d_url = smartconnector.get_url_with_pkey(
+        encoded_d_url = stage.get_url_with_pkey(
             settings=settings,
             url_or_relative_path=remote_path,
             is_relative_path=True,
@@ -138,7 +137,7 @@ class MakeFinishedStage(Stage):
             bdp_username)
         settings.update(comp_pltf_settings)
 
-        encoded_d_url = smartconnector.get_url_with_pkey(
+        encoded_d_url = stage.get_url_with_pkey(
             settings,
             dest_url,
             is_relative_path=True,
@@ -177,7 +176,7 @@ class MakeFinishedStage(Stage):
             bdp_username)
         settings.update(comp_pltf_settings)
 
-        encoded_s_url = smartconnector.get_url_with_pkey(
+        encoded_s_url = stage.get_url_with_pkey(
             settings,
             source_url,
             is_relative_path=True,
@@ -202,7 +201,7 @@ class MakeFinishedStage(Stage):
         logger.debug("Transferring output from %s to %s" % (source_url,
             dest_url))
         settings.update(output_storage_settings)
-        encoded_d_url = smartconnector.get_url_with_pkey(settings, dest_url)
+        encoded_d_url = stage.get_url_with_pkey(settings, dest_url)
         logger.debug("encoded_d_url=%s" % encoded_d_url)
         # FIXME: might want to turn on paramiko compress function
         #storage_files(encoded_d_url, exceptions=[])
@@ -232,7 +231,7 @@ class MakeFinishedStage(Stage):
                     OUTCAR_FILE = "OUTCAR"
                     VALUES_FILE = "values"
 
-                    outcar_url = smartconnector.get_url_with_pkey(settings,
+                    outcar_url = stage.get_url_with_pkey(settings,
                         os.path.join(dest_url, OUTCAR_FILE), is_relative_path=False)
                     logger.debug("outcar_url=%s" % outcar_url)
 
@@ -256,7 +255,7 @@ class MakeFinishedStage(Stage):
 
                     logger.debug("toten=%s" % toten)
 
-                    values_url = smartconnector.get_url_with_pkey(settings,
+                    values_url = stage.get_url_with_pkey(settings,
                         os.path.join(dest_url, VALUES_FILE), is_relative_path=False)
                     logger.debug("values_url=%s" % values_url)
                     try:
