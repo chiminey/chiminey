@@ -27,8 +27,9 @@ from django.core.exceptions import ImproperlyConfigured
 
 from bdphpcprovider.cloudconnection import get_registered_vms, is_vm_running
 from bdphpcprovider.platform import manage
-from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
-from bdphpcprovider.smartconnectorscheduler import smartconnector, hrmcstages
+from bdphpcprovider.corestages import stage
+from bdphpcprovider.corestages.stage import Stage
+from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.sshconnection import open_connection
 from bdphpcprovider.compute import run_command_with_status
@@ -61,7 +62,7 @@ class Schedule(Stage):
             logger.debug(e)
 
         try:
-            bootstrap_done = int(smartconnector.get_existing_key(run_settings,
+            bootstrap_done = int(stage.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/stages/bootstrap/bootstrap_done'))
             if not bootstrap_done:
                 return False
@@ -103,7 +104,7 @@ class Schedule(Stage):
                 logger.debug(e)
 
         try:
-            scheduled_str = smartconnector.get_existing_key(
+            scheduled_str = stage.get_existing_key(
                 run_settings,
                 'http://rmit.edu.au/schemas/stages/schedule/scheduled_nodes')
             self.scheduled_nodes = ast.literal_eval(scheduled_str)
@@ -113,7 +114,7 @@ class Schedule(Stage):
             self.scheduled_nodes = []
 
         try:
-            rescheduled_str = smartconnector.get_existing_key(
+            rescheduled_str = stage.get_existing_key(
                 run_settings,
                 'http://rmit.edu.au/schemas/stages/schedule/rescheduled_nodes')
             self.rescheduled_nodes = ast.literal_eval(rescheduled_str)
@@ -121,7 +122,7 @@ class Schedule(Stage):
             self.rescheduled_nodes = []
 
         try:
-            current_processes_str = smartconnector.get_existing_key(
+            current_processes_str = stage.get_existing_key(
                 run_settings,
                 'http://rmit.edu.au/schemas/stages/schedule/current_processes')
             #self.scheduled_nodes = ast.literal_eval(scheduled_str)
@@ -131,7 +132,7 @@ class Schedule(Stage):
             self.current_processes = []
 
         try:
-            all_processes_str = smartconnector.get_existing_key(run_settings,
+            all_processes_str = stage.get_existing_key(run_settings,
             'http://rmit.edu.au/schemas/stages/schedule/all_processes')
             self.all_processes = ast.literal_eval(all_processes_str)
         except KeyError:
@@ -165,7 +166,7 @@ class Schedule(Stage):
 
     def process(self, run_settings):
         try:
-            self.started = int(smartconnector.get_existing_key(run_settings,
+            self.started = int(stage.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/stages/schedule/schedule_started'))
         except KeyError:
             self.started = 0
@@ -177,7 +178,7 @@ class Schedule(Stage):
         logger.debug('Schedule there')
         if not self.started:
             try:
-                self.schedule_index = int(smartconnector.get_existing_key(run_settings,
+                self.schedule_index = int(stage.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/stages/schedule/schedule_index'))
             except KeyError:
                 self.schedule_index = 0
@@ -219,7 +220,7 @@ class Schedule(Stage):
                 try:
                     relative_path = "%s@%s" % (local_settings['type'],
                         local_settings['payload_destination'])
-                    destination = smartconnector.get_url_with_pkey(
+                    destination = stage.get_url_with_pkey(
                         local_settings,
                         relative_path,
                         is_relative_path=True,
@@ -267,7 +268,7 @@ class Schedule(Stage):
 
     def start_schedule(self, run_settings, local_settings):
         #FIXme replace with hrmcstage.get_parent_stage()
-        schedule_package = "bdphpcprovider.smartconnectorscheduler.stages.schedule.Schedule"
+        schedule_package = "bdphpcprovider.corestages.schedule.Schedule"
         parent_obj = models.Stage.objects.get(package=schedule_package)
         parent_stage = parent_obj.parent
         logger.debug("local_settings=%s" % local_settings)
@@ -382,27 +383,27 @@ class Schedule(Stage):
 
 
 def retrieve_local_settings(run_settings, local_settings):
-    smartconnector.copy_settings(local_settings, run_settings,
+    stage.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/input/system/cloud/number_vm_instances')
-    smartconnector.copy_settings(local_settings, run_settings,
+    stage.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/input/reliability/maximum_retry')
-    smartconnector.copy_settings(local_settings, run_settings,
+    stage.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/setup/payload_destination')
-    smartconnector.copy_settings(local_settings, run_settings,
+    stage.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/setup/filename_for_PIDs')
-    smartconnector.copy_settings(local_settings, run_settings,
+    stage.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/setup/payload_name')
-    smartconnector.copy_settings(local_settings, run_settings,
+    stage.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/system/platform')
-    smartconnector.copy_settings(local_settings, run_settings,
+    stage.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/bootstrap/bootstrapped_nodes')
-    smartconnector.copy_settings(local_settings, run_settings,
+    stage.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/create/custom_prompt')
-    smartconnector.copy_settings(local_settings, run_settings,
+    stage.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/system/max_seed_int')
-    smartconnector.copy_settings(local_settings, run_settings,
+    stage.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/input/hrmc/optimisation_scheme')
-    smartconnector.copy_settings(local_settings, run_settings,
+    stage.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/input/hrmc/fanout_per_kept_result')
     local_settings['bdp_username'] = run_settings[
         RMIT_SCHEMA + '/bdp_userprofile']['username']
@@ -446,7 +447,7 @@ def start_round_robin_schedule(nodes, processes, schedule_index, settings):
             ids, ip_address, new_processes,
             maximum_retry=int(settings['maximum_retry']))
 
-        destination = smartconnector.get_url_with_pkey(
+        destination = stage.get_url_with_pkey(
             settings,
             relative_path,
             is_relative_path=True,
@@ -510,7 +511,7 @@ def start_round_robin_reschedule(nodes, procs_2b_rescheduled,
             ids, ip_address, new_processes,
             status='reschedule_ready',
             maximum_retry=int(settings['maximum_retry']))
-        destination = smartconnector.get_url_with_pkey(settings,
+        destination = stage.get_url_with_pkey(settings,
             relative_path,
             is_relative_path=True,
             ip_address=ip_address)
@@ -562,7 +563,7 @@ def put_proc_ids(relative_path, ids, ip, settings):
     relative_path = os.path.join(relative_path,
                                  settings['filename_for_PIDs'])
     logger.debug('put_proc_ids=%s' % relative_path)
-    destination = smartconnector.get_url_with_pkey(settings,
+    destination = stage.get_url_with_pkey(settings,
         relative_path,
         is_relative_path=True,
         ip_address=ip)

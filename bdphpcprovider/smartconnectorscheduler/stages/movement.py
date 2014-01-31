@@ -20,9 +20,8 @@
 
 
 import logging
-import logging.config
 
-from bdphpcprovider.smartconnectorscheduler.smartconnector import (
+from bdphpcprovider.corestages.stage import (
     Stage, get_url_with_pkey, copy_settings)
 
 from bdphpcprovider import storage

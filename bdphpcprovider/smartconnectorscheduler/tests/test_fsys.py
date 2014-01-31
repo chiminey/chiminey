@@ -18,26 +18,18 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import os
-import tempfile
 import unittest
-from pprint import pformat
 import logging
-import logging.config
 
 from nose.plugins.skip import SkipTest
 
-from django.contrib.auth.models import User
-from django import test as djangotest
 from django.conf import settings
 
-from bdphpcprovider.smartconnectorscheduler.management.commands import view
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
-from bdphpcprovider.smartconnectorscheduler import smartconnector
-from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
 
 from bdphpcprovider import mytardis
+from bdphpcprovider.corestages import stage
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +65,7 @@ class TestBDPURLS(unittest.TestCase):
         }
         url = "ssh://nci@127.0.0.1/remote/greet.txt"
 
-        res = smartconnector.get_url_with_pkey(self.my_settings, url)
+        res = stage.get_url_with_pkey(self.my_settings, url)
 
         self.assertEquals("ssh://127.0.0.1/remote/greet.txt?"
             "key_file=nci_private_key&password=nci_password&"
@@ -81,7 +73,7 @@ class TestBDPURLS(unittest.TestCase):
 
         url = "ssh://127.0.0.1/foo/bar.txt"
 
-        res = smartconnector.get_url_with_pkey(self.my_settings, url)
+        res = stage.get_url_with_pkey(self.my_settings, url)
 
         self.assertEquals("file://127.0.0.1/foo/bar.txt?"
             "root_path=/var/cloudenabling/remotesys", res)
@@ -89,32 +81,32 @@ class TestBDPURLS(unittest.TestCase):
 
         url = 'file://local@127.0.0.1/local/finalresult.txt'
 
-        res = smartconnector.get_url_with_pkey(self.my_settings, url)
+        res = stage.get_url_with_pkey(self.my_settings, url)
 
         self.assertEquals("file://127.0.0.1/local/finalresult.txt?"
             "root_path=/var/cloudenabling/remotesys", res)
 
         url = 'file://local@127.0.0.1/local/finalresult.txt'
 
-        res = smartconnector.get_url_with_pkey(self.my_settings, url)
+        res = stage.get_url_with_pkey(self.my_settings, url)
 
         self.assertEquals("file://127.0.0.1/local/finalresult.txt?root_path=/var/cloudenabling/remotesys", res)
 
         url = 'file://127.0.0.1/hrmcrun/input_0'
 
-        res = smartconnector.get_url_with_pkey(self.my_settings, url)
+        res = stage.get_url_with_pkey(self.my_settings, url)
 
         self.assertEquals("file://127.0.0.1/hrmcrun/input_0?root_path=/var/cloudenabling/remotesys", res)
 
         url = 'celery_payload_2'
 
-        res = smartconnector.get_url_with_pkey(self.my_settings, url, is_relative_path=True)
+        res = stage.get_url_with_pkey(self.my_settings, url, is_relative_path=True)
 
         self.assertEquals("file://127.0.0.1/celery_payload_2/?root_path=/var/cloudenabling/remotesys", res)
 
         url = 'nci@celery_payload_2'
 
-        res = smartconnector.get_url_with_pkey(self.my_settings, url, is_relative_path=True)
+        res = stage.get_url_with_pkey(self.my_settings, url, is_relative_path=True)
 
         self.assertEquals("ssh://127.0.0.1/celery_payload_2/?key_file=nci_private_key&password=nci_password&root_path=/var/cloudenabling/nci&username=nci_user", res)
 
@@ -152,13 +144,13 @@ class TestCopy(unittest.TestCase):
             }
 
         for fpath, content in file_info:
-            dest_url = smartconnector.get_url_with_pkey(self.my_settings,
+            dest_url = stage.get_url_with_pkey(self.my_settings,
                 fpath, is_relative_path=True)
             hrmcstages.put_file(dest_url, content.encode('utf-8'))
 
-        source_url = smartconnector.get_url_with_pkey(self.my_settings,
+        source_url = stage.get_url_with_pkey(self.my_settings,
             'user/testdir', is_relative_path=True)
-        destination_url = smartconnector.get_url_with_pkey(self.my_settings,
+        destination_url = stage.get_url_with_pkey(self.my_settings,
             'user/testdir2', is_relative_path=True)
         hrmcstages.copy_directories(source_url, destination_url)
 
@@ -166,7 +158,7 @@ class TestCopy(unittest.TestCase):
         self.assertEquals(len(files_list), len(file_info))
         for path in files_list:
             logger.debug(path)
-            relpath = smartconnector.get_url_with_pkey(self.my_settings,
+            relpath = stage.get_url_with_pkey(self.my_settings,
                 path, is_relative_path=True)
             content = hrmcstages.get_file(relpath)
             logger.debug(content)
@@ -195,12 +187,12 @@ class TestCopy(unittest.TestCase):
             }
 
         for fpath, content in file_info:
-            dest_url = smartconnector.get_url_with_pkey(self.my_settings,
+            dest_url = stage.get_url_with_pkey(self.my_settings,
                 fpath, is_relative_path=True)
             hrmcstages.put_file(dest_url, content.encode('utf-8'))
-        source_url = smartconnector.get_url_with_pkey(self.my_settings,
+        source_url = stage.get_url_with_pkey(self.my_settings,
             'testdir', is_relative_path=True)
-        destination_url = smartconnector.get_url_with_pkey(self.my_settings,
+        destination_url = stage.get_url_with_pkey(self.my_settings,
             'testdir2', is_relative_path=True)
         hrmcstages.copy_directories(source_url, destination_url)
 
@@ -208,7 +200,7 @@ class TestCopy(unittest.TestCase):
         self.assertEquals(len(files_list), len(file_info))
         for path in files_list:
             logger.debug(path)
-            relpath = smartconnector.get_url_with_pkey(self.my_settings,
+            relpath = stage.get_url_with_pkey(self.my_settings,
                 path, is_relative_path=True)
             content = hrmcstages.get_file(relpath)
             logger.debug(content)
@@ -232,7 +224,7 @@ class TestCopy(unittest.TestCase):
         self._make_test_data()
 
         mytardis_url = "http://tardis@115.146.85.142/username/sweep313/hrmc1439/1_1_2/file.txt"
-        mytardis_bdp_url = smartconnector.get_url_with_pkey(self.mysettings,
+        mytardis_bdp_url = stage.get_url_with_pkey(self.mysettings,
             mytardis_url, is_relative_path=False)
         logger.debug("mytardis_bdp_url=%s" % mytardis_bdp_url)
         #hrmcstages.put_file(mytardis_bdp_url)
@@ -277,7 +269,7 @@ class TestCopy(unittest.TestCase):
             'testdir2/dir/file2.txt': 'content2'
             }
         for fpath, content in file_info:
-            dest_url = smartconnector.get_url_with_pkey(self.mysettings,
+            dest_url = stage.get_url_with_pkey(self.mysettings,
                 fpath, is_relative_path=True)
             hrmcstages.put_file(dest_url, content.encode('utf-8'))
 
@@ -296,7 +288,7 @@ class TestCopy(unittest.TestCase):
         # add file to existing dataset (or create if not found)
         mytardis_url = "http://tardis@115.146.85.142/username/" \
                         "sweep313/hrmc1439/1_1_2/file2.txt"
-        mytardis_bdp_url = smartconnector.get_url_with_pkey(self.mysettings,
+        mytardis_bdp_url = stage.get_url_with_pkey(self.mysettings,
             mytardis_url, is_relative_path=False)
         logger.debug("mytardis_bdp_url=%s" % mytardis_bdp_url)
 

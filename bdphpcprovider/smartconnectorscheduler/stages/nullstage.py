@@ -19,9 +19,8 @@
 # IN THE SOFTWARE.
 
 import logging
-import logging.config
 
-from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
+from bdphpcprovider.corestages.stage import Stage
 
 
 logger = logging.getLogger(__name__)

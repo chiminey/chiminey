@@ -22,10 +22,9 @@ import logging
 import ast
 import os
 from bdphpcprovider.platform import manage
-from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
-from bdphpcprovider.smartconnectorscheduler import (models,
-                                                    smartconnector,
-                                                    platform)
+from bdphpcprovider.corestages import stage
+from bdphpcprovider.corestages.stage import Stage
+from bdphpcprovider.smartconnectorscheduler import (models )
 from bdphpcprovider.reliabilityframework.ftmanager import FTManager
 
 from bdphpcprovider.reliabilityframework.failuredetection import FailureDetection
@@ -72,13 +71,13 @@ class Wait(Stage):
             logger.debug(e)
             return False
 
-        self.all_processes = ast.literal_eval(smartconnector.get_existing_key(run_settings,
+        self.all_processes = ast.literal_eval(stage.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/stages/schedule/all_processes'))
 
-        self.current_processes = ast.literal_eval(smartconnector.get_existing_key(run_settings,
+        self.current_processes = ast.literal_eval(stage.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/stages/schedule/current_processes'))
 
-        self.exec_procs = ast.literal_eval(smartconnector.get_existing_key(run_settings,
+        self.exec_procs = ast.literal_eval(stage.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/stages/execute/executed_procs'))
 
         if len(self.current_processes) == 0:
@@ -123,7 +122,7 @@ class Wait(Stage):
         curr_username = settings['username']
         settings['username'] = 'root'
         relative_path = settings['type'] + '@' + settings['payload_destination'] + "/" + process_id
-        destination = smartconnector.get_url_with_pkey(settings,
+        destination = stage.get_url_with_pkey(settings,
             relative_path,
             is_relative_path=True,
             ip_address=ip)
@@ -213,12 +212,12 @@ class Wait(Stage):
         source_files_location = "%s://%s@%s" % (computation_platform_settings['scheme'],
                                                 computation_platform_settings['type'],
                                                  os.path.join(ip, cloud_path))
-        source_files_url = smartconnector.get_url_with_pkey(
+        source_files_url = stage.get_url_with_pkey(
             computation_platform_settings, source_files_location,
             is_relative_path=False)
         logger.debug('source_files_url=%s' % source_files_url)
 
-        dest_files_url = smartconnector.get_url_with_pkey(
+        dest_files_url = stage.get_url_with_pkey(
             output_storage_settings,
             output_prefix+os.path.join(
                 self.job_dir, self.output_dir, process_id),
@@ -249,13 +248,13 @@ class Wait(Stage):
         offset = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset']
         self.job_dir = manage.get_job_dir(output_storage_settings, offset)
         try:
-            self.finished_nodes = smartconnector.get_existing_key(run_settings,
+            self.finished_nodes = stage.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/stages/run/finished_nodes')
         except KeyError:
             self.finished_nodes = '[]'
 
         try:
-            self.id = int(smartconnector.get_existing_key(run_settings,
+            self.id = int(stage.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/system/id'))
             self.output_dir = "output_%s" % self.id
         except KeyError:
@@ -311,7 +310,7 @@ class Wait(Stage):
                                     local_settings, comp_pltf_settings,
                                     output_storage_settings)
 
-                    audit_url = smartconnector.get_url_with_pkey(
+                    audit_url = stage.get_url_with_pkey(
                         comp_pltf_settings, os.path.join(
                             self.output_dir, process_id, "audit.txt"),
                         is_relative_path=True)
@@ -414,11 +413,11 @@ class Wait(Stage):
 
 
 def retrieve_local_settings(run_settings, local_settings):
-    smartconnector.copy_settings(local_settings, run_settings,
+    stage.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/setup/payload_destination')
-    smartconnector.copy_settings(local_settings, run_settings,
+    stage.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/system/platform')
-    smartconnector.copy_settings(local_settings, run_settings,
+    stage.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/run/payload_cloud_dirname')
     local_settings['bdp_username'] = run_settings[
         RMIT_SCHEMA + '/bdp_userprofile']['username']

@@ -24,8 +24,7 @@ import json
 from itertools import product
 from pprint import pformat
 
-from bdphpcprovider.smartconnectorscheduler import smartconnector
-from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
+from bdphpcprovider.corestages.stage import Stage
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
 
@@ -33,6 +32,7 @@ from bdphpcprovider import messages
 from bdphpcprovider.platform import manage
 from bdphpcprovider import storage
 from bdphpcprovider import mytardis
+from bdphpcprovider.corestages import stage
 
 
 logger = logging.getLogger(__name__)
@@ -65,11 +65,11 @@ class Sweep(Stage):
         from copy import deepcopy
         local_settings = deepcopy(run_settings[models.UserProfile.PROFILE_SCHEMA_NS])
 
-        smartconnector.copy_settings(local_settings, run_settings,
+        stage.copy_settings(local_settings, run_settings,
             RMIT_SCHEMA + '/system/platform')
-        smartconnector.copy_settings(local_settings, run_settings,
+        stage.copy_settings(local_settings, run_settings,
             RMIT_SCHEMA + '/input/mytardis/experiment_id')
-        smartconnector.copy_settings(local_settings, run_settings,
+        stage.copy_settings(local_settings, run_settings,
             RMIT_SCHEMA + '/system/random_numbers')
         local_settings['bdp_username'] = run_settings[
             RMIT_SCHEMA + '/bdp_userprofile']['username']
@@ -130,7 +130,7 @@ class Sweep(Stage):
             'offset'] = input_storage_offset
 
         try:
-            self.experiment_id = int(smartconnector.get_existing_key(
+            self.experiment_id = int(stage.get_existing_key(
                 run_settings,
                 RMIT_SCHEMA + '/input/mytardis/experiment_id'))
         except KeyError:
@@ -236,13 +236,13 @@ class Sweep(Stage):
         try:
             input_prefix = '%s://%s@' % (input_storage_settings['scheme'],
                                     input_storage_settings['type'])
-            values_url = smartconnector.get_url_with_pkey(
+            values_url = stage.get_url_with_pkey(
                 input_storage_settings,
                 input_prefix + os.path.join(input_storage_settings['ip_address'],
                     input_storage_offset, "initial", "values"),
                 is_relative_path=False)
             logger.debug("values_url=%s" % values_url)
-            values_e_url = smartconnector.get_url_with_pkey(
+            values_e_url = stage.get_url_with_pkey(
                 local_settings,
                 values_url,
                 is_relative_path=False)
@@ -267,7 +267,7 @@ class Sweep(Stage):
         # Get input_url directory
         input_prefix = '%s://%s@' % (input_storage_settings['scheme'],
                                 input_storage_settings['type'])
-        input_url = smartconnector.get_url_with_pkey(input_storage_settings,
+        input_url = stage.get_url_with_pkey(input_storage_settings,
             input_prefix + os.path.join(input_storage_settings['ip_address'],
                 input_storage_offset),
         is_relative_path=False)
@@ -289,7 +289,7 @@ class Sweep(Stage):
                 "run%s" % str(run_counter),
                 "input_0",)
             logger.debug("run_inputdir=%s" % run_inputdir)
-            run_iter_url = smartconnector.get_url_with_pkey(local_settings,
+            run_iter_url = stage.get_url_with_pkey(local_settings,
                 run_inputdir, is_relative_path=False)
             logger.debug("run_iter_url=%s" % run_iter_url)
 
@@ -314,7 +314,7 @@ class Sweep(Stage):
                 logger.debug("template_name=%s" % template_name)
                 v_map = {}
                 try:
-                    values_url = smartconnector.get_url_with_pkey(
+                    values_url = stage.get_url_with_pkey(
                         local_settings,
                         os.path.join(run_inputdir, "initial",
                             '%s_values' % template_name),
@@ -332,7 +332,7 @@ class Sweep(Stage):
 
             v_map = {}
             try:
-                values_url = smartconnector.get_url_with_pkey(
+                values_url = stage.get_url_with_pkey(
                     local_settings,
                     os.path.join(run_inputdir, "initial",
                         'values'),

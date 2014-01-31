@@ -24,9 +24,7 @@ import ast
 
 from bdphpcprovider.cloudconnection import get_registered_vms, is_vm_running
 from bdphpcprovider.platform import manage
-from bdphpcprovider.smartconnectorscheduler import smartconnector
-from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
-from bdphpcprovider.smartconnectorscheduler import hrmcstages
+from bdphpcprovider.corestages.stage import Stage
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler.errors import PackageFailedError
 from bdphpcprovider.smartconnectorscheduler.stages.errors import InsufficientResourceError
@@ -35,6 +33,7 @@ from bdphpcprovider.compute import run_command_with_status, run_make
 
 from bdphpcprovider import messages
 from bdphpcprovider import storage
+from bdphpcprovider.corestages import stage
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +56,7 @@ class Bootstrap(Stage):
         if len(self.created_nodes) == 0:
             return False
         try:
-            bootstrapped_str = smartconnector.get_existing_key(run_settings,
+            bootstrapped_str = stage.get_existing_key(run_settings,
                 RMIT_SCHEMA + '/stages/bootstrap/bootstrapped_nodes')
             self.bootstrapped_nodes = ast.literal_eval(bootstrapped_str)
             logger.debug('bootstrapped nodes=%d, created nodes = %d'
@@ -70,7 +69,7 @@ class Bootstrap(Stage):
 
     def process(self, run_settings):
         try:
-            self.started = int(smartconnector.get_existing_key(run_settings,
+            self.started = int(stage.get_existing_key(run_settings,
                 RMIT_SCHEMA + '/stages/bootstrap/started'))
         except KeyError:
             self.started = 0
@@ -113,7 +112,7 @@ class Bootstrap(Stage):
                     continue
                 relative_path = "%s@%s" % (local_settings['type'],
                     local_settings['payload_destination'])
-                destination = smartconnector.get_url_with_pkey(local_settings,
+                destination = stage.get_url_with_pkey(local_settings,
                     relative_path,
                     is_relative_path=True,
                     ip_address=node_ip)
@@ -162,15 +161,15 @@ class Bootstrap(Stage):
 
 
 def retrieve_local_settings(run_settings, local_settings):
-    smartconnector.copy_settings(local_settings, run_settings,
+    stage.copy_settings(local_settings, run_settings,
         RMIT_SCHEMA + '/stages/setup/payload_source')
-    smartconnector.copy_settings(local_settings, run_settings,
+    stage.copy_settings(local_settings, run_settings,
         RMIT_SCHEMA + '/stages/setup/payload_destination')
-    smartconnector.copy_settings(local_settings, run_settings,
+    stage.copy_settings(local_settings, run_settings,
         RMIT_SCHEMA + '/system/platform')
-    smartconnector.copy_settings(local_settings, run_settings,
+    stage.copy_settings(local_settings, run_settings,
         RMIT_SCHEMA + '/stages/create/created_nodes')
-    smartconnector.copy_settings(local_settings, run_settings,
+    stage.copy_settings(local_settings, run_settings,
         RMIT_SCHEMA + '/stages/create/custom_prompt')
     local_settings['bdp_username'] = run_settings[
         RMIT_SCHEMA + '/bdp_userprofile']['username']
@@ -218,10 +217,10 @@ def start_multi_setup_task(settings):
                 node_ip = instance.private_ip_address
             logger.debug("node_ip=%s" % node_ip)
             logger.debug('constructing source')
-            source = smartconnector.get_url_with_pkey(settings, settings['payload_source'])
+            source = stage.get_url_with_pkey(settings, settings['payload_source'])
             logger.debug('source=%s' % source)
             relative_path = '%s@%s' % (settings['type'], settings['payload_destination'])
-            destination = smartconnector.get_url_with_pkey(settings, relative_path,
+            destination = stage.get_url_with_pkey(settings, relative_path,
                                                  is_relative_path=True,
                                                  ip_address=node_ip)
             logger.debug("Source %s" % source)

@@ -18,34 +18,25 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-# Contains the specific connectors and stages for HRMC
+# Contains the specific connectors and corestages for HRMC
 
 import os
 import logging
-import logging.config
 import json
-import time
 import collections
 from pprint import pformat
-import paramiko
-import getpass
-from urlparse import urlparse, parse_qsl
 from django.db import transaction
 
 from django.utils.importlib import import_module
 from django.core.exceptions import ImproperlyConfigured
-from django.core.files.base import ContentFile
 from django.contrib.auth.models import User
-from django.core.files.storage import FileSystemStorage
 from storages.backends.sftpstorage import SFTPStorage
-
-from paramiko.ssh_exception import SSHException
 
 from bdphpcprovider.smartconnectorscheduler.errors import ContextKeyMissing, InvalidInputError, deprecated
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
 from bdphpcprovider.smartconnectorscheduler import models
-from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.smartconnectorscheduler import storage
+from bdphpcprovider.corestages import stage
 
 logger = logging.getLogger(__name__)
 
@@ -608,7 +599,7 @@ def make_runcontext_for_directive(platform_name, directive_name,
 @transaction.commit_on_success
 def _make_new_run_context(stage, profile, directive, parent, run_settings):
     """
-    Make a new context  for a user to execute stages based on initial context
+    Make a new context  for a user to execute corestages based on initial context
     """
     # make run_context for this user
     run_context = models.Context.objects.create(
@@ -743,7 +734,7 @@ def generate_rands(settings, start_range,  end_range, num_required, start_index)
     # FIXME: there must be an third party library that does this more
     # effectively.
     rand_nums = []
-    num_url = smartconnector.get_url_with_pkey(settings, settings['random_numbers'],
+    num_url = stage.get_url_with_pkey(settings, settings['random_numbers'],
         is_relative_path=False)
     random_content = storage.get_file(num_url)
     # FIXME: this loads the entire file, which could be very large.

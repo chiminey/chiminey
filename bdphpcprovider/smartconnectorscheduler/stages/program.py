@@ -19,9 +19,9 @@
 # IN THE SOFTWARE.
 
 import logging
+from bdphpcprovider.corestages import stage
 
-from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
-from bdphpcprovider.smartconnectorscheduler import smartconnector
+from bdphpcprovider.corestages.stage import Stage
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.sshconnection import open_connection
 from bdphpcprovider.compute import run_command_with_status
@@ -84,7 +84,7 @@ class LocalProgramStage(Stage):
         # condition should always be True, though we might reuse the same Stage for different
         # platforms
         if platform.name == 'nci':
-            bdp_urls = [smartconnector.get_url_with_pkey(self.user_settings, x) for x in param_urls]
+            bdp_urls = [stage.get_url_with_pkey(self.user_settings, x) for x in param_urls]
             logger.debug("bdp_urls=%s" % bdp_urls)
             param_paths = [storage.get_remote_path(x) for x in bdp_urls]
             # FIXME: check that these param_paths are actually local to NCI and not elsewhere

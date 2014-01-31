@@ -22,8 +22,8 @@ import logging
 
 from bdphpcprovider.cloudconnection import create_vms, print_vms
 from bdphpcprovider.platform import manage
-from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
-from bdphpcprovider.smartconnectorscheduler import smartconnector
+from bdphpcprovider.corestages import stage
+from bdphpcprovider.corestages.stage import Stage
 from bdphpcprovider.reliabilityframework.failuredetection import FailureDetection
 from bdphpcprovider.reliabilityframework.failurerecovery import FailureRecovery
 
@@ -68,15 +68,15 @@ class Create(Stage):
         messages.info(run_settings, "1: create")
         local_settings = {}
         #todo: remove system/platform dependency
-        smartconnector.copy_settings(local_settings, run_settings,
+        stage.copy_settings(local_settings, run_settings,
             RMIT_SCHEMA + '/system/platform')
-        smartconnector.copy_settings(local_settings, run_settings,
+        stage.copy_settings(local_settings, run_settings,
             RMIT_SCHEMA + '/stages/create/vm_image')
-        smartconnector.copy_settings(local_settings, run_settings,
+        stage.copy_settings(local_settings, run_settings,
             RMIT_SCHEMA + '/stages/create/group_id_dir')
-        smartconnector.copy_settings(local_settings, run_settings,
+        stage.copy_settings(local_settings, run_settings,
             RMIT_SCHEMA + '/stages/create/custom_prompt')
-        smartconnector.copy_settings(local_settings, run_settings,
+        stage.copy_settings(local_settings, run_settings,
             RMIT_SCHEMA + '/stages/create/cloud_sleep_interval')
         logger.debug('local_settings=%s' % local_settings)
 
