@@ -287,37 +287,37 @@ def get_url_with_pkey(settings, url_or_relative_path,
 #     return url_with_pkey
 
 
-def multilevel_key_exists(context, *parts):
-    """
-    Returns true if context contains all parts of the key, else
-    false
-    """
-    c = dict(context)
-    for p in parts:
-        if p in c:
-            c = c[p]
-        else:
-            #logger.warn("%s not found in context" % p)
-            return False
-    return True
+# def multilevel_key_exists(context, *parts):
+#     """
+#     Returns true if context contains all parts of the key, else
+#     false
+#     """
+#     c = dict(context)
+#     for p in parts:
+#         if p in c:
+#             c = c[p]
+#         else:
+#             #logger.warn("%s not found in context" % p)
+#             return False
+#     return True
 
 
-def get_existing_key(context, schema):
-    """
-    Extract the schema field from the context, but if not present throw KeyError.
-    """
-    if multilevel_key_exists(context, os.path.dirname(schema), os.path.basename(schema)):
-        res = context[os.path.dirname(schema)][os.path.basename(schema)]
-    else:
-        raise KeyError("Cannot find %s in run_settings" % schema)
-    return res
+# def get_existing_key(context, schema):
+#     """
+#     Extract the schema field from the context, but if not present throw KeyError.
+#     """
+#     if multilevel_key_exists(context, os.path.dirname(schema), os.path.basename(schema)):
+#         res = context[os.path.dirname(schema)][os.path.basename(schema)]
+#     else:
+#         raise KeyError("Cannot find %s in run_settings" % schema)
+#     return res
 
 
-@deprecated
-def set_val(settings, k, v):
-    if not Stage.exists(settings, os.path.dirname(k)):
-            settings[os.path.dirname(k)] = {}
-    settings[os.path.dirname(k)][os.path.basename(k)] = v
+# @deprecated
+# def set_val(settings, k, v):
+#     if not Stage.exists(settings, os.path.dirname(k)):
+#             settings[os.path.dirname(k)] = {}
+#     settings[os.path.dirname(k)][os.path.basename(k)] = v
 
 
 class Stage(object):
@@ -328,12 +328,11 @@ class Stage(object):
     def __init__(self, user_settings=None):
         pass
 
-
     def input_valid(self, settings_to_test):
         """ Return a tuple, where the first element is True settings_to_test
         are syntactically and semantically valid for this stage.  Otherwise,
         return False with the second element in the tuple describing the
-        problem
+        problem.  Cannot change stage state.
         """
         return (True, "ok")
         #return (False, "All arguments are assumed invalid until verified")
@@ -341,31 +340,32 @@ class Stage(object):
     def triggered(self, context):
         """
         Return true if the directory pattern triggers this stage, or there
-        has been any other error
+        has been any other error.  SHould not change stage of stage (i.e., store any self)
         """
         # FIXME: Need to verify that triggered is idempotent.
         return True
 
     def process(self, context):
-        """ perfrom the stage operation
+        """ perfrom the stage operation. Can change stage state, but not change context
         """
         pass
 
     def output(self, context):
-        """ produce the resulting datfiles and metadata
+        """ produce the resulting datfiles and metadata. can read stage state and change
+            context
         """
         pass
 
-    @deprecated
-    def _exists(self, context, *parts):
-            c = dict(context)
-            for p in parts:
-                if p in c:
-                    c = c[p]
-                else:
-                    logger.debug("%s not found in context" % p)
-                    return False
-            return True
+    # @deprecated
+    # def _exists(self, context, *parts):
+    #         c = dict(context)
+    #         for p in parts:
+    #             if p in c:
+    #                 c = c[p]
+    #             else:
+    #                 logger.debug("%s not found in context" % p)
+    #                 return False
+    #         return True
 
 
 class UI(object):

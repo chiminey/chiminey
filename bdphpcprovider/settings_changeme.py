@@ -213,6 +213,10 @@ LOGGING = {
     'level': 'WARN',
     'handlers': ['file'],
     },
+    'bdphpcprovider.simpleui.wizard': {
+    'level': 'DEBUG',
+    'handlers': ['file'],
+    },
     'bdphpcprovider.storage': {
     'level': 'WARN',
     'handlers': ['file'],

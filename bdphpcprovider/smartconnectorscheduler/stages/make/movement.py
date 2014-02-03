@@ -38,6 +38,8 @@ from django.template import Context, Template
 
 from bdphpcprovider import messages
 from bdphpcprovider import storage
+from bdphpcprovider.runsettings import getval, setvals, getvals, update, SettingNotFoundException
+
 
 from . import setup_settings
 
@@ -56,29 +58,46 @@ class MakeUploadStage(Stage):
         return (True, "ok")
 
     def triggered(self, run_settings):
-        if self._exists(
-                run_settings,
-                'http://rmit.edu.au/schemas/stages/upload_makefile',
-                'done'):
-            upload_makefile_done = int(run_settings[
-                'http://rmit.edu.au/schemas/stages/upload_makefile'][u'done'])
-            return not upload_makefile_done
-        return True
+
+        try:
+            upload_makefile_done = int(getval(run_settings, '%s/stages/upload_makefile/done' % RMIT_SCHEMA))
+        except (ValueError, SettingNotFoundException):
+            return True
+        return not upload_makefile_done
+
+        # if self._exists(
+        #         run_settings,
+        #         'http://rmit.edu.au/schemas/stages/upload_makefile',
+        #         'done'):
+        #     upload_makefile_done = int(run_settings[
+        #         'http://rmit.edu.au/schemas/stages/upload_makefile'][u'done'])
+        #     return not upload_makefile_done
+        # return True
 
     def process(self, run_settings):
         """ perform the stage operation
         """
-
-        bdp_username = run_settings[RMIT_SCHEMA + '/bdp_userprofile']['username']
+        bdp_username = getval(run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA)
+        # bdp_username = run_settings[RMIT_SCHEMA + '/bdp_userprofile']['username']
         logger.debug("bdp_username=%s" % bdp_username)
-        input_storage_url = run_settings[
-            RMIT_SCHEMA + '/platform/storage/input']['platform_url']
+
+        input_storage_url = getval(run_settings,
+                                   '%s/platform/storage/input/platform_url'
+                                        % RMIT_SCHEMA)
+        # input_storage_url = run_settings[
+        #     RMIT_SCHEMA + '/platform/storage/input']['platform_url']
+
         logger.debug("input_storage_url=%s" % input_storage_url)
+
         input_storage_settings = manage.get_platform_settings(
             input_storage_url,
             bdp_username)
         logger.debug("input_storage_settings=%s" % pformat(input_storage_settings))
-        input_offset = run_settings[RMIT_SCHEMA + "/platform/storage/input"]['offset']
+
+        input_offset = getval(run_settings,
+                                   '%s/platform/storage/input/offset'
+                                        % RMIT_SCHEMA)
+        # input_offset = run_settings[RMIT_SCHEMA + "/platform/storage/input"]['offset']
         logger.debug("input_offset=%s" % pformat(input_offset))
         input_prefix = '%s://%s@' % (input_storage_settings['scheme'],
                                     input_storage_settings['type'])
@@ -103,12 +122,18 @@ class MakeUploadStage(Stage):
         """
         logger.debug("CopyDirectory Stage Output")
         logger.debug("run_settings=%s" % run_settings)
-        run_settings.setdefault(
-            'http://rmit.edu.au/schemas/stages/upload_makefile',
-            {})[u'done'] = 1
-        run_settings.setdefault(
-            'http://rmit.edu.au/schemas/stages/make',
-            {})[u'runs_left'] = str(1)
+
+        setvals(run_settings, {
+                '%s/stages/upload_makefile/done' % RMIT_SCHEMA: 1,
+                '%s/stages/make/runs_left' % RMIT_SCHEMA: str(1)
+                })
+
+        # run_settings.setdefault(
+        #     'http://rmit.edu.au/schemas/stages/upload_makefile',
+        #     {})[u'done'] = 1
+        # run_settings.setdefault(
+        #     'http://rmit.edu.au/schemas/stages/make',
+        #     {})[u'runs_left'] = str(1)
         return run_settings
 
 
@@ -264,10 +289,6 @@ def _create_variations(values_map, settings, variation_map):
         run_counter += 1
         variations.append(context)
     return variations
-
-
-
-
 
 
 

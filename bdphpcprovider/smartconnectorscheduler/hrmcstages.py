@@ -24,22 +24,13 @@ import os
 import logging
 import logging.config
 import json
-import time
 import collections
 from pprint import pformat
-import paramiko
-import getpass
-from urlparse import urlparse, parse_qsl
 from django.db import transaction
 
 from django.utils.importlib import import_module
 from django.core.exceptions import ImproperlyConfigured
-from django.core.files.base import ContentFile
 from django.contrib.auth.models import User
-from django.core.files.storage import FileSystemStorage
-from storages.backends.sftpstorage import SFTPStorage
-
-from paramiko.ssh_exception import SSHException
 
 from bdphpcprovider.smartconnectorscheduler.errors import ContextKeyMissing, InvalidInputError, deprecated
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
@@ -76,7 +67,6 @@ logger = logging.getLogger(__name__)
 #         config = DataObject(fname, '')
 #         logger.warn("Cannot load %s %s" % (fname, e))
 #     return config
-
 
 def retrieve_settings(profile):
     """

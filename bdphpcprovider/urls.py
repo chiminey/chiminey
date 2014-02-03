@@ -37,6 +37,7 @@ from bdphpcprovider.simpleui.views import (
     )
 
 from bdphpcprovider.simpleui.wizard.views import AddDirective1View
+from bdphpcprovider.simpleui.wizard.views import AddDirective2View
 
 from core.views import (
     UserProfileResource,
@@ -102,7 +103,8 @@ urlpatterns = patterns('',
 
     url(r'^wizard/$', login_required(AddDirective1View.as_view()),
         name='wizard',),
-
+    url(r'^wizard2/$', login_required(AddDirective2View.as_view()),
+        name='wizard2',),
 
     # # FIXME: this method is deprecated by list_jobs button.
     # url(r'^jobs/finished/edit/(?P<pk>\d+)/$', login_required(uiviews.FinishedContextUpdateView.as_view()),

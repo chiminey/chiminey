@@ -84,6 +84,13 @@ subtype_validation = {
 }
 
 
+def get_subtype_as_choices():
+    res = [('', "NONE")]
+    for k in subtype_validation:
+        res.append((k, "%s (%s) " % (k, subtype_validation[k][0])))
+    return res
+
+
 clean_rules = {
     'addition': validators.check_addition
 }

@@ -42,6 +42,8 @@ from bdphpcprovider import mytardis
 from bdphpcprovider import compute
 from bdphpcprovider import storage
 from bdphpcprovider import messages
+from bdphpcprovider.runsettings import getval, setvals, getvals, update, SettingNotFoundException
+
 
 logger = logging.getLogger(__name__)
 
@@ -63,24 +65,45 @@ class Execute(Stage):
          input_dir is assumed to be populated.
         """
         try:
-            schedule_completed = int(smartconnector.get_existing_key(run_settings,
-                'http://rmit.edu.au/schemas/stages/schedule/schedule_completed'))
-            self.all_processes = ast.literal_eval(smartconnector.get_existing_key(run_settings,
-                'http://rmit.edu.au/schemas/stages/schedule/all_processes'))
-        except KeyError, e:
+            schedule_completed = int(getval(run_settings, '%s/stages/schedule/schedule_completed' % RMIT_SCHEMA))
+            # schedule_completed = int(smartconnector.get_existing_key(run_settings,
+            #     'http://rmit.edu.au/schemas/stages/schedule/schedule_completed'))
+
+            self.all_processes = ast.literal_eval(getval(run_settings, '%s/stages/schedule/all_processes' % RMIT_SCHEMA))
+            # self.all_processes = ast.literal_eval(smartconnector.get_existing_key(run_settings,
+            #     'http://rmit.edu.au/schemas/stages/schedule/all_processes'))
+
+        except SettingNotFoundException, e:
             return False
+        except ValueError, e:
+            return False
+
         if not schedule_completed:
             return False
-        scheduled_procs_str = run_settings['http://rmit.edu.au/schemas/stages/schedule'][u'current_processes']
-        self.schedule_procs = ast.literal_eval(scheduled_procs_str)
+        try:
+            scheduled_procs_str = getval(run_settings, '%s/stages/schedule/current_processes' % RMIT_SCHEMA)
+            # scheduled_procs_str = run_settings['http://rmit.edu.au/schemas/stages/schedule'][u'current_processes']
+        except SettingNotFoundException:
+            return False
+        try:
+            self.schedule_procs = ast.literal_eval(scheduled_procs_str)
+        except ValueError:
+            return False
+
         if len(self.schedule_procs) == 0:
             return False
 
-        self.reschedule_failed_procs = run_settings['http://rmit.edu.au/schemas/input/reliability'][u'reschedule_failed_processes']
+        try:
+            self.reschedule_failed_procs = getval(run_settings, '%s/input/reliability/reschedule_failed_processes' % RMIT_SCHEMA)
+        except SettingNotFoundException:
+            self.reschedule_failed_procs = []  # FIXME: check this is correct
+
+        # self.reschedule_failed_procs = run_settings['http://rmit.edu.au/schemas/input/reliability'][u'reschedule_failed_processes']
 
         try:
-            exec_procs_str = smartconnector.get_existing_key(run_settings,
-                'http://rmit.edu.au/schemas/stages/execute/executed_procs')
+            exec_procs_str = getval(run_settings, '%s/stages/execute/executed_procs' % RMIT_SCHEMA)
+            # exec_procs_str = smartconnector.get_existing_key(run_settings,
+            #     'http://rmit.edu.au/schemas/stages/execute/executed_procs')
             self.exec_procs = ast.literal_eval(exec_procs_str)
             logger.debug('executed procs=%d, scheduled procs = %d'
                          % (len(self.exec_procs), len(self.schedule_procs)))
@@ -89,7 +112,7 @@ class Execute(Stage):
             logger.debug('total ready procs %d' % len(self.ready_processes))
             return len(self.ready_processes)
             #return len(self.exec_procs) < len(self.schedule_procs)
-        except KeyError, e:
+        except SettingNotFoundException, e:
             logger.debug(e)
             self.exec_procs = []
             return True
@@ -98,55 +121,151 @@ class Execute(Stage):
     def process(self, run_settings):
 
         logger.debug("processing execute stage")
-        local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
+
+        local_settings = getvals(run_settings, models.UserProfile.PROFILE_SCHEMA_NS)
+        # local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
+
+        def retrieve_boto_settings(run_settings, local_settings):
+
+            update(local_settings, run_settings,
+                    '%s/stages/setup/payload_destination' % RMIT_SCHEMA,
+                    '%s/stages/setup/filename_for_PIDs' % RMIT_SCHEMA,
+                    # '%s/system/platform' % RMIT_SCHEMA,
+                    '%s/stages/create/custom_prompt' % RMIT_SCHEMA,
+                    '%s/stages/run/payload_cloud_dirname' % RMIT_SCHEMA,
+                    '%s/system/max_seed_int' % RMIT_SCHEMA,
+                    '%s/stages/run/compile_file' % RMIT_SCHEMA,
+                    '%s/stages/run/retry_attempts' % RMIT_SCHEMA,
+                    '%s/input/system/cloud/number_vm_instances' % RMIT_SCHEMA,
+                    '%s/input/hrmc/iseed' % RMIT_SCHEMA,
+                    '%s/input/hrmc/optimisation_scheme' % RMIT_SCHEMA,
+                    '%s/input/hrmc/threshold' % RMIT_SCHEMA,
+                    '%s/input/hrmc/pottype' % RMIT_SCHEMA,
+                    '%s/system/random_numbers' % RMIT_SCHEMA,
+                    '%s/input/hrmc/fanout_per_kept_result' % RMIT_SCHEMA,
+                    '%s/input/hrmc/optimisation_scheme' % RMIT_SCHEMA,
+                    '%s/input/hrmc/threshold' % RMIT_SCHEMA,
+                    '%s/input/hrmc/pottype' % RMIT_SCHEMA,
+                    '%s/system/max_seed_int' % RMIT_SCHEMA,
+                    '%s/system/random_numbers' % RMIT_SCHEMA,
+                    '%s/system/id' % RMIT_SCHEMA,
+                   )
+
+            # smartconnector.copy_settings(local_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/stages/setup/payload_destination')
+            # smartconnector.copy_settings(local_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/stages/setup/filename_for_PIDs')
+            # smartconnector.copy_settings(local_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/system/platform')
+            # smartconnector.copy_settings(local_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/stages/create/custom_prompt')
+            # smartconnector.copy_settings(local_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/stages/run/payload_cloud_dirname')
+            # smartconnector.copy_settings(local_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/system/max_seed_int')
+            # smartconnector.copy_settings(local_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/stages/run/compile_file')
+            # smartconnector.copy_settings(local_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/stages/run/retry_attempts')
+            # smartconnector.copy_settings(local_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/input/system/cloud/number_vm_instances')
+            # smartconnector.copy_settings(local_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/input/hrmc/iseed')
+            # smartconnector.copy_settings(local_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/input/hrmc/optimisation_scheme')
+            # smartconnector.copy_settings(local_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/input/hrmc/threshold')
+            # smartconnector.copy_settings(local_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/input/hrmc/pottype')
+
+            # smartconnector.copy_settings(local_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/system/random_numbers')
+            # smartconnector.copy_settings(local_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/input/hrmc/fanout_per_kept_result')
+            # smartconnector.copy_settings(local_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/input/hrmc/optimisation_scheme')
+            # smartconnector.copy_settings(local_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/input/hrmc/threshold')
+            # smartconnector.copy_settings(local_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/input/hrmc/pottype')
+            # smartconnector.copy_settings(local_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/system/max_seed_int')
+            # smartconnector.copy_settings(local_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/system/random_numbers')
+            # smartconnector.copy_settings(local_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/system/id')
+
+            local_settings['bdp_username'] = getval(run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA)
+            # local_settings['bdp_username'] = run_settings[
+            #     RMIT_SCHEMA + '/bdp_userprofile']['username']
+
+            logger.debug('retrieve completed %s' % pformat(local_settings))
+
         retrieve_boto_settings(run_settings, local_settings)
 
-        self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
-        output_storage_url = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['platform_url']
+        self.contextid = getval(run_settings, '%s/system/contextid' % RMIT_SCHEMA)
+        # NB: Don't catch SettingNotFoundException because we can't recover
+        # run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
+
+        output_storage_url = getval(run_settings, '%s/platform/storage/output/platform_url' % RMIT_SCHEMA)
+        # output_storage_url = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['platform_url']
+
         output_storage_settings = manage.get_platform_settings(output_storage_url, local_settings['bdp_username'])
-        offset = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset']
+        offset = getval(run_settings, '%s/platform/storage/output/offset' % RMIT_SCHEMA)
+        # offset = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset']
         self.job_dir = manage.get_job_dir(output_storage_settings, offset)
         # TODO: we assume initial input is in "%s/input_0" % self.job_dir
         # in configure stage we could copy initial data in 'input_location' into this location
         try:
-            self.id = int(smartconnector.get_existing_key(run_settings,
-                'http://rmit.edu.au/schemas/system/id'))
+            self.id = int(getval(run_settings, '%s/system/id' % RMIT_SCHEMA))
+            # self.id = int(smartconnector.get_existing_key(run_settings,
+            #     'http://rmit.edu.au/schemas/system/id'))
+
             self.iter_inputdir = os.path.join(self.job_dir, "input_%s" % self.id)
-        except KeyError, e:
+        except (SettingNotFoundException, ValueError):
             self.id = 0
             self.iter_inputdir = os.path.join(self.job_dir, "input_location")
         messages.info(run_settings, "%s: execute" % (self.id + 1))
         logger.debug("id = %s" % self.id)
         try:
-            self.initial_numbfile = int(smartconnector.get_existing_key(run_settings,
-                'http://rmit.edu.au/schemas/stages/run/initial_numbfile'))
-        except KeyError:
+            self.initial_numbfile = int(getval(run_settings, '%s/stages/run/initial_numbfile' % RMIT_SCHEMA))
+            # self.initial_numbfile = int(smartconnector.get_existing_key(run_settings,
+            #     'http://rmit.edu.au/schemas/stages/run/initial_numbfile'))
+        except (SettingNotFoundException, ValueError):
             logger.warn("setting initial_numbfile for first iteration")
             self.initial_numbfile = 1
 
         try:
-            self.rand_index = int(smartconnector.get_existing_key(run_settings,
-                'http://rmit.edu.au/schemas/stages/run/rand_index'))
-        except KeyError:
+            self.rand_index = int(getval(run_settings, '%s/stages/run/rand_index'))
+            # self.rand_index = int(smartconnector.get_existing_key(run_settings,
+                # 'http://rmit.edu.au/schemas/stages/run/rand_index'))
+        except (SettingNotFoundException, ValueError):
             logger.warn("setting rand_index for first iteration")
-            self.rand_index = int(smartconnector.get_existing_key(run_settings,
-                'http://rmit.edu.au/schemas/input/hrmc/iseed'))
+            self.rand_index = int(getval(run_settings, '%s/input/hrmc/iseed' % RMIT_SCHEMA))
+
+            # self.rand_index = int(smartconnector.get_existing_key(run_settings,
+            #     'http://rmit.edu.au/schemas/input/hrmc/iseed'))
         logger.debug("rand_index=%s" % self.rand_index)
 
         try:
-            self.experiment_id = int(smartconnector.get_existing_key(run_settings,
-                'http://rmit.edu.au/schemas/input/mytardis/experiment_id'))
-        except KeyError:
+            self.experiment_id = int(getval(run_settings, '%s/input/mytardis/experiment_id' % RMIT_SCHEMA))
+            # self.experiment_id = int(smartconnector.get_existing_key(run_settings,
+            #     'http://rmit.edu.au/schemas/input/mytardis/experiment_id'))
+        except SettingNotFoundException:
             self.experiment_id = 0
         except ValueError:
             self.experiment_id = 0
 
         logger.debug("process run_settings=%s" % pformat(run_settings))
 
-        computation_platform_url = run_settings['http://rmit.edu.au/schemas/platform/computation']['platform_url']
+        computation_platform_url = getval(run_settings, '%s/platform/computation/platform_url' % RMIT_SCHEMA)
         comp_pltf_settings = manage.get_platform_settings(computation_platform_url, local_settings['bdp_username'])
 
-        mytardis_url = run_settings['http://rmit.edu.au/schemas/input/mytardis']['mytardis_platform']
+        # computation_platform_url = run_settings['http://rmit.edu.au/schemas/platform/computation']['platform_url']
+        # comp_pltf_settings = manage.get_platform_settings(computation_platform_url, local_settings['bdp_username'])
+
+        mytardis_url = getval(run_settings, '%s/input/mytardis/mytardis_platform' % RMIT_SCHEMA)
+        # mytardis_url = run_settings['http://rmit.edu.au/schemas/input/mytardis']['mytardis_platform']
         mytardis_settings = manage.get_platform_settings(mytardis_url, local_settings['bdp_username'])
 
         #generic_output_schema = 'http://rmit.edu.au/schemas/platform/storage/output'
@@ -195,28 +314,44 @@ class Execute(Stage):
         """
         Assume that no nodes have finished yet and indicate to future stages
         """
-        run_settings.setdefault(
-            'http://rmit.edu.au/schemas/stages/execute',
-            {})[u'executed_procs'] = str(self.exec_procs)
 
-        run_settings.setdefault(
-            'http://rmit.edu.au/schemas/stages/schedule',
-            {})[u'current_processes'] = str(self.schedule_procs)
+        setvals(run_settings, {
+                '%s/stages/execute/executed_procs' % RMIT_SCHEMA: str(self.exec_procs),
+                '%s/stages/schedule/current_processes' % RMIT_SCHEMA: str(self.schedule_procs),
+                '%s/stages/schedule/all_processes' % RMIT_SCHEMA: str(self.all_processes)
+                })
+        # run_settings.setdefault(
+        #     'http://rmit.edu.au/schemas/stages/execute',
+        #     {})[u'executed_procs'] = str(self.exec_procs)
 
-        run_settings.setdefault(
-            'http://rmit.edu.au/schemas/stages/schedule',
-            {})[u'all_processes'] = str(self.all_processes)
+        # run_settings.setdefault(
+        #     'http://rmit.edu.au/schemas/stages/schedule',
+        #     {})[u'current_processes'] = str(self.schedule_procs)
 
-        if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run'):
-            run_settings['http://rmit.edu.au/schemas/stages/run'] = {}
+        # run_settings.setdefault(
+        #     'http://rmit.edu.au/schemas/stages/schedule',
+        #     {})[u'all_processes'] = str(self.all_processes)
+
+        # if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run'):
+        #     run_settings['http://rmit.edu.au/schemas/stages/run'] = {}
 
         completed_processes = [x for x in self.exec_procs if x['status'] == 'completed']
         logger.debug('completed_processes=%d' % len(completed_processes))
-        run_settings['http://rmit.edu.au/schemas/stages/run'][u'runs_left'] =\
-            len(self.exec_procs) - len(completed_processes)
-        run_settings['http://rmit.edu.au/schemas/stages/run'][u'initial_numbfile'] = self.initial_numbfile
-        run_settings['http://rmit.edu.au/schemas/stages/run'][u'rand_index'] = self.rand_index
-        run_settings['http://rmit.edu.au/schemas/input/mytardis']['experiment_id'] = str(self.experiment_id)
+
+        setvals(run_settings, {
+                '%s/stages/run/runs_left' % RMIT_SCHEMA:
+                    len(self.exec_procs) - len(completed_processes),
+                '%s/stages/run/initial_numbfile' % RMIT_SCHEMA: self.initial_numbfile,
+                '%s/stages/run/rand_index' % RMIT_SCHEMA: self.rand_index,
+                '%s/input/mytardis/experiment_id' % RMIT_SCHEMA: str(self.experiment_id)
+                })
+
+        # run_settings['http://rmit.edu.au/schemas/stages/run'][u'runs_left'] =\
+        #     len(self.exec_procs) - len(completed_processes)
+
+        # run_settings['http://rmit.edu.au/schemas/stages/run'][u'initial_numbfile'] = self.initial_numbfile
+        # run_settings['http://rmit.edu.au/schemas/stages/run'][u'rand_index'] = self.rand_index
+        # run_settings['http://rmit.edu.au/schemas/input/mytardis']['experiment_id'] = str(self.experiment_id)
 
         return run_settings
 
@@ -665,53 +800,3 @@ class Execute(Stage):
                     is_relative_path=True)
                 logger.debug("deleting %s" % tmp_url)
                 #hrmcstages.delete_files(u
-
-
-def retrieve_boto_settings(run_settings, local_settings):
-    smartconnector.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/stages/setup/payload_destination')
-    smartconnector.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/stages/setup/filename_for_PIDs')
-    smartconnector.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/system/platform')
-    smartconnector.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/stages/create/custom_prompt')
-    smartconnector.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/stages/run/payload_cloud_dirname')
-    smartconnector.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/system/max_seed_int')
-    smartconnector.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/stages/run/compile_file')
-    smartconnector.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/stages/run/retry_attempts')
-    smartconnector.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/input/system/cloud/number_vm_instances')
-    smartconnector.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/input/hrmc/iseed')
-    smartconnector.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/input/hrmc/optimisation_scheme')
-    smartconnector.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/input/hrmc/threshold')
-    smartconnector.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/input/hrmc/pottype')
-
-    smartconnector.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/system/random_numbers')
-    smartconnector.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/input/hrmc/fanout_per_kept_result')
-    smartconnector.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/input/hrmc/optimisation_scheme')
-    smartconnector.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/input/hrmc/threshold')
-    smartconnector.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/input/hrmc/pottype')
-    smartconnector.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/system/max_seed_int')
-    smartconnector.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/system/random_numbers')
-    smartconnector.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/system/id')
-    local_settings['bdp_username'] = run_settings[
-        RMIT_SCHEMA + '/bdp_userprofile']['username']
-
-    logger.debug('retrieve completed %s' % pformat(local_settings))

@@ -34,6 +34,8 @@ from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.platform import manage
 from bdphpcprovider import storage
 from bdphpcprovider import mytardis
+from bdphpcprovider.runsettings import getval, setvals, getvals, update, SettingNotFoundException
+
 
 logger = logging.getLogger(__name__)
 
@@ -58,61 +60,96 @@ class Transform(Stage):
 
     def triggered(self, run_settings):
         try:
-            reschedule_str = run_settings['http://rmit.edu.au/schemas/stages/schedule'][u'procs_2b_rescheduled']
+            reschedule_str = getval(run_settings, '%s/stages/schedule/procs_2b_rescheduled' % RMIT_SCHEMA)
+            # reschedule_str = run_settings['http://rmit.edu.au/schemas/stages/schedule'][u'procs_2b_rescheduled']
             self.procs_2b_rescheduled = ast.literal_eval(reschedule_str)
             logger.debug('self.procs_2b_rescheduled=%s' % self.procs_2b_rescheduled)
             if self.procs_2b_rescheduled:
                 return False
-        except KeyError, e:
+        except SettingNotFoundException, e:
             logger.debug(e)
+        except ValueError as e:
+            logger.error(e)
 
         try:
-            current_processes = ast.literal_eval(smartconnector.get_existing_key(run_settings,
-                    'http://rmit.edu.au/schemas/stages/schedule/current_processes'))
+            current_processes = ast.literal_eval(getval(run_settings, '%s/stages/schedule/current_processes' % RMIT_SCHEMA))
+            # current_processes = ast.literal_eval(smartconnector.get_existing_key(run_settings,
+            #         'http://rmit.edu.au/schemas/stages/schedule/current_processes'))
             executed_not_running = [x for x in current_processes if x['status'] == 'ready']
             if executed_not_running:
                 logger.debug('executed_not_running=%s' % executed_not_running)
                 return False
             else:
                 logger.debug('No ready: executed_not_running=%s' % executed_not_running)
-        except KeyError, e:
+        except SettingNotFoundException as e:
             logger.debug(e)
+        except ValueError as e:
+            logger.error(e)
 
         try:
-            failed_str = run_settings['http://rmit.edu.au/schemas/stages/create'][u'failed_nodes']
+            failed_str = getval(run_settings, '%s/stages/create/failed_nodes' % RMIT_SCHEMA)
+            # failed_str = run_settings['http://rmit.edu.au/schemas/stages/create'][u'failed_nodes']
             failed_nodes = ast.literal_eval(failed_str)
-            created_str = run_settings['http://rmit.edu.au/schemas/stages/create'][u'created_nodes']
+            created_str = getval(run_settings, '%s/stages/create/created_nodes' % RMIT_SCHEMA)
+            # created_str = run_settings['http://rmit.edu.au/schemas/stages/create'][u'created_nodes']
             created_nodes = ast.literal_eval(created_str)
             if len(failed_nodes) == len(created_nodes) or len(created_nodes) == 0:
                 return False
-        except KeyError, e:
+        except SettingNotFoundException as e:
             logger.debug(e)
+        except ValueError as e:
+            logger.error(e)
 
-        if self._exists(run_settings, 'http://rmit.edu.au/schemas/input/hrmc', u'threshold'):
+        try:
             # FIXME: need to validate this output to make sure list of int
-            self.threshold = ast.literal_eval(run_settings['http://rmit.edu.au/schemas/input/hrmc'][u'threshold'])
-        else:
+            self.threshold = ast.literal_eval(getval(run_settings, '%s/input/hrmc/threshold' % RMIT_SCHEMA))
+        except (SettingNotFoundException, ValueError) as e:
             logger.warn("no threshold found when expected")
             return False
+        # if self._exists(run_settings, 'http://rmit.edu.au/schemas/input/hrmc', u'threshold'):
+        #     # FIXME: need to validate this output to make sure list of int
+        #     self.threshold = ast.literal_eval(run_settings['http://rmit.edu.au/schemas/input/hrmc'][u'threshold'])
+        # else:
+        #     logger.warn("no threshold found when expected")
+        #     return False
+
         logger.debug("threshold = %s" % self.threshold)
 
-        if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/converge', u'converged'):
-            # FIXME: should use NUMERIC for bools, so use 0,1 and natural comparison will work.
-            self.converged = int(run_settings['http://rmit.edu.au/schemas/stages/converge'][u'converged'])
-        else:
+        try:
+            self.converged = int(getval(run_settings, '%s/stages/converge/converged' % RMIT_SCHEMA))
+        except (SettingNotFoundException, ValueError) as e:
             self.converged = 0
+        # if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/converge', u'converged'):
+        #     # FIXME: should use NUMERIC for bools, so use 0,1 and natural comparison will work.
+        #     self.converged = int(run_settings['http://rmit.edu.au/schemas/stages/converge'][u'converged'])
+        # else:
+        #     self.converged = 0
 
-        if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run', u'runs_left'):
-            self.runs_left = run_settings['http://rmit.edu.au/schemas/stages/run'][u'runs_left']
-            if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/transform', u'transformed'):
-                self.transformed = int(run_settings['http://rmit.edu.au/schemas/stages/transform'][u'transformed'])
-            else:
+        try:
+            self.runs_left = getval(run_settings, '%s/stages/run/runs_left' % RMIT_SCHEMA)
+        except SettingNotFoundException as e:
+            pass
+        else:
+            try:
+                self.transformed = int(getval(run_settings, '%s/stages/transform/transformed' % RMIT_SCHEMA))
+            except (SettingNotFoundException, ValueError) as e:
                 self.transformed = 0
             if (self.runs_left == 0) and (not self.transformed) and (not self.converged):
                 return True
             else:
                 logger.debug("%s %s %s" % (self.runs_left, self.transformed, self.converged))
                 pass
+        # if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run', u'runs_left'):
+        #     self.runs_left = run_settings['http://rmit.edu.au/schemas/stages/run'][u'runs_left']
+        #     if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/transform', u'transformed'):
+        #         self.transformed = int(run_settings['http://rmit.edu.au/schemas/stages/transform'][u'transformed'])
+        #     else:
+        #         self.transformed = 0
+        #     if (self.runs_left == 0) and (not self.transformed) and (not self.converged):
+        #         return True
+        #     else:
+        #         logger.debug("%s %s %s" % (self.runs_left, self.transformed, self.converged))
+        #         pass
 
         return False
 
@@ -135,73 +172,118 @@ class Transform(Stage):
                 content = storage.get_file(source_url)
                 storage.put_file(dest_url, content)
 
-    def retrieve_local_settings(self, run_settings):
-        self.boto_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
-
-        smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/stages/setup/payload_source')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/stages/setup/payload_destination')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/system/platform')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/stages/create/custom_prompt')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/stages/create/cloud_sleep_interval')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
-          'http://rmit.edu.au/schemas/stages/create/created_nodes')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/stages/run/payload_cloud_dirname')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/system/max_seed_int')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/stages/run/compile_file')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/stages/run/retry_attempts')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/input/system/cloud/number_vm_instances')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/input/hrmc/iseed')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/input/hrmc/optimisation_scheme')
-        smartconnector.copy_settings(self.boto_settings, run_settings,
-            'http://rmit.edu.au/schemas/input/hrmc/threshold')
-        self.boto_settings['bdp_username'] = run_settings[
-            RMIT_SCHEMA + '/bdp_userprofile']['username']
-
-        logger.debug("boto_settings=%s" % self.boto_settings)
-
     def process(self, run_settings):
 
-        self.retrieve_local_settings(run_settings)
+        def retrieve_local_settings(run_settings, local_settings):
+
+            update(local_settings, run_settings,
+                '%s/stages/setup/payload_source' % RMIT_SCHEMA,
+                '%s/stages/setup/payload_destination' % RMIT_SCHEMA,
+                '%s/system/platform' % RMIT_SCHEMA,
+                '%s/stages/create/custom_prompt' % RMIT_SCHEMA,
+                '%s/stages/create/cloud_sleep_interval' % RMIT_SCHEMA,
+                '%s/stages/create/created_nodes' % RMIT_SCHEMA,
+                '%s/stages/run/payload_cloud_dirname' % RMIT_SCHEMA,
+                '%s/system/max_seed_int' % RMIT_SCHEMA,
+                '%s/stages/run/compile_file' % RMIT_SCHEMA,
+                '%s/stages/run/retry_attempts' % RMIT_SCHEMA,
+                '%s/input/system/cloud/number_vm_instances' % RMIT_SCHEMA,
+                '%s/input/hrmc/iseed' % RMIT_SCHEMA,
+                '%s/input/hrmc/optimisation_scheme' % RMIT_SCHEMA,
+                '%s/input/hrmc/threshold' % RMIT_SCHEMA
+            )
+
+            # smartconnector.copy_settings(self.boto_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/stages/setup/payload_source')
+            # smartconnector.copy_settings(self.boto_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/stages/setup/payload_destination')
+            # smartconnector.copy_settings(self.boto_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/system/platform')
+            # smartconnector.copy_settings(self.boto_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/stages/create/custom_prompt')
+            # smartconnector.copy_settings(self.boto_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/stages/create/cloud_sleep_interval')
+            # smartconnector.copy_settings(self.boto_settings, run_settings,
+            #   'http://rmit.edu.au/schemas/stages/create/created_nodes')
+            # smartconnector.copy_settings(self.boto_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/stages/run/payload_cloud_dirname')
+            # smartconnector.copy_settings(self.boto_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/system/max_seed_int')
+            # smartconnector.copy_settings(self.boto_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/stages/run/compile_file')
+            # smartconnector.copy_settings(self.boto_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/stages/run/retry_attempts')
+            # smartconnector.copy_settings(self.boto_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/input/system/cloud/number_vm_instances')
+            # smartconnector.copy_settings(self.boto_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/input/hrmc/iseed')
+            # smartconnector.copy_settings(self.boto_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/input/hrmc/optimisation_scheme')
+            # smartconnector.copy_settings(self.boto_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/input/hrmc/threshold')
+
+            local_settings['bdp_username'] = getval(run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA)
+            # self.boto_settings['bdp_username'] = run_settings[
+            #     RMIT_SCHEMA + '/bdp_userprofile']['username']
+
+            logger.debug("local_settings=%s" % local_settings)
+
+        self.boto_settings = getvals(run_settings, models.UserProfile.PROFILE_SCHEMA_NS)
+        # self.boto_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
+        retrieve_local_settings(run_settings, self.boto_settings)
+
         #TODO: break up this function as it is way too long
-        self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
+
+        self.contextid = getval(run_settings, '%s/system/contextid' % RMIT_SCHEMA)
+        # self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
+
         bdp_username = self.boto_settings['bdp_username']
-        output_storage_url = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['platform_url']
+
+        output_storage_url = getval(run_settings, '%s/platform/storage/output/platform_url' % RMIT_SCHEMA)
+        # output_storage_url = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['platform_url']
         output_storage_settings = manage.get_platform_settings(output_storage_url, bdp_username)
         output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
                                     output_storage_settings['type'])
-        offset = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset']
+        offset = getval(run_settings, '%s/platform/storage/output/offset' % RMIT_SCHEMA)
+        # offset = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset']
         self.job_dir = manage.get_job_dir(output_storage_settings, offset)
 
-        if self._exists(run_settings, 'http://rmit.edu.au/schemas/system', u'id'):
-            self.id = run_settings['http://rmit.edu.au/schemas/system'][u'id']
+        try:
+            self.id = int(getval(run_settings, '%s/system/id' % RMIT_SCHEMA))
             self.output_dir = os.path.join(os.path.join(self.job_dir, "output_%s" % self.id))
             self.input_dir = os.path.join(os.path.join(self.job_dir, "input_%d" % self.id))
             self.new_input_dir = os.path.join(os.path.join(self.job_dir, "input_%d" % (self.id + 1)))
-        else:
+        except (SettingNotFoundException, ValueError):
             # FIXME: Not clear that this a valid path through stages
             self.output_dir = os.path.join(os.path.join(self.job_dir, "output"))
             self.output_dir = os.path.join(os.path.join(self.job_dir, "input"))
             self.new_input_dir = os.path.join(os.path.join(self.job_dir, "input_1"))
 
-        if self._exists(run_settings, 'http://rmit.edu.au/schemas/input/mytardis', u'experiment_id'):
-            try:
-                self.experiment_id = int(run_settings['http://rmit.edu.au/schemas/input/mytardis'][u'experiment_id'])
-            except ValueError:
-                self.experiment_id = 0
-        else:
+        # if self._exists(run_settings, 'http://rmit.edu.au/schemas/system', u'id'):
+        #     self.id = run_settings['http://rmit.edu.au/schemas/system'][u'id']
+        #     self.output_dir = os.path.join(os.path.join(self.job_dir, "output_%s" % self.id))
+        #     self.input_dir = os.path.join(os.path.join(self.job_dir, "input_%d" % self.id))
+        #     self.new_input_dir = os.path.join(os.path.join(self.job_dir, "input_%d" % (self.id + 1)))
+        # else:
+        #     # FIXME: Not clear that this a valid path through stages
+        #     self.output_dir = os.path.join(os.path.join(self.job_dir, "output"))
+        #     self.output_dir = os.path.join(os.path.join(self.job_dir, "input"))
+        #     self.new_input_dir = os.path.join(os.path.join(self.job_dir, "input_1"))
+
+        try:
+            self.experiment_id = int(getval(run_settings, '%s/input/mytardis/experiment_id' % RMIT_SCHEMA))
+        except SettingNotFoundException:
             self.experiment_id = 0
+        except ValueError:
+            self.experiment_id = 0
+        # if self._exists(run_settings, 'http://rmit.edu.au/schemas/input/mytardis', u'experiment_id'):
+        #     try:
+        #         self.experiment_id = int(run_settings['http://rmit.edu.au/schemas/input/mytardis'][u'experiment_id'])
+        #     except ValueError:
+        #         self.experiment_id = 0
+        # else:
+        #     self.experiment_id = 0
+
         logger.debug('self.output_dir=%s' % self.output_dir)
         # import time
         # start_time = time.time()
@@ -254,7 +336,8 @@ class Transform(Stage):
         outputs.sort(key=lambda x: int(x.criterion))
         logger.debug("outputs=%s" % outputs)
 
-        mytardis_url = run_settings['http://rmit.edu.au/schemas/input/mytardis']['mytardis_platform']
+        mytardis_url = getval(run_settings, '%s/input/mytardis/mytardis_platform' % RMIT_SCHEMA)
+        # mytardis_url = run_settings['http://rmit.edu.au/schemas/input/mytardis']['mytardis_platform']
         mytardis_settings = manage.get_platform_settings(mytardis_url, bdp_username)
 
         if mytardis_settings['mytardis_host']:
@@ -510,10 +593,16 @@ class Transform(Stage):
 
     def output(self, run_settings):
         logger.debug("transform.output")
-        if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/transform'):
-            run_settings['http://rmit.edu.au/schemas/stages/transform'] = {}
-        run_settings['http://rmit.edu.au/schemas/stages/transform'][u'transformed'] = 1
-        run_settings['http://rmit.edu.au/schemas/input/mytardis']['experiment_id'] = str(self.experiment_id)
+
+        # if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/transform'):
+        #     run_settings['http://rmit.edu.au/schemas/stages/transform'] = {}
+
+        setvals(run_settings, {
+                '%s/stages/transform/transformed' % RMIT_SCHEMA: 1,
+                '%s/input/mytardis/experiment_id' % RMIT_SCHEMA: str(self.experiment_id),
+                })
+        # run_settings['http://rmit.edu.au/schemas/stages/transform'][u'transformed'] = 1
+        # run_settings['http://rmit.edu.au/schemas/input/mytardis']['experiment_id'] = str(self.experiment_id)
 
         print "End of Transformation: \n %s" % self.audit
 

@@ -27,7 +27,6 @@ from paramiko.ssh_exception import SSHException
 
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import smartconnector
-from bdphpcprovider.smartconnectorscheduler import platform
 
 from bdphpcprovider import messages
 from bdphpcprovider.platform import manage
@@ -37,9 +36,11 @@ from bdphpcprovider import compute
 
 from . import setup_settings
 from bdphpcprovider.sshconnection import open_connection
+from bdphpcprovider.runsettings import getval, setvals, update, SettingNotFoundException
 
 
 logger = logging.getLogger(__name__)
+RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
 
 class MakeFinishedStage(Stage):
@@ -56,21 +57,38 @@ class MakeFinishedStage(Stage):
     def triggered(self, run_settings):
 
         # if we have no runs_left then we must have finished all the runs
-        if self._exists(
-                run_settings,
-                'http://rmit.edu.au/schemas/stages/make',
-                u'runs_left'):
-            if ast.literal_eval(run_settings[
-                'http://rmit.edu.au/schemas/stages/make'][
-                u'runs_left']):
-                if self._exists(
-                        run_settings,
-                        'http://rmit.edu.au/schemas/stages/make',
-                        u'running'):
-                    return run_settings['http://rmit.edu.au/schemas/stages/make'][
-                        u'running']
+        try:
+            runs_left = ast.literal_eval(getval(run_settings, '%s/stages/make/runs_left' % RMIT_SCHEMA))
+        except ValueError:
+            pass
+        except SettingNotFoundException:
+            pass
+        else:
+            # TODO: should check program_success?
+            if runs_left:
+                try:
+                    running = getval(run_settings, '%s/stages/make/running' % RMIT_SCHEMA)
+                except SettingNotFoundException:
+                    return False
+                return running
 
         return False
+
+        # if self._exists(
+        #         run_settings,
+        #         'http://rmit.edu.au/schemas/stages/make',
+        #         u'runs_left'):
+        #     if ast.literal_eval(run_settings[
+        #         'http://rmit.edu.au/schemas/stages/make'][
+        #         u'runs_left']):
+        #         if self._exists(
+        #                 run_settings,
+        #                 'http://rmit.edu.au/schemas/stages/make',
+        #                 u'running'):
+        #             return run_settings['http://rmit.edu.au/schemas/stages/make'][
+        #                 u'running']
+
+        # return False
 
     def _job_finished(self, settings, remote_path):
 
@@ -116,13 +134,19 @@ class MakeFinishedStage(Stage):
         self.experiment_id = settings['experiment_id']
         messages.info(run_settings, "1: waiting for completion")
         logger.debug("settings=%s" % settings)
-        if self._exists(run_settings,
-            'http://rmit.edu.au/schemas/stages/make',
-            u'runs_left'):
-            self.runs_left = ast.literal_eval(
-                run_settings['http://rmit.edu.au/schemas/stages/make'][u'runs_left'])
-        else:
+
+        try:
+            self.runs_left = ast.literal_eval(getval(run_settings, '%s/stages/make/runs_left' % RMIT_SCHEMA))
+        except (ValueError, SettingNotFoundException):
             self.runs_left = []
+
+        # if self._exists(run_settings,
+        #     'http://rmit.edu.au/schemas/stages/make',
+        #     u'runs_left'):
+        #     self.runs_left = ast.literal_eval(
+        #         run_settings['http://rmit.edu.au/schemas/stages/make'][u'runs_left'])
+        # else:
+        #     self.runs_left = []
 
         def _get_dest_bdp_url(settings):
             return "%s@%s" % (
@@ -146,7 +170,6 @@ class MakeFinishedStage(Stage):
 
         (scheme, host, mypath, location, query_settings) = \
             storage.parse_bdpurl(encoded_d_url)
-
 
         if self.runs_left:
             job_finished = self._job_finished(
@@ -357,10 +380,15 @@ class MakeFinishedStage(Stage):
                     )
 
     def output(self, run_settings):
-        run_settings['http://rmit.edu.au/schemas/stages/make']['runs_left']  \
-            = str(self.runs_left)
-        run_settings['http://rmit.edu.au/schemas/input/mytardis']['experiment_id'] \
-            = self.experiment_id
-        # run_settings['http://rmit.edu.au/schemas/stages/make']['running'] = \
-        #     self.still_running
+        setvals(run_settings, {
+                '%s/input/mytardis/experiment_id' % RMIT_SCHEMA: self.experiment_id,
+                '%s/stages/make/runs_left' % RMIT_SCHEMA: str(self.runs_left)
+        })
+
+        # run_settings['http://rmit.edu.au/schemas/stages/make']['runs_left']  \
+        #     = str(self.runs_left)
+        # run_settings['http://rmit.edu.au/schemas/input/mytardis']['experiment_id'] \
+        #     = self.experiment_id
+        # # run_settings['http://rmit.edu.au/schemas/stages/make']['running'] = \
+        # #     self.still_running
         return run_settings

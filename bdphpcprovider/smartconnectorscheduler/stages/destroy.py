@@ -26,9 +26,12 @@ from bdphpcprovider.platform import manage
 from bdphpcprovider.smartconnectorscheduler import smartconnector, models
 from bdphpcprovider.cloudconnection import destroy_vms
 
+from bdphpcprovider.runsettings import getval, setval, setvals, getvals, update, SettingNotFoundException
+
 logger = logging.getLogger(__name__)
 
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+
 
 class Destroy(smartconnector.Stage):
 
@@ -36,69 +39,107 @@ class Destroy(smartconnector.Stage):
         logger.debug('Destroy stage initialised')
 
     def triggered(self, run_settings):
+
         try:
-            cleanup_nodes_str = smartconnector.get_existing_key(run_settings,
-                'http://rmit.edu.au/schemas/reliability/cleanup_nodes')
+            cleanup_nodes_str = getval(run_settings,
+                                       '%s/reliability/cleanup_nodes'
+                                            % RMIT_SCHEMA)
             self.cleanup_nodes = ast.literal_eval(cleanup_nodes_str)
             if self.cleanup_nodes:
                 return True
-        except KeyError, e:
+        except (SettingNotFoundException, ValueError) as e:
             self.cleanup_nodes = []
             logger.debug(e)
+        # try:
+        #     cleanup_nodes_str = smartconnector.get_existing_key(run_settings,
+        #         'http://rmit.edu.au/schemas/reliability/cleanup_nodes')
+        #     self.cleanup_nodes = ast.literal_eval(cleanup_nodes_str)
+        #     if self.cleanup_nodes:
+        #         return True
+        # except KeyError, e:
+        #     self.cleanup_nodes = []
+        #     logger.debug(e)
 
-        if self._exists(run_settings,
-            'http://rmit.edu.au/schemas/stages/converge',
-            u'converged'):
-            converged = int(run_settings['http://rmit.edu.au/schemas/stages/converge'][u'converged'])
+        try:
+            converged = int(getval(run_settings, '%s/stages/converge/converged' % RMIT_SCHEMA))
             logger.debug("converged=%s" % converged)
-            if converged:
-                if self._exists(run_settings,
-                    'http://rmit.edu.au/schemas/stages/destroy',
-                    u'run_finished'):
-                    run_finished = int(run_settings['http://rmit.edu.au/schemas/stages/destroy'][u'run_finished'])
-                    return not run_finished
-                else:
-                    return True
+        except (ValueError, SettingNotFoundException) as e:
+            return False
+        if converged:
+            try:
+                run_finished = int(getval(run_settings,
+                                   '%s/stages/destroy/run_finished'
+                                        % RMIT_SCHEMA))
+            except (ValueError, SettingNotFoundException) as e:
+                return True
+
+            return not run_finished
+
         return False
-        # if 'converged' in self.settings:
-        #     if self.settings['converged']:
-        #         if not 'run_finished' in self.settings:
+
+        # if self._exists(run_settings,
+        #     'http://rmit.edu.au/schemas/stages/converge',
+        #     u'converged'):
+        #     converged = int(run_settings['http://rmit.edu.au/schemas/stages/converge'][u'converged'])
+        #     logger.debug("converged=%s" % converged)
+        #     if converged:
+        #         if self._exists(run_settings,
+        #             'http://rmit.edu.au/schemas/stages/destroy',
+        #             u'run_finished'):
+        #             run_finished = int(run_settings['http://rmit.edu.au/schemas/stages/destroy'][u'run_finished'])
+        #             return not run_finished
+        #         else:
         #             return True
         # return False
 
     def process(self, run_settings):
-        local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
-        smartconnector.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/system/platform')
-        smartconnector.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/stages/create/cloud_sleep_interval')
-        local_settings['bdp_username'] = run_settings[
-            RMIT_SCHEMA + '/bdp_userprofile']['username']
-        #smartconnector.copy_settings(local_settings, run_settings,
-        #    RMIT_SCHEMA+'/platform/computation/nectar/ec2_access_key')
-        #smartconnector.copy_settings(local_settings, run_settings,
-        #    RMIT_SCHEMA+'/platform/computation/nectar/ec2_secret_key')
 
-        bdp_username = run_settings['http://rmit.edu.au/schemas/bdp_userprofile']['username']
-        computation_platform_url = run_settings['http://rmit.edu.au/schemas/platform/computation']['platform_url']
-        comp_pltf_settings = manage.get_platform_settings(computation_platform_url, bdp_username)
+        local_settings = getvals(run_settings, models.UserProfile.PROFILE_SCHEMA_NS)
+        # local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
+
+        update(local_settings, run_settings,
+               '%s/system/platform' % RMIT_SCHEMA,
+               '%s/stages/create/cloud_sleep_interval' % RMIT_SCHEMA)
+        # smartconnector.copy_settings(local_settings, run_settings,
+        #     'http://rmit.edu.au/schemas/system/platform')
+        # smartconnector.copy_settings(local_settings, run_settings,
+        #     'http://rmit.edu.au/schemas/stages/create/cloud_sleep_interval')
+        local_settings['bdp_username'] = getval(run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA)
+        # local_settings['bdp_username'] = run_settings[
+        #     RMIT_SCHEMA + '/bdp_userprofile']['username']
+
+        computation_platform_url = getval(run_settings, '%s/platform/computation/platform_url' % RMIT_SCHEMA)
+        # computation_platform_url = run_settings['http://rmit.edu.au/schemas/platform/computation']['platform_url']
+        comp_pltf_settings = manage.get_platform_settings(computation_platform_url, local_settings['bdp_username'])
         local_settings.update(comp_pltf_settings)
 
         node_type = []
-        if self._exists(run_settings,
-            'http://rmit.edu.au/schemas/stages/create',
-            u'created_nodes'):
-            smartconnector.copy_settings(local_settings, run_settings,
-                'http://rmit.edu.au/schemas/stages/create/created_nodes')
-            #all_instances = managevms.get_registered_vms(
-            #    local_settings, node_type=node_type)
-            node_type.append('created_nodes')
-        #else:
-        #    all_instances = []
+
+        try:
+            if getvals(run_settings, '%s/stages/create'):
+                update(local_settings,
+                       run_settings,
+                       '%s/steages/create/created_nodes' % RMIT_SCHEMA)
+        except SettingNotFoundException:
+            pass
+
+        # if self._exists(run_settings,
+        #     'http://rmit.edu.au/schemas/stages/create',
+        #     u'created_nodes'):
+        #     smartconnector.copy_settings(local_settings, run_settings,
+        #         'http://rmit.edu.au/schemas/stages/create/created_nodes')
+        #     #all_instances = managevms.get_registered_vms(
+        #     #    local_settings, node_type=node_type)
+        #     node_type.append('created_nodes')
+        # #else:
+        # #    all_instances = []
 
         if self.cleanup_nodes:
-            smartconnector.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/reliability/cleanup_nodes')
+            update(local_settings, run_settings,
+                   '%s/reliability/cleanup_nodes' % RMIT_SCHEMA
+                   )
+            # smartconnector.copy_settings(local_settings, run_settings,
+            # 'http://rmit.edu.au/schemas/reliability/cleanup_nodes')
             node_type.append('cleanup_nodes')
             #all_instances.extend(managevms.get_registered_vms(
             #    local_settings, node_type=node_type))
@@ -111,12 +152,17 @@ class Destroy(smartconnector.Stage):
             logger.info('Destroy stage completed')
 
     def output(self, run_settings):
-        run_settings.setdefault(
-            'http://rmit.edu.au/schemas/stages/destroy',
-            {})[u'run_finished'] = 1
 
-        if self.cleanup_nodes:
-            run_settings.setdefault(
-            'http://rmit.edu.au/schemas/reliability', {})[u'cleanup_nodes'] = []
+        setvals(run_settings, {
+            '%s/stages/destroy/run_finished' % RMIT_SCHEMA: 1,
+            '%s/reliability/cleanup_nodes' % RMIT_SCHEMA: []
+               })
+        # run_settings.setdefault(
+        #     'http://rmit.edu.au/schemas/stages/destroy',
+        #     {})[u'run_finished'] = 1
+
+        # if self.cleanup_nodes:
+        #     run_settings.setdefault(
+        #     'http://rmit.edu.au/schemas/reliability', {})[u'cleanup_nodes'] = []
 
         return run_settings

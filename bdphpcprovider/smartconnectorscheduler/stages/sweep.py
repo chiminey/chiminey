@@ -33,6 +33,7 @@ from bdphpcprovider import messages
 from bdphpcprovider.platform import manage
 from bdphpcprovider import storage
 from bdphpcprovider import mytardis
+from bdphpcprovider.runsettings import getval, getvals, setval, update, SettingNotFoundException
 
 
 logger = logging.getLogger(__name__)
@@ -49,13 +50,21 @@ class Sweep(Stage):
 
     def triggered(self, run_settings):
         logger.debug('run_settings=%s' % run_settings)
-        if self._exists(run_settings,
-            RMIT_SCHEMA + '/stages/sweep',
-            'sweep_done'):
-            configure_done = int(run_settings[
-                RMIT_SCHEMA + '/stages/sweep'][u'sweep_done'])
-            return not configure_done
-        return True
+
+        try:
+            configure_done = int(getval(run_settings, '%s/stages/sweep/sweep_done' % RMIT_SCHEMA))
+        except (ValueError, SettingNotFoundException):
+            return True
+
+        return not configure_done
+
+        # if self._exists(run_settings,
+        #     RMIT_SCHEMA + '/stages/sweep',
+        #     'sweep_done'):
+        #     configure_done = int(run_settings[
+        #         RMIT_SCHEMA + '/stages/sweep'][u'sweep_done'])
+        #     return not configure_done
+        # return True
 
     def process(self, run_settings):
         logger.debug('run_settings=%s' % run_settings)
@@ -63,23 +72,31 @@ class Sweep(Stage):
         # Need to make copy because we pass on run_settings to sub connector
         # so any changes we make here to run_settings WILL be inherited
         from copy import deepcopy
-        local_settings = deepcopy(run_settings[models.UserProfile.PROFILE_SCHEMA_NS])
+        local_settings = deepcopy(getvals(run_settings, models.UserProfile.PROFILE_SCHEMA_NS))
+        # local_settings = deepcopy(run_settings[models.UserProfile.PROFILE_SCHEMA_NS])
 
-        smartconnector.copy_settings(local_settings, run_settings,
-            RMIT_SCHEMA + '/system/platform')
-        smartconnector.copy_settings(local_settings, run_settings,
-            RMIT_SCHEMA + '/input/mytardis/experiment_id')
-        smartconnector.copy_settings(local_settings, run_settings,
-            RMIT_SCHEMA + '/system/random_numbers')
-        local_settings['bdp_username'] = run_settings[
-            RMIT_SCHEMA + '/bdp_userprofile']['username']
+        update(local_settings, run_settings,
+                RMIT_SCHEMA + '/system/platform',
+                RMIT_SCHEMA + '/input/mytardis/experiment_id',
+                RMIT_SCHEMA + '/system/random_numbers',
+               )
+        # smartconnector.copy_settings(local_settings, run_settings,
+        #     RMIT_SCHEMA + '/system/platform')
+        # smartconnector.copy_settings(local_settings, run_settings,
+        #     RMIT_SCHEMA + '/input/mytardis/experiment_id')
+        # smartconnector.copy_settings(local_settings, run_settings,
+        #     RMIT_SCHEMA + '/system/random_numbers')
+
+        local_settings['bdp_username'] = getval(run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA)
+        # local_settings['bdp_username'] = run_settings[
+        #     RMIT_SCHEMA + '/bdp_userprofile']['username']
 
         logger.debug('local_settings=%s' % local_settings)
 
-        contextid = int(run_settings[RMIT_SCHEMA + '/system'][
-            u'contextid'])
+        contextid = int(getval(run_settings, '%s/system/contextid' % RMIT_SCHEMA))
+        # contextid = int(run_settings[RMIT_SCHEMA + '/system'][
+        #     u'contextid'])
         logger.debug("contextid=%s" % contextid)
-
         # if self._exists(run_settings,
         #     RMIT_SCHEMA + '/system',
         #     'parent_contextid'):
@@ -87,13 +104,19 @@ class Sweep(Stage):
         # else:
         #     parent_contextid = 0
 
-        computation_platform_name = run_settings[
-            RMIT_SCHEMA + '/input/system/compplatform']['computation_platform']
-        run_settings[RMIT_SCHEMA + '/platform/computation'] = {}
-        run_settings[RMIT_SCHEMA + '/platform/computation'][
-            'platform_url'] = computation_platform_name
+        setval(run_settings,
+               '%s/platform/computation/platform_url' % RMIT_SCHEMA,
+               getval(run_settings,
+                      '%s/input/system/compplatform/computation_platform'
+                            % RMIT_SCHEMA))
+        # computation_platform_name = run_settings[
+        #     RMIT_SCHEMA + '/input/system/compplatform']['computation_platform']
+        # run_settings[RMIT_SCHEMA + '/platform/computation'] = {}
+        # run_settings[RMIT_SCHEMA + '/platform/computation'][
+        #     'platform_url'] = computation_platform_name
 
-        output_location = run_settings[RMIT_SCHEMA + '/input/system'][u'output_location']
+        output_location = getval(run_settings, '%s/input/system/output_location' % RMIT_SCHEMA)
+        # output_location = run_settings[RMIT_SCHEMA + '/input/system'][u'output_location']
         output_location_list = output_location.split('/')
         output_storage_name = output_location_list[0]
         output_storage_offset = ''
@@ -101,44 +124,73 @@ class Sweep(Stage):
             output_storage_offset = os.path.join(*output_location_list[1:])
         logger.debug('output_storage_offset=%s' % output_storage_offset)
 
-        run_settings[RMIT_SCHEMA + '/platform/storage/output'] = {}
-        run_settings[RMIT_SCHEMA + '/platform/storage/output'][
-            'platform_url'] = output_storage_name
-        run_settings[RMIT_SCHEMA + '/platform/storage/output']['offset'] = \
-            os.path.join(output_storage_offset, 'sweep%s' % contextid)
+        setval(run_settings,
+               '%s/platform/storage/output/platform_url' % RMIT_SCHEMA,
+               output_storage_name)
 
-        minput_location = run_settings[RMIT_SCHEMA + '/input/system'][
-            u'input_location']
+        # run_settings[RMIT_SCHEMA + '/platform/storage/output'] = {}
+        # run_settings[RMIT_SCHEMA + '/platform/storage/output'][
+        #     'platform_url'] = output_storage_name
+
+        setval(run_settings, '%s/platform/storage/output/offset' % RMIT_SCHEMA,
+               os.path.join(output_storage_offset, 'sweep%s' % contextid))
+        # run_settings[RMIT_SCHEMA + '/platform/storage/output']['offset'] = \
+        #     os.path.join(output_storage_offset, 'sweep%s' % contextid)
+
+        minput_location = getval(run_settings, '%s/input/system/input_location' % RMIT_SCHEMA)
+        # minput_location = run_settings[RMIT_SCHEMA + '/input/system'][
+        #     u'input_location']
         input_location_list = minput_location.split('/')
         input_storage_name = input_location_list[0]
         input_storage_offset = ''
         if len(input_location_list) > 1:
             input_storage_offset = os.path.join(*input_location_list[1:])
         logger.debug('input_storage_offset=%s' % input_storage_offset)
-        run_settings[RMIT_SCHEMA + '/platform/storage/input'] = {}
-        run_settings[RMIT_SCHEMA + '/platform/storage/input'][
-            'platform_url'] = input_storage_name
-        bdp_username = run_settings[RMIT_SCHEMA + '/bdp_userprofile'][
-            'username']
+
+        setval(run_settings, '%s/platform/storage/input/platform_url' % RMIT_SCHEMA,
+               input_storage_name)
+        # run_settings[RMIT_SCHEMA + '/platform/storage/input'] = {}
+        # run_settings[RMIT_SCHEMA + '/platform/storage/input'][
+        #     'platform_url'] = input_storage_name
+
+        bdp_username = getval(run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA)
+        # bdp_username = run_settings[RMIT_SCHEMA + '/bdp_userprofile'][
+        #     'username']
+
         logger.debug("bdp_username=%s" % bdp_username)
-        input_storage_url = run_settings[
-            RMIT_SCHEMA + '/platform/storage/input']['platform_url']
+
+        input_storage_url = getval(run_settings, '%s/platform/storage/input/platform_url' % RMIT_SCHEMA)
+        # input_storage_url = run_settings[
+        #     RMIT_SCHEMA + '/platform/storage/input']['platform_url']
+
         input_storage_settings = manage.get_platform_settings(
             input_storage_url,
             bdp_username)
-        run_settings[RMIT_SCHEMA + '/platform/storage/input'][
-            'offset'] = input_storage_offset
+
+        setval(run_settings,
+               '%s/platform/storage/input/offset' % RMIT_SCHEMA,
+               input_storage_offset)
+        # run_settings[RMIT_SCHEMA + '/platform/storage/input'][
+        #     'offset'] = input_storage_offset
 
         try:
-            self.experiment_id = int(smartconnector.get_existing_key(
-                run_settings,
-                RMIT_SCHEMA + '/input/mytardis/experiment_id'))
-        except KeyError:
+            self.experiment_id = int(getval(run_settings, '%s/input/mytardis/experiment_id' % RMIT_SCHEMA))
+        except SettingNotFoundException:
             self.experiment_id = 0
         except ValueError:
             self.experiment_id = 0
+        # try:
+        #     self.experiment_id = int(smartconnector.get_existing_key(
+        #         run_settings,
+        #         RMIT_SCHEMA + '/input/mytardis/experiment_id'))
+        # except KeyError:
+        #     self.experiment_id = 0
+        # except ValueError:
+        #     self.experiment_id = 0
 
-        subdirective = run_settings[RMIT_SCHEMA + '/stages/sweep']['directive']
+        subdirective = getval(run_settings, '%s/stages/sweep/directive' % RMIT_SCHEMA)
+        # subdirective = run_settings[RMIT_SCHEMA + '/stages/sweep']['directive']
+
         current_context = models.Context.objects.get(id=contextid)
         user = current_context.owner.user.username
         # TODO: replace with scratch space computation platform space
@@ -179,8 +231,8 @@ class Sweep(Stage):
                     ],
                 output_location=self.scratch_platform)
 
-            run_settings[RMIT_SCHEMA + '/input/mytardis'][
-                'experiment_id'] = self.experiment_id
+            # run_settings[RMIT_SCHEMA + '/input/mytardis'][
+            #     'experiment_id'] = self.experiment_id
         elif subdirective == "remotemake":
             self.experiment_id = self._make_mytardis_exp(
                 run_settings=run_settings,
@@ -191,12 +243,18 @@ class Sweep(Stage):
         elif subdirective == "hrmc":
             pass
 
-        if '%s/input/mytardis' % RMIT_SCHEMA in run_settings:
-                run_settings[RMIT_SCHEMA + '/input/mytardis'][
-            'experiment_id'] = str(self.experiment_id)
+        if getvals(run_settings, '%s/input/mytardis' % RMIT_SCHEMA):
+            setval(run_settings,
+                   '%s/input/mytardis/experiment_id' % RMIT_SCHEMA,
+                   str(self.experiment_id))
+        # if '%s/input/mytardis' % RMIT_SCHEMA in run_settings:
+        #         run_settings[RMIT_SCHEMA + '/input/mytardis'][
+        #     'experiment_id'] = str(self.experiment_id)
 
         # # generate all variations
-        map_text = run_settings[RMIT_SCHEMA + '/input/sweep']['sweep_map']
+        map_text = getval(run_settings, '%s/input/sweep/sweep_map' % RMIT_SCHEMA)
+        # map_text = run_settings[RMIT_SCHEMA + '/input/sweep']['sweep_map']
+
         sweep_map = json.loads(map_text)
         logger.debug("sweep_map=%s" % pformat(sweep_map))
         runs = _expand_variations(maps=[sweep_map], values={})
@@ -204,15 +262,17 @@ class Sweep(Stage):
 
         # Create random numbers if needed
         rands = []
-        if RMIT_SCHEMA + '/input/hrmc' in run_settings:
 
-            # TODO: move iseed out of hrmc into separate generic schema
-            # to use on any sweepable connector and make this function
-            # completely hrmc independent.
+        # TODO: move iseed out of hrmc into separate generic schema
+        # to use on any sweepable connector and make this function
+        # completely hrmc independent.
 
-            self.rand_index = run_settings[
-                RMIT_SCHEMA + '/input/hrmc']['iseed']
+        try:
+            self.rand_index = getval(run_settings, '%s/input/hrmc/iseed' % RMIT_SCHEMA)
             logger.debug("rand_index=%s" % self.rand_index)
+        except SettingNotFoundException:
+            pass
+        else:
             # prep random seeds for each run based off original iseed
             # FIXME: inefficient for large random file
             # TODO, FIXME: this is potentially problematic if different
@@ -229,6 +289,29 @@ class Sweep(Stage):
             except Exception, e:
                 logger.error(e)
                 raise
+        # if RMIT_SCHEMA + '/input/hrmc' in run_settings:
+        #     # TODO: move iseed out of hrmc into separate generic schema
+        #     # to use on any sweepable connector and make this function
+        #     # completely hrmc independent.
+        #     self.rand_index = run_settings[
+        #         RMIT_SCHEMA + '/input/hrmc']['iseed']
+        #     logger.debug("rand_index=%s" % self.rand_index)
+        #     # prep random seeds for each run based off original iseed
+        #     # FIXME: inefficient for large random file
+        #     # TODO, FIXME: this is potentially problematic if different
+        #     # runs end up overlapping in the random numbers they utilise.
+        #     # solution is to have separate random files per run or partition
+        #     # big file up.
+        #     try:
+        #         rands = hrmcstages.generate_rands(settings=local_settings,
+        #         start_range=0,
+        #         end_range=-1,
+        #         num_required=len(runs),
+        #         start_index=self.rand_index)
+        #         logger.debug("rands=%s" % rands)
+        #     except Exception, e:
+        #         logger.error(e)
+        #         raise
 
         # load initial values map in the input directory which
         # contains variable to use for all subdirectives
@@ -260,7 +343,8 @@ class Sweep(Stage):
         # starting values.
         for ns in run_settings:
             if ns.startswith(RMIT_SCHEMA + "/input"):
-                for k, v in run_settings[ns].items():
+                # for k, v in run_settings[ns].items():
+                for k, v in getvals(run_settings, ns).items():
                     starting_map[k] = v
         logger.debug("starting_map after form=%s" % pformat(starting_map))
 
@@ -283,8 +367,8 @@ class Sweep(Stage):
 
             run_counter = int(context['run_counter'])
             logger.debug("run_counter=%s" % run_counter)
-            logger.debug("systemsetttings=%s" % pformat(run_settings[
-                RMIT_SCHEMA + '/input/system']))
+            logger.debug("systemsettings=%s"
+                     % pformat(getvals(run_settings, RMIT_SCHEMA + '/input/system')))
             run_inputdir = os.path.join(self.scratch_platform,
                 "run%s" % str(run_counter),
                 "input_0",)
@@ -302,15 +386,11 @@ class Sweep(Stage):
             # Need to load up existing values, because original input_dir could
             # have contained values for the whole run
             error_detected = False
-            if self._exists(run_settings,
-                RMIT_SCHEMA + '/stages/sweep',
-                'template_name'):
-
-                # TODO: This code is deprecated, as should rely purely on "values"
-                # file and any *_template files, rather than a single
-                # template_name
-                template_name = run_settings[RMIT_SCHEMA + '/stages/sweep'][
-                    u'template_name']
+            try:
+                template_name = getval(run_settings, '%s/stages/sweep/template_name' % RMIT_SCHEMA)
+            except SettingNotFoundException:
+                pass
+            else:
                 logger.debug("template_name=%s" % template_name)
                 v_map = {}
                 try:
@@ -329,6 +409,34 @@ class Sweep(Stage):
                 v_map.update(context)
                 logger.debug("new v_map=%s" % v_map)
                 storage.put_file(values_url, json.dumps(v_map, indent=4))
+
+            # if self._exists(run_settings,
+            #     RMIT_SCHEMA + '/stages/sweep',
+            #     'template_name'):
+
+            #     # TODO: This code is deprecated, as should rely purely on "values"
+            #     # file and any *_template files, rather than a single
+            #     # template_name
+            #     template_name = run_settings[RMIT_SCHEMA + '/stages/sweep'][
+            #         u'template_name']
+            #     logger.debug("template_name=%s" % template_name)
+            #     v_map = {}
+            #     try:
+            #         values_url = smartconnector.get_url_with_pkey(
+            #             local_settings,
+            #             os.path.join(run_inputdir, "initial",
+            #                 '%s_values' % template_name),
+            #             is_relative_path=False)
+            #         logger.debug("values_url=%s" % values_url)
+            #         values_content = storage.get_file(values_url)
+            #         logger.debug("values_content=%s" % values_content)
+            #         v_map = dict(json.loads(values_content), indent=4)
+            #     except IOError:
+            #         logger.warn("no values file found")
+            #     v_map.update(starting_map)
+            #     v_map.update(context)
+            #     logger.debug("new v_map=%s" % v_map)
+            #     storage.put_file(values_url, json.dumps(v_map, indent=4))
 
             v_map = {}
             try:
@@ -351,11 +459,17 @@ class Sweep(Stage):
             # Prepare subdirective run_settings
             logger.debug("run_settings=%s" % pformat(run_settings))
             if len(rands):
-                run_settings[RMIT_SCHEMA + '/input/hrmc'][u'iseed'] = rands[i]
-            run_settings[RMIT_SCHEMA + "/input/system"]['input_location'] =  \
-                "%s/run%s/input_0" % (self.scratch_platform, run_counter)
-            run_settings[RMIT_SCHEMA + "/input/system"]['input_location'] =  \
-                "%s/run%s/input_0" % (self.scratch_platform, run_counter)
+                setval(run_settings, '%s/input/hrmc/iseed' % RMIT_SCHEMA, rands[i])
+                # run_settings[RMIT_SCHEMA + '/input/hrmc'][u'iseed'] = rands[i]
+
+            setval(run_settings, '%s/input/system/input_location' % RMIT_SCHEMA,
+                "%s/run%s/input_0" % (self.scratch_platform,
+                                      run_counter))
+
+            # run_settings[RMIT_SCHEMA + "/input/system"]['input_location'] =  \
+            #     "%s/run%s/input_0" % (self.scratch_platform, run_counter)
+            # run_settings[RMIT_SCHEMA + "/input/system"]['input_location'] =  \
+            #     "%s/run%s/input_0" % (self.scratch_platform, run_counter)
 
             minput_location = "local/sweep%s/run%s/input_0" % (contextid, run_counter)
             input_location_list = minput_location.split('/')
@@ -364,18 +478,25 @@ class Sweep(Stage):
             if len(input_location_list) > 1:
                 input_storage_offset = os.path.join(*input_location_list[1:])
             logger.debug('input_storage_offset=%s' % input_storage_offset)
-            run_settings[RMIT_SCHEMA + '/platform/storage/input'] = {}
-            run_settings[RMIT_SCHEMA + '/platform/storage/input'][
-                'platform_url'] = input_storage_name
-            bdp_username = run_settings[RMIT_SCHEMA + '/bdp_userprofile'][
-                'username']
-            input_storage_url = run_settings[
-                RMIT_SCHEMA + '/platform/storage/input']['platform_url']
-            input_storage_settings = manage.get_platform_settings(
-                input_storage_url,
-                bdp_username)
-            run_settings[RMIT_SCHEMA + '/platform/storage/input'][
-                'offset'] = input_storage_offset
+
+            setval(run_settings,
+                   '%s/platform/storage/input/platform_url' % RMIT_SCHEMA,
+                   input_storage_name)
+            # run_settings[RMIT_SCHEMA + '/platform/storage/input'] = {}
+            # run_settings[RMIT_SCHEMA + '/platform/storage/input'][
+            #     'platform_url'] = input_storage_name
+
+            # bdp_username = run_settings[RMIT_SCHEMA + '/bdp_userprofile'][
+            #     'username']
+
+            # input_storage_url = run_settings[
+            #     RMIT_SCHEMA + '/platform/storage/input']['platform_url']
+
+            # input_storage_settings = manage.get_platform_settings(
+            #     input_storage_url,
+            #     bdp_username)
+            # run_settings[RMIT_SCHEMA + '/platform/storage/input'][
+            #     'offset'] = input_storage_offset
 
             logger.debug("run_settings=%s" % pformat(run_settings))
             try:
@@ -390,14 +511,21 @@ class Sweep(Stage):
 
     def output(self, run_settings):
         logger.debug("sweep output")
-        run_settings.setdefault(
-            RMIT_SCHEMA + '/stages/sweep',
-            {})[u'sweep_done'] = 1
+
+        setval(run_settings, '%s/stages/sweep/sweep_done' % RMIT_SCHEMA, 1)
+        # run_settings.setdefault(
+        #     RMIT_SCHEMA + '/stages/sweep',
+        #     {})[u'sweep_done'] = 1
         logger.debug('interesting run_settings=%s' % run_settings)
 
-        if '%s/input/mytardis' % RMIT_SCHEMA in run_settings:
-                run_settings[RMIT_SCHEMA + '/input/mytardis'][
-            'experiment_id'] = str(self.experiment_id)
+        if getvals(run_settings, '%s/input/mytardis' % RMIT_SCHEMA):
+            setval(run_settings,
+                   '%s/input/mytardis/experiment_id' % RMIT_SCHEMA,
+                   str(self.experiment_id))
+
+        # if '%s/input/mytardis' % RMIT_SCHEMA in run_settings:
+        #         run_settings[RMIT_SCHEMA + '/input/mytardis'][
+        #     'experiment_id'] = str(self.experiment_id)
         messages.success(run_settings, "0: completed")
         return run_settings
 
@@ -405,10 +533,14 @@ class Sweep(Stage):
             self, run_settings,
             experiment_id, experiment_paramset,
             output_location):
-        bdp_username = run_settings[
-            RMIT_SCHEMA + '/bdp_userprofile']['username']
-        mytardis_url = run_settings[
-            RMIT_SCHEMA + '/input/mytardis']['mytardis_platform']
+        bdp_username = getval(run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA)
+        # bdp_username = run_settings[
+        #     RMIT_SCHEMA + '/bdp_userprofile']['username']
+
+        mytardis_url = getval(run_settings, '%s/input/mytardis/mytardis_platform' % RMIT_SCHEMA)
+        # mytardis_url = run_settings[
+        #     RMIT_SCHEMA + '/input/mytardis']['mytardis_platform']
+
         mytardis_settings = manage.get_platform_settings(
             mytardis_url,
             bdp_username)
@@ -440,7 +572,6 @@ def _submit_subtask(platform, directive_name, data, user, parentcontext):
     directive_args = [directive_args]
     logger.debug("directive_args=%s" % pformat(directive_args))
     logger.debug('directive_name=%s' % directive_name)
-
 
     (task_run_settings, command_args, run_context) \
         = hrmcstages.make_runcontext_for_directive(
