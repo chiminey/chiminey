@@ -24,8 +24,7 @@ import os
 from bdphpcprovider.platform import manage
 from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
 from bdphpcprovider.smartconnectorscheduler import (models,
-                                                    smartconnector,
-                                                    platform)
+                                                    smartconnector)
 from bdphpcprovider.reliabilityframework.ftmanager import FTManager
 from bdphpcprovider.reliabilityframework.failuredetection import FailureDetection
 from bdphpcprovider.sshconnection import open_connection
@@ -33,6 +32,8 @@ from bdphpcprovider.sshconnection import open_connection
 from bdphpcprovider import compute
 from bdphpcprovider import messages
 from bdphpcprovider import storage
+from bdphpcprovider.runsettings import getval, setvals, setval, getvals, update, SettingNotFoundException
+
 
 logger = logging.getLogger(__name__)
 
@@ -58,26 +59,52 @@ class Wait(Stage):
         self.failure_detector = FailureDetection()
         #self.cleanup_nodes = self.ftmanager.get_cleanup_nodes(run_settings, smartconnector)
         try:
-            failed_str = run_settings['http://rmit.edu.au/schemas/stages/create'][u'failed_nodes']
+            failed_str = getval(run_settings, '%s/stages/create/failed_nodes' % RMIT_SCHEMA)
+            # failed_str = run_settings['http://rmit.edu.au/schemas/stages/create'][u'failed_nodes']
+
             self.failed_nodes = ast.literal_eval(failed_str)
-        except KeyError, e:
+        except SettingNotFoundException, e:
             logger.debug(e)
             self.failed_nodes = []
+        except ValueError, e:
+            logger.warn(e)
+            self.failed_nodes = []
+
         try:
-            executed_procs_str = run_settings['http://rmit.edu.au/schemas/stages/execute'][u'executed_procs']
+            executed_procs_str = getval(run_settings, '%s/stages/execute/executed_procs' % RMIT_SCHEMA)
+            # executed_procs_str = run_settings['http://rmit.edu.au/schemas/stages/execute'][u'executed_procs']
+
             self.executed_procs = ast.literal_eval(executed_procs_str)
-        except KeyError, e:
+        except SettingNotFoundException, e:
             logger.debug(e)
             return False
+        except ValueError, e:
+            logger.error(e)
+            return False
 
-        self.all_processes = ast.literal_eval(smartconnector.get_existing_key(run_settings,
-                'http://rmit.edu.au/schemas/stages/schedule/all_processes'))
+        try:
+            self.all_processes = ast.literal_eval(getval(run_settings, '%s/stages/schedule/all_processes' % RMIT_SCHEMA))
+        except (SettingNotFoundException, ValueError):
+            self.all_processes = []
 
-        self.current_processes = ast.literal_eval(smartconnector.get_existing_key(run_settings,
-                'http://rmit.edu.au/schemas/stages/schedule/current_processes'))
+        try:
+            self.current_processes = ast.literal_eval(getval(run_settings, '%s/stages/schedule/current_processes' % RMIT_SCHEMA))
+        except (SettingNotFoundException, ValueError):
+            self.current_processes = []
 
-        self.exec_procs = ast.literal_eval(smartconnector.get_existing_key(run_settings,
-                'http://rmit.edu.au/schemas/stages/execute/executed_procs'))
+        try:
+            self.exec_procs = ast.literal_eval(getval(run_settings, '%s/stages/schedule/executed_procs' % RMIT_SCHEMA))
+        except (SettingNotFoundException, ValueError):
+            self.exec_procs = []
+
+        # self.all_processes = ast.literal_eval(smartconnector.get_existing_key(run_settings,
+        #         'http://rmit.edu.au/schemas/stages/schedule/all_processes'))
+
+        # self.current_processes = ast.literal_eval(smartconnector.get_existing_key(run_settings,
+        #         'http://rmit.edu.au/schemas/stages/schedule/current_processes'))
+
+        # self.exec_procs = ast.literal_eval(smartconnector.get_existing_key(run_settings,
+        #         'http://rmit.edu.au/schemas/stages/execute/executed_procs'))
 
         if len(self.current_processes) == 0:
             return False
@@ -89,26 +116,51 @@ class Wait(Stage):
         else:
             logger.debug('No ready: executed_not_running=%s' % executed_not_running)
 
-
         try:
-            reschedule_str = run_settings['http://rmit.edu.au/schemas/stages/schedule'][u'procs_2b_rescheduled']
+            reschedule_str = getval(run_settings, '%s/stages/schedule/procs_2b_rescheduled' % RMIT_SCHEMA)
             self.procs_2b_rescheduled = ast.literal_eval(reschedule_str)
             if self.procs_2b_rescheduled:
                 return False
-        except KeyError, e:
+        except (ValueError, SettingNotFoundException) as e:
             logger.debug(e)
             self.procs_2b_rescheduled = []
 
-        self.reschedule_failed_procs = run_settings['http://rmit.edu.au/schemas/input/reliability'][u'reschedule_failed_processes']
+        # try:
+        #     reschedule_str = run_settings['http://rmit.edu.au/schemas/stages/schedule'][u'procs_2b_rescheduled']
+        #     self.procs_2b_rescheduled = ast.literal_eval(reschedule_str)
+        #     if self.procs_2b_rescheduled:
+        #         return False
+        # except KeyError, e:
+        #     logger.debug(e)
+        #     self.procs_2b_rescheduled = []
+
+        try:
+            self.reschedule_failed_procs = getval(run_settings, '%s/input/reliability/reschedule_failed_processes' % RMIT_SCHEMA)
+        except SettingNotFoundException:
+            self.reschedule_failed_procs = []  # FIXME: check this is correct
+        # self.reschedule_failed_procs = run_settings['http://rmit.edu.au/schemas/input/reliability'][u'reschedule_failed_processes']
+
         self.failed_processes = self.ftmanager.\
                     get_total_failed_processes(self.executed_procs)
 
+        logger.debug("self.failed_processes=%s" % self.failed_processes)
         # if we have no runs_left then we must have finished all the runs
-        if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run', u'runs_left'):
-            created_str = run_settings['http://rmit.edu.au/schemas/stages/create'][u'created_nodes']
-            self.created_nodes = ast.literal_eval(created_str)
-            return run_settings['http://rmit.edu.au/schemas/stages/run'][u'runs_left']
 
+        try:
+            runs_left = getval(run_settings, '%s/stages/run/runs_left' % RMIT_SCHEMA)
+        except SettingNotFoundException:
+            pass
+        else:
+            logger.debug("runs_left=%s" % runs_left)
+            created_str = getval(run_settings, '%s/stages/create/created_nodes' % RMIT_SCHEMA)
+            self.created_nodes = ast.literal_eval(created_str)
+            return runs_left
+
+        # if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run', u'runs_left'):
+        #     created_str = run_settings['http://rmit.edu.au/schemas/stages/create'][u'created_nodes']
+        #     self.created_nodes = ast.literal_eval(created_str)
+        #     return run_settings['http://rmit.edu.au/schemas/stages/run'][u'runs_left']
+        logger.debug("wait not triggered")
         return False
 
     def job_finished(self, ip_address, process_id, retry_left, settings):
@@ -194,7 +246,7 @@ class Wait(Stage):
                                   )
         logger.debug("cloud_path=%s" % cloud_path)
         logger.debug("Transferring output from %s to %s" % (cloud_path, output_dir))
-        ip = ip_address#botocloudconnector.get_instance_ip(instance_id, settings)
+        ip = ip_address  # botocloudconnector.get_instance_ip(instance_id, settings)
         #ssh = open_connection(ip_address=ip, settings=settings)
         source_files_location = "%s://%s@%s" % (computation_platform_settings['scheme'],
                                                 computation_platform_settings['type'],
@@ -206,7 +258,7 @@ class Wait(Stage):
 
         dest_files_url = smartconnector.get_url_with_pkey(
             output_storage_settings,
-            output_prefix+os.path.join(
+            output_prefix + os.path.join(
                 self.job_dir, self.output_dir, process_id),
             is_relative_path=False)
         logger.debug('dest_files_url=%s' % dest_files_url)
@@ -215,36 +267,64 @@ class Wait(Stage):
         # to speed up this transfer
         storage.copy_directories(source_files_url, dest_files_url)
 
-
     def process(self, run_settings):
         """
             Check all registered nodes to find whether
             they are running, stopped or in error_nodes
         """
 
-        local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
+        local_settings = getvals(run_settings, models.UserProfile.PROFILE_SCHEMA_NS)
+        # local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
+
+        def retrieve_local_settings(run_settings, local_settings):
+            update(local_settings, run_settings,
+                '%s/stages/setup/payload_destination' % RMIT_SCHEMA,
+                '%s/system/platform' % RMIT_SCHEMA,
+                '%s/stages/run/payload_cloud_dirname' % RMIT_SCHEMA
+                   )
+            # smartconnector.copy_settings(local_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/stages/setup/payload_destination')
+            # smartconnector.copy_settings(local_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/system/platform')
+            # smartconnector.copy_settings(local_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/stages/run/payload_cloud_dirname')
+
+            local_settings['bdp_username'] = getval(run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA)
+            # local_settings['bdp_username'] = run_settings[
+            #     RMIT_SCHEMA + '/bdp_userprofile']['username']
+
+            logger.debug('retrieve completed')
+
         retrieve_local_settings(run_settings, local_settings)
         logger.debug("local_settings=%s" % local_settings)
 
-        self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
-        output_storage_url = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['platform_url']
+        self.contextid = getval(run_settings, '%s/system/contextid' % RMIT_SCHEMA)
+        # self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
+
+        output_storage_url = getval(run_settings, '%s/platform/storage/output/platform_url' % RMIT_SCHEMA)
+        # output_storage_url = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['platform_url']
         output_storage_settings = manage.get_platform_settings(output_storage_url, local_settings['bdp_username'])
         # FIXME: Need to be consistent with how we handle settings here.  Prob combine all into
         # single local_settings for simplicity.
         output_storage_settings['bdp_username'] = local_settings['bdp_username']
-        offset = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset']
+
+        offset = getval(run_settings, '%s/platform/storage/output/offset' % RMIT_SCHEMA)
+        # offset = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset']
         self.job_dir = manage.get_job_dir(output_storage_settings, offset)
         try:
-            self.finished_nodes = smartconnector.get_existing_key(run_settings,
-                'http://rmit.edu.au/schemas/stages/run/finished_nodes')
-        except KeyError:
+            self.finished_nodes = getval(run_settings, '%s/stages/run/finished_nodes' % RMIT_SCHEMA)
+            # self.finished_nodes = smartconnector.get_existing_key(run_settings,
+            #     'http://rmit.edu.au/schemas/stages/run/finished_nodes')
+        except SettingNotFoundException:
             self.finished_nodes = '[]'
 
         try:
-            self.id = int(smartconnector.get_existing_key(run_settings,
-                'http://rmit.edu.au/schemas/system/id'))
+            self.id = int(getval(run_settings, '%s/system/id' % RMIT_SCHEMA))
+            # self.id = int(smartconnector.get_existing_key(run_settings,
+            #     'http://rmit.edu.au/schemas/system/id'))
+
             self.output_dir = "output_%s" % self.id
-        except KeyError:
+        except (SettingNotFoundException, ValueError):
             self.id = 0
             self.output_dir = "output"
 
@@ -258,11 +338,11 @@ class Wait(Stage):
         logger.debug('self.finished_nodes=%s' % self.finished_nodes)
         self.finished_nodes = ast.literal_eval(self.finished_nodes)
 
-        computation_platform_url = run_settings['http://rmit.edu.au/schemas/platform/computation']['platform_url']
+        computation_platform_url = getval(run_settings, '%s/platform/computation/platform_url' % RMIT_SCHEMA)
+        # computation_platform_url = run_settings['http://rmit.edu.au/schemas/platform/computation']['platform_url']
         comp_pltf_settings = manage.get_platform_settings(computation_platform_url, local_settings['bdp_username'])
         local_settings.update(comp_pltf_settings)
         comp_pltf_settings['bdp_username'] = local_settings['bdp_username']
-
 
         for process in processes:
             #instance_id = node.id
@@ -322,7 +402,6 @@ class Wait(Stage):
             else:
                 print "job %s at %s not completed" % (process_id, ip_address)
 
-
     def output(self, run_settings):
         """
         Output new runs_left value (including zero value)
@@ -331,78 +410,80 @@ class Wait(Stage):
         nodes_working = len(self.executed_procs) - (len(self.finished_nodes) + self.failed_processes)
         #if len(self.finished_nodes) == 0 and self.failed_processes == 0:
         #    nodes_working = 0
-        logger.debug("%d %d " %(len(self.finished_nodes), self.failed_processes))
+        logger.debug("%d %d " % (len(self.finished_nodes), self.failed_processes))
         logger.debug("self.executed_procs=%s" % self.executed_procs)
         logger.debug("self.finished_nodes=%s" % self.finished_nodes)
 
         #FIXME: nodes_working can be negative
 
         # FIXME: possible race condition?
-        if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run'):
-            run_settings['http://rmit.edu.au/schemas/stages/run'] = {}
-        #run_settings['http://rmit.edu.au/schemas/stages/run']['runs_left'] = nodes_working
+        # if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run'):
+        #     run_settings['http://rmit.edu.au/schemas/stages/run'] = {}
+        # #run_settings['http://rmit.edu.au/schemas/stages/run']['runs_left'] = nodes_working
         #run_settings['http://rmit.edu.au/schemas/stages/run']['error_nodes'] = nodes_working
 
-        run_settings.setdefault(
-            'http://rmit.edu.au/schemas/stages/run',
-            {})[u'runs_left'] = nodes_working
+        setvals(run_settings, {
+                '%s/stages/run/runs_left' % RMIT_SCHEMA: nodes_working,
+                '%s/stages/run/error_nodes' % RMIT_SCHEMA: nodes_working,
+                })
 
-        run_settings.setdefault(
-            'http://rmit.edu.au/schemas/stages/run',
-            {})[u'error_nodes'] = nodes_working
+        # run_settings.setdefault(
+        #     'http://rmit.edu.au/schemas/stages/run',
+        #     {})[u'runs_left'] = nodes_working
+
+        # run_settings.setdefault(
+        #     'http://rmit.edu.au/schemas/stages/run',
+        #     {})[u'error_nodes'] = nodes_working
 
         if not nodes_working:
             self.finished_nodes = []
         #run_settings['http://rmit.edu.au/schemas/stages/run']['finished_nodes'] = str(self.finished_nodes)
 
-        run_settings.setdefault(
-            'http://rmit.edu.au/schemas/stages/run',
-            {})[u'finished_nodes'] = str(self.finished_nodes)
+        setvals(run_settings, {
+                '%s/stages/run/finished_nodes' % RMIT_SCHEMA: str(self.finished_nodes),
+                '%s/stages/schedule/all_processes' % RMIT_SCHEMA: str(self.all_processes),
+                '%s/stages/schedule/current_processes' % RMIT_SCHEMA: str(self.current_processes),
+                '%s/stages/execute/executed_procs' % RMIT_SCHEMA: str(self.executed_procs)
+                })
+        # run_settings.setdefault(
+        #     'http://rmit.edu.au/schemas/stages/run',
+        #     {})[u'finished_nodes'] = str(self.finished_nodes)
 
-        run_settings.setdefault(
-            'http://rmit.edu.au/schemas/stages/schedule',
-            {})[u'all_processes'] = str(self.all_processes)
-        run_settings.setdefault(
-            'http://rmit.edu.au/schemas/stages/schedule',
-            {})[u'current_processes'] = str(self.current_processes)
+        # run_settings.setdefault(
+        #     'http://rmit.edu.au/schemas/stages/schedule',
+        #     {})[u'all_processes'] = str(self.all_processes)
+        # run_settings.setdefault(
+        #     'http://rmit.edu.au/schemas/stages/schedule',
+        #     {})[u'current_processes'] = str(self.current_processes)
 
-        run_settings.setdefault(
-            'http://rmit.edu.au/schemas/stages/execute',
-            {})[u'executed_procs'] = str(self.executed_procs)
+        # run_settings.setdefault(
+        #     'http://rmit.edu.au/schemas/stages/execute',
+        #     {})[u'executed_procs'] = str(self.executed_procs)
 
-        #if self.cleanup_nodes:
+        # if self.cleanup_nodes:
         #    run_settings.setdefault(
         #    'http://rmit.edu.au/schemas/reliability', {})[u'cleanup_nodes'] = self.cleanup_nodes
 
         if self.failed_nodes:
-            run_settings.setdefault(
-            'http://rmit.edu.au/schemas/stages/create', {})[u'failed_nodes'] = self.failed_nodes
+            setval(run_settings, '%s/stages/create/failed_nodes' % RMIT_SCHEMA, self.failed_nodes)
+            # run_settings.setdefault(
+            # 'http://rmit.edu.au/schemas/stages/create', {})[u'failed_nodes'] = self.failed_nodes
 
         completed_procs = [x for x in self.executed_procs if x['status'] == 'completed']
         messages.info(run_settings, "%s: waiting (%s of %s processes done)"
             % (self.id + 1, len(completed_procs), len(self.current_processes)))
 
-
         if self.procs_2b_rescheduled:
-            run_settings.setdefault(
-                'http://rmit.edu.au/schemas/stages/schedule',
-                {})[u'schedule_started'] = 0
-            run_settings.setdefault(
-                    'http://rmit.edu.au/schemas/stages/schedule',
-                    {})[u'procs_2b_rescheduled'] = self.procs_2b_rescheduled
+            setvals(run_settings, {
+                    '%s/stages/schedule/scheduled_started' % RMIT_SCHEMA: 0,
+                    '%s/stages/schedule/procs_2b_rescheduled' % RMIT_SCHEMA: self.procs_2b_rescheduled
+                    })
+            # run_settings.setdefault(
+            #     'http://rmit.edu.au/schemas/stages/schedule',
+            #     {})[u'schedule_started'] = 0
+            # run_settings.setdefault(
+            #         'http://rmit.edu.au/schemas/stages/schedule',
+            #         {})[u'procs_2b_rescheduled'] = self.procs_2b_rescheduled
         return run_settings
-
-
-def retrieve_local_settings(run_settings, local_settings):
-    smartconnector.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/stages/setup/payload_destination')
-    smartconnector.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/system/platform')
-    smartconnector.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/stages/run/payload_cloud_dirname')
-    local_settings['bdp_username'] = run_settings[
-        RMIT_SCHEMA + '/bdp_userprofile']['username']
-
-    logger.debug('retrieve completed')
 
 

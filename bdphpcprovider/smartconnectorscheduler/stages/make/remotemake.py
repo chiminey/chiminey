@@ -32,9 +32,12 @@ from bdphpcprovider import storage
 
 from . import setup_settings
 from bdphpcprovider.sshconnection import open_connection
+from bdphpcprovider.runsettings import getval, setvals, SettingNotFoundException
 
 
 logger = logging.getLogger(__name__)
+
+RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
 
 class MakeRunStage(smartconnector.Stage):
@@ -49,28 +52,45 @@ class MakeRunStage(smartconnector.Stage):
             return (True, "ok")
 
     def triggered(self, run_settings):
-        if smartconnector.multilevel_key_exists(
-            run_settings,
-            'http://rmit.edu.au/schemas/stages/upload_makefile',
-            'done'):
+
+        try:
+            upload_makefile_done = int(getval(run_settings, '%s/stages/upload_makefile/done' % RMIT_SCHEMA))
+        except (ValueError, SettingNotFoundException):
+            return False
+
+        if upload_makefile_done:
             try:
-                upload_makefile_done = int(smartconnector.get_existing_key(run_settings,
-                    'http://rmit.edu.au/schemas/stages/upload_makefile/done'))
-            except ValueError, e:
-                logger.error(e)
-                return False
-            if upload_makefile_done:
-                if self._exists(
-                        run_settings,
-                        'http://rmit.edu.au/schemas/stages/make',
-                        'program_success'):
-                    program_success = int(run_settings[
-                        'http://rmit.edu.au/schemas/stages/make'][u'program_success'])
-                    logger.debug("program_success")
-                    return not program_success
-                else:
-                    return True
+                program_success = int(getval(run_settings, '%s/stages/make/program_success' % RMIT_SCHEMA))
+            except (ValueError, SettingNotFoundException):
+                return True
+
+            logger.debug("program_success")
+            return not program_success
+
         return False
+
+        # if smartconnector.multilevel_key_exists(
+        #     run_settings,
+        #     'http://rmit.edu.au/schemas/stages/upload_makefile',
+        #     'done'):
+        #     try:
+        #         upload_makefile_done = int(smartconnector.get_existing_key(run_settings,
+        #             'http://rmit.edu.au/schemas/stages/upload_makefile/done'))
+        #     except ValueError, e:
+        #         logger.error(e)
+        #         return False
+        #     if upload_makefile_done:
+        #         if self._exists(
+        #                 run_settings,
+        #                 'http://rmit.edu.au/schemas/stages/make',
+        #                 'program_success'):
+        #             program_success = int(run_settings[
+        #                 'http://rmit.edu.au/schemas/stages/make'][u'program_success'])
+        #             logger.debug("program_success")
+        #             return not program_success
+        #         else:
+        #             return True
+        # return False
 
     def process(self, run_settings):
         settings = setup_settings(run_settings)
@@ -116,10 +136,17 @@ class MakeRunStage(smartconnector.Stage):
         messages.info(run_settings, "1: execute started")
 
     def output(self, run_settings):
-        run_settings.setdefault(
-            'http://rmit.edu.au/schemas/stages/make',
-            {})[u'program_success'] = self.program_success
-        run_settings.setdefault(
-            'http://rmit.edu.au/schemas/stages/make',
-            {})[u'running'] = 1
+
+        # TODO: should only set runnning if program_success is true?
+        setvals(run_settings, {
+                '%s/stages/make/program_success' % RMIT_SCHEMA: self.program_success,
+                '%s/stages/make/running' % RMIT_SCHEMA: 1
+                })
+
+        # run_settings.setdefault(
+        #     'http://rmit.edu.au/schemas/stages/make',
+        #     {})[u'program_success'] = self.program_success
+        # run_settings.setdefault(
+        #     'http://rmit.edu.au/schemas/stages/make',
+        #     {})[u'running'] = 1
         return run_settings

@@ -106,6 +106,8 @@ class ParameterName(models.Model):
              (YEAR, 'YEAR')
 
             )
+
+
     # The form used to store dates in the DATE type field
     DATE_FORMAT = "%b %d, %Y"
 
@@ -622,9 +624,9 @@ class Context(models.Model):
             logger.debug("schdata=%s" % schdata)
             try:
                 sch = Schema.objects.get(namespace=schdata)
-            except Schema.DoesNotExist:
+            except Schema.DoesNotExist as e:
                 logger.error("schema %s does not exist" % schdata)
-                raise
+                raise e
             except MultipleObjectsReturned:
                 logger.error("multiple schemas found for %s" % schdata)
                 raise

@@ -70,6 +70,9 @@ from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 logger = logging.getLogger(__name__)
 
 
+PARALLEL_PACKAGE= "bdphpcprovider.smartconnectorscheduler.stages.composite.ParallelStage"
+
+
 subtype_validation = {
     'password': ('string', serverside_validators.validate_string_not_empty,
                  forms.PasswordInput, None),
@@ -845,6 +848,8 @@ def _fix_put(request):
     request.PUT = request.POST
 
 
+
+
 @has_session_key
 @logged_in_or_basicauth()
 @transaction.commit_on_success
@@ -1210,3 +1215,86 @@ def preset_detail(request, pk):
             return f(request, pk)
     return HttpResponseNotAllowed(['GET', 'POST', 'DELETE'])
 
+
+@has_session_key
+@logged_in_or_basicauth()
+@transaction.commit_on_success
+def new_directive(request):
+
+    # def _make_schemas(directive_data):
+
+    #     for ns in schema_data:
+    #         l = schema_data[ns]
+    #         logger.debug("l=%s" % l)
+    #         desc = l[0]
+    #         logger.debug("desc=%s" % desc)
+    #         kv = l[1:][0]
+    #         logger.debug("kv=%s", kv)
+
+    #         url = urlparse(ns)
+
+    #         context_schema, _ = models.Schema.objects.get_or_create(
+    #             namespace=ns,
+    #             defaults={'name': slugify(url.path.replace('/', ' ')),
+    #                       'description': desc})
+
+    #     for k, v in kv.items():
+    #         try:
+    #             model, _ = models.ParameterName.objects.get_or_create(
+    #                 schema=context_schema,
+    #                 name=k,
+    #                 defaults=dict(v))
+    #         except TypeError:
+    #             logger.debug('Parameters are added to a schema using old format.')
+    #         # if 'hidefield' in dict(v):
+    #         #     hidelinks[model.id] = dict(v)['hidefield']
+
+    def post_directive(request):
+        if (request.user.groups.filter(name="admin").exists()
+            or request.user.groups.is_superuser()):
+
+            try:
+                directive_data = request.POST['form']
+                schemas_data = request.POST['formset_schema']
+                input_schemas_data = request.POST['formset_input_schemas']
+                stage_params_data = request.POST['formset_params']
+                stage_set_data = request.POST['form_stage_set']
+
+            except IndexError:
+                return _error_response(
+                    HttpResponseBadRequest(),
+                    "cannot get input data")
+
+            COMPOSITE_DESC = "Composite for the %(name)s connector"
+            composite_stage, _ = models.Stage.objects.get_or_create(
+                name="%s_composite" % directive_data['name'],
+                description=COMPOSITE_DESC
+                    % directive_data,
+                package=PARALLEL_PACKAGE,
+                order=100)
+
+            composite_stage.update_settings({})
+
+            directive_, _ = models.Directive.objects.get_or_create(
+                name=directive_data['name'],
+                description=directive_data['description'],
+                hidden=directive_data['disabled'],
+                stage=composite_stage)
+
+            response = HttpResponse(request.POST)
+            # response['location'] = reverse('preset_detail', args=[ps.pk])
+
+            response.status_code = 201
+            return response
+
+        else:
+            return _error_response(
+                    HttpResponseBadRequest(),
+                    "do not have access to this function")
+
+    for m, f in {'POST': post_directive}.items():
+        if request.method == m:
+            response = f(request)
+            logger.debug("response=%s" % response.status_code)
+            return response
+    return HttpResponseNotAllowed(['POST'])

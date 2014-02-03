@@ -27,6 +27,9 @@ from bdphpcprovider.smartconnectorscheduler.stages.composite import ParallelStag
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadSpecificationError
 from bdphpcprovider.smartconnectorscheduler import hrmcstages, smartconnector
 
+from bdphpcprovider.runsettings import getval, update, SettingNotFoundException
+RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+
 
 from bdphpcprovider import storage
 
@@ -58,20 +61,30 @@ class HRMCParallelStage(ParallelStage):
         try:
             run_settings = kwargs['run_settings']
             logger.debug('run_settings=%s' % run_settings)
-            smartconnector.copy_settings(local_settings, run_settings,
-                'http://rmit.edu.au/schemas/input/hrmc/fanout_per_kept_result')
-            smartconnector.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/input/hrmc/optimisation_scheme')
-            smartconnector.copy_settings(local_settings, run_settings,
-                'http://rmit.edu.au/schemas/input/hrmc/threshold')
-            smartconnector.copy_settings(local_settings, run_settings,
-                'http://rmit.edu.au/schemas/input/hrmc/pottype')
-            smartconnector.copy_settings(local_settings, run_settings,
-                'http://rmit.edu.au/schemas/system/max_seed_int')
-            smartconnector.copy_settings(local_settings, run_settings,
-                'http://rmit.edu.au/schemas/system/random_numbers')
-            smartconnector.copy_settings(local_settings, run_settings,
-                'http://rmit.edu.au/schemas/system/id')
+
+            update(local_settings, run_settings,
+                '%s/input/hrmc/fanout_per_kept_result' % RMIT_SCHEMA,
+                '%s/input/hrmc/optimisation_scheme' % RMIT_SCHEMA,
+                '%s/input/hrmc/threshold' % RMIT_SCHEMA,
+                '%s/input/hrmc/pottype' % RMIT_SCHEMA,
+                '%s/system/max_seed_int' % RMIT_SCHEMA,
+                '%s/system/random_numbers' % RMIT_SCHEMA,
+                '%s/system/id' % RMIT_SCHEMA)
+
+            # smartconnector.copy_settings(local_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/input/hrmc/fanout_per_kept_result')
+            # smartconnector.copy_settings(local_settings, run_settings,
+            # 'http://rmit.edu.au/schemas/input/hrmc/optimisation_scheme')
+            # smartconnector.copy_settings(local_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/input/hrmc/threshold')
+            # smartconnector.copy_settings(local_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/input/hrmc/pottype')
+            # smartconnector.copy_settings(local_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/system/max_seed_int')
+            # smartconnector.copy_settings(local_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/system/random_numbers')
+            # smartconnector.copy_settings(local_settings, run_settings,
+            #     'http://rmit.edu.au/schemas/system/id')
         except KeyError, e:
             logger.debug(e)
         logger.debug("local_settings=%s" % local_settings)
@@ -132,7 +145,7 @@ class HRMCParallelStage(ParallelStage):
                     1, rand_index)
                 rand_index += N
                 map = {
-                    'temp': [i for i in [300, 700, 1100, 1500]], #Fixme: temp should be hrmc parameter
+                    'temp': [i for i in [300, 700, 1100, 1500]],  # Fixme: temp should be hrmc parameter
                     'iseed': rand_nums,
                     'istart': [1],
                     'pottype': [pottype],
@@ -148,12 +161,18 @@ class HRMCParallelStage(ParallelStage):
         run_settings = kwargs['run_settings']
         output_storage_settings = kwargs['output_storage_settings']
         job_dir = kwargs['job_dir']
+
         try:
-            id = smartconnector.get_existing_key(
-                run_settings, 'http://rmit.edu.au/schemas/system/id')
-        except KeyError, e:
+            id = getval(run_settings, '%s/system/id' % RMIT_SCHEMA)
+        except SettingNotFoundException as e:
             logger.error(e)
             id = 0
+        # try:
+        #     id = smartconnector.get_existing_key(
+        #         run_settings, 'http://rmit.edu.au/schemas/system/id')
+        # except KeyError, e:
+        #     logger.error(e)
+        #     id = 0
         iter_inputdir = os.path.join(job_dir, "input_%s" % id)
         url_with_pkey = smartconnector.get_url_with_pkey(
             output_storage_settings,
@@ -174,4 +193,3 @@ class HRMCParallelStage(ParallelStage):
             total_templates = product * len(input_dirs)
             logger.debug("total_templates=%d" % (total_templates))
         return total_templates
-

@@ -18,6 +18,9 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+import sys
+import linecache
+import logging
 from celery.task import task
 from celery.exceptions import SoftTimeLimitExceeded
 from pprint import pformat
@@ -35,8 +38,10 @@ import redis
 from copy import deepcopy
 
 # for celery 3.0
-from celery.utils.log import get_task_logger
-logger = get_task_logger(__name__)
+# from celery.utils.log import get_task_logger
+# logger = get_task_logger(__name__)
+
+logger = logging.getLogger(__name__)
 
 
 CELERY_TIMEOUT = 50000
@@ -223,7 +228,7 @@ def _process_context(context_id):
                 {'user_settings': deepcopy(user_settings)})  # obviously need to cache this
             except ImproperlyConfigured, e:
                 logger.error(e)
-                messages.error(run_settings, e)
+                messages.error(run_settings, "0: internal error (%s stage):%s" % (str(current_stage.name), e))
                 raise
 
             logger.debug("process stage=%s", stage)
@@ -255,8 +260,18 @@ def _process_context(context_id):
                 else:
                     logger.debug("Stage '%s' NOT TRIGGERED" % current_stage.name)
             except Exception, e:
-                logger.error("0: internal error (%s stage):%s" % (str(current_stage.name), e))
-                messages.error(run_settings, "0: internal error (%s stage):%s" % (str(current_stage.name), e))
+                # exc_type, exc_obj, tb = sys.exc_info()
+                # while tb.tb_next:
+                #     tb = tb.tb_next
+                # f = tb.tb_frame
+                # lineno = tb.tb_lineno
+                # filename = f.f_code.co_filename
+                # linecache.checkcache(filename)
+                # line = linecache.getline(filename, lineno, f.f_globals)
+                # file_info = 'EXCEPTION IN (%s LINE %s "%s"): %s' % (filename, lineno, line.strip(), exc_obj)
+                file_info = ""
+                logger.error("0: internal error (%s stage):%s %s" % (str(current_stage.name), e, file_info))
+                messages.error(run_settings, "0: internal error (%s stage):%s %s" % (str(current_stage.name), e, file_info))
         if not triggered:
             logger.debug("No stages triggered")
             test_info = task_run_settings

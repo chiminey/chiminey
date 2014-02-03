@@ -32,5 +32,8 @@ urlpatterns = patterns('',
     url(r'^preset/$', views.preset_list,
         name='preset_list'),
 
+    url(r'^directive/$', views.new_directive,
+        name='new_direcive')
+
 )
 

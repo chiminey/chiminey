@@ -20,10 +20,15 @@
 
 
 from bdphpcprovider.runsettings.run_settings import (
-    dummy
+    setval,
+    setvals,
+    getval,
+    getvals,
+    update,
+    delkey,
+    SettingNotFoundException,
+    IncompatibleTypeException
+
 )
 
 
-class RunsettingsException(Exception):
-    """ A problem in the run_settings library"""
-    pass

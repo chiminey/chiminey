@@ -22,23 +22,29 @@
 import logging
 from pprint import pformat
 
+from bdphpcprovider.runsettings import getval, SettingNotFoundException
 
-from bdphpcprovider.smartconnectorscheduler.smartconnector import (
-    get_existing_key
-)
-
+RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
 logger = logging.getLogger(__name__)
 
 
 def addMessage(run_settings, level, msg):
+
     try:
-        context_id = get_existing_key(run_settings,
-            "http://rmit.edu.au/schemas/system/contextid")
-    except KeyError:
+        context_id = getval(run_settings, '%s/system/contextid' % RMIT_SCHEMA)
+    except SettingNotFoundException:
         logger.error("unable to load contextid from run_settings")
         logger.error(pformat(run_settings))
         return
+
+    # try:
+    #     context_id = get_existing_key(run_settings,
+    #         "http://rmit.edu.au/schemas/system/contextid")
+    # except KeyError:
+    #     logger.error("unable to load contextid from run_settings")
+    #     logger.error(pformat(run_settings))
+    #     return
     logger.debug("context_id=%s" % context_id)
     if not context_id:
         logger.error("invalid context_id")

@@ -12,34 +12,15 @@
 
 <div class="container-fluid">
 
-  <div class="page-header"><h1>Add a new directive</h1></div>
+  <div class="page-header"><h1>Add New Schemas</h1></div>
 
   <form class="form-horizontal form-inline" method="post"> {% csrf_token %}
 
-    <fieldset>
-      <legend>Directive Details</legend>
-      <div class="offset1">
-        {% for f in form %}
-        {% if f.errors %}
-        <div class="control-group error row-fluid">
-          <label class="control-label span1">{{ f.label }}</label>
-          <div class="controls span11">{{f}}</div>
-          <span class="help-inline">{{f.errors}}</span>
-        </div>
-        {% else %}
-        <div class="control-group row-fluid">
-          <label class="control-label span1">{{ f.label }}</label>
-          <div class="controls span11">{{f}} </div>
-        </div>
-        {% endif %}
-        {% endfor %}
-        {{ formset_schema.management_form }}
-        {{ formset_dirarg.management_form }}
-        {{ formset_params.management_form }}
-      </div>
-    </fieldset>
 
     <fieldset>
+      {{ formset_schema.management_form }}
+      {{ formset_params.management_form }}
+
       <legend>Schemas</legend>
       <div class="schemas offset1">
         {% for schema_form in formset_schema %}
@@ -56,7 +37,14 @@
               {% if f.name == "DELETE" %}
               <div id="schema_{{forloop.parentloop.counter0}}_del" class="controls span11">{{schema_form.DELETE|attr:"onclick:delete_form(this)" }}</div>
               {% else %}
-              <div class="controls span11">{{f}}</div>
+              <div class="controls">{{f}}
+                <div class="help-block">{{f.help_text}}
+                  {% if f.field.required %}
+                  (required)
+                  {% endif %}
+                </div>
+              </div>
+
               {% endif %}
 
               {% if f.errors %}
@@ -65,7 +53,7 @@
             </div>
             {% endfor %}
 
-            <div class="params-{{forloop.counter0}}">
+            <div class=" offset1 params-{{forloop.counter0}}">
               {% for params_form in formset_params %}
 <!--         <p>counter{{ forloop.counter0}}
         {% myparent params_form forloop.counter0 as lhs %}
@@ -88,109 +76,114 @@
 
 
         {% if f.errors %}
-
         <div class="control-group error">
           {% else %}
           <div class="control-group">
             {% endif %}
+
+
             <label class="control-label">{{ f.label }}</label>
 
             {% if f.name == "DELETE" %}
             <div class="controls">{{params_form.DELETE|attr:"onclick:delete_form(this)" }}</div>
             {% else %}
-            <div class="controls">{{f}}</div>
+            <div class="controls">{{f}}
+             <div class="help-block">{{f.help_text}}
+              {% if f.field.required %}
+              (required)
+              {% endif %}
+            </div>
+
             {% endif %}
 
             {% if f.errors %}
             <span class="help-inline">{{f.errors}}</span>
             {% endif %}
           </div>
-
-          {% endif %}
-
-          {% endfor %}
-
         </div>
+
+        {% endif %}
+
+        {% endfor %}
+
         {% endif %}
 
         {#  <input type="hidden" name="param-{{ forloop.parentloop.counter0}}-{{ forloop.counter0 }}-parent" id="id_param-{{ forloop.parentloop.counter0}}-{{ forloop.counter0 }}-parent" value="{{forloop.parentloop.counter0}}"> #}
         {% endfor %}
+
+
       </div>
       <div class="control-group">
         <div class="controls ">
-          <a href="#" class="btn btn-info " onclick="add_param({{forloop.counter0}})">Add Param</a>
+          <a href="#" class="btn " onclick="add_param({{forloop.counter0}})">Add Param</a>
         </div>
       </div>
     </div>
     {% endfor %}
-  </div>
-  <div class="offset1">
+    </div>
+
+
+
+
+  </fieldset>
     <div class="control-group row-fluid">
       <div class="controls span11">
-        <a href="#" class="btn btn-info add-schema offset1">Add schema</a>
+        <a href="#" class="btn add-schema offset1">Add schema</a>
       </div>
     </div>
+
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">Create Event</button>
   </div>
-</fieldset>
 
-<fieldset>
-  <legend>Directive Argument</legend>
-  <div class="dirargs offset1">
-    {% for dirarg_form in formset_dirarg %}
-    <div id="dirarg-{{ forloop.counter0 }}">
-      {% for f in dirarg_form %}
-      {% if f.errors %}
-      <div class="control-group error row-fluid">
-        {% else %}
-        <div class="control-group row-fluid">
-         {% endif %}
-
-         <label class="control-label span1">{{ f.label }}</label>
-
-         {% if f.name == "DELETE" %}
-         <div class="controls span11">{{dirarg_form.DELETE|attr:"onclick:delete_form(this)" }}</div>
-         {% else %}
-         <div class="controls span11">{{f}}</div>
-         {% endif %}
-
-         {% if f.errors %}
-         <span class="help-inline">{{f.errors}}</span>
-         {% endif %}
-       </div>
-       {% endfor %}
-     </div>
-     {% endfor %}
-   </div>
- </fieldset>
-
- <div class="offset1">
-  <div class="control-group row-fluid">
-    <div class="controls span11">
-      <a href="#" class="btn btn-info add-dirarg offset1">Add dirarg</a>
-    </div>
-  </div>
+</form>
 </div>
+
 
 
 <script type="text/html" id="schema-template">
 <div id="schema-<%= id %>" class="">
 <div class="control-group row-fluid">
 <label class="control-label span1">Namespace</label>
-<div class="controls span11">
-<input type="text" name="schemas-<%= id %>-namespace" id="id_schemas-<%= id %>-namespace" />
+<div class="controls">
+<input type="text" name="schemas-<%= id %>-namespace" id="id_schemas-<%= id %>-namespace" class="input-xxlarge" value="http://rmit.edu.au/schemas"/>
+
+<div class="help-block">A URI that uniquely ids the schema
+(required)
 </div>
 </div>
+</div>
+
 <div class="control-group row-fluid">
 <label class="control-label span1" for="id_schemas-<%= id %>-name">Name</label>
-<div class="controls span11">
-<input type="text" name="schemas-<%= id %>-name" id="id_schemas-<%= id %>-name" />
+<div class="controls ">
+<input type="text" name="schemas-<%= id %>-name" id="id_schemas-<%= id %>-name" class="input-xxlarge"  />
+<div class="help-block">A unique identifier for the schema
+
+(required)
+</div>
 </div>
 </div>
 <div class="control-group row-fluid">
 <label class="control-label span1">Description</label>
-<div class="controls span11">
-<input type="text" name="schemas-<%= id %>-description" id="id_schemas-<%= id %>-description" />
+<div class="controls ">
+<textarea type="text" name="schemas-<%= id %>-description" id="id_schemas-<%= id %>-description" class="input-xxlarge" rows="10" cols="40"/>
+<div class="help-block">The description of this schema
+
 </div>
+</div>
+
+</div>
+
+
+<div class="control-group row-fluid">
+<label class="control-label span1">Hidden From UI</label>
+<div class="controls">
+<input type="checkbox" name="schemas-<%= id %>-hidden" id="id_schemas-<%= id %>-hidden" class="input-xxlarge"/>
+<div class="help-block"> schema is internal and not visible in UI
+</div>
+</div>
+
 </div>
 
 <div class="control-group row-fluid">
@@ -200,29 +193,108 @@
 </div>
 </div>
 
-<div class="params-<%= id %>"></div>
 
+
+<div class="offset1 params-<%= id %>">
 <div class="control-group">
 <div class="controls">
-<a href="#" id="schema_<%= id %>_del" class="btn btn-info " onclick="add_param(<%= id %>)">Add Param</a>
+<a href="#" class="btn" onclick="add_param(<%= id %>)">Add Param</a>
+</div>
+</div>
+
 </div>
 </script>
+
+
+
 
 <script type="text/html" id="param-template">
 <div id="param-<%= ind %>-<%= id %>" class="">
 <div class="control-group">
 <label class="control-label" >Name</label>
 <div class="controls">
-<input type="text" name="param-<%= id %>-name" id="id_param-<%= id %>-name" maxlength="50"/>
+<input type="text" name="param-<%= id %>-name" id="id_param-<%= id %>-name" class="input-xxlarge" maxlength="50"/>
+<div class="help-block">(required)</div>
 </div>
 </div>
 <div class="control-group">
-<label class="control-label" >Type</label>
-<div class="controls">
-<input type="text" name="param-<%= id %>-type" id="id_param-<%= id %>-type" />
+<label class="control-label">Type</label>
+<div class="controls"><select name="param-<%= id %>-type" id="id_param-<%= id %>-type">
+<option value="0">UNKNOWN</option>
+<option value="1">STRING</option>
+<option value="2">NUMERIC</option>
+<option value="3">LINK</option>
+<option value="4">STRLIST</option>
+<option value="5">DATE</option>
+<option value="6">YEAR</option>
+</select>
+<div class="help-block">The type of the parameter
+
+(required)
+
+</div>
 </div>
 </div>
 <input type="hidden" name="param-<%= id %>-parent" id="id_param-<%= id %>-parent" value="<%= ind %>">
+
+
+<div class="control-group">
+
+<label class="control-label">BDP SubType</label>
+
+
+<div class="controls"><select name="param-<%= id %>-subtype" id="id_param-<%= id %>-subtype">
+<option value="" selected="selected">NONE</option>
+<option value="even">even (even number) </option>
+<option value="mytardis">mytardis (MyTardis platform name) </option>
+<option value="float">float (floating point number) </option>
+<option value="natural">natural (natural number) </option>
+<option value="string">string (string) </option>
+<option value="nectar_platform">nectar_platform (NeCTAR platform name) </option>
+<option value="jsondict">jsondict (JSON Dictionary) </option>
+<option value="string_not_empty">string_not_empty (string_not_empty) </option>
+<option value="bdpurl">bdpurl (BDP url) </option>
+<option value="platform">platform (platform) </option>
+<option value="bool">bool (On/Off) </option>
+<option value="choicefield">choicefield (choicefield) </option>
+<option value="storage_bdpurl">storage_bdpurl (Storage platform name with optional offset path) </option>
+<option value="hidden">hidden (natural number) </option>
+<option value="password">password (password) </option>
+<option value="whole">whole (whole number) </option>
+</select>
+<div class="help-block">The subtype of the parameter
+
+</div>
+
+
+
+
+</div>
+</div>
+
+
+<div class="control-group">
+
+<label class="control-label">Help text</label>
+
+
+<div class="controls"><textarea id="id_param-<%= id %>-help_text" rows="10" cols="40" name="param-0-help_text" class="input-xxlarge"></textarea>
+<div class="help-block">Extra help information for filling out this field
+
+</div>
+
+
+
+
+</div>
+</div>
+
+
+
+
+
+
+
 <div class="control-group">
 <label class="control-label">Delete</label>
 <div class="controls">
@@ -232,33 +304,6 @@
 </div>
 </script>
 
-<script type="text/html" id="dirarg-template">
-<div id="dirarg-<%= id %>">
-<div class="control-group row-fluid">
-<label class="control-label span1">Namespace</label>
-<div class="controls span11">
-<input type="text" name="dirargs-<%= id %>-namespace" id="id_dirargs-<%= id %>-namespace" />
-</div>
-</div>
-
-<input type="hidden" name="dirargs-<%= id %>-directive" id="id_dirargs-<%= id %>-directive">
-<input type="hidden" name="dirargs-<%= id %>-id" id="id_dirargs-<%= id %>-id">
-
-<div class="control-group row-fluid">
-<label class="control-label span1">Delete</label>
-<div class="controls span11">
-<input type="checkbox" name="dirarg-<%= id %>-DELETE"  onclick="delete_form(this)">
-</div>
-</div>
-</div>
-</script>
-
-<div class="form-actions">
-  <button type="submit" class="btn btn-primary">Create Event</button>
-</div>
-
-</form>
-</div>
 
 <script>
 $('.add-schema').click(function(ev){

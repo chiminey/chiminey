@@ -27,6 +27,10 @@ from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider.reliabilityframework.failuredetection import FailureDetection
 from bdphpcprovider.reliabilityframework.failurerecovery import FailureRecovery
 
+from bdphpcprovider.runsettings import (
+    getval, setval, SettingNotFoundException, IncompatibleTypeException)
+
+
 from bdphpcprovider import messages
 
 logger = logging.getLogger(__name__)
@@ -46,20 +50,40 @@ class Create(Stage):
             Return True if there is a platform
             but not group_id
         """
-        if self._exists(run_settings,
-            RMIT_SCHEMA + '/stages/configure',
-            'configure_done'):
-                configure_done = run_settings[
-                    RMIT_SCHEMA + '/stages/configure'][u'configure_done']
-                if configure_done:
-                    if not self._exists(run_settings,
-                        RMIT_SCHEMA + '/stages/create', 'group_id'):
-                        if self._exists(run_settings,
-                            RMIT_SCHEMA + '/system', 'platform'):
-                            self.platform_type = run_settings[
-                                RMIT_SCHEMA + '/system'][u'platform']
-                            return True
+
+        try:
+            configure_done = int(getval(run_settings,
+                '%s/stages/configure/configure_done' % RMIT_SCHEMA))
+        except (SettingNotFoundException, ValueError):
+            return False
+
+        if configure_done:
+            try:
+                group_id = getval(run_settings,
+                       '%s/stages/create/group_id' % RMIT_SCHEMA)
+            except SettingNotFoundException:
+                try:
+                    self.platform_type = getval(run_settings, '%s/system/platform' % RMIT_SCHEMA)
+                    return True
+                except SettingNotFoundException:
+                    pass
+
         return False
+
+        # if self._exists(run_settings,
+        #     RMIT_SCHEMA + '/stages/configure',
+        #     'configure_done'):
+        #         configure_done = run_settings[
+        #             RMIT_SCHEMA + '/stages/configure'][u'configure_done']
+        #         if configure_done:
+        #             if not self._exists(run_settings,
+        #                 RMIT_SCHEMA + '/stages/create', 'group_id'):
+        #                 if self._exists(run_settings,
+        #                     RMIT_SCHEMA + '/system', 'platform'):
+        #                     self.platform_type = run_settings[
+        #                         RMIT_SCHEMA + '/system'][u'platform']
+        #                     return True
+        # return False
 
     def process(self, run_settings):
         """
@@ -127,28 +151,44 @@ class Create(Stage):
         Inserting a new group if into run settings.
         """
         logger.debug('output')
-        run_settings.setdefault(
-            RMIT_SCHEMA + '/stages/create', {})[u'group_id'] \
-            = self.group_id
 
-        run_settings.setdefault(
-            RMIT_SCHEMA + '/system', {})[u'platform'] \
-            = self.platform_type
+        setval(run_settings,
+               '%s/stages/create/group_id' % RMIT_SCHEMA,
+               self.group_id)
+        # run_settings.setdefault(
+        #     RMIT_SCHEMA + '/stages/create', {})[u'group_id'] \
+        #     = self.group_id
+
+        setval(run_settings,
+               '%s/system/platform' % RMIT_SCHEMA,
+               self.platform_type)
+        # run_settings.setdefault(
+        #     RMIT_SCHEMA + '/system', {})[u'platform'] \
+        #     = self.platform_type
 
         if not self.nodes:
-            run_settings.setdefault(
-            RMIT_SCHEMA + '/stages/create', {})[u'created_nodes'] = []
+            setval(run_settings,
+             '%s/stages/create/created_nodes' % RMIT_SCHEMA, [])
+            # run_settings.setdefault(
+            # RMIT_SCHEMA + '/stages/create', {})[u'created_nodes'] = []
         else:
             for node in self.nodes:
                 if not node.ip_address:
                     node.ip_address = node.private_ip_address
             if self.group_id is "UNKNOWN":
-                run_settings.setdefault(
-                    RMIT_SCHEMA + '/reliability', {})[u'cleanup_nodes'] \
-                    = [(x.id, x.ip_address, unicode(x.region)) for x in self.nodes]
+                setval(run_settings,
+                       "%s/reliability/cleanup_nodes" % RMIT_SCHEMA,
+                        [(x.id, x.ip_address, unicode(x.region)) for x in self.nodes])
+                # run_settings.setdefault(
+                #     RMIT_SCHEMA + '/reliability', {})[u'cleanup_nodes'] \
+                #     = [(x.id, x.ip_address, unicode(x.region)) for x in self.nodes]
             else:
-                run_settings.setdefault(
-                    RMIT_SCHEMA + '/stages/create', {})[u'created_nodes'] \
-                    = [(x.id, x.ip_address, unicode(x.region)) for x in self.nodes]
+                setval(run_settings,
+                       "%s/stages/create/created_nodes" % RMIT_SCHEMA,
+                       [(x.id, x.ip_address, unicode(x.region)) for x in self.nodes])
+
+                # run_settings.setdefault(
+                #     RMIT_SCHEMA + '/stages/create', {})[u'created_nodes'] \
+                #     = [(x.id, x.ip_address, unicode(x.region)) for x in self.nodes]
         logger.debug("Updated run settings %s" % run_settings)
         return run_settings
