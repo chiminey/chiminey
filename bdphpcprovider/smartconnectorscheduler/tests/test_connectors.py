@@ -748,6 +748,7 @@ class ConnectorTests(unittest.TestCase):
     #     ss1.process(context)
     #     self.assertEquals(context,{'teststage':1})
 
+    '''
     def test_seq_stage(self):
         """
         Creates a sequential Stage
@@ -776,7 +777,7 @@ class ConnectorTests(unittest.TestCase):
                                    'convert': 4,
                                    'teststage': 4})
 
-
+    '''
     # def test_daisychain(self):
 
     #     # each accepts a filesystem and either uses or creates subfilesystem
