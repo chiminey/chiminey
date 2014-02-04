@@ -1,4 +1,4 @@
-# Copyright (C) 2013, RMIT University
+# Copyright (C) 2014, RMIT University
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to
@@ -24,9 +24,8 @@ from bdphpcprovider.cloudconnection import create_vms, print_vms
 from bdphpcprovider.platform import manage
 from bdphpcprovider.corestages import stage
 from bdphpcprovider.corestages.stage import Stage
-from bdphpcprovider.reliabilityframework.failuredetection import FailureDetection
-from bdphpcprovider.reliabilityframework.failurerecovery import FailureRecovery
-
+from bdphpcprovider.smartconnectorscheduler.stages.errors import InsufficientVMError
+from bdphpcprovider.reliabilityframework import FTManager
 from bdphpcprovider import messages
 
 logger = logging.getLogger(__name__)
@@ -35,7 +34,6 @@ RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
 
 class Create(Stage):
-
     def __init__(self, user_settings=None):
         self.group_id = ''
         self.platform_type = None
@@ -78,6 +76,8 @@ class Create(Stage):
             RMIT_SCHEMA + '/stages/create/custom_prompt')
         stage.copy_settings(local_settings, run_settings,
             RMIT_SCHEMA + '/stages/create/cloud_sleep_interval')
+        local_settings['min_count'] = run_settings[RMIT_SCHEMA + '/input/system/cloud']['minimum_number_vm_instances']
+        local_settings['max_count'] = run_settings[RMIT_SCHEMA + '/input/system/cloud']['number_vm_instances']
         logger.debug('local_settings=%s' % local_settings)
 
         computation_platform_url = run_settings['http://rmit.edu.au/schemas/platform/computation']['platform_url']
@@ -91,36 +91,20 @@ class Create(Stage):
             return
         local_settings.update(comp_pltf_settings)
         logger.debug('local_settings=%s' % local_settings)
-
-        number_vm_instances = run_settings[RMIT_SCHEMA + '/input/system/cloud'][u'number_vm_instances']
-        min_number_vms = run_settings[RMIT_SCHEMA + '/input/system/cloud'][u'minimum_number_vm_instances']
-        logger.debug("VM instance %d" % number_vm_instances)
         self.platform_type = local_settings['platform_type']
-        self.group_id, self.nodes = create_vms(
-            number_vm_instances,
-            local_settings)
-        logger.debug('node initialisation done')
-        #todo: cleanup nodes with Error state, and also nodes that are spawning indefinitely (timeout)
-        #check if sufficient no. node created
-        failure_detection = FailureDetection()
-        failure_recovery = FailureRecovery()
-        #fixme add no retries
-        if not failure_detection.sufficient_vms(len(self.nodes), min_number_vms):
-            if not failure_recovery.recovered_insufficient_vms_failure():
-                self.group_id = 'UNKNOWN'  # FIXME: do we we mean '' or None here?
-                messages.error(run_settings, "error: sufficient VMS cannot be created")
-                logger.info("Sufficient number VMs cannot be created for this computation."
-                            "Increase your quota or decrease your minimum requirement")
-                return
+        self.group_id, self.nodes = create_vms(local_settings)
+        try:
+            if not self.nodes or len(self.nodes) < local_settings['min_count']:
+                raise InsufficientVMError
+            print_vms(local_settings, all_vms=self.nodes)
+            messages.info(run_settings, "1: create (%s nodes created)" % len(self.nodes))
+        except InsufficientVMError as e:
+            self.group_id = 'UNKNOWN'
+            messages.error(run_settings, "error: sufficient VMs cannot be created")
+            ftmanager = FTManager()
+            ftmanager.manage_failure(e, settings=comp_pltf_settings,
+                                     created_vms=self.nodes)
 
-        print_vms(local_settings, all_vms=self.nodes)
-        messages.info(run_settings, "1: create (%s nodes created)" % len(self.nodes))
-
-        #Fixme: the following should transfer power to FT managers
-        if not self.group_id:
-            self.group_id = 'UNKNOWN'  # FIXME: do we we mean '' or None here?
-            logger.debug("No new VM instance can be created for this computation. Retry later.")
-            #clear_temp_files(run_settings)
 
     def output(self, run_settings):
         """
@@ -130,11 +114,9 @@ class Create(Stage):
         run_settings.setdefault(
             RMIT_SCHEMA + '/stages/create', {})[u'group_id'] \
             = self.group_id
-
         run_settings.setdefault(
             RMIT_SCHEMA + '/system', {})[u'platform'] \
             = self.platform_type
-
         if not self.nodes:
             run_settings.setdefault(
             RMIT_SCHEMA + '/stages/create', {})[u'created_nodes'] = []
@@ -142,13 +124,9 @@ class Create(Stage):
             for node in self.nodes:
                 if not node.ip_address:
                     node.ip_address = node.private_ip_address
-            if self.group_id is "UNKNOWN":
-                run_settings.setdefault(
-                    RMIT_SCHEMA + '/reliability', {})[u'cleanup_nodes'] \
-                    = [(x.id, x.ip_address, unicode(x.region)) for x in self.nodes]
-            else:
+            if self.group_id is not  "UNKNOWN":
                 run_settings.setdefault(
                     RMIT_SCHEMA + '/stages/create', {})[u'created_nodes'] \
-                    = [(x.id, x.ip_address, unicode(x.region)) for x in self.nodes]
+                    = [[x.id, x.ip_address, unicode(x.region), 'running'] for x in self.nodes]
         logger.debug("Updated run settings %s" % run_settings)
         return run_settings

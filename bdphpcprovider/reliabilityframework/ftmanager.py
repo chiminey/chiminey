@@ -19,17 +19,41 @@
 # IN THE SOFTWARE.
 
 import logging
+import socket
 from bdphpcprovider.reliabilityframework.failuredetection import FailureDetection
 from bdphpcprovider.cloudconnection import get_this_vm
+from bdphpcprovider.sshconnection import AuthError, SSHException
+from bdphpcprovider.smartconnectorscheduler.stages.errors import \
+    InsufficientVMError, NoRegisteredVMError, VMTerminatedError
+from bdphpcprovider.cloudconnection import destroy_vms, get_registered_vms
+
+
 logger = logging.getLogger(__name__)
 
 
 class FTManager():
+    def __init__(self, **kwargs):
+        try:
+            self.stage_class = kwargs['stage_class']
+        except KeyError:
+            self.stage_class = None
+
     def collect_failed_processes(self, source, destination):
         for iterator, process in enumerate(source):
             if process['status'] == 'failed' and \
                     process not in destination:
                 destination.append(process)
+
+    def _flag_failed_vm(self, vm_ip, all_vms):
+        for vm in all_vms:
+            if str(vm[1]) == str(vm_ip):
+                vm[3] = 'failed'
+                break
+
+    def _flag_all_failed_vms(self, all_vms):
+        for vm in all_vms:
+            vm[3] = 'failed'
+
 
     def flag_all_processes(self, process_lists, ip_address):
         for process_list in process_lists:
@@ -80,6 +104,83 @@ class FTManager():
         return failed_processes
 
 
+    def manage_failure(self, exception, **kwargs):
+        logger.debug('exception is %s ' % exception.__class__)
+        try:
+            raise exception.__class__
+        except (AuthError, SSHException, socket.error):
+            logger.debug('ssh failure detected')
+            self._manage_ssh_failure(kwargs)
+        except InsufficientVMError:
+            logger.debug('insufficient VM error detected')
+            self._manage_insufficient_vm_error(kwargs)
+        except NoRegisteredVMError:
+            logger.debug('NoRegisteredVMError detected')
+            self._manage_no_registered_vm_error(kwargs)
+        except VMTerminatedError:
+            logger.debug('VMTerminatedError detected')
+            self._manage_vm_terminated_error(kwargs)
+
+    def _manage_vm_terminated_error(self, kwargs):
+        try:
+            self.stage_class = kwargs['stage_class']
+            running_vms = get_registered_vms(kwargs['settings'])
+            running_vms_id = []
+            for vm in running_vms:
+                running_vms_id.append(vm.id)
+            created_vms = self.stage_class.created_nodes
+            for vm in created_vms:
+                if str(vm[0]) not in running_vms_id:
+                    vm[3] = 'failed'
+        except KeyError as e:
+            logger.debug('key_error = %s' % e)
+
+    #stage_class
+    def _manage_ssh_failure(self, kwargs):
+        try:
+            self.stage_class = kwargs['stage_class']
+            failure_detection = FailureDetection()
+            vm_terminated = failure_detection.node_terminated(
+                kwargs['settings'], kwargs['vm_id'])
+            if vm_terminated:
+                self._flag_failed_vm(kwargs['vm_ip'], self.stage_class.created_nodes)
+                list_of_process_lists = [self.stage_class.current_procs, self.stage_class.all_procs]
+                self.flag_all_processes(list_of_process_lists, kwargs['vm_ip'])
+                self.decrease_max_retry(list_of_process_lists, kwargs['vm_ip'], kwargs['process_id'])
+            else:
+                self._manage_process_terminated_error(kwargs)
+        except KeyError as e:
+            logger.debug('key_error=%s' % e)
+
+    def _manage_vm_terminated_error2(self, kwargs):
+        try:
+            self._flag_failed_vm(kwargs['vm_ip'], self.stage_class.created_nodes)
+            list_of_process_lists = [self.stage_class.current_procs, self.stage_class.all_procs]
+            self.flag_all_processes(list_of_process_lists, kwargs['vm_ip'])
+            self.decrease_max_retry(list_of_process_lists, kwargs['vm_ip'], kwargs['process_id'])
+        except KeyError as e:
+            logger.debug('key_error=%s' % e)
+
+    def _manage_process_terminated_error(self, kwargs):
+        pass
+
+
+    def _manage_insufficient_vm_error(self, kwargs):
+        try:
+            logger.info("Sufficient number VMs cannot be created for this computation."
+                        "Increase your quota or decrease your minimum requirement")
+            destroy_vms(kwargs['settings'], registered_vms=kwargs['created_vms'])
+        except KeyError:
+            pass
+
+    def _manage_no_registered_vm_error(self, kwargs):
+        logger.debug('managing NoRegisteredVMError')
+        try:
+            self.stage_class = kwargs['stage_class']
+            self._flag_all_failed_vms(self.stage_class.created_nodes)
+            logger.debug('NoRegisteredVMError managed %s' % self.stage_class.created_nodes)
+        except KeyError as e:
+            logger.debug('key_error=%s' % e)
 
 
 
