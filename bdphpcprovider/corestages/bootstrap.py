@@ -31,10 +31,16 @@ from bdphpcprovider.smartconnectorscheduler.stages.errors import InsufficientRes
 from bdphpcprovider.sshconnection import open_connection
 from bdphpcprovider.compute import run_command_with_status, run_make
 
+
 from bdphpcprovider.runsettings import getval, setval, setvals, getvals, update, SettingNotFoundException
+
+from bdphpcprovider.reliabilityframework.ftmanager import FTManager
+
 from bdphpcprovider import messages
 from bdphpcprovider import storage
 from bdphpcprovider.corestages import stage
+from bdphpcprovider.smartconnectorscheduler.stages.errors import \
+    NoRegisteredVMError, VMTerminatedError
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +59,10 @@ class Bootstrap(Stage):
 
         try:
             created_str = getval(run_settings, '%s/stages/create/created_nodes' % RMIT_SCHEMA)
-
+            self.created_nodes = ast.literal_eval(created_str)
+            logger.debug('created_nodes=%s' % self.created_nodes)
+            running_created_nodes = [x for x in self.created_nodes if str(x[3]) == 'running']
+            logger.debug('running_created_nodes=%s' % running_created_nodes)
         except SettingNotFoundException:
             return False
 
@@ -61,24 +70,17 @@ class Bootstrap(Stage):
             self.created_nodes = ast.literal_eval(created_str)
         except ValueError:
             return False
+        if len(running_created_nodes) == 0:
 
-        # if not self._exists(run_settings, RMIT_SCHEMA + '/stages/create', u'created_nodes'):
-        #     return False
-        # created_str = run_settings[RMIT_SCHEMA + '/stages/create'][u'created_nodes']
-        # self.created_nodes = ast.literal_eval(created_str)
-        if len(self.created_nodes) == 0:
             return False
         try:
             bootstrapped_str = getval(run_settings,
                                       '%s/stages/bootstrap/bootstrapped_nodes'
                                         % RMIT_SCHEMA)
-
-            # bootstrapped_str = smartconnector.get_existing_key(run_settings,
-            #     RMIT_SCHEMA + '/stages/bootstrap/bootstrapped_nodes')
             self.bootstrapped_nodes = ast.literal_eval(bootstrapped_str)
-            logger.debug('bootstrapped nodes=%d, created nodes = %d'
-                         % (len(self.bootstrapped_nodes), len(self.created_nodes)))
-            return len(self.bootstrapped_nodes) < len(self.created_nodes)
+            logger.debug('bootstrapped nodes=%d, running created nodes = %d'
+                         % (len(self.bootstrapped_nodes), len(running_created_nodes)))
+            return len(self.bootstrapped_nodes) < len(running_created_nodes)
         except SettingNotFoundException:
             self.bootstrapped_nodes = []
             return True
@@ -160,7 +162,19 @@ class Bootstrap(Stage):
             self.started = 1
 
         else:
-            self.nodes = get_registered_vms(local_settings)
+            try:
+                self.nodes = get_registered_vms(local_settings)
+                running_created_nodes = [x for x in self.created_nodes if str(x[3]) == 'running']
+                if len(self.nodes) < len(running_created_nodes):
+                    raise VMTerminatedError
+            except NoRegisteredVMError as e:
+                logger.debug('NoRegisteredVMError detected')
+                ftmanager = FTManager()
+                ftmanager.manage_failure(e, stage_class=self,  settings=local_settings)
+            except VMTerminatedError as e:
+                logger.debug('VMTerminatedError detected')
+                ftmanager = FTManager()
+                ftmanager.manage_failure(e, stage_class=self,  settings=local_settings)
             self.error_nodes = []
             for node in self.nodes:
                 node_ip = node.ip_address
@@ -169,15 +183,6 @@ class Bootstrap(Stage):
                 if (node_ip in [x[1]
                                         for x in self.bootstrapped_nodes
                                         if x[1] == node_ip]):
-                    continue
-                if not is_vm_running(node):
-                    # An unlikely situation where the node crashed after is was
-                    # detected as registered.
-                    #FIXME: should error nodes be counted as finished?
-                    #FIXME: remove this instance from created_nodes
-                    logging.error('Instance %s not running' % node.id)
-                    self.error_nodes.append((node.id, node_ip,
-                                            unicode(node.region)))
                     continue
                 relative_path = "%s@%s" % (local_settings['type'],
                     local_settings['payload_destination'])
@@ -192,6 +197,12 @@ class Bootstrap(Stage):
                 except IOError, e:
                     logger.error(e)
                     fin = False
+                except Exception as e:
+                    logger.error(e)
+                    fin = False
+                    ftmanager = FTManager()
+                    ftmanager.manage_failure(e, stage_class=self, vm_ip=node_ip,
+                                             vm_id=node.id, settings=local_settings)
                 logger.debug("fin=%s" % fin)
                 if fin:
                     print "done."
@@ -201,8 +212,8 @@ class Bootstrap(Stage):
                                                 for x in self.bootstrapped_nodes
                                                 if x[1] == node_ip]):
                         logger.debug('new ip = %s' % node_ip)
-                        self.bootstrapped_nodes.append((node.id, node_ip,
-                                            unicode(node.region)))
+                        self.bootstrapped_nodes.append(
+                            [node.id, node_ip, unicode(node.region), 'running'])
                     else:
                         logger.info("We have already "
                             + "bootstrapped node %s" % node_ip)
@@ -212,27 +223,17 @@ class Bootstrap(Stage):
                     print "job still running on %s" % node_ip
 
     def output(self, run_settings):
-
         setvals(run_settings, {
                 '%s/stages/bootstrap/started' % RMIT_SCHEMA: self.started,
                 '%s/stages/bootstrap/bootstrapped_nodes' % RMIT_SCHEMA: str(self.bootstrapped_nodes),
-                '%s/system/id' % RMIT_SCHEMA: 0
+                '%s/system/id' % RMIT_SCHEMA: 0,
+                '%s/stages/create/created_nodes' % RMIT_SCHEMA: self.created_nodes
                 })
-        # run_settings.setdefault(
-        #     RMIT_SCHEMA + '/stages/bootstrap',
-        #     {})[u'started'] = self.started
-        # run_settings.setdefault(
-        #     RMIT_SCHEMA + '/stages/bootstrap',
-        #     {})[u'bootstrapped_nodes'] = str(self.bootstrapped_nodes)
-        # run_settings.setdefault(
-        #     RMIT_SCHEMA + '/system',
-        #     {})[u'id'] = 0
-        logger.debug('created_nodes=%s' % self.created_nodes)
-        if len(self.bootstrapped_nodes) == len(self.created_nodes):
-            setval(run_settings, '%s/stages/bootstrap/bootstrap_done' % RMIT_SCHEMA, 1)
-            # run_settings.setdefault(RMIT_SCHEMA + '/stages/bootstrap',
-            # {})[u'bootstrap_done'] = 1
-
+        running_created_nodes = [x for x in self.created_nodes if x[3] == 'running']
+        logger.debug('running created_nodes=%s' % running_created_nodes)
+        if self.bootstrapped_nodes and len(self.bootstrapped_nodes) == len(running_created_nodes):
+            setvals(run_settings, {
+                '%s/stages/bootstrap/bootstrap_done' % RMIT_SCHEMA: 1})
         return run_settings
 
 
@@ -303,7 +304,7 @@ def start_setup(instance, ip,  settings, source, destination):
         command_out, errs = run_command_with_status(ssh, install_make)
         logger.debug("command_out1=(%s, %s)" % (command_out, errs))
         run_make(ssh, makefile_path, 'setupstart')
-    except Exception, e:
+    except Exception, e:#fixme: consider using reliability framework
         logger.error(e)
         raise
     finally:

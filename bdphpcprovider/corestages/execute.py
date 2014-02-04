@@ -92,14 +92,10 @@ class Execute(Stage):
 
         if len(self.schedule_procs) == 0:
             return False
-
         try:
             self.reschedule_failed_procs = getval(run_settings, '%s/input/reliability/reschedule_failed_processes' % RMIT_SCHEMA)
         except SettingNotFoundException:
-            self.reschedule_failed_procs = []  # FIXME: check this is correct
-
-        # self.reschedule_failed_procs = run_settings['http://rmit.edu.au/schemas/input/reliability'][u'reschedule_failed_processes']
-
+            self.reschedule_failed_procs = 0  # FIXME: check this is correct
         try:
             exec_procs_str = getval(run_settings, '%s/stages/execute/executed_procs' % RMIT_SCHEMA)
             # exec_procs_str = smartconnector.get_existing_key(run_settings,
@@ -559,6 +555,7 @@ class Execute(Stage):
         logger.debug('Variations %s' % variations)
         logger.debug("Variations items %d" % len(variations.items()))
         return variations
+
 
     def _expand_variations(self, template, maps, values, initial_numbfile):
             """

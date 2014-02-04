@@ -44,3 +44,13 @@ class InsufficientResourceError(StageException):
 
 class MissingConfigurationError(StageException):
     pass
+
+
+class InsufficientVMError(Exception):
+    pass
+
+class NoRegisteredVMError(Exception):
+    pass
+
+class VMTerminatedError(Exception):
+    pass

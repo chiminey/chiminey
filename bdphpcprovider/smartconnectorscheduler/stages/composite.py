@@ -38,6 +38,7 @@ class ParallelStage(Stage):
         return u"ParallelStage"
 
     def triggered(self, run_settings):
+        '''
         logger.debug("Parallel Stage Triggered")
         logger.debug("run_settings=%s" % run_settings)
 
@@ -59,7 +60,7 @@ class ParallelStage(Stage):
 
         if self.parallel_index:
             return True
-
+        '''
         return False
 
     def process(self, run_settings):

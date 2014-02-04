@@ -18,6 +18,26 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from bdphpcprovider.corestages.configure import Configure
-from bdphpcprovider.corestages.execute import Execute
-from bdphpcprovider.corestages.wait import Wait
+import socket
+from bdphpcprovider.sshconnection import AuthError, SSHException
+from bdphpcprovider.corestages import Execute
+from bdphpcprovider.sshconnection import open_connection
+from bdphpcprovider.compute import run_command_with_status
+
+
+class RandExecute(Execute):
+    def run_task(self, ip_address, process_id, settings):
+        settings['username'] = 'root'
+        ssh = None
+        try:
+            ssh = open_connection(ip_address=ip_address, settings=settings)
+            command, errs = run_command_with_status(ssh, 'uptime > /tmp/randtime')#fixme use platform location
+        except (AuthError, SSHException, socket.error) as e:
+            print e
+        finally:
+            if ssh:
+                ssh.close()
+
+    def output(self, run_settings):
+        run_settings['http://rmit.edu.au/schemas/stages/run']['runs_left'] = 1
+        return super(RandExecute, self).output()

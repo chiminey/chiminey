@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 NODE_STATE = ['RUNNING', 'REBOOTING', 'TERMINATED', 'PENDING', 'UNKNOWN']
 
 
-def create_vms(total_vms, settings):
+def create_vms(settings):
     """
         Create vms and return ip_address
     """
@@ -61,13 +61,13 @@ def create_vms(total_vms, settings):
 
     connection = _create_cloud_connection(settings)
     all_vms = []
-    logger.info("Creating %d VM(s)" % total_vms)
+    logger.info("Creating %d VM(s)" % settings['max_count'])
     try:
         reservation = connection.run_instances(
                     placement=placement,
                     image_id=vm_image,
-                    min_count=1,
-                    max_count=total_vms,
+                    min_count=settings['min_count'],
+                    max_count=settings['max_count'],
                     key_name=settings['private_key_name'],
                     security_groups=[settings['security_group']],
                     instance_type=settings['vm_image_size'])
@@ -83,11 +83,11 @@ def create_vms(total_vms, settings):
             raise
     logger.debug(all_vms)
     logger.debug('%d of %d requested VM(s) created'
-                 % (len(all_vms), total_vms))
+                 % (len(all_vms), settings['max_count']))
     return all_vms
 
 
-def destroy_vms(settings, all_vms, ids_of_all_vms=None):
+def destroy_vms(settings, all_vms):
     """
         Terminate
             - all vms, or
@@ -97,12 +97,9 @@ def destroy_vms(settings, all_vms, ids_of_all_vms=None):
     if not all_vms:
         logging.error("No running vm(s)")
         return
-
-    if not ids_of_all_vms:
-        ids_of_all_vms = []
-        for vm in all_vms:
-            ids_of_all_vms.append(vm.id)
-
+    ids_of_all_vms = []
+    for vm in all_vms:
+        ids_of_all_vms.append(vm.id)
     logger.info("Terminating %d vm(s)" % len(ids_of_all_vms))
     connection = _create_cloud_connection(settings)
     terminated_vms = connection.terminate_instances(ids_of_all_vms)
@@ -114,6 +111,7 @@ def wait_for_vms_to_start_running(all_vms, settings):
     # FIXME: add final timeout for when VMs fail to initialise properly
     # TODO: spamming all nodes in tenancy continually is impolite, so should
     # store nodes we know to be part of this run (in context?)
+    #todo: cleanup nodes that are spawning indefinitely (timeout)
     logger.debug("Started waiting")
     #maximum rwait time 3 minutes
     minutes = 3 #fixme avoid hard coding; move to settings.py

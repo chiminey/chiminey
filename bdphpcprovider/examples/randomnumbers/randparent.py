@@ -1,4 +1,4 @@
-# Copyright (C) 2014, RMIT University
+# Copyright (C) 2013, RMIT University
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to
@@ -18,6 +18,20 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from bdphpcprovider.corestages.configure import Configure
-from bdphpcprovider.corestages.execute import Execute
-from bdphpcprovider.corestages.wait import Wait
+
+import logging
+from bdphpcprovider.smartconnectorscheduler.stages.composite import ParallelStage
+
+
+logger = logging.getLogger(__name__)
+
+
+class RandParent(ParallelStage):
+    def get_run_map(self, settings, **kwargs):
+        rand_index = 42
+        map = {'val': [1]}
+        logger.debug('map=%s' % map)
+        return map, rand_index
+
+
+

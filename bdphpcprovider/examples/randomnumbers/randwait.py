@@ -18,6 +18,8 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from bdphpcprovider.corestages.configure import Configure
-from bdphpcprovider.corestages.execute import Execute
-from bdphpcprovider.corestages.wait import Wait
+from bdphpcprovider.corestages import Wait
+
+class RandWait(Wait):
+    def job_finished(self, ip_address, process_id, retry_left, ):
+        return True
