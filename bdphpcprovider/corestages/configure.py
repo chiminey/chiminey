@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
 
-class Configure(Stage, UI):
+class Configure(Stage):
     """
         - Setups up remote file system
            e.g. Object store in NeCTAR Creates file system,

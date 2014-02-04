@@ -437,6 +437,7 @@ def create_dataset(settings,
                                 #new_value.update(func(open(file_path, 'r')))
                                 source_file.seek(0)
                                 new_value.update(func(source_file))
+
                                 found_func_match = True  # FIXME: can multiple funcs match?
 
                         logger.debug("new_value=%s" % new_value)

@@ -91,6 +91,9 @@ def setup_settings(run_settings):
     local_settings['bdp_username'] = getval(run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA)
     local_settings['directive'] = getval(run_settings, '%s/stages/sweep/directive' % RMIT_SCHEMA)
 
+
+    local_settings['curate_data'] = getval(run_settings, '%s/input/mytardis/curate_data' % RMIT_SCHEMA)
+
     # settings['mytardis_platform'] = run_settings['http://rmit.edu.au/schemas/input/mytardis']['mytardis_platform']
 
     return local_settings

@@ -245,6 +245,7 @@ class MakeFinishedStage(Stage):
 
         mytardis_settings = _get_mytardis_settings(settings, bdp_username)
         logger.debug(mytardis_settings)
+
         if settings['curate_data']:
             if mytardis_settings['mytardis_host']:
 

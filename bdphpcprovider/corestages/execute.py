@@ -149,6 +149,7 @@ class Execute(Stage):
                     '%s/system/max_seed_int' % RMIT_SCHEMA,
                     '%s/system/random_numbers' % RMIT_SCHEMA,
                     '%s/system/id' % RMIT_SCHEMA,
+                    '%s/input/mytardis/curate_data' % RMIT_SCHEMA
                    )
 
             # smartconnector.copy_settings(local_settings, run_settings,
@@ -341,7 +342,7 @@ class Execute(Stage):
 
         setvals(run_settings, {
                 '%s/stages/run/runs_left' % RMIT_SCHEMA:
-                    len(running_processes)
+                    len(running_processes),
 
                     # len(self.exec_procs) - len(completed_processes),
                 '%s/stages/run/initial_numbfile' % RMIT_SCHEMA: self.initial_numbfile,
