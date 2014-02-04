@@ -21,19 +21,24 @@
 import time
 import ast
 import hashlib
+import random
 import logging
 
+
 from bdphpcprovider.cloudconnection import botoconnector
+from boto.exception import EC2ResponseError
 from bdphpcprovider.sshconnection import open_connection
+from bdphpcprovider.smartconnectorscheduler.stages.errors import NoRegisteredVMError
+
 
 logger = logging.getLogger(__name__)
 
-def create_vms(total_vms, settings):
+def create_vms(settings):
     """
         Create virtual machines and return id
     """
     logger.debug("create_vms")
-    all_vms = botoconnector.create_vms(total_vms, settings)
+    all_vms = botoconnector.create_vms(settings)
     if all_vms:
         all_running_vms = botoconnector.wait_for_vms_to_start_running(
             all_vms, settings)
@@ -46,42 +51,46 @@ def create_vms(total_vms, settings):
     return ('', [])
 
 
-def destroy_vms(settings, node_types=['created_nodes'],
-                ids_of_all_vms=None):
-    logger.info("destroy_vms")
-    all_vms = []
-    for type in node_types:
-        all_vms.extend(get_registered_vms(
-            settings, node_type=type))
-    logger.debug('all_vms(teardown)=%s' % all_vms)
-    terminated_vms = botoconnector.destroy_vms(
-        settings, all_vms,
-        ids_of_all_vms=ids_of_all_vms)
-    botoconnector.wait_for_vms_to_terminate(
-        terminated_vms, settings)
-
-
 def get_registered_vms(settings, node_type='created_nodes'):
     res = []
     try:
         requested_nodes = settings[node_type]
-    except KeyError:
-        logger.debug("settings=%s" % settings)
-        logger.error("%s missing from context" % node_type)
-        raise
-    try:
+        logger.debug('requested_nodes= %s' % requested_nodes)
         nodes = ast.literal_eval(requested_nodes)
-    except KeyError:
-        logger.error("error with parsing created_nodes")
-        raise
-    for node in nodes:
-        try:
-           vm = botoconnector.get_this_vm(node[0], settings)
-           res.append(vm)
-        except Exception:
-            logger.debug('vm [%s:%s] not found' % (node[0], node[1]))
+        logger.debug('nodes= %s' % nodes)
+        if nodes:
+            for node in nodes:
+                try:
+                    vm = botoconnector.get_this_vm(node[0], settings)
+                    res.append(vm)
+                except EC2ResponseError as e:
+                    logger.debug('vm [%s:%s] not found' % (node[0], node[1]))
+                    logger.debug(e)
+    except KeyError as e:
+        logger.debug("settings=%s" % settings)
+        logger.debug("node_type=%s" % node_type)
+        logger.debug('key_error=%s' % e)
+    except ValueError as e:
+        logger.debug('value_error=%s' % e)
     logger.debug("nodes=%s" % res)
+    if not res:
+        raise NoRegisteredVMError
     return res
+
+
+def destroy_vms(settings, node_types=['created_nodes'],
+                registered_vms=[]):
+    logger.info("destroy_vms")
+    all_vms = registered_vms
+    for type in node_types:
+        logger.debug('type=%s' % type)
+        all_vms.extend(get_registered_vms(
+            settings, node_type=type))
+    logger.debug('all_vms(teardown)=%s' % all_vms)
+    terminated_vms = botoconnector.destroy_vms(
+        settings, all_vms)
+    botoconnector.wait_for_vms_to_terminate(
+        terminated_vms, settings)
 
 
 def print_vms(settings, all_vms=None):
@@ -166,7 +175,7 @@ def _is_ssh_ready(settings, ip_address):
 
 
 def _generate_group_id(all_vms):
-    md5_starter_string = ""
+    md5_starter_string = str(random.random())
     for vm in all_vms:
         md5_starter_string += vm.id
     md5 = hashlib.md5()

@@ -143,7 +143,7 @@ class HRMCParallelStage(ParallelStage):
             raise BadSpecificationError(message)
         logger.debug('map=%s' % map)
         return map, rand_index
-
+    '''
     def get_total_templates(self, maps, **kwargs):
         run_settings = kwargs['run_settings']
         output_storage_settings = kwargs['output_storage_settings']
@@ -174,4 +174,4 @@ class HRMCParallelStage(ParallelStage):
             total_templates = product * len(input_dirs)
             logger.debug("total_templates=%d" % (total_templates))
         return total_templates
-
+        '''

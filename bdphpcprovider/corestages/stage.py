@@ -37,7 +37,6 @@ logger = logging.getLogger(__name__)
 
 
 class Stage(object):
-
     def __init__(self):
         pass
 

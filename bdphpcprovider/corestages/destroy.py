@@ -1,4 +1,4 @@
-# Copyright (C) 2013, RMIT University
+# Copyright (C) 2014, RMIT University
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to
@@ -37,16 +37,6 @@ class Destroy(stage.Stage):
         logger.debug('Destroy stage initialised')
 
     def triggered(self, run_settings):
-        try:
-            cleanup_nodes_str = stage.get_existing_key(run_settings,
-                'http://rmit.edu.au/schemas/reliability/cleanup_nodes')
-            self.cleanup_nodes = ast.literal_eval(cleanup_nodes_str)
-            if self.cleanup_nodes:
-                return True
-        except KeyError, e:
-            self.cleanup_nodes = []
-            logger.debug(e)
-
         if self._exists(run_settings,
             'http://rmit.edu.au/schemas/stages/converge',
             u'converged'):
@@ -97,13 +87,6 @@ class Destroy(stage.Stage):
         #else:
         #    all_instances = []
 
-        if self.cleanup_nodes:
-            stage.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/reliability/cleanup_nodes')
-            node_type.append('cleanup_nodes')
-            #all_instances.extend(managevms.get_registered_vms(
-            #    local_settings, node_type=node_type))
-
         #logger.debug('all_instance=%s' % all_instances)
         if node_type:
             destroy_vms(local_settings, node_types=node_type)
@@ -115,9 +98,4 @@ class Destroy(stage.Stage):
         run_settings.setdefault(
             'http://rmit.edu.au/schemas/stages/destroy',
             {})[u'run_finished'] = 1
-
-        if self.cleanup_nodes:
-            run_settings.setdefault(
-            'http://rmit.edu.au/schemas/reliability', {})[u'cleanup_nodes'] = []
-
         return run_settings
