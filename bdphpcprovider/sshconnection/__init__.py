@@ -20,3 +20,4 @@
 
 from bdphpcprovider.sshconnection.manage import open_connection
 from bdphpcprovider.sshconnection.paramikoconnector import AuthError
+from paramiko import BadHostKeyException, AuthenticationException, SSHException

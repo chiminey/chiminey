@@ -209,6 +209,9 @@ class AddDirective1View(FormView):
             #     'wizard/create_directive2.html',
             #         {'debug_text': str(debug_text)},
             #             context_instance=self.RequestContext(self.request))
+
+        # return super(MyFormView, self).form_valid(form)
+
         else:
             logger.debug("errors")
             new_context = self.get_context_data(form=form)
@@ -226,6 +229,19 @@ class AddDirective1View(FormView):
             #                    'wizard/create_directive1.html',
             #                    {'debug_text': "ERROR:" + debug_text},
             #                    context_instance=RequestContext(self.request))
+
+    # def form_invalid(self, form):
+    #         messages.info(
+    #             self.request,
+    #             "Your submission has not been saved. Try again."
+    #         )
+    #         return super(EmailPreferenceView, self).form_invalid(form)
+
+
+    # def get_success_url(self):
+    #         # Redirect to previous url
+    #         return reverse('wizard2')) # Redirect after POST
+
 
 
 class AddDirective2View(FormView):
@@ -395,10 +411,13 @@ class AddDirective2View(FormView):
             #         job_id = str(new_context_uri).split('/')[-1]
             #     logger.debug("job_id=%s" % job_id)
 
-            return render_to_response(
-                'wizard/create_directive2.html',
-                    {'debug_text': str(debug_text)},
-                        context_instance=self.RequestContext(self.request))
+
+            return HttpResponseRedirect(reverse('wizard2')) # Redirect after POST
+
+            # return render_to_response(
+            #     'wizard/create_directive2.html',
+            #         {'debug_text': str(debug_text)},
+            #             context_instance=self.RequestContext(self.request))
         else:
             new_context = self.get_context_data(form=form)
             debug_text = str(pformat(self.request.POST)) + "hgello"
@@ -409,6 +428,8 @@ class AddDirective2View(FormView):
                 + str(pformat(formset_params.errors)) \
                 + str(pformat(self.request.POST))
             print debug_text
+
+
             return render_to_response(
                                'wizard/create_directive2.html',
                                {'debug_text': "ERROR:" + debug_text},

@@ -23,17 +23,18 @@ import logging
 import ast
 from bdphpcprovider.platform import manage
 
-from bdphpcprovider.smartconnectorscheduler import smartconnector, models
+from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.cloudconnection import destroy_vms
+from bdphpcprovider.corestages import stage
 
-from bdphpcprovider.runsettings import getval, setval, setvals, getvals, update, SettingNotFoundException
+from bdphpcprovider.runsettings import getval, setvals, getvals, update, SettingNotFoundException
 
 logger = logging.getLogger(__name__)
 
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
 
-class Destroy(smartconnector.Stage):
+class Destroy(stage.Stage):
 
     def __init__(self, user_settings=None):
         logger.debug('Destroy stage initialised')
@@ -98,7 +99,7 @@ class Destroy(smartconnector.Stage):
         # local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
 
         update(local_settings, run_settings,
-               '%s/system/platform' % RMIT_SCHEMA,
+               #'%s/system/platform' % RMIT_SCHEMA,
                '%s/stages/create/cloud_sleep_interval' % RMIT_SCHEMA)
         # smartconnector.copy_settings(local_settings, run_settings,
         #     'http://rmit.edu.au/schemas/system/platform')
@@ -119,7 +120,9 @@ class Destroy(smartconnector.Stage):
             if getvals(run_settings, '%s/stages/create'):
                 update(local_settings,
                        run_settings,
-                       '%s/steages/create/created_nodes' % RMIT_SCHEMA)
+                       '%s/stages/create/created_nodes' % RMIT_SCHEMA)
+                node_type.append('created_nodes')
+
         except SettingNotFoundException:
             pass
 

@@ -7,7 +7,7 @@ from bdphpcprovider.smartconnectorscheduler import models
 
 class Command(BaseCommand):
     args = ''
-    help = 'Deletes all non-super users and all associated contexts stages and schemas'
+    help = 'Deletes all non-super users and all associated contexts corestages and schemas'
 
     def handle(self, *args, **options):
 

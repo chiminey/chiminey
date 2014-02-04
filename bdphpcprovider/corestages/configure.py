@@ -23,11 +23,10 @@ import os
 import logging
 from pprint import pformat
 from bdphpcprovider.platform import manage
+from bdphpcprovider.corestages import stage
 
-from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage, UI
+from bdphpcprovider.corestages.stage import Stage, UI
 from bdphpcprovider.smartconnectorscheduler import models
-from bdphpcprovider.smartconnectorscheduler import smartconnector
-
 
 from bdphpcprovider import mytardis
 from bdphpcprovider import messages
@@ -126,7 +125,6 @@ class Configure(Stage, UI):
         # self.contextid = int(run_settings[
         #     RMIT_SCHEMA + '/system'][u'contextid'])
 
-
         logger.debug("self.contextid=%s" % self.contextid)
 
         self.output_loc_offset = str(self.contextid)
@@ -155,11 +153,11 @@ class Configure(Stage, UI):
         #todo: input location will evenatually be replaced by the scratch space that was used by the sweep
         #todo: the sweep will indicate the location of the scratch space in the run_settings
         #todo: add scheme (ssh) to inputlocation
-        source_url = smartconnector.get_url_with_pkey(local_settings,
+        source_url = stage.get_url_with_pkey(local_settings,
             input_location)
         logger.debug("source_url=%s" % source_url)
 
-        destination_url = smartconnector.get_url_with_pkey(
+        destination_url = stage.get_url_with_pkey(
             output_storage_settings,
             '%s://%s@%s' % (output_storage_settings['scheme'],
                              output_storage_settings['type'],
@@ -170,47 +168,54 @@ class Configure(Stage, UI):
 
         # output_location = self.output_loc_offset  # run_settings[RMIT_SCHEMA + '/input/system'][u'output_location']
 
-
         try:
             self.experiment_id = int(getval(run_settings, '%s/input/mytardis/experiment_id' % RMIT_SCHEMA))
         except SettingNotFoundException:
             self.experiment_id = 0
         except ValueError:
             self.experiment_id = 0
-        # try:
-        #     self.experiment_id = int(smartconnector.get_existing_key(run_settings,
+
+        #     self.experiment_id = int(stage.get_existing_key(run_settings,
         #         RMIT_SCHEMA + '/input/mytardis/experiment_id'))
         # except KeyError:
         #     self.experiment_id = 0
         # except ValueError:
         #     self.experiment_id = 0
 
-        # mytardis_url = run_settings['http://rmit.edu.au/schemas/input/mytardis']['mytardis_platform']
-        mytardis_url = getval(run_settings, '%s/input/mytardis/mytardis_platform' % RMIT_SCHEMA)
-        mytardis_settings = manage.get_platform_settings(mytardis_url, bdp_username)
-        logger.debug(mytardis_settings)
-        #local_settings.update(mytardis_settings)
+        curate_data = getval(run_settings, '%s/input/mytardis/curate_data' % RMIT_SCHEMA)
 
-        if mytardis_settings['mytardis_host']:
-            EXP_DATASET_NAME_SPLIT = 2
+        if curate_data:
 
-            def _get_exp_name_for_input(path):
-                return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
+            mytardis_url = getval(run_settings, '%s/input/mytardis/mytardis_platform' % RMIT_SCHEMA)
+            mytardis_settings = manage.get_platform_settings(mytardis_url, bdp_username)
+            logger.debug(mytardis_settings)
+            #local_settings.update(mytardis_settings)
 
-            ename = _get_exp_name_for_input(self.output_loc_offset)
-            logger.debug("ename=%s" % ename)
-            self.experiment_id = mytardis.create_experiment(
-                settings=mytardis_settings,
-                exp_id=self.experiment_id,
-                expname=ename,
-                experiment_paramset=[
-                    mytardis.create_paramset("hrmcexp", []),
-                    mytardis.create_graph_paramset("expgraph",
-                        name="hrmcexp",
-                        graph_info={"axes":["iteration", "criterion"], "legends":["criterion"], "precision":[0, 2]},
-                        value_dict={},
-                        value_keys=[["hrmcdset/it", "hrmcdset/crit"]])
-            ])
+            if mytardis_settings['mytardis_host']:
+                EXP_DATASET_NAME_SPLIT = 2
+
+                def _get_exp_name_for_input(path):
+                    return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
+
+                #ename = _get_exp_name_for_input(output_location)
+                ename = _get_exp_name_for_input(self.output_loc_offset)
+                logger.debug("ename=%s" % ename)
+                self.experiment_id = mytardis.create_experiment(
+                    settings=mytardis_settings,
+                    exp_id=self.experiment_id,
+                    expname=ename,
+                    experiment_paramset=[
+                        mytardis.create_paramset("hrmcexp", []),
+                        mytardis.create_graph_paramset("expgraph",
+                            name="hrmcexp",
+                            graph_info={"axes":["iteration", "criterion"], "legends":["criterion"], "precision":[0, 2]},
+                            value_dict={},
+                            value_keys=[["hrmcdset/it", "hrmcdset/crit"]])
+                ])
+            else:
+                logger.warn("no mytardis host specified")
+        else:
+            logger.warn('Data curation is off')
 
     def output(self, run_settings):
 

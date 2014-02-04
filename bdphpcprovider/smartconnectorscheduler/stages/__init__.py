@@ -19,9 +19,6 @@
 # IN THE SOFTWARE.
 
 
-# from bdphpcprovider.smartconnectorscheduler.stages import (
-#     dummy
-# )
 
 
 # class StageException(Exception):

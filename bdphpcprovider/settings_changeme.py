@@ -194,15 +194,27 @@ LOGGING = {
     'loggers': {
 
     'bdphpcprovider': {
-    'level': 'WARN',
+    'level': 'DEBUG',
     'handlers': ['file'],
     },
     'bdphpcprovider.smartconnectorscheduler': {
-    'level': 'WARN',
+    'level': 'DEBUG',
+    'handlers': ['file'],
+    },
+    'bdphpcprovider.sshconnection': {
+    'level': 'DEBUG',
+    'handlers': ['file'],
+    },
+    'bdphpcprovider.platform': {
+    'level': 'DEBUG',
+    'handlers': ['file'],
+    },
+    'bdphpcprovider.cloudconnection': {
+    'level': 'DEBUG',
     'handlers': ['file'],
     },
     'bdphpcprovider.reliabilityframework': {
-    'level': 'WARN',
+    'level': 'DEBUG',
     'handlers': ['file'],
     },
     'bdphpcprovider.simpleui': {
@@ -210,7 +222,7 @@ LOGGING = {
     'handlers': ['file'],
     },
     'bdphpcprovider.mytardis': {
-    'level': 'WARN',
+    'level': 'DEBUG',
     'handlers': ['file'],
     },
     'bdphpcprovider.simpleui.wizard': {
@@ -218,15 +230,15 @@ LOGGING = {
     'handlers': ['file'],
     },
     'bdphpcprovider.storage': {
-    'level': 'WARN',
+    'level': 'DEBUG',
     'handlers': ['file'],
     },
     'bdphpcprovider.sshconnector': {
-    'level': 'WARN',
+    'level': 'DEBUG',
     'handlers': ['file'],
     },
     'bdphpcprovider.core': {
-    'level': 'WARN',
+    'level': 'DEBUG',
     'handlers': ['file'],
     },
     'bdphpcprovider.smartconnectorscheduler.tasks': {
@@ -234,7 +246,7 @@ LOGGING = {
     'handlers': ['file'],
     },
     'celery.task': {
-    'level': 'WARN',
+    'level': 'DEBUG',
     'handlers': ['file'],
     },
     'django.db.backends': {
@@ -268,7 +280,7 @@ CELERYBEAT_SCHEDULE = {
     # },
     "run_contexts": {
         "task": "smartconnectorscheduler.run_contexts",
-        "schedule": timedelta(seconds=15)
+        "schedule": timedelta(seconds=10)
         #"schedule": timedelta(seconds=60)
       },
     }

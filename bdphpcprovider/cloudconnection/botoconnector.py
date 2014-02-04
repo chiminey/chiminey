@@ -166,6 +166,23 @@ def get_this_vm(vm_id, settings):
                 return i
     except Exception, e:
         logger.debug(e)
+        raise
+
+
+def get_vm_ip(vm_id, settings):
+    connection = _create_cloud_connection(settings)
+    try:
+        reservation_list = connection.get_all_instances(
+            instance_ids=[vm_id], filters=None)
+        for vm in reservation_list[0].instances:
+            if vm.id is vm_id:
+                ip_address = vm.ip_address
+                if not ip_address:
+                    ip_address = vm.private_ip_address
+                return ip_address
+    except Exception, e:
+        logger.debug(e)
+        raise
 
 
 def is_vm_running(vm):
@@ -226,7 +243,7 @@ def create_ssh_security_group(settings):
             _create_ssh_group(connection, security_group_name)
     except EC2ResponseError as e:
         if 'SecurityGroupNotFoundForProject' in e.error_code:
-            _create_security_group(connection, security_group_name)
+            _create_ssh_group(connection, security_group_name)
         else:
             logger.exception(e)
             raise

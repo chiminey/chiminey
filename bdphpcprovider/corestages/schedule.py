@@ -27,8 +27,9 @@ from django.core.exceptions import ImproperlyConfigured
 
 from bdphpcprovider.cloudconnection import get_registered_vms, is_vm_running
 from bdphpcprovider.platform import manage
-from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
-from bdphpcprovider.smartconnectorscheduler import smartconnector, hrmcstages
+from bdphpcprovider.corestages import stage
+from bdphpcprovider.corestages.stage import Stage
+from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.sshconnection import open_connection
 from bdphpcprovider.compute import run_command_with_status
@@ -80,7 +81,6 @@ class Schedule(Stage):
         try:
             bootstrap_done = int(getval(run_settings,
                                  '%s/stages/bootstrap/bootstrap_done' % RMIT_SCHEMA))
-
             # bootstrap_done = int(smartconnector.get_existing_key(run_settings,
             #     'http://rmit.edu.au/schemas/stages/bootstrap/bootstrap_done'))
             if not bootstrap_done:
@@ -225,7 +225,6 @@ class Schedule(Stage):
             self.started = 0
         except ValueError, e:
             logger.error(e)
-            self.started = 0
 
         logger.debug("started=%s" % self.started)
 
@@ -282,9 +281,10 @@ class Schedule(Stage):
             logger.debug('retrieve completed %s' % pformat(local_settings))
 
         retrieve_local_settings(run_settings, local_settings)
+        logger.debug('Schedule here')
         self.nodes = get_registered_vms(
                 local_settings, node_type='bootstrapped_nodes')
-
+        logger.debug('Schedule there')
         if not self.started:
             logger.debug("initial run")
             try:
@@ -298,7 +298,7 @@ class Schedule(Stage):
                 self.schedule_index = 0
 
             if self.procs_2b_rescheduled:
-                self.start_reschedule(run_settings)
+                self.start_reschedule(run_settings, local_settings)
             else:
                 self.start_schedule(run_settings, local_settings)
 
@@ -340,7 +340,7 @@ class Schedule(Stage):
                 try:
                     relative_path = "%s@%s" % (local_settings['type'],
                         local_settings['payload_destination'])
-                    destination = smartconnector.get_url_with_pkey(
+                    destination = stage.get_url_with_pkey(
                         local_settings,
                         relative_path,
                         is_relative_path=True,
@@ -388,7 +388,7 @@ class Schedule(Stage):
 
     def start_schedule(self, run_settings, local_settings):
         #FIXme replace with hrmcstage.get_parent_stage()
-        schedule_package = "bdphpcprovider.smartconnectorscheduler.stages.schedule.Schedule"
+        schedule_package = "bdphpcprovider.corestages.schedule.Schedule"
         parent_obj = models.Stage.objects.get(package=schedule_package)
         parent_stage = parent_obj.parent
         logger.debug("local_settings=%s" % local_settings)
@@ -437,10 +437,13 @@ class Schedule(Stage):
                  self.all_processes, new_processes=self.current_processes)
         logger.debug('all_processes=%s' % self.all_processes)
 
-    def start_reschedule(self, local_settings):
+    def start_reschedule(self, run_settings, local_settings):
+        bdp_username = run_settings['http://rmit.edu.au/schemas/bdp_userprofile']['username']
+        output_storage_url = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['platform_url']
+        output_storage_settings = manage.get_platform_settings(output_storage_url, bdp_username)
         _, self.current_processes = \
         start_round_robin_reschedule(self.nodes, self.procs_2b_rescheduled,
-                                     self.current_processes, local_settings)
+                                     self.current_processes, local_settings, output_storage_settings)
         self.all_processes = update_lookup_table(
                  self.all_processes,
                  new_processes=self.current_processes, reschedule=True)
@@ -576,7 +579,7 @@ def start_round_robin_schedule(nodes, processes, schedule_index, settings):
             ids, ip_address, new_processes,
             maximum_retry=int(settings['maximum_retry']))
 
-        destination = smartconnector.get_url_with_pkey(
+        destination = stage.get_url_with_pkey(
             settings,
             relative_path,
             is_relative_path=True,
@@ -604,7 +607,8 @@ def start_round_robin_schedule(nodes, processes, schedule_index, settings):
     return index, new_processes
 
 
-def start_round_robin_reschedule(nodes, procs_2b_rescheduled, current_procs, settings):
+def start_round_robin_reschedule(nodes, procs_2b_rescheduled,
+                                 current_procs, settings, output_storage_settings):
     total_nodes = len(nodes)
     all_nodes = list(nodes)
     processes = len(procs_2b_rescheduled)
@@ -619,11 +623,12 @@ def start_round_robin_reschedule(nodes, procs_2b_rescheduled, current_procs, set
     new_processes = current_procs
     rescheduled_procs = list(procs_2b_rescheduled)
     for cur_node in all_nodes:
+        logger.debug('Schedule here %s' % cur_node)
         ip_address = cur_node.ip_address
         if not ip_address:
             ip_address = cur_node.private_ip_address
         logger.debug('ip_address=%s' % ip_address)
-        relative_path = settings['type'] + '@' + settings['payload_destination']
+        relative_path = output_storage_settings['type'] + '@' + settings['payload_destination']
         procs_on_cur_node = proc_per_node
         if remaining_procs:
             procs_on_cur_node = proc_per_node + 1
@@ -638,7 +643,7 @@ def start_round_robin_reschedule(nodes, procs_2b_rescheduled, current_procs, set
             ids, ip_address, new_processes,
             status='reschedule_ready',
             maximum_retry=int(settings['maximum_retry']))
-        destination = smartconnector.get_url_with_pkey(settings,
+        destination = stage.get_url_with_pkey(settings,
             relative_path,
             is_relative_path=True,
             ip_address=ip_address)
@@ -690,7 +695,7 @@ def put_proc_ids(relative_path, ids, ip, settings):
     relative_path = os.path.join(relative_path,
                                  settings['filename_for_PIDs'])
     logger.debug('put_proc_ids=%s' % relative_path)
-    destination = smartconnector.get_url_with_pkey(settings,
+    destination = stage.get_url_with_pkey(settings,
         relative_path,
         is_relative_path=True,
         ip_address=ip)

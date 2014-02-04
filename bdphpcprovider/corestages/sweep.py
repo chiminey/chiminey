@@ -24,8 +24,7 @@ import json
 from itertools import product
 from pprint import pformat
 
-from bdphpcprovider.smartconnectorscheduler import smartconnector
-from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
+from bdphpcprovider.corestages.stage import Stage
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
 
@@ -34,6 +33,7 @@ from bdphpcprovider.platform import manage
 from bdphpcprovider import storage
 from bdphpcprovider import mytardis
 from bdphpcprovider.runsettings import getval, getvals, setval, update, SettingNotFoundException
+from bdphpcprovider.corestages import stage
 
 
 logger = logging.getLogger(__name__)
@@ -319,13 +319,13 @@ class Sweep(Stage):
         try:
             input_prefix = '%s://%s@' % (input_storage_settings['scheme'],
                                     input_storage_settings['type'])
-            values_url = smartconnector.get_url_with_pkey(
+            values_url = stage.get_url_with_pkey(
                 input_storage_settings,
                 input_prefix + os.path.join(input_storage_settings['ip_address'],
                     input_storage_offset, "initial", "values"),
                 is_relative_path=False)
             logger.debug("values_url=%s" % values_url)
-            values_e_url = smartconnector.get_url_with_pkey(
+            values_e_url = stage.get_url_with_pkey(
                 local_settings,
                 values_url,
                 is_relative_path=False)
@@ -351,7 +351,7 @@ class Sweep(Stage):
         # Get input_url directory
         input_prefix = '%s://%s@' % (input_storage_settings['scheme'],
                                 input_storage_settings['type'])
-        input_url = smartconnector.get_url_with_pkey(input_storage_settings,
+        input_url = stage.get_url_with_pkey(input_storage_settings,
             input_prefix + os.path.join(input_storage_settings['ip_address'],
                 input_storage_offset),
         is_relative_path=False)
@@ -373,7 +373,7 @@ class Sweep(Stage):
                 "run%s" % str(run_counter),
                 "input_0",)
             logger.debug("run_inputdir=%s" % run_inputdir)
-            run_iter_url = smartconnector.get_url_with_pkey(local_settings,
+            run_iter_url = stage.get_url_with_pkey(local_settings,
                 run_inputdir, is_relative_path=False)
             logger.debug("run_iter_url=%s" % run_iter_url)
 
@@ -394,7 +394,7 @@ class Sweep(Stage):
                 logger.debug("template_name=%s" % template_name)
                 v_map = {}
                 try:
-                    values_url = smartconnector.get_url_with_pkey(
+                    values_url = stage.get_url_with_pkey(
                         local_settings,
                         os.path.join(run_inputdir, "initial",
                             '%s_values' % template_name),
@@ -440,7 +440,7 @@ class Sweep(Stage):
 
             v_map = {}
             try:
-                values_url = smartconnector.get_url_with_pkey(
+                values_url = stage.get_url_with_pkey(
                     local_settings,
                     os.path.join(run_inputdir, "initial",
                         'values'),
@@ -545,16 +545,22 @@ class Sweep(Stage):
             mytardis_url,
             bdp_username)
         logger.debug(mytardis_settings)
-        if mytardis_settings['mytardis_host']:
-            def _get_exp_name_for_input(path):
-                return str(os.sep.join(path.split(os.sep)[-1:]))
-            ename = _get_exp_name_for_input(output_location)
-            logger.debug("ename=%s" % ename)
-            experiment_id = mytardis.create_experiment(
-                settings=mytardis_settings,
-                exp_id=self.experiment_id,
-                experiment_paramset=experiment_paramset,
-                expname=ename)
+        curate_data = run_settings['http://rmit.edu.au/schemas/input/mytardis']['curate_data']
+        if curate_data:
+            if mytardis_settings['mytardis_host']:
+                def _get_exp_name_for_input(path):
+                    return str(os.sep.join(path.split(os.sep)[-1:]))
+                ename = _get_exp_name_for_input(output_location)
+                logger.debug("ename=%s" % ename)
+                experiment_id = mytardis.create_experiment(
+                    settings=mytardis_settings,
+                    exp_id=self.experiment_id,
+                    experiment_paramset=experiment_paramset,
+                    expname=ename)
+            else:
+                logger.warn("no mytardis host specified")
+        else:
+            logger.warn('Data curation is off')
         return experiment_id
 
 

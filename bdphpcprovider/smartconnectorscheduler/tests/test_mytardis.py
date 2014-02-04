@@ -18,27 +18,20 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import os
-import tempfile
 import unittest
 import logging
-import logging.config
-import requests
-from requests.auth import HTTPBasicAuth
 import json
 
+import requests
+from requests.auth import HTTPBasicAuth
 from django.conf import settings
 from nose.plugins.skip import SkipTest
 
-from django.contrib.auth.models import User
-from django import test as djangotest
-
-from bdphpcprovider.smartconnectorscheduler.management.commands import view
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
-from bdphpcprovider.smartconnectorscheduler import smartconnector
 from bdphpcprovider import mytardis
-from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
+from bdphpcprovider.corestages import stage
+
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +60,7 @@ class TestTardisAPI(unittest.TestCase):
             )
 
         for fpath, content in file_info:
-            dest_url = smartconnector.get_url_with_pkey(self.settings,
+            dest_url = stage.get_url_with_pkey(self.settings,
                 fpath, is_relative_path=True)
             hrmcstages.put_file(dest_url, content.encode('utf-8'))
 
@@ -172,7 +165,7 @@ class TestTardisAPI(unittest.TestCase):
         exp_id = 0
         for file_path in file_info:
 
-            source_url = smartconnector.get_url_with_pkey(
+            source_url = stage.get_url_with_pkey(
                 self.settings, file_path,
                 is_relative_path=True)
             logger.debug("source_url=%s"  % source_url)

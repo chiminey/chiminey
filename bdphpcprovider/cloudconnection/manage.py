@@ -75,11 +75,11 @@ def get_registered_vms(settings, node_type='created_nodes'):
         logger.error("error with parsing created_nodes")
         raise
     for node in nodes:
-        vm = botoconnector.get_this_vm(node[0], settings)
-        if not vm:
+        try:
+           vm = botoconnector.get_this_vm(node[0], settings)
+           res.append(vm)
+        except Exception:
             logger.debug('vm [%s:%s] not found' % (node[0], node[1]))
-        else:
-            res.append(vm)
     logger.debug("nodes=%s" % res)
     return res
 
@@ -115,6 +115,10 @@ def is_vm_running(vm):
 
 def get_this_vm(vm_id, settings):
     return botoconnector.get_this_vm(vm_id, settings)
+
+
+def get_vm_ip(vm_id, settings):
+    return botoconnector.get_vm_ip(vm_id, settings)
 
 
 def _get_ssh_ready_vms(all_vms, settings):

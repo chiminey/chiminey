@@ -106,7 +106,7 @@ def get_all_schemas_vars():
         sch = param.schema.namespace
         name = param.name
         desc = param.description
-        choice.setdefault(sch, []).append((name,desc))
+        choice.setdefault(sch, []).append((name, desc))
 
     for sch in sorted(choice.keys()):
         choices.extend(["%s/%s (%s)" % (sch, x[0], x[1]) for x in choice[sch]])
