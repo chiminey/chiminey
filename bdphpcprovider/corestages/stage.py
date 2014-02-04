@@ -36,6 +36,54 @@ RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 logger = logging.getLogger(__name__)
 
 
+class Stage(object):
+
+    def __init__(self):
+        pass
+
+    def __init__(self, user_settings=None):
+        pass
+
+
+    def input_valid(self, settings_to_test):
+        """ Return a tuple, where the first element is True settings_to_test
+        are syntactically and semantically valid for this stage.  Otherwise,
+        return False with the second element in the tuple describing the
+        problem
+        """
+        return (True, "ok")
+        #return (False, "All arguments are assumed invalid until verified")
+
+    def triggered(self, context):
+        """
+        Return true if the directory pattern triggers this stage, or there
+        has been any other error
+        """
+        # FIXME: Need to verify that triggered is idempotent.
+        return True
+
+    def process(self, context):
+        """ perfrom the stage operation
+        """
+        pass
+
+    def output(self, context):
+        """ produce the resulting datfiles and metadata
+        """
+        pass
+
+    # @deprecated
+    # def _exists(self, context, *parts):
+    #         c = dict(context)
+    #         for p in parts:
+    #             if p in c:
+    #                 c = c[p]
+    #             else:
+    #                 logger.debug("%s not found in context" % p)
+    #                 return False
+    #         return True
+
+
 def copy_settings(dest_context, context, key):
     """
     """
@@ -48,10 +96,6 @@ def copy_settings(dest_context, context, key):
     except KeyError:
         logger.error("error on key %s" % key)
         raise
-
-
-def get_platform(platform_url):
-    return get_bdp_storage_url(platform_url)
 
 
 def get_bdp_storage_url(platform_url, username):
@@ -225,67 +269,6 @@ def get_url_with_pkey(settings, url_or_relative_path,
     return url_with_pkey
 
 
-# def get_url_with_pkey(settings, url_or_relative_path,
-#                       is_relative_path=False, ip_address='127.0.0.1'):
-#     '''
-#      This method appends private key, username, passowrd and/or rootpath
-#      parameters at end of a url. If only relative path is passed,
-#      a url is constructed based on the data @url_or_relative_path and
-#      @settings.
-
-#     Suppose
-#         url_or_relative_path = 'nectar@new_payload'
-#         ip_address = 127.0.0.1
-#         root_path = /home/centos
-#     the platform is nectar and the relative path is new_payload
-#     The new url will be ssh://127.0.0.1/new_payload?root_path=/home/centos
-
-#     :param settings:
-#     :param url_or_relative_path:
-#     :param is_destination:
-#     :param ip_address:
-#     :return:
-#     '''
-#     username = settings['USER_NAME']
-#     password = settings['PASSWORD']
-#     private_key = ''
-#     scheme = 'file'
-
-#     if is_relative_path:
-#         url = 'http://' + url_or_relative_path
-#     else:
-#         url = url_or_relative_path
-#     parsed_url = urlparse(url)
-#     platform = parsed_url.username
-#     if platform == 'nectar':
-#         if 'PRIVATE_KEY_NECTAR' in settings:
-#             private_key = settings['PRIVATE_KEY_NECTAR']
-#         scheme = 'ssh'
-#     elif platform == 'nci':
-#         if 'PRIVATE_KEY_NCI' in settings:
-#             private_key = settings['PRIVATE_KEY_NCI']
-#         scheme = 'ssh'
-#     else:
-#         platform = 'local'
-
-#     platform_object = models.Platform.objects.get(name=platform)
-#     root_path = platform_object.root_path
-#     if is_relative_path:
-#         relative_path = parsed_url.hostname
-#         url_with_pkey = '%s://%s/%s?key_filename=%s' \
-#                         '&username=%s&password=%s' \
-#                         '&root_path=%s' % (scheme, ip_address,
-#                                            relative_path, private_key,
-#                                            username, password, root_path)
-#     else:
-#         url_with_pkey = url_or_relative_path + \
-#                         '?key_filename=%s&username=%s' \
-#                         '&password=%s&root_path=%s' % (private_key,
-#                                                        username, password,
-#                                                        root_path)
-#     logger.debug("Destination %s url_pkey %s" % (str(is_relative_path), url_with_pkey))
-#     return url_with_pkey
-
 
 # def multilevel_key_exists(context, *parts):
 #     """
@@ -312,112 +295,5 @@ def get_url_with_pkey(settings, url_or_relative_path,
 #         raise KeyError("Cannot find %s in run_settings" % schema)
 #     return res
 
-
-# @deprecated
-# def set_val(settings, k, v):
-#     if not Stage.exists(settings, os.path.dirname(k)):
-#             settings[os.path.dirname(k)] = {}
-#     settings[os.path.dirname(k)][os.path.basename(k)] = v
-
-
-class Stage(object):
-
-    def __init__(self):
-        pass
-
-    def __init__(self, user_settings=None):
-        pass
-
-    def input_valid(self, settings_to_test):
-        """ Return a tuple, where the first element is True settings_to_test
-        are syntactically and semantically valid for this stage.  Otherwise,
-        return False with the second element in the tuple describing the
-        problem.  Cannot change stage state.
-        """
-        return (True, "ok")
-        #return (False, "All arguments are assumed invalid until verified")
-
-    def triggered(self, context):
-        """
-        Return true if the directory pattern triggers this stage, or there
-        has been any other error.  SHould not change stage of stage (i.e., store any self)
-        """
-        # FIXME: Need to verify that triggered is idempotent.
-        return True
-
-    def process(self, context):
-        """ perfrom the stage operation. Can change stage state, but not change context
-        """
-        pass
-
-    def output(self, context):
-        """ produce the resulting datfiles and metadata. can read stage state and change
-            context
-        """
-        pass
-
-    # @deprecated
-    # def _exists(self, context, *parts):
-    #         c = dict(context)
-    #         for p in parts:
-    #             if p in c:
-    #                 c = c[p]
-    #             else:
-    #                 logger.debug("%s not found in context" % p)
-    #                 return False
-    #         return True
-
-
 class UI(object):
     pass
-
-
-# @deprecated
-# class ParallelStage(Stage):
-#     def triggered(self, context):
-#         return True
-
-#     def process(self, context):
-#         pass
-
-#     def output(self, context):
-#         pass
-
-
-@deprecated
-class SequentialStage(Stage):
-
-    def __init__(self, stages):
-        self.stages = stages
-
-    def triggered(self, context):
-        return True
-
-    def process(self, context):
-        for stage in self.stages:
-            if stage.triggered(context):
-                stage.process(context)
-                stage.output(context)
-
-    def output(self, context):
-        pass
-
-
-# @deprecated
-# class SmartConnector(object):
-#     """ A smart Connector is a container for stages """
-
-#     def __init__(self, stage=None):
-#         self.stages = []
-#         if stage:
-#             self.stages.append(stage)
-
-#     def register(self, stage):
-#         self.stages.append(stage)
-
-#     def process(self, context):
-#         if self.stage.triggered(context):
-#             self.stage.process(context)
-#             self.stage.output(context)
-#         else:
-#             raise PackageFailedError()

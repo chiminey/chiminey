@@ -18,30 +18,18 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import os
-import tempfile
 import logging
-import logging.config
-import json
-from pprint import pformat
-from tastypie.test import ResourceTestCase
-from tastypie.models import ApiKey
-
-from flexmock import flexmock
-from django.contrib.auth.models import User, Group
-from django.contrib.auth.models import User
-from django.contrib.auth.models import Permission
-from django.core.urlresolvers import reverse
-from django.db.models import Q
-
 from urlparse import urlparse
+
+from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import Permission
+from django.db.models import Q
 from django.template.defaultfilters import slugify
 
-from bdphpcprovider.smartconnectorscheduler.management.commands import view
+from tastypie.test import ResourceTestCase
+from tastypie.models import ApiKey
 from bdphpcprovider.smartconnectorscheduler import models
-from bdphpcprovider.smartconnectorscheduler import hrmcstages
-from bdphpcprovider.smartconnectorscheduler import smartconnector
-from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
+
 
 logger = logging.getLogger(__name__)
 
@@ -510,7 +498,7 @@ class ContextResourceTest(ResourceTestCase):
 
         composite_stage = models.Stage.objects.create(name="basic_connector",
              description="encapsulates a workflow",
-             package="bdphpcprovider.smartconnectorscheduler.stages.composite.ParallelStage",
+             package="bdphpcprovider.smartconnectorscheduler.corestages.composite.ParallelStage",
              order=100)
 
 

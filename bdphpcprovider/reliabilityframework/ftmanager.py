@@ -1,4 +1,4 @@
-# Copyright (C) 2013, RMIT University
+# Copyright (C) 2014, RMIT University
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to
@@ -19,14 +19,16 @@
 # IN THE SOFTWARE.
 
 import logging
-
+from bdphpcprovider.reliabilityframework.failuredetection import FailureDetection
+from bdphpcprovider.cloudconnection import get_this_vm
 logger = logging.getLogger(__name__)
 
 
 class FTManager():
     def collect_failed_processes(self, source, destination):
         for iterator, process in enumerate(source):
-            if process['status'] == 'failed':
+            if process['status'] == 'failed' and \
+                    process not in destination:
                 destination.append(process)
 
     def flag_all_processes(self, process_lists, ip_address):
@@ -54,7 +56,92 @@ class FTManager():
     def decrease_max_retry(self, process_lists, ip_address, process_id):
         for process_list in process_lists:
             for process in process_list:
-                if process['ip_address'] == ip_address \
+                if str(process['ip_address']) is str(ip_address) \
                     and process['id'] == process_id:
                     retry = int(process['retry_left'])
-                    process['retry_left'] = retry - 1
+                    if retry > 0:
+                        process['retry_left'] = retry - 1
+
+    def manage_failed_process(self, settings, process_id, host_node, host_node_id,
+                              host_node_ip, failed_nodes, executed_procs, current_procs, all_procs,
+                              procs_2b_rescheduled):
+        failure_detection = FailureDetection()
+        list_of_process_lists = [executed_procs, current_procs, all_procs]
+        self.decrease_max_retry(list_of_process_lists, host_node_ip, process_id)
+        if failure_detection.node_terminated(settings, host_node_id):
+            if not failure_detection.recorded_failed_node(
+                            failed_nodes, host_node_ip):
+                failed_nodes.append(host_node)
+            self.flag_all_processes(list_of_process_lists, host_node_ip)
+        else:
+            self.flag_this_process(list_of_process_lists, host_node_ip, process_id)
+        failed_processes = self.get_total_failed_processes(current_procs)
+        self.collect_failed_processes(current_procs, procs_2b_rescheduled)
+        return failed_processes
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

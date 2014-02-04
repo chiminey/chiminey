@@ -46,6 +46,8 @@ def setup_settings(run_settings):
     # settings['input_location'] = run_settings[
     #     'http://rmit.edu.au/schemas/input/system']['input_location']
 
+    local_settings['curate_data'] = run_settings['http://rmit.edu.au/schemas/input/mytardis']['curate_data']
+
     # for key in ['nci_user', 'nci_password']:
     #     settings[key] = \
     #         run_settings[models.UserProfile.PROFILE_SCHEMA_NS][key]

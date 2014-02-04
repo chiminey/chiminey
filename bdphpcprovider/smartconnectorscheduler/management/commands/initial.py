@@ -193,7 +193,7 @@ class Command(BaseCommand):
                 }
                 ],
             # we might want to reuse schemas in muliple contextsets
-            # hence we could merge next too stages, for example.
+            # hence we could merge next too corestages, for example.
             # However, current ContextParameterSets are unamed in the
             # URI so we can't identify which one to use.
             # TODO: testing schemas are probably deprecated
@@ -368,6 +368,7 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/input/mytardis':
                 [u'MyTardis',
                 {
+                u'curate_data': {'type':models.ParameterName.NUMERIC, 'subtype':'bool', 'ranking':2, 'initial':1, 'description': 'Curate execution output', 'help_text': 'Curate data using selected MyTardis'},
                 u'mytardis_platform': {'type':models.ParameterName.STRLIST, 'subtype':'mytardis', 'initial': 0, 'description':'MyTardis Platform', 'ranking':1, 'help_text':'Select MyTardis platfrom name'},
                 u'experiment_id': {'type':models.ParameterName.NUMERIC, 'subtype':'natural', 'initial': 0, 'description':'MyTardis experiment ID', 'ranking':0, 'help_text':'Use 0 for new experiment'},
                 }
@@ -622,15 +623,15 @@ class Command(BaseCommand):
 
     def define_hrmc(self):
 
-        self.configure_package = "bdphpcprovider.smartconnectorscheduler.stages.configure.Configure"
-        self.create_package = "bdphpcprovider.smartconnectorscheduler.stages.create.Create"
-        self.bootstrap_package = "bdphpcprovider.smartconnectorscheduler.stages.bootstrap.Bootstrap"
-        self.schedule_package = "bdphpcprovider.smartconnectorscheduler.stages.schedule.Schedule"
-        self.execute_package = "bdphpcprovider.smartconnectorscheduler.stages.execute.Execute"
-        self.wait_package = "bdphpcprovider.smartconnectorscheduler.stages.wait.Wait"
+        self.configure_package = "bdphpcprovider.corestages.configure.Configure"
+        self.create_package = "bdphpcprovider.corestages.create.Create"
+        self.bootstrap_package = "bdphpcprovider.corestages.bootstrap.Bootstrap"
+        self.schedule_package = "bdphpcprovider.corestages.schedule.Schedule"
+        self.execute_package = "bdphpcprovider.corestages.execute.Execute"
+        self.wait_package = "bdphpcprovider.corestages.wait.Wait"
         self.transform_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc2.transform.Transform"
         self.converge_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc2.converge.Converge"
-        self.destroy_package = "bdphpcprovider.smartconnectorscheduler.stages.destroy.Destroy"
+        self.destroy_package = "bdphpcprovider.corestages.destroy.Destroy"
 
         hrmc_composite_stage, _ = models.Stage.objects.get_or_create(name="hrmc_connector",
             description="Encapsultes HRMC smart connector workflow",
@@ -743,7 +744,7 @@ class Command(BaseCommand):
 
         sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep_make",
             description="Sweep Test",
-            package="bdphpcprovider.smartconnectorscheduler.stages.sweep.Sweep",
+            package="bdphpcprovider.corestages.sweep.Sweep",
             order=100)
         sweep_stage.update_settings({
             # FIXME: move random_numbers into system schema
@@ -755,14 +756,14 @@ class Command(BaseCommand):
             })
 
         sweep, _ = models.Directive.objects.get_or_create(name="sweep_vasp",
-            defaults={'description': "VASP Sweep Connector"},
+            description="VASP Sweep Connector",
             stage=sweep_stage)
 
     def define_hrmc_sweep(self):
 
         sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep",
             description="Sweep Test",
-            package="bdphpcprovider.smartconnectorscheduler.stages.sweep.Sweep",
+            package="bdphpcprovider.corestages.sweep.Sweep",
             order=100)
         sweep_stage.update_settings({
             u'http://rmit.edu.au/schemas/stages/sweep':
@@ -777,14 +778,14 @@ class Command(BaseCommand):
             })
         # FIXME: tasks.progress_context does not load up composite stage settings
         sweep, _ = models.Directive.objects.get_or_create(name="sweep",
-            defaults={'description': "HRMC Sweep Connector"},
+            description="HRMC Sweep Connector",
             stage=sweep_stage)
 
     def define_sweep_remotemake(self):
 
         sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep_make",
             description="Sweep Test",
-            package="bdphpcprovider.smartconnectorscheduler.stages.sweep.Sweep",
+            package="bdphpcprovider.corestages.sweep.Sweep",
             order=100)
         sweep_stage.update_settings({
             # FIXME: move random_numbers into system schema
@@ -795,7 +796,7 @@ class Command(BaseCommand):
 
             })
         sweep, _ = models.Directive.objects.get_or_create(name="sweep_make",
-            defaults={'description': "Remote Make Sweep Connector"},
+            description="Remote Make Sweep Connector",
             stage=sweep_stage)
 
     def setup_directive_args(self):
@@ -843,7 +844,7 @@ class Command(BaseCommand):
         local_fs = FileSystemStorage(location=local_filesys_rootpath)
         self.copy_dir_stage = "bdphpcprovider.smartconnectorscheduler.stages.movement.CopyDirectoryStage"
         self.program_stage = "bdphpcprovider.smartconnectorscheduler.stages.program.LocalProgramStage"
-        # Define all the stages that will make up the command.  This structure
+        # Define all the corestages that will make up the command.  This structure
         # has two layers of composition
         copy_stage, _ = models.Stage.objects.get_or_create(name="copydir",
              description="data movemement operation",
@@ -869,7 +870,7 @@ class Command(BaseCommand):
 
     def define_copydir(self, local_filesys_rootpath):
         self.copy_file_stage = "bdphpcprovider.smartconnectorscheduler.stages.movement.CopyFileStage"
-        # Define all the stages that will make up the command.  This structure
+        # Define all the corestages that will make up the command.  This structure
         # has two layers of composition
         copy_stage, _ = models.Stage.objects.get_or_create(name="copy",
              description="data movemement operation",
@@ -886,7 +887,7 @@ class Command(BaseCommand):
         self.null_package = "bdphpcprovider.smartconnectorscheduler.stages.nullstage.NullStage"
         self.parallel_package = "bdphpcprovider.smartconnectorscheduler.stages.composite.ParallelStage"
         self.hrmc_parallel_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc_composite.HRMCParallelStage"
-        # Define all the stages that will make up the command.  This structure
+        # Define all the corestages that will make up the command.  This structure
         # has two layers of composition
         composite_stage, _ = models.Stage.objects.get_or_create(name="basic_connector",
              description="encapsulates a workflow",
@@ -901,7 +902,7 @@ class Command(BaseCommand):
             description="This is a setup stage of something",
             package=self.null_package,
             order=0)
-        # stage settings are usable from subsequent stages in a run so only
+        # stage settings are usable from subsequent corestages in a run so only
         # need to define once for first null or parallel stage
         setup_stage.update_settings(
             {

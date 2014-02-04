@@ -20,28 +20,26 @@
 # IN THE SOFTWARE.
 
 import json
-import ast
 import re
 import logging
 import os
-import logging.config
 from pprint import pformat
 from itertools import product
-from bdphpcprovider.platform import manage
-
-from bdphpcprovider.smartconnectorscheduler.smartconnector import (
-    Stage, get_url_with_pkey)
-from bdphpcprovider.smartconnectorscheduler import smartconnector
 
 from django.template import TemplateSyntaxError
 from django.template import Context, Template
 
+from bdphpcprovider.platform import manage
+from bdphpcprovider.corestages import stage
+from bdphpcprovider.corestages.stage import (
+    Stage, get_url_with_pkey)
 from bdphpcprovider import messages
 from bdphpcprovider import storage
-from bdphpcprovider.runsettings import getval, setvals, getvals, update, SettingNotFoundException
+from bdphpcprovider.runsettings import getval, setvals, update, SettingNotFoundException
 
 
 from . import setup_settings
+
 
 logger = logging.getLogger(__name__)
 
@@ -105,15 +103,15 @@ class MakeUploadStage(Stage):
         map_initial_location = "%s/%s/initial" % (input_prefix, input_offset)
         logger.debug("map_initial_location=%s" % map_initial_location)
 
-        settings = setup_settings(run_settings)
-        logger.debug("settings=%s" % settings)
+        local_settings = setup_settings(run_settings)
+        logger.debug("local_settings=%s" % local_settings)
 
-        values_map = _load_values_map(settings, map_initial_location)
+        values_map = _load_values_map(local_settings, map_initial_location)
         logger.debug("values_map=%s" % values_map)
         _upload_variations_inputs(
-            settings,
+            local_settings,
             map_initial_location, values_map)
-        _upload_payload(settings, settings['payload_source'], values_map)
+        _upload_payload(local_settings, local_settings['payload_source'], values_map)
 
         messages.info(run_settings, "1: upload done")
 
@@ -158,7 +156,7 @@ def _upload_payload(settings, source_url, values_map):
     logger.debug("comp_pltf_settings=%s" % pformat(comp_pltf_settings))
     settings.update(comp_pltf_settings)
 
-    encoded_d_url = smartconnector.get_url_with_pkey(settings,
+    encoded_d_url = stage.get_url_with_pkey(settings,
         dest_url, is_relative_path=True, ip_address=settings['host'])
 
     storage.copy_directories(encoded_s_url, encoded_d_url)
@@ -168,7 +166,7 @@ def _upload_payload(settings, source_url, values_map):
             settings,
             values_map).items():
 
-        content_url = smartconnector.get_url_with_pkey(
+        content_url = stage.get_url_with_pkey(
             settings,
             os.path.join(dest_url, content_fname),
             is_relative_path=True, ip_address=settings['host'])
@@ -193,7 +191,7 @@ def _upload_variations_inputs(settings, source_url_initial, values_map):
         bdp_username)
     settings.update(comp_pltf_settings)
 
-    encoded_d_url = smartconnector.get_url_with_pkey(settings,
+    encoded_d_url = stage.get_url_with_pkey(settings,
         dest_url, is_relative_path=True, ip_address=settings['host'])
 
     storage.copy_directories(encoded_s_url, encoded_d_url)
@@ -203,7 +201,7 @@ def _upload_variations_inputs(settings, source_url_initial, values_map):
             settings,
             values_map).items():
 
-        content_url = smartconnector.get_url_with_pkey(
+        content_url = stage.get_url_with_pkey(
             settings,
             os.path.join(dest_url, content_fname),
             is_relative_path=True, ip_address=settings['host'])
@@ -216,7 +214,7 @@ def _upload_variations_inputs(settings, source_url_initial, values_map):
 
 
 def _save_values(settings, url, context):
-    values_url = smartconnector.get_url_with_pkey(settings,
+    values_url = stage.get_url_with_pkey(settings,
         os.path.join(url, VALUES_FNAME),
         is_relative_path=True, ip_address=settings['host'])
     storage.put_file(values_url, json.dumps(context))
@@ -225,7 +223,7 @@ def _save_values(settings, url, context):
 def _instantiate_context(source_url, settings, context):
 
     templ_pat = re.compile("(.*)_template")
-    encoded_s_url = smartconnector.get_url_with_pkey(settings,
+    encoded_s_url = stage.get_url_with_pkey(settings,
         source_url, is_relative_path=False)
 
     logger.debug("encoded_s_url=%s" % encoded_s_url)
@@ -238,7 +236,7 @@ def _instantiate_context(source_url, settings, context):
         templ_mat = templ_pat.match(fname)
         if templ_mat:
             base_fname = templ_mat.group(1)
-            basename_url_with_pkey = smartconnector.get_url_with_pkey(
+            basename_url_with_pkey = stage.get_url_with_pkey(
                 settings,
                 os.path.join(
                     source_url,
@@ -289,8 +287,3 @@ def _create_variations(values_map, settings, variation_map):
         run_counter += 1
         variations.append(context)
     return variations
-
-
-
-
-

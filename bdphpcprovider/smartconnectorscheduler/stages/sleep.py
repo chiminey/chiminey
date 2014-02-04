@@ -1,4 +1,4 @@
-from bdphpcprovider.smartconnectorscheduler.smartconnector import Stage
+from bdphpcprovider.corestages.stage import Stage
 
 class Sleep(Stage):
     """
