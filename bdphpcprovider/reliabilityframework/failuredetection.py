@@ -61,6 +61,15 @@ class FailureDetection():
         return False
 
 
-
+    def detect_failure(self, exception):
+        logger.debug('exception is %s ' % exception.__class__)
+        try:
+            logger.debug(exception.__class__)
+            raise exception.__class__
+        except (AuthError, SSHException, socket.error):
+            return True, 'ssh_failure'
+        except Exception as e:
+            return True, e
+        return False, ''
 
 

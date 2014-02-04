@@ -107,8 +107,7 @@ class Configure(Stage):
         # output_storage_url = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['platform_url']
         output_storage_settings = manage.get_platform_settings(output_storage_url, bdp_username)
 
-        # input_storage_url = run_settings[
-        #     RMIT_SCHEMA + '/platform/storage/input']['platform_url']
+
         input_storage_url = getval(run_settings, '%s/platform/storage/input/platform_url' % RMIT_SCHEMA)
         input_storage_settings = manage.get_platform_settings(
             input_storage_url,
@@ -126,7 +125,9 @@ class Configure(Stage):
         #     RMIT_SCHEMA + '/system'][u'contextid'])
 
         logger.debug("self.contextid=%s" % self.contextid)
+        self.output_loc_offset = str(self.contextid)
 
+        '''
         self.output_loc_offset = str(self.contextid)
         logger.debug("suffix=%s" % self.output_loc_offset)
         try:
@@ -136,18 +137,13 @@ class Configure(Stage):
                'hrmc' + self.output_loc_offset)
         except SettingNotFoundException:
             pass
-        # try:
-        #     #fixme, hrmc should be variable..so configure can be used in any connector
-        #     self.output_loc_offset = os.path.join(
-        #         run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset'],
-        #         'hrmc' + self.output_loc_offset)
-        # except KeyError:
-        #     pass
-
-        # run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset'] = self.output_loc_offset
-        # offset = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset']
-
-        self.job_dir = manage.get_job_dir(output_storage_settings, self.output_loc_offset)
+        '''
+        self.output_loc_offset = self.set_offset_suffix(run_settings, 'hrmc')
+        self.copy_to_scratch_space(run_settings, local_settings)
+        '''
+        run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset'] = self.output_loc_offset
+        offset = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset']
+        self.job_dir = manage.get_job_dir(output_storage_settings, offset)
         iter_inputdir = os.path.join(self.job_dir, "input_0")
         logger.debug("iter_inputdir=%s" % iter_inputdir)
         #todo: input location will evenatually be replaced by the scratch space that was used by the sweep
@@ -165,8 +161,12 @@ class Configure(Stage):
             is_relative_path=False)
         logger.debug("destination_url=%s" % destination_url)
         storage.copy_directories(source_url, destination_url)
+        '''
 
-        # output_location = self.output_loc_offset  # run_settings[RMIT_SCHEMA + '/input/system'][u'output_location']
+
+        output_location = self.output_loc_offset  # run_settings[RMIT_SCHEMA + '/input/system'][u'output_location']
+        self.experiment_id = self.curate_date(run_settings, location=output_location)
+        '''
 
         try:
             self.experiment_id = int(getval(run_settings, '%s/input/mytardis/experiment_id' % RMIT_SCHEMA))
@@ -216,6 +216,7 @@ class Configure(Stage):
                 logger.warn("no mytardis host specified")
         else:
             logger.warn('Data curation is off')
+        '''
 
     def output(self, run_settings):
 
@@ -238,3 +239,88 @@ class Configure(Stage):
         # run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset'] = self.output_loc_offset
 
         return run_settings
+
+    def copy_to_scratch_space(self, run_settings, local_settings):
+        bdp_username = run_settings['http://rmit.edu.au/schemas/bdp_userprofile']['username']
+        output_storage_url = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['platform_url']
+        output_storage_settings = manage.get_platform_settings(output_storage_url, bdp_username)
+
+        run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset'] = self.output_loc_offset
+        offset = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset']
+        self.job_dir = manage.get_job_dir(output_storage_settings, offset)
+        iter_inputdir = os.path.join(self.job_dir, "input_0")
+        logger.debug("iter_inputdir=%s" % iter_inputdir)
+
+        input_location = run_settings[
+            RMIT_SCHEMA + '/input/system']['input_location']
+        logger.debug("input_location=%s" % input_location)
+        #todo: input location will evenatually be replaced by the scratch space that was used by the sweep
+        #todo: the sweep will indicate the location of the scratch space in the run_settings
+        #todo: add scheme (ssh) to inputlocation
+        source_url = stage.get_url_with_pkey(local_settings, input_location)
+        logger.debug("source_url=%s" % source_url)
+
+        destination_url = stage.get_url_with_pkey(
+            output_storage_settings,
+            '%s://%s@%s' % (output_storage_settings['scheme'],
+                             output_storage_settings['type'],
+                             iter_inputdir),
+            is_relative_path=False)
+        logger.debug("destination_url=%s" % destination_url)
+        storage.copy_directories(source_url, destination_url)
+
+
+    def set_offset_suffix(self, run_settings, name):
+        output_loc_offset = str(self.contextid)
+        logger.debug("suffix=%s" % output_loc_offset)
+        try:
+            #fixme, hrmc should be variable..so configure can be used in any connector
+            output_loc_offset = os.path.join(
+                run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset'],
+                name + self.output_loc_offset)
+        except KeyError:
+            pass
+        return output_loc_offset
+
+    def curate_date(self, run_settings, **kwargs):
+        bdp_username = run_settings['http://rmit.edu.au/schemas/bdp_userprofile']['username']
+        try:
+            experiment_id = int(stage.get_existing_key(run_settings,
+                RMIT_SCHEMA + '/input/mytardis/experiment_id'))
+            location = kwargs['location']
+        except KeyError:
+            experiment_id = 0
+        except ValueError:
+            experiment_id = 0
+        curate_data = run_settings['http://rmit.edu.au/schemas/input/mytardis']['curate_data']
+        if curate_data:
+            mytardis_url = run_settings['http://rmit.edu.au/schemas/input/mytardis']['mytardis_platform']
+            mytardis_settings = manage.get_platform_settings(mytardis_url, bdp_username)
+            logger.debug(mytardis_settings)
+            #local_settings.update(mytardis_settings)
+
+            if mytardis_settings['mytardis_host']:
+                EXP_DATASET_NAME_SPLIT = 2
+
+                def _get_exp_name_for_input(path):
+                    return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
+
+                ename = _get_exp_name_for_input(location)
+                logger.debug("ename=%s" % ename)
+                self.experiment_id = mytardis.create_experiment(
+                    settings=mytardis_settings,
+                    exp_id=self.experiment_id,
+                    expname=ename,
+                    experiment_paramset=[
+                        mytardis.create_paramset("hrmcexp", []),
+                        mytardis.create_graph_paramset("expgraph",
+                            name="hrmcexp",
+                            graph_info={"axes":["iteration", "criterion"], "legends":["criterion"], "precision":[0, 2]},
+                            value_dict={},
+                            value_keys=[["hrmcdset/it", "hrmcdset/crit"]])
+                ])
+            else:
+                logger.warn("no mytardis host specified")
+        else:
+            logger.warn('Data curation is off')
+        return experiment_id

@@ -1,4 +1,4 @@
-# Copyright (C) 2013, RMIT University
+# Copyright (C) 2014, RMIT University
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to
@@ -59,7 +59,9 @@ class Schedule(Stage):
             created_str = getval(run_settings,
                                  '%s/stages/create/created_nodes' % RMIT_SCHEMA)
             created_nodes = ast.literal_eval(created_str)
-            if len(failed_nodes) == len(created_nodes) or len(created_nodes) == 0:
+            running_created_nodes = [x for x in self.created_nodes if str(x[3]) == 'running']
+            logger.debug('running_created_nodes=%s' % running_created_nodes)
+            if len(running_created_nodes) == 0:
                 return False
         except SettingNotFoundException, e:
             logger.debug(e)
@@ -423,7 +425,7 @@ class Schedule(Stage):
         offset = getval(run_settings, '%s/platform/storage/output/offset' % RMIT_SCHEMA)
         # offset = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset']
         job_dir = manage.get_job_dir(output_storage_settings, offset)
-        self.total_processes = stage.get_total_templates(
+        self.total_processes = get_total_templates(
             [self.run_map], run_settings=run_settings,
             output_storage_settings=output_storage_settings, job_dir=job_dir)
         logger.debug('total_processes=%d' % self.total_processes)
@@ -757,3 +759,36 @@ def job_finished(ip, settings, destination):
             if 'All processes are scheduled' in line:
                 return True
     return False
+
+
+#todo: check get_total_templates() in composite.py
+def get_total_templates(maps, **kwargs):
+        run_settings = kwargs['run_settings']
+        output_storage_settings = kwargs['output_storage_settings']
+        job_dir = kwargs['job_dir']
+        try:
+            id = stage.get_existing_key(
+                run_settings, 'http://rmit.edu.au/schemas/system/id')
+        except KeyError, e:
+            logger.error(e)
+            id = 0
+        iter_inputdir = os.path.join(job_dir, "input_%s" % id)
+        url_with_pkey = stage.get_url_with_pkey(
+            output_storage_settings,
+            '%s://%s@%s' % (output_storage_settings['scheme'],
+                           output_storage_settings['type'],
+                            iter_inputdir),
+            is_relative_path=False)
+        logger.debug(url_with_pkey)
+        input_dirs = storage.list_dirs(url_with_pkey)
+        for iter, template_map in enumerate(maps):
+            logger.debug("template_map=%s" % template_map)
+            map_keys = template_map.keys()
+            logger.debug("map_keys %s" % map_keys)
+            map_ranges = [list(template_map[x]) for x in map_keys]
+            product = 1
+            for i in map_ranges:
+                product = product * len(i)
+            total_templates = product * len(input_dirs)
+            logger.debug("total_templates=%d" % (total_templates))
+        return total_templates
