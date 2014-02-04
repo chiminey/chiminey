@@ -38,6 +38,8 @@ from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler import storage
 from bdphpcprovider.corestages import stage
 
+from bdphpcprovider import messages
+
 logger = logging.getLogger(__name__)
 
 
@@ -560,15 +562,16 @@ def make_runcontext_for_directive(platform_name, directive_name,
     run_settings = _make_run_settings_for_command(command_args, run_settings)
     logger.debug("updated run_settings=%s" % run_settings)
 
-    stage = directive.stage
-
     try:
         settings_valid, problem = check_settings_valid(run_settings,
             user_settings,
-            stage)
+            directive.stage)
     except Exception, e:
         logger.error(e)
-        raise
+        messages.error(run_settings, "0: internal error (%s stage):%s" %
+                       (directive.stage.name, e))
+        raise InvalidInputError("0: internal error (%s stage):%s" %
+                       (directive.stage.name, e))
 
     if not settings_valid:
         raise InvalidInputError(problem)
@@ -576,10 +579,10 @@ def make_runcontext_for_directive(platform_name, directive_name,
     run_settings[u'http://rmit.edu.au/schemas/system'][u'platform'] = platform_name
     run_settings[u'http://rmit.edu.au/schemas/system'][u'contextid'] = 0
 
-    run_context = _make_new_run_context(stage,
+    run_context = _make_new_run_context(directive.stage,
         profile, directive, parent, run_settings)
     logger.debug("run_context =%s" % run_context)
-    run_context.current_stage = stage
+    run_context.current_stage = directive.stage
     run_context.save()
 
     run_settings[u'http://rmit.edu.au/schemas/system'][u'contextid'] = run_context.id

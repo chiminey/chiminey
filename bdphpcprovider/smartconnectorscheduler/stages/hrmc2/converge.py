@@ -375,7 +375,7 @@ class Converge(Stage):
             logger.debug("Total Iterations: %d" % self.id)
             self._ready_final_output(min_crit_node, min_crit_index, output_storage_settings, mytardis_settings, run_settings)
             messages.success(run_settings, "%s: finished" % (self.id + 1))
-        logger.error('Current min criterion: %f, Prev '
+        logger.debug('Current min criterion: %f, Prev '
                      'criterion: %f' % (min_crit, self.prev_criterion))
 
         self.criterion = min_crit
@@ -402,7 +402,7 @@ class Converge(Stage):
 
         node_dirs = storage.list_dirs(dest_url)
         logger.debug("node_dirs=%s" % node_dirs)
-        curate_data = run_settings['http://rmit.edu.au/schemas/input/mytardis']['curate_data']
+        curate_data = (getval(run_settings, '%s/input/mytardis/curate_data' % RMIT_SCHEMA))
         if curate_data:
             if mytardis_settings['mytardis_host']:
 
@@ -575,6 +575,9 @@ class Converge(Stage):
 
                 for m, node_dir in enumerate(node_dirs):
 
+                    #FIXME: this calculation should be done as in extract_psd_func
+                    # pulling directly from data_errors rather than passing in
+                    # through nested function.
                     dataerrors_url = stage.get_url_with_pkey(output_storage_settings,
                         output_prefix + os.path.join(new_output_dir, node_dir, DATA_ERRORS_FILE), is_relative_path=False)
                     dataerrors_content = storage.get_file(dataerrors_url)
@@ -632,8 +635,27 @@ class Converge(Stage):
                             if i == 0:
                                 continue
                             columns = line.split()
-                            xs.append(float(columns[0]))
-                            ys.append(float(columns[1]))
+
+                            val = columns[0]
+                            val = re_dbl_fort.sub(r'\1E\2', val)
+                            logger.debug("val=%s" % val)
+                            try:
+                                x = float(val)
+                            except ValueError:
+                                logger.warn("could not parse value on line %s" % i)
+                                continue
+
+                            val = columns[1]
+                            val = re_dbl_fort.sub(r'\1E\2', val)
+                            logger.debug("val=%s" % val)
+                            try:
+                                y = float(val)
+                            except ValueError:
+                                logger.warn("could not parse value on line %s" % i)
+                                continue
+
+                            xs.append(x)
+                            ys.append(y)
                         res = {"hrmcdfile/r1": xs, "hrmcdfile/g1": ys}
                         return res
 

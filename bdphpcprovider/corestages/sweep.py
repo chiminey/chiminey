@@ -545,7 +545,7 @@ class Sweep(Stage):
             mytardis_url,
             bdp_username)
         logger.debug(mytardis_settings)
-        curate_data = run_settings['http://rmit.edu.au/schemas/input/mytardis']['curate_data']
+        curate_data = getval(run_settings, '%s/input/mytardis/curate_data' % RMIT_SCHEMA)
         if curate_data:
             if mytardis_settings['mytardis_host']:
                 def _get_exp_name_for_input(path):
