@@ -44,7 +44,7 @@ class Create(Stage):
         self.platform_type = None
         logger.debug("Create stage initialized")
 
-    def triggered(self, run_settings):
+    def is_triggered(self, run_settings):
         """
             Return True if there is a platform
             but not group_id

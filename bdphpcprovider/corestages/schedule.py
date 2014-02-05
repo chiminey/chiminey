@@ -50,7 +50,7 @@ class Schedule(Stage):
     def __init__(self, user_settings=None):
         logger.debug('Schedule stage initialised')
 
-    def triggered(self, run_settings):
+    def is_triggered(self, run_settings):
         #fixme what happens if no nodes are available for scheduling
         try:
             failed_str = getval(run_settings,
@@ -745,7 +745,7 @@ def update_lookup_table(all_processes, reschedule=False, **kwargs):
 #FIXME: what happens if a job never finishes?
 def job_finished(ip, settings, destination):
     """
-        Return True if package job on instance_id has job_finished
+        Return True if package job on instance_id has is_job_finished
     """
     ssh = open_connection(ip_address=ip, settings=settings)
     makefile_path = storage.get_make_path(destination)

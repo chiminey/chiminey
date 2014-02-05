@@ -54,7 +54,7 @@ class MakeFinishedStage(Stage):
     def input_valid(self, settings_to_test):
             return (True, "ok")
 
-    def triggered(self, run_settings):
+    def is_triggered(self, run_settings):
 
         # if we have no runs_left then we must have finished all the runs
         try:

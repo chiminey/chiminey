@@ -36,7 +36,7 @@ from bdphpcprovider.smartconnectorscheduler.errors import ContextKeyMissing, Inv
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler import storage
-from bdphpcprovider.corestages import stage
+from bdphpcprovider.storage import get_url_with_pkey
 
 from bdphpcprovider import messages
 
@@ -656,15 +656,15 @@ def _make_new_run_context(stage, profile, directive, parent, run_settings):
 #              {'user_settings': user_settings})  # obviously need to cache this
 #             logger.debug("stage=%s", stage)
 
-#             if stage.triggered(run_settings):
-#                 logger.debug("triggered")
+#             if stage.is_triggered(run_settings):
+#                 logger.debug("is_triggered")
 #                 stage.process(run_settings)
 #                 run_settings = stage.output(run_settings)
 #                 logger.debug("updated run_settings=%s" % run_settings)
 #                 run_context.update_run_settings(run_settings)
 #                 logger.debug("run_settings=%s" % run_settings)
 #             else:
-#                 logger.debug("not triggered")
+#                 logger.debug("not is_triggered")
 
 #             # advance to the next stage
 #             current_stage = run_context.current_stage.get_next_stage(run_settings)
@@ -736,7 +736,7 @@ def generate_rands(settings, start_range,  end_range, num_required, start_index)
     # FIXME: there must be an third party library that does this more
     # effectively.
     rand_nums = []
-    num_url = stage.get_url_with_pkey(settings, settings['random_numbers'],
+    num_url = get_url_with_pkey(settings, settings['random_numbers'],
         is_relative_path=False)
     random_content = storage.get_file(num_url)
     # FIXME: this loads the entire file, which could be very large.

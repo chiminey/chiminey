@@ -55,8 +55,7 @@ class MakeUploadStage(Stage):
     def input_valid(self, settings_to_test):
         return (True, "ok")
 
-    def triggered(self, run_settings):
-
+    def is_triggered(self, run_settings):
         try:
             upload_makefile_done = int(getval(run_settings, '%s/stages/upload_makefile/done' % RMIT_SCHEMA))
         except (ValueError, SettingNotFoundException):

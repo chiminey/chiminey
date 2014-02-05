@@ -31,14 +31,14 @@ class NullStage(Stage):
     def __init__(self, user_settings=None):
         pass
 
-    def triggered(self, run_settings):
+    def is_triggered(self, run_settings):
         """
         Return true if the directory pattern triggers this stage, or there
         has been any other error
         """
-        # Remember: context is immutable in triggered
-        #FIXME: triggered should make deep copy of context to ensure that it is not modified.
-        # FIXME: Need to verify that triggered is idempotent.
+        # Remember: context is immutable in is_triggered
+        #FIXME: is_triggered should make deep copy of context to ensure that it is not modified.
+        # FIXME: Need to verify that is_triggered is idempotent.
         logger.debug("Null Stage Triggered?")
         logger.debug("run_settings=%s" % run_settings)
 

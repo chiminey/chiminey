@@ -31,7 +31,9 @@ from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider import mytardis
 from bdphpcprovider import messages
 from bdphpcprovider import storage
+
 from bdphpcprovider.runsettings import getval, getvals, setval, update, SettingNotFoundException
+from bdphpcprovider.storage import get_url_with_pkey
 
 
 logger = logging.getLogger(__name__)
@@ -49,8 +51,7 @@ class Configure(Stage):
     def __init__(self, user_settings=None):
         self.job_dir = "hrmcrun"  # TODO: make a stageparameter + suffix on real job number
 
-    def triggered(self, run_settings):
-
+    def is_triggered(self, run_settings):
         try:
             configure_done = int(getval(run_settings,
                 '%s/stages/configure/configure_done' % RMIT_SCHEMA))
@@ -61,16 +62,41 @@ class Configure(Stage):
         else:
             return not configure_done
 
-        # if self._exists(run_settings,
-        #     RMIT_SCHEMA + '/stages/configure',
-        #     'configure_done'):
-        #     configure_done = int(run_settings[
-        #         RMIT_SCHEMA + '/stages/configure'][u'configure_done'])
-        #     return not configure_done
-        # return True
 
     def process(self, run_settings):
+
         logger.debug('run_settings=%s' % run_settings)
+        self.output_platform_name = ''
+        self.output_platform_offset = ''
+        self.input_platform_name = ''
+        self.input_platform_offset = ''
+        try:
+             run_settings['http://rmit.edu.au/schemas/platform/storage/output']
+        except KeyError:
+            bdp_url = run_settings[RMIT_SCHEMA + '/input/system'][u'output_location']
+            self.output_platform_name, self.output_platform_offset = self.break_bdp_url(bdp_url)
+            run_settings[RMIT_SCHEMA + '/platform/storage/output'] = {}
+            run_settings[RMIT_SCHEMA + '/platform/storage/output'][
+            'platform_url'] = self.output_platform_name
+            run_settings[RMIT_SCHEMA + '/platform/storage/output']['offset'] = self.output_platform_offset
+
+        try:
+             run_settings['http://rmit.edu.au/schemas/platform/storage/input']
+        except KeyError:
+            bdp_url = run_settings[RMIT_SCHEMA + '/input/system'][u'input_location']
+            self.input_platform_name, self.input_platform_offset = self.break_bdp_url(bdp_url)
+            run_settings[RMIT_SCHEMA + '/platform/storage/input'] = {}
+            run_settings[RMIT_SCHEMA + '/platform/storage/input'][
+            'platform_url'] = self.input_platform_name
+            run_settings[RMIT_SCHEMA + '/platform/storage/input']['offset'] = self.input_platform_offset
+
+        try:
+             run_settings['http://rmit.edu.au/schemas/platform/computation']
+        except KeyError:
+            bdp_url =  run_settings[RMIT_SCHEMA + '/input/system/compplatform']['computation_platform']
+            self.compute_platform_name, self.compute_platform_offset = self.break_bdp_url(bdp_url)
+
+
 
         messages.info(run_settings, "1: configure")
 
@@ -79,20 +105,10 @@ class Configure(Stage):
         # local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
         logger.debug("settings=%s" % pformat(run_settings))
 
-        update(local_settings, run_settings,
-            '%s/input/hrmc/optimisation_scheme' % RMIT_SCHEMA,
-            '%s/input/hrmc/threshold' % RMIT_SCHEMA
-            )
-        # smartconnector.copy_settings(local_settings, run_settings,
-        #     RMIT_SCHEMA + '/system/platform')
-        # smartconnector.copy_settings(local_settings, run_settings,
-        #     RMIT_SCHEMA + '/input/hrmc/optimisation_scheme')
-        # smartconnector.copy_settings(local_settings, run_settings,
-        #     RMIT_SCHEMA + '/input/hrmc/threshold')
-
         local_settings['bdp_username'] = getval(run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA)
         # local_settings['bdp_username'] = run_settings[
         #     RMIT_SCHEMA + '/bdp_userprofile']['username']
+
 
         logger.debug('local_settings=%s' % local_settings)
 
@@ -114,16 +130,12 @@ class Configure(Stage):
             bdp_username)
 
         input_offset = getval(run_settings, '%s/platform/storage/input/offset' % RMIT_SCHEMA)
-        # input_offset = run_settings[RMIT_SCHEMA + "/platform/storage/input"]['offset']
         input_prefix = '%s://%s@' % (input_storage_settings['scheme'],
                                     input_storage_settings['type'])
         map_initial_location = "%s/%s/initial" % (input_prefix, input_offset)
         logger.debug("map_initial_location=%s" % map_initial_location)
 
         self.contextid = getval(run_settings, '%s/system/contextid' % RMIT_SCHEMA)
-        # self.contextid = int(run_settings[
-        #     RMIT_SCHEMA + '/system'][u'contextid'])
-
         logger.debug("self.contextid=%s" % self.contextid)
         self.output_loc_offset = str(self.contextid)
 
@@ -138,7 +150,7 @@ class Configure(Stage):
         except SettingNotFoundException:
             pass
         '''
-        self.output_loc_offset = self.set_offset_suffix(run_settings, 'hrmc')
+        self.output_loc_offset = self.get_results_dirname(run_settings, 'hrmc')
         self.copy_to_scratch_space(run_settings, local_settings)
         '''
         run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset'] = self.output_loc_offset
@@ -149,11 +161,11 @@ class Configure(Stage):
         #todo: input location will evenatually be replaced by the scratch space that was used by the sweep
         #todo: the sweep will indicate the location of the scratch space in the run_settings
         #todo: add scheme (ssh) to inputlocation
-        source_url = stage.get_url_with_pkey(local_settings,
+        source_url = get_url_with_pkey(local_settings,
             input_location)
         logger.debug("source_url=%s" % source_url)
 
-        destination_url = stage.get_url_with_pkey(
+        destination_url = get_url_with_pkey(
             output_storage_settings,
             '%s://%s@%s' % (output_storage_settings['scheme'],
                              output_storage_settings['type'],
@@ -165,7 +177,13 @@ class Configure(Stage):
 
 
         output_location = self.output_loc_offset  # run_settings[RMIT_SCHEMA + '/input/system'][u'output_location']
-        self.experiment_id = self.curate_date(run_settings, location=output_location)
+        self.experiment_id = 0
+        try:
+            run_settings['http://rmit.edu.au/schemas/input/mytardis']['curate_data']
+            self.experiment_id = self.curate_date(run_settings, location=output_location)
+        except KeyError:
+            pass
+
         '''
 
         try:
@@ -219,24 +237,32 @@ class Configure(Stage):
         '''
 
     def output(self, run_settings):
-
         setval(run_settings,
                '%s/stages/configure/configure_done' % RMIT_SCHEMA,
                1)
-        # run_settings.setdefault(
-        #     RMIT_SCHEMA + '/stages/configure',
-        #     {})[u'configure_done'] = 1
-
         setval(run_settings,
                '%s/input/mytardis/experiment_id' % RMIT_SCHEMA,
                str(self.experiment_id))
-        # run_settings[RMIT_SCHEMA + '/input/mytardis']['experiment_id'] = str(self.experiment_id)
 
-        setval(run_settings,
-               '%s/platform/storage/output/offset' % RMIT_SCHEMA,
-               self.output_loc_offset)
+        run_settings.setdefault(
+            RMIT_SCHEMA + '/platform/storage/output',
+            {})[u'platform_url'] = self.output_platform_name
+        if self.output_platform_offset:
+            run_settings[RMIT_SCHEMA + '/platform/storage/output']['offset'] = self.output_platform_offset
+        else:
+            run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset'] = self.output_loc_offset
 
-        # run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset'] = self.output_loc_offset
+        run_settings.setdefault(
+            RMIT_SCHEMA + '/platform/storage/input',
+            {})[u'platform_url'] = self.input_platform_name
+        if self.input_platform_offset:
+            run_settings[RMIT_SCHEMA + '/platform/storage/input']['offset'] = self.input_platform_offset
+
+        run_settings.setdefault('http://rmit.edu.au/schemas/platform/computation',
+            {})[u'platform_url'] = self.compute_platform_name
+
+        run_settings.setdefault('http://rmit.edu.au/schemas/platform/computation',
+            {})[u'offset'] = self.compute_platform_offset
 
         return run_settings
 
@@ -257,10 +283,10 @@ class Configure(Stage):
         #todo: input location will evenatually be replaced by the scratch space that was used by the sweep
         #todo: the sweep will indicate the location of the scratch space in the run_settings
         #todo: add scheme (ssh) to inputlocation
-        source_url = stage.get_url_with_pkey(local_settings, input_location)
+        source_url = get_url_with_pkey(local_settings, input_location)
         logger.debug("source_url=%s" % source_url)
 
-        destination_url = stage.get_url_with_pkey(
+        destination_url = get_url_with_pkey(
             output_storage_settings,
             '%s://%s@%s' % (output_storage_settings['scheme'],
                              output_storage_settings['type'],
@@ -270,7 +296,7 @@ class Configure(Stage):
         storage.copy_directories(source_url, destination_url)
 
 
-    def set_offset_suffix(self, run_settings, name):
+    def get_results_dirname(self, run_settings, name):
         output_loc_offset = str(self.contextid)
         logger.debug("suffix=%s" % output_loc_offset)
         try:

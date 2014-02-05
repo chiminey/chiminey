@@ -19,25 +19,48 @@
 # IN THE SOFTWARE.
 
 import socket
+import os
+import logging
 from bdphpcprovider.sshconnection import AuthError, SSHException
 from bdphpcprovider.corestages import Execute
 from bdphpcprovider.sshconnection import open_connection
 from bdphpcprovider.compute import run_command_with_status
 
 
+logger = logging.getLogger(__name__)
+
 class RandExecute(Execute):
-    def run_task(self, ip_address, process_id, settings):
-        settings['username'] = 'root'
+    def set_domain_settings(self, run_settings, local_settings):
+        pass
+
+    def prepare_inputs(self, local_settings, output_storage_settings,
+                        computation_platform_settings, mytardis_settings):
+        pass
+
+    def run_task(self, ip_address, process_id, settings, run_settings):
         ssh = None
         try:
             ssh = open_connection(ip_address=ip_address, settings=settings)
-            command, errs = run_command_with_status(ssh, 'uptime > /tmp/randtime')#fixme use platform location
+            computation_platform = self.get_platform_settings(
+                run_settings, 'http://rmit.edu.au/schemas/platform/computation')
+            logger.debug('ssh=%s' % ssh)
+            logger.debug('computation_platform=%s' % computation_platform)
+            filename = 'rand'
+            output_path = os.path.join(
+                computation_platform['root_path'], settings['payload_destination'],
+                str(process_id), settings['payload_cloud_dirname'])
+            logger.debug('output_path=%s' % output_path)
+            command, errs = run_command_with_status(ssh, 'mkdir -p %s; cd %s ; uptime > %s' %
+                                                         (output_path, output_path, filename))
+            #'python -c \'import random; print random.random()\'
+            logger.debug('command=%s errs=%s' % (command, errs))
         except (AuthError, SSHException, socket.error) as e:
-            print e
+            logger.error(e)
+            raise
         finally:
             if ssh:
                 ssh.close()
 
     def output(self, run_settings):
         run_settings['http://rmit.edu.au/schemas/stages/run']['runs_left'] = 1
-        return super(RandExecute, self).output()
+        return super(RandExecute, self).output(run_settings)

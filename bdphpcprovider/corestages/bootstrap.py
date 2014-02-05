@@ -55,24 +55,18 @@ class Bootstrap(Stage):
     def __init__(self, user_settings=None):
         logger.debug('Bootstrap stage initialised')
 
-    def triggered(self, run_settings):
-
+    def is_triggered(self, run_settings):
         try:
             created_str = getval(run_settings, '%s/stages/create/created_nodes' % RMIT_SCHEMA)
             self.created_nodes = ast.literal_eval(created_str)
             logger.debug('created_nodes=%s' % self.created_nodes)
             running_created_nodes = [x for x in self.created_nodes if str(x[3]) == 'running']
             logger.debug('running_created_nodes=%s' % running_created_nodes)
+            if len(running_created_nodes) == 0:
+                return False
         except SettingNotFoundException:
             return False
 
-        try:
-            self.created_nodes = ast.literal_eval(created_str)
-        except ValueError:
-            return False
-        if len(running_created_nodes) == 0:
-
-            return False
         try:
             bootstrapped_str = getval(run_settings,
                                       '%s/stages/bootstrap/bootstrapped_nodes'
@@ -229,6 +223,7 @@ class Bootstrap(Stage):
                 '%s/system/id' % RMIT_SCHEMA: 0,
                 '%s/stages/create/created_nodes' % RMIT_SCHEMA: self.created_nodes
                 })
+        #todo: move id to hrmc parent subclass parent?? may be not needed
         running_created_nodes = [x for x in self.created_nodes if x[3] == 'running']
         logger.debug('running created_nodes=%s' % running_created_nodes)
         if self.bootstrapped_nodes and len(self.bootstrapped_nodes) == len(running_created_nodes):
@@ -314,7 +309,7 @@ def start_setup(instance, ip,  settings, source, destination):
 
 def job_finished(ip, settings, destination):
     """
-        Return True if package job on instance_id has job_finished
+        Return True if package job on instance_id has is_job_finished
     """
     ssh = open_connection(ip_address=ip, settings=settings)
     makefile_path = storage.get_make_path(destination)

@@ -37,7 +37,7 @@ class ParallelStage(Stage):
     def __unicode__(self):
         return u"ParallelStage"
 
-    def triggered(self, run_settings):
+    def is_triggered(self, run_settings):
         '''
         logger.debug("Parallel Stage Triggered")
         logger.debug("run_settings=%s" % run_settings)
