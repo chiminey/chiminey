@@ -50,7 +50,7 @@ class Bootstrap(Stage):
     def __init__(self, user_settings=None):
         logger.debug('Bootstrap stage initialised')
 
-    def triggered(self, run_settings):
+    def is_triggered(self, run_settings):
         if not self._exists(run_settings, RMIT_SCHEMA + '/stages/create', u'created_nodes'):
             return False
         created_str = run_settings[RMIT_SCHEMA + '/stages/create'][u'created_nodes']
@@ -163,6 +163,7 @@ class Bootstrap(Stage):
         run_settings.setdefault(
             RMIT_SCHEMA + '/stages/bootstrap',
             {})[u'bootstrapped_nodes'] = str(self.bootstrapped_nodes)
+        #todo: move  to hrmc parent subclass parent
         run_settings.setdefault(
             RMIT_SCHEMA + '/system',
             {})[u'id'] = 0
@@ -275,7 +276,7 @@ def start_setup(instance, ip,  settings, source, destination):
 
 def job_finished(ip, settings, destination):
     """
-        Return True if package job on instance_id has job_finished
+        Return True if package job on instance_id has is_job_finished
     """
     ssh = open_connection(ip_address=ip, settings=settings)
     makefile_path = storage.get_make_path(destination)

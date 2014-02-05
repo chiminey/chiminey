@@ -62,7 +62,7 @@ class CounterStage(Stage):
     def __init__(self, context):
         context['count'] = 0
 
-    def triggered(self, context):
+    def is_triggered(self, context):
         count = context['count']
         return (count < 10)
 
@@ -84,7 +84,7 @@ class TestStage(Stage):
         self.key = key
         context[key] = 0
 
-    def triggered(self, context):
+    def is_triggered(self, context):
         return self.must_trigger
 
     def process(self, context):
@@ -124,7 +124,7 @@ class ConfigureStageTests(unittest.TestCase):
         context['provider'] = "nectar"
 
         con = Configure()
-        self.assertTrue(con.triggered(context), True)
+        self.assertTrue(con.is_triggered(context), True)
         con.process(context)
         context = con.output(context)
 
@@ -252,7 +252,7 @@ class SetupStageTests(unittest.TestCase):
 
         flexmock(Thread).should_receive('join').and_return()
 
-        res = s1.triggered(context)
+        res = s1.is_triggered(context)
         print res
         self.assertEquals(res, True)
 
@@ -389,8 +389,8 @@ class RunStageTests(unittest.TestCase):
         context['provider'] = "nectar"
         print("context=%s" % context)
         s1 = Run()
-        res = s1.triggered(context)
-        logger.debug("triggered done")
+        res = s1.is_triggered(context)
+        logger.debug("is_triggered done")
         print res
         self.assertEquals(res, True)
         self.assertEquals(s1.group_id, group_id)
@@ -548,8 +548,8 @@ class FinishedStageTests(unittest.TestCase):
         context['provider'] = "nectar"
         print("context=%s" % context)
         s1 = Finished()
-        res = s1.triggered(context)
-        logger.debug("triggered done")
+        res = s1.is_triggered(context)
+        logger.debug("is_triggered done")
         self.assertEquals(res, True)
         self.assertEquals(s1.group_id, group_id)
 
@@ -564,8 +564,8 @@ class FinishedStageTests(unittest.TestCase):
         # run_info_text = json.dumps(run_info)
         # run_info_file.setContent(run_info_text)
         # fs.update("default", run_info_file)
-        #res = s1.triggered(context)
-        #logger.debug("triggered done")
+        #res = s1.is_triggered(context)
+        #logger.debug("is_triggered done")
         #self.assertEquals(res, False)
 
         #TODO: need to properly test copying down of output files
@@ -732,7 +732,7 @@ class ConnectorTests(unittest.TestCase):
 
         context = {}
         s = CounterStage(context)
-        while s.triggered(context):
+        while s.is_triggered(context):
             s.process(context)
             s.output(context)
 
@@ -1368,7 +1368,7 @@ class TransformStageTests(unittest.TestCase):
         context = {'filesys': fs, 'threshold': [1]}
         print("context=%s" % context)
         s1 = Transform()
-        res = s1.triggered(context)
+        res = s1.is_triggered(context)
         print res
         self.assertEquals(res, True)
         self.assertEquals(s1.output_dir, "output_%s" % id_to_test)
@@ -1469,7 +1469,7 @@ class ConvergeStageTests(unittest.TestCase):
         print("fs=%s" % fs)
         context = {'filesys': fs}
         print("context=%s" % context)
-        res = s1.triggered(context)
+        res = s1.is_triggered(context)
         print res
         s1.process(context)
         context = s1.output(context)
@@ -1540,7 +1540,7 @@ class ConvergeStageTests(unittest.TestCase):
         print("fs=%s" % fs)
         context = {'filesys': fs}
         print("context=%s" % context)
-        res = s1.triggered(context)
+        res = s1.is_triggered(context)
         print res
         s1.process(context)
         context = s1.output(context)
@@ -1600,7 +1600,7 @@ class ConvergeStageTests(unittest.TestCase):
         print("fs=%s" % fs)
         context = {'filesys': fs}
         print("context=%s" % context)
-        res = s1.triggered(context)
+        res = s1.is_triggered(context)
         print res
         s1.process(context)
         context = s1.output(context)

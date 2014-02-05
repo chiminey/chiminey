@@ -19,4 +19,5 @@
 # IN THE SOFTWARE.
 
 from bdphpcprovider.platform.manage import \
-    create_platform, update_platform, delete_platform
+    create_platform, update_platform, delete_platform, \
+    get_platform_settings, get_job_dir

@@ -312,7 +312,8 @@ class ContextResource(ModelResource):
                 'sweep_make': self._post_to_sweep_make,
                 'sweep_vasp': self._post_to_sweep_vasp,
                 'copydir': self._post_to_copy,
-                'remotemake': self._post_to_remotemake}
+                'remotemake': self._post_to_remotemake,
+                'randomnumber': self._post_to_randomnumber}
 
             smart_connector = bundle.data['smart_connector']
             logger.debug("smart_connector=%s" % smart_connector)
@@ -512,6 +513,54 @@ class ContextResource(ModelResource):
         directive_args = [''] + d_arg
         logger.debug("directive_args=%s" % pformat(directive_args))
         return (platform, directive, [directive_args], {})
+
+
+    def _post_to_randomnumber(self, bundle, directive):
+        platform = 'local'
+        logger.debug("%s" % directive)
+
+        try:
+            self.validate_input(bundle.data, directive)
+        except ValidationError, e:
+            logger.error(e)
+            raise
+        directive_obj = models.Directive.objects.get(name=directive)
+        dirargs = models.DirectiveArgSet.objects.filter(
+            directive=directive_obj)
+        schemas = [x.schema.namespace for x in dirargs]
+        dargs = {}
+        for key in bundle.data:
+            if os.path.dirname(key) in schemas:
+                d = dargs.setdefault(os.path.dirname(key), {})
+                d[os.path.basename(key)] = bundle.data[key]
+
+        logger.debug("dargs=%s" % pformat(dargs))
+
+        d_arg = []
+        for key in dargs:
+            directive_arg = []
+            directive_arg.append(key)
+            for k, v in dargs[key].items():
+                directive_arg.append((k, v))
+            d_arg.append(directive_arg)
+
+        d_arg.append(
+        ['http://rmit.edu.au/schemas/system',
+            (u'random_numbers', 'file://127.0.0.1/randomnums.txt'),
+            ('system', 'settings'),
+            ('max_seed_int', 1000),
+        ])
+        d_arg.append(
+        ['http://rmit.edu.au/schemas/bdp_userprofile',
+            (u'username',
+             str(bundle.data[
+                'http://rmit.edu.au/schemas/bdp_userprofile/username'])),
+        ])
+        directive_args = [''] + d_arg
+        logger.debug("directive_args=%s" % pformat(directive_args))
+        return (platform, directive, [directive_args], {})
+
+
 
     # TODO: likely not allow remotemake to be called directly and will
     # force through  sweep in all cases

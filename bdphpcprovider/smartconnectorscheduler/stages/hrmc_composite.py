@@ -42,7 +42,7 @@ class HRMCParallelStage(ParallelStage):
         logger.debug("HRMCParallelStage")
         pass
 
-    def triggered(self, context):
+    def is_triggered(self, context):
         return False
 
     def __unicode__(self):

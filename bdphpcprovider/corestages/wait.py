@@ -21,7 +21,7 @@
 import logging
 import ast
 import os
-from bdphpcprovider.platform import manage
+from bdphpcprovider.platform import get_platform_settings, get_job_dir
 from bdphpcprovider.corestages import stage
 from bdphpcprovider.corestages.stage import Stage
 from bdphpcprovider.smartconnectorscheduler import (models )
@@ -33,6 +33,7 @@ from bdphpcprovider.sshconnection import open_connection
 from bdphpcprovider import compute
 from bdphpcprovider import messages
 from bdphpcprovider import storage
+from bdphpcprovider.storage import get_url_with_pkey
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +51,7 @@ class Wait(Stage):
         self.job_dir = "hrmcrun"  # TODO: make a stageparameter + suffix on real job number
         logger.debug("Wait stage initialised")
 
-    def triggered(self, run_settings):
+    def is_triggered(self, run_settings):
         """
             Checks whether there is a non-zero number of runs still going.
         """
@@ -100,21 +101,29 @@ class Wait(Stage):
             logger.debug(e)
             self.procs_2b_rescheduled = []
 
-        self.reschedule_failed_procs = run_settings['http://rmit.edu.au/schemas/input/reliability'][u'reschedule_failed_processes']
+        try:
+            self.reschedule_failed_procs = run_settings['http://rmit.edu.au/schemas/input/reliability'][u'reschedule_failed_processes']
+            created_str = run_settings['http://rmit.edu.au/schemas/stages/create'][u'created_nodes']
+            self.created_nodes = ast.literal_eval(created_str)
+        except KeyError:
+            self.reschedule_failed_procs = {}
+            self.created_nodes = {}
+
         self.failed_processes = self.ftmanager.\
                     get_total_failed_processes(self.current_processes)#self.executed_procs)
 
         # if we have no runs_left then we must have finished all the runs
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run', u'runs_left'):
-            created_str = run_settings['http://rmit.edu.au/schemas/stages/create'][u'created_nodes']
-            self.created_nodes = ast.literal_eval(created_str)
+
+
+
             return run_settings['http://rmit.edu.au/schemas/stages/run'][u'runs_left']
 
         return False
 
-    def job_finished(self, ip_address, process_id, retry_left, settings):
+    def is_job_finished(self, ip_address, process_id, retry_left, settings):
         """
-            Return True if package job on instance_id has job_finished
+            Return True if package job on instance_id has is_job_finished
         """
         # TODO: maybe this should be a reusable library method?
         ip = ip_address
@@ -122,7 +131,7 @@ class Wait(Stage):
         curr_username = settings['username']
         settings['username'] = 'root'
         relative_path = settings['type'] + '@' + settings['payload_destination'] + "/" + process_id
-        destination = stage.get_url_with_pkey(settings,
+        destination = get_url_with_pkey(settings,
             relative_path,
             is_relative_path=True,
             ip_address=ip)
@@ -194,7 +203,8 @@ class Wait(Stage):
         return False
 
     def get_output(self, ip_address, process_id, output_dir, local_settings,
-                   computation_platform_settings, output_storage_settings):
+                   computation_platform_settings, output_storage_settings,
+                   run_settings):
         """
             Retrieve the output from the task on the node
         """
@@ -202,7 +212,7 @@ class Wait(Stage):
         output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
                                     output_storage_settings['type'])
         cloud_path = os.path.join(local_settings['payload_destination'],
-                                  process_id,
+                                  str(process_id),
                                   local_settings['payload_cloud_dirname']
                                   )
         logger.debug("cloud_path=%s" % cloud_path)
@@ -212,12 +222,12 @@ class Wait(Stage):
         source_files_location = "%s://%s@%s" % (computation_platform_settings['scheme'],
                                                 computation_platform_settings['type'],
                                                  os.path.join(ip, cloud_path))
-        source_files_url = stage.get_url_with_pkey(
+        source_files_url = get_url_with_pkey(
             computation_platform_settings, source_files_location,
             is_relative_path=False)
         logger.debug('source_files_url=%s' % source_files_url)
 
-        dest_files_url = stage.get_url_with_pkey(
+        dest_files_url = get_url_with_pkey(
             output_storage_settings,
             output_prefix+os.path.join(
                 self.job_dir, self.output_dir, process_id),
@@ -241,12 +251,12 @@ class Wait(Stage):
 
         self.contextid = run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
         output_storage_url = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['platform_url']
-        output_storage_settings = manage.get_platform_settings(output_storage_url, local_settings['bdp_username'])
+        output_storage_settings = get_platform_settings(output_storage_url, local_settings['bdp_username'])
         # FIXME: Need to be consistent with how we handle settings here.  Prob combine all into
         # single local_settings for simplicity.
         output_storage_settings['bdp_username'] = local_settings['bdp_username']
         offset = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset']
-        self.job_dir = manage.get_job_dir(output_storage_settings, offset)
+        self.job_dir = get_job_dir(output_storage_settings, offset)
         try:
             self.finished_nodes = stage.get_existing_key(run_settings,
                 'http://rmit.edu.au/schemas/stages/run/finished_nodes')
@@ -274,7 +284,7 @@ class Wait(Stage):
         self.finished_nodes = ast.literal_eval(self.finished_nodes)
 
         computation_platform_url = run_settings['http://rmit.edu.au/schemas/platform/computation']['platform_url']
-        comp_pltf_settings = manage.get_platform_settings(computation_platform_url, local_settings['bdp_username'])
+        comp_pltf_settings = get_platform_settings(computation_platform_url, local_settings['bdp_username'])
         local_settings.update(comp_pltf_settings)
         comp_pltf_settings['bdp_username'] = local_settings['bdp_username']
 
@@ -293,7 +303,7 @@ class Wait(Stage):
             #    logging.error('Instance %s not running' % instance_id)
             #    self.error_nodes.append(node)
             #    continue
-            fin = self.job_finished(ip_address, process_id, retry_left, local_settings)
+            fin = self.is_job_finished(ip_address, process_id, retry_left, local_settings)
             logger.debug("fin=%s" % fin)
             if fin:
                 logger.debug("done. output is available")
@@ -308,9 +318,9 @@ class Wait(Stage):
                                             if int(process_id) == int(x['id'])]):
                     self.get_output(ip_address, process_id, self.output_dir,
                                     local_settings, comp_pltf_settings,
-                                    output_storage_settings)
+                                    output_storage_settings, run_settings)
 
-                    audit_url = stage.get_url_with_pkey(
+                    audit_url = get_url_with_pkey(
                         comp_pltf_settings, os.path.join(
                             self.output_dir, process_id, "audit.txt"),
                         is_relative_path=True)

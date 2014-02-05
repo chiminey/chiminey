@@ -48,7 +48,7 @@ class MakeRunStage(stage.Stage):
     def input_valid(self, settings_to_test):
             return (True, "ok")
 
-    def triggered(self, run_settings):
+    def is_triggered(self, run_settings):
         if stage.multilevel_key_exists(
             run_settings,
             'http://rmit.edu.au/schemas/stages/upload_makefile',

@@ -43,12 +43,12 @@ class LocalProgramStage(Stage):
         self.user_settings = user_settings.copy()
         pass
 
-    def triggered(self, run_settings):
+    def is_triggered(self, run_settings):
         """
         Return true if the directory pattern triggers this stage, or there
         has been any other error
         """
-        # FIXME: Need to verify that triggered is idempotent.
+        # FIXME: Need to verify that is_triggered is idempotent.
         logger.debug("Program Stage Triggered")
         logger.debug("run_settings=%s" % run_settings)
 

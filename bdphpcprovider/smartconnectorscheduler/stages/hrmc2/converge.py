@@ -63,7 +63,7 @@ class IterationConverge(Stage):
         self.id = 0
         self.job_dir = "hrmcrun"  # TODO: make a stageparameter + suffix on real job number
 
-    def triggered(self, run_settings):
+    def is_triggered(self, run_settings):
         """
         """
         if self._exists(run_settings, 'http://rmit.edu.au/schemas/system', u'id'):
@@ -137,7 +137,7 @@ class Converge(Stage):
         self.job_dir = "hrmcrun"  # TODO: make a stageparameter + suffix on real job number
         self.id = 0
 
-    def triggered(self, run_settings):
+    def is_triggered(self, run_settings):
         """
         """
 
