@@ -31,7 +31,7 @@ from django.template import Context, Template
 from bdphpcprovider.platform import manage
 from bdphpcprovider.corestages import stage
 
-from bdphpcprovider.corestages.stage import Stage
+#from bdphpcprovider.corestages.stage import Stage
 from bdphpcprovider.smartconnectorscheduler.errors import PackageFailedError
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
 from bdphpcprovider.smartconnectorscheduler import (models,
@@ -42,7 +42,9 @@ from bdphpcprovider import mytardis
 from bdphpcprovider import compute
 from bdphpcprovider import storage
 from bdphpcprovider import messages
+
 from bdphpcprovider.runsettings import getval, setvals, getvals, update, SettingNotFoundException
+from bdphpcprovider.storage import get_url_with_pkey
 
 
 logger = logging.getLogger(__name__)
@@ -50,7 +52,7 @@ logger = logging.getLogger(__name__)
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
 
-class Execute(Stage):
+class Execute(stage.Stage):
     """
     Start application on nodes and return status
     """
@@ -59,7 +61,7 @@ class Execute(Stage):
         self.job_dir = "hrmcrun"
         logger.debug("Execute stage initialized")
 
-    def triggered(self, run_settings):
+    def is_triggered(self, run_settings):
         """
         Triggered when we now that we have N nodes setup and ready to run.
          input_dir is assumed to be populated.
@@ -117,96 +119,15 @@ class Execute(Stage):
     def process(self, run_settings):
 
         logger.debug("processing execute stage")
-
         local_settings = getvals(run_settings, models.UserProfile.PROFILE_SCHEMA_NS)
-        # local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
+        self.retrieve_boto_settings(run_settings, local_settings)
 
-        def retrieve_boto_settings(run_settings, local_settings):
-
-            update(local_settings, run_settings,
-                    '%s/stages/setup/payload_destination' % RMIT_SCHEMA,
-                    '%s/stages/setup/filename_for_PIDs' % RMIT_SCHEMA,
-                    # '%s/system/platform' % RMIT_SCHEMA,
-                    '%s/stages/create/custom_prompt' % RMIT_SCHEMA,
-                    '%s/stages/run/payload_cloud_dirname' % RMIT_SCHEMA,
-                    '%s/system/max_seed_int' % RMIT_SCHEMA,
-                    '%s/stages/run/compile_file' % RMIT_SCHEMA,
-                    '%s/stages/run/retry_attempts' % RMIT_SCHEMA,
-                    '%s/input/system/cloud/number_vm_instances' % RMIT_SCHEMA,
-                    '%s/input/hrmc/iseed' % RMIT_SCHEMA,
-                    '%s/input/hrmc/optimisation_scheme' % RMIT_SCHEMA,
-                    '%s/input/hrmc/threshold' % RMIT_SCHEMA,
-                    '%s/input/hrmc/pottype' % RMIT_SCHEMA,
-                    '%s/system/random_numbers' % RMIT_SCHEMA,
-                    '%s/input/hrmc/fanout_per_kept_result' % RMIT_SCHEMA,
-                    '%s/input/hrmc/optimisation_scheme' % RMIT_SCHEMA,
-                    '%s/input/hrmc/threshold' % RMIT_SCHEMA,
-                    '%s/input/hrmc/pottype' % RMIT_SCHEMA,
-                    '%s/system/max_seed_int' % RMIT_SCHEMA,
-                    '%s/system/random_numbers' % RMIT_SCHEMA,
-                    '%s/system/id' % RMIT_SCHEMA,
-                    '%s/input/mytardis/curate_data' % RMIT_SCHEMA
-                   )
-
-            # smartconnector.copy_settings(local_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/stages/setup/payload_destination')
-            # smartconnector.copy_settings(local_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/stages/setup/filename_for_PIDs')
-            # smartconnector.copy_settings(local_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/system/platform')
-            # smartconnector.copy_settings(local_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/stages/create/custom_prompt')
-            # smartconnector.copy_settings(local_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/stages/run/payload_cloud_dirname')
-            # smartconnector.copy_settings(local_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/system/max_seed_int')
-            # smartconnector.copy_settings(local_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/stages/run/compile_file')
-            # smartconnector.copy_settings(local_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/stages/run/retry_attempts')
-            # smartconnector.copy_settings(local_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/input/system/cloud/number_vm_instances')
-            # smartconnector.copy_settings(local_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/input/hrmc/iseed')
-            # smartconnector.copy_settings(local_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/input/hrmc/optimisation_scheme')
-            # smartconnector.copy_settings(local_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/input/hrmc/threshold')
-            # smartconnector.copy_settings(local_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/input/hrmc/pottype')
-
-            # smartconnector.copy_settings(local_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/system/random_numbers')
-            # smartconnector.copy_settings(local_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/input/hrmc/fanout_per_kept_result')
-            # smartconnector.copy_settings(local_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/input/hrmc/optimisation_scheme')
-            # smartconnector.copy_settings(local_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/input/hrmc/threshold')
-            # smartconnector.copy_settings(local_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/input/hrmc/pottype')
-            # smartconnector.copy_settings(local_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/system/max_seed_int')
-            # smartconnector.copy_settings(local_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/system/random_numbers')
-            # smartconnector.copy_settings(local_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/system/id')
-
-            local_settings['bdp_username'] = getval(run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA)
-            # local_settings['bdp_username'] = run_settings[
-            #     RMIT_SCHEMA + '/bdp_userprofile']['username']
-
-            logger.debug('retrieve completed %s' % pformat(local_settings))
-
-        retrieve_boto_settings(run_settings, local_settings)
 
         self.contextid = getval(run_settings, '%s/system/contextid' % RMIT_SCHEMA)
         # NB: Don't catch SettingNotFoundException because we can't recover
         # run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
 
         output_storage_url = getval(run_settings, '%s/platform/storage/output/platform_url' % RMIT_SCHEMA)
-        # output_storage_url = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['platform_url']
-
         output_storage_settings = manage.get_platform_settings(output_storage_url, local_settings['bdp_username'])
         offset = getval(run_settings, '%s/platform/storage/output/offset' % RMIT_SCHEMA)
         # offset = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset']
@@ -215,8 +136,6 @@ class Execute(Stage):
         # in configure stage we could copy initial data in 'input_location' into this location
         try:
             self.id = int(getval(run_settings, '%s/system/id' % RMIT_SCHEMA))
-            # self.id = int(smartconnector.get_existing_key(run_settings,
-            #     'http://rmit.edu.au/schemas/system/id'))
             self.iter_inputdir = os.path.join(self.job_dir, "input_%s" % self.id)
         except (SettingNotFoundException, ValueError):
             self.id = 0
@@ -225,8 +144,6 @@ class Execute(Stage):
         logger.debug("id = %s" % self.id)
         try:
             self.initial_numbfile = int(getval(run_settings, '%s/stages/run/initial_numbfile' % RMIT_SCHEMA))
-            # self.initial_numbfile = int(smartconnector.get_existing_key(run_settings,
-            #     'http://rmit.edu.au/schemas/stages/run/initial_numbfile'))
         except (SettingNotFoundException, ValueError):
             logger.warn("setting initial_numbfile for first iteration")
             self.initial_numbfile = 1
@@ -238,9 +155,6 @@ class Execute(Stage):
         except (SettingNotFoundException, ValueError):
             logger.warn("setting rand_index for first iteration")
             self.rand_index = int(getval(run_settings, '%s/input/hrmc/iseed' % RMIT_SCHEMA))
-
-            # self.rand_index = int(smartconnector.get_existing_key(run_settings,
-            #     'http://rmit.edu.au/schemas/input/hrmc/iseed'))
         logger.debug("rand_index=%s" % self.rand_index)
 
         try:
@@ -256,19 +170,18 @@ class Execute(Stage):
 
         computation_platform_url = getval(run_settings, '%s/platform/computation/platform_url' % RMIT_SCHEMA)
         comp_pltf_settings = manage.get_platform_settings(computation_platform_url, local_settings['bdp_username'])
+        if local_settings['curate_data']:
+            mytardis_url = getval(run_settings, '%s/input/mytardis/mytardis_platform' % RMIT_SCHEMA)
+            mytardis_settings = manage.get_platform_settings(mytardis_url, local_settings['bdp_username'])
+        else:
+            mytardis_settings = {}
 
-        # computation_platform_url = run_settings['http://rmit.edu.au/schemas/platform/computation']['platform_url']
-        # comp_pltf_settings = manage.get_platform_settings(computation_platform_url, local_settings['bdp_username'])
-
-        mytardis_url = getval(run_settings, '%s/input/mytardis/mytardis_platform' % RMIT_SCHEMA)
-        # mytardis_url = run_settings['http://rmit.edu.au/schemas/input/mytardis']['mytardis_platform']
-        mytardis_settings = manage.get_platform_settings(mytardis_url, local_settings['bdp_username'])
 
         #generic_output_schema = 'http://rmit.edu.au/schemas/platform/storage/output'
 
         failed_processes = [x for x in self.schedule_procs if x['status'] == 'failed']
         if not failed_processes:
-            self._prepare_inputs(
+            self.prepare_inputs(
                 local_settings, output_storage_settings, comp_pltf_settings, mytardis_settings)
         else:
             self._copy_previous_inputs(
@@ -276,7 +189,7 @@ class Execute(Stage):
                 comp_pltf_settings)
         try:
             local_settings.update(comp_pltf_settings)
-            pids = self.run_multi_task(local_settings)
+            pids = self.run_multi_task(local_settings, run_settings)
         except PackageFailedError, e:
             logger.error(e)
             logger.error("unable to start packages: %s" % e)
@@ -291,7 +204,7 @@ class Execute(Stage):
                                     output_storage_settings['type'])
         for proc in self.ready_processes:
             source_location = os.path.join(self.job_dir, "input_backup", proc['id'])
-            source_files_url = stage.get_url_with_pkey(output_storage_settings,
+            source_files_url = get_url_with_pkey(output_storage_settings,
                     output_prefix + source_location, is_relative_path=False)
 
             dest_files_location = computation_platform_settings['type'] + "@"\
@@ -300,7 +213,7 @@ class Execute(Stage):
                 proc['id'], local_settings['payload_cloud_dirname'])
             logger.debug('dest_files_location=%s' % dest_files_location)
 
-            dest_files_url = stage.get_url_with_pkey(
+            dest_files_url = get_url_with_pkey(
                 computation_platform_settings, dest_files_location,
                 is_relative_path=True, ip_address=proc['ip_address'])
             logger.debug('dest_files_url=%s' % dest_files_url)
@@ -316,26 +229,11 @@ class Execute(Stage):
                 '%s/stages/schedule/current_processes' % RMIT_SCHEMA: str(self.schedule_procs),
                 '%s/stages/schedule/all_processes' % RMIT_SCHEMA: str(self.all_processes)
                 })
-        # run_settings.setdefault(
-        #     'http://rmit.edu.au/schemas/stages/execute',
-        #     {})[u'executed_procs'] = str(self.exec_procs)
-
-        # run_settings.setdefault(
-        #     'http://rmit.edu.au/schemas/stages/schedule',
-        #     {})[u'current_processes'] = str(self.schedule_procs)
-
-        # run_settings.setdefault(
-        #     'http://rmit.edu.au/schemas/stages/schedule',
-        #     {})[u'all_processes'] = str(self.all_processes)
-
-        # if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run'):
-        #     run_settings['http://rmit.edu.au/schemas/stages/run'] = {}
 
         #completed_processes = [x for x in self.exec_procs if x['status'] == 'completed']
         completed_processes = [x for x in self.schedule_procs if x['status'] == 'completed']
         running_processes = [x for x in self.schedule_procs if x['status'] == 'running']
         logger.debug('completed_processes=%d' % len(completed_processes))
-
         setvals(run_settings, {
                 '%s/stages/run/runs_left' % RMIT_SCHEMA:
                     len(running_processes),
@@ -346,16 +244,10 @@ class Execute(Stage):
                 '%s/input/mytardis/experiment_id' % RMIT_SCHEMA: str(self.experiment_id)
                 })
 
-        # run_settings['http://rmit.edu.au/schemas/stages/run'][u'runs_left'] =\
-        #     len(self.exec_procs) - len(completed_processes)
-
-        # run_settings['http://rmit.edu.au/schemas/stages/run'][u'initial_numbfile'] = self.initial_numbfile
-        # run_settings['http://rmit.edu.au/schemas/stages/run'][u'rand_index'] = self.rand_index
-        # run_settings['http://rmit.edu.au/schemas/input/mytardis']['experiment_id'] = str(self.experiment_id)
 
         return run_settings
 
-    def run_task(self, ip_address, process_id, settings):
+    def run_task(self, ip_address, process_id, settings, run_settings):
         """
             Start the task on the instance, then hang and
             periodically check its state.
@@ -371,7 +263,7 @@ class Execute(Stage):
         # settings['username'] = curr_username
 
         relative_path = settings['type'] + '@' + settings['payload_destination'] + "/" + process_id
-        destination = stage.get_url_with_pkey(settings,
+        destination = get_url_with_pkey(settings,
             relative_path,
             is_relative_path=True,
             ip_address=ip)
@@ -404,7 +296,7 @@ class Execute(Stage):
         #         ssh.close()
         # logger.debug("command_out2=(%s, %s)" % (command_out, errs))
 
-    def run_multi_task(self, settings):
+    def run_multi_task(self, settings, run_settings):
         """
         Run the package on each of the nodes in the group and grab
         any output as needed
@@ -427,7 +319,7 @@ class Execute(Stage):
             ip_address = proc['ip_address']
             process_id = proc['id']
             try:
-                pids_for_task = self.run_task(ip_address, process_id, settings)
+                pids_for_task = self.run_task(ip_address, process_id, settings, run_settings)
                 proc['status'] = 'running'
                 #self.exec_procs.append(proc)
                 for iterator, process in enumerate(self.all_processes):
@@ -445,7 +337,7 @@ class Execute(Stage):
         logger.debug('all_pids=%s' % all_pids)
         return all_pids
 
-    def _prepare_inputs(self, local_settings, output_storage_settings,
+    def prepare_inputs(self, local_settings, output_storage_settings,
                         computation_platform_settings, mytardis_settings):
             """
             Upload all input files for this run
@@ -460,7 +352,7 @@ class Execute(Stage):
             logger.debug("Iteration Input dir %s" % self.iter_inputdir)
             output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
                                     output_storage_settings['type'])
-            url_with_pkey = stage.get_url_with_pkey(
+            url_with_pkey = get_url_with_pkey(
                 output_storage_settings, output_prefix + self.iter_inputdir, is_relative_path=False)
             logger.debug("url_with_pkey=%s" % url_with_pkey)
             input_dirs = storage.list_dirs(url_with_pkey)
@@ -481,7 +373,7 @@ class Execute(Stage):
         output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
                                     output_storage_settings['type'])
         template_pat = re.compile("(.*)_template")
-        fname_url_with_pkey = stage.get_url_with_pkey(
+        fname_url_with_pkey = get_url_with_pkey(
             output_storage_settings,
             output_prefix + os.path.join(self.iter_inputdir, input_dir),
             is_relative_path=False)
@@ -500,7 +392,7 @@ class Execute(Stage):
             template_mat = template_pat.match(fname)
             if template_mat:
                 # get the template
-                basename_url_with_pkey = stage.get_url_with_pkey(
+                basename_url_with_pkey = get_url_with_pkey(
                     output_storage_settings,
                     output_prefix + os.path.join(self.iter_inputdir, input_dir, fname),
                     is_relative_path=False)
@@ -511,7 +403,7 @@ class Execute(Stage):
                 # find associated values file and generator_counter
                 values_map = {}
                 try:
-                    values_url_with_pkey = stage.get_url_with_pkey(
+                    values_url_with_pkey = get_url_with_pkey(
                         output_storage_settings,
                         output_prefix + os.path.join(self.iter_inputdir,
                             input_dir,
@@ -606,7 +498,7 @@ class Execute(Stage):
         output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
                                     output_storage_settings['type'])
         output_host = output_storage_settings['host']
-        source_files_url = stage.get_url_with_pkey(
+        source_files_url = get_url_with_pkey(
             output_storage_settings, output_prefix + os.path.join(
                 self.iter_inputdir, input_dir),
             is_relative_path=False)
@@ -626,7 +518,7 @@ class Execute(Stage):
                 def _get_dataset_name_for_input(settings, url, path):
                     logger.debug("path=%s" % path)
 
-                    source_url = stage.get_url_with_pkey(
+                    source_url = get_url_with_pkey(
                         output_storage_settings,
                         output_prefix + os.path.join(output_host, path, "HRMC.inp_values"),
                         is_relative_path=False)
@@ -720,7 +612,7 @@ class Execute(Stage):
                                                      )
                 logger.debug('dest_files_location=%s' % dest_files_location)
 
-                dest_files_url = stage.get_url_with_pkey(
+                dest_files_url = get_url_with_pkey(
                     computation_platform_settings, dest_files_location,
                     is_relative_path=True, ip_address=ip)
                 logger.debug('dest_files_url=%s' % dest_files_url)
@@ -738,7 +630,7 @@ class Execute(Stage):
 
                 if self.reschedule_failed_procs:
                     input_backup = os.path.join(self.job_dir, "input_backup", proc['id'])
-                    backup_url = stage.get_url_with_pkey(
+                    backup_url = get_url_with_pkey(
                         output_storage_settings,
                         output_prefix + input_backup, is_relative_path=False)
                     storage.copy_directories(source_files_url, backup_url)
@@ -747,12 +639,12 @@ class Execute(Stage):
                 import uuid
                 randsuffix = unicode(uuid.uuid4())  # should use some job id here
 
-                var_url = stage.get_url_with_pkey(local_settings, os.path.join("tmp%s" % randsuffix, "var"),
+                var_url = get_url_with_pkey(local_settings, os.path.join("tmp%s" % randsuffix, "var"),
                     is_relative_path=True)
                 logger.debug("var_url=%s" % var_url)
                 storage.put_file(var_url, var_content.encode('utf-8'))
 
-                value_url = stage.get_url_with_pkey(local_settings, os.path.join("tmp%s" % randsuffix, "value"),
+                value_url = get_url_with_pkey(local_settings, os.path.join("tmp%s" % randsuffix, "value"),
                     is_relative_path=True)
                 logger.debug("value_url=%s" % value_url)
                 storage.put_file(value_url, json.dumps(values))
@@ -764,14 +656,14 @@ class Execute(Stage):
                                          proc['id'],
                                          local_settings['payload_cloud_dirname'],
                                          var_fname)
-                var_fname_pkey = stage.get_url_with_pkey(
+                var_fname_pkey = get_url_with_pkey(
                     computation_platform_settings, var_fname_remote,
                     is_relative_path=True, ip_address=ip)
                 var_content = storage.get_file(var_url)
                 storage.put_file(var_fname_pkey, var_content)
 
                 logger.debug("var_fname_pkey=%s" % var_fname_pkey)
-                values_fname_pkey = stage.get_url_with_pkey(
+                values_fname_pkey = get_url_with_pkey(
                     computation_platform_settings,
                     os.path.join(dest_files_location,
                                  "%s_values" % var_fname),
@@ -782,14 +674,14 @@ class Execute(Stage):
 
                 #copying values and var_content to backup folder
                 if self.reschedule_failed_procs:
-                    value_url = stage.get_url_with_pkey(
+                    value_url = get_url_with_pkey(
                         output_storage_settings,
                         output_prefix + os.path.join(input_backup, "%s_values" % var_fname),
                         is_relative_path=False)
                     logger.debug("value_url=%s" % value_url)
                     storage.put_file(value_url, json.dumps(values))
 
-                    var_fname_pkey = stage.get_url_with_pkey(
+                    var_fname_pkey = get_url_with_pkey(
                         output_storage_settings,
                         output_prefix + os.path.join(input_backup, var_fname),
                         is_relative_path=False)
@@ -797,7 +689,69 @@ class Execute(Stage):
                     storage.put_file(var_fname_pkey, var_content)
 
                 # cleanup
-                tmp_url = stage.get_url_with_pkey(local_settings, os.path.join("tmp%s" % randsuffix),
+                tmp_url = get_url_with_pkey(local_settings, os.path.join("tmp%s" % randsuffix),
                     is_relative_path=True)
                 logger.debug("deleting %s" % tmp_url)
                 #hrmcstages.delete_files(u
+
+
+
+    def retrieve_boto_settings(self, run_settings, local_settings):
+        self.set_domain_settings(run_settings, local_settings)
+        stage.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/stages/setup/payload_destination')
+        stage.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/stages/setup/filename_for_PIDs')
+        stage.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/system/platform')
+        #stage.copy_settings(local_settings, run_settings,
+        #    'http://rmit.edu.au/schemas/stages/create/custom_prompt')
+        stage.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/stages/run/payload_cloud_dirname')
+        stage.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/system/max_seed_int')
+        stage.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/stages/run/compile_file')
+        stage.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/stages/run/retry_attempts')
+        #stage.copy_settings(local_settings, run_settings,
+        #    'http://rmit.edu.au/schemas/input/system/cloud/number_vm_instances')
+
+
+        stage.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/system/random_numbers')
+
+        stage.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/system/max_seed_int')
+        stage.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/system/random_numbers')
+        stage.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/system/id')
+        try:
+            local_settings['curate_data'] = run_settings['http://rmit.edu.au/schemas/input/mytardis']['curate_data']
+        except KeyError:
+            local_settings['curate_data'] = 0
+        local_settings['bdp_username'] = run_settings[
+            RMIT_SCHEMA + '/bdp_userprofile']['username']
+
+        logger.debug('retrieve completed %s' % pformat(local_settings))
+
+
+    def set_domain_settings(self, run_settings, local_settings):
+        stage.copy_settings(local_settings, run_settings,
+        'http://rmit.edu.au/schemas/input/hrmc/iseed')
+        stage.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/input/hrmc/optimisation_scheme')
+        stage.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/input/hrmc/threshold')
+        stage.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/input/hrmc/pottype')
+        stage.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/input/hrmc/fanout_per_kept_result')
+        stage.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/input/hrmc/optimisation_scheme')
+        stage.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/input/hrmc/threshold')
+        stage.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/input/hrmc/pottype')
+

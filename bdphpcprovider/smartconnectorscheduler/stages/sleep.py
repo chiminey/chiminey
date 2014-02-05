@@ -7,7 +7,7 @@ class Sleep(Stage):
     def __init__(self, secs):
         self.sleeptime = secs
 
-    def triggered(self, context):
+    def is_triggered(self, context):
         # FIXME: broken because dispatch loop will never exit because
         # stage will always trigger.  Need to create return state that
         # triggers dispatch loop to end

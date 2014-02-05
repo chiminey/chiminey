@@ -50,80 +50,6 @@ RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 # TODO: key task here is to seperate the domain specific  parts from the
 # general parts of this stage and move to different class/module
 
-# class IterationConverge(Stage):
-#     """
-#     Determine whether the function has been optimised
-#     """
-#     # TODO: Might be clearer to count up rather than down as id goes up
-
-#     def __init__(self, user_settings=None):
-#         """
-#         """
-#         logger.debug("created iteration converge")
-#         self.total_iterations = 30
-#         self.number_of_remaining_iterations = 30
-#         self.id = 0
-#         self.job_dir = "hrmcrun"  # TODO: make a stageparameter + suffix on real job number
-
-#     def triggered(self, run_settings):
-#         """
-#         """
-#         if self._exists(run_settings, 'http://rmit.edu.au/schemas/system', u'id'):
-#             self.id = run_settings['http://rmit.edu.au/schemas/system'][u'id']
-#         else:
-#             logger.warn("Cannot retrieve id. Maybe first iteration?")
-#             self.id = 0
-#         logger.debug("id = %s" % self.id)
-
-#         if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/transform', u'transformed'):
-#             self.transformed = int(run_settings['http://rmit.edu.au/schemas/stages/transformed'][u'transformed'])
-#             return self.transformed
-#         return False
-
-#     def process(self, run_settings):
-#         """
-#         """
-#         self.boto_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
-#         self.number_of_remaining_iterations -= 1
-#         print "Number of Iterations Left %d" \
-#             % self.number_of_remaining_iterations
-
-#     def output(self, run_settings):
-#         """
-#         """
-#         if self.number_of_remaining_iterations > 0:
-#             # trigger first of iteration corestages
-#             logger.debug("nonconvergence")
-
-#             # delete_key('runs_left', context)
-#             run = run_settings['http://rmit.edu.au/schemas/stages/run']
-#             del run['runs_left']
-
-#             # delete_key('error_nodes', context)
-#             run = run_settings['http://rmit.edu.au/schemas/stages/run']
-#             del run['error_nodes']
-
-#             #update_key('converged', False, context)
-#             run_settings['http://rmit.edu.au/stages/converge']['converged'] = False
-#         else:
-#             logger.debug("convergence")
-#             # we are done, so trigger next stage outside of converge
-
-#             # update_key('converged', True, context)
-#             run_settings['http://rmit.edu.au/stages/converge']['converged'] = True
-
-#             # we are done, so don't trigger iteration corestages
-
-#         #delete_key('transformed', context)
-#         transform = run_settings['http://rmit.edu.au/schemas/stages/transform']
-#         del transform['transformed']
-
-#         self.id += 1
-#         #update_key('id', self.id, context)
-#         run_settings['http://rmit.edu.au/schemas/system'][u'id'] = self.id
-
-#         return run_settings
-
 
 class Converge(Stage):
     """
@@ -139,7 +65,7 @@ class Converge(Stage):
         self.job_dir = "hrmcrun"  # TODO: make a stageparameter + suffix on real job number
         self.id = 0
 
-    def triggered(self, run_settings):
+    def is_triggered(self, run_settings):
         """
         """
         try:

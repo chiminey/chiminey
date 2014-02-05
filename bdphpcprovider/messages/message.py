@@ -20,9 +20,11 @@
 
 
 import logging
+import os
 from pprint import pformat
 
 from bdphpcprovider.runsettings import getval, SettingNotFoundException
+
 
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
@@ -74,9 +76,38 @@ def success(run_settings, msg):
     return addMessage(run_settings, 'success', msg)
 
 
+
 def warn(run_settings, msg):
     return addMessage(run_settings, 'warning', msg)
 
 
 def error(run_settings, msg):
     return addMessage(run_settings, 'error', msg)
+
+
+#todo: remove after merging code with Ian
+def get_existing_key(context, schema):
+    """
+    Extract the schema field from the context, but if not present throw KeyError.
+    """
+    if multilevel_key_exists(context, os.path.dirname(schema), os.path.basename(schema)):
+        res = context[os.path.dirname(schema)][os.path.basename(schema)]
+    else:
+        raise KeyError("Cannot find %s in run_settings" % schema)
+    return res
+
+
+#todo: remove after merging code with Ian
+def multilevel_key_exists(context, *parts):
+    """
+    Returns true if context contains all parts of the key, else
+    false
+    """
+    c = dict(context)
+    for p in parts:
+        if p in c:
+            c = c[p]
+        else:
+            #logger.warn("%s not found in context" % p)
+            return False
+    return True

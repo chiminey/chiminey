@@ -83,7 +83,7 @@ class MetadataTests(unittest.TestCase):
                  os.path.join(self.global_filesystem, "vasp"))
         print("fs=%s" % fs)
         context = {'filesys': fs}
-        res = s1.triggered(context)
+        res = s1.is_triggered(context)
         self.assertEquals(res, True)
         s1.process(context)
         context = s1.output(context)

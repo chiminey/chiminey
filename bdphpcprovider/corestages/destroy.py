@@ -39,7 +39,7 @@ class Destroy(stage.Stage):
     def __init__(self, user_settings=None):
         logger.debug('Destroy stage initialised')
 
-    def triggered(self, run_settings):
+    def is_triggered(self, run_settings):
         try:
             converged = int(getval(run_settings, '%s/stages/converge/converged' % RMIT_SCHEMA))
             logger.debug("converged=%s" % converged)
@@ -52,25 +52,8 @@ class Destroy(stage.Stage):
                                         % RMIT_SCHEMA))
             except (ValueError, SettingNotFoundException) as e:
                 return True
-
             return not run_finished
-
         return False
-
-        # if self._exists(run_settings,
-        #     'http://rmit.edu.au/schemas/stages/converge',
-        #     u'converged'):
-        #     converged = int(run_settings['http://rmit.edu.au/schemas/stages/converge'][u'converged'])
-        #     logger.debug("converged=%s" % converged)
-        #     if converged:
-        #         if self._exists(run_settings,
-        #             'http://rmit.edu.au/schemas/stages/destroy',
-        #             u'run_finished'):
-        #             run_finished = int(run_settings['http://rmit.edu.au/schemas/stages/destroy'][u'run_finished'])
-        #             return not run_finished
-        #         else:
-        #             return True
-        # return False
 
     def process(self, run_settings):
 
