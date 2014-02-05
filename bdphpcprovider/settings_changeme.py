@@ -218,7 +218,7 @@ LOGGING = {
     'handlers': ['file'],
     },
     'bdphpcprovider.simpleui': {
-    'level': 'WARN',
+    'level': 'DEBUG',
     'handlers': ['file'],
     },
     'bdphpcprovider.mytardis': {

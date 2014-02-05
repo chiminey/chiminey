@@ -241,7 +241,7 @@ def _process_context(context_id):
 
             logger.debug("Stage '%s' testing for triggering" % current_stage.name)
             try:
-                if stage.triggered(deepcopy(task_run_settings)):
+                if stage.is_triggered(deepcopy(task_run_settings)):
                     logger.debug("Stage '%s' TRIGGERED" % current_stage.name)
                     stage.process(deepcopy(task_run_settings))
                     task_run_settings = stage.output(task_run_settings)
@@ -258,7 +258,7 @@ def _process_context(context_id):
                 logger.error("0: internal error (%s stage):%s" % (str(current_stage.name), e))
                 messages.error(run_settings, "0: internal error (%s stage):%s" % (str(current_stage.name), e))
         if not triggered:
-            logger.debug("No corestages triggered")
+            logger.debug("No corestages is_triggered")
             test_info = task_run_settings
             run_context.deleted = True
             run_context.save()
@@ -378,7 +378,7 @@ def progress_context_broken(context_id):
 
                     logger.debug("Stage '%s' testing for triggering" % current_stage.name)
                     try:
-                        if stage.triggered(deepcopy(task_run_settings)):
+                        if stage.is_triggered(deepcopy(task_run_settings)):
                             logger.debug("Stage '%s' TRIGGERED" % current_stage.name)
                             stage.process(deepcopy(task_run_settings))
                             task_run_settings = stage.output(task_run_settings)
@@ -394,7 +394,7 @@ def progress_context_broken(context_id):
                     except Exception, e:
                         messages.error(run_settings, "0: internal error:%s" % e)
                 if not triggered:
-                    logger.debug("No corestages triggered")
+                    logger.debug("No corestages is_triggered")
                     test_info = task_run_settings
                     run_context.deleted = True
                     run_context.save()

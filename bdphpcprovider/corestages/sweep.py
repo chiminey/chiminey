@@ -47,7 +47,7 @@ class Sweep(Stage):
         self.numbfile = 0
         logger.debug("Sweep stage initialized")
 
-    def triggered(self, run_settings):
+    def is_triggered(self, run_settings):
         logger.debug('run_settings=%s' % run_settings)
         if self._exists(run_settings,
             RMIT_SCHEMA + '/stages/sweep',

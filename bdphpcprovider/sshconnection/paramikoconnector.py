@@ -33,6 +33,10 @@ class Error(Exception):
 class AuthError(Error):
     pass
 
+#def to be completed
+def __enter__(ip_address, settings):
+    return open_connection(ip_address, settings)
+
 
 def open_connection(ip_address, settings):
     """

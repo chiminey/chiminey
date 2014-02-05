@@ -808,6 +808,8 @@ def make_dynamic_field(parameter, **kwargs):
                         schema += 'cluster/pbs_based'
                     elif comp_platform == 'sweep_vasp':
                         schema += 'cluster/pbs_based'
+                    elif comp_platform == 'randumnumber':
+                        schema += 'cluster/pbs_based'
                     else:
                         logger.warn("unknown computation platform")
                 elif parameter['subtype'] == 'mytardis':

@@ -36,7 +36,7 @@ class Destroy(stage.Stage):
     def __init__(self, user_settings=None):
         logger.debug('Destroy stage initialised')
 
-    def triggered(self, run_settings):
+    def is_triggered(self, run_settings):
         if self._exists(run_settings,
             'http://rmit.edu.au/schemas/stages/converge',
             u'converged'):

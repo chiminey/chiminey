@@ -55,7 +55,7 @@ class Transform(Stage):
         self.job_dir = "hrmcrun"  # TODO: make a stageparameter + suffix on real job number
         pass
 
-    def triggered(self, run_settings):
+    def is_triggered(self, run_settings):
         try:
             reschedule_str = run_settings['http://rmit.edu.au/schemas/stages/schedule'][u'procs_2b_rescheduled']
             self.procs_2b_rescheduled = ast.literal_eval(reschedule_str)

@@ -42,12 +42,12 @@ class CopyDirectoryStage(Stage):
     def input_valid(self, settings_to_test):
         return (True, "ok")
 
-    def triggered(self, run_settings):
+    def is_triggered(self, run_settings):
         """
         Return true if the directory pattern triggers this stage, or there
         has been any other error
         """
-        # FIXME: Need to verify that triggered is idempotent.
+        # FIXME: Need to verify that is_triggered is idempotent.
         logger.debug("CopyDirectory Stage Triggered?")
         logger.debug("run_settings=%s" % run_settings)
 
@@ -126,12 +126,12 @@ class CopyFileStage(Stage):
     def input_valid(self, settings_to_test):
         return (True, "ok")
 
-    def triggered(self, run_settings):
+    def is_triggered(self, run_settings):
         """
         Return true if the directory pattern triggers this stage, or there
         has been any other error
         """
-        # FIXME: Need to verify that triggered is idempotent.
+        # FIXME: Need to verify that is_triggered is idempotent.
         logger.debug("Copy File Stage Triggered?")
         logger.debug("run_settings=%s" % run_settings)
 

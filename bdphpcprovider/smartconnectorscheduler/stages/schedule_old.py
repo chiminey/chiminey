@@ -15,7 +15,7 @@ class Schedule(Stage):
         self.settings = {}
         self.group_id = ''
 
-    def triggered(self, context):
+    def is_triggered(self, context):
         """
             Return True if there is a file system
             but it doesn't contain run_info file.
@@ -28,7 +28,7 @@ class Schedule(Stage):
                 self.settings = get_settings(context)
                 logger.debug("settings = %s" % self.settings)
                 return True
-        logger.debug("Scheduler not triggered")
+        logger.debug("Scheduler not is_triggered")
         return False
 
     def process(self, context):
