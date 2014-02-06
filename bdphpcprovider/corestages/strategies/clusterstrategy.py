@@ -18,16 +18,14 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from bdphpcprovider.messages.message import (
-    debug,
-    info,
-    success,
-    warn,
-    error,
-    debug_context, info_context, success_context, warn_context, error_context
-)
+from bdphpcprovider.corestages.strategies.strategy import Strategy
+from bdphpcprovider import messages
 
+class ClusterStrategy(Strategy):
+    def create_resource(self, connection_settings, platform_settings, context_id):
+        group_id = 'UNKNOWN'
+        created_nodes = []
+        created_nodes.add(['1', platform_settings['ip_address'], 'cluster', 'running'])
+        messages.info_context(context_id, "1: create (%s nodes created)" % len(created_nodes))
+        return group_id, created_nodes
 
-class MessagesException(Exception):
-    """ A problem in the messages library"""
-    pass

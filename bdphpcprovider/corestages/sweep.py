@@ -32,8 +32,11 @@ from bdphpcprovider import messages
 from bdphpcprovider.platform import manage
 from bdphpcprovider import storage
 from bdphpcprovider import mytardis
-from bdphpcprovider.runsettings import (getval, get_schema_namespaces,
-                         getvals, setval, update, SettingNotFoundException)
+
+from bdphpcprovider.runsettings import getval, getvals, \
+    setval, update, get_schema_namespaces, SettingNotFoundException
+from bdphpcprovider.corestages import stage
+from bdphpcprovider.storage import get_url_with_pkey
 
 
 logger = logging.getLogger(__name__)
@@ -105,7 +108,6 @@ class Sweep(Stage):
         output_storage_name, output_storage_offset = _parse_output_location(run_settings)
 
         def _parse_input_location(run_settings, location):
-
             loc_list = location.split('/')
             name = loc_list[0]
             offset = ''
@@ -198,13 +200,15 @@ class Sweep(Stage):
         try:
             input_prefix = '%s://%s@' % (input_storage_settings['scheme'],
                                     input_storage_settings['type'])
-            values_url = storage.get_url_with_pkey(
+
+            values_url = get_url_with_pkey(
                 input_storage_settings,
                 input_prefix + os.path.join(input_storage_settings['ip_address'],
                     input_storage_offset, "initial", VALUES_MAP_FILE),
                 is_relative_path=False)
             logger.debug("values_url=%s" % values_url)
-            values_e_url = storage.get_url_with_pkey(
+
+            values_e_url = get_url_with_pkey(
                 local_settings,
                 values_url,
                 is_relative_path=False)
@@ -233,7 +237,7 @@ class Sweep(Stage):
         # Get input_url directory
         input_prefix = '%s://%s@' % (input_storage_settings['scheme'],
                                 input_storage_settings['type'])
-        input_url = storage.get_url_with_pkey(input_storage_settings,
+        input_url = get_url_with_pkey(input_storage_settings,
             input_prefix + os.path.join(input_storage_settings['ip_address'],
                 input_storage_offset),
         is_relative_path=False)
@@ -258,7 +262,7 @@ class Sweep(Stage):
                 SUBDIRECTIVE_DIR % {'run_counter': str(run_counter)},
                 FIRST_ITERATION_DIR,)
             logger.debug("run_inputdir=%s" % run_inputdir)
-            run_iter_url = storage.get_url_with_pkey(local_settings,
+            run_iter_url = get_url_with_pkey(local_settings,
                 run_inputdir, is_relative_path=False)
             logger.debug("run_iter_url=%s" % run_iter_url)
             storage.copy_directories(input_url, run_iter_url)
@@ -277,7 +281,7 @@ class Sweep(Stage):
                 logger.debug("template_name=%s" % template_name)
                 v_map = {}
                 try:
-                    values_url = storage.get_url_with_pkey(
+                    values_url = get_url_with_pkey(
                         local_settings,
                         os.path.join(run_inputdir, "initial",
                              VALUES_MAP_TEMPLATE_FILE % {'template_name': template_name}),
@@ -298,7 +302,7 @@ class Sweep(Stage):
 
             v_map = {}
             try:
-                values_url = storage.get_url_with_pkey(
+                values_url = get_url_with_pkey(
                     local_settings,
                     os.path.join(run_inputdir, "initial",
                         VALUES_MAP_FILE),

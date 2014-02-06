@@ -1,4 +1,4 @@
-# Copyright (C) 2014, RMIT University
+# Copyright (C) 2013, RMIT University
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to
@@ -18,16 +18,12 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from bdphpcprovider.messages.message import (
-    debug,
-    info,
-    success,
-    warn,
-    error,
-    debug_context, info_context, success_context, warn_context, error_context
-)
+from bdphpcprovider import messages
 
+class Strategy():
 
-class MessagesException(Exception):
-    """ A problem in the messages library"""
-    pass
+    def create_resource(self, connection_settings, platform_settings, context_id):
+        group_id = 'UNKNOWN'
+        created_nodes = []
+        messages.warn_context(context_id, "warn: no compute resources are created")
+        return group_id, created_nodes

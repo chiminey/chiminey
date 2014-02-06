@@ -18,16 +18,6 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from bdphpcprovider.messages.message import (
-    debug,
-    info,
-    success,
-    warn,
-    error,
-    debug_context, info_context, success_context, warn_context, error_context
-)
-
-
-class MessagesException(Exception):
-    """ A problem in the messages library"""
-    pass
+from bdphpcprovider.corestages.strategies.strategy import Strategy
+from bdphpcprovider.corestages.strategies.cloudstrategy import CloudStrategy
+from bdphpcprovider.corestages.strategies.clusterstrategy import ClusterStrategy
