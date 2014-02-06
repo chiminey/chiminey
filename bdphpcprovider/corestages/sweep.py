@@ -34,7 +34,7 @@ from bdphpcprovider import storage
 from bdphpcprovider import mytardis
 from bdphpcprovider.runsettings import getval, getvals, setval, update, SettingNotFoundException
 from bdphpcprovider.corestages import stage
-
+from bdphpcprovider.storage import get_url_with_pkey
 
 logger = logging.getLogger(__name__)
 
@@ -104,16 +104,18 @@ class Sweep(Stage):
         # else:
         #     parent_contextid = 0
 
+        '''
         setval(run_settings,
                '%s/platform/computation/platform_url' % RMIT_SCHEMA,
                getval(run_settings,
                       '%s/input/system/compplatform/computation_platform'
                             % RMIT_SCHEMA))
-        # computation_platform_name = run_settings[
-        #     RMIT_SCHEMA + '/input/system/compplatform']['computation_platform']
-        # run_settings[RMIT_SCHEMA + '/platform/computation'] = {}
-        # run_settings[RMIT_SCHEMA + '/platform/computation'][
-        #     'platform_url'] = computation_platform_name
+        '''
+        computation_platform_name = run_settings[
+             RMIT_SCHEMA + '/input/system/compplatform']['computation_platform']
+        run_settings[RMIT_SCHEMA + '/platform/computation'] = {}
+        run_settings[RMIT_SCHEMA + '/platform/computation'][
+             'platform_url'] = computation_platform_name
 
         output_location = getval(run_settings, '%s/input/system/output_location' % RMIT_SCHEMA)
         # output_location = run_settings[RMIT_SCHEMA + '/input/system'][u'output_location']
@@ -124,13 +126,14 @@ class Sweep(Stage):
             output_storage_offset = os.path.join(*output_location_list[1:])
         logger.debug('output_storage_offset=%s' % output_storage_offset)
 
+        run_settings[RMIT_SCHEMA + '/platform/storage/output'] = {}
+        run_settings[RMIT_SCHEMA + '/platform/storage/output'][
+             'platform_url'] = output_storage_name
+
         setval(run_settings,
                '%s/platform/storage/output/platform_url' % RMIT_SCHEMA,
                output_storage_name)
 
-        # run_settings[RMIT_SCHEMA + '/platform/storage/output'] = {}
-        # run_settings[RMIT_SCHEMA + '/platform/storage/output'][
-        #     'platform_url'] = output_storage_name
 
         setval(run_settings, '%s/platform/storage/output/offset' % RMIT_SCHEMA,
                os.path.join(output_storage_offset, 'sweep%s' % contextid))
@@ -147,11 +150,12 @@ class Sweep(Stage):
             input_storage_offset = os.path.join(*input_location_list[1:])
         logger.debug('input_storage_offset=%s' % input_storage_offset)
 
-        setval(run_settings, '%s/platform/storage/input/platform_url' % RMIT_SCHEMA,
-               input_storage_name)
-        # run_settings[RMIT_SCHEMA + '/platform/storage/input'] = {}
+
+        run_settings[RMIT_SCHEMA + '/platform/storage/input'] = {}
         # run_settings[RMIT_SCHEMA + '/platform/storage/input'][
         #     'platform_url'] = input_storage_name
+        setval(run_settings, '%s/platform/storage/input/platform_url' % RMIT_SCHEMA,
+               input_storage_name)
 
         bdp_username = getval(run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA)
         # bdp_username = run_settings[RMIT_SCHEMA + '/bdp_userprofile'][
@@ -319,13 +323,13 @@ class Sweep(Stage):
         try:
             input_prefix = '%s://%s@' % (input_storage_settings['scheme'],
                                     input_storage_settings['type'])
-            values_url = stage.get_url_with_pkey(
+            values_url = get_url_with_pkey(
                 input_storage_settings,
                 input_prefix + os.path.join(input_storage_settings['ip_address'],
                     input_storage_offset, "initial", "values"),
                 is_relative_path=False)
             logger.debug("values_url=%s" % values_url)
-            values_e_url = stage.get_url_with_pkey(
+            values_e_url = get_url_with_pkey(
                 local_settings,
                 values_url,
                 is_relative_path=False)
@@ -351,7 +355,7 @@ class Sweep(Stage):
         # Get input_url directory
         input_prefix = '%s://%s@' % (input_storage_settings['scheme'],
                                 input_storage_settings['type'])
-        input_url = stage.get_url_with_pkey(input_storage_settings,
+        input_url = get_url_with_pkey(input_storage_settings,
             input_prefix + os.path.join(input_storage_settings['ip_address'],
                 input_storage_offset),
         is_relative_path=False)
@@ -373,7 +377,7 @@ class Sweep(Stage):
                 "run%s" % str(run_counter),
                 "input_0",)
             logger.debug("run_inputdir=%s" % run_inputdir)
-            run_iter_url = stage.get_url_with_pkey(local_settings,
+            run_iter_url = get_url_with_pkey(local_settings,
                 run_inputdir, is_relative_path=False)
             logger.debug("run_iter_url=%s" % run_iter_url)
 
@@ -394,7 +398,7 @@ class Sweep(Stage):
                 logger.debug("template_name=%s" % template_name)
                 v_map = {}
                 try:
-                    values_url = stage.get_url_with_pkey(
+                    values_url = get_url_with_pkey(
                         local_settings,
                         os.path.join(run_inputdir, "initial",
                             '%s_values' % template_name),
@@ -440,7 +444,7 @@ class Sweep(Stage):
 
             v_map = {}
             try:
-                values_url = stage.get_url_with_pkey(
+                values_url = get_url_with_pkey(
                     local_settings,
                     os.path.join(run_inputdir, "initial",
                         'values'),

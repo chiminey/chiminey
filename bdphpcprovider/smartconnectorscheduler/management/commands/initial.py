@@ -401,6 +401,7 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/stages/create':
                 [u'the create state of the smartconnector1',
                 {
+                u'create_done': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'ranking':12, 'help_text': ''},
                 u'failed_nodes': {'type':models.ParameterName.STRING, 'subtype':'', 'ranking':11, 'help_text': ''},
                 u'group_id': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':10, 'help_text':''},
                 u'vm_size': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':9, 'help_text':''},
