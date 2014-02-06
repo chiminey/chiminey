@@ -19,6 +19,7 @@
 # IN THE SOFTWARE.
 
 import logging
+import ast
 
 from bdphpcprovider.cloudconnection import create_vms, print_vms
 from bdphpcprovider.platform import manage
@@ -30,8 +31,9 @@ from bdphpcprovider.runsettings import (
     getval, setval, SettingNotFoundException, IncompatibleTypeException)
 from bdphpcprovider.smartconnectorscheduler.stages.errors import InsufficientVMError
 from bdphpcprovider.reliabilityframework import FTManager
-
+from bdphpcprovider.corestages import strategies
 from bdphpcprovider import messages
+from bdphpcprovider.platform import get_platform_settings
 
 logger = logging.getLogger(__name__)
 
@@ -46,16 +48,29 @@ class Create(Stage):
 
     def is_triggered(self, run_settings):
         """
-            Return True if there is a platform
-            but not group_id
+            Return True if configure done and no nodes are created
         """
-
         try:
             configure_done = int(getval(run_settings,
                 '%s/stages/configure/configure_done' % RMIT_SCHEMA))
         except (SettingNotFoundException, ValueError):
             return False
+        try:
+            create_done = int(getval(run_settings,
+                '%s/stages/create/create_done' % RMIT_SCHEMA))
+            if create_done:
+               return False
+        except (SettingNotFoundException, ValueError):
+            pass
 
+        try:
+            self.created_nodes = ast.literal_eval(getval(
+                run_settings, '%s/stages/create/created_nodes' % RMIT_SCHEMA))
+        except (SettingNotFoundException, ValueError):
+            self.created_nodes = []
+            return True
+        return False
+        '''
         if configure_done:
             try:
                 group_id = getval(run_settings,
@@ -68,6 +83,7 @@ class Create(Stage):
                     pass
 
         return False
+        '''
 
         # if self._exists(run_settings,
         #     RMIT_SCHEMA + '/stages/configure',
@@ -84,7 +100,9 @@ class Create(Stage):
         #                     return True
         # return False
 
+
     def process(self, run_settings):
+        logger.debug('run_settings=%s' % run_settings)
         """
         Make new VMS and store group_id
         """
@@ -107,16 +125,30 @@ class Create(Stage):
 
         computation_platform_url = run_settings['http://rmit.edu.au/schemas/platform/computation']['platform_url']
         bdp_username = run_settings['http://rmit.edu.au/schemas/bdp_userprofile']['username']
+        logger.debug('computation_platform_url=%s' % computation_platform_url)
         try:
-            comp_pltf_settings = manage.get_platform_settings(computation_platform_url, bdp_username)
+            comp_pltf_settings = get_platform_settings(computation_platform_url, bdp_username)
+            logger.debug('comp_pltf_settings=%s' % comp_pltf_settings)
+            platform_type = comp_pltf_settings['platform_type']
+            logger.debug('platform_type=%s' % platform_type)
+
+
         except KeyError:
             #Fixme: the following should transfer power to FT managers
             self.group_id = 'UNKNOWN'
             self.nodes = []
             return
+
         local_settings.update(comp_pltf_settings)
         logger.debug('local_settings=%s' % local_settings)
+        if platform_type == 'nectar':
+                self.strategy = strategies.CloudStrategy()
+        else:
+            self.strategy = strategies.ClusterStrategy()
+
         self.platform_type = local_settings['platform_type']
+
+        '''
         self.group_id, self.nodes = create_vms(local_settings)
         try:
             if not self.nodes or len(self.nodes) < local_settings['min_count']:
@@ -129,6 +161,10 @@ class Create(Stage):
             ftmanager = FTManager()
             ftmanager.manage_failure(e, settings=comp_pltf_settings,
                                      created_vms=self.nodes)
+        '''
+        context_id = getval(run_settings, '%s/system/contextid' % RMIT_SCHEMA)
+        platform_settings = self.get_platform_settings(run_settings, 'http://rmit.edu.au/schemas/platform/computation')
+        self.group_id, self.created_nodes = self.strategy.create_resource(local_settings, platform_settings, context_id)
 
 
     def output(self, run_settings):
@@ -139,11 +175,17 @@ class Create(Stage):
         setval(run_settings,
                '%s/stages/create/group_id' % RMIT_SCHEMA,
                self.group_id)
+        setval(run_settings,
+                       "%s/stages/create/created_nodes" % RMIT_SCHEMA,
+                       self.created_nodes)
+        setval(run_settings,
+                       "%s/stages/create/create_done" % RMIT_SCHEMA,
+                       1)
 
+        '''
         setval(run_settings,
                '%s/system/platform' % RMIT_SCHEMA,
                self.platform_type)
-
         if not self.nodes:
             setval(run_settings,
              '%s/stages/create/created_nodes' % RMIT_SCHEMA, [])
@@ -156,6 +198,7 @@ class Create(Stage):
             if self.group_id is not  "UNKNOWN":
                 setval(run_settings,
                        "%s/stages/create/created_nodes" % RMIT_SCHEMA,
-                       [(x.id, x.ip_address, unicode(x.region)) for x in self.nodes])
+                       [[x.id, x.ip_address, unicode(x.region)] for x in self.nodes])
+        '''
         logger.debug("Updated run settings %s" % run_settings)
         return run_settings
