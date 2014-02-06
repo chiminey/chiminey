@@ -154,8 +154,12 @@ class Execute(stage.Stage):
                 # 'http://rmit.edu.au/schemas/stages/run/rand_index'))
         except (SettingNotFoundException, ValueError):
             logger.warn("setting rand_index for first iteration")
-            self.rand_index = int(getval(run_settings, '%s/input/hrmc/iseed' % RMIT_SCHEMA))
+            try:
+                self.rand_index = int(getval(run_settings, '%s/input/hrmc/iseed' % RMIT_SCHEMA))#fixme: consider removing reference to iseed
+            except (SettingNotFoundException, ValueError):
+                self.rand_index = 0
         logger.debug("rand_index=%s" % self.rand_index)
+
 
         try:
             self.experiment_id = int(getval(run_settings, '%s/input/mytardis/experiment_id' % RMIT_SCHEMA))

@@ -50,7 +50,8 @@ class RandExecute(Execute):
                 computation_platform['root_path'], settings['payload_destination'],
                 str(process_id), settings['payload_cloud_dirname'])
             logger.debug('output_path=%s' % output_path)
-            command, errs = run_command_with_status(ssh, 'mkdir -p %s; cd %s ; uptime > %s' %
+            command, errs = run_command_with_status(ssh, "mkdir -p %s; cd %s ; "
+                                                         "python -c 'import random; print random.random()' > %s" %
                                                          (output_path, output_path, filename))
             #'python -c \'import random; print random.random()\'
             logger.debug('command=%s errs=%s' % (command, errs))
