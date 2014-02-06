@@ -77,6 +77,13 @@ class Stage(object):
         platform_url = run_settings[namespace_prefix]['platform_url']
         return get_platform_settings(platform_url, bdp_username)
 
+
+    def set_stage_settings(self, run_settings, local_settings):
+        pass
+
+    def set_domain_settings(self, run_settings, local_settings):
+        pass
+
     @deprecated
     def _exists(self, context, *parts):
             c = dict(context)

@@ -63,6 +63,58 @@ def addMessage(run_settings, level, msg):
 
     tasks.context_message.delay(context_id, mess)
 
+def addMessage_context(context_id, level, msg):
+    '''
+    try:
+        context_id = getval(run_settings, '%s/system/contextid' % RMIT_SCHEMA)
+    except SettingNotFoundException:
+        logger.error("unable to load contextid from run_settings")
+        logger.error(pformat(run_settings))
+        return
+    '''
+    # try:
+    #     context_id = get_existing_key(run_settings,
+    #         "http://rmit.edu.au/schemas/system/contextid")
+    # except KeyError:
+    #     logger.error("unable to load contextid from run_settings")
+    #     logger.error(pformat(run_settings))
+    #     return
+    logger.debug("context_id=%s" % context_id)
+    if not context_id:
+        logger.error("invalid context_id")
+        return
+    mess = '%s,%s' % (level, msg)
+    logger.debug("mess=%s" % mess)
+    # Cannot write ContextMessage in same process as tasks.py
+    # holds lock on all tables, so would get all messages
+    # within a corestages at the end of the corestages process
+    # With celery task, then some other worker (if available)
+    # can do the task ASAP.
+    # FIXME: this is circular import at global level
+    from bdphpcprovider.smartconnectorscheduler import tasks
+
+    tasks.context_message.delay(context_id, mess)
+
+
+def debug_context(context_id, msg):
+    return addMessage_context(context_id, 'debug', msg)
+
+
+def info_context(context_id, msg):
+    return addMessage_context(context_id, 'info', msg)
+
+
+def success_context(context_id, msg):
+    return addMessage_context(context_id, 'success', msg)
+
+
+def warn_context(context_id, msg):
+    return addMessage_context(context_id, 'warning', msg)
+
+
+def error_context(context_id, msg):
+    return addMessage_context(context_id, 'error', msg)
+
 
 def debug(run_settings, msg):
     return addMessage(run_settings, 'debug', msg)

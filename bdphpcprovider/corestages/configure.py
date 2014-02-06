@@ -70,6 +70,8 @@ class Configure(Stage):
         self.output_platform_offset = ''
         self.input_platform_name = ''
         self.input_platform_offset = ''
+        self.compute_platform_name = ''
+        self.compute_platform_offset = ''
         try:
              run_settings['http://rmit.edu.au/schemas/platform/storage/output']
         except KeyError:
@@ -94,9 +96,11 @@ class Configure(Stage):
              run_settings['http://rmit.edu.au/schemas/platform/computation']
         except KeyError:
             bdp_url =  run_settings[RMIT_SCHEMA + '/input/system/compplatform']['computation_platform']
+            logger.debug('tbdp_url=%s' % bdp_url)
             self.compute_platform_name, self.compute_platform_offset = self.break_bdp_url(bdp_url)
-
-
+            run_settings[RMIT_SCHEMA + '/platform/computation'] = {}
+            run_settings[RMIT_SCHEMA + '/platform/computation']['platform_url'] = self.compute_platform_name
+            run_settings[RMIT_SCHEMA + '/platform/computation']['offset'] = self.compute_platform_offset
 
         messages.info(run_settings, "1: configure")
 
@@ -244,25 +248,30 @@ class Configure(Stage):
                '%s/input/mytardis/experiment_id' % RMIT_SCHEMA,
                str(self.experiment_id))
 
-        run_settings.setdefault(
-            RMIT_SCHEMA + '/platform/storage/output',
-            {})[u'platform_url'] = self.output_platform_name
+        if self.output_platform_name:
+            run_settings.setdefault(
+                RMIT_SCHEMA + '/platform/storage/output',
+                {})[u'platform_url'] = self.output_platform_name
         if self.output_platform_offset:
             run_settings[RMIT_SCHEMA + '/platform/storage/output']['offset'] = self.output_platform_offset
         else:
             run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset'] = self.output_loc_offset
 
-        run_settings.setdefault(
-            RMIT_SCHEMA + '/platform/storage/input',
-            {})[u'platform_url'] = self.input_platform_name
+        if self.input_platform_name:
+            run_settings.setdefault(
+                RMIT_SCHEMA + '/platform/storage/input',
+                {})[u'platform_url'] = self.input_platform_name
         if self.input_platform_offset:
             run_settings[RMIT_SCHEMA + '/platform/storage/input']['offset'] = self.input_platform_offset
 
-        run_settings.setdefault('http://rmit.edu.au/schemas/platform/computation',
-            {})[u'platform_url'] = self.compute_platform_name
+        logger.debug('self.compute_platform_name=%s' % self.compute_platform_name)
+        if self.compute_platform_name:
+            run_settings.setdefault('http://rmit.edu.au/schemas/platform/computation',
+                {})[u'platform_url'] = self.compute_platform_name
 
-        run_settings.setdefault('http://rmit.edu.au/schemas/platform/computation',
-            {})[u'offset'] = self.compute_platform_offset
+        if self.compute_platform_offset:
+            run_settings.setdefault('http://rmit.edu.au/schemas/platform/computation',
+                {})[u'offset'] = self.compute_platform_offset
 
         return run_settings
 
@@ -311,8 +320,7 @@ class Configure(Stage):
     def curate_date(self, run_settings, **kwargs):
         bdp_username = run_settings['http://rmit.edu.au/schemas/bdp_userprofile']['username']
         try:
-            experiment_id = int(stage.get_existing_key(run_settings,
-                RMIT_SCHEMA + '/input/mytardis/experiment_id'))
+            experiment_id = int(getval(run_settings, '%s/input/mytardis/experiment_id' % RMIT_SCHEMA))
             location = kwargs['location']
         except KeyError:
             experiment_id = 0
