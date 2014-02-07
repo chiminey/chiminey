@@ -20,12 +20,11 @@
 
 import logging
 from bdphpcprovider.corestages.strategies.strategy import Strategy
-from bdphpcprovider.cloudconnection import create_vms, destroy_vms, print_vms
+from bdphpcprovider.cloudconnection import create_vms, destroy_vms, print_vms, get_registered_vms
 from bdphpcprovider.smartconnectorscheduler.stages.errors import InsufficientVMError
 from bdphpcprovider.reliabilityframework import FTManager
 from bdphpcprovider import messages
 from bdphpcprovider.runsettings import SettingNotFoundException, getval, update
-from bdphpcprovider.cloudconnection import get_registered_vms
 from bdphpcprovider.smartconnectorscheduler.stages.errors \
     import InsufficientResourceError, VMTerminatedError, NoRegisteredVMError
 from bdphpcprovider.storage import get_url_with_pkey, copy_directories, get_make_path
@@ -253,6 +252,8 @@ class CloudStrategy(Strategy):
         local_settings['bdp_username'] = getval(run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA)
 
     def start_schedule_task(self, schedule_class, run_settings, local_settings):
+        schedule_class.nodes = get_registered_vms(
+                local_settings, node_type='bootstrapped_nodes')
         schedule.schedule_task(schedule_class, run_settings, local_settings)
 
     def complete_schedule(self, schedule_class, local_settings):

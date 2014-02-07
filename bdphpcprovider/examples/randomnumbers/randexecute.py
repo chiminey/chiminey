@@ -61,7 +61,3 @@ class RandExecute(Execute):
         finally:
             if ssh:
                 ssh.close()
-
-    def output(self, run_settings):
-        run_settings['http://rmit.edu.au/schemas/stages/run']['runs_left'] = 1
-        return super(RandExecute, self).output(run_settings)

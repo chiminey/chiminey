@@ -19,10 +19,15 @@
 # IN THE SOFTWARE.
 
 from bdphpcprovider import messages
+from bdphpcprovider.runsettings import update
+
+RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
 class Strategy():
     def set_create_settings(self, run_settings, local_settings):
-        pass
+        update(local_settings, run_settings,
+               '%s/system/contextid' % RMIT_SCHEMA
+               )
 
     def create_resource(self, local_settings):
         group_id = 'UNKNOWN'
@@ -43,10 +48,10 @@ class Strategy():
         pass
 
     def start_schedule_task(self, schedule_class, run_settings, local_settings):
-        pass
+        schedule_class.total_processes = 1
 
     def complete_schedule(self, schedule_class, local_settings):
-        pass
+        schedule_class.total_scheduled_procs = 1
 
     def set_destroy_settings(self, run_settings, local_settings):
         pass
