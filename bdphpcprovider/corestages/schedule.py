@@ -20,7 +20,7 @@
 
 import logging
 import ast
-from bdphpcprovider.cloudconnection import get_registered_vms
+
 from bdphpcprovider.corestages import strategies
 from bdphpcprovider.corestages.stage import Stage
 from bdphpcprovider.runsettings import getval, setval, setvals, SettingNotFoundException
@@ -217,8 +217,6 @@ class Schedule(Stage):
             logger.error(e)
 
         logger.debug("started=%s" % self.started)
-        self.nodes = get_registered_vms(
-                local_settings, node_type='bootstrapped_nodes')
         logger.debug('Schedule there')
         if not self.started:
             logger.debug("initial run")
