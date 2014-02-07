@@ -43,13 +43,14 @@ RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 # TODO: key task here is to seperate the domain specific  parts from the
 # general parts of this stage and move to different class/module
 
+DOMAIN_INPUT_FILES = ['input_bo.dat', 'input_gr.dat', 'input_sq.dat']
+
 
 class Transform(Stage):
     """
         Convert output into input for next iteration.
     """
     # FIXME: put part of config file, or pull from original input file
-    domain_input_files = ['input_bo.dat', 'input_gr.dat', 'input_sq.dat']
 
     def __init__(self, user_settings=None):
 
@@ -60,7 +61,6 @@ class Transform(Stage):
     def is_triggered(self, run_settings):
         try:
             reschedule_str = getval(run_settings, '%s/stages/schedule/procs_2b_rescheduled' % RMIT_SCHEMA)
-            # reschedule_str = run_settings['http://rmit.edu.au/schemas/stages/schedule'][u'procs_2b_rescheduled']
             self.procs_2b_rescheduled = ast.literal_eval(reschedule_str)
             logger.debug('self.procs_2b_rescheduled=%s' % self.procs_2b_rescheduled)
             if self.procs_2b_rescheduled:
@@ -72,8 +72,6 @@ class Transform(Stage):
 
         try:
             current_processes = ast.literal_eval(getval(run_settings, '%s/stages/schedule/current_processes' % RMIT_SCHEMA))
-            # current_processes = ast.literal_eval(smartconnector.get_existing_key(run_settings,
-            #         'http://rmit.edu.au/schemas/stages/schedule/current_processes'))
             executed_not_running = [x for x in current_processes if x['status'] == 'ready']
             if executed_not_running:
                 logger.debug('executed_not_running=%s' % executed_not_running)
@@ -87,10 +85,8 @@ class Transform(Stage):
 
         try:
             failed_str = getval(run_settings, '%s/stages/create/failed_nodes' % RMIT_SCHEMA)
-            # failed_str = run_settings['http://rmit.edu.au/schemas/stages/create'][u'failed_nodes']
             failed_nodes = ast.literal_eval(failed_str)
             created_str = getval(run_settings, '%s/stages/create/created_nodes' % RMIT_SCHEMA)
-            # created_str = run_settings['http://rmit.edu.au/schemas/stages/create'][u'created_nodes']
             created_nodes = ast.literal_eval(created_str)
             if len(failed_nodes) == len(created_nodes) or len(created_nodes) == 0:
                 return False
@@ -105,12 +101,6 @@ class Transform(Stage):
         except (SettingNotFoundException, ValueError) as e:
             logger.warn("no threshold found when expected")
             return False
-        # if self._exists(run_settings, 'http://rmit.edu.au/schemas/input/hrmc', u'threshold'):
-        #     # FIXME: need to validate this output to make sure list of int
-        #     self.threshold = ast.literal_eval(run_settings['http://rmit.edu.au/schemas/input/hrmc'][u'threshold'])
-        # else:
-        #     logger.warn("no threshold found when expected")
-        #     return False
 
         logger.debug("threshold = %s" % self.threshold)
 
@@ -118,11 +108,6 @@ class Transform(Stage):
             self.converged = int(getval(run_settings, '%s/stages/converge/converged' % RMIT_SCHEMA))
         except (SettingNotFoundException, ValueError) as e:
             self.converged = 0
-        # if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/converge', u'converged'):
-        #     # FIXME: should use NUMERIC for bools, so use 0,1 and natural comparison will work.
-        #     self.converged = int(run_settings['http://rmit.edu.au/schemas/stages/converge'][u'converged'])
-        # else:
-        #     self.converged = 0
 
         try:
             self.runs_left = getval(run_settings, '%s/stages/run/runs_left' % RMIT_SCHEMA)
@@ -138,17 +123,6 @@ class Transform(Stage):
             else:
                 logger.debug("%s %s %s" % (self.runs_left, self.transformed, self.converged))
                 pass
-        # if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run', u'runs_left'):
-        #     self.runs_left = run_settings['http://rmit.edu.au/schemas/stages/run'][u'runs_left']
-        #     if self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/transform', u'transformed'):
-        #         self.transformed = int(run_settings['http://rmit.edu.au/schemas/stages/transform'][u'transformed'])
-        #     else:
-        #         self.transformed = 0
-        #     if (self.runs_left == 0) and (not self.transformed) and (not self.converged):
-        #         return True
-        #     else:
-        #         logger.debug("%s %s %s" % (self.runs_left, self.transformed, self.converged))
-        #         pass
 
         return False
 
@@ -191,35 +165,6 @@ class Transform(Stage):
                 '%s/input/hrmc/optimisation_scheme' % RMIT_SCHEMA,
                 '%s/input/hrmc/threshold' % RMIT_SCHEMA
             )
-
-            # smartconnector.copy_settings(self.boto_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/stages/setup/payload_source')
-            # smartconnector.copy_settings(self.boto_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/stages/setup/payload_destination')
-            # smartconnector.copy_settings(self.boto_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/system/platform')
-            # smartconnector.copy_settings(self.boto_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/stages/create/custom_prompt')
-            # smartconnector.copy_settings(self.boto_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/stages/create/cloud_sleep_interval')
-            # smartconnector.copy_settings(self.boto_settings, run_settings,
-            #   'http://rmit.edu.au/schemas/stages/create/created_nodes')
-            # smartconnector.copy_settings(self.boto_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/stages/run/payload_cloud_dirname')
-            # smartconnector.copy_settings(self.boto_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/system/max_seed_int')
-            # smartconnector.copy_settings(self.boto_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/stages/run/compile_file')
-            # smartconnector.copy_settings(self.boto_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/stages/run/retry_attempts')
-            # smartconnector.copy_settings(self.boto_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/input/system/cloud/number_vm_instances')
-            # smartconnector.copy_settings(self.boto_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/input/hrmc/iseed')
-            # smartconnector.copy_settings(self.boto_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/input/hrmc/optimisation_scheme')
-            # smartconnector.copy_settings(self.boto_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/input/hrmc/threshold')
 
             local_settings['bdp_username'] = getval(run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA)
             # self.boto_settings['bdp_username'] = run_settings[
@@ -544,7 +489,7 @@ class Transform(Stage):
             logger.debug("New input node dir %s" % self.new_input_node_dir)
 
             # Move all existing domain input files unchanged to next input directory
-            for f in self.domain_input_files:
+            for f in self.DOMAIN_INPUT_FILES:
                 source_url = stage.get_url_with_pkey(
                     output_storage_settings,
                     output_prefix + os.path.join(self.output_dir, Node_info.dir, f), is_relative_path=False)
@@ -704,3 +649,6 @@ class Transform(Stage):
 
 
 
+
+class HRMCTransform(Transform):
+    pass

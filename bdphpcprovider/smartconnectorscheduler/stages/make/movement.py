@@ -31,11 +31,10 @@ from django.template import Context, Template
 
 from bdphpcprovider.platform import manage
 from bdphpcprovider.corestages import stage
-from bdphpcprovider.corestages.stage import (
-    Stage, get_url_with_pkey)
+from bdphpcprovider.corestages.stage import Stage
 from bdphpcprovider import messages
 from bdphpcprovider import storage
-from bdphpcprovider.runsettings import getval, setvals, update, SettingNotFoundException
+from bdphpcprovider.runsettings import getval, setvals, SettingNotFoundException
 
 
 from . import setup_settings
@@ -44,7 +43,6 @@ from . import setup_settings
 logger = logging.getLogger(__name__)
 
 VALUES_FNAME = "values"
-
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
 
@@ -143,7 +141,7 @@ def _get_dest_bdp_url(settings):
 
 def _upload_payload(settings, source_url, values_map):
 
-    encoded_s_url = get_url_with_pkey(settings, source_url)
+    encoded_s_url = storage.get_url_with_pkey(settings, source_url)
     logger.debug("encoded_s_url=%s" % encoded_s_url)
 
     dest_url = _get_dest_bdp_url(settings)
@@ -155,7 +153,7 @@ def _upload_payload(settings, source_url, values_map):
     logger.debug("comp_pltf_settings=%s" % pformat(comp_pltf_settings))
     settings.update(comp_pltf_settings)
 
-    encoded_d_url = stage.get_url_with_pkey(settings,
+    encoded_d_url = storage.get_url_with_pkey(settings,
         dest_url, is_relative_path=True, ip_address=settings['host'])
 
     storage.copy_directories(encoded_s_url, encoded_d_url)
@@ -165,7 +163,7 @@ def _upload_payload(settings, source_url, values_map):
             settings,
             values_map).items():
 
-        content_url = stage.get_url_with_pkey(
+        content_url = storage.get_url_with_pkey(
             settings,
             os.path.join(dest_url, content_fname),
             is_relative_path=True, ip_address=settings['host'])
@@ -178,7 +176,7 @@ def _upload_payload(settings, source_url, values_map):
 def _upload_variations_inputs(settings, source_url_initial, values_map):
     bdp_username = settings['bdp_username']
     logger.debug("source_url_initial=%s" % source_url_initial)
-    encoded_s_url = get_url_with_pkey(settings, source_url_initial)
+    encoded_s_url = storage.get_url_with_pkey(settings, source_url_initial)
     logger.debug("encoded_s_url=%s" % encoded_s_url)
 
     dest_url = _get_dest_bdp_url(settings)
@@ -190,7 +188,7 @@ def _upload_variations_inputs(settings, source_url_initial, values_map):
         bdp_username)
     settings.update(comp_pltf_settings)
 
-    encoded_d_url = stage.get_url_with_pkey(settings,
+    encoded_d_url = storage.get_url_with_pkey(settings,
         dest_url, is_relative_path=True, ip_address=settings['host'])
 
     storage.copy_directories(encoded_s_url, encoded_d_url)
@@ -200,7 +198,7 @@ def _upload_variations_inputs(settings, source_url_initial, values_map):
             settings,
             values_map).items():
 
-        content_url = stage.get_url_with_pkey(
+        content_url = storage.get_url_with_pkey(
             settings,
             os.path.join(dest_url, content_fname),
             is_relative_path=True, ip_address=settings['host'])
@@ -213,7 +211,7 @@ def _upload_variations_inputs(settings, source_url_initial, values_map):
 
 
 def _save_values(settings, url, context):
-    values_url = stage.get_url_with_pkey(settings,
+    values_url = storage.get_url_with_pkey(settings,
         os.path.join(url, VALUES_FNAME),
         is_relative_path=True, ip_address=settings['host'])
     storage.put_file(values_url, json.dumps(context))
@@ -222,7 +220,7 @@ def _save_values(settings, url, context):
 def _instantiate_context(source_url, settings, context):
 
     templ_pat = re.compile("(.*)_template")
-    encoded_s_url = stage.get_url_with_pkey(settings,
+    encoded_s_url = storage.get_url_with_pkey(settings,
         source_url, is_relative_path=False)
 
     logger.debug("encoded_s_url=%s" % encoded_s_url)
@@ -235,7 +233,7 @@ def _instantiate_context(source_url, settings, context):
         templ_mat = templ_pat.match(fname)
         if templ_mat:
             base_fname = templ_mat.group(1)
-            basename_url_with_pkey = stage.get_url_with_pkey(
+            basename_url_with_pkey = storage.get_url_with_pkey(
                 settings,
                 os.path.join(
                     source_url,
@@ -260,7 +258,7 @@ def _instantiate_context(source_url, settings, context):
 def _load_values_map(settings, url):
     values = {}
     try:
-        enc_url = get_url_with_pkey(
+        enc_url = storage.get_url_with_pkey(
             settings,
             "%s/%s" % (url, VALUES_FNAME))
         logger.debug("values_file=%s" % enc_url)

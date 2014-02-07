@@ -51,7 +51,6 @@ class MakeRunStage(stage.Stage):
     def input_valid(self, settings_to_test):
             return (True, "ok")
 
-
     def is_triggered(self, run_settings):
         try:
             upload_makefile_done = int(getval(run_settings, '%s/stages/upload_makefile/done' % RMIT_SCHEMA))
@@ -110,7 +109,7 @@ class MakeRunStage(stage.Stage):
             bdp_username)
         logger.debug("comp_pltf_settings=%s" % pformat(comp_pltf_settings))
         settings.update(comp_pltf_settings)
-        encoded_d_url = stage.get_url_with_pkey(
+        encoded_d_url = storage.get_url_with_pkey(
             settings,
             dest_url,
             is_relative_path=True,

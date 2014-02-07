@@ -763,7 +763,7 @@ class Command(BaseCommand):
 
         sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep",
             description="Sweep Test",
-            package="bdphpcprovider.corestages.sweep.Sweep",
+            package="bdphpcprovider.corestages.sweep.HRMCSweep",
             order=100)
         sweep_stage.update_settings({
             u'http://rmit.edu.au/schemas/stages/sweep':
@@ -785,7 +785,7 @@ class Command(BaseCommand):
 
         sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep_make",
             description="Sweep Test",
-            package="bdphpcprovider.corestages.sweep.Sweep",
+            package="bdphpcprovider.corestages.sweep.RemoteMakeSweep",
             order=100)
         sweep_stage.update_settings({
             # FIXME: move random_numbers into system schema

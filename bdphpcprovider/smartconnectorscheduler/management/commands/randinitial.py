@@ -605,11 +605,34 @@ class Command(BaseCommand):
 
         logger.debug("local_filesys_rootpath=%s" % local_filesys_rootpath)
 
-
         self.define_rand_number()
         print "done"
 
+    def define_rand_number_sweep(self, subdirective):
 
+        sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep_rand",
+            description="Sweep for Random",
+            package="bdphpcprovider.examples.randomnumber.randsweep.RandSweep",
+            order=100)
+        sweep_stage.update_settings({
+            u'http://rmit.edu.au/schemas/sweep':
+            {
+                u'directive': subdirective.name
+            }
+            })
+        sweep, _ = models.Directive.objects.get_or_create(name="sweep_rand",
+            description="Rand Sweep Connector",
+            stage=sweep_stage)
+
+        RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+        for i, sch in enumerate([
+                RMIT_SCHEMA + "/input/system/compplatform",
+                RMIT_SCHEMA + "/input/system",
+                RMIT_SCHEMA + "/input/sweep",
+                ]):
+            schema = models.Schema.objects.get(namespace=sch)
+        das, _ = models.DirectiveArgSet.objects.get_or_create(
+              directive=subdirective, order=i, schema=schema)
 
     def define_rand_number(self):
         package = "bdphpcprovider.examples.randomnumbers"
@@ -643,7 +666,7 @@ class Command(BaseCommand):
                 {
                     u'payload_cloud_dirname': '',
                     u'compile_file': '',
-                    u'retry_attempts': 3, #fixme remove after deleting references in all other stages
+                    u'retry_attempts': 3,  # fixme remove after deleting references in all other stages
                 },
             })
         rand_execute_stage.update_settings(
@@ -678,8 +701,10 @@ class Command(BaseCommand):
             schema = models.Schema.objects.get(namespace=sch)
             das, _ = models.DirectiveArgSet.objects.get_or_create(directive=rand_number, order=i, schema=schema)
 
-
+        self.define_rand_number_sweep(rand_number)
 
     def handle(self, *args, **options):
         self.setup()
         print "done"
+
+
