@@ -641,6 +641,14 @@ class Command(BaseCommand):
         randwait = package + ".randwait.RandWait"
         parent = "bdphpcprovider.smartconnectorscheduler.stages.composite.ParallelStage"
 
+        create_package = "bdphpcprovider.corestages.create.Create"
+        bootstrap_package = "bdphpcprovider.corestages.bootstrap.Bootstrap"
+        schedule_package = "bdphpcprovider.corestages.schedule.Schedule"
+
+        destroy_package = "bdphpcprovider.corestages.destroy.Destroy"
+
+
+
         parent_stage, _ = models.Stage.objects.get_or_create(
             name="random_number_connector",
             description="Random number parent",
@@ -654,6 +662,42 @@ class Command(BaseCommand):
             order=5
         )
         rand_config_stage.update_settings({})
+        create_stage, _ = models.Stage.objects.get_or_create(name="create",
+            description="This is create stage of HRMC smart connector",
+            parent=parent_stage,
+            package=create_package,
+            order=1)
+        create_stage.update_settings({u'http://rmit.edu.au/schemas/stages/create':
+                {
+                    u'vm_size': "m1.small",
+                    u'vm_image': "ami-0000000d",
+                    u'cloud_sleep_interval': 20,
+                    u'security_group': '["ssh"]',
+                    u'group_id_dir': 'group_id',
+                    u'custom_prompt': '[smart-connector_prompt]$',
+                    u'nectar_username': 'root',
+                    u'nectar_password': ''
+                }})
+        bootstrap_stage, _ = models.Stage.objects.get_or_create(name="bootstrap",
+            description="This is bootstrap stage of this smart connector",
+            parent=parent_stage,
+            package=bootstrap_package,
+            order=20)
+        bootstrap_stage.update_settings(
+            {
+            u'http://rmit.edu.au/schemas/stages/setup':
+                {
+                    u'payload_source': 'file://127.0.0.1/local/testpayload_new',
+                    u'payload_destination': 'celery_payload_2',
+                    u'payload_name': 'process_payload',
+                    u'filename_for_PIDs': 'PIDs_collections',
+                },
+            })
+        schedule_stage, _ = models.Stage.objects.get_or_create(name="schedule",
+            description="This is schedule stage of this smart connector",
+            parent=parent_stage,
+            package=schedule_package,
+            order=25)
         rand_execute_stage, _ = models.Stage.objects.get_or_create(
             name="randexecute",
             description="Rand execute stage",
@@ -687,6 +731,12 @@ class Command(BaseCommand):
             order=15
         )
         rand_wait_stage.update_settings({})
+        destroy_stage, _ = models.Stage.objects.get_or_create(name="destroy",
+            description="This is destroy stage of HRMC smart connector",
+            parent=parent_stage,
+            package=destroy_package,
+            order=70)
+        destroy_stage.update_settings({})
         rand_number, _ = models.Directive.objects.get_or_create(
             name="randomnumber",
             defaults={'stage': parent_stage,
@@ -701,7 +751,9 @@ class Command(BaseCommand):
             schema = models.Schema.objects.get(namespace=sch)
             das, _ = models.DirectiveArgSet.objects.get_or_create(directive=rand_number, order=i, schema=schema)
 
-        self.define_rand_number_sweep(rand_number)
+
+        #self.define_rand_number_sweep(rand_number)
+
 
     def handle(self, *args, **options):
         self.setup()
