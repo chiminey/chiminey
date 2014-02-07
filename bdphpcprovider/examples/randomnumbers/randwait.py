@@ -24,10 +24,3 @@ from bdphpcprovider import messages
 class RandWait(Wait):
     def is_job_finished(self, ip_address, process_id, retry_left, settings):
         return True
-
-    def get_output(self, ip_address, process_id, output_dir, local_settings,
-                   computation_platform_settings, output_storage_settings,
-                   run_settings):
-        super(RandWait, self).get_output(ip_address, process_id, output_dir, local_settings,
-                   computation_platform_settings, output_storage_settings, run_settings)
-        messages.success(run_settings, "finished")

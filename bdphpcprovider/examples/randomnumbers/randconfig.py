@@ -29,24 +29,3 @@ class RandConfig(Configure):
 
     def copy_to_scratch_space(self, run_settings, local_settings):
         pass
-
-    def output(self, run_settings):
-        process = [{'status': 'ready', 'id': '1', 'ip_address': '118.138.241.230', 'retry_left': 1}]
-        run_settings.setdefault(
-            'http://rmit.edu.au/schemas/stages/schedule',
-            {})[u'current_processes'] = process
-        run_settings.setdefault(
-            'http://rmit.edu.au/schemas/stages/schedule',
-            {})[u'all_processes'] = process
-
-
-        run_settings.setdefault(
-            'http://rmit.edu.au/schemas/stages/execute',
-            {})[u'executed_procs'] = process
-        run_settings.setdefault(
-            'http://rmit.edu.au/schemas/stages/schedule',
-            {})[u'schedule_completed'] = 1
-        run_settings.setdefault(
-            'http://rmit.edu.au/schemas/system',
-            {})[u'id'] = 0
-        return super(RandConfig, self).output(run_settings)

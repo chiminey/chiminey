@@ -25,9 +25,18 @@ class ClusterStrategy(Strategy):
     def create_resource(self, local_settings):
         group_id = 'UNKNOWN'
         created_nodes = []
-        created_nodes.add(['1', local_settings['ip_address'], 'unix', 'running'])
+        created_nodes.append(['1', local_settings['ip_address'], 'unix', 'running'])
         messages.info_context(local_settings['contextid'], "1: create (%s nodes created)" % len(created_nodes))
         return group_id, created_nodes
 
     def complete_bootstrap(self, bootstrap_class, local_settings):
         bootstrap_class.bootstrapped_nodes.append(['1', local_settings['ip_address'], 'unix', 'running'])
+
+
+    def complete_schedule(self, schedule_class, local_settings):
+        schedule_class.total_scheduled_procs = 1
+        schedule_class.scheduled_nodes.append(['1', local_settings['ip_address'], 'unix', 'running'])
+        schedule_class.all_processes.append({'status': 'ready', 'retry_left': '2',
+                                             'ip_address': local_settings['ip_address'], 'id': '1'})#fixme: process id assumes single iteration
+        schedule_class.current_processes.append({'status': 'ready', 'retry_left': '2',
+                                             'ip_address': local_settings['ip_address'], 'id': '1'})
