@@ -20,14 +20,10 @@
 
 
 import logging
-import ast
-from bdphpcprovider.platform import manage
+from bdphpcprovider.corestages import stage, strategies
+from bdphpcprovider import messages
 
-from bdphpcprovider.smartconnectorscheduler import models
-from bdphpcprovider.cloudconnection import destroy_vms
-from bdphpcprovider.corestages import stage
-
-from bdphpcprovider.runsettings import getval, setvals, getvals, update, SettingNotFoundException
+from bdphpcprovider.runsettings import getval, setvals, SettingNotFoundException
 
 logger = logging.getLogger(__name__)
 
@@ -56,56 +52,29 @@ class Destroy(stage.Stage):
         return False
 
     def process(self, run_settings):
-
-        local_settings = getvals(run_settings, models.UserProfile.PROFILE_SCHEMA_NS)
-        # local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
-
-        update(local_settings, run_settings,
-               #'%s/system/platform' % RMIT_SCHEMA,
-               '%s/stages/create/cloud_sleep_interval' % RMIT_SCHEMA)
-        # smartconnector.copy_settings(local_settings, run_settings,
-        #     'http://rmit.edu.au/schemas/system/platform')
-        # smartconnector.copy_settings(local_settings, run_settings,
-        #     'http://rmit.edu.au/schemas/stages/create/cloud_sleep_interval')
-        local_settings['bdp_username'] = getval(run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA)
-        # local_settings['bdp_username'] = run_settings[
-        #     RMIT_SCHEMA + '/bdp_userprofile']['username']
-
-        computation_platform_url = getval(run_settings, '%s/platform/computation/platform_url' % RMIT_SCHEMA)
-        # computation_platform_url = run_settings['http://rmit.edu.au/schemas/platform/computation']['platform_url']
-        comp_pltf_settings = manage.get_platform_settings(computation_platform_url, local_settings['bdp_username'])
-        local_settings.update(comp_pltf_settings)
-
-        node_type = []
-
+        messages.info(run_settings, "1: create")
+        comp_pltf_settings = self.get_platform_settings(
+            run_settings, 'http://rmit.edu.au/schemas/platform/computation')
         try:
-            if getvals(run_settings, '%s/stages/create'):
-                update(local_settings,
-                       run_settings,
-                       '%s/stages/create/created_nodes' % RMIT_SCHEMA)
-                node_type.append('created_nodes')
-
-        except SettingNotFoundException:
-            pass
-
-        # if self._exists(run_settings,
-        #     'http://rmit.edu.au/schemas/stages/create',
-        #     u'created_nodes'):
-        #     smartconnector.copy_settings(local_settings, run_settings,
-        #         'http://rmit.edu.au/schemas/stages/create/created_nodes')
-        #     #all_instances = managevms.get_registered_vms(
-        #     #    local_settings, node_type=node_type)
-        #     node_type.append('created_nodes')
-        # #else:
-        # #    all_instances = []
-
-
-        #logger.debug('all_instance=%s' % all_instances)
-        if node_type:
-            destroy_vms(local_settings, node_types=node_type)
-        else:
-        #    logger.debug('No running VM instances in this context')
-            logger.info('Destroy stage completed')
+            platform_type = comp_pltf_settings['platform_type']
+        except KeyError, e:
+            logger.error(e)
+            messages.error(run_settings, e)
+            return
+        if platform_type == 'nectar' or platform_type == 'csrack':
+            self.strategy = strategies.CloudStrategy()
+        elif platform_type == 'nci':
+            self.strategy = strategies.ClusterStrategy()
+        local_settings = {}
+        try:
+            self.strategy.set_destroy_settings(run_settings, local_settings)
+            local_settings.update(comp_pltf_settings)
+            logger.debug('local_settings=%s' % local_settings)
+        except SettingNotFoundException, e:
+            logger.error(e)
+            messages.error(run_settings, e)
+            return
+        self.strategy.destroy_resource(run_settings, local_settings)
 
     def output(self, run_settings):
         setvals(run_settings, {
