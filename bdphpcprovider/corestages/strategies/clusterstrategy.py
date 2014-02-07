@@ -22,10 +22,12 @@ from bdphpcprovider.corestages.strategies.strategy import Strategy
 from bdphpcprovider import messages
 
 class ClusterStrategy(Strategy):
-    def create_resource(self, connection_settings, platform_settings, context_id):
+    def create_resource(self, local_settings):
         group_id = 'UNKNOWN'
         created_nodes = []
-        created_nodes.add(['1', platform_settings['ip_address'], 'cluster', 'running'])
-        messages.info_context(context_id, "1: create (%s nodes created)" % len(created_nodes))
+        created_nodes.add(['1', local_settings['ip_address'], 'unix', 'running'])
+        messages.info_context(local_settings['contextid'], "1: create (%s nodes created)" % len(created_nodes))
         return group_id, created_nodes
 
+    def complete_bootstrap(self, bootstrap_class, local_settings):
+        bootstrap_class.bootstrapped_nodes.append(['1', local_settings['ip_address'], 'unix', 'running'])

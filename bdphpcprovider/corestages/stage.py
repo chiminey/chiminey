@@ -84,6 +84,9 @@ class Stage(object):
     def set_domain_settings(self, run_settings, local_settings):
         pass
 
+    def job_finished(self):
+        pass
+
     @deprecated
     def _exists(self, context, *parts):
             c = dict(context)
