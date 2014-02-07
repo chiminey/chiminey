@@ -21,9 +21,35 @@
 from bdphpcprovider import messages
 
 class Strategy():
+    def set_create_settings(self, run_settings, local_settings):
+        pass
 
-    def create_resource(self, connection_settings, platform_settings, context_id):
+    def create_resource(self, local_settings):
         group_id = 'UNKNOWN'
         created_nodes = []
-        messages.warn_context(context_id, "warn: no compute resources are created")
+        messages.warn_context(local_settings['contextid'], "warn: no compute resources are created")
         return group_id, created_nodes
+
+    def set_bootstrap_settings(self, run_settings, local_settings):
+        pass
+
+    def start_multi_bootstrap_task(self, settings):
+        pass
+
+    def complete_bootstrap(self, bootstrap_class, local_settings):
+        pass
+
+    def set_schedule_settings(self, run_settings, local_settings):
+        pass
+
+    def start_schedule_task(self, schedule_class, run_settings, local_settings):
+        pass
+
+    def complete_schedule(self, schedule_class, local_settings):
+        pass
+
+    def set_destroy_settings(self, run_settings, local_settings):
+        pass
+
+    def destroy_resource(self, run_settings, local_settings):
+        pass

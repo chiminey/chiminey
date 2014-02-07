@@ -30,7 +30,7 @@ class RunsettingsException(Exception):
     """ A problem in the run_settings library"""
     pass
 
-class SettingNotFoundException(RunsettingsException):
+class SettingNotFoundException(KeyError):
     pass
 
 
@@ -119,6 +119,4 @@ def update(dest_dict, context, *keys):
             dest_dict[os.path.basename(k)] = res
             # logger.debug("dest_contxt[%s] = %s" % (os.path.basename(k), repr(res)))
         except SettingNotFoundException:
-            raise SettingNotFoundException("Error on key %s" % k)
-        except KeyError:
             raise SettingNotFoundException("Error on key %s" % k)
