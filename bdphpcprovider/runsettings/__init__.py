@@ -26,6 +26,7 @@ from bdphpcprovider.runsettings.run_settings import (
     getvals,
     update,
     delkey,
+    get_schema_namespaces,
     SettingNotFoundException,
     IncompatibleTypeException
 

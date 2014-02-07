@@ -143,8 +143,7 @@ class Sweep(Stage):
         # mytardis
         self.experiment_id = self.get_initial_experiment(run_settings)
 
-        if getvals(run_settings, '%s/input/mytardis' % RMIT_SCHEMA):
-            setval(run_settings,
+        setval(run_settings,
                    '%s/input/mytardis/experiment_id' % RMIT_SCHEMA,
                    str(self.experiment_id))
 
@@ -482,13 +481,6 @@ class HRMCSweep(Sweep):
     def get_initial_experiment(self, run_settings):
 
         # mytardis
-        try:
-            self.experiment_id = int(getval(run_settings,
-                 '%s/input/mytardis/experiment_id' % RMIT_SCHEMA))
-        except SettingNotFoundException:
-            self.experiment_id = 0
-        except ValueError:
-            self.experiment_id = 0
         try:
             subdirective = getval(run_settings, '%s/stages/sweep/directive' % RMIT_SCHEMA)
         except SettingNotFoundException:

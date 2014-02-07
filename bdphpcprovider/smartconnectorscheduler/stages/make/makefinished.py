@@ -130,10 +130,10 @@ class MakeFinishedStage(Stage):
 
     def process(self, run_settings):
         self.experiment_id = 0
-        settings = setup_settings(run_settings)
-        self.experiment_id = settings['experiment_id']
+        local_settings = setup_settings(run_settings)
+        self.experiment_id = local_settings['experiment_id']
         messages.info(run_settings, "1: waiting for completion")
-        logger.debug("settings=%s" % settings)
+        logger.debug("settings=%s" % local_settings)
 
         try:
             self.runs_left = ast.literal_eval(getval(run_settings, '%s/stages/make/runs_left' % RMIT_SCHEMA))
@@ -148,38 +148,38 @@ class MakeFinishedStage(Stage):
         # else:
         #     self.runs_left = []
 
-        def _get_dest_bdp_url(settings):
+        def _get_dest_bdp_url(local_settings):
             return "%s@%s" % (
                     "nci",
-                    os.path.join(settings['payload_destination'],
-                                 str(settings['contextid'])))
+                    os.path.join(local_settings['payload_destination'],
+                                 str(local_settings['contextid'])))
 
-        dest_url = _get_dest_bdp_url(settings)
-        computation_platform_url = settings['comp_platform_url']
-        bdp_username = settings['bdp_username']
+        dest_url = _get_dest_bdp_url(local_settings)
+        computation_platform_url = local_settings['comp_platform_url']
+        bdp_username = local_settings['bdp_username']
         comp_pltf_settings = manage.get_platform_settings(
             computation_platform_url,
             bdp_username)
-        settings.update(comp_pltf_settings)
+        local_settings.update(comp_pltf_settings)
 
         encoded_d_url = storage.get_url_with_pkey(
-            settings,
+            local_settings,
             dest_url,
             is_relative_path=True,
-            ip_address=settings['host'])
+            ip_address=local_settings['host'])
 
         (scheme, host, mypath, location, query_settings) = \
             storage.parse_bdpurl(encoded_d_url)
 
         if self.runs_left:
             job_finished = self._job_finished(
-                settings=settings,
+                settings=local_settings,
                 remote_path=dest_url)
 
             if not job_finished:
                 return
 
-            self._get_output(settings, dest_url)
+            self._get_output(local_settings, dest_url)
             self.runs_left -= 1
 
         if self.runs_left <= 0:
@@ -187,45 +187,45 @@ class MakeFinishedStage(Stage):
 
         logger.debug("processing finished")
 
-    def _get_output(self, settings, source_url):
+    def _get_output(self, local_settings, source_url):
         """
             Retrieve the output from the task on the node
         """
         logger.debug("get_output from %s" % source_url)
 
-        computation_platform_url = settings['comp_platform_url']
-        bdp_username = settings['bdp_username']
+        computation_platform_url = local_settings['comp_platform_url']
+        bdp_username = local_settings['bdp_username']
         comp_pltf_settings = manage.get_platform_settings(
             computation_platform_url,
             bdp_username)
-        settings.update(comp_pltf_settings)
+        local_settings.update(comp_pltf_settings)
 
         encoded_s_url = storage.get_url_with_pkey(
-            settings,
+            local_settings,
             source_url,
             is_relative_path=True,
-            ip_address=settings['host'])
+            ip_address=local_settings['host'])
 
         (scheme, host, mypath, location, query_settings) = \
             storage.parse_bdpurl(encoded_s_url)
         make_path = os.path.join(query_settings['root_path'], mypath)
         logger.debug("make_path=%s" % make_path)
 
-        output_storage_url = settings['storeout_platform_url']
+        output_storage_url = local_settings['storeout_platform_url']
         logger.debug("output_storage_url=%s" % output_storage_url)
         output_storage_settings = manage.get_platform_settings(output_storage_url, bdp_username)
-        settings.update(output_storage_settings)
+        local_settings.update(output_storage_settings)
         logger.debug("output_storage_settings=%s" % output_storage_settings)
 
         dest_url = '%s://%s@%s/%s/make%s' % (output_storage_settings['scheme'],
                 output_storage_settings['type'],
                 output_storage_settings['host'],
-                    settings['storeout_platform_offset'], str(settings['contextid']))
+                    local_settings['storeout_platform_offset'], str(local_settings['contextid']))
 
         logger.debug("Transferring output from %s to %s" % (source_url,
             dest_url))
-        settings.update(output_storage_settings)
-        encoded_d_url = storage.get_url_with_pkey(settings, dest_url)
+        local_settings.update(output_storage_settings)
+        encoded_d_url = storage.get_url_with_pkey(local_settings, dest_url)
         logger.debug("encoded_d_url=%s" % encoded_d_url)
         # FIXME: might want to turn on paramiko compress function
         #storage_files(encoded_d_url, exceptions=[])
@@ -237,16 +237,16 @@ class MakeFinishedStage(Stage):
             # FIXME: Could just exit, but need to flag that this data has not
             # been transferred.
             raise
-        directive = settings['directive']
+        directive = local_settings['directive']
 
-        def _get_mytardis_settings(settings, bdp_username):
-            mytardis_url = settings['mytardis_platform']
+        def _get_mytardis_settings(local_settings, bdp_username):
+            mytardis_url = local_settings['mytardis_platform']
             return manage.get_platform_settings(mytardis_url, bdp_username)
 
-        mytardis_settings = _get_mytardis_settings(settings, bdp_username)
+        mytardis_settings = _get_mytardis_settings(local_settings, bdp_username)
         logger.debug(mytardis_settings)
 
-        if settings['curate_data']:
+        if local_settings['curate_data']:
             if mytardis_settings['mytardis_host']:
 
                 if directive == "vasp":
@@ -256,12 +256,12 @@ class MakeFinishedStage(Stage):
                     OUTCAR_FILE = "OUTCAR"
                     VALUES_FILE = "values"
 
-                    outcar_url = storage.get_url_with_pkey(settings,
+                    outcar_url = storage.get_url_with_pkey(local_settings,
                         os.path.join(dest_url, OUTCAR_FILE), is_relative_path=False)
                     logger.debug("outcar_url=%s" % outcar_url)
 
                     try:
-                        outcar_content =storage.get_file(outcar_url)
+                        outcar_content = storage.get_file(outcar_url)
                     except IOError, e:
                         logger.error(e)
                         toten = None
@@ -280,11 +280,11 @@ class MakeFinishedStage(Stage):
 
                     logger.debug("toten=%s" % toten)
 
-                    values_url = storage.get_url_with_pkey(settings,
+                    values_url = storage.get_url_with_pkey(local_settings,
                         os.path.join(dest_url, VALUES_FILE), is_relative_path=False)
                     logger.debug("values_url=%s" % values_url)
                     try:
-                        values_content =storage.get_file(values_url)
+                        values_content = storage.get_file(values_url)
                     except IOError, e:
                         logger.error(e)
                         values = None
@@ -338,7 +338,7 @@ class MakeFinishedStage(Stage):
 
                     mytardis_settings['ENCUT'] = encut
                     mytardis_settings['NUMKP'] = num_kp
-                    mytardis_settings['RUNCOUNTER'] = settings['contextid']
+                    mytardis_settings['RUNCOUNTER'] = local_settings['contextid']
 
                     self.experiment_id = mytardis.create_dataset(
                         settings=mytardis_settings,
@@ -382,7 +382,6 @@ class MakeFinishedStage(Stage):
                 logger.warn("no mytardis host specified")
         else:
             logger.warn('Data curation is off')
-
 
     def output(self, run_settings):
         setvals(run_settings, {
