@@ -62,7 +62,7 @@ def setup_settings(run_settings):
     #             'output_location']
 
     try:
-        experiment_id = int(getval(run_settings, '%s/input/mytardis/experiment_id'))
+        experiment_id = int(getval(run_settings, '%s/input/mytardis/experiment_id' % RMIT_SCHEMA))
     except (ValueError, SettingNotFoundException):
         experiment_id = 0
     # experiment_id = 0
