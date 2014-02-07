@@ -220,6 +220,23 @@ class UserProfileAdmin(admin.ModelAdmin):
     inlines = (UserProfileParameterSetInline,)
 
 
+#TODO: add timestamp to messages to allow auditing
+class ContextMessageAdmin(admin.ModelAdmin):
+    model = models.ContextMessage
+    list_display = ('context_out', 'message_out')
+    # list_display_links = ('context',)
+    # list_filter = ('',)
+    ordering = ('message', 'context')
+    # inlines = (UserProfileParameterSetInline,)
+
+
+    def context_out(self, obj):
+        return obj.context.id
+
+    def message_out(self, obj):
+        return obj.message
+
+
 class PresetParameterInline(admin.TabularInline):
     model = models.PresetParameter
     extra = 0
@@ -246,7 +263,7 @@ admin.site.register(models.UserProfileParameter)
 admin.site.register(models.Platform)
 admin.site.register(models.Stage, StageAdmin)
 admin.site.register(models.Context, ContextAdmin)
-admin.site.register(models.ContextMessage)
+admin.site.register(models.ContextMessage, ContextMessageAdmin)
 admin.site.register(models.ContextParameterSet, ContextParameterSetAdmin)
 admin.site.register(models.ContextParameter)
 admin.site.register(models.StageParameterSet, StageParameterSetAdmin)

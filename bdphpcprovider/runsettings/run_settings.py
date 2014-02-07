@@ -103,6 +103,10 @@ def delkey(context, key):
     del k[os.path.basename(key)]
 
 
+def get_schema_namespaces(context):
+    return context.keys()
+
+
 def update(dest_dict, context, *keys):
     """
     """

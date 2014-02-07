@@ -283,7 +283,7 @@ class Stage(models.Model):
         order_insertion_by = ['order']
 
     def __unicode__(self):
-        return u'#%s %s %s %s' % (self.id, self.name, self.description, self.parent)
+        return u'#%s %s "%s" parent="%s"' % (self.id, self.name, self.description, self.parent)
 
     def get_next_stage(self, context):
         """
@@ -697,6 +697,8 @@ class ContextMessage(models.Model):
     context = models.ForeignKey(Context)
     message = models.TextField(blank=True, verbose_name="Message", help_text="Status message for the context")
 
+    def __unicode__(self):
+        return "%s (contextid=%s)" % (self.message, self.context.id)
 
 class ContextParameterSet(models.Model):
     """
@@ -711,8 +713,9 @@ class ContextParameterSet(models.Model):
         app_label = "smartconnectorscheduler"
 
     def __unicode__(self):
-        res = "schema=%s\n" % self.schema
-        res += ('\n'.join([str(cp) for cp in ContextParameter.objects.filter(paramset=self)]))
+        res = "%s contextid=%s" % (self.schema, self.context.id)
+        # res = "schema=%s\n" % self.schema
+        # res += ('\n'.join([str(cp) for cp in ContextParameter.objects.filter(paramset=self)]))
         return res
 
 
@@ -758,8 +761,9 @@ class StageParameterSet(models.Model):
         # app_label = "smartconnectorscheduler"
 
     def __unicode__(self):
-        res = "schema=%s\n" % self.schema
-        res += ('\n'.join([str(cp) for cp in StageParameter.objects.filter(paramset=self)]))
+        res = "%s (ns=%s, stage=%s)" % (self.schema, self.schema.namespace, self.stage.name)
+        # res = "schema=%s\n" % self.schema
+        # res += ('\n'.join([str(cp) for cp in StageParameter.objects.filter(paramset=self)]))
         return res
 
 
