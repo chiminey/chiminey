@@ -21,19 +21,11 @@
 import logging
 import ast
 
-from bdphpcprovider.cloudconnection import create_vms, print_vms
-from bdphpcprovider.platform import manage
-from bdphpcprovider.corestages import stage
 from bdphpcprovider.corestages.stage import Stage
-
-
 from bdphpcprovider.runsettings import (
-    getval, setval, SettingNotFoundException, IncompatibleTypeException)
-from bdphpcprovider.smartconnectorscheduler.stages.errors import InsufficientVMError
-from bdphpcprovider.reliabilityframework import FTManager
+    getval, setval, SettingNotFoundException)
 from bdphpcprovider.corestages import strategies
 from bdphpcprovider import messages
-from bdphpcprovider.platform import get_platform_settings
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +34,7 @@ RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
 class Create(Stage):
     def __init__(self, user_settings=None):
-        self.group_id = ''
+        #        self.group_id = ''
         self.platform_type = None
         logger.debug("Create stage initialized")
 
@@ -62,7 +54,6 @@ class Create(Stage):
                return False
         except (SettingNotFoundException, ValueError):
             pass
-
         try:
             self.created_nodes = ast.literal_eval(getval(
                 run_settings, '%s/stages/create/created_nodes' % RMIT_SCHEMA))
@@ -70,102 +61,31 @@ class Create(Stage):
             self.created_nodes = []
             return True
         return False
-        '''
-        if configure_done:
-            try:
-                group_id = getval(run_settings,
-                       '%s/stages/create/group_id' % RMIT_SCHEMA)
-            except SettingNotFoundException:
-                try:
-                    self.platform_type = getval(run_settings, '%s/system/platform' % RMIT_SCHEMA)
-                    return True
-                except SettingNotFoundException:
-                    pass
-
-        return False
-        '''
-
-        # if self._exists(run_settings,
-        #     RMIT_SCHEMA + '/stages/configure',
-        #     'configure_done'):
-        #         configure_done = run_settings[
-        #             RMIT_SCHEMA + '/stages/configure'][u'configure_done']
-        #         if configure_done:
-        #             if not self._exists(run_settings,
-        #                 RMIT_SCHEMA + '/stages/create', 'group_id'):
-        #                 if self._exists(run_settings,
-        #                     RMIT_SCHEMA + '/system', 'platform'):
-        #                     self.platform_type = run_settings[
-        #                         RMIT_SCHEMA + '/system'][u'platform']
-        #                     return True
-        # return False
-
 
     def process(self, run_settings):
-        logger.debug('run_settings=%s' % run_settings)
-        """
-        Make new VMS and store group_id
-        """
         messages.info(run_settings, "1: create")
-        local_settings = {}
-        #todo: remove system/platform dependency
-        stage.copy_settings(local_settings, run_settings,
-            RMIT_SCHEMA + '/system/platform')
-        stage.copy_settings(local_settings, run_settings,
-            RMIT_SCHEMA + '/stages/create/vm_image')
-        stage.copy_settings(local_settings, run_settings,
-            RMIT_SCHEMA + '/stages/create/group_id_dir')
-        stage.copy_settings(local_settings, run_settings,
-            RMIT_SCHEMA + '/stages/create/custom_prompt')
-        stage.copy_settings(local_settings, run_settings,
-            RMIT_SCHEMA + '/stages/create/cloud_sleep_interval')
-        local_settings['min_count'] = run_settings[RMIT_SCHEMA + '/input/system/cloud']['minimum_number_vm_instances']
-        local_settings['max_count'] = run_settings[RMIT_SCHEMA + '/input/system/cloud']['number_vm_instances']
-        logger.debug('local_settings=%s' % local_settings)
-
-        computation_platform_url = run_settings['http://rmit.edu.au/schemas/platform/computation']['platform_url']
-        bdp_username = run_settings['http://rmit.edu.au/schemas/bdp_userprofile']['username']
-        logger.debug('computation_platform_url=%s' % computation_platform_url)
+        comp_pltf_settings = self.get_platform_settings(
+            run_settings, 'http://rmit.edu.au/schemas/platform/computation')
         try:
-            comp_pltf_settings = get_platform_settings(computation_platform_url, bdp_username)
-            logger.debug('comp_pltf_settings=%s' % comp_pltf_settings)
             platform_type = comp_pltf_settings['platform_type']
-            logger.debug('platform_type=%s' % platform_type)
-
-
-        except KeyError:
-            #Fixme: the following should transfer power to FT managers
-            self.group_id = 'UNKNOWN'
-            self.nodes = []
+        except KeyError, e:
+            logger.error(e)
+            messages.error(run_settings, e)
             return
-
-        local_settings.update(comp_pltf_settings)
-        logger.debug('local_settings=%s' % local_settings)
-        if platform_type == 'nectar':
-                self.strategy = strategies.CloudStrategy()
-        else:
+        if platform_type == 'nectar' or platform_type == 'csrack':
+            self.strategy = strategies.CloudStrategy()
+        elif platform_type == 'nci':
             self.strategy = strategies.ClusterStrategy()
-
-        self.platform_type = local_settings['platform_type']
-
-        '''
-        self.group_id, self.nodes = create_vms(local_settings)
+        local_settings = {}
         try:
-            if not self.nodes or len(self.nodes) < local_settings['min_count']:
-                raise InsufficientVMError
-            print_vms(local_settings, all_vms=self.nodes)
-            messages.info(run_settings, "1: create (%s nodes created)" % len(self.nodes))
-        except InsufficientVMError as e:
-            self.group_id = 'UNKNOWN'
-            messages.error(run_settings, "error: sufficient VMs cannot be created")
-            ftmanager = FTManager()
-            ftmanager.manage_failure(e, settings=comp_pltf_settings,
-                                     created_vms=self.nodes)
-        '''
-        context_id = getval(run_settings, '%s/system/contextid' % RMIT_SCHEMA)
-        platform_settings = self.get_platform_settings(run_settings, 'http://rmit.edu.au/schemas/platform/computation')
-        self.group_id, self.created_nodes = self.strategy.create_resource(local_settings, platform_settings, context_id)
-
+            self.strategy.set_create_settings(run_settings, local_settings)
+            local_settings.update(comp_pltf_settings)
+            logger.debug('local_settings=%s' % local_settings)
+        except SettingNotFoundException, e:
+            logger.error(e)
+            messages.error(run_settings, e)
+            return
+        self.group_id, self.created_nodes = self.strategy.create_resource(local_settings)
 
     def output(self, run_settings):
         """
@@ -173,32 +93,10 @@ class Create(Stage):
         """
         logger.debug('output')
         setval(run_settings,
-               '%s/stages/create/group_id' % RMIT_SCHEMA,
-               self.group_id)
-        setval(run_settings,
                        "%s/stages/create/created_nodes" % RMIT_SCHEMA,
                        self.created_nodes)
         setval(run_settings,
                        "%s/stages/create/create_done" % RMIT_SCHEMA,
                        1)
-
-        '''
-        setval(run_settings,
-               '%s/system/platform' % RMIT_SCHEMA,
-               self.platform_type)
-        if not self.nodes:
-            setval(run_settings,
-             '%s/stages/create/created_nodes' % RMIT_SCHEMA, [])
-            # run_settings.setdefault(
-            # RMIT_SCHEMA + '/stages/create', {})[u'created_nodes'] = []
-        else:
-            for node in self.nodes:
-                if not node.ip_address:
-                    node.ip_address = node.private_ip_address
-            if self.group_id is not  "UNKNOWN":
-                setval(run_settings,
-                       "%s/stages/create/created_nodes" % RMIT_SCHEMA,
-                       [[x.id, x.ip_address, unicode(x.region)] for x in self.nodes])
-        '''
         logger.debug("Updated run settings %s" % run_settings)
         return run_settings

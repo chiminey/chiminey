@@ -24,7 +24,7 @@ import os
 import logging
 import json
 import sys
-from bdphpcprovider.corestages import stage
+from bdphpcprovider.storage import get_url_with_pkey
 
 from bdphpcprovider.corestages.stage import Stage
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
@@ -201,7 +201,7 @@ class Converge(Stage):
         # else:
         #     self.experiment_id = 0
 
-        inputdir_url = stage.get_url_with_pkey(output_storage_settings,
+        inputdir_url = get_url_with_pkey(output_storage_settings,
             output_prefix + self.iter_inputdir, is_relative_path=False)
         logger.debug('input_dir_url=%s' % inputdir_url)
 
@@ -223,7 +223,7 @@ class Converge(Stage):
         for input_dir in input_dirs:
             # Retrieve audit file
 
-            audit_url = stage.get_url_with_pkey(output_storage_settings,
+            audit_url = get_url_with_pkey(output_storage_settings,
                 output_prefix + os.path.join(self.iter_inputdir, input_dir, 'audit.txt'), is_relative_path=False)
             audit_content = storage.get_file(audit_url)
             logger.debug('audit_url=%s' % audit_url)
@@ -319,9 +319,9 @@ class Converge(Stage):
         # logger.debug("Convergence Source %s Destination %s " % (source, dest))
         # shutil.copytree(source, dest)
 
-        source_url = stage.get_url_with_pkey(output_storage_settings,
+        source_url = get_url_with_pkey(output_storage_settings,
             output_prefix + os.path.join(self.output_dir), is_relative_path=False)
-        dest_url = stage.get_url_with_pkey(output_storage_settings,
+        dest_url = get_url_with_pkey(output_storage_settings,
             output_prefix + os.path.join(new_output_dir), is_relative_path=False)
 
         storage.copy_directories(source_url, dest_url)
@@ -438,7 +438,7 @@ class Converge(Stage):
                     host = settings['host']
                     prefix = 'ssh://%s@%s' % (settings['type'], host)
 
-                    source_url = stage.get_url_with_pkey(
+                    source_url = get_url_with_pkey(
                         settings, os.path.join(prefix, path, "HRMC.inp_values"),
                         is_relative_path=False)
                     logger.debug("source_url=%s" % source_url)
@@ -480,7 +480,7 @@ class Converge(Stage):
                 for m, node_dir in enumerate(node_dirs):
                     exp_value_keys.append(["hrmcdset%s/step" % m, "hrmcdset%s/err" % m])
 
-                    source_url = stage.get_url_with_pkey(output_storage_settings,
+                    source_url = get_url_with_pkey(output_storage_settings,
                         output_prefix + os.path.join(new_output_dir, node_dir), is_relative_path=False)
 
                     (source_scheme, source_location, source_path, source_location,
@@ -504,7 +504,7 @@ class Converge(Stage):
                     #FIXME: this calculation should be done as in extract_psd_func
                     # pulling directly from data_errors rather than passing in
                     # through nested function.
-                    dataerrors_url = stage.get_url_with_pkey(output_storage_settings,
+                    dataerrors_url = get_url_with_pkey(output_storage_settings,
                         output_prefix + os.path.join(new_output_dir, node_dir, DATA_ERRORS_FILE), is_relative_path=False)
                     dataerrors_content = storage.get_file(dataerrors_url)
                     xs = []
@@ -533,7 +533,7 @@ class Converge(Stage):
                     logger.debug("xs=%s" % xs)
                     logger.debug("ys=%s" % ys)
 
-                    crit_url = stage.get_url_with_pkey(output_storage_settings,
+                    crit_url = get_url_with_pkey(output_storage_settings,
                         output_prefix + os.path.join(new_output_dir, node_dir, "criterion.txt"), is_relative_path=False)
                     try:
                         crit = storage.get_file(crit_url)
@@ -547,7 +547,7 @@ class Converge(Stage):
                     else:
                         hrmcdset_val = {}
 
-                    source_url = stage.get_url_with_pkey(
+                    source_url = get_url_with_pkey(
                         output_storage_settings,
                         output_prefix + os.path.join(new_output_dir, node_dir), is_relative_path=False)
                     logger.debug("source_url=%s" % source_url)
