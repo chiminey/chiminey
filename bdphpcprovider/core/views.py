@@ -309,6 +309,21 @@ class ContextResource(ModelResource):
         bundle.data['username'] = request.user.username
 
 
+        '''
+        if 'smart_connector' in bundle.data:
+
+            # TODO: need to parameterise API by set of directives
+            dispatch_table = {
+                'hrmc': self._post_to_hrmc,
+                'sweep': self._post_to_sweep_hrmc,
+                'sweep_make': self._post_to_sweep_make,
+                'sweep_vasp': self._post_to_sweep_vasp,
+                'copydir': self._post_to_copy,
+                'remotemake': self._post_to_remotemake,
+                'randomnumber': self._post_to_randomnumber}
+        '''
+
+
         if 'smart_connector' in bundle.data:
             smartconnector = bundle.data['smart_connector']
             directive_obj = models.Directive.objects.get(name=smartconnector)

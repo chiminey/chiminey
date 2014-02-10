@@ -31,7 +31,6 @@ class CoreDirective():
         subdirective = models.Directive.objects.get(
             name="randomnumber"
         )
-
         sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep_rand",
             description="Sweep for Random",
             package="bdphpcprovider.examples.randomnumbers.randsweep.RandSweep",
