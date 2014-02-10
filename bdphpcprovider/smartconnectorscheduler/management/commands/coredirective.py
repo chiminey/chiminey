@@ -27,14 +27,17 @@ logger = logging.getLogger(__name__)
 
 
 class CoreDirective():
-    def define_rand_number_sweep(self, subdirective):
+    def define_rand_number_sweep(self):
+        subdirective = models.Directive.objects.get(
+            name="randomnumber"
+        )
 
         sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep_rand",
             description="Sweep for Random",
-            package="bdphpcprovider.examples.randomnumber.randsweep.RandSweep",
+            package="bdphpcprovider.examples.randomnumbers.randsweep.RandSweep",
             order=100)
         sweep_stage.update_settings({
-            u'http://rmit.edu.au/schemas/sweep':
+            u'http://rmit.edu.au/schemas/stages/sweep':
             {
                 u'directive': subdirective.name
             }
@@ -47,11 +50,12 @@ class CoreDirective():
         for i, sch in enumerate([
                 RMIT_SCHEMA + "/input/system/compplatform",
                 RMIT_SCHEMA + "/input/system",
+                RMIT_SCHEMA + "/input/mytardis",
                 RMIT_SCHEMA + "/input/sweep",
                 ]):
             schema = models.Schema.objects.get(namespace=sch)
-        das, _ = models.DirectiveArgSet.objects.get_or_create(
-              directive=subdirective, order=i, schema=schema)
+            das, _ = models.DirectiveArgSet.objects.get_or_create(
+                  directive=sweep, order=i, schema=schema)
 
     def define_parent_stage(self):
         parent = "bdphpcprovider.smartconnectorscheduler.stages.composite.ParallelStage"
