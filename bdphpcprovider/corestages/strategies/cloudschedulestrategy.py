@@ -25,8 +25,7 @@ from django.core.exceptions import ImproperlyConfigured
 from bdphpcprovider.smartconnectorscheduler import models, hrmcstages
 from bdphpcprovider.platform import get_job_dir
 from bdphpcprovider.cloudconnection import is_vm_running
-
-from bdphpcprovider.runsettings import SettingNotFoundException, getval
+from bdphpcprovider.runsettings import SettingNotFoundException, getval, update
 from bdphpcprovider.storage import get_url_with_pkey, get_make_path, put_file, list_dirs
 from bdphpcprovider.sshconnection import open_connection
 from bdphpcprovider.compute import run_command_with_status
@@ -34,6 +33,23 @@ from bdphpcprovider.compute import run_command_with_status
 
 logger = logging.getLogger(__name__)
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+
+
+def set_schedule_settings(self, run_settings, local_settings):
+    #fixme: the last three should move to hrmc package
+    update(local_settings, run_settings,
+            #'%s/input/system/cloud/number_vm_instances' % RMIT_SCHEMA,
+            '%s/input/reliability/maximum_retry' % RMIT_SCHEMA,
+            '%s/stages/setup/payload_destination' % RMIT_SCHEMA,
+            '%s/stages/setup/filename_for_PIDs' % RMIT_SCHEMA,
+            '%s/stages/setup/payload_name' % RMIT_SCHEMA,
+            #'%s/system/platform' % RMIT_SCHEMA,
+            '%s/stages/bootstrap/bootstrapped_nodes' % RMIT_SCHEMA,
+            #'%s/stages/create/custom_prompt' % RMIT_SCHEMA,
+            '%s/system/max_seed_int' % RMIT_SCHEMA,
+            '%s/input/hrmc/optimisation_scheme' % RMIT_SCHEMA,
+            '%s/input/hrmc/fanout_per_kept_result' % RMIT_SCHEMA)
+    local_settings['bdp_username'] = getval(run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA)
 
 
 def schedule_task(schedule_class, run_settings, local_settings):
