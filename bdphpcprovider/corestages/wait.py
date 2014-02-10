@@ -38,7 +38,6 @@ from bdphpcprovider.runsettings import getval, setvals, setval, getvals, update,
 from bdphpcprovider.storage import get_url_with_pkey
 
 logger = logging.getLogger(__name__)
-
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
 
@@ -139,85 +138,7 @@ class Wait(Stage):
         return False
 
     def is_job_finished(self, ip_address, process_id, retry_left, settings):
-        """
-            Return True if package job on instance_id has is_job_finished
-        """
-        # TODO: maybe this should be a reusable library method?
-        ip = ip_address
-        logger.debug("ip=%s" % ip)
-        curr_username = settings['username']
-        settings['username'] = 'root'
-        relative_path = settings['type'] + '@' + settings['payload_destination'] + "/" + process_id
-        destination = get_url_with_pkey(settings,
-            relative_path,
-            is_relative_path=True,
-            ip_address=ip)
-        makefile_path = storage.get_make_path(destination)
-        ssh = None
-        try:
-            logger.debug('trying ssh')
-            ssh = open_connection(ip_address=ip, settings=settings)
-            logger.debug('successful ssh')
-            (command_out, errs) = compute.run_make(ssh,
-                                                   makefile_path,
-                                                   "running")
-            ssh.close()
-            logger.debug("command_out2=(%s, %s)" % (command_out, errs))
-            if command_out:
-                logger.debug("command_out = %s" % command_out)
-                for line in command_out:
-                    if "stopped" in line:
-                        return True
-        except Exception, e:
-
-            # Failure detection and then management
-            logger.debug('error is = %s' % e)
-            process_failed = False
-            node_failed = False
-            logger.debug('Is there error? %s' % self.failure_detector.failed_ssh_connection(e))
-            if self.failure_detector.failed_ssh_connection(e):
-                node = [x for x in self.created_nodes if x[1] == ip_address]
-                self.failed_processes = self.ftmanager.manage_failed_process(
-                    settings, process_id, node[0], node[0][0], ip_address,
-                    self.failed_nodes, self.executed_procs, self.current_processes,
-                    self.all_processes, self.procs_2b_rescheduled)
-                #self.procs_2b_rescheduled.extend(rescheduled_prcs)
-                '''
-                if self.failure_detector.node_terminated(settings, node[0][0]):
-                    if not self.failure_detector.recorded_failed_node(
-                            self.failed_nodes, ip_address):
-                        self.failed_nodes.append(node[0])
-                    node_failed = True
-                else:
-                    if not retry_left:
-                        process_failed = True
-                    else:
-                        process_lists = [self.executed_procs, self.current_processes,
-                                         self.all_processes]
-                        self.ftmanager.decrease_max_retry(
-                            process_lists, ip_address, process_id)
-                # Failure management
-                if node_failed or process_failed:
-                    process_lists = [self.executed_procs,
-                                     self.current_processes, self.all_processes]
-                    if node_failed:
-                        self.ftmanager.flag_all_processes(process_lists, ip_address)
-                    elif process_failed:
-                        self.ftmanager.flag_this_process(
-                            process_lists, ip_address, process_id)
-                    self.failed_processes = self.ftmanager.\
-                        get_total_failed_processes(self.executed_procs)
-                    if self.reschedule_failed_procs:
-                        self.ftmanager.collect_failed_processes(
-                            self.executed_procs, self.procs_2b_rescheduled)
-
-                '''
-            else:
-                raise
-        finally:
-            if ssh:
-                ssh.close()
-        return False
+        return True
 
     def get_output(self, ip_address, process_id, output_dir, local_settings,
                    computation_platform_settings, output_storage_settings,
@@ -228,6 +149,7 @@ class Wait(Stage):
         logger.debug("get_output of process %s on %s" % (process_id, ip_address))
         output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
                                     output_storage_settings['type'])
+        #fixme: add call get_process_output_path
         cloud_path = os.path.join(local_settings['payload_destination'],
                                   str(process_id),
                                   local_settings['payload_cloud_dirname']

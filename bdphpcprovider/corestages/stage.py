@@ -30,6 +30,7 @@ from bdphpcprovider.smartconnectorscheduler.errors import deprecated
 from bdphpcprovider.platform.manage import retrieve_platform
 from django.contrib import messages
 from bdphpcprovider.platform import get_platform_settings
+from bdphpcprovider.runsettings import getval, setvals, SettingNotFoundException
 
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
@@ -84,8 +85,33 @@ class Stage(object):
     def set_domain_settings(self, run_settings, local_settings):
         pass
 
-    def job_finished(self):
-        pass
+    def input_exists(self, run_settings):
+        try:
+            getval(run_settings, 'http://rmit.edu.au/schemas/input/location/input/input_location')
+            return True
+        except SettingNotFoundException:
+            pass
+        try:
+            getval(run_settings, 'http://rmit.edu.au/schemas/input/system/input_location')
+            return True
+        except SettingNotFoundException:
+            pass
+        return False
+
+
+    def output_exists(self, run_settings):
+        try:
+            getval(run_settings, 'http://rmit.edu.au/schemas/input/location/output/output_location')
+            return True
+        except SettingNotFoundException:
+            pass
+        try:
+            getval(run_settings, 'http://rmit.edu.au/schemas/input/system/output_location')
+            return True
+        except SettingNotFoundException:
+            pass
+        return False
+
 
     @deprecated
     def _exists(self, context, *parts):
@@ -109,6 +135,15 @@ class Stage(object):
         logger.debug('platform_name=%s, bdpurl_offset=%s' % (platform_name, offset))
         return platform_name, offset
 
+
+    def get_process_output_path(self, run_settings, process_id):
+        computation_platform = self.get_platform_settings(
+            run_settings, 'http://rmit.edu.au/schemas/platform/computation')
+        output_path = os.path.join(
+                computation_platform['root_path'],
+                getval(run_settings, 'http://rmit.edu.au/schemas/stages/setup/payload_destination'),
+                str(process_id), getval(run_settings, 'http://rmit.edu.au/schemas/stages/run/payload_cloud_dirname'))
+        return output_path
 
 def copy_settings(dest_context, context, key):
     """

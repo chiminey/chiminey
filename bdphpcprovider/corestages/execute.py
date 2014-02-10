@@ -44,7 +44,7 @@ from bdphpcprovider import storage
 from bdphpcprovider import messages
 
 from bdphpcprovider.runsettings import getval, setvals, getvals, update, SettingNotFoundException
-from bdphpcprovider.storage import get_url_with_pkey
+from bdphpcprovider.storage import get_url_with_pkey, list_dirs
 
 
 logger = logging.getLogger(__name__)
@@ -184,13 +184,14 @@ class Execute(stage.Stage):
         #generic_output_schema = 'http://rmit.edu.au/schemas/platform/storage/output'
 
         failed_processes = [x for x in self.schedule_procs if x['status'] == 'failed']
-        if not failed_processes:
-            self.prepare_inputs(
-                local_settings, output_storage_settings, comp_pltf_settings, mytardis_settings)
-        else:
-            self._copy_previous_inputs(
-                local_settings, output_storage_settings,
-                comp_pltf_settings)
+        if self.input_exists(run_settings):
+            if not failed_processes:
+                self.prepare_inputs(
+                    local_settings, output_storage_settings, comp_pltf_settings, mytardis_settings)
+            else:
+                self._copy_previous_inputs(
+                    local_settings, output_storage_settings,
+                    comp_pltf_settings)
         try:
             local_settings.update(comp_pltf_settings)
             pids = self.run_multi_task(local_settings, run_settings)
@@ -334,6 +335,9 @@ class Execute(stage.Stage):
                 logger.error(e)
                 logger.error("unable to start package on node %s" % ip_address)
                 #TODO: cleanup node of copied input files etc.
+            except Exception:
+                #fixme FT management
+                pass
             else:
                 pids.append(pids_for_task)
         #all_pids = dict(zip(nodes, pids))
@@ -343,34 +347,34 @@ class Execute(stage.Stage):
 
     def prepare_inputs(self, local_settings, output_storage_settings,
                         computation_platform_settings, mytardis_settings):
-            """
-            Upload all input files for this run
-            """
-            logger.debug("preparing inputs")
-            # TODO: to ensure reproducability, may want to precalculate all random numbers and
-            # store rather than rely on canonical execution of rest of this funciton.
-            #processes = self.schedule_procs
-            processes = [x for x in self.schedule_procs
-                        if x['status'] == 'ready']
-            self.node_ind = 0
-            logger.debug("Iteration Input dir %s" % self.iter_inputdir)
-            output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
-                                    output_storage_settings['type'])
-            url_with_pkey = get_url_with_pkey(
-                output_storage_settings, output_prefix + self.iter_inputdir, is_relative_path=False)
-            logger.debug("url_with_pkey=%s" % url_with_pkey)
-            input_dirs = storage.list_dirs(url_with_pkey)
-            if not input_dirs:
-                raise BadInputException("require an initial subdirectory of input directory")
-            for input_dir in sorted(input_dirs):
-                logger.debug("Input dir %s" % input_dir)
-                self._upload_variation_inputs(
-                    local_settings, self._generate_variations(
-                        input_dir, local_settings, output_storage_settings),
-                    processes, input_dir, output_storage_settings,
-                    computation_platform_settings, mytardis_settings)
+        """
+        Upload all input files for this run
+        """
+        logger.debug("preparing inputs")
+        # TODO: to ensure reproducability, may want to precalculate all random numbers and
+        # store rather than rely on canonical execution of rest of this funciton.
+        #processes = self.schedule_procs
+        processes = [x for x in self.schedule_procs
+                    if x['status'] == 'ready']
+        self.node_ind = 0
+        logger.debug("Iteration Input dir %s" % self.iter_inputdir)
+        output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
+                                output_storage_settings['type'])
+        url_with_pkey = get_url_with_pkey(
+            output_storage_settings, output_prefix + self.iter_inputdir, is_relative_path=False)
+        logger.debug("url_with_pkey=%s" % url_with_pkey)
+        input_dirs = list_dirs(url_with_pkey)
+        if not input_dirs:
+            raise BadInputException("require an initial subdirectory of input directory")
+        for input_dir in sorted(input_dirs):
+            logger.debug("Input dir %s" % input_dir)
+            self.upload_variation_inputs(
+                local_settings, self.generate_variations(
+                    input_dir, local_settings, output_storage_settings),
+                processes, input_dir, output_storage_settings,
+                computation_platform_settings, mytardis_settings)
 
-    def _generate_variations(self, input_dir, local_settings, output_storage_settings):
+    def generate_variations(self, input_dir, local_settings, output_storage_settings):
         """
         For each templated file in input_dir, generate all variations
         """
@@ -492,7 +496,7 @@ class Execute(stage.Stage):
                 logger.debug("%d files created" % (temp_num))
             return res
 
-    def _upload_variation_inputs(self, local_settings, variations, processes,
+    def upload_variation_inputs(self, local_settings, variations, processes,
                                  input_dir, output_storage_settings,
                                  computation_platform_settings, mytardis_settings):
         '''
@@ -741,21 +745,5 @@ class Execute(stage.Stage):
         logger.debug('retrieve completed %s' % pformat(local_settings))
 
 
-    def set_domain_settings(self, run_settings, local_settings):
-        stage.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/input/hrmc/iseed')
-        stage.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/input/hrmc/optimisation_scheme')
-        stage.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/input/hrmc/threshold')
-        stage.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/input/hrmc/pottype')
-        stage.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/input/hrmc/fanout_per_kept_result')
-        stage.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/input/hrmc/optimisation_scheme')
-        stage.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/input/hrmc/threshold')
-        stage.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/input/hrmc/pottype')
+
 

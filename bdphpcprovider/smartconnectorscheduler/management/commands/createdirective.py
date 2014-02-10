@@ -18,14 +18,35 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+import logging
 
-from bdphpcprovider.corestages import Configure
+from django.core.management.base import BaseCommand
+from bdphpcprovider.smartconnectorscheduler.management.commands import randdirective
+logger = logging.getLogger(__name__)
 
 
-class RandConfig(Configure):
-    def get_results_dirname(self, run_settings, name):
-        name = 'random_numbers_example%s' % self.contextid
-        return name
+class Command(BaseCommand):
+    """
+    Load up the initial state of the database (replaces use of
+    fixtures).  Assumes specific strcture.
+    """
 
-    def copy_to_scratch_space(self, run_settings, local_settings):
-        pass
+    args = ''
+    help = 'Setup an initial task structure.'
+
+    def setup(self):
+        confirm = raw_input("This will ERASE and reset the database. "
+            " Are you sure [Yes|No]")
+        if confirm != "Yes":
+            print "action aborted by user"
+            return
+
+        directive = randdirective.RandDirective()
+        directive.define_directive()
+        print "done"
+
+
+    def handle(self, *args, **options):
+        self.setup()
+        print "done"
+
