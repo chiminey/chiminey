@@ -766,10 +766,13 @@ class Command(BaseCommand):
             description="Sweep Test",
             package="bdphpcprovider.corestages.sweep.HRMCSweep",
             order=100)
-        sweep_stage.update_settings({
+        sweep_stage.update_settings(
+                                    {
             u'http://rmit.edu.au/schemas/stages/sweep':
             {
                 u'template_name': 'HRMC.inp',
+                u'directive': 'hrmc'
+
             },
             # FIXME: move random_numbers into system schema
             u'http://rmit.edu.au/schemas/system':

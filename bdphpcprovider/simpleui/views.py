@@ -1370,6 +1370,7 @@ def submit_directive(request, directive_id):
             if valid:
                 return HttpResponsePermanentRedirect(reverse("hrmcjob-list"))
             else:
+                messages.error(request, "Invalid Job Submission")
                 logger.error("invalid job submission")
                 return HttpResponsePermanentRedirect(reverse("makedirective", args=[directive_id]))
         else:

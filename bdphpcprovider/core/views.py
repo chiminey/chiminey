@@ -307,31 +307,43 @@ class ContextResource(ModelResource):
                                    request=request)
         bundle.data['username'] = request.user.username
         if 'smart_connector' in bundle.data:
-
-            # TODO: need to parameterise API by set of directives
-            dispatch_table = {
-                'hrmc': self._post_to_hrmc,
-                'sweep': self._post_to_sweep_hrmc,
-                'sweep_make': self._post_to_sweep_make,
-                'sweep_vasp': self._post_to_sweep_vasp,
-                'copydir': self._post_to_copy,
-                'remotemake': self._post_to_remotemake,
-                'randomnumber': self._post_to_randomnumber}
-
-            smart_connector = bundle.data['smart_connector']
-            logger.debug("smart_connector=%s" % smart_connector)
-
-            try:
-                if smart_connector in dispatch_table:
-                    logger.debug("dispatching %s" % smart_connector)
+            smartconnector = bundle.data['smart_connector']
+            directive_obj = models.Directive.objects.get(name=smartconnector)
+            stage = directive_obj.stage
+            sch = models.Schema.objects.get(namespace="http://rmit.edu.au/schemas/stages/sweep")
+            subdirective = stage.get_stage_setting(sch, "directive")
+            if subdirective:
+                try:
                     (myplatform, directive_name,
-                    directive_args, system_settings) = dispatch_table[
-                        smart_connector](bundle, smart_connector)
-                else:
-                    return http.HttpBadRequest()
-            except Exception, e:
-                logger.error("post_list error %s" % e)
-                raise ImmediateHttpResponse(http.HttpBadRequest(e))
+                     directive_args, system_settings) = \
+                    self._post_to_sweep(bundle, smartconnector, subdirective)
+                except Exception, e:
+                    logger.error("post_list error %s" % e)
+                    raise ImmediateHttpResponse(http.HttpBadRequest(e))
+            else:
+                dispatch_table = {
+                    'hrmc': self._post_to_hrmc,
+                    # 'sweep': self._post_to_sweep_hrmc,
+                    # 'sweep_make': self._post_to_sweep_make,
+                    # 'sweep_vasp': self._post_to_sweep_vasp,
+                    'copydir': self._post_to_copy,
+                    'remotemake': self._post_to_remotemake,
+                    'randomnumber': self._post_to_randomnumber}
+
+                smart_connector = bundle.data['smart_connector']
+                logger.debug("smart_connector=%s" % smart_connector)
+
+                try:
+                    if smart_connector in dispatch_table:
+                        logger.debug("dispatching %s" % smart_connector)
+                        (myplatform, directive_name,
+                        directive_args, system_settings) = dispatch_table[
+                            smart_connector](bundle, smart_connector)
+                    else:
+                        return http.HttpBadRequest()
+                except Exception, e:
+                    logger.error("post_list error %s" % e)
+                    raise ImmediateHttpResponse(http.HttpBadRequest(e))
         location = []
         try:
             logger.debug(directive_args)
@@ -499,14 +511,14 @@ class ContextResource(ModelResource):
 
         d_arg.append(
         ['http://rmit.edu.au/schemas/system',
-            (u'random_numbers', 'file://127.0.0.1/randomnums.txt'),
+            # (u'random_numbers', 'file://127.0.0.1/randomnums.txt'),
             ('system', 'settings'),
             ('max_seed_int', 1000),
         ])
-        d_arg.append(
-        ['http://rmit.edu.au/schemas/stages/sweep',
-            ('directive', subdirective)
-        ])
+        # d_arg.append(
+        # ['http://rmit.edu.au/schemas/stages/sweep',
+        #     ('directive', subdirective)
+        # ])
         d_arg.append(
         ['http://rmit.edu.au/schemas/bdp_userprofile',
             (u'username',

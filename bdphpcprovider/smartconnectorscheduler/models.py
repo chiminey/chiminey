@@ -381,6 +381,15 @@ class Stage(models.Model):
                     cp.value = v
                     cp.save()
 
+    def get_stage_setting(self, schema, key):
+        param_set = StageParameterSet.objects.filter(schema=schema, stage=self)
+        for ps in param_set:
+            pn = ParameterName.objects.get(schema=schema, name=key)
+            p = StageParameter.objects.get(paramset=ps, name=pn)
+            return p.value
+        return ""
+
+
 
 #FIXME: We assume 1 private key per platform. Relax this assumption
 #fixme depreciate this model

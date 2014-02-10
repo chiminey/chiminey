@@ -78,8 +78,8 @@ class Sweep(Stage):
 
             update(local_settings, run_settings,
                     RMIT_SCHEMA + '/system/platform',
-                    RMIT_SCHEMA + '/input/mytardis/experiment_id',
-                    RMIT_SCHEMA + '/system/random_numbers',
+                    # RMIT_SCHEMA + '/input/mytardis/experiment_id',
+                    # RMIT_SCHEMA + '/system/random_numbers',
                    )
             local_settings['bdp_username'] = getval(
                 run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA)
@@ -163,24 +163,27 @@ class Sweep(Stage):
         # completely hrmc independent.
 
         rands = []
+
         try:
-            num_url = getval(run_settings, "%s/system/random_numbers" % RMIT_SCHEMA)
+            self.rand_index = getval(run_settings, '%s/input/hrmc/iseed' % RMIT_SCHEMA)
+            logger.debug("rand_index=%s" % self.rand_index)
         except SettingNotFoundException:
             pass
         else:
+            # prep random seeds for each run based off original iseed
+            # FIXME: inefficient for large random file
+            # TODO, FIXME: this is potentially problematic if different
+            # runs end up overlapping in the random numbers they utilise.
+            # solution is to have separate random files per run or partition
+            # big file up.
+
             try:
-                self.rand_index = getval(run_settings, '%s/input/hrmc/iseed' % RMIT_SCHEMA)
-                logger.debug("rand_index=%s" % self.rand_index)
+                num_url = getval(run_settings, "%s/system/random_numbers" % RMIT_SCHEMA)
             except SettingNotFoundException:
                 pass
             else:
-                # prep random seeds for each run based off original iseed
-                # FIXME: inefficient for large random file
-                # TODO, FIXME: this is potentially problematic if different
-                # runs end up overlapping in the random numbers they utilise.
-                # solution is to have separate random files per run or partition
-                # big file up.
                 try:
+                    local_settings['random_numbers'] = num_url
                     rands = hrmcstages.generate_rands(settings=local_settings,
                     start_range=0,
                     end_range=-1,
@@ -234,6 +237,9 @@ class Sweep(Stage):
                     starting_map[k] = v
         logger.debug("starting_map after form=%s" % pformat(starting_map))
 
+
+        # FIXME: we assume we will always have input directory
+
         # Get input_url directory
         input_prefix = '%s://%s@' % (input_storage_settings['scheme'],
                                 input_storage_settings['type'])
@@ -251,6 +257,10 @@ class Sweep(Stage):
         # and then schedule subrun of sub directive
         logger.debug("run_settings=%s" % run_settings)
         for i, context in enumerate(runs):
+
+            # FIXME: we assume that we have an input directory
+            # that can be copied.  If not, still copy values map
+            # because user script may want to access it
 
             # Duplicate input directory into runX duplicates
             logger.debug("context=%s" % context)
@@ -369,6 +379,7 @@ class Sweep(Stage):
     def get_initial_experiment(self, run_settings):
         # TODO: this is a domain-specific so this function should be overridden
         # in domain specfic mytardis class
+        #TODO: By default, this class should NOT CREATE an experiment
 
         try:
             experiment_id = int(getval(run_settings, '%s/input/mytardis/experiment_id' % RMIT_SCHEMA))
@@ -515,7 +526,11 @@ def post_mytardis_exp(run_settings,
     # TODO: move into mytardis package?
     bdp_username = getval(run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA)
 
-    mytardis_url = getval(run_settings, '%s/input/mytardis/mytardis_platform' % RMIT_SCHEMA)
+    try:
+        mytardis_url = getval(run_settings, '%s/input/mytardis/mytardis_platform' % RMIT_SCHEMA)
+    except SettingNotFoundException:
+        logger.error("mytardis_platform not set")
+        return 0
 
     mytardis_settings = manage.get_platform_settings(
         mytardis_url,
