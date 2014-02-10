@@ -21,4 +21,4 @@
 from bdphpcprovider.corestages.configure import Configure
 from bdphpcprovider.corestages.execute import Execute
 from bdphpcprovider.corestages.wait import Wait
-from bdphpcprovider.corestages.stage import Stage
+from bdphpcprovider.corestages.stage import Stage, copy_settings

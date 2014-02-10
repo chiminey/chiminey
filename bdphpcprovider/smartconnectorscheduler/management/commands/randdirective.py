@@ -18,9 +18,31 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from bdphpcprovider.corestages import Wait
-from bdphpcprovider import messages
+import logging
 
-class RandWait(Wait):
-    def is_job_finished(self, ip_address, process_id, retry_left, settings):
-        return True
+from bdphpcprovider.smartconnectorscheduler import models
+from bdphpcprovider.smartconnectorscheduler.management.commands.coredirective import CoreDirective
+logger = logging.getLogger(__name__)
+
+
+class RandDirective(CoreDirective):
+    def define_execute_stage(self):
+        '''
+        overwrites the core execute stage definition
+        '''
+        execute_package = "bdphpcprovider.examples.randomnumbers.randexecute.RandExecute"
+        execute_stage, _ = models.Stage.objects.get_or_create(
+            name="randexecute",
+            package=execute_package,
+            parent=self.parent_stage,
+            defaults={'description': "Rand execute stage", 'order': 11})
+        execute_stage.update_settings(
+            {
+            u'http://rmit.edu.au/schemas/stages/run':
+                {
+                    u'payload_cloud_dirname': '',
+                    u'compile_file': '',
+                    u'retry_attempts': 3,  # fixme remove after deleting references in all other stages
+                },
+            })
+

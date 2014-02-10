@@ -271,6 +271,7 @@ class ContextResource(ModelResource):
 
     parent = fields.ForeignKey('self',
         attribute='parent', null=True)
+    logger.debug('directive_name = %s' % directive)
 
     class Meta:
         queryset = models.Context.objects.all()
@@ -306,6 +307,8 @@ class ContextResource(ModelResource):
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized),
                                    request=request)
         bundle.data['username'] = request.user.username
+
+
         if 'smart_connector' in bundle.data:
             smartconnector = bundle.data['smart_connector']
             directive_obj = models.Directive.objects.get(name=smartconnector)
@@ -415,7 +418,7 @@ class ContextResource(ModelResource):
         # make the system settings, available to initial stage and merged with run_settings
         system_dict = {u'system': u'settings',
                        u'output_location': bundle.data[
-                            os.path.join(self.system_schema, 'output_location')]}
+                            os.path.join(self.system_schema, 'output_location')]}#fixme: check whether location schema isused
 
         logger.debug('post_to_hrmc output_location = %s' % bundle.data[
             os.path.join(self.system_schema, 'output_location')])
@@ -570,6 +573,12 @@ class ContextResource(ModelResource):
             (u'username',
              str(bundle.data[
                 'http://rmit.edu.au/schemas/bdp_userprofile/username'])),
+        ])
+        d_arg.append(
+        ['http://rmit.edu.au/schemas/directive_profile',
+            (u'name',
+             str(bundle.data[
+                'http://rmit.edu.au/schemas/directive_profile/name'])),
         ])
         directive_args = [''] + d_arg
         logger.debug("directive_args=%s" % pformat(directive_args))

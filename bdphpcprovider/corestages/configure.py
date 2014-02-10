@@ -72,25 +72,36 @@ class Configure(Stage):
         self.input_platform_offset = ''
         self.compute_platform_name = ''
         self.compute_platform_offset = ''
-        try:
-             run_settings['http://rmit.edu.au/schemas/platform/storage/output']
-        except KeyError:
-            bdp_url = run_settings[RMIT_SCHEMA + '/input/system'][u'output_location']
-            self.output_platform_name, self.output_platform_offset = self.break_bdp_url(bdp_url)
-            run_settings[RMIT_SCHEMA + '/platform/storage/output'] = {}
-            run_settings[RMIT_SCHEMA + '/platform/storage/output'][
-            'platform_url'] = self.output_platform_name
-            run_settings[RMIT_SCHEMA + '/platform/storage/output']['offset'] = self.output_platform_offset
+        if self.output_exists(run_settings):
+            try:
+                 run_settings['http://rmit.edu.au/schemas/platform/storage/output']
+            except KeyError:
+                logger.debug('bdp_url settings ...')
+                try:
+                    bdp_url = getval(run_settings, RMIT_SCHEMA + '/input/system/output_location')
+                    logger.debug('bdp_url=%s' % bdp_url)
+                except SettingNotFoundException:
+                    bdp_url = getval(run_settings, RMIT_SCHEMA + '/input/location/output/output_location')
+                    logger.debug('bdp_url=%s' % bdp_url)
+                self.output_platform_name, self.output_platform_offset = self.break_bdp_url(bdp_url)
+                run_settings[RMIT_SCHEMA + '/platform/storage/output'] = {}
+                run_settings[RMIT_SCHEMA + '/platform/storage/output'][
+                'platform_url'] = self.output_platform_name
+                run_settings[RMIT_SCHEMA + '/platform/storage/output']['offset'] = self.output_platform_offset
 
-        try:
-             run_settings['http://rmit.edu.au/schemas/platform/storage/input']
-        except KeyError:
-            bdp_url = run_settings[RMIT_SCHEMA + '/input/system'][u'input_location']
-            self.input_platform_name, self.input_platform_offset = self.break_bdp_url(bdp_url)
-            run_settings[RMIT_SCHEMA + '/platform/storage/input'] = {}
-            run_settings[RMIT_SCHEMA + '/platform/storage/input'][
-            'platform_url'] = self.input_platform_name
-            run_settings[RMIT_SCHEMA + '/platform/storage/input']['offset'] = self.input_platform_offset
+        if self.input_exists(run_settings):
+            try:
+                 run_settings['http://rmit.edu.au/schemas/platform/storage/input']
+            except KeyError:
+                try:
+                    bdp_url = getval(run_settings, RMIT_SCHEMA + '/input/system/input_location')
+                except SettingNotFoundException:
+                    bdp_url = getval(run_settings, RMIT_SCHEMA + '/input/location/input/input_location')
+                self.input_platform_name, self.input_platform_offset = self.break_bdp_url(bdp_url)
+                run_settings[RMIT_SCHEMA + '/platform/storage/input'] = {}
+                run_settings[RMIT_SCHEMA + '/platform/storage/input'][
+                'platform_url'] = self.input_platform_name
+                run_settings[RMIT_SCHEMA + '/platform/storage/input']['offset'] = self.input_platform_offset
 
         try:
              run_settings['http://rmit.edu.au/schemas/platform/computation']
@@ -110,34 +121,35 @@ class Configure(Stage):
         logger.debug("settings=%s" % pformat(run_settings))
 
         local_settings['bdp_username'] = getval(run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA)
+
         # local_settings['bdp_username'] = run_settings[
         #     RMIT_SCHEMA + '/bdp_userprofile']['username']
 
 
         logger.debug('local_settings=%s' % local_settings)
 
-        input_location = getval(run_settings, "%s/input/system/input_location" % RMIT_SCHEMA)
+        #input_location = getval(run_settings, "%s/input/system/input_location" % RMIT_SCHEMA)
         # input_location = run_settings[
         #     RMIT_SCHEMA + '/input/system']['input_location']
-        logger.debug("input_location=%s" % input_location)
+        #logger.debug("input_location=%s" % input_location)
 
         bdp_username = local_settings['bdp_username']
 
         output_storage_url = getval(run_settings, '%s/platform/storage/output/platform_url' % RMIT_SCHEMA)
         # output_storage_url = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['platform_url']
-        output_storage_settings = manage.get_platform_settings(output_storage_url, bdp_username)
+        #output_storage_settings = manage.get_platform_settings(output_storage_url, bdp_username)
 
 
-        input_storage_url = getval(run_settings, '%s/platform/storage/input/platform_url' % RMIT_SCHEMA)
-        input_storage_settings = manage.get_platform_settings(
-            input_storage_url,
-            bdp_username)
+        #input_storage_url = getval(run_settings, '%s/platform/storage/input/platform_url' % RMIT_SCHEMA)
+        #input_storage_settings = manage.get_platform_settings(
+        #    input_storage_url,
+        #    bdp_username)
 
-        input_offset = getval(run_settings, '%s/platform/storage/input/offset' % RMIT_SCHEMA)
-        input_prefix = '%s://%s@' % (input_storage_settings['scheme'],
-                                    input_storage_settings['type'])
-        map_initial_location = "%s/%s/initial" % (input_prefix, input_offset)
-        logger.debug("map_initial_location=%s" % map_initial_location)
+        #input_offset = getval(run_settings, '%s/platform/storage/input/offset' % RMIT_SCHEMA)
+        #input_prefix = '%s://%s@' % (input_storage_settings['scheme'],
+        #                            input_storage_settings['type'])
+        #map_initial_location = "%s/%s/initial" % (input_prefix, input_offset)
+        #logger.debug("map_initial_location=%s" % map_initial_location)
 
         self.contextid = getval(run_settings, '%s/system/contextid' % RMIT_SCHEMA)
         logger.debug("self.contextid=%s" % self.contextid)
@@ -154,8 +166,10 @@ class Configure(Stage):
         except SettingNotFoundException:
             pass
         '''
-        self.output_loc_offset = self.get_results_dirname(run_settings, 'hrmc')
-        self.copy_to_scratch_space(run_settings, local_settings)
+        self.output_loc_offset = self.get_results_dirname(run_settings)
+        logger.debug('self.output_loc_offset=%s' % self.output_loc_offset)
+        if self.input_exists(run_settings):
+            self.copy_to_scratch_space(run_settings, local_settings)
         '''
         run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset'] = self.output_loc_offset
         offset = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset']
@@ -183,7 +197,7 @@ class Configure(Stage):
         output_location = self.output_loc_offset  # run_settings[RMIT_SCHEMA + '/input/system'][u'output_location']
         self.experiment_id = 0
         try:
-            run_settings['http://rmit.edu.au/schemas/input/mytardis']['curate_data']
+            curate_data = run_settings['http://rmit.edu.au/schemas/input/mytardis']['curate_data']
             self.experiment_id = self.curate_date(run_settings, location=output_location)
         except KeyError:
             pass
@@ -247,22 +261,23 @@ class Configure(Stage):
         setval(run_settings,
                '%s/input/mytardis/experiment_id' % RMIT_SCHEMA,
                str(self.experiment_id))
-
-        if self.output_platform_name:
-            run_settings.setdefault(
-                RMIT_SCHEMA + '/platform/storage/output',
-                {})[u'platform_url'] = self.output_platform_name
-        if self.output_platform_offset:
-            run_settings[RMIT_SCHEMA + '/platform/storage/output']['offset'] = self.output_platform_offset
-        else:
+        if self.output_exists(run_settings):
+            if self.output_platform_name:
+                run_settings.setdefault(
+                    RMIT_SCHEMA + '/platform/storage/output',
+                    {})[u'platform_url'] = self.output_platform_name
+            #if self.output_platform_offset:
+            #    run_settings[RMIT_SCHEMA + '/platform/storage/output']['offset'] = self.output_platform_offset
+            #else:
             run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset'] = self.output_loc_offset
 
-        if self.input_platform_name:
-            run_settings.setdefault(
-                RMIT_SCHEMA + '/platform/storage/input',
-                {})[u'platform_url'] = self.input_platform_name
-        if self.input_platform_offset:
-            run_settings[RMIT_SCHEMA + '/platform/storage/input']['offset'] = self.input_platform_offset
+        if self.input_exists(run_settings):
+            if self.input_platform_name:
+                run_settings.setdefault(
+                    RMIT_SCHEMA + '/platform/storage/input',
+                    {})[u'platform_url'] = self.input_platform_name
+            if self.input_platform_offset:
+                run_settings[RMIT_SCHEMA + '/platform/storage/input']['offset'] = self.input_platform_offset
 
         logger.debug('self.compute_platform_name=%s' % self.compute_platform_name)
         if self.compute_platform_name:
@@ -305,7 +320,11 @@ class Configure(Stage):
         storage.copy_directories(source_url, destination_url)
 
 
-    def get_results_dirname(self, run_settings, name):
+    def get_results_dirname(self, run_settings):
+        try:
+            name = getval(run_settings, '%s/directive_profile/name' % RMIT_SCHEMA)
+        except SettingNotFoundException:
+            name = 'unknown_connector'
         output_loc_offset = str(self.contextid)
         logger.debug("suffix=%s" % output_loc_offset)
         try:

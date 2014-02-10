@@ -249,6 +249,13 @@ class Command(BaseCommand):
                         'description':'BDP username', 'ranking':12, 'help_text':''},
                 }
                 ],
+            u'http://rmit.edu.au/schemas/directive_profile':
+                ["Directive profile",
+                {
+                 u'name': {'type':models.ParameterName.STRING, 'subtype':'',
+                        'description':'Directive name', 'ranking':12, 'help_text':''},
+                }
+                ],
             # TODO: this schema is deprecated
             models.UserProfile.PROFILE_SCHEMA_NS:
                 [u'user profile',
@@ -337,6 +344,25 @@ class Command(BaseCommand):
                 [u'Locations',
                 {
                 u'input_location': {'type':models.ParameterName.STRING, 'subtype':'storage_bdpurl', 'initial':'file://127.0.0.1/myfiles/input', 'description':'Input Location', 'ranking':1,  'help_text': 'Storage platform name with optional offset path: e.g., storage_home/myexperiment'},
+                u'output_location': {'type':models.ParameterName.STRING, 'subtype':'storage_bdpurl', 'initial':'file://local@127.0.0.1/sweep', 'description':'Output Location', 'ranking': 2, 'help_text': 'Storage platform name with optional offset path: e.g., storage_home/myexperiment'}
+                }
+                ],
+            u'http://rmit.edu.au/schemas/input/location':
+                [u'Locations',
+                {
+                u'input_location': {'type':models.ParameterName.STRING, 'subtype':'storage_bdpurl', 'initial':'file://127.0.0.1/myfiles/input', 'description':'Input Location', 'ranking':1,  'help_text': 'Storage platform name with optional offset path: e.g., storage_home/myexperiment'},
+                u'output_location': {'type':models.ParameterName.STRING, 'subtype':'storage_bdpurl', 'initial':'file://local@127.0.0.1/sweep', 'description':'Output Location', 'ranking': 2, 'help_text': 'Storage platform name with optional offset path: e.g., storage_home/myexperiment'}
+                }
+                ],
+            u'http://rmit.edu.au/schemas/input/location/input':
+                [u'Locations',
+                {
+                u'input_location': {'type':models.ParameterName.STRING, 'subtype':'storage_bdpurl', 'initial':'file://127.0.0.1/myfiles/input', 'description':'Input Location', 'ranking':1,  'help_text': 'Storage platform name with optional offset path: e.g., storage_home/myexperiment'},
+                }
+                ],
+            u'http://rmit.edu.au/schemas/input/location/output':
+                [u'Locations',
+                {
                 u'output_location': {'type':models.ParameterName.STRING, 'subtype':'storage_bdpurl', 'initial':'file://local@127.0.0.1/sweep', 'description':'Output Location', 'ranking': 2, 'help_text': 'Storage platform name with optional offset path: e.g., storage_home/myexperiment'}
                 }
                 ],
