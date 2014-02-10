@@ -328,6 +328,7 @@ class Wait(Stage):
 
         if not nodes_working:
             self.finished_nodes = []
+            messages.success(run_settings, 'All processes in iteration %d completed' %(self.id + 1))
         #run_settings['http://rmit.edu.au/schemas/stages/run']['finished_nodes'] = str(self.finished_nodes)
 
         setvals(run_settings, {
