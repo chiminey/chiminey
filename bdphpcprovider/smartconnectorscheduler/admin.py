@@ -113,6 +113,10 @@ class PlatformParameterSetAdmin(admin.ModelAdmin):
         return obj.owner
 
 
+class DirectiveArgSetAdmin(admin.ModelAdmin):
+    list_display = ('directive', 'schema')
+
+
 class UserProfileParameterInline(admin.TabularInline):
     model = models.UserProfileParameter
     extra = 0
@@ -269,7 +273,7 @@ admin.site.register(models.ContextParameter)
 admin.site.register(models.StageParameterSet, StageParameterSetAdmin)
 admin.site.register(models.StageParameter)
 admin.site.register(models.Directive, DirectiveAdmin)
-admin.site.register(models.DirectiveArgSet)
+admin.site.register(models.DirectiveArgSet, DirectiveArgSetAdmin)
 admin.site.register(models.PlatformInstance)
 admin.site.register(models.PlatformInstanceParameterSet, PlatformInstanceParameterSetAdmin)
 admin.site.register(models.PlatformInstanceParameter)

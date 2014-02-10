@@ -605,17 +605,23 @@ class Command(BaseCommand):
 
         logger.debug("local_filesys_rootpath=%s" % local_filesys_rootpath)
 
+        #self.define_rand_number_sweep()
+
         self.define_rand_number()
         print "done"
 
-    def define_rand_number_sweep(self, subdirective):
+    def define_rand_number_sweep(self):
+
+        subdirective = models.Directive.objects.get(
+            name="randomnumber"
+        )
 
         sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep_rand",
             description="Sweep for Random",
-            package="bdphpcprovider.examples.randomnumber.randsweep.RandSweep",
+            package="bdphpcprovider.examples.randomnumbers.randsweep.RandSweep",
             order=100)
         sweep_stage.update_settings({
-            u'http://rmit.edu.au/schemas/sweep':
+            u'http://rmit.edu.au/schemas/stages/sweep':
             {
                 u'directive': subdirective.name
             }
@@ -628,11 +634,12 @@ class Command(BaseCommand):
         for i, sch in enumerate([
                 RMIT_SCHEMA + "/input/system/compplatform",
                 RMIT_SCHEMA + "/input/system",
+                RMIT_SCHEMA + "/input/mytardis",
                 RMIT_SCHEMA + "/input/sweep",
                 ]):
             schema = models.Schema.objects.get(namespace=sch)
-        das, _ = models.DirectiveArgSet.objects.get_or_create(
-              directive=subdirective, order=i, schema=schema)
+            das, _ = models.DirectiveArgSet.objects.get_or_create(
+                  directive=sweep, order=i, schema=schema)
 
     def define_rand_number(self):
         package = "bdphpcprovider.examples.randomnumbers"
@@ -752,7 +759,7 @@ class Command(BaseCommand):
             das, _ = models.DirectiveArgSet.objects.get_or_create(directive=rand_number, order=i, schema=schema)
 
 
-        #self.define_rand_number_sweep(rand_number)
+        #self.define_rand_number_sweep()
 
 
     def handle(self, *args, **options):

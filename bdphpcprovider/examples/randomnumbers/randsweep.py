@@ -21,8 +21,13 @@
 
 import logging
 from bdphpcprovider.corestages.sweep import Sweep
+from bdphpcprovider.runsettings import getval, getvals, \
+    setval, update, get_schema_namespaces, SettingNotFoundException
+from bdphpcprovider.corestages.sweep import post_mytardis_exp
 
 logger = logging.getLogger(__name__)
+RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+
 
 class RandSweep(Sweep):
 
