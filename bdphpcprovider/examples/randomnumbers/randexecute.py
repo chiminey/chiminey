@@ -18,10 +18,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import socket
-import os
 import logging
-from bdphpcprovider.sshconnection import AuthError, SSHException
 from bdphpcprovider.corestages import Execute
 from bdphpcprovider.sshconnection import open_connection
 from bdphpcprovider.compute import run_command_with_status
@@ -30,34 +27,17 @@ from bdphpcprovider.compute import run_command_with_status
 logger = logging.getLogger(__name__)
 
 class RandExecute(Execute):
-    def set_domain_settings(self, run_settings, local_settings):
-        pass
-
-    def prepare_inputs(self, local_settings, output_storage_settings,
-                        computation_platform_settings, mytardis_settings):
-        pass
-
-    def run_task(self, ip_address, process_id, settings, run_settings):
-        ssh = None
+    def run_task(self, ip_address, process_id, connection_settings, run_settings):
+        filename = 'rand'
+        output_path = self.get_process_output_path(run_settings, process_id)
+        logger.debug('output_path=%s' % output_path)
+        ssh = open_connection(ip_address=ip_address, settings=connection_settings)
         try:
-            ssh = open_connection(ip_address=ip_address, settings=settings)
-            computation_platform = self.get_platform_settings(
-                run_settings, 'http://rmit.edu.au/schemas/platform/computation')
-            logger.debug('ssh=%s' % ssh)
-            logger.debug('computation_platform=%s' % computation_platform)
-            filename = 'rand'
-            output_path = os.path.join(
-                computation_platform['root_path'], settings['payload_destination'],
-                str(process_id), settings['payload_cloud_dirname'])
-            logger.debug('output_path=%s' % output_path)
-            command, errs = run_command_with_status(ssh, "mkdir -p %s; cd %s ; "
-                                                         "python -c 'import random; print random.random()' > %s" %
-                                                         (output_path, output_path, filename))
-            #'python -c \'import random; print random.random()\'
+            command, errs = run_command_with_status(
+                ssh, "mkdir -p %s; cd %s ;"
+                     " python -c 'import random; "
+                     "print random.random()' > %s" %
+                     (output_path, output_path, filename))
             logger.debug('command=%s errs=%s' % (command, errs))
-        except (AuthError, SSHException, socket.error) as e:
-            logger.error(e)
-            raise
         finally:
-            if ssh:
-                ssh.close()
+            ssh.close()
