@@ -823,13 +823,17 @@ class Command(BaseCommand):
             description="Sweep Test",
             package="bdphpcprovider.corestages.sweep.RemoteMakeSweep",
             order=100)
+
         sweep_stage.update_settings({
             # FIXME: move random_numbers into system schema
             u'http://rmit.edu.au/schemas/system':
             {
                 u'random_numbers': 'file://127.0.0.1/randomnums.txt'
             },
-
+            u'http://rmit.edu.au/schemas/stages/sweep':
+            {
+                u'directive': "remotemake"
+            }
             })
         sweep, _ = models.Directive.objects.get_or_create(name="sweep_make",
             description="Remote Make Sweep Connector",

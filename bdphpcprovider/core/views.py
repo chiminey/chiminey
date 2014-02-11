@@ -342,7 +342,7 @@ class ContextResource(ModelResource):
                 dispatch_table = {
                     'hrmc': self._post_to_hrmc,
                     # 'sweep': self._post_to_sweep_hrmc,
-                    # 'sweep_make': self._post_to_sweep_make,
+                    'sweep_make': self._post_to_sweep_make,
                     # 'sweep_vasp': self._post_to_sweep_vasp,
                     'copydir': self._post_to_copy,
                     'remotemake': self._post_to_remotemake,
