@@ -35,19 +35,27 @@ class Command(BaseCommand):
     help = 'Setup an initial task structure.'
 
     def setup(self):
-        confirm = raw_input("This will ERASE and reset the database. "
-            " Are you sure [Yes|No]")
+        confirm = raw_input("This operation will add a new directive to catalogue of"
+                            " available directives. Are you sure [Yes|No]")
         if confirm != "Yes":
             print "action aborted by user"
             return
 
         directive = randdirective.RandDirective()
-        #directive.define_directive('randomnumber')
-        directive.define_directive('sweep_rand', 'random_number', description='Random Number Sweep Connector')
+        # With Sweep
+        new_directive = directive.define_directive(
+            directive_name='randomnumber',
+            directive_description="A Random Number Directive",
+            make_sweep=True)
+        # Without Sweep
+        # new_directive = directive.define_directive(directive_name='randomnumber',
+        #                                        directive_description=
+        #                                         "A Random Number Directive")
+
+        #directive.define_directive('sweep_rand', 'random_number', description='Random Number Sweep Connector')
         #directive = hrmcdirective.HRMCDirective()
         #directive.define_directive(name="hrmc2", description='Random number generation')
         print "done"
-
 
     def handle(self, *args, **options):
         self.setup()
