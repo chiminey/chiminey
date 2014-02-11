@@ -18,8 +18,12 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+import logging
 from bdphpcprovider.corestages.strategies.strategy import Strategy
-from bdphpcprovider.corestages.strategies.cloudstrategy import CloudStrategy
-from bdphpcprovider.corestages.strategies.clusterstrategy import ClusterStrategy
-from bdphpcprovider.corestages.strategies.synchronouswaitstrategy import SynchronousWaitStrategy
-from bdphpcprovider.corestages.strategies.asynchronouswaitstrategy import AsynchronousWaitStrategy
+
+logger = logging.getLogger(__name__)
+RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+
+class SynchronousWaitStrategy(Strategy):
+    def is_job_finished(self, ip_address, process_id, retry_left, settings):
+        return True

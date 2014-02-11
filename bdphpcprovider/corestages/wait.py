@@ -26,11 +26,8 @@ from bdphpcprovider.corestages import stage
 from bdphpcprovider.corestages.stage import Stage
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.reliabilityframework.ftmanager import FTManager
-
+from bdphpcprovider.corestages import strategies
 from bdphpcprovider.reliabilityframework.failuredetection import FailureDetection
-from bdphpcprovider.sshconnection import open_connection
-
-from bdphpcprovider import compute
 from bdphpcprovider import messages
 from bdphpcprovider import storage
 
@@ -137,8 +134,10 @@ class Wait(Stage):
         logger.debug("wait not triggered")
         return False
 
+    '''
     def is_job_finished(self, ip_address, process_id, retry_left, settings):
         return True
+    '''
 
     def get_output(self, ip_address, process_id, output_dir, local_settings,
                    computation_platform_settings, output_storage_settings,
@@ -231,6 +230,14 @@ class Wait(Stage):
         local_settings.update(comp_pltf_settings)
         comp_pltf_settings['bdp_username'] = local_settings['bdp_username']
 
+        wait_strategy = strategies.SynchronousWaitStrategy()
+        try:
+            synchronous_wait = getval(run_settings, '%s/stages/wait/synchronous' % RMIT_SCHEMA)
+            if not synchronous_wait:
+                wait_strategy = strategies.AsynchronousWaitStrategy()
+        except SettingNotFoundException:
+            pass
+
         for process in processes:
             #instance_id = node.id
             ip_address = process['ip_address']
@@ -245,7 +252,7 @@ class Wait(Stage):
             #    logging.error('Instance %s not running' % instance_id)
             #    self.error_nodes.append(node)
             #    continue
-            fin = self.is_job_finished(ip_address, process_id, retry_left, local_settings)
+            fin = wait_strategy.is_job_finished(ip_address, process_id, retry_left, local_settings)
             logger.debug("fin=%s" % fin)
             if fin:
                 logger.debug("done. output is available")
