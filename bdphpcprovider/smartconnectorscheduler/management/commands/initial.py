@@ -793,7 +793,6 @@ class Command(BaseCommand):
             stage=sweep_stage)
 
     def define_hrmc_sweep(self):
-
         sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep",
             description="Sweep Test",
             package="bdphpcprovider.corestages.sweep.HRMCSweep",

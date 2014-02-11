@@ -21,7 +21,7 @@
 import logging
 
 from django.core.management.base import BaseCommand
-from bdphpcprovider.smartconnectorscheduler.management.commands import randdirective
+from bdphpcprovider.smartconnectorscheduler.management.commands import randdirective, hrmcdirective
 logger = logging.getLogger(__name__)
 
 
@@ -42,20 +42,12 @@ class Command(BaseCommand):
             return
 
         directive = randdirective.RandDirective()
-        directive.assemble_directive(name="randomnumber", description='Random number generation')
+        directive.define_directive('randomnumber')
+        #directive = hrmcdirective.HRMCDirective()
+        #directive.define_directive(name="hrmc2", description='Random number generation')
         print "done"
 
 
     def handle(self, *args, **options):
         self.setup()
         print "done"
-
-
-'''
-rand_number, _ = models.Directive.objects.get_or_create(
-            name="randomnumber",
-            defaults={'stage': self.define_parent_stage(),
-                      'description': "Random number generation",
-                      'hidden': False}
-        )
-'''

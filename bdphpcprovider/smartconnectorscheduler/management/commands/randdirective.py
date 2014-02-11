@@ -46,3 +46,13 @@ class RandDirective(CoreDirective):
                 },
             })
 
+    def create_ui(self, new_directive):
+        RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+        for i, sch in enumerate([
+                    RMIT_SCHEMA + "/input/system/compplatform",
+                    RMIT_SCHEMA + "/input/location/output",
+        ]):
+            schema = models.Schema.objects.get(namespace=sch)
+            das, _ = models.DirectiveArgSet.objects.get_or_create(
+                directive=new_directive, order=i, schema=schema)
+

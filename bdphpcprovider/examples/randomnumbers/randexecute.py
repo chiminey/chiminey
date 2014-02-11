@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 class RandExecute(Execute):
     def run_task(self, ip_address, process_id, connection_settings, run_settings):
+        logger
         filename = 'rand'
         output_path = self.get_process_output_path(run_settings, process_id)
         logger.debug('output_path=%s' % output_path)
