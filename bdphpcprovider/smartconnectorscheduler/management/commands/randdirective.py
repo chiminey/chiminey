@@ -56,3 +56,41 @@ class RandDirective(CoreDirective):
             das, _ = models.DirectiveArgSet.objects.get_or_create(
                 directive=new_directive, order=i, schema=schema)
 
+'''
+
+    def define_sweep(self, subdirective):
+
+        sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep_%s" % subdirective.name,
+            description="Sweep for %s" % subdirective.name,
+            package="bdphpcprovider.corestages.sweep.Sweep",
+            order=100)
+        sweep_stage.update_settings({
+            u'http://rmit.edu.au/schemas/stages/sweep':
+            {
+                u'directive': subdirective.name
+            }
+            })
+        sweep, _ = models.Directive.objects.get_or_create(name="sweep_rand",
+            description="%s Sweep Connector" % subdirective.name,
+            stage=sweep_stage)
+
+        max_order = 0
+        for das in models.DirectiveArgSet.objects.filter(directive=subdirective):
+            new_das = models.DirectiveArgSet.objects.create(
+                directive=sweep, order=das.order, schema=das.schema)
+            max_order = max(max_order, das.order)
+
+        schema = models.Schema.objects.get(namespace=SWEEP_SCHEMA)
+        new_das = models.DirectiveArgSet.objects.create(
+            directive=sweep, order=max_order + 1, schema=schema)
+
+        # for i, sch in enumerate([
+        #         RMIT_SCHEMA + "/input/system/compplatform",
+        #         RMIT_SCHEMA + "/input/system",
+        #         RMIT_SCHEMA + "/input/mytardis",
+        #         RMIT_SCHEMA + "/input/sweep",
+        #         ]):
+        #     schema = models.Schema.objects.get(namespace=sch)
+        #     das, _ = models.DirectiveArgSet.objects.get_or_create(
+        #           directive=sweep, order=i, schema=schema)
+    '''
