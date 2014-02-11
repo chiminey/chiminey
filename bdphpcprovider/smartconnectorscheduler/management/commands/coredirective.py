@@ -138,7 +138,12 @@ class CoreDirective():
             parent=self.parent_stage,
             package=wait_package,
             order=40)
-        wait_stage.update_settings({})
+        wait_stage.update_settings({
+            u'http://rmit.edu.au/schemas/stages/wait':
+                {
+                    u'synchronous': 1
+                },
+        })
         destroy_stage, _ = models.Stage.objects.get_or_create(name="destroy",
             description="This is core destroy stage",
             parent=self.parent_stage,

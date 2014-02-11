@@ -21,3 +21,5 @@
 from bdphpcprovider.corestages.strategies.strategy import Strategy
 from bdphpcprovider.corestages.strategies.cloudstrategy import CloudStrategy
 from bdphpcprovider.corestages.strategies.clusterstrategy import ClusterStrategy
+from bdphpcprovider.corestages.strategies.synchronouswaitstrategy import SynchronousWaitStrategy
+from bdphpcprovider.corestages.strategies.asynchronouswaitstrategy import AsynchronousWaitStrategy

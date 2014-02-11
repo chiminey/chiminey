@@ -567,6 +567,12 @@ class Command(BaseCommand):
                 u'done': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''}
                 }
                 ],
+            u'http://rmit.edu.au/schemas/stages/wait':
+                [u'wait stage parameters',
+                {
+                u'synchronous': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''}
+                }
+                ],
             u'http://rmit.edu.au/schemas/stages/make':
                 [u'',
                 {
