@@ -88,29 +88,30 @@ class Stage(object):
     def input_exists(self, run_settings):
         try:
             getval(run_settings, 'http://rmit.edu.au/schemas/input/location/input/input_location')
-            return True
+            return 'http://rmit.edu.au/schemas/input/location/input/input_location'
         except SettingNotFoundException:
             pass
         try:
             getval(run_settings, 'http://rmit.edu.au/schemas/input/system/input_location')
-            return True
+            return 'http://rmit.edu.au/schemas/input/system/input_location'
         except SettingNotFoundException:
             pass
-        return False
+        return ""
 
 
     def output_exists(self, run_settings):
+
         try:
             getval(run_settings, 'http://rmit.edu.au/schemas/input/location/output/output_location')
-            return True
+            return 'http://rmit.edu.au/schemas/input/location/output/output_location'
         except SettingNotFoundException:
             pass
         try:
             getval(run_settings, 'http://rmit.edu.au/schemas/input/system/output_location')
-            return True
+            return 'http://rmit.edu.au/schemas/input/system/output_location'
         except SettingNotFoundException:
             pass
-        return False
+        return ""
 
 
     @deprecated
@@ -139,10 +140,12 @@ class Stage(object):
     def get_process_output_path(self, run_settings, process_id):
         computation_platform = self.get_platform_settings(
             run_settings, 'http://rmit.edu.au/schemas/platform/computation')
+        contextid = int(getval(run_settings, '%s/system/contextid' % RMIT_SCHEMA))
+
         output_path = os.path.join(
                 computation_platform['root_path'],
                 getval(run_settings, 'http://rmit.edu.au/schemas/stages/setup/payload_destination'),
-                str(process_id), getval(run_settings, 'http://rmit.edu.au/schemas/stages/run/payload_cloud_dirname'))
+                str(contextid), str(process_id), getval(run_settings, 'http://rmit.edu.au/schemas/stages/run/payload_cloud_dirname'))
         return output_path
 
 def copy_settings(dest_context, context, key):

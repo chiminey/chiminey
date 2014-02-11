@@ -35,7 +35,6 @@ from bdphpcprovider import mytardis
 
 from bdphpcprovider.runsettings import getval, getvals, \
     setval, update, get_schema_namespaces, SettingNotFoundException
-from bdphpcprovider.corestages import stage
 from bdphpcprovider.storage import get_url_with_pkey
 
 
@@ -94,9 +93,8 @@ class Sweep(Stage):
                       '%s/input/system/compplatform/computation_platform'
                             % RMIT_SCHEMA))
 
-        def _parse_output_location(run_settings):
-            location = getval(run_settings,
-                '%s/input/system/output_location' % RMIT_SCHEMA)
+        def _parse_output_location(run_settings, location):
+
             loc_list = location.split('/')
             name = loc_list[0]
             offset = ''
@@ -105,7 +103,19 @@ class Sweep(Stage):
             logger.debug('offset=%s' % offset)
             return name, offset
 
-        output_storage_name, output_storage_offset = _parse_output_location(run_settings)
+        contextid = int(getval(run_settings, '%s/system/contextid' % RMIT_SCHEMA))
+        logger.debug("contextid=%s" % contextid)
+
+        output_loc = self.output_exists(run_settings)
+        if output_loc:
+            location = getval(run_settings, output_loc)
+            output_storage_name, output_storage_offset = \
+                _parse_output_location(run_settings, location)
+            setval(run_settings,
+                   '%s/platform/storage/output/platform_url' % RMIT_SCHEMA,
+                   output_storage_name)
+            setval(run_settings, '%s/platform/storage/output/offset' % RMIT_SCHEMA,
+                   os.path.join(output_storage_offset, 'sweep%s' % contextid))
 
         def _parse_input_location(run_settings, location):
             loc_list = location.split('/')
@@ -116,26 +126,17 @@ class Sweep(Stage):
             logger.debug('offset=%s' % offset)
             return (name, offset)
 
-        input_storage_name, input_storage_offset = _parse_input_location(run_settings,
-              getval(run_settings, '%s/input/system/input_location' % RMIT_SCHEMA))
-
-        contextid = int(getval(run_settings, '%s/system/contextid' % RMIT_SCHEMA))
-        logger.debug("contextid=%s" % contextid)
-
-        # store platform_urls
-        setval(run_settings,
-               '%s/platform/storage/output/platform_url' % RMIT_SCHEMA,
-               output_storage_name)
-
-        setval(run_settings, '%s/platform/storage/input/platform_url' % RMIT_SCHEMA,
-               input_storage_name)
-
-        # store offsets
-        setval(run_settings,
-               '%s/platform/storage/input/offset' % RMIT_SCHEMA,
-               input_storage_offset)
-        setval(run_settings, '%s/platform/storage/output/offset' % RMIT_SCHEMA,
-               os.path.join(output_storage_offset, 'sweep%s' % contextid))
+        input_loc = self.input_exists(run_settings)
+        if input_loc:
+            location = getval(run_settings, input_loc)
+            input_storage_name, input_storage_offset = \
+                _parse_input_location(run_settings, location)
+            setval(run_settings, '%s/platform/storage/input/platform_url' % RMIT_SCHEMA,
+                   input_storage_name)
+            # store offsets
+            setval(run_settings,
+                   '%s/platform/storage/input/offset' % RMIT_SCHEMA,
+                   input_storage_offset)
 
         # TODO: replace with scratch space computation platform space
         self.scratch_platform = '%ssweep%s' % (
@@ -194,38 +195,39 @@ class Sweep(Stage):
                     logger.error(e)
                     raise
 
-        input_storage_settings = self.get_platform_settings(
-            run_settings, 'http://rmit.edu.au/schemas/platform/storage/input')
-
         # load initial values map in the input directory which
         # contains variable to use for all subdirectives
         starting_map = {}
-        try:
-            input_prefix = '%s://%s@' % (input_storage_settings['scheme'],
-                                    input_storage_settings['type'])
+        if input_loc:
 
-            values_url = get_url_with_pkey(
-                input_storage_settings,
-                input_prefix + os.path.join(input_storage_settings['ip_address'],
-                    input_storage_offset, "initial", VALUES_MAP_FILE),
-                is_relative_path=False)
-            logger.debug("values_url=%s" % values_url)
+            input_storage_settings = self.get_platform_settings(
+                run_settings, 'http://rmit.edu.au/schemas/platform/storage/input')
+            try:
+                input_prefix = '%s://%s@' % (input_storage_settings['scheme'],
+                                        input_storage_settings['type'])
 
-            values_e_url = get_url_with_pkey(
-                local_settings,
-                values_url,
-                is_relative_path=False)
-            logger.debug("values_url=%s" % values_e_url)
-            values_content = storage.get_file(values_e_url)
-            logger.debug("values_content=%s" % values_content)
-            starting_map = dict(json.loads(values_content))
-        except IOError:
-            logger.warn("no starting values file found")
-        except ValueError:
-            logger.error("problem parsing contents of %s" % VALUES_MAP_FILE)
-            pass
-        logger.debug("starting_map after initial values=%s"
-            % pformat(starting_map))
+                values_url = get_url_with_pkey(
+                    input_storage_settings,
+                    input_prefix + os.path.join(input_storage_settings['ip_address'],
+                        input_storage_offset, "initial", VALUES_MAP_FILE),
+                    is_relative_path=False)
+                logger.debug("values_url=%s" % values_url)
+
+                values_e_url = get_url_with_pkey(
+                    local_settings,
+                    values_url,
+                    is_relative_path=False)
+                logger.debug("values_url=%s" % values_e_url)
+                values_content = storage.get_file(values_e_url)
+                logger.debug("values_content=%s" % values_content)
+                starting_map = dict(json.loads(values_content))
+            except IOError:
+                logger.warn("no starting values file found")
+            except ValueError:
+                logger.error("problem parsing contents of %s" % VALUES_MAP_FILE)
+                pass
+            logger.debug("starting_map after initial values=%s"
+                % pformat(starting_map))
 
         # Copy form input values info starting map
         # FIXME: could have name collisions between form inputs and
@@ -237,17 +239,18 @@ class Sweep(Stage):
                     starting_map[k] = v
         logger.debug("starting_map after form=%s" % pformat(starting_map))
 
-
         # FIXME: we assume we will always have input directory
 
         # Get input_url directory
-        input_prefix = '%s://%s@' % (input_storage_settings['scheme'],
-                                input_storage_settings['type'])
-        input_url = get_url_with_pkey(input_storage_settings,
-            input_prefix + os.path.join(input_storage_settings['ip_address'],
-                input_storage_offset),
-        is_relative_path=False)
-        logger.debug("input_url=%s" % input_url)
+        input_url = ""
+        if input_loc:
+            input_prefix = '%s://%s@' % (input_storage_settings['scheme'],
+                                    input_storage_settings['type'])
+            input_url = get_url_with_pkey(input_storage_settings,
+                input_prefix + os.path.join(input_storage_settings['ip_address'],
+                    input_storage_offset),
+            is_relative_path=False)
+            logger.debug("input_url=%s" % input_url)
 
         current_context = models.Context.objects.get(id=contextid)
         user = current_context.owner.user.username
@@ -258,16 +261,8 @@ class Sweep(Stage):
         logger.debug("run_settings=%s" % run_settings)
         for i, context in enumerate(runs):
 
-            # FIXME: we assume that we have an input directory
-            # that can be copied.  If not, still copy values map
-            # because user script may want to access it
-
-            # Duplicate input directory into runX duplicates
-            logger.debug("context=%s" % context)
             run_counter = int(context['run_counter'])
             logger.debug("run_counter=%s" % run_counter)
-            logger.debug("systemsettings=%s"
-                     % pformat(getvals(run_settings, RMIT_SCHEMA + '/input/system')))
             run_inputdir = os.path.join(self.scratch_platform,
                 SUBDIRECTIVE_DIR % {'run_counter': str(run_counter)},
                 FIRST_ITERATION_DIR,)
@@ -275,12 +270,20 @@ class Sweep(Stage):
             run_iter_url = get_url_with_pkey(local_settings,
                 run_inputdir, is_relative_path=False)
             logger.debug("run_iter_url=%s" % run_iter_url)
-            storage.copy_directories(input_url, run_iter_url)
+
+            # Duplicate any input_directory into runX duplicates
+            if input_loc:
+                logger.debug("context=%s" % context)
+                logger.debug("systemsettings=%s"
+                         % pformat(getvals(run_settings, RMIT_SCHEMA + '/input/system')))
+                storage.copy_directories(input_url, run_iter_url)
 
             # Need to load up existing values, because original input_dir could
             # have contained values for the whole run
             # This code is deprecated in favour of single values file.
             self.error_detected = False
+
+
             try:
                 template_name = getval(run_settings,
                                        '%s/stages/sweep/template_name'
@@ -336,23 +339,24 @@ class Sweep(Stage):
             if rands:
                 setval(run_settings, '%s/input/hrmc/iseed' % RMIT_SCHEMA, rands[i])
 
-            # Set revised input_location for subdirective
-            setval(run_settings, '%s/input/system/input_location' % RMIT_SCHEMA,
-                "%s/%s/%s" % (self.scratch_platform,
-                                SUBDIRECTIVE_DIR
-                                    % {'run_counter': str(run_counter)},
-                                FIRST_ITERATION_DIR))
+            if input_loc:
+                # Set revised input_location for subdirective
+                setval(run_settings, input_loc,
+                    "%s/%s/%s" % (self.scratch_platform,
+                                    SUBDIRECTIVE_DIR
+                                        % {'run_counter': str(run_counter)},
+                                    FIRST_ITERATION_DIR))
 
             # Redirect input
-            input_storage_name, input_storage_offset = \
+            run_input_storage_name, run_input_storage_offset = \
                 _parse_input_location(run_settings,
                     "local/sweep%s/run%s/input_0" % (contextid, run_counter))
-            setval(run_settings,
-                   '%s/platform/storage/input/platform_url' % RMIT_SCHEMA,
-                   input_storage_name)
-            setval(run_settings,
-                   '%s/platform/storage/input/offset' % RMIT_SCHEMA,
-                   input_storage_offset)
+            # setval(run_settings,
+            #        '%s/platform/storage/input/platform_url' % RMIT_SCHEMA,
+            #        run_input_storage_name)
+            # setval(run_settings,
+            #        '%s/platform/storage/input/offset' % RMIT_SCHEMA,
+            #        run_input_storage_offset)
 
             logger.debug("run_settings=%s" % pformat(run_settings))
             try:
@@ -367,10 +371,13 @@ class Sweep(Stage):
         setval(run_settings, '%s/stages/sweep/sweep_done' % RMIT_SCHEMA, 1)
         logger.debug('interesting run_settings=%s' % run_settings)
 
-        if getvals(run_settings, '%s/input/mytardis' % RMIT_SCHEMA):
-            setval(run_settings,
-                   '%s/input/mytardis/experiment_id' % RMIT_SCHEMA,
-                   str(self.experiment_id))
+        try:
+            if getvals(run_settings, '%s/input/mytardis' % RMIT_SCHEMA):
+                setval(run_settings,
+                       '%s/input/mytardis/experiment_id' % RMIT_SCHEMA,
+                       str(self.experiment_id))
+        except SettingNotFoundException:
+            pass
 
         if not self.error_detected:
             messages.success(run_settings, "0: completed")
