@@ -23,6 +23,8 @@ import logging
 
 from bdphpcprovider.smartconnectorscheduler import models
 
+RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+SWEEP_SCHEMA = RMIT_SCHEMA + "/input/sweep"
 logger = logging.getLogger(__name__)
 
 
@@ -69,7 +71,7 @@ class CoreDirective():
     def define_create_stage(self):
         create_package = "bdphpcprovider.corestages.create.Create"
         create_stage, _ = models.Stage.objects.get_or_create(name="create",
-            description="This is create stage of HRMC smart connector",
+            description="This is the core create stage",
             parent=self.define_parent_stage(),
             package=create_package,
             order=1)
@@ -110,16 +112,6 @@ class CoreDirective():
             parent=self.define_parent_stage(),
             package=bootstrap_package,
             order=20)
-        bootstrap_stage.update_settings(
-            {
-                u'http://rmit.edu.au/schemas/stages/setup':
-                    {
-                        u'payload_source': 'file://127.0.0.1/local/testpayload_new',
-                        u'payload_destination': 'celery_payload_2',
-                        u'payload_name': 'process_payload',
-                        u'filename_for_PIDs': 'PIDs_collections',
-                    },
-            })
         bootstrap_stage.update_settings(
             {
                 u'http://rmit.edu.au/schemas/stages/setup':
@@ -186,27 +178,51 @@ class CoreDirective():
         destroy_stage.update_settings({})
         return destroy_stage
 
-    def define_directive(self, name, description='', hidden=False):
+    def define_directive(self, directive_name, subdirective_name='', description='', hidden=False):
+        parent_stage = self.assemble_stages()
         new_directive, _ = models.Directive.objects.get_or_create(
-            name=name,
-            defaults={'stage': self.define_parent_stage(),
+            name=directive_name,
+            defaults={'stage': parent_stage,
                       'description': description,
                       'hidden': hidden}
         )
-        return new_directive
+        if subdirective_name:
+            new_subdirective = self.define_subdirective(new_directive, subdirective_name)
+            self.create_ui(new_subdirective)
+        else:
+            self.create_ui(new_directive)
+
+    def define_subdirective(self, directive, subdirective_name):
+        subdirective = models.Directive.objects.get(name=subdirective_name)
+        max_order = 0
+        for das in models.DirectiveArgSet.objects.filter(directive=subdirective):
+            new_das = models.DirectiveArgSet.objects.create(
+                directive=directive, order=das.order, schema=das.schema)
+            max_order = max(max_order, das.order)
+
+        schema = models.Schema.objects.get(namespace=SWEEP_SCHEMA)
+        new_das = models.DirectiveArgSet.objects.create(
+            directive=directive, order=max_order + 1, schema=schema)
+        return subdirective
+
+    def define_sweep_stage(self, subdirective_name):
+        sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep_%s" % subdirective_name,
+            description="Sweep for %s" % subdirective_name,
+            package="bdphpcprovider.corestages.sweep.Sweep",
+            order=100)
+        sweep_stage.update_settings({
+            u'http://rmit.edu.au/schemas/stages/sweep':
+            {
+                u'directive': subdirective_name
+            }
+            })
+        return sweep_stage
 
     def create_ui(self, new_directive):
-        RMIT_SCHEMA = "http://rmit.edu.au/schemas"
-        for i, sch in enumerate([
-                    RMIT_SCHEMA + "/input/system/compplatform",
-                    RMIT_SCHEMA + "/input/location/output",
-        ]):
-            schema = models.Schema.objects.get(namespace=sch)
-            das, _ = models.DirectiveArgSet.objects.get_or_create(
-                directive=new_directive, order=i, schema=schema)
+        pass
 
-    def assemble_directive(self, name, description='', hidden=False):
-        self.define_parent_stage()
+    def assemble_stages(self):
+        parent_stage = self.define_parent_stage()
         self.define_configure_stage()
         self.define_create_stage()
         self.define_bootstrap_stage()
@@ -214,8 +230,8 @@ class CoreDirective():
         self.define_execute_stage()
         self.define_wait_stage()
         self.define_destroy_stage()
-        new_directive = self.define_directive(name, description, hidden)
-        self.create_ui(new_directive)
+        return parent_stage
+
 
 
 
