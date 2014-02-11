@@ -76,6 +76,7 @@ def _remote_path_exists(remote_path, parameters, passwd_auth=False):
                     'root': "/"}
     exists = True
     message = 'Remote path [%s] exists' % remote_path
+    logger.debug("_remote_path_exists")
     try:
         fs = storage.RemoteStorage(settings=ssh_settings)
         fs.listdir(remote_path)
@@ -95,8 +96,12 @@ def _remote_path_exists(remote_path, parameters, passwd_auth=False):
         elif 'No such file' in e:
             message = 'Remote path [%s] does not exist' % remote_path
         else:
+            logger.debug("IO ERROR: %s" % e)
             message = '[%s]: %s, %s' % (remote_path, e.__doc__, e.strerror)
     except Exception, e:
+
         exists = False
+        logger.debug("General ERROR: %s" % e)
+
         message = '%s, %s' % (e.__doc__, e.strerror)
     return exists, message

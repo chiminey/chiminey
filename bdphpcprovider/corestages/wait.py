@@ -149,8 +149,11 @@ class Wait(Stage):
         logger.debug("get_output of process %s on %s" % (process_id, ip_address))
         output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
                                     output_storage_settings['type'])
-        #fixme: use get_output_path
+        contextid = int(getval(run_settings, '%s/system/contextid' % RMIT_SCHEMA))
+
+        #fixme: add call get_process_output_path
         cloud_path = os.path.join(local_settings['payload_destination'],
+                                  str(contextid),
                                   str(process_id),
                                   local_settings['payload_cloud_dirname']
                                   )
