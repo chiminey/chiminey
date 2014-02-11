@@ -27,15 +27,17 @@ RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 SWEEP_SCHEMA = RMIT_SCHEMA + "/input/sweep"
 logger = logging.getLogger(__name__)
 
+RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+SWEEP_SCHEMA = RMIT_SCHEMA + "/input/sweep"
 
 class CoreDirective():
-    def define_rand_number_sweep(self):
-        subdirective = models.Directive.objects.get(
-            name="randomnumber"
-        )
-        sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep_rand",
-            description="Sweep for Random",
-            package="bdphpcprovider.examples.randomnumbers.randsweep.RandSweep",
+
+
+    def define_sweep(self, subdirective):
+
+        sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep_%s" % subdirective.name,
+            description="Sweep for %s" % subdirective.name,
+            package="bdphpcprovider.corestages.sweep.Sweep",
             order=100)
         sweep_stage.update_settings({
             u'http://rmit.edu.au/schemas/stages/sweep':
@@ -44,19 +46,28 @@ class CoreDirective():
             }
             })
         sweep, _ = models.Directive.objects.get_or_create(name="sweep_rand",
-            description="Rand Sweep Connector",
+            description="%s Sweep Connector" % subdirective.name,
             stage=sweep_stage)
 
-        RMIT_SCHEMA = "http://rmit.edu.au/schemas"
-        for i, sch in enumerate([
-                RMIT_SCHEMA + "/input/system/compplatform",
-                RMIT_SCHEMA + "/input/system",
-                RMIT_SCHEMA + "/input/mytardis",
-                RMIT_SCHEMA + "/input/sweep",
-                ]):
-            schema = models.Schema.objects.get(namespace=sch)
-            das, _ = models.DirectiveArgSet.objects.get_or_create(
-                  directive=sweep, order=i, schema=schema)
+        max_order = 0
+        for das in models.DirectiveArgSet.objects.filter(directive=subdirective):
+            new_das = models.DirectiveArgSet.objects.create(
+                directive=sweep, order=das.order, schema=das.schema)
+            max_order = max(max_order, das.order)
+
+        schema = models.Schema.objects.get(namespace=SWEEP_SCHEMA)
+        new_das = models.DirectiveArgSet.objects.create(
+            directive=sweep, order=max_order + 1, schema=schema)
+
+        # for i, sch in enumerate([
+        #         RMIT_SCHEMA + "/input/system/compplatform",
+        #         RMIT_SCHEMA + "/input/system",
+        #         RMIT_SCHEMA + "/input/mytardis",
+        #         RMIT_SCHEMA + "/input/sweep",
+        #         ]):
+        #     schema = models.Schema.objects.get(namespace=sch)
+        #     das, _ = models.DirectiveArgSet.objects.get_or_create(
+        #           directive=sweep, order=i, schema=schema)
 
     def define_parent_stage(self):
         parent = "bdphpcprovider.smartconnectorscheduler.stages.composite.ParallelStage"
@@ -66,8 +77,8 @@ class CoreDirective():
             package=parent,
             order=0)
         return parent_stage
-        
-        
+
+
     def define_create_stage(self):
         create_package = "bdphpcprovider.corestages.create.Create"
         create_stage, _ = models.Stage.objects.get_or_create(name="create",
@@ -231,6 +242,9 @@ class CoreDirective():
         self.define_wait_stage()
         self.define_destroy_stage()
         return parent_stage
+
+
+        self.define_sweep(self, new_directive)
 
 
 
