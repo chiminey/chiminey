@@ -55,7 +55,7 @@ class CoreDirective():
 
         schema = models.Schema.objects.get(namespace=SWEEP_SCHEMA)
         new_das = models.DirectiveArgSet.objects.create(
-            directive=sweep, order=max_order+1, schema=schema)
+            directive=sweep, order=max_order + 1, schema=schema)
 
         # for i, sch in enumerate([
         #         RMIT_SCHEMA + "/input/system/compplatform",
@@ -69,36 +69,19 @@ class CoreDirective():
 
     def define_parent_stage(self):
         parent = "bdphpcprovider.smartconnectorscheduler.stages.composite.ParallelStage"
-        self.parent_stage, _ = models.Stage.objects.get_or_create(
+        parent_stage, _ = models.Stage.objects.get_or_create(
             name="random_number_connector",
             description="Random number parent",
             package=parent,
             order=0)
+        return parent_stage
 
-    def define_directive(self):
 
-        configure_package = "bdphpcprovider.corestages.configure.Configure"
-        wait_package = "bdphpcprovider.corestages.wait.Wait"
+    def define_create_stage(self):
         create_package = "bdphpcprovider.corestages.create.Create"
-        bootstrap_package = "bdphpcprovider.corestages.bootstrap.Bootstrap"
-        schedule_package = "bdphpcprovider.corestages.schedule.Schedule"
-        destroy_package = "bdphpcprovider.corestages.destroy.Destroy"
-
-        self.define_parent_stage()
-        configure_stage, _ = models.Stage.objects.get_or_create(name="configure",
-            description="This is the core configure stage",
-            parent=self.parent_stage,
-            package=configure_package,
-            order=0)
-        configure_stage.update_settings({
-            u'http://rmit.edu.au/schemas/system':
-                {
-                    u'random_numbers': 'file://127.0.0.1/randomnums.txt'
-                },
-            })
         create_stage, _ = models.Stage.objects.get_or_create(name="create",
             description="This is create stage of HRMC smart connector",
-            parent=self.parent_stage,
+            parent=self.define_parent_stage(),
             package=create_package,
             order=1)
         create_stage.update_settings({u'http://rmit.edu.au/schemas/stages/create':
@@ -112,41 +95,87 @@ class CoreDirective():
                     u'nectar_username': 'root',
                     u'nectar_password': ''
                 }})
-        bootstrap_stage, _ = models.Stage.objects.get_or_create(name="bootstrap",
+        return create_stage
+
+    def define_configure_stage(self):
+        configure_package = "bdphpcprovider.corestages.configure.Configure"
+        configure_stage, _ = models.Stage.objects.get_or_create\
+            (name="configure",
+            description="This is the core configure stage",
+            parent=self.define_parent_stage(),
+            package=configure_package,
+            order=0)
+        configure_stage.update_settings({
+            u'http://rmit.edu.au/schemas/system':
+                {
+                    u'random_numbers': 'file://127.0.0.1/randomnums.txt'
+                },
+        })
+        return configure_stage
+
+    def define_bootstrap_stage(self):
+        bootstrap_package = "bdphpcprovider.corestages.bootstrap.Bootstrap"
+        bootstrap_stage, _ = models.Stage.objects.get_or_create(
+            name="bootstrap",
             description="This is bootstrap stage of this smart connector",
-            parent=self.parent_stage,
+            parent=self.define_parent_stage(),
             package=bootstrap_package,
             order=20)
         bootstrap_stage.update_settings(
             {
-            u'http://rmit.edu.au/schemas/stages/setup':
-                {
-                    u'payload_source': 'file://127.0.0.1/local/testpayload_new',
-                    u'payload_destination': 'celery_payload_2',
-                    u'payload_name': 'process_payload',
-                    u'filename_for_PIDs': 'PIDs_collections',
-                },
+                u'http://rmit.edu.au/schemas/stages/setup':
+                    {
+                        u'payload_source': 'file://127.0.0.1/local/testpayload_new',
+                        u'payload_destination': 'celery_payload_2',
+                        u'payload_name': 'process_payload',
+                        u'filename_for_PIDs': 'PIDs_collections',
+                    },
             })
         bootstrap_stage.update_settings(
             {
-            u'http://rmit.edu.au/schemas/stages/setup':
-                {
-                    u'payload_source': '',
-                    u'payload_destination': '',
-                    u'payload_name': '',
-                    u'filename_for_PIDs': 'PIDs_collections',
-                },
+                u'http://rmit.edu.au/schemas/stages/setup':
+                    {
+                        u'payload_source': '',
+                        u'payload_destination': '',
+                        u'payload_name': '',
+                        u'filename_for_PIDs': 'PIDs_collections',
+                    },
             })
-        schedule_stage, _ = models.Stage.objects.get_or_create(name="schedule",
+        return bootstrap_stage
+
+    def define_schedule_stage(self):
+        schedule_package = "bdphpcprovider.corestages.schedule.Schedule"
+        schedule_stage, _ = models.Stage.objects.get_or_create(
+            name="schedule",
             description="This is schedule stage of this smart connector",
-            parent=self.parent_stage,
+            parent=self.define_parent_stage(),
             package=schedule_package,
             order=25)
+        return schedule_stage
 
-        self.define_execute_stage()
-        wait_stage, _ = models.Stage.objects.get_or_create(name="wait",
+    def define_execute_stage(self):
+        execute_package = "bdphpcprovider.corestages.execute.Execute"
+        execute_stage, _ = models.Stage.objects.get_or_create(name="execute",
+            description="This is a core execute stage",
+            parent=self.define_parent_stage(),
+            package=execute_package,
+            order=30)
+        execute_stage.update_settings(
+            {
+            u'http://rmit.edu.au/schemas/stages/run':
+                {
+                    u'payload_cloud_dirname': '',
+                    u'compile_file': '',
+                    u'retry_attempts': 1,
+                },
+            })
+
+    def define_wait_stage(self):
+        wait_package = "bdphpcprovider.corestages.wait.Wait"
+        wait_stage, _ = models.Stage.objects.get_or_create(
+            name="wait",
             description="This is core wait stage",
-            parent=self.parent_stage,
+            parent=self.define_parent_stage(),
             package=wait_package,
             order=40)
         wait_stage.update_settings({
@@ -155,46 +184,53 @@ class CoreDirective():
                     u'synchronous': 1
                 },
         })
-        destroy_stage, _ = models.Stage.objects.get_or_create(name="destroy",
+        return wait_stage
+
+    def define_destroy_stage(self):
+        destroy_package = "bdphpcprovider.corestages.destroy.Destroy"
+        destroy_stage, _ = models.Stage.objects.get_or_create(
+            name="destroy",
             description="This is core destroy stage",
-            parent=self.parent_stage,
+            parent=self.define_parent_stage(),
             package=destroy_package,
             order=70)
         destroy_stage.update_settings({})
-        rand_number, _ = models.Directive.objects.get_or_create(
-            name="randomnumber",
-            defaults={'stage': self.parent_stage,
-                      'description': "Random number generation",
-                      'hidden': False}
+        return destroy_stage
+
+    def define_directive(self, name, description='', hidden=False):
+        new_directive, _ = models.Directive.objects.get_or_create(
+            name=name,
+            defaults={'stage': self.define_parent_stage(),
+                      'description': description,
+                      'hidden': hidden}
         )
+        return new_directive
+
+    def create_ui(self, new_directive):
         RMIT_SCHEMA = "http://rmit.edu.au/schemas"
         for i, sch in enumerate([
-                RMIT_SCHEMA + "/input/system/compplatform",
-                RMIT_SCHEMA + "/input/location/output",
-                ]):
+                    RMIT_SCHEMA + "/input/system/compplatform",
+                    RMIT_SCHEMA + "/input/location/output",
+        ]):
             schema = models.Schema.objects.get(namespace=sch)
-            das, _ = models.DirectiveArgSet.objects.get_or_create(directive=rand_number, order=i, schema=schema)
+            das, _ = models.DirectiveArgSet.objects.get_or_create(
+                directive=new_directive, order=i, schema=schema)
 
-        self.define_sweep(rand_number)
+    def assemble_directive(self, name, description='', hidden=False):
+        self.define_parent_stage()
+        self.define_configure_stage()
+        self.define_create_stage()
+        self.define_bootstrap_stage()
+        self.define_schedule_stage()
+        self.define_execute_stage()
+        self.define_wait_stage()
+        self.define_destroy_stage()
+        new_directive = self.define_directive(name, description, hidden)
+        self.create_ui(new_directive)
 
-    def define_execute_stage(self):
-        execute_package = "bdphpcprovider.corestages.execute.Execute"
-        execute_stage, _ = models.Stage.objects.get_or_create(name="execute",
-            description="This is execute stage of this smart connector",
-            parent=self.parent,
-            package=execute_package,
-            order=30)
-        execute_stage.update_settings(
-            {
-            u'http://rmit.edu.au/schemas/stages/run':
-                {
-                    u'payload_cloud_dirname': 'HRMC2',
-                    u'compile_file': 'HRMC',
-                    u'retry_attempts': 3,
-                    #u'max_seed_int': 1000,  # FIXME: should we use maxint here?
-                    #u'random_numbers': 'file://127.0.0.1/randomnums.txt'
-                },
-            })
+        self.define_sweep(self, new_directive)
+
+
 
 
 
