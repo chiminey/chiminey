@@ -145,14 +145,16 @@ class Wait(Stage):
         """
             Retrieve the output from the task on the node
         """
+
         logger.debug("get_output of process %s on %s" % (process_id, ip_address))
         output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
                                     output_storage_settings['type'])
-        #fixme: add call get_process_output_path
+        #fixme: use get_output_path
         cloud_path = os.path.join(local_settings['payload_destination'],
                                   str(process_id),
                                   local_settings['payload_cloud_dirname']
                                   )
+        #cloud_path = self.get_process_output_path(run_settings, process_id)
         logger.debug("cloud_path=%s" % cloud_path)
         logger.debug("Transferring output from %s to %s" % (cloud_path, output_dir))
         ip = ip_address  # botocloudconnector.get_instance_ip(instance_id, settings)

@@ -34,7 +34,7 @@ class RandDirective(CoreDirective):
         execute_stage, _ = models.Stage.objects.get_or_create(
             name="randexecute",
             package=execute_package,
-            parent=self.parent_stage,
+            parent=self.define_parent_stage(),
             defaults={'description': "Rand execute stage", 'order': 11})
         execute_stage.update_settings(
             {
@@ -42,7 +42,7 @@ class RandDirective(CoreDirective):
                 {
                     u'payload_cloud_dirname': '',
                     u'compile_file': '',
-                    u'retry_attempts': 3,  # fixme remove after deleting references in all other stages
+                    u'retry_attempts': 3,
                 },
             })
 

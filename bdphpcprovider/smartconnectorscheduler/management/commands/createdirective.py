@@ -42,7 +42,7 @@ class Command(BaseCommand):
             return
 
         directive = randdirective.RandDirective()
-        directive.define_directive()
+        directive.assemble_directive(name="randomnumber", description='Random number generation')
         print "done"
 
 
@@ -50,3 +50,12 @@ class Command(BaseCommand):
         self.setup()
         print "done"
 
+
+'''
+rand_number, _ = models.Directive.objects.get_or_create(
+            name="randomnumber",
+            defaults={'stage': self.define_parent_stage(),
+                      'description': "Random number generation",
+                      'hidden': False}
+        )
+'''
