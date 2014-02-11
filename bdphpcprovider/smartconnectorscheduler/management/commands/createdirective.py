@@ -42,7 +42,8 @@ class Command(BaseCommand):
             return
 
         directive = randdirective.RandDirective()
-        directive.define_directive('randomnumber')
+        #directive.define_directive('randomnumber')
+        directive.define_directive('sweep_rand', 'random_number', description='Random Number Sweep Connector')
         #directive = hrmcdirective.HRMCDirective()
         #directive.define_directive(name="hrmc2", description='Random number generation')
         print "done"

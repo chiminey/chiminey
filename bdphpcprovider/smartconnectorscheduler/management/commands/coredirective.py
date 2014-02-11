@@ -27,48 +27,8 @@ RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 SWEEP_SCHEMA = RMIT_SCHEMA + "/input/sweep"
 logger = logging.getLogger(__name__)
 
-RMIT_SCHEMA = "http://rmit.edu.au/schemas"
-SWEEP_SCHEMA = RMIT_SCHEMA + "/input/sweep"
 
 class CoreDirective():
-
-
-    def define_sweep(self, subdirective):
-
-        sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep_%s" % subdirective.name,
-            description="Sweep for %s" % subdirective.name,
-            package="bdphpcprovider.corestages.sweep.Sweep",
-            order=100)
-        sweep_stage.update_settings({
-            u'http://rmit.edu.au/schemas/stages/sweep':
-            {
-                u'directive': subdirective.name
-            }
-            })
-        sweep, _ = models.Directive.objects.get_or_create(name="sweep_rand",
-            description="%s Sweep Connector" % subdirective.name,
-            stage=sweep_stage)
-
-        max_order = 0
-        for das in models.DirectiveArgSet.objects.filter(directive=subdirective):
-            new_das = models.DirectiveArgSet.objects.create(
-                directive=sweep, order=das.order, schema=das.schema)
-            max_order = max(max_order, das.order)
-
-        schema = models.Schema.objects.get(namespace=SWEEP_SCHEMA)
-        new_das = models.DirectiveArgSet.objects.create(
-            directive=sweep, order=max_order + 1, schema=schema)
-
-        # for i, sch in enumerate([
-        #         RMIT_SCHEMA + "/input/system/compplatform",
-        #         RMIT_SCHEMA + "/input/system",
-        #         RMIT_SCHEMA + "/input/mytardis",
-        #         RMIT_SCHEMA + "/input/sweep",
-        #         ]):
-        #     schema = models.Schema.objects.get(namespace=sch)
-        #     das, _ = models.DirectiveArgSet.objects.get_or_create(
-        #           directive=sweep, order=i, schema=schema)
-
     def define_parent_stage(self):
         parent = "bdphpcprovider.smartconnectorscheduler.stages.composite.ParallelStage"
         parent_stage, _ = models.Stage.objects.get_or_create(
@@ -189,46 +149,61 @@ class CoreDirective():
         destroy_stage.update_settings({})
         return destroy_stage
 
-    def define_directive(self, directive_name, subdirective_name='', description='', hidden=False):
-        parent_stage = self.assemble_stages()
-        new_directive, _ = models.Directive.objects.get_or_create(
-            name=directive_name,
-            defaults={'stage': parent_stage,
-                      'description': description,
-                      'hidden': hidden}
-        )
-        if subdirective_name:
-            new_subdirective = self.define_subdirective(new_directive, subdirective_name)
-            self.create_ui(new_subdirective)
-        else:
-            self.create_ui(new_directive)
-
-    def define_subdirective(self, directive, subdirective_name):
-        subdirective = models.Directive.objects.get(name=subdirective_name)
-        max_order = 0
-        for das in models.DirectiveArgSet.objects.filter(directive=subdirective):
-            new_das = models.DirectiveArgSet.objects.create(
-                directive=directive, order=das.order, schema=das.schema)
-            max_order = max(max_order, das.order)
-
-        schema = models.Schema.objects.get(namespace=SWEEP_SCHEMA)
-        new_das = models.DirectiveArgSet.objects.create(
-            directive=directive, order=max_order + 1, schema=schema)
-        return subdirective
-
-    def define_sweep_stage(self, subdirective_name):
-        sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep_%s" % subdirective_name,
-            description="Sweep for %s" % subdirective_name,
+    def define_sweep_stage(self, subdirective):
+        sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep_%s" % subdirective.name,
+            description="Sweep for %s" % subdirective.name,
             package="bdphpcprovider.corestages.sweep.Sweep",
             order=100)
         sweep_stage.update_settings({
             u'http://rmit.edu.au/schemas/stages/sweep':
             {
-                u'directive': subdirective_name
+                u'directive': subdirective.name
             }
             })
         return sweep_stage
 
+    def define_directive(self, directive_name, subdirective_name='', description=''):
+        if subdirective_name:
+            new_directive = self.define_sweep_directive(
+                subdirective_name, description)
+        else:
+            parent_stage = self.assemble_stages()
+            new_directive, _ = models.Directive.objects.get_or_create(
+                name=directive_name,
+                defaults={'stage': parent_stage,
+                          'description': description,
+                          'hidden': False}
+                            )
+        self.create_ui(new_directive)
+
+    def define_sweep_directive(self, subdirective_name, description):
+        parent_stage = self.assemble_stages()
+        subdirective, _ = models.Directive.objects.get_or_create(
+            name=subdirective_name,
+            defaults={'stage': parent_stage,
+                      'description': '%s Smart Connector' % subdirective_name,
+                      'hidden': True}
+                        )
+        self.create_ui(subdirective)
+        sweep_stage = self.define_sweep_stage(subdirective)
+        sweep_directive_name = "sweep_%s" % subdirective_name
+        sweep_directive, _ = models.Directive.objects.get_or_create(
+            name=sweep_directive_name,
+            defaults={'stage': sweep_stage,
+                      'description': description,
+                      'hidden': False}
+                    )
+        max_order = 0
+        for das in models.DirectiveArgSet.objects.filter(directive=subdirective):
+            new_das = models.DirectiveArgSet.objects.create(
+                directive=sweep_directive, order=das.order, schema=das.schema)
+            max_order = max(max_order, das.order)
+        schema = models.Schema.objects.get(namespace=SWEEP_SCHEMA)
+        new_das = models.DirectiveArgSet.objects.create(
+            directive=sweep_directive, order=max_order + 1, schema=schema)
+        return subdirective
+
+    #fixme: rename create_ui
     def create_ui(self, new_directive):
         pass
 
@@ -244,7 +219,7 @@ class CoreDirective():
         return parent_stage
 
 
-        self.define_sweep(self, new_directive)
+
 
 
 

@@ -329,7 +329,9 @@ class ContextResource(ModelResource):
             directive_obj = models.Directive.objects.get(name=smartconnector)
             stage = directive_obj.stage
             sch = models.Schema.objects.get(namespace="http://rmit.edu.au/schemas/stages/sweep")
+            logger.debug('sch=%s' % sch)
             subdirective = stage.get_stage_setting(sch, "directive")
+            logger.debug('subdirective=%s' %subdirective)
             if subdirective:
                 try:
                     (myplatform, directive_name,
