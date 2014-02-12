@@ -545,6 +545,12 @@ class ContextResource(ModelResource):
              str(bundle.data[
                 'http://rmit.edu.au/schemas/bdp_userprofile/username'])),
         ])
+        d_arg.append(
+        ['http://rmit.edu.au/schemas/directive_profile',
+            (u'name',
+             str(bundle.data[
+                'http://rmit.edu.au/schemas/directive_profile/name'])),
+        ])
         directive_args = [''] + d_arg
         logger.debug("directive_args=%s" % pformat(directive_args))
         return (platform, directive, [directive_args], {})
