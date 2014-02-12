@@ -322,7 +322,7 @@ class Configure(Stage):
 
     def get_results_dirname(self, run_settings):
         try:
-            name = getval(run_settings, '%s/directive_profile/name' % RMIT_SCHEMA)
+            name = getval(run_settings, '%s/directive_profile/directive_name' % RMIT_SCHEMA)
         except SettingNotFoundException:
             name = 'unknown_connector'
         output_loc_offset = str(self.contextid)

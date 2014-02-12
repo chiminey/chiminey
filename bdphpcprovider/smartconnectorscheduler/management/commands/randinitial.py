@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 class Command(BaseCommand):
     """
     Load up the initial state of the database (replaces use of
-    fixtures).  Assumes specific strcture.
+    fixtures).  Assumes specific structure.
     """
 
     args = ''

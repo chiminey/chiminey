@@ -1180,7 +1180,6 @@ def submit_job(request, form, directive):
     headers = {'content-type': 'application/json'}
     logger.debug("form.cleaned_data=%s" % pformat(form.cleaned_data))
     form.cleaned_data[RMIT_SCHEMA + '/bdp_userprofile/username'] = request.user.username
-    form.cleaned_data[RMIT_SCHEMA + '/directive_profile/name'] = directive
     data = json.dumps(dict(form.cleaned_data.items()
         + [('smart_connector', directive)]))
     logger.debug("data=%s" % data)
