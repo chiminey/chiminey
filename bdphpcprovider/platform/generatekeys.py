@@ -109,9 +109,10 @@ def generate_unix_key(parameters):
         ssh_client = open_connection(parameters['ip_address'], ssh_settings)
         #command = 'cat %s >> %s' % (remote_key_path, authorized_remote_path)
         space = " "
-        command = 'echo %s >> %s; echo %s >> %s;  echo %s >> %s' % (
+        command = 'echo %s >> %s; echo %s >> %s;  echo %s >> %s; chmod 600 %s' % (
             space, authorized_remote_path, public_key_content,
-            authorized_remote_path, space, authorized_remote_path)
+            authorized_remote_path, space, authorized_remote_path,
+            authorized_remote_path)
         command_out, errs = run_command_with_status(ssh_client, command)
         if errs:
             if 'Permission denied' in errs:

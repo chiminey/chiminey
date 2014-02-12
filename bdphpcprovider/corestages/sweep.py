@@ -66,6 +66,13 @@ class Sweep(Stage):
 
         return not configure_done
 
+    def _get_sweep_name(self, run_settings):
+        try:
+            sweep_name = getval(run_settings, '%s/directive_profile/sweep_name' % RMIT_SCHEMA)
+        except SettingNotFoundException:
+            sweep_name = 'unknown_sweep'
+        return sweep_name
+
     def process(self, run_settings):
         logger.debug('run_settings=%s' % run_settings)
 
@@ -105,6 +112,8 @@ class Sweep(Stage):
 
         contextid = int(getval(run_settings, '%s/system/contextid' % RMIT_SCHEMA))
         logger.debug("contextid=%s" % contextid)
+        sweep_name = self._get_sweep_name(run_settings)
+        logger.debug("sweep_name=%s" % sweep_name)
 
         output_loc = self.output_exists(run_settings)
         if output_loc:
@@ -115,7 +124,7 @@ class Sweep(Stage):
                    '%s/platform/storage/output/platform_url' % RMIT_SCHEMA,
                    output_storage_name)
             setval(run_settings, '%s/platform/storage/output/offset' % RMIT_SCHEMA,
-                   os.path.join(output_storage_offset, 'sweep%s' % contextid))
+                   os.path.join(output_storage_offset, '%s%s' % (sweep_name, contextid)))
 
         def _parse_input_location(run_settings, location):
             loc_list = location.split('/')
@@ -139,8 +148,8 @@ class Sweep(Stage):
                    input_storage_offset)
 
         # TODO: replace with scratch space computation platform space
-        self.scratch_platform = '%ssweep%s' % (
-            manage.get_scratch_platform(),
+        self.scratch_platform = '%s%s%s' % (
+            manage.get_scratch_platform(), sweep_name,
             contextid)
 
         # mytardis
