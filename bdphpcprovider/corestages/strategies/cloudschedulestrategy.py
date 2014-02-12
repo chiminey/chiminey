@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
 
-def set_schedule_settings(self, run_settings, local_settings):
+def set_schedule_settings(run_settings, local_settings):
     #fixme: the last three should move to hrmc package
     update(local_settings, run_settings,
             #'%s/input/system/cloud/number_vm_instances' % RMIT_SCHEMA,

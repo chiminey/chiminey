@@ -252,8 +252,11 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/directive_profile':
                 ["Directive profile",
                 {
-                 u'name': {'type':models.ParameterName.STRING, 'subtype':'',
+                 u'directive_name': {'type':models.ParameterName.STRING, 'subtype':'',
                         'description':'Directive name', 'ranking':12, 'help_text':''},
+                 u'sweep_name': {'type':models.ParameterName.STRING, 'subtype':'',
+                        'description':'Directive name', 'ranking':12, 'help_text':''},
+
                 }
                 ],
             # TODO: this schema is deprecated

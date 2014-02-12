@@ -545,11 +545,15 @@ class ContextResource(ModelResource):
              str(bundle.data[
                 'http://rmit.edu.au/schemas/bdp_userprofile/username'])),
         ])
+        if not subdirective:
+            subdirective = directive
         d_arg.append(
         ['http://rmit.edu.au/schemas/directive_profile',
-            (u'name',
-             str(bundle.data[
-                'http://rmit.edu.au/schemas/directive_profile/name'])),
+            (u'directive_name', subdirective),
+        ])
+        d_arg.append(
+        ['http://rmit.edu.au/schemas/directive_profile',
+            (u'sweep_name', directive),
         ])
         directive_args = [''] + d_arg
         logger.debug("directive_args=%s" % pformat(directive_args))
@@ -599,9 +603,7 @@ class ContextResource(ModelResource):
         ])
         d_arg.append(
         ['http://rmit.edu.au/schemas/directive_profile',
-            (u'name',
-             str(bundle.data[
-                'http://rmit.edu.au/schemas/directive_profile/name'])),
+            (u'directive_name', directive),
         ])
         directive_args = [''] + d_arg
         logger.debug("directive_args=%s" % pformat(directive_args))
