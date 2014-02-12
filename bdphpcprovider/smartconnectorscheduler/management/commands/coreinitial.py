@@ -19,8 +19,7 @@
 # IN THE SOFTWARE.
 
 import logging
-
-
+from django.core.management.base import BaseCommand
 from bdphpcprovider.smartconnectorscheduler import models
 
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
@@ -28,7 +27,30 @@ SWEEP_SCHEMA = RMIT_SCHEMA + "/input/sweep"
 logger = logging.getLogger(__name__)
 
 
-class CoreDirective():
+class Command(BaseCommand):
+    """
+    Load up the initial state of the database (replaces use of
+    fixtures).  Assumes specific strcture.
+    """
+    args = ''
+    help = 'Setup an initial task structure.'
+    def setup(self):
+        confirm = raw_input("This will ERASE and reset the database. "
+            " Are you sure [Yes|No]")
+        if confirm != "Yes":
+            print "action aborted by user"
+            return
+        directive = CoreInitial()
+        directive.define_directive('core', description='Core Smart Connector')
+        print "done"
+
+
+    def handle(self, *args, **options):
+        self.setup()
+        print "done"
+
+
+class CoreInitial():
     def define_parent_stage(self):
         parent = "bdphpcprovider.smartconnectorscheduler.stages.composite.ParallelStage"
         parent_stage, _ = models.Stage.objects.get_or_create(
@@ -162,31 +184,29 @@ class CoreDirective():
             })
         return sweep_stage
 
-    def define_directive(self, directive_name, subdirective_name='', description=''):
-        if subdirective_name:
-            new_directive = self.define_sweep_directive(
-                subdirective_name, description)
-        else:
-            parent_stage = self.assemble_stages()
-            new_directive, _ = models.Directive.objects.get_or_create(
-                name=directive_name,
-                defaults={'stage': parent_stage,
-                          'description': description,
-                          'hidden': False}
-                            )
-        self.create_ui(new_directive)
-
-    def define_sweep_directive(self, subdirective_name, description):
+    def define_directive(self, directive_name, description='', sweep=False):
+        directive_dsc = description
+        if not description:
+            directive_dsc = '%s Smart Connector' % directive_name
         parent_stage = self.assemble_stages()
-        subdirective, _ = models.Directive.objects.get_or_create(
-            name=subdirective_name,
+        directive, _ = models.Directive.objects.get_or_create(
+            name=directive_name,
             defaults={'stage': parent_stage,
-                      'description': '%s Smart Connector' % subdirective_name,
-                      'hidden': True}
-                        )
-        self.create_ui(subdirective)
+                      'description': directive_dsc,
+                      'hidden': sweep}
+        )
+        self.attach_directive_args(directive)
+        if sweep:
+            if not description:
+                directive_dsc = '%s Sweep Smart Connector' % directive_name
+            sweep_directive = self.define_sweep_directive(
+                directive, directive_dsc)
+            self.attach_directive_args(sweep_directive)
+
+
+    def define_sweep_directive(self, subdirective, description):
         sweep_stage = self.define_sweep_stage(subdirective)
-        sweep_directive_name = "sweep_%s" % subdirective_name
+        sweep_directive_name = "sweep_%s" % subdirective.name
         sweep_directive, _ = models.Directive.objects.get_or_create(
             name=sweep_directive_name,
             defaults={'stage': sweep_stage,
@@ -203,8 +223,7 @@ class CoreDirective():
             directive=sweep_directive, order=max_order + 1, schema=schema)
         return subdirective
 
-    #fixme: rename create_ui
-    def create_ui(self, new_directive):
+    def attach_directive_args(self, new_directive):
         pass
 
     def assemble_stages(self):

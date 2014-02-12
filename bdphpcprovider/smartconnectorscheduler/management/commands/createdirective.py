@@ -21,7 +21,7 @@
 import logging
 
 from django.core.management.base import BaseCommand
-from bdphpcprovider.smartconnectorscheduler.management.commands import randdirective, hrmcdirective
+from bdphpcprovider.smartconnectorscheduler.management.commands import randinitial, hrmcdirective
 logger = logging.getLogger(__name__)
 
 
@@ -41,7 +41,7 @@ class Command(BaseCommand):
             print "action aborted by user"
             return
 
-        directive = randdirective.RandDirective()
+        directive = randinitial.RandInitial()
         #directive.define_directive('randomnumber')
         directive.define_directive('sweep_rand', 'random_number', description='Random Number Sweep Connector')
         #directive = hrmcdirective.HRMCDirective()
