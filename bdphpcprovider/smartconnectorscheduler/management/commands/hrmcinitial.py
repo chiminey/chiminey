@@ -21,7 +21,7 @@
 import logging
 
 from bdphpcprovider.smartconnectorscheduler import models
-from bdphpcprovider.smartconnectorscheduler.management.commands.coredirective import CoreDirective
+from bdphpcprovider.smartconnectorscheduler.management.commands.coreinitial import CoreInitial
 
 logger = logging.getLogger(__name__)
 
