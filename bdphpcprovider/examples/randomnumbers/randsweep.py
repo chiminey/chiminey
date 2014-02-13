@@ -32,6 +32,7 @@ RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 class RandSweep(Sweep):
 
     def get_initial_experiment(self, run_settings):
+        # TODO: this method should come from mytardis mixin
 
         try:
             experiment_id = int(getval(run_settings,
