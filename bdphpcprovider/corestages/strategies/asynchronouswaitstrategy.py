@@ -19,6 +19,7 @@
 # IN THE SOFTWARE.
 
 import logging
+import os
 from bdphpcprovider.sshconnection import open_connection
 from bdphpcprovider.storage import get_url_with_pkey
 from bdphpcprovider.storage import get_make_path
@@ -30,7 +31,7 @@ logger = logging.getLogger(__name__)
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
 class AsynchronousWaitStrategy(Strategy):
-    def is_job_finished(self, ip_address, process_id, retry_left, settings):
+    def is_job_finished(self, ip_address, process_id, retry_left, settings, relative_path_suffix):
         """
             Return True if package job on instance_id has is_job_finished
         """
@@ -39,7 +40,8 @@ class AsynchronousWaitStrategy(Strategy):
         logger.debug("ip=%s" % ip)
         curr_username = settings['username']
         settings['username'] = 'root'
-        relative_path = settings['type'] + '@' + settings['payload_destination'] + "/" + process_id
+        #relative_path = settings['type'] + '@' + settings['payload_destination'] + "/" + process_id
+        relative_path = settings['type'] + '@' + os.path.join(relative_path_suffix, process_id)
         destination = get_url_with_pkey(settings,
             relative_path,
             is_relative_path=True,

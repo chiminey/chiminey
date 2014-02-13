@@ -23,7 +23,7 @@ from bdphpcprovider.runsettings import update
 
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
-class Strategy():
+class Strategy(object):
     def set_create_settings(self, run_settings, local_settings):
         update(local_settings, run_settings,
                '%s/system/contextid' % RMIT_SCHEMA
@@ -36,16 +36,22 @@ class Strategy():
         return group_id, created_nodes
 
     def set_bootstrap_settings(self, run_settings, local_settings):
-        pass
+        update(local_settings, run_settings,
+           '%s/system/contextid' % RMIT_SCHEMA,
+           '%s/stages/setup/payload_destination' % RMIT_SCHEMA,
+           )
 
-    def start_multi_bootstrap_task(self, settings):
+    def start_multi_bootstrap_task(self, settings, relative_path_suffix):
         pass
 
     def complete_bootstrap(self, bootstrap_class, local_settings):
         pass
 
     def set_schedule_settings(self, run_settings, local_settings):
-        pass
+        update(local_settings, run_settings,
+           '%s/system/contextid' % RMIT_SCHEMA,
+           '%s/stages/setup/payload_destination' % RMIT_SCHEMA,
+           )
 
     def start_schedule_task(self, schedule_class, run_settings, local_settings):
         schedule_class.total_processes = 1
@@ -56,7 +62,7 @@ class Strategy():
     def set_destroy_settings(self, run_settings, local_settings):
         pass
 
-    def destroy_resource(self, run_settings, local_settings):
+    def destroy_resource(self, destroy_class, run_settings, local_settings):
         pass
 
     def is_job_finished(self, ip_address, process_id, retry_left, settings):

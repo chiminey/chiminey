@@ -163,6 +163,7 @@ def get_this_vm(vm_id, settings):
             if i.id in vm_id:
                 return i
     except Exception, e:
+        logger.debug('caught %s '% e)
         logger.debug(e)
         raise
 

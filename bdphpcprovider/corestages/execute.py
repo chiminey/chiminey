@@ -211,10 +211,13 @@ class Execute(stage.Stage):
             source_location = os.path.join(self.job_dir, "input_backup", proc['id'])
             source_files_url = get_url_with_pkey(output_storage_settings,
                     output_prefix + source_location, is_relative_path=False)
-
+            relative_path_suffix = self.get_relative_output_path(local_settings)
+            #dest_files_location = computation_platform_settings['type'] + "@"\
+            #                      + os.path.join(
+            #    local_settings['payload_destination'],
+            #    proc['id'], local_settings['payload_cloud_dirname'])
             dest_files_location = computation_platform_settings['type'] + "@"\
-                                  + os.path.join(
-                local_settings['payload_destination'],
+                                  + os.path.join(relative_path_suffix,
                 proc['id'], local_settings['payload_cloud_dirname'])
             logger.debug('dest_files_location=%s' % dest_files_location)
 
@@ -267,7 +270,9 @@ class Execute(stage.Stage):
         #                                    settings=settings)
         # settings['username'] = curr_username
 
-        relative_path = settings['type'] + '@' + settings['payload_destination'] + "/" + process_id
+        #relative_path = settings['type'] + '@' + settings['payload_destination'] + "/" + process_id
+        relative_path_suffix = self.get_relative_output_path(settings)
+        relative_path = settings['type'] + '@' + os.path.join(relative_path_suffix, process_id)
         destination = get_url_with_pkey(settings,
             relative_path,
             is_relative_path=True,
@@ -613,11 +618,18 @@ class Execute(stage.Stage):
                 #ip = botocloudconnector.get_instance_ip(var_node.id, local_settings)
                 ip = proc['ip_address']
 
+                #dest_files_location = computation_platform_settings['type'] + "@"\
+                #                      + os.path.join(local_settings['payload_destination'],
+                #                                     proc['id'],
+                #                                     local_settings['payload_cloud_dirname']
+                #                                     )
+                relative_path_suffix = self.get_relative_output_path(local_settings)
                 dest_files_location = computation_platform_settings['type'] + "@"\
-                                      + os.path.join(local_settings['payload_destination'],
+                                      + os.path.join(relative_path_suffix,
                                                      proc['id'],
                                                      local_settings['payload_cloud_dirname']
                                                      )
+
                 logger.debug('dest_files_location=%s' % dest_files_location)
 
                 dest_files_url = get_url_with_pkey(
@@ -659,11 +671,17 @@ class Execute(stage.Stage):
 
                 #local_settings['platform'] should be replaced
                 # and overwrite on the remote
+                #var_fname_remote = computation_platform_settings['type']\
+                #    + "@" + os.path.join(local_settings['payload_destination'],
+                #                         proc['id'],
+                #                         local_settings['payload_cloud_dirname'],
+                #                         var_fname)
                 var_fname_remote = computation_platform_settings['type']\
-                    + "@" + os.path.join(local_settings['payload_destination'],
+                    + "@" + os.path.join(relative_path_suffix,
                                          proc['id'],
                                          local_settings['payload_cloud_dirname'],
                                          var_fname)
+
                 var_fname_pkey = get_url_with_pkey(
                     computation_platform_settings, var_fname_remote,
                     is_relative_path=True, ip_address=ip)
@@ -725,6 +743,8 @@ class Execute(stage.Stage):
         #stage.copy_settings(local_settings, run_settings,
         #    'http://rmit.edu.au/schemas/input/system/cloud/number_vm_instances')
 
+        stage.copy_settings(local_settings, run_settings,
+        '%s/system/contextid' % RMIT_SCHEMA)
 
         stage.copy_settings(local_settings, run_settings,
             'http://rmit.edu.au/schemas/system/random_numbers')
@@ -743,6 +763,24 @@ class Execute(stage.Stage):
             RMIT_SCHEMA + '/bdp_userprofile']['username']
 
         logger.debug('retrieve completed %s' % pformat(local_settings))
+
+    def set_domain_settings(self, run_settings, local_settings):
+        stage.copy_settings(local_settings, run_settings,
+        'http://rmit.edu.au/schemas/input/hrmc/iseed')
+        stage.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/input/hrmc/optimisation_scheme')
+        stage.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/input/hrmc/threshold')
+        stage.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/input/hrmc/pottype')
+        stage.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/input/hrmc/fanout_per_kept_result')
+        stage.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/input/hrmc/optimisation_scheme')
+        stage.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/input/hrmc/threshold')
+        stage.copy_settings(local_settings, run_settings,
+            'http://rmit.edu.au/schemas/input/hrmc/pottype')
 
 
 

@@ -24,7 +24,7 @@ import os
 from django.core.exceptions import ImproperlyConfigured
 from bdphpcprovider.smartconnectorscheduler import models, hrmcstages
 from bdphpcprovider.platform import get_job_dir
-from bdphpcprovider.cloudconnection import is_vm_running
+from bdphpcprovider.cloudconnection import is_vm_running, get_registered_vms
 from bdphpcprovider.runsettings import SettingNotFoundException, getval, update
 from bdphpcprovider.storage import get_url_with_pkey, get_make_path, put_file, list_dirs
 from bdphpcprovider.sshconnection import open_connection
@@ -38,14 +38,12 @@ RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 def set_schedule_settings(run_settings, local_settings):
     #fixme: the last three should move to hrmc package
     update(local_settings, run_settings,
-            #'%s/input/system/cloud/number_vm_instances' % RMIT_SCHEMA,
+           '%s/system/contextid' % RMIT_SCHEMA,
             '%s/input/reliability/maximum_retry' % RMIT_SCHEMA,
             '%s/stages/setup/payload_destination' % RMIT_SCHEMA,
             '%s/stages/setup/filename_for_PIDs' % RMIT_SCHEMA,
             '%s/stages/setup/payload_name' % RMIT_SCHEMA,
-            #'%s/system/platform' % RMIT_SCHEMA,
             '%s/stages/bootstrap/bootstrapped_nodes' % RMIT_SCHEMA,
-            #'%s/stages/create/custom_prompt' % RMIT_SCHEMA,
             '%s/system/max_seed_int' % RMIT_SCHEMA,
             '%s/input/hrmc/optimisation_scheme' % RMIT_SCHEMA,
             '%s/input/hrmc/fanout_per_kept_result' % RMIT_SCHEMA)
@@ -53,6 +51,7 @@ def set_schedule_settings(run_settings, local_settings):
 
 
 def schedule_task(schedule_class, run_settings, local_settings):
+    schedule_class.nodes = get_registered_vms(local_settings, node_type='bootstrapped_nodes')
     if schedule_class.procs_2b_rescheduled:
         start_reschedule(schedule_class, run_settings, local_settings)
     else:
@@ -61,6 +60,7 @@ def schedule_task(schedule_class, run_settings, local_settings):
 
 def complete_schedule(schedule_class, local_settings):
     logger.debug("started")
+    schedule_class.nodes = get_registered_vms(local_settings, node_type='bootstrapped_nodes')
     for node in schedule_class.nodes:
         node_ip = node.ip_address
         logger.debug("node_ip=%s" % node_ip)
@@ -92,8 +92,10 @@ def complete_schedule(schedule_class, local_settings):
 
         logger.debug('mynode=%s' % node_ip)
         try:
+            #relative_path = "%s@%s" % (local_settings['type'],
+            #    local_settings['payload_destination'])
             relative_path = "%s@%s" % (local_settings['type'],
-                local_settings['payload_destination'])
+                schedule_class.get_relative_output_path(local_settings))
             destination = get_url_with_pkey(
                 local_settings,
                 relative_path,
@@ -141,10 +143,11 @@ def complete_schedule(schedule_class, local_settings):
 
 
 def start_schedule(schedule_class, run_settings, local_settings):
-    #FIXme replace with hrmcstage.get_parent_stage()
-    schedule_package = "bdphpcprovider.corestages.schedule.Schedule"
-    parent_obj = models.Stage.objects.get(package=schedule_package)
-    parent_stage = parent_obj.parent
+    directive_name = getval(run_settings, "http://rmit.edu.au/schemas/directive_profile/directive_name")
+    directive = models.Directive.objects.get(name=directive_name)
+    logger.debug('directive_name=%s' % directive_name)
+    parent_stage = directive.stage
+    logger.debug('parent_stage=%s' % parent_stage)
     logger.debug("local_settings=%s" % local_settings)
     logger.debug("run_settings=%s" % run_settings)
     try:
@@ -176,11 +179,12 @@ def start_schedule(schedule_class, run_settings, local_settings):
         output_storage_settings=output_storage_settings, job_dir=job_dir)
     logger.debug('total_processes=%d' % schedule_class.total_processes)
     schedule_class.current_processes = []
+    relative_path_suffix = schedule_class.get_relative_output_path(local_settings)
     schedule_class.schedule_index, schedule_class.current_processes = \
             start_round_robin_schedule(
                 schedule_class.nodes, schedule_class.total_processes,
                                        schedule_class.schedule_index,
-                                       local_settings)
+                                       local_settings, relative_path_suffix)
     schedule_class.all_processes = update_lookup_table(
              schedule_class.all_processes,
              new_processes=schedule_class.current_processes)
@@ -190,15 +194,17 @@ def start_schedule(schedule_class, run_settings, local_settings):
 def start_reschedule(schedule_class, run_settings, local_settings):
     output_storage_settings = schedule_class.get_platform_settings(
             run_settings, 'http://rmit.edu.au/schemas/platform/storage/output')
+    relative_path_suffix = schedule_class.get_relative_output_path(local_settings)
     _, schedule_class.current_processes = \
     start_round_robin_reschedule(schedule_class.nodes, schedule_class.procs_2b_rescheduled,
-                                 schedule_class.current_processes, local_settings, output_storage_settings)
+                                 schedule_class.current_processes, local_settings,
+                                 output_storage_settings, relative_path_suffix)
     schedule_class.all_processes = update_lookup_table(
              schedule_class.all_processes,
              new_processes=schedule_class.current_processes, reschedule=True)
 
 
-def start_round_robin_schedule(nodes, processes, schedule_index, settings):
+def start_round_robin_schedule(nodes, processes, schedule_index, settings, relative_path_suffix):
     total_nodes = len(nodes)
     all_nodes = list(nodes)
     if total_nodes > processes:
@@ -216,7 +222,8 @@ def start_round_robin_schedule(nodes, processes, schedule_index, settings):
         if not ip_address:
             ip_address = cur_node.private_ip_address
         logger.debug('ip_address=%s' % ip_address)
-        relative_path = settings['type'] + '@' + settings['payload_destination']
+        #relative_path = settings['type'] + '@' + settings['payload_destination']
+        relative_path = settings['type'] + '@' + relative_path_suffix
         procs_on_cur_node = proc_per_node
         if remaining_procs:
             procs_on_cur_node = proc_per_node + 1
@@ -259,7 +266,8 @@ def start_round_robin_schedule(nodes, processes, schedule_index, settings):
 
 
 def start_round_robin_reschedule(nodes, procs_2b_rescheduled,
-                                 current_procs, settings, output_storage_settings):
+                                 current_procs, settings,
+                                 output_storage_settings, relative_path_suffix):
     total_nodes = len(nodes)
     all_nodes = list(nodes)
     processes = len(procs_2b_rescheduled)
@@ -279,7 +287,8 @@ def start_round_robin_reschedule(nodes, procs_2b_rescheduled,
         if not ip_address:
             ip_address = cur_node.private_ip_address
         logger.debug('ip_address=%s' % ip_address)
-        relative_path = output_storage_settings['type'] + '@' + settings['payload_destination']
+        #relative_path = output_storage_settings['type'] + '@' + settings['payload_destination']
+        relative_path = output_storage_settings['type'] + '@' + relative_path_suffix
         procs_on_cur_node = proc_per_node
         if remaining_procs:
             procs_on_cur_node = proc_per_node + 1

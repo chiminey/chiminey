@@ -73,20 +73,20 @@ class CloudStrategy(Strategy):
         return group_id, created_nodes
 
     def set_bootstrap_settings(self, run_settings, local_settings):
+        super(CloudStrategy, self).set_bootstrap_settings(run_settings, local_settings)
         bootstrap.set_bootstrap_settings(run_settings, local_settings)
 
-    def start_multi_bootstrap_task(self, settings):
-        bootstrap.start_multi_bootstrap_task(settings)
+    def start_multi_bootstrap_task(self, settings, relative_path_suffix):
+        bootstrap.start_multi_bootstrap_task(settings, relative_path_suffix)
 
     def complete_bootstrap(self, bootstrap_class, local_settings):
         bootstrap.complete_bootstrap(bootstrap_class, local_settings)
 
     def set_schedule_settings(self, run_settings, local_settings):
+        super(CloudStrategy, self).set_schedule_settings(run_settings, local_settings)
         schedule.set_schedule_settings(run_settings, local_settings)
 
     def start_schedule_task(self, schedule_class, run_settings, local_settings):
-        schedule_class.nodes = get_registered_vms(
-                local_settings, node_type='bootstrapped_nodes')
         schedule.schedule_task(schedule_class, run_settings, local_settings)
 
     def complete_schedule(self, schedule_class, local_settings):
@@ -94,21 +94,25 @@ class CloudStrategy(Strategy):
 
     def set_destroy_settings(self, run_settings, local_settings):
         update(local_settings, run_settings,
-               #'%s/system/platform' % RMIT_SCHEMA,
                '%s/stages/create/cloud_sleep_interval' % RMIT_SCHEMA,
                '%s/system/contextid' % RMIT_SCHEMA,
+               '%s/stages/create/created_nodes' % RMIT_SCHEMA
                )
         local_settings['bdp_username'] = getval(run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA)
 
-    def destroy_resource(self, run_settings, local_settings):
-        node_type = []
-        try:
-            created_nodes = getval(run_settings, '%s/stages/create' % RMIT_SCHEMA)
-            node_type.append('created_nodes')
-        except SettingNotFoundException:
-            pass
-        if node_type:
-            destroy_vms(local_settings, node_types=node_type)
+    def destroy_resource(self, destroy_class, run_settings, local_settings):
+        node_type = ['created_nodes']
+        destroy_vms(local_settings, node_types=node_type)
+        for node in destroy_class.created_nodes:
+            if node[3] == 'running':
+                node[3] = 'terminated'
+        for node in destroy_class.scheduled_nodes:
+            if node[3] == 'running':
+                node[3] = 'terminated'
+        for node in destroy_class.bootstrapped_nodes:
+            if node[3] == 'running':
+                node[3] = 'terminated'
+
 
 
 

@@ -19,25 +19,51 @@
 # IN THE SOFTWARE.
 
 import logging
-
+from django.core.management.base import BaseCommand
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler.management.commands.coreinitial import CoreInitial
 
 logger = logging.getLogger(__name__)
 
-class HRMCDirective():
+
+class Command(BaseCommand):
+    """
+    Load up the initial state of the database (replaces use of
+    fixtures).  Assumes specific structure.
+    """
+
+    args = ''
+    help = 'Setup an initial task structure.'
+
+    def setup(self):
+        confirm = raw_input("This will ERASE and reset the database. "
+            " Are you sure [Yes|No]")
+        if confirm != "Yes":
+            print "action aborted by user"
+            return
+
+        directive = HRMCInitial()
+        directive.define_directive('hrmc', description='HRMC Smart Connector', sweep=True)
+        print "done"
+
+
+    def handle(self, *args, **options):
+        self.setup()
+        print "done"
+
+
+class HRMCInitial(CoreInitial):
     def define_parent_stage(self):
+        hrmc_parallel_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc_composite.HRMCParallelStage"
         hrmc_composite_stage, _ = models.Stage.objects.get_or_create(name="hrmc_connector",
             description="Encapsultes HRMC smart connector workflow",
-            package=self.hrmc_parallel_package,
+            package=hrmc_parallel_package,
             order=100)
-
-        # FIXME: tasks.progress_context does not load up composite stage settings
         hrmc_composite_stage.update_settings({})
         return hrmc_composite_stage
 
     def define_bootstrap_stage(self):
-        bootstrap_stage = super(HRMCDirective, self).define_bootstrap_stage()
+        bootstrap_stage = super(HRMCInitial, self).define_bootstrap_stage()
         bootstrap_stage.update_settings(
             {
                 u'http://rmit.edu.au/schemas/stages/setup':
@@ -51,7 +77,7 @@ class HRMCDirective():
         return bootstrap_stage
 
     def define_wait_stage(self):
-        wait_stage = super(HRMCDirective, self).define_wait_stage()
+        wait_stage = super(HRMCInitial, self).define_wait_stage()
         wait_stage.update_settings({
             u'http://rmit.edu.au/schemas/stages/wait':
                 {
@@ -61,7 +87,7 @@ class HRMCDirective():
         return wait_stage
 
     def define_execute_stage(self):
-        execute_stage =super(HRMCDirective, self).define_execute_stage()
+        execute_stage = super(HRMCInitial, self).define_execute_stage()
         execute_stage.update_settings(
             {
             u'http://rmit.edu.au/schemas/stages/run':
@@ -69,13 +95,11 @@ class HRMCDirective():
                     u'payload_cloud_dirname': 'HRMC2',
                     u'compile_file': 'HRMC',
                     u'retry_attempts': 3,
-                    #u'max_seed_int': 1000,  # FIXME: should we use maxint here?
-                    #u'random_numbers': 'file://127.0.0.1/randomnums.txt'
                 },
             })
         return execute_stage
 
-    def create_ui(self, new_directive):
+    def attach_directive_args(self, new_directive):
         RMIT_SCHEMA = "http://rmit.edu.au/schemas"
         for i, sch in enumerate([
                 RMIT_SCHEMA + "/input/system/compplatform",
@@ -84,18 +108,14 @@ class HRMCDirective():
                 RMIT_SCHEMA + "/input/system",
                 RMIT_SCHEMA + "/input/hrmc",
                 RMIT_SCHEMA + "/input/mytardis",
-                RMIT_SCHEMA + "/input/sweep"
                 ]):
             schema = models.Schema.objects.get(namespace=sch)
             das, _ = models.DirectiveArgSet.objects.get_or_create(
                 directive=new_directive, order=i, schema=schema)
 
 
-    def define_sweep_stage(self):
-        sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep",
-            description="Sweep Test",
-            package="bdphpcprovider.corestages.sweep.HRMCSweep",
-            order=100)
+    def define_sweep_stage(self, subdirective):
+        sweep_stage = super(HRMCInitial, self).define_sweep_stage(subdirective)
         sweep_stage.update_settings(
                                     {
             u'http://rmit.edu.au/schemas/stages/sweep':
@@ -110,7 +130,9 @@ class HRMCDirective():
                 u'random_numbers': 'file://127.0.0.1/randomnums.txt'
             },
             })
+        return sweep_stage
 
-    def assemble_directive(self):
-        super(HRMCDirective, self).assemble_directive()
-        return self.define_sweep_stage()
+    def assemble_stages(self):
+        self.define_transform_stage()
+        self.define_converge_stage()
+        return super(HRMCInitial, self).assemble_stages()

@@ -20,6 +20,7 @@
 
 
 import logging
+import ast
 from bdphpcprovider.corestages import stage, strategies
 from bdphpcprovider import messages
 
@@ -52,7 +53,30 @@ class Destroy(stage.Stage):
         return False
 
     def process(self, run_settings):
-        messages.info(run_settings, "1: create")
+        try:
+            self.id = int(getval(run_settings, '%s/system/id' % RMIT_SCHEMA))
+        except (SettingNotFoundException, ValueError):
+            self.id = 0
+        try:
+            self.created_nodes = ast.literal_eval(getval(
+                run_settings, '%s/stages/create/created_nodes' % RMIT_SCHEMA))
+        except (SettingNotFoundException, ValueError):
+            self.created_nodes = []
+
+        try:
+            self.scheduled_nodes = ast.literal_eval(getval(
+                run_settings, '%s/stages/schedule/scheduled_nodes' % RMIT_SCHEMA))
+        except (SettingNotFoundException, ValueError):
+            self.scheduled_nodes = []
+
+        try:
+            self.bootstrapped_nodes = ast.literal_eval(getval(
+                run_settings, '%s/stages/bootstrap/bootstrapped_nodes' % RMIT_SCHEMA))
+        except (SettingNotFoundException, ValueError):
+            self.bootstrapped_nodes = []
+
+
+        messages.info(run_settings, "%d: destroy" % self.id)
         comp_pltf_settings = self.get_platform_settings(
             run_settings, 'http://rmit.edu.au/schemas/platform/computation')
         try:
@@ -74,10 +98,22 @@ class Destroy(stage.Stage):
             logger.error(e)
             messages.error(run_settings, e)
             return
-        self.strategy.destroy_resource(run_settings, local_settings)
+        logger.debug('started')
+        self.strategy.destroy_resource(self, run_settings, local_settings)
+        logger.debug('ended')
 
     def output(self, run_settings):
         setvals(run_settings, {
             '%s/stages/destroy/run_finished' % RMIT_SCHEMA: 1
                })
+        setvals(run_settings, {
+            '%s/stages/create/created_nodes' % RMIT_SCHEMA: self.created_nodes
+               })
+        setvals(run_settings, {
+            '%s/stages/schedule/scheduled_nodes' % RMIT_SCHEMA: self.scheduled_nodes
+               })
+        setvals(run_settings, {
+            '%s/stages/bootstrap/bootstrapped_nodes' % RMIT_SCHEMA: self.bootstrapped_nodes
+               })
+        messages.success(run_settings, "%d: finished" % self.id)
         return run_settings

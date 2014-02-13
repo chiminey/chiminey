@@ -95,7 +95,8 @@ class Bootstrap(Stage):
         if not self.started:
             try:
                 logger.debug('process to start')
-                self.strategy.start_multi_bootstrap_task(local_settings)
+                relative_path_suffix = self.get_relative_output_path(local_settings)
+                self.strategy.start_multi_bootstrap_task(local_settings, relative_path_suffix)
             except PackageFailedError, e:
                 logger.error("unable to start setup of packages: %s" % e)
             self.started = 1
