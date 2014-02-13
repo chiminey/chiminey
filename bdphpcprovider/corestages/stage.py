@@ -125,7 +125,6 @@ class Stage(object):
                     return False
             return True
 
-
     def break_bdp_url(self, bdpurl):
 
         bdpurl_list = bdpurl.split('/')
@@ -137,16 +136,20 @@ class Stage(object):
         return platform_name, offset
 
 
-    def get_process_output_path(self, run_settings, process_id):
+    def get_process_output_path(self, run_settings, process_id, local_settings):
         computation_platform = self.get_platform_settings(
             run_settings, 'http://rmit.edu.au/schemas/platform/computation')
-        contextid = int(getval(run_settings, '%s/system/contextid' % RMIT_SCHEMA))
-
         output_path = os.path.join(
-                computation_platform['root_path'],
-                getval(run_settings, 'http://rmit.edu.au/schemas/stages/setup/payload_destination'),
-                str(contextid), str(process_id), getval(run_settings, 'http://rmit.edu.au/schemas/stages/run/payload_cloud_dirname'))
+            computation_platform['root_path'],
+            self.get_relative_output_path(local_settings), str(process_id),
+            getval(run_settings, 'http://rmit.edu.au/schemas/stages/run/payload_cloud_dirname'))
         return output_path
+
+    def get_relative_output_path(self, local_settings):
+        contextid = str(local_settings['contextid'])
+        payload_destination = local_settings['payload_destination']
+        return os.path.join(contextid, payload_destination)
+
 
 def copy_settings(dest_context, context, key):
     """

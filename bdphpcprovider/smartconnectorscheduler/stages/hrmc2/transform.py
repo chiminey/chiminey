@@ -489,7 +489,7 @@ class Transform(Stage):
             logger.debug("New input node dir %s" % self.new_input_node_dir)
 
             # Move all existing domain input files unchanged to next input directory
-            for f in self.DOMAIN_INPUT_FILES:
+            for f in DOMAIN_INPUT_FILES:
                 source_url = get_url_with_pkey(
                     output_storage_settings,
                     output_prefix + os.path.join(self.output_dir, Node_info.dir, f), is_relative_path=False)

@@ -50,11 +50,11 @@ class Command(BaseCommand):
         print "done"
 
 
-class CoreInitial():
+class CoreInitial(object):
     def define_parent_stage(self):
         parent = "bdphpcprovider.smartconnectorscheduler.stages.composite.ParallelStage"
         parent_stage, _ = models.Stage.objects.get_or_create(
-            name="random_number_connector",
+            name="parent_connector",
             description="Random number parent",
             package=parent,
             order=0)
@@ -143,6 +143,7 @@ class CoreInitial():
                     u'retry_attempts': 1,
                 },
             })
+        return execute_stage
 
     def define_wait_stage(self):
         wait_package = "bdphpcprovider.corestages.wait.Wait"
@@ -159,6 +160,25 @@ class CoreInitial():
                 },
         })
         return wait_stage
+    def define_transform_stage(self):
+        transform_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc2.transform.Transform"
+        transform_stage, _ = models.Stage.objects.get_or_create(name="transform",
+            description="This is the core transform stage",
+            parent=self.define_parent_stage(),
+            package=transform_package,
+            order=50)
+        transform_stage.update_settings({})
+        return transform_stage
+
+    def define_converge_stage(self):
+        converge_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc2.converge.Converge"
+        converge_stage, _ = models.Stage.objects.get_or_create(name="converge",
+            description="This is the core converge stage",
+            parent=self.define_parent_stage(),
+            package=converge_package,
+            order=60)
+        converge_stage.update_settings({})
+        return converge_stage
 
     def define_destroy_stage(self):
         destroy_package = "bdphpcprovider.corestages.destroy.Destroy"

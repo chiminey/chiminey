@@ -35,6 +35,7 @@ RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
 
 def set_bootstrap_settings(run_settings, local_settings):
+    #logger.debug('in=%s' % run_settings)
     update(local_settings, run_settings,
            '%s/stages/setup/payload_source' % RMIT_SCHEMA,
            '%s/stages/setup/payload_destination' % RMIT_SCHEMA,
@@ -42,9 +43,10 @@ def set_bootstrap_settings(run_settings, local_settings):
            '%s/system/contextid' % RMIT_SCHEMA
            )
     local_settings['bdp_username'] = getval(run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA)
+    #logger.debug('out=%s' % local_settings)
 
 
-def start_multi_bootstrap_task(settings):
+def start_multi_bootstrap_task(settings, relative_path_suffix):
     """
     Run the package on each of the nodes in the group and grab
     any output as needed
@@ -81,7 +83,8 @@ def start_multi_bootstrap_task(settings):
             logger.debug('constructing source')
             source = get_url_with_pkey(settings, settings['payload_source'])
             logger.debug('source=%s' % source)
-            relative_path = '%s@%s' % (settings['type'], settings['payload_destination'])
+            #relative_path = '%s@%s' % (settings['type'], settings['payload_destination'])
+            relative_path = '%s@%s' % (settings['type'], relative_path_suffix)
             destination = get_url_with_pkey(settings, relative_path,
                                                  is_relative_path=True,
                                                  ip_address=node_ip)
@@ -139,8 +142,9 @@ def complete_bootstrap(bootstrap_class, local_settings):
             node_ip = node.private_ip_address
         if (node_ip in [x[1] for x in bootstrap_class.bootstrapped_nodes if x[1] == node_ip]):
             continue
+        relative_path_suffix = bootstrap_class.get_relative_output_path(local_settings)
         relative_path = "%s@%s" % (local_settings['type'],
-            local_settings['payload_destination'])
+            relative_path_suffix)
         destination = get_url_with_pkey(local_settings,
             relative_path,
             is_relative_path=True,

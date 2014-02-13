@@ -326,8 +326,10 @@ class ContextResource(ModelResource):
 
         if 'smart_connector' in bundle.data:
             smartconnector = bundle.data['smart_connector']
+            logger.debug('smart_connector=%s' % smartconnector)
             directive_obj = models.Directive.objects.get(name=smartconnector)
             stage = directive_obj.stage
+            logger.debug('stage=%s' % stage)
             sch = models.Schema.objects.get(namespace="http://rmit.edu.au/schemas/stages/sweep")
             logger.debug('sch=%s' % sch)
             subdirective = stage.get_stage_setting(sch, "directive")
@@ -550,9 +552,6 @@ class ContextResource(ModelResource):
         d_arg.append(
         ['http://rmit.edu.au/schemas/directive_profile',
             (u'directive_name', subdirective),
-        ])
-        d_arg.append(
-        ['http://rmit.edu.au/schemas/directive_profile',
             (u'sweep_name', directive),
         ])
         directive_args = [''] + d_arg

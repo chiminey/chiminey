@@ -63,7 +63,7 @@ def get_registered_vms(settings, node_type='created_nodes'):
                 try:
                     vm = botoconnector.get_this_vm(node[0], settings)
                     res.append(vm)
-                except EC2ResponseError as e:
+                except Exception as e: #fixme: use custom exception
                     logger.debug('vm [%s:%s] not found' % (node[0], node[1]))
                     logger.debug(e)
     except KeyError as e:
@@ -81,11 +81,15 @@ def get_registered_vms(settings, node_type='created_nodes'):
 def destroy_vms(settings, node_types=['created_nodes'],
                 registered_vms=[]):
     logger.info("destroy_vms")
+    logger.debug('registered_vms=%s' % registered_vms)
     all_vms = registered_vms
     for type in node_types:
         logger.debug('type=%s' % type)
-        all_vms.extend(get_registered_vms(
-            settings, node_type=type))
+        try:
+            all_vms.extend(get_registered_vms(
+                settings, node_type=type))
+        except NoRegisteredVMError as e:
+            pass
     logger.debug('all_vms(teardown)=%s' % all_vms)
     terminated_vms = botoconnector.destroy_vms(
         settings, all_vms)

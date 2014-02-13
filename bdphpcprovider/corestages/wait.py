@@ -152,8 +152,13 @@ class Wait(Stage):
         contextid = int(getval(run_settings, '%s/system/contextid' % RMIT_SCHEMA))
 
         #fixme: add call get_process_output_path
-        cloud_path = os.path.join(local_settings['payload_destination'],
-                                  str(contextid),
+        #cloud_path = os.path.join(local_settings['payload_destination'],
+        #                          #str(contextid), #fixme: uncomment
+        #                          str(process_id),
+        #                          local_settings['payload_cloud_dirname']
+        #                          )
+        relative_path_suffix = self.get_relative_output_path(local_settings)
+        cloud_path = os.path.join(relative_path_suffix,
                                   str(process_id),
                                   local_settings['payload_cloud_dirname']
                                   )
@@ -257,7 +262,10 @@ class Wait(Stage):
             #    logging.error('Instance %s not running' % instance_id)
             #    self.error_nodes.append(node)
             #    continue
-            fin = wait_strategy.is_job_finished(ip_address, process_id, retry_left, local_settings)
+            relative_path_suffix = self.get_relative_output_path(local_settings)
+            fin = wait_strategy.is_job_finished(
+                ip_address, process_id, retry_left,
+                local_settings, relative_path_suffix)
             logger.debug("fin=%s" % fin)
             if fin:
                 logger.debug("done. output is available")
@@ -340,7 +348,7 @@ class Wait(Stage):
 
         if not nodes_working:
             self.finished_nodes = []
-            messages.success(run_settings, 'All processes in iteration %d completed' %(self.id + 1))
+            messages.success(run_settings, '%d: All processes in current iteration completed' % (self.id + 1))
         #run_settings['http://rmit.edu.au/schemas/stages/run']['finished_nodes'] = str(self.finished_nodes)
 
         setvals(run_settings, {
@@ -397,6 +405,8 @@ def retrieve_local_settings(run_settings, local_settings):
         'http://rmit.edu.au/schemas/system/platform')
     stage.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/stages/run/payload_cloud_dirname')
+    stage.copy_settings(local_settings, run_settings,
+        '%s/system/contextid' % RMIT_SCHEMA)
     local_settings['bdp_username'] = run_settings[
         RMIT_SCHEMA + '/bdp_userprofile']['username']
 

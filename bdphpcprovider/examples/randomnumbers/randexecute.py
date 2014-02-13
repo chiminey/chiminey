@@ -27,12 +27,16 @@ from bdphpcprovider.compute import run_command_with_status
 logger = logging.getLogger(__name__)
 
 class RandExecute(Execute):
-    def run_task(self, ip_address, process_id, connection_settings, run_settings):
+    #fixme: should removed out after execute is refactored
+    def set_domain_settings(self, run_settings, local_settings):
+        pass
+
+    def run_task(self, ip_address, process_id, local_settings, run_settings):
         logger
         filename = 'rand'
-        output_path = self.get_process_output_path(run_settings, process_id)
+        output_path = self.get_process_output_path(run_settings, process_id, local_settings)
         logger.debug('output_path=%s' % output_path)
-        ssh = open_connection(ip_address=ip_address, settings=connection_settings)
+        ssh = open_connection(ip_address=ip_address, settings=local_settings)
         try:
             command, errs = run_command_with_status(
                 ssh, "mkdir -p %s; cd %s ;"
