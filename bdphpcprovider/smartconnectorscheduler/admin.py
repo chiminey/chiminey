@@ -183,7 +183,7 @@ class ContextAdmin(admin.ModelAdmin):
 #         # Compare the requested value (either '80s' or '90s')
 #         # to decide how to filter the queryset.
 
-#         return queryset.filter(id=parent)
+#         return queryset.filter(id=stage__parent).order_by('id')
 
 
 class StageInline(admin.TabularInline):
@@ -196,15 +196,15 @@ class StageInline(admin.TabularInline):
 
 class StageAdmin(admin.ModelAdmin):
     model = models.Stage
-    list_display = ('name', 'description', 'parent_name', 'package')
+    list_display = ('id', 'name', 'description', 'parent_name', 'package')
     list_display_links = ('name',)
-    #list_filter = ('ParentListFilter',)
+    # list_filter = ('ParentListFilter',)
     list_filter = ('parent',)
-    ordering = ('parent', 'order')
+    ordering = ('id','parent', 'order')
     inlines = (StageInline,)
 
     def parent_name(self, obj):
-        return obj.parent.name
+        return "#%s %s" % (obj.parent.id, obj.parent.name)
 
 
 class UserProfileParameterSetInline(admin.TabularInline):

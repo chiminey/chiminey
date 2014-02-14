@@ -55,7 +55,7 @@ class Command(BaseCommand):
 class HRMCInitial(CoreInitial):
     def define_parent_stage(self):
         hrmc_parallel_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc_composite.HRMCParallelStage"
-        hrmc_composite_stage, _ = models.Stage.objects.get_or_create(name="hrmc_connector",
+        hrmc_composite_stage, _ = models.Stage.objects.get_or_create(name=self.get_parent_name(),
             description="Encapsultes HRMC smart connector workflow",
             package=hrmc_parallel_package,
             order=100)
@@ -98,6 +98,26 @@ class HRMCInitial(CoreInitial):
                 },
             })
         return execute_stage
+
+    def define_transform_stage(self):
+        transform_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc2.hrmctransform.HRMCTransform"
+        transform_stage, _ = models.Stage.objects.get_or_create(name="hrmctransform",
+            description="This is the transform stage of HRMC",
+            parent=self.define_parent_stage(),
+            package=transform_package,
+            order=50)
+        transform_stage.update_settings({})
+        return transform_stage
+
+    def define_converge_stage(self):
+        converge_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc2.hrmcconverge.HRMCConverge"
+        converge_stage, _ = models.Stage.objects.get_or_create(name="hrmcconverge",
+            description="This is the converge stage of HRMC",
+            parent=self.define_parent_stage(),
+            package=converge_package,
+            order=60)
+        converge_stage.update_settings({})
+        return converge_stage
 
     def attach_directive_args(self, new_directive):
         RMIT_SCHEMA = "http://rmit.edu.au/schemas"

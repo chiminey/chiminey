@@ -51,15 +51,20 @@ class Command(BaseCommand):
 
 
 class CoreInitial(object):
+    def __init__(self):
+        self.directive_name = 'core'
+
+    def get_parent_name(self):
+        return "%s_connector" % self.directive_name
+
     def define_parent_stage(self):
         parent = "bdphpcprovider.smartconnectorscheduler.stages.composite.ParallelStage"
         parent_stage, _ = models.Stage.objects.get_or_create(
-            name="parent_connector",
+            name=self.get_parent_name(),
             description="Random number parent",
             package=parent,
             order=0)
         return parent_stage
-
 
     def define_create_stage(self):
         create_package = "bdphpcprovider.corestages.create.Create"
@@ -205,11 +210,12 @@ class CoreInitial(object):
         return sweep_stage
 
     def define_directive(self, directive_name, description='', sweep=False):
+        self.directive_name = directive_name
         if not description:
-            description = '%s Smart Connector' % directive_name
+            description = '%s Smart Connector' % self.directive_name
         parent_stage = self.assemble_stages()
         directive, _ = models.Directive.objects.get_or_create(
-            name=directive_name,
+            name=self.directive_name,
             defaults={'stage': parent_stage,
                       'description': description,
                       'hidden': sweep}

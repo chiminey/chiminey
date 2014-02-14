@@ -397,19 +397,21 @@ class Sweep(Stage):
         # in domain specfic mytardis class
         #TODO: By default, this class should NOT CREATE an experiment
 
-        try:
-            experiment_id = int(getval(run_settings, '%s/input/mytardis/experiment_id' % RMIT_SCHEMA))
-        except SettingNotFoundException:
-            experiment_id = 0
-        except ValueError:
-            experiment_id = 0
+        # try:
+        #     experiment_id = int(getval(run_settings, '%s/input/mytardis/experiment_id' % RMIT_SCHEMA))
+        # except SettingNotFoundException:
+        #     experiment_id = 0
+        # except ValueError:
+        #     experiment_id = 0
 
-        experiment_id = post_mytardis_exp(
-            run_settings=run_settings,
-            experiment_id=experiment_id,
-            output_location=self.scratch_platform)
+        # experiment_id = post_mytardis_exp(
+        #     run_settings=run_settings,
+        #     experiment_id=experiment_id,
+        #     output_location=self.scratch_platform)
 
-        return experiment_id
+        # return experiment_id
+
+        return 0
 
 
 def _submit_subdirective(platform, run_settings, user, parentcontext):
