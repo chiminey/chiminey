@@ -402,6 +402,3 @@ class Transform(Stage):
     def process_outputs(self, run_settings, base_dir, output_url, output_storage_settings):
         return
 
-
-class HRMCTransform(Transform):
-    pass
