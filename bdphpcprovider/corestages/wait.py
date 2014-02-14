@@ -31,7 +31,7 @@ from bdphpcprovider.reliabilityframework.failuredetection import FailureDetectio
 from bdphpcprovider import messages
 from bdphpcprovider import storage
 
-from bdphpcprovider.runsettings import getval, setvals, setval, getvals, update, SettingNotFoundException
+from bdphpcprovider.runsettings import getval, setvals, setval, getvals, SettingNotFoundException
 from bdphpcprovider.storage import get_url_with_pkey
 
 logger = logging.getLogger(__name__)
@@ -46,7 +46,6 @@ class Wait(Stage):
     def __init__(self, user_settings=None):
         self.runs_left = 0
         self.error_nodes = 0
-        self.job_dir = "hrmcrun"  # TODO: make a stageparameter + suffix on real job number
         logger.debug("Wait stage initialised")
 
     def is_triggered(self, run_settings):
@@ -149,8 +148,6 @@ class Wait(Stage):
         logger.debug("get_output of process %s on %s" % (process_id, ip_address))
         output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
                                     output_storage_settings['type'])
-        contextid = int(getval(run_settings, '%s/system/contextid' % RMIT_SCHEMA))
-
         #fixme: add call get_process_output_path
         #cloud_path = os.path.join(local_settings['payload_destination'],
         #                          #str(contextid), #fixme: uncomment
@@ -181,7 +178,6 @@ class Wait(Stage):
                 self.job_dir, self.output_dir, process_id),
             is_relative_path=False)
         logger.debug('dest_files_url=%s' % dest_files_url)
-        #hrmcstages.delete_files(dest_files_url, exceptions=[]) #FIXme: uncomment as needed
         # FIXME: might want to turn on paramiko compress function
         # to speed up this transfer
         storage.copy_directories(source_files_url, dest_files_url)
@@ -229,7 +225,6 @@ class Wait(Stage):
 
         #processes = self.executed_procs
         processes = [x for x in self.current_processes if x['status'] == 'running']
-        not_failed_processes = [x for x in self.current_processes if x['status'] != 'failed']
         self.error_nodes = []
         # TODO: parse finished_nodes input
         logger.debug('self.finished_nodes=%s' % self.finished_nodes)
@@ -304,14 +299,14 @@ class Wait(Stage):
                 else:
                     logger.warn("We have already "
                         + "processed output of %s on node %s" % (process_id, ip_address))
-                failed_processes = [x for x in self.current_processes if x['status'] == 'failed']
-                logger.debug('failed_processes=%s' % failed_processes)
-                logger.debug('failed_processes=%d' % len(failed_processes))
-                messages.info(run_settings, "%d: waiting %d processes (%d completed, %d failed) " % (
-                    self.id + 1, len(self.current_processes),  len(self.finished_nodes),
-                    len(failed_processes)))
             else:
                 print "job %s at %s not completed" % (process_id, ip_address)
+            failed_processes = [x for x in self.current_processes if x['status'] == 'failed']
+            logger.debug('failed_processes=%s' % failed_processes)
+            logger.debug('failed_processes=%d' % len(failed_processes))
+            messages.info(run_settings, "%d: waiting %d processes (%d completed, %d failed) " % (
+                self.id + 1, len(self.current_processes),  len(self.finished_nodes),
+                len(failed_processes)))
 
     def output(self, run_settings):
         """
