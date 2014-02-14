@@ -30,7 +30,7 @@ from bdphpcprovider.runsettings import getval, SettingNotFoundException
 
 from bdphpcprovider import storage
 from bdphpcprovider import mytardis
-from . import Transform
+from . import transform
 
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 DOMAIN_INPUT_FILES = ['input_bo.dat', 'input_gr.dat', 'input_sq.dat']
 
 
-class HRMCTransform(Transform):
+class HRMCTransform(transform.Transform):
     def is_triggered(self, run_settings):
         super_trigger = super(HRMCTransform, self).is_triggered(run_settings)
         if super_trigger:
