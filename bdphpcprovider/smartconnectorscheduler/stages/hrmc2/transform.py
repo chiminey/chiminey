@@ -149,11 +149,11 @@ class Transform(Stage):
             output_storage_settings,
             output_prefix + self.output_dir, is_relative_path=False)
 
-        (scheme, host, mypath, location, query_settings) = storage.parse_bdpurl(output_url)
-        fsys = storage.get_filesystem(output_url)
+        # (scheme, host, mypath, location, query_settings) = storage.parse_bdpurl(output_url)
+        # fsys = storage.get_filesystem(output_url)
 
-        node_output_dirs, _ = fsys.listdir(mypath)
-        logger.debug("node_output_dirs=%s" % node_output_dirs)
+        # node_output_dirs, _ = fsys.listdir(mypath)
+        # logger.debug("node_output_dirs=%s" % node_output_dirs)
 
         self.process_outputs(run_settings, self.job_dir, output_url, output_storage_settings)
 
