@@ -301,12 +301,15 @@ class Wait(Stage):
                     for iterator, p in enumerate(self.current_processes):
                         if int(p['id']) == int(process_id) and p['status'] == 'running':
                             self.current_processes[iterator]['status'] = 'completed'
-                    messages.info(run_settings, "%s: waiting (%s process left)" % (
-                        #self.id + 1, len(self.executed_procs) - (len(self.finished_nodes) + self.failed_processes)))
-                        self.id + 1, len(not_failed_processes) - (len(self.finished_nodes))))
                 else:
                     logger.warn("We have already "
                         + "processed output of %s on node %s" % (process_id, ip_address))
+                failed_processes = [x for x in self.current_processes if x['status'] == 'failed']
+                logger.debug('failed_processes=%s' % failed_processes)
+                logger.debug('failed_processes=%d' % len(failed_processes))
+                messages.info(run_settings, "%d: waiting %d processes (%d completed, %d failed) " % (
+                    self.id + 1, len(self.current_processes),  len(self.finished_nodes),
+                    len(failed_processes)))
             else:
                 print "job %s at %s not completed" % (process_id, ip_address)
 
@@ -318,6 +321,9 @@ class Wait(Stage):
         executing_procs = [x for x in self.current_processes if x['status'] != 'ready']
         #nodes_working = len(self.executed_procs) - (len(self.finished_nodes) + self.failed_processes)
         nodes_working = len(executing_procs) - (len(self.finished_nodes) + self.failed_processes)
+
+
+
         #if len(self.finished_nodes) == 0 and self.failed_processes == 0:
         #    nodes_working = 0
         logger.debug("%d %d " %(len(self.finished_nodes), self.failed_processes))
@@ -338,17 +344,11 @@ class Wait(Stage):
                 '%s/stages/run/error_nodes' % RMIT_SCHEMA: nodes_working,
                 })
 
-        # run_settings.setdefault(
-        #     'http://rmit.edu.au/schemas/stages/run',
-        #     {})[u'runs_left'] = nodes_working
 
-        # run_settings.setdefault(
-        #     'http://rmit.edu.au/schemas/stages/run',
-        #     {})[u'error_nodes'] = nodes_working
 
         if not nodes_working:
             self.finished_nodes = []
-            messages.success(run_settings, '%d: All processes in current iteration completed' % (self.id + 1))
+            #messages.success(run_settings, '%d: All processes in current iteration completed' % (self.id + 1))
         #run_settings['http://rmit.edu.au/schemas/stages/run']['finished_nodes'] = str(self.finished_nodes)
 
         setvals(run_settings, {
@@ -357,24 +357,7 @@ class Wait(Stage):
                 '%s/stages/schedule/current_processes' % RMIT_SCHEMA: str(self.current_processes),
                 '%s/stages/execute/executed_procs' % RMIT_SCHEMA: str(self.executed_procs)
                 })
-        # run_settings.setdefault(
-        #     'http://rmit.edu.au/schemas/stages/run',
-        #     {})[u'finished_nodes'] = str(self.finished_nodes)
 
-        # run_settings.setdefault(
-        #     'http://rmit.edu.au/schemas/stages/schedule',
-        #     {})[u'all_processes'] = str(self.all_processes)
-        # run_settings.setdefault(
-        #     'http://rmit.edu.au/schemas/stages/schedule',
-        #     {})[u'current_processes'] = str(self.current_processes)
-
-        # run_settings.setdefault(
-        #     'http://rmit.edu.au/schemas/stages/execute',
-        #     {})[u'executed_procs'] = str(self.executed_procs)
-
-        # if self.cleanup_nodes:
-        #    run_settings.setdefault(
-        #    'http://rmit.edu.au/schemas/reliability', {})[u'cleanup_nodes'] = self.cleanup_nodes
 
         if self.failed_nodes:
             setval(run_settings, '%s/stages/create/failed_nodes' % RMIT_SCHEMA, self.failed_nodes)
