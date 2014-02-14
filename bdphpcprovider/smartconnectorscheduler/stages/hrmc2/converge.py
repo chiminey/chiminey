@@ -19,20 +19,15 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import re
 import os
 import logging
-import json
-import sys
 from bdphpcprovider.storage import get_url_with_pkey
 
 from bdphpcprovider.corestages.stage import Stage
-from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
 
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler import storage
 
-from bdphpcprovider import mytardis
 from bdphpcprovider.platform import manage
 from bdphpcprovider import messages
 from bdphpcprovider.runsettings import getval, delkey, setvals, setval, getvals, update, SettingNotFoundException
@@ -40,9 +35,6 @@ from bdphpcprovider.runsettings import getval, delkey, setvals, setval, getvals,
 
 logger = logging.getLogger(__name__)
 
-DATA_ERRORS_FILE = "data_errors.dat"
-STEP_COLUMN_NUM = 0
-ERRGR_COLUMN_NUM = 28
 
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
@@ -110,7 +102,7 @@ class Converge(Stage):
 
         bdp_username = local_settings['bdp_username']
 
-        # get output 
+        # get output
         output_storage_url = getval(run_settings, '%s/platform/storage/output/platform_url' % RMIT_SCHEMA)
         output_storage_settings = manage.get_platform_settings(output_storage_url, bdp_username)
         output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
@@ -154,8 +146,6 @@ class Converge(Stage):
 
         (self.done_iterating, self.criterion) = self.process_outputs(run_settings, job_dir, inputdir_url, output_storage_settings)
 
-
-
         if self.done_iterating:
             logger.debug("Total Iterations: %d" % self.id)
 
@@ -168,21 +158,16 @@ class Converge(Stage):
             # dest_url = get_url_with_pkey(output_storage_settings,
             #     output_prefix + os.path.join(new_output_dir), is_relative_path=False)
 
-
-
             output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
                                     output_storage_settings['type'])
 
             # get source url
             iter_output_dir = os.path.join(os.path.join(job_dir, "output_%s" % id))
 
-            iter_output_dir = "%s%s" % (output_prefix, iter_output_dir)
-            source_path = os.path.join(iter_output_dir, Node_info.dirname)
-
+            source_url = "%s%s" % (output_prefix, iter_output_dir)
             # get dest url
             new_output_dir = os.path.join(job_dir, 'output')
-            dest_path = "%s%s" % (output_prefix, new_output_dir)
-
+            dest_url = "%s%s" % (output_prefix, new_output_dir)
 
             storage.copy_directories(source_url, dest_url)
 
@@ -204,9 +189,6 @@ class Converge(Stage):
                 logger.warn('Data curation is off')
 
             messages.success(run_settings, "%s: finished" % (self.id + 1))
-
-
-
 
 
         # # TODO: store all audit info in single file in input_X directory in transform,
@@ -305,7 +287,6 @@ class Converge(Stage):
 
         # self.criterion = min_crit
 
-
     def output(self, run_settings):
 
         # if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/converge'):
@@ -398,3 +379,10 @@ class Converge(Stage):
         setval(run_settings, '%s/system/id' % RMIT_SCHEMA, self.id)
         # run_settings['http://rmit.edu.au/schemas/system'][u'id'] = self.id
         return run_settings
+
+        def process_outputs(self, run_settings, base_dir, output_url, all_settings):
+            return
+
+        def curate_dataset(self, run_settings, experiment_id, base_dir,
+                           output_url, all_settings):
+            return 0
