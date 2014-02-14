@@ -28,29 +28,44 @@ import json
 import sys
 from bdphpcprovider.storage import get_url_with_pkey
 
-from bdphpcprovider.corestages.stage import Stage
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
 
-from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler import storage
 
 from bdphpcprovider import mytardis
-from bdphpcprovider.platform import manage
-from bdphpcprovider import messages
-from bdphpcprovider.runsettings import getval, delkey, setvals, setval, getvals, update, SettingNotFoundException
+from bdphpcprovider.runsettings import getval, SettingNotFoundException
 
-RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
 from . import converge
 
 logger = logging.getLogger(__name__)
 
+
+RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+DATA_ERRORS_FILE = "data_errors.dat"
+STEP_COLUMN_NUM = 0
+ERRGR_COLUMN_NUM = 28
+
+
 class HRMCConverge(converge.Converge):
 
-    def curate_dataset(self, run_settings, experiment_id, base_dir, all_settings):
+    def curate_dataset(self, run_settings, experiment_id, base_dir, output_url, all_settings):
+
+        iteration = int(getval(run_settings, '%s/system/id' % RMIT_SCHEMA))
+        iter_output_dir = os.path.join(os.path.join(base_dir, "output_%s" % iteration))
+        output_prefix = '%s://%s@' % (all_settings['scheme'],
+                                    all_settings['type'])
+        iter_output_dir = "%s%s" % (output_prefix, iter_output_dir)
+
+        (scheme, host, mypath, location, query_settings) = storage.parse_bdpurl(output_url)
+        fsys = storage.get_filesystem(output_url)
+
+        node_output_dirnames, _ = fsys.listdir(mypath)
+        logger.debug("node_output_dirnames=%s" % node_output_dirnames)
+
         curate_data = (getval(run_settings, '%s/input/mytardis/curate_data' % RMIT_SCHEMA))
         if curate_data:
-            if mytardis_settings['mytardis_host']:
+            if all_settings['mytardis_host']:
 
 #         if mytardis_settings['mytardis_host']:
 
@@ -165,7 +180,7 @@ class HRMCConverge(converge.Converge):
                     try:
                         content = storage.get_file(source_url)
                     except IOError, e:
-                        logger.warn("cannot read file %s" %e)
+                        logger.warn("cannot read file %s" % e)
                         return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
 
                     logger.debug("content=%s" % content)
@@ -194,21 +209,22 @@ class HRMCConverge(converge.Converge):
 
                 re_dbl_fort = re.compile(r'(\d*\.\d+)[dD]([-+]?\d+)')
 
-                logger.debug("new_output_dir=%s" % new_output_dir)
                 exp_value_keys = []
                 legends = []
-                for m, node_dir in enumerate(node_dirs):
+                for m, node_dir in enumerate(node_output_dirnames):
+                    node_path = os.path.join(iter_output_dir, node_dir)
+
                     exp_value_keys.append(["hrmcdset%s/step" % m, "hrmcdset%s/err" % m])
 
-                    source_url = get_url_with_pkey(output_storage_settings,
-                        output_prefix + os.path.join(new_output_dir, node_dir), is_relative_path=False)
+                    source_url = get_url_with_pkey(all_settings,
+                                                   node_path, is_relative_path=False)
 
                     (source_scheme, source_location, source_path, source_location,
                         query_settings) = storage.parse_bdpurl(source_url)
                     logger.debug("source_url=%s" % source_url)
                     legends.append(
                         get_dataset_name_for_output(
-                            output_storage_settings, "", source_path))
+                            all_settings, "", source_path))
 
                 logger.debug("exp_value_keys=%s" % exp_value_keys)
                 logger.debug("legends=%s" % legends)
@@ -219,13 +235,15 @@ class HRMCConverge(converge.Converge):
                     value_dict={},
                     value_keys=exp_value_keys)]
 
-                for m, node_dir in enumerate(node_dirs):
+                for m, node_dir in enumerate(node_output_dirnames):
+                    node_path = os.path.join(iter_output_dir, node_dir)
 
                     #FIXME: this calculation should be done as in extract_psd_func
                     # pulling directly from data_errors rather than passing in
                     # through nested function.
-                    dataerrors_url = get_url_with_pkey(output_storage_settings,
-                        output_prefix + os.path.join(new_output_dir, node_dir, DATA_ERRORS_FILE), is_relative_path=False)
+                    dataerrors_url = get_url_with_pkey(all_settings,
+                        os.path.join(node_dir, DATA_ERRORS_FILE),
+                        is_relative_path=False)
                     dataerrors_content = storage.get_file(dataerrors_url)
                     xs = []
                     ys = []
@@ -253,8 +271,8 @@ class HRMCConverge(converge.Converge):
                     logger.debug("xs=%s" % xs)
                     logger.debug("ys=%s" % ys)
 
-                    crit_url = get_url_with_pkey(output_storage_settings,
-                        output_prefix + os.path.join(new_output_dir, node_dir, "criterion.txt"), is_relative_path=False)
+                    crit_url = get_url_with_pkey(all_settings,
+                        os.path.join(node_path, "criterion.txt"), is_relative_path=False)
                     try:
                         crit = storage.get_file(crit_url)
                     except ValueError:
@@ -268,8 +286,7 @@ class HRMCConverge(converge.Converge):
                         hrmcdset_val = {}
 
                     source_url = get_url_with_pkey(
-                        output_storage_settings,
-                        output_prefix + os.path.join(new_output_dir, node_dir), is_relative_path=False)
+                        all_settings, node_dir, is_relative_path=False)
                     logger.debug("source_url=%s" % source_url)
 
                     # TODO: move into utiltiy function for reuse
@@ -356,9 +373,7 @@ class HRMCConverge(converge.Converge):
                         res = {"hrmcdfile/r4": cut_xs, "hrmcdfile/g4": cut_ys}
                         return res
                     #todo: replace self.boto_setttings with mytardis_settings
-                    all_settings = dict(local_settings)
-                    all_settings.update(mytardis_settings)
-                    all_settings.update(output_storage_settings)
+
                     self.experiment_id = mytardis.create_dataset(
                         settings=all_settings,
                         source_url=source_url,
@@ -409,8 +424,8 @@ class HRMCConverge(converge.Converge):
                 logger.warn("no mytardis host specified")
         else:
             logger.warn('Data curation is off')
-            
-    def process_outputs(self, run_settings, base_dir, output_url, output_storage_settings):
+
+    def process_outputs(self, run_settings, base_dir, output_url, all_settings):
 
         id = int(getval(run_settings, '%s/system/id' % RMIT_SCHEMA))
         iter_output_dir = os.path.join(os.path.join(base_dir, "output_%s" % id))
@@ -505,4 +520,3 @@ class HRMCConverge(converge.Converge):
             logger.debug("iteration continues: %d iteration so far" % self.id)
 
         return (False, min_crit)
-
