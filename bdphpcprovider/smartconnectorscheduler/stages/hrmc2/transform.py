@@ -155,7 +155,7 @@ class Transform(Stage):
         # node_output_dirs, _ = fsys.listdir(mypath)
         # logger.debug("node_output_dirs=%s" % node_output_dirs)
 
-        self.process_outputs(run_settings, self.job_dir, output_url, output_storage_settings)
+        self.process_outputs(run_settings, self.job_dir, output_url, output_storage_settings, offset)
 
 
         # logger.debug("output_url=%s" % output_url)

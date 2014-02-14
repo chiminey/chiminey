@@ -53,34 +53,40 @@ class HRMCTransform(transform.Transform):
                 return False
         return super_trigger
 
-    def process_outputs(self, run_settings, base_dir, output_url, all_settings):
+    def process_outputs(self, run_settings, base_dir, output_url, all_settings, offset):
 
         # output_dir = 118.138.241.232/outptuersdfsd/sweep277/hrmc278/output_1
         # output_prefix = ssh://unix@
         # node_output_dir = 2
 
-        id = int(getval(run_settings, '%s/system/id' % RMIT_SCHEMA))
-        iter_output_dir = os.path.join(os.path.join(base_dir, "output_%s" % id))
         output_prefix = '%s://%s@' % (all_settings['scheme'],
                                     all_settings['type'])
-        iter_output_dir = "%s%s" % (output_prefix, iter_output_dir)
 
+        id = int(getval(run_settings, '%s/system/id' % RMIT_SCHEMA))
+        iter_output_dir = os.path.join(os.path.join(base_dir, "output_%s" % id))
+        logger.debug('iter_output_dir=%s' % iter_output_dir)
+        output_prefix = '%s://%s@' % (all_settings['scheme'],
+                                    all_settings['type'])
+        logger.debug('output_prefix=%s' % output_prefix)
+        #iter_output_dir = "%s%s" % (output_prefix, iter_output_dir)
+        logger.debug('output_url=%s' % output_url)
         (scheme, host, iter_output_path, location, query_settings) = storage.parse_bdpurl(output_url)
+        logger.debug("iter_output_path=%s" % iter_output_path)
         iter_out_fsys = storage.get_filesystem(output_url)
-
+        logger.debug("iter_out_fsys=%s" % iter_out_fsys)
         node_output_dirnames, _ = iter_out_fsys.listdir(iter_output_path)
-
+        logger.debug('node_output_dirnames=%s' % node_output_dirnames)
         self.audit = ""
 
         Node_info = namedtuple('Node_info',
-            ['dirnane', 'number', 'criterion'])
+            ['dirname', 'number', 'criterion'])
 
         BASE_FNAME = "HRMC.inp"
 
         # generate criterias
         self.outputs = []
         for node_output_dirname in node_output_dirnames:
-            node_path = os.path.join(iter_output_dir, node_output_dirname)
+            node_path = output_prefix + os.path.join(iter_output_dir, node_output_dirname)
             criterion = self.compute_psd_criterion(all_settings, node_path)
             #criterion = self.compute_hrmc_criterion(values_map['run_counter'], node_output_dirname, fs,)
             logger.debug("criterion=%s" % criterion)
@@ -123,19 +129,21 @@ class HRMCTransform(transform.Transform):
         else:
             total_picks = threshold[0]
 
-        def copy_files_with_pattern(self, iter_out_fsys, source_path,
+        def copy_files_with_pattern(iter_out_fsys, source_path,
                                  dest_path, pattern, all_settings):
             """
             """
+            output_prefix = '%s://%s@' % (all_settings['scheme'],
+                                    all_settings['type'])
 
             logger.debug('source_path=%s, dest_path=%s' % (source_path, dest_path))
             # (scheme, host, iter_output_path, location, query_settings) = storage.parse_bdpurl(source_path)
             _, node_output_fnames = iter_out_fsys.listdir(source_path)
-
+            ip_address = all_settings['ip_address']
             for f in node_output_fnames:
                 if fnmatch.fnmatch(f, pattern):
-                    source_url = get_url_with_pkey(all_settings, os.path.join(source_path, f), is_relative_path=False)
-                    dest_url = get_url_with_pkey(all_settings, os.path.join(dest_path, f), is_relative_path=False)
+                    source_url = get_url_with_pkey(all_settings, output_prefix + os.path.join(ip_address, source_path, f), is_relative_path=False)
+                    dest_url = get_url_with_pkey(all_settings, output_prefix + os.path.join(ip_address, dest_path, f), is_relative_path=False)
                     logger.debug('source_url=%s, dest_url=%s' % (source_url, dest_url))
                     content = storage.get_file(source_url)
                     storage.put_file(dest_url, content)
@@ -156,9 +164,9 @@ class HRMCTransform(transform.Transform):
             # Move all existing domain input files unchanged to next input directory
             for f in DOMAIN_INPUT_FILES:
                 source_url = get_url_with_pkey(
-                    all_settings, os.path.join(old_output_path, f), is_relative_path=False)
+                    all_settings, output_prefix + os.path.join(old_output_path, f), is_relative_path=False)
                 dest_url = get_url_with_pkey(
-                    all_settings, os.path.join(new_input_path, f),
+                    all_settings, output_prefix + os.path.join(new_input_path, f),
                     is_relative_path=False)
                 logger.debug('source_url=%s, dest_url=%s' % (source_url, dest_url))
 
@@ -169,38 +177,46 @@ class HRMCTransform(transform.Transform):
 
             logger.debug('put file successfully')
             pattern = "*_values"
-            self.copy_files_with_pattern(iter_out_fsys,
-                old_output_path,
-                new_input_path, pattern,
+            output_offset = os.path.join(os.path.join(offset, "output_%s" % id, Node_info.dirname))
+            input_offset = os.path.join(os.path.join(offset, "input_%s" % (id + 1), Node_info.dirname))
+            copy_files_with_pattern(iter_out_fsys,
+                output_offset,
+                input_offset, pattern,
                 all_settings)
 
             pattern = "*_template"
-            self.copy_files_with_pattern(iter_out_fsys,
-                old_output_path,
-                new_input_path, pattern,
+            copy_files_with_pattern(iter_out_fsys,
+                output_offset,
+                input_offset, pattern,
                 all_settings)
 
             # NB: Converge stage triggers based on criterion value from audit.
-
+            logger.debug('starting audit')
             info = "Run %s preserved (error %s)\n" % (Node_info.number, Node_info.criterion)
             audit_url = get_url_with_pkey(
-                all_settings,
+                all_settings, output_prefix +
                 os.path.join(new_input_path, 'audit.txt'), is_relative_path=False)
             storage.put_file(audit_url, info)
             logger.debug("audit=%s" % info)
+            logger.debug('1:audit_url=%s' % audit_url)
             self.audit += info
 
             # move xyz_final.xyz to initial.xyz
             source_url = get_url_with_pkey(
-                all_settings, os.path.join(old_output_path, "xyz_final.xyz"), is_relative_path=False)
+                all_settings, output_prefix + os.path.join(old_output_path, "xyz_final.xyz"), is_relative_path=False)
+            logger.debug('source_url=%s' % source_url)
             dest_url = get_url_with_pkey(
-                all_settings, os.path.join(new_input_path, 'input_initial.xyz'), is_relative_path=False)
+                all_settings, output_prefix + os.path.join(new_input_path, 'input_initial.xyz'), is_relative_path=False)
+            logger.debug('dest_url=%s' % dest_url)
             content = storage.get_file(source_url)
+            logger.debug('content=%s' % content)
             storage.put_file(dest_url, content)
             self.audit += "spawning diamond runs\n"
 
+        logger.debug("input_dir=%s" % (output_prefix + os.path.join(new_input_dir, 'audit.txt')))
         audit_url = get_url_with_pkey(
-            all_settings, os.path.join(new_input_dir, 'audit.txt'), is_relative_path=False)
+            all_settings, output_prefix + os.path.join(new_input_dir, 'audit.txt'), is_relative_path=False)
+        logger.debug('audit_url=%s' % audit_url)
         storage.put_file(audit_url, self.audit)
 
     def compute_psd_criterion(self, all_settings, node_path):
@@ -213,9 +229,12 @@ class HRMCTransform(transform.Transform):
         #Fixme replace all reference to files by parameters, e.g PSDCode
         output_prefix = '%s://%s@' % (all_settings['scheme'],
                                     all_settings['type'])
+        logger.debug('output_prefix=%s' % output_prefix)
+        logger.debug('node_path=%s' % node_path)
+
         logger.debug('compute psd---')
         psd_url = get_url_with_pkey(all_settings,
-                        output_prefix + os.path.join(node_path, "PSD_output", "psd.dat"), is_relative_path=False)
+                        os.path.join(node_path, "PSD_output", "psd.dat"), is_relative_path=False)
         logger.debug('psd_url=%s' % psd_url)
 
         psd = storage.get_filep(psd_url)
@@ -226,7 +245,7 @@ class HRMCTransform(transform.Transform):
         #                        "PSD_output/PSD_exp.dat")
         psd_url = get_url_with_pkey(
             all_settings,
-                        output_prefix + os.path.join(node_path, "PSD_output", "PSD_exp.dat"), is_relative_path=False)
+                         os.path.join(node_path, "PSD_output", "PSD_exp.dat"), is_relative_path=False)
         logger.debug('psd_url=%s' % psd_url)
         psd_exp = storage.get_filep(psd_url)
         logger.debug('psd_exp=%s' % psd_exp._name)
@@ -261,7 +280,7 @@ class HRMCTransform(transform.Transform):
 
         criterion_url = get_url_with_pkey(
             all_settings,
-            output_prefix + os.path.join(node_path, "PSD_output", "criterion.txt"),
+            os.path.join(node_path, "PSD_output", "criterion.txt"),
             is_relative_path=False)
         storage.put_file(criterion_url, str(criterion))
 
