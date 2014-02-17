@@ -31,15 +31,9 @@ from django.template import Context, Template
 from bdphpcprovider.platform import manage
 from bdphpcprovider.corestages import stage
 
-#from bdphpcprovider.corestages.stage import Stage
 from bdphpcprovider.smartconnectorscheduler.errors import PackageFailedError
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
-from bdphpcprovider.smartconnectorscheduler import (models,
-                                                    hrmcstages
-                                                    )
-from bdphpcprovider.sshconnection import open_connection
-from bdphpcprovider import mytardis
-from bdphpcprovider import compute
+from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider import storage
 from bdphpcprovider import messages
 
@@ -58,7 +52,6 @@ class Execute(stage.Stage):
     """
     def __init__(self, user_settings=None):
         self.numbfile = 0
-        self.job_dir = "hrmcrun"
         logger.debug("Execute stage initialized")
 
     def is_triggered(self, run_settings):
@@ -117,10 +110,10 @@ class Execute(stage.Stage):
         return False
 
     def process(self, run_settings):
-
         logger.debug("processing execute stage")
         local_settings = getvals(run_settings, models.UserProfile.PROFILE_SCHEMA_NS)
-        self.retrieve_boto_settings(run_settings, local_settings)
+        #self.retrieve_boto_settings(run_settings, local_settings)
+        self.set_execute_settings(run_settings, local_settings)
 
 
         self.contextid = getval(run_settings, '%s/system/contextid' % RMIT_SCHEMA)
@@ -147,20 +140,6 @@ class Execute(stage.Stage):
         except (SettingNotFoundException, ValueError):
             logger.warn("setting initial_numbfile for first iteration")
             self.initial_numbfile = 1
-
-        try:
-            self.rand_index = int(getval(run_settings, '%s/stages/run/rand_index'))
-            # self.rand_index = int(smartconnector.get_existing_key(run_settings,
-                # 'http://rmit.edu.au/schemas/stages/run/rand_index'))
-        except (SettingNotFoundException, ValueError):
-            logger.warn("setting rand_index for first iteration")
-            try:
-                self.rand_index = int(getval(run_settings, '%s/input/hrmc/iseed' % RMIT_SCHEMA))#fixme: consider removing reference to iseed
-            except (SettingNotFoundException, ValueError):
-                self.rand_index = 0
-        logger.debug("rand_index=%s" % self.rand_index)
-
-
         try:
             self.experiment_id = int(getval(run_settings, '%s/input/mytardis/experiment_id' % RMIT_SCHEMA))
             # self.experiment_id = int(smartconnector.get_existing_key(run_settings,
@@ -187,7 +166,7 @@ class Execute(stage.Stage):
         if self.input_exists(run_settings):
             if not failed_processes:
                 self.prepare_inputs(
-                    local_settings, output_storage_settings, comp_pltf_settings, mytardis_settings)
+                    local_settings, output_storage_settings, comp_pltf_settings, mytardis_settings, run_settings)
             else:
                 self._copy_previous_inputs(
                     local_settings, output_storage_settings,
@@ -248,63 +227,13 @@ class Execute(stage.Stage):
 
                     # len(self.exec_procs) - len(completed_processes),
                 '%s/stages/run/initial_numbfile' % RMIT_SCHEMA: self.initial_numbfile,
-                '%s/stages/run/rand_index' % RMIT_SCHEMA: self.rand_index,
+                '%s/stages/run/rand_index' % RMIT_SCHEMA: self.rand_index, #fixme remove rand_index
                 '%s/input/mytardis/experiment_id' % RMIT_SCHEMA: str(self.experiment_id)
                 })
-
-
         return run_settings
 
     def run_task(self, ip_address, process_id, settings, run_settings):
-        """
-            Start the task on the instance, then hang and
-            periodically check its state.
-        """
-        logger.debug("run_task %s" % ip_address)
-        #ip = botocloudconnector.get_instance_ip(instance_id, settings)
-        ip = ip_address
-        logger.debug("ip=%s" % ip)
-        # curr_username = settings['username']
-        settings['username'] = 'root'
-        # ssh = sshconnector.open_connection(ip_address=ip,
-        #                                    settings=settings)
-        # settings['username'] = curr_username
-
-        #relative_path = settings['type'] + '@' + settings['payload_destination'] + "/" + process_id
-        relative_path_suffix = self.get_relative_output_path(settings)
-        relative_path = settings['type'] + '@' + os.path.join(relative_path_suffix, process_id)
-        destination = get_url_with_pkey(settings,
-            relative_path,
-            is_relative_path=True,
-            ip_address=ip)
-        makefile_path = storage.get_make_path(destination)
-        try:
-            ssh = open_connection(ip_address=ip, settings=settings)
-            command, errs = compute.run_make(ssh,
-                                             makefile_path,
-                                             'startrun IDS=%s' % (
-                                                settings['filename_for_PIDs']))
-        except Exception, e:
-            logger.error(e)
-        finally:
-            if ssh:
-                ssh.close()
-
-        # command = "cd %s; make -f Makefile %s" % (makefile_path, 'startrun IDS=%s' % (
-        #                               settings['filename_for_PIDs']))
-        # logger.debug('command_exec=%s' % command)
-        # command_out = ''
-        # errs = ''
-        # logger.debug("starting command for %s" % ip)
-        # try:
-        #     ssh = sshconnector.open_connection(ip_address=ip, settings=settings)
-        #     command_out, errs = sshconnector.run_command_with_status(ssh, command)
-        # except Exception, e:
-        #     logger.error(e)
-        # finally:
-        #     if ssh:
-        #         ssh.close()
-        # logger.debug("command_out2=(%s, %s)" % (command_out, errs))
+        pass
 
     def run_multi_task(self, settings, run_settings):
         """
@@ -351,7 +280,7 @@ class Execute(stage.Stage):
         return all_pids
 
     def prepare_inputs(self, local_settings, output_storage_settings,
-                        computation_platform_settings, mytardis_settings):
+                        computation_platform_settings, mytardis_settings, run_settings):
         """
         Upload all input files for this run
         """
@@ -375,11 +304,11 @@ class Execute(stage.Stage):
             logger.debug("Input dir %s" % input_dir)
             self.upload_variation_inputs(
                 local_settings, self.generate_variations(
-                    input_dir, local_settings, output_storage_settings),
+                    input_dir, local_settings, output_storage_settings, run_settings),
                 processes, input_dir, output_storage_settings,
                 computation_platform_settings, mytardis_settings)
 
-    def generate_variations(self, input_dir, local_settings, output_storage_settings):
+    def generate_variations(self, input_dir, local_settings, output_storage_settings, run_settings):
         """
         For each templated file in input_dir, generate all variations
         """
@@ -395,9 +324,7 @@ class Execute(stage.Stage):
 
         variations = {}
         # TODO: only tested with single template file per input
-        # TODO: child_package should be link to current class not hardcoded
-        child_package = "bdphpcprovider.corestages.execute.Execute"
-        parent_stage = hrmcstages.get_parent_stage(child_package, local_settings)
+        parent_stage = self.import_parent_stage(run_settings)
 
         for fname in input_files:
             logger.debug("trying %s/%s/%s" % (self.iter_inputdir, input_dir,
@@ -439,7 +366,7 @@ class Execute(stage.Stage):
                     # of values...
 
                 map, self.rand_index = parent_stage.get_run_map(local_settings,
-                                       rand_index=self.rand_index)
+                                       run_settings=run_settings)
 
                 if not template_mat.groups():
                     logger.info("found odd template matching file %s" % fname)
@@ -501,6 +428,10 @@ class Execute(stage.Stage):
                 logger.debug("%d files created" % (temp_num))
             return res
 
+    def curate_data(self, local_settings, output_storage_settings,
+                    mytardis_settings, source_files_url):
+        pass
+
     def upload_variation_inputs(self, local_settings, variations, processes,
                                  input_dir, output_storage_settings,
                                  computation_platform_settings, mytardis_settings):
@@ -510,81 +441,17 @@ class Execute(stage.Stage):
         logger.debug("upload_variation_inputs")
         output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
                                     output_storage_settings['type'])
-        output_host = output_storage_settings['host']
         source_files_url = get_url_with_pkey(
             output_storage_settings, output_prefix + os.path.join(
                 self.iter_inputdir, input_dir),
             is_relative_path=False)
 
         logger.debug('source_files_url=%s' % source_files_url)
-        #file://127.0.0.1/sweephrmc261/hrmcrun262/input_0/initial
-        #file://127.0.0.1/sweephrmc261/hrmcrun262/input_0/initial?root_path=/var/cloudenabling/remotesys
         # Copy input directory to mytardis only after saving locally, so if
         # something goes wrong we still have the results
         if local_settings['curate_data']:
-            if mytardis_settings['mytardis_host']:
-                EXP_DATASET_NAME_SPLIT = 2
-
-                def _get_exp_name_for_input(settings, url, path):
-                    return str(os.sep.join(path.split(os.sep)[:-EXP_DATASET_NAME_SPLIT]))
-
-                def _get_dataset_name_for_input(settings, url, path):
-                    logger.debug("path=%s" % path)
-
-                    source_url = get_url_with_pkey(
-                        output_storage_settings,
-                        output_prefix + os.path.join(output_host, path, "HRMC.inp_values"),
-                        is_relative_path=False)
-                    logger.debug("source_url=%s" % source_url)
-                    try:
-                        content = storage.get_file(source_url)
-                    except IOError:
-                        return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
-
-                    logger.debug("content=%s" % content)
-                    try:
-                        values_map = dict(json.loads(str(content)))
-                    except Exception, e:
-                        logger.warn("cannot load %s: %s" % (content, e))
-                        return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
-
-                    try:
-                        iteration = str(path.split(os.sep)[-2:-1][0])
-                    except Exception, e:
-                        logger.error(e)
-                        iteration = ""
-
-                    if "_" in iteration:
-                        iteration = iteration.split("_")[1]
-                    else:
-                        iteration = "initial"
-
-                    if 'run_counter' in values_map:
-                        run_counter = values_map['run_counter']
-                    else:
-                        run_counter = 0
-
-                    dataset_name = "%s_%s" % (iteration,
-                        run_counter)
-                    logger.debug("dataset_name=%s" % dataset_name)
-                    return dataset_name
-
-                # FIXME: better to create experiment_paramsets
-                # later closer to when corresponding datasets are created, but
-                # would required PUT of paramerset data to existing experiment.
-                #fixme uncomment later
-                local_settings.update(mytardis_settings)
-                self.experiment_id = mytardis.create_dataset(
-                    settings=local_settings,
-                    source_url=source_files_url,
-                    exp_id=self.experiment_id,
-                    exp_name=_get_exp_name_for_input,
-                    dataset_name=_get_dataset_name_for_input,
-                    experiment_paramset=[],
-                    dataset_paramset=[
-                        mytardis.create_paramset('hrmcdataset/input', [])])
-            else:
-                logger.warn("no mytardis host specified")
+            self.curate_data(local_settings, output_storage_settings,
+                             mytardis_settings, source_files_url)
         else:
             logger.warn('Data curation is off')
         #proc_ind = 0
@@ -645,7 +512,6 @@ class Execute(stage.Stage):
                               'PSD', 'PSD.f', 'PSD_exp.dat', 'PSD.inp',
                               'Makefile', 'running.sh',
                               'process_scheduledone.sh', 'process_schedulestart.sh']
-                #hrmcstages.delete_files(dest_files_url, exceptions=exceptions) #FIXme: uncomment as needed
                 storage.copy_directories(source_files_url, dest_files_url)
 
                 if self.reschedule_failed_procs:
@@ -718,70 +584,24 @@ class Execute(stage.Stage):
                 tmp_url = get_url_with_pkey(local_settings, os.path.join("tmp%s" % randsuffix),
                     is_relative_path=True)
                 logger.debug("deleting %s" % tmp_url)
-                #hrmcstages.delete_files(u
 
-
-
-    def retrieve_boto_settings(self, run_settings, local_settings):
+    def set_execute_settings(self, run_settings, local_settings):
         self.set_domain_settings(run_settings, local_settings)
-        stage.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/stages/setup/payload_destination')
-        stage.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/stages/setup/filename_for_PIDs')
-        stage.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/system/platform')
-        #stage.copy_settings(local_settings, run_settings,
-        #    'http://rmit.edu.au/schemas/stages/create/custom_prompt')
-        stage.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/stages/run/payload_cloud_dirname')
-        stage.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/system/max_seed_int')
-        stage.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/stages/run/compile_file')
-        stage.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/stages/run/retry_attempts')
-        #stage.copy_settings(local_settings, run_settings,
-        #    'http://rmit.edu.au/schemas/input/system/cloud/number_vm_instances')
-
-        stage.copy_settings(local_settings, run_settings,
-        '%s/system/contextid' % RMIT_SCHEMA)
-
-        stage.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/system/random_numbers')
-
-        stage.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/system/max_seed_int')
-        stage.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/system/random_numbers')
-        stage.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/system/id')
+        update(local_settings, run_settings,
+               '%s/stages/setup/payload_destination' % RMIT_SCHEMA,
+               '%s/stages/setup/filename_for_PIDs' % RMIT_SCHEMA,
+               '%s/stages/run/payload_cloud_dirname' % RMIT_SCHEMA,
+               '%s/stages/run/compile_file' % RMIT_SCHEMA,
+               '%s/stages/run/retry_attempts' % RMIT_SCHEMA,
+               '%s/system/contextid' % RMIT_SCHEMA,
+               '%s/system/random_numbers' % RMIT_SCHEMA,
+               '%s/system/id' % RMIT_SCHEMA
+        )
         try:
-            local_settings['curate_data'] = run_settings['http://rmit.edu.au/schemas/input/mytardis']['curate_data']
-        except KeyError:
+            local_settings['curate_data'] = getval(run_settings, '%s/input/mytardis/curate_data' % RMIT_SCHEMA)
+        except SettingNotFoundException:
             local_settings['curate_data'] = 0
-        local_settings['bdp_username'] = run_settings[
-            RMIT_SCHEMA + '/bdp_userprofile']['username']
-
-        logger.debug('retrieve completed %s' % pformat(local_settings))
-
-    def set_domain_settings(self, run_settings, local_settings):
-        stage.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/input/hrmc/iseed')
-        stage.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/input/hrmc/optimisation_scheme')
-        stage.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/input/hrmc/threshold')
-        stage.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/input/hrmc/pottype')
-        stage.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/input/hrmc/fanout_per_kept_result')
-        stage.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/input/hrmc/optimisation_scheme')
-        stage.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/input/hrmc/threshold')
-        stage.copy_settings(local_settings, run_settings,
-            'http://rmit.edu.au/schemas/input/hrmc/pottype')
-
+        local_settings['bdp_username'] = getval(run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA )
 
 
 

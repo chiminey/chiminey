@@ -113,6 +113,26 @@ class Stage(object):
             pass
         return ""
 
+    def import_parent_stage(self, run_settings):
+        from bdphpcprovider.smartconnectorscheduler import hrmcstages
+        from django.core.exceptions import ImproperlyConfigured
+        directive_name = getval(run_settings, "http://rmit.edu.au/schemas/directive_profile/directive_name")
+        directive = models.Directive.objects.get(name=directive_name)
+        logger.debug('directive_name=%s' % directive_name)
+        parent_stage = directive.stage
+        try:
+            logger.debug('parent_package=%s' % (parent_stage.package))
+            stage = hrmcstages.safe_import(parent_stage.package, [],
+                                           {})
+            logger.debug("stage=%s" % stage)
+            return stage
+        except ImproperlyConfigured, e:
+            logger.debug("Except in import of stage: %s: %s" % (parent_stage.name, e))
+            raise
+        except Exception, e:
+            logger.error(e)
+            raise
+
 
     @deprecated
     def _exists(self, context, *parts):

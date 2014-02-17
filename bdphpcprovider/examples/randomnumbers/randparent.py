@@ -20,13 +20,14 @@
 
 
 import logging
-from bdphpcprovider.smartconnectorscheduler.stages.composite import ParallelStage
+
+from bdphpcprovider.corestages.parent import Parent
 
 
 logger = logging.getLogger(__name__)
 
 
-class RandParent(ParallelStage):
+class RandParent(Parent):
     def get_run_map(self, settings, **kwargs):
         rand_index = 42
         map = {'val': [1]}

@@ -63,7 +63,7 @@ class RandInitial(CoreInitial):
             name="randexecute",
             package=execute_package,
             parent=self.define_parent_stage(),
-            defaults={'description': "Rand execute stage", 'order': 11})
+            defaults={'description': "This is the rand execute stage", 'order': 11})
         execute_stage.update_settings(
             {
             u'http://rmit.edu.au/schemas/stages/run':
