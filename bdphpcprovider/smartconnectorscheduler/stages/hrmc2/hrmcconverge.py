@@ -49,6 +49,27 @@ ERRGR_COLUMN_NUM = 28
 
 class HRMCConverge(converge.Converge):
 
+    def input_valid(self, settings_to_test):
+        """ Return a tuple, where the first element is True settings_to_test
+        are syntactically and semantically valid for this stage.  Otherwise,
+        return False with the second element in the tuple describing the
+        problem
+        """
+        error = []
+        try:
+            int(getval(settings_to_test, '%s/input/hrmc/max_iteration' % RMIT_SCHEMA))
+        except (ValueError, SettingNotFoundException):
+            error.append("Cannot load max_iteration")
+
+        try:
+            float(getval(settings_to_test, '%s/input/hrmc/error_threshold' % RMIT_SCHEMA))
+        except (SettingNotFoundException, ValueError):
+            error.append("Cannot load error threshold")
+
+        if error:
+            return (False, '. '.join(error))
+        return (True, "ok")
+
     def curate_dataset(self, run_settings, experiment_id, base_dir, output_url, all_settings):
 
         iteration = int(getval(run_settings, '%s/system/id' % RMIT_SCHEMA))
@@ -237,13 +258,15 @@ class HRMCConverge(converge.Converge):
 
                 for m, node_dir in enumerate(node_output_dirnames):
                     node_path = os.path.join(iter_output_dir, node_dir)
+                    logger.debug("node_path=%s" % node_path)
 
                     #FIXME: this calculation should be done as in extract_psd_func
                     # pulling directly from data_errors rather than passing in
                     # through nested function.
                     dataerrors_url = get_url_with_pkey(all_settings,
-                        os.path.join(node_dir, DATA_ERRORS_FILE),
+                        os.path.join(node_path, DATA_ERRORS_FILE),
                         is_relative_path=False)
+                    logger.debug("dataerrors_url=%s" % dataerrors_url)
                     dataerrors_content = storage.get_file(dataerrors_url)
                     xs = []
                     ys = []
@@ -286,7 +309,7 @@ class HRMCConverge(converge.Converge):
                         hrmcdset_val = {}
 
                     source_url = get_url_with_pkey(
-                        all_settings, node_dir, is_relative_path=False)
+                        all_settings, node_path, is_relative_path=False)
                     logger.debug("source_url=%s" % source_url)
 
                     # TODO: move into utiltiy function for reuse
@@ -374,12 +397,12 @@ class HRMCConverge(converge.Converge):
                         return res
                     #todo: replace self.boto_setttings with mytardis_settings
 
-                    self.experiment_id = mytardis.create_dataset(
+                    experiment_id = mytardis.create_dataset(
                         settings=all_settings,
                         source_url=source_url,
                         exp_name=get_exp_name_for_output,
                         dataset_name=get_dataset_name_for_output,
-                        exp_id=self.experiment_id,
+                        exp_id=experiment_id,
                         experiment_paramset=graph_paramset,
                         dataset_paramset=[
                             mytardis.create_paramset('hrmcdataset/output', []),
@@ -424,17 +447,18 @@ class HRMCConverge(converge.Converge):
                 logger.warn("no mytardis host specified")
         else:
             logger.warn('Data curation is off')
+        return experiment_id
 
-    def process_outputs(self, run_settings, base_dir, output_url, all_settings):
+    def process_outputs(self, run_settings, base_dir, input_url, all_settings):
 
         id = int(getval(run_settings, '%s/system/id' % RMIT_SCHEMA))
-        iter_output_dir = os.path.join(os.path.join(base_dir, "output_%s" % id))
+        iter_output_dir = os.path.join(os.path.join(base_dir, "input_%s" % (id + 1)))
         output_prefix = '%s://%s@' % (all_settings['scheme'],
                                     all_settings['type'])
         iter_output_dir = "%s%s" % (output_prefix, iter_output_dir)
 
-        (scheme, host, iter_output_path, location, query_settings) = storage.parse_bdpurl(output_url)
-        iter_out_fsys = storage.get_filesystem(output_url)
+        (scheme, host, iter_output_path, location, query_settings) = storage.parse_bdpurl(input_url)
+        iter_out_fsys = storage.get_filesystem(input_url)
 
         input_dirs, _ = iter_out_fsys.listdir(iter_output_path)
 
@@ -450,6 +474,7 @@ class HRMCConverge(converge.Converge):
         logger.debug("input_dirs=%s" % input_dirs)
         for input_dir in input_dirs:
             node_path = os.path.join(iter_output_dir, input_dir)
+            logger.debug('node_path= %s' % node_path)
 
             # Retrieve audit file
 
@@ -505,6 +530,12 @@ class HRMCConverge(converge.Converge):
         except (ValueError, SettingNotFoundException):
             raise BadInputException("unknown max_iteration")
         logger.debug("max_iteration=%s" % max_iteration)
+
+        try:
+            self.error_threshold = float(getval(run_settings, '%s/input/hrmc/error_threshold' % RMIT_SCHEMA))
+        except (SettingNotFoundException, ValueError):
+            raise BadInputException("uknown error threshold")
+        logger.debug("error_threshold=%s" % self.error_threshold)
 
         if self.id >= (max_iteration - 1):
             logger.debug("Max Iteration Reached %d " % self.id)

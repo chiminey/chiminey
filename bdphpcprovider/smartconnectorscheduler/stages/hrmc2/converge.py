@@ -70,30 +70,23 @@ class Converge(Stage):
 
     def process(self, run_settings):
 
-        try:
-            self.error_threshold = float(getval(run_settings, '%s/input/hrmc/error_threshold' % RMIT_SCHEMA))
-        except (SettingNotFoundException, ValueError):
-            pass  # FIXME: is this an error condition?
-
-        logger.debug("error_threshold=%s" % self.error_threshold)
-
         def retrieve_local_settings(run_settings, local_settings):
 
-            update(local_settings, run_settings,
-                    '%s/stages/setup/payload_source' % RMIT_SCHEMA,
-                    '%s/stages/setup/payload_destination' % RMIT_SCHEMA,
-                    '%s/system/platform' % RMIT_SCHEMA,
-                    '%s/stages/create/custom_prompt' % RMIT_SCHEMA,
-                    '%s/stages/create/cloud_sleep_interval' % RMIT_SCHEMA,
-                    '%s/stages/create/created_nodes' % RMIT_SCHEMA,
-                    '%s/stages/run/payload_cloud_dirname' % RMIT_SCHEMA,
-                    '%s/system/max_seed_int' % RMIT_SCHEMA,
-                    '%s/stages/run/compile_file' % RMIT_SCHEMA,
-                    '%s/stages/run/retry_attempts' % RMIT_SCHEMA,
-                    '%s/input/system/cloud/number_vm_instances' % RMIT_SCHEMA,
-                    '%s/input/hrmc/iseed' % RMIT_SCHEMA,
-                    '%s/input/hrmc/optimisation_scheme' % RMIT_SCHEMA,
-                    '%s/input/hrmc/threshold' % RMIT_SCHEMA,
+            update(local_settings, run_settings
+                    # '%s/stages/setup/payload_source' % RMIT_SCHEMA,
+                    # '%s/stages/setup/payload_destination' % RMIT_SCHEMA,
+                    # '%s/system/platform' % RMIT_SCHEMA,
+                    # # '%s/stages/create/custom_prompt' % RMIT_SCHEMA,
+                    # # '%s/stages/create/cloud_sleep_interval' % RMIT_SCHEMA,
+                    # # '%s/stages/create/created_nodes' % RMIT_SCHEMA,
+                    # '%s/stages/run/payload_cloud_dirname' % RMIT_SCHEMA,
+                    # '%s/system/max_seed_int' % RMIT_SCHEMA,
+                    # '%s/stages/run/compile_file' % RMIT_SCHEMA,
+                    # '%s/stages/run/retry_attempts' % RMIT_SCHEMA,
+                    # '%s/input/system/cloud/number_vm_instances' % RMIT_SCHEMA,
+                    # '%s/input/hrmc/iseed' % RMIT_SCHEMA,
+                    # '%s/input/hrmc/optimisation_scheme' % RMIT_SCHEMA,
+                    # '%s/input/hrmc/threshold' % RMIT_SCHEMA,
             )
             local_settings['bdp_username'] = getval(run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA)
 
@@ -153,21 +146,21 @@ class Converge(Stage):
             #                             output_storage_settings['type'])
             # new_output_dir = os.path.join(base_dir, 'output')
 
-            # source_url = get_url_with_pkey(output_storage_settings,
-            #     output_prefix + os.path.join(self.output_dir), is_relative_path=False)
-            # dest_url = get_url_with_pkey(output_storage_settings,
-            #     output_prefix + os.path.join(new_output_dir), is_relative_path=False)
-
             output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
                                     output_storage_settings['type'])
 
             # get source url
-            iter_output_dir = os.path.join(os.path.join(job_dir, "output_%s" % id))
+            iter_output_dir = os.path.join(os.path.join(job_dir, "output_%s" % self.id))
 
             source_url = "%s%s" % (output_prefix, iter_output_dir)
             # get dest url
             new_output_dir = os.path.join(job_dir, 'output')
             dest_url = "%s%s" % (output_prefix, new_output_dir)
+
+            source_url = get_url_with_pkey(output_storage_settings,
+                output_prefix + os.path.join(iter_output_dir), is_relative_path=False)
+            dest_url = get_url_with_pkey(output_storage_settings,
+                output_prefix + os.path.join(new_output_dir), is_relative_path=False)
 
             storage.copy_directories(source_url, dest_url)
 
@@ -182,6 +175,7 @@ class Converge(Stage):
                 all_settings = dict(mytardis_settings)
                 all_settings.update(output_storage_settings)
 
+                logger.debug("source_url=%s" % source_url)
                 self.experiment_id = self.curate_dataset(run_settings, self.experiment_id,
                                                          job_dir, source_url,
                                                          all_settings)

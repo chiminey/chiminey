@@ -133,9 +133,11 @@ class HRMCInitial(CoreInitial):
             das, _ = models.DirectiveArgSet.objects.get_or_create(
                 directive=new_directive, order=i, schema=schema)
 
-
     def define_sweep_stage(self, subdirective):
-        sweep_stage = super(HRMCInitial, self).define_sweep_stage(subdirective)
+        sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep_%s" % subdirective.name,
+            description="Sweep for %s" % subdirective.name,
+            package="bdphpcprovider.corestages.sweep.HRMCSweep",
+            order=100)
         sweep_stage.update_settings(
                                     {
             u'http://rmit.edu.au/schemas/stages/sweep':
