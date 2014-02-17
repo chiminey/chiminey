@@ -80,26 +80,14 @@ class Parent(Stage):
         run_settings[u'http://rmit.edu.au/schemas/stages/parallel/testing'][u'index'] = self.parallel_index
         return run_settings
 
-
     def get_run_map(self, settings, **kwargs):
-        return {}, kwargs
+        rand_index = 42
+        map = {'val': [1]}
+        logger.debug('map=%s' % map)
+        return map, rand_index
 
     def get_total_templates(self, maps, **kwargs):
-        for iter, template_map in enumerate(maps):
-            logger.debug("template_map=%s" % template_map)
-            total_templates = 0
-            # ensure ordering of the template_map entries
-            map_keys = template_map.keys()
-            logger.debug("map_keys %s" % map_keys)
-            map_ranges = [list(template_map[x]) for x in map_keys]
-            product = 1
-            for i in map_ranges:
-                product = product * len(i)
-            total_templates = product
-            #for z in product(*map_ranges):
-            #    total_templates += 1
-            logger.debug("total_templates=%d" % (total_templates))
-        return total_templates
+        return 1
 
 
 

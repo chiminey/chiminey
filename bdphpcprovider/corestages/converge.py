@@ -104,8 +104,8 @@ class Converge(Stage):
         job_dir = manage.get_job_dir(output_storage_settings, offset)
 
         # get mytardis
-        mytardis_url = getval(run_settings, '%s/input/mytardis/mytardis_platform' % RMIT_SCHEMA)
-        mytardis_settings = manage.get_platform_settings(mytardis_url, bdp_username)
+        #mytardis_url = getval(run_settings, '%s/input/mytardis/mytardis_platform' % RMIT_SCHEMA)
+        #mytardis_settings = manage.get_platform_settings(mytardis_url, bdp_username)
 
         # setup new paths
         try:
@@ -165,8 +165,10 @@ class Converge(Stage):
             storage.copy_directories(source_url, dest_url)
 
             # curate
-
-            curate_data = getval(run_settings, '%s/input/mytardis/curate_data' % RMIT_SCHEMA)
+            try:
+                curate_data = getval(run_settings, '%s/input/mytardis/curate_data' % RMIT_SCHEMA)
+            except SettingNotFoundException:
+                curate_data = 0
             if curate_data:
 
                 mytardis_url = getval(run_settings, '%s/input/mytardis/mytardis_platform' % RMIT_SCHEMA)
@@ -378,9 +380,12 @@ class Converge(Stage):
 
     def process_outputs(self, run_settings, base_dir, output_url, all_settings):
         logger.debug("default process_outputs")
+
         return (True, '')
 
     def curate_dataset(self, run_settings, experiment_id, base_dir,
                        output_url, all_settings):
+
         logger.debug("default curate_dataset")
+
         return 0
