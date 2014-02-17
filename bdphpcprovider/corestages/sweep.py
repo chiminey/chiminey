@@ -510,31 +510,31 @@ class RemoteMakeSweep(Sweep):
 
 
 class HRMCSweep(Sweep):
+    pass
+    # def get_initial_experiment(self, run_settings):
 
-    def get_initial_experiment(self, run_settings):
+    #     # mytardis
+    #     try:
+    #         subdirective = getval(run_settings, '%s/stages/sweep/directive' % RMIT_SCHEMA)
+    #     except SettingNotFoundException:
+    #         logger.warn("cannot find subdirective name")
+    #         subdirective = ''
+    #     try:
+    #         experiment_id = int(getval(run_settings, '%s/input/mytardis/experiment_id' % RMIT_SCHEMA))
+    #     except SettingNotFoundException:
+    #         experiment_id = 0
+    #     except ValueError:
+    #         experiment_id = 0
 
-        # mytardis
-        try:
-            subdirective = getval(run_settings, '%s/stages/sweep/directive' % RMIT_SCHEMA)
-        except SettingNotFoundException:
-            logger.warn("cannot find subdirective name")
-            subdirective = ''
-        try:
-            experiment_id = int(getval(run_settings, '%s/input/mytardis/experiment_id' % RMIT_SCHEMA))
-        except SettingNotFoundException:
-            experiment_id = 0
-        except ValueError:
-            experiment_id = 0
+    #     if subdirective == "hrmc":
+    #         experiment_id = post_mytardis_exp(
+    #             run_settings=run_settings,
+    #             experiment_id=experiment_id,
+    #             output_location=self.scratch_platform)
+    #     else:
+    #         logger.warn("cannot find subdirective name")
 
-        if subdirective == "hrmc":
-            experiment_id = post_mytardis_exp(
-                run_settings=run_settings,
-                experiment_id=experiment_id,
-                output_location=self.scratch_platform)
-        else:
-            logger.warn("cannot find subdirective name")
-
-        return experiment_id
+    #     return experiment_id
 
 
 def post_mytardis_exp(run_settings,

@@ -358,11 +358,12 @@ class Configure(Stage):
                 def _get_exp_name_for_input(path):
                     return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
 
+                logger.debug("location=%s" % location)
                 ename = _get_exp_name_for_input(location)
                 logger.debug("ename=%s" % ename)
-                self.experiment_id = mytardis.create_experiment(
+                experiment_id = mytardis.create_experiment(
                     settings=mytardis_settings,
-                    exp_id=self.experiment_id,
+                    exp_id=experiment_id,
                     expname=ename,
                     experiment_paramset=[
                         mytardis.create_paramset("hrmcexp", []),
