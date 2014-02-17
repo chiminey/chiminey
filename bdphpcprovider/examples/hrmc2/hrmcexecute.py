@@ -45,6 +45,7 @@ class HRMCExecute(Execute):
                '%s/input/hrmc/pottype' % RMIT_SCHEMA,
                '%s/system/max_seed_int' % RMIT_SCHEMA,)
 
+    '''
     def run_task(self, ip_address, process_id, settings, run_settings):
         """
             Start the task on the instance, then hang and
@@ -73,6 +74,7 @@ class HRMCExecute(Execute):
             command, errs = run_make(ssh, makefile_path, 'startrun IDS=%s' % (settings['filename_for_PIDs']))
         finally:
             ssh.close()
+    '''
 
     def curate_data(self, local_settings, output_storage_settings,
                     mytardis_settings, source_files_url):
