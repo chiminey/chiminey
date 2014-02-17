@@ -26,7 +26,7 @@ from bdphpcprovider.corestages.stage import Stage
 logger = logging.getLogger(__name__)
 
 
-class ParallelStage(Stage):
+class Parent(Stage):
     """
         A list of corestages
     """

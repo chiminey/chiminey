@@ -54,7 +54,7 @@ class Command(BaseCommand):
 
 class HRMCInitial(CoreInitial):
     def define_parent_stage(self):
-        hrmc_parallel_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc_composite.HRMCParallelStage"
+        hrmc_parallel_package = "bdphpcprovider.examples.hrmc2.hrmcparent.HRMCParent"
         hrmc_composite_stage, _ = models.Stage.objects.get_or_create(name=self.get_parent_name(),
             description="Encapsultes HRMC smart connector workflow",
             package=hrmc_parallel_package,
@@ -87,7 +87,12 @@ class HRMCInitial(CoreInitial):
         return wait_stage
 
     def define_execute_stage(self):
-        execute_stage = super(HRMCInitial, self).define_execute_stage()
+        execute_package = "bdphpcprovider.examples.hrmc2.hrmcexecute.HRMCExecute"
+        execute_stage, _ = models.Stage.objects.get_or_create(name="hrmcexecute",
+            description="This is the HRMC execute stage",
+            parent=self.define_parent_stage(),
+            package=execute_package,
+            order=30)
         execute_stage.update_settings(
             {
             u'http://rmit.edu.au/schemas/stages/run':
@@ -100,7 +105,7 @@ class HRMCInitial(CoreInitial):
         return execute_stage
 
     def define_transform_stage(self):
-        transform_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc2.hrmctransform.HRMCTransform"
+        transform_package = "bdphpcprovider.examples.hrmc2.hrmctransform.HRMCTransform"
         transform_stage, _ = models.Stage.objects.get_or_create(name="hrmctransform",
             description="This is the transform stage of HRMC",
             parent=self.define_parent_stage(),
@@ -110,7 +115,7 @@ class HRMCInitial(CoreInitial):
         return transform_stage
 
     def define_converge_stage(self):
-        converge_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc2.hrmcconverge.HRMCConverge"
+        converge_package = "bdphpcprovider.examples.hrmc2.hrmcconverge.HRMCConverge"
         converge_stage, _ = models.Stage.objects.get_or_create(name="hrmcconverge",
             description="This is the converge stage of HRMC",
             parent=self.define_parent_stage(),

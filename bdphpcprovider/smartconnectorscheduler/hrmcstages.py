@@ -786,17 +786,3 @@ def clear_temp_files(context):
 def test_task():
     print "Hello World"
 
-
-
-def get_parent_stage(child_package, settings):
-    parent_obj = models.Stage.objects.get(package=child_package)
-    parent_stage = parent_obj.parent
-    try:
-        logger.debug('parent_package=%s' % (parent_stage.package))
-        stage = safe_import(parent_stage.package, [],
-                                       {'user_settings': settings})
-    except ImproperlyConfigured, e:
-        logger.debug(e)
-        return (False, "Except in import of stage: %s: %s"
-            % (parent_stage.name, e))
-    return stage

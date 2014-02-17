@@ -21,8 +21,6 @@
 import logging
 import os
 
-from django.core.exceptions import ImproperlyConfigured
-from bdphpcprovider.smartconnectorscheduler import models, hrmcstages
 from bdphpcprovider.platform import get_job_dir
 from bdphpcprovider.cloudconnection import is_vm_running, get_registered_vms
 from bdphpcprovider.runsettings import SettingNotFoundException, getval, update
@@ -36,7 +34,6 @@ RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
 
 def set_schedule_settings(run_settings, local_settings):
-    #fixme: the last three should move to hrmc package
     update(local_settings, run_settings,
            '%s/system/contextid' % RMIT_SCHEMA,
             '%s/input/reliability/maximum_retry' % RMIT_SCHEMA,
@@ -44,9 +41,7 @@ def set_schedule_settings(run_settings, local_settings):
             '%s/stages/setup/filename_for_PIDs' % RMIT_SCHEMA,
             '%s/stages/setup/payload_name' % RMIT_SCHEMA,
             '%s/stages/bootstrap/bootstrapped_nodes' % RMIT_SCHEMA,
-            '%s/system/max_seed_int' % RMIT_SCHEMA,
-            '%s/input/hrmc/optimisation_scheme' % RMIT_SCHEMA,
-            '%s/input/hrmc/fanout_per_kept_result' % RMIT_SCHEMA)
+             )
     local_settings['bdp_username'] = getval(run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA)
 
 
@@ -143,27 +138,8 @@ def complete_schedule(schedule_class, local_settings):
 
 
 def start_schedule(schedule_class, run_settings, local_settings):
-    directive_name = getval(run_settings, "http://rmit.edu.au/schemas/directive_profile/directive_name")
-    directive = models.Directive.objects.get(name=directive_name)
-    logger.debug('directive_name=%s' % directive_name)
-    parent_stage = directive.stage
-    logger.debug('parent_stage=%s' % parent_stage)
-    logger.debug("local_settings=%s" % local_settings)
-    logger.debug("run_settings=%s" % run_settings)
-    try:
-        logger.debug('parent_package=%s' % (parent_stage.package))
-        stage = hrmcstages.safe_import(parent_stage.package, [],
-                                       {'user_settings': local_settings})
-        logger.debug("stage=%s" % stage)
-    except ImproperlyConfigured, e:
-        logger.debug(e)
-        return (False, "Except in import of stage: %s: %s"
-            % (parent_stage.name, e))
-    except Exception, e:
-        logger.error(e)
-        raise
-
-    map = stage.get_run_map(local_settings, run_settings=run_settings)
+    parent_stage = schedule_class.import_parent_stage(run_settings)
+    map = parent_stage.get_run_map(local_settings, run_settings=run_settings)
     try:
         isinstance(map, tuple)
         run_map = map[0]
@@ -399,7 +375,7 @@ def update_lookup_table(all_processes, reschedule=False, **kwargs):
         logger.debug(e)
     return all_processes
 
-#todo: check get_total_templates() in composite.py
+#todo: check get_total_templates() in parent.py
 def get_total_templates(maps, **kwargs):
         run_settings = kwargs['run_settings']
         output_storage_settings = kwargs['output_storage_settings']

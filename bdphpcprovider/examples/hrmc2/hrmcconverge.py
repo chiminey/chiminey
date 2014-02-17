@@ -36,7 +36,7 @@ from bdphpcprovider import mytardis
 from bdphpcprovider.runsettings import getval, SettingNotFoundException
 
 
-from . import converge
+from bdphpcprovider.corestages import Converge
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ STEP_COLUMN_NUM = 0
 ERRGR_COLUMN_NUM = 28
 
 
-class HRMCConverge(converge.Converge):
+class HRMCConverge(Converge):
 
     def input_valid(self, settings_to_test):
         """ Return a tuple, where the first element is True settings_to_test
