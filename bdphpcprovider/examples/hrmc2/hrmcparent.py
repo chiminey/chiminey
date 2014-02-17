@@ -21,11 +21,12 @@
 
 import logging
 import ast
-
+import os
 from bdphpcprovider.corestages.parent import Parent
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadSpecificationError
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.runsettings import update, getval, SettingNotFoundException
+from bdphpcprovider.storage import get_url_with_pkey, list_dirs
 
 
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
@@ -156,32 +157,26 @@ class HRMCParent(Parent):
             raise BadSpecificationError(message)
         logger.debug('map=%s' % map)
         return map, rand_index
-    '''
-    def get_total_templates(self, maps, **kwargs):
+
+    def get_total_templates(maps, **kwargs):
         run_settings = kwargs['run_settings']
         output_storage_settings = kwargs['output_storage_settings']
         job_dir = kwargs['job_dir']
-
         try:
-            id = getval(run_settings, '%s/system/id' % RMIT_SCHEMA)
-        except SettingNotFoundException as e:
-            logger.error(e)
+            id = int(getval(run_settings,
+                                 '%s/system/id' % RMIT_SCHEMA))
+        except (SettingNotFoundException, ValueError) as e:
+            logger.debug(e)
             id = 0
-        # try:
-        #     id = smartconnector.get_existing_key(
-        #         run_settings, 'http://rmit.edu.au/schemas/system/id')
-        # except KeyError, e:
-        #     logger.error(e)
-        #     id = 0
         iter_inputdir = os.path.join(job_dir, "input_%s" % id)
-        url_with_pkey = stage.get_url_with_pkey(
+        url_with_pkey = get_url_with_pkey(
             output_storage_settings,
             '%s://%s@%s' % (output_storage_settings['scheme'],
                            output_storage_settings['type'],
                             iter_inputdir),
             is_relative_path=False)
         logger.debug(url_with_pkey)
-        input_dirs = storage.list_dirs(url_with_pkey)
+        input_dirs = list_dirs(url_with_pkey)
         for iter, template_map in enumerate(maps):
             logger.debug("template_map=%s" % template_map)
             map_keys = template_map.keys()
@@ -193,5 +188,5 @@ class HRMCParent(Parent):
             total_templates = product * len(input_dirs)
             logger.debug("total_templates=%d" % (total_templates))
         return total_templates
-        '''
+
 

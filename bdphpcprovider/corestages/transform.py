@@ -274,7 +274,10 @@ class Transform(Stage):
         # storage.put_file(audit_url, self.audit)
 
         # curate dataset into mytardis
-        curate_data = getval(run_settings, '%s/input/mytardis/curate_data' % RMIT_SCHEMA)
+        try:
+            curate_data = getval(run_settings, '%s/input/mytardis/curate_data' % RMIT_SCHEMA)
+        except SettingNotFoundException:
+            curate_data = 0
         if curate_data:
 
             mytardis_url = getval(run_settings, '%s/input/mytardis/mytardis_platform' % RMIT_SCHEMA)
@@ -303,7 +306,7 @@ class Transform(Stage):
         # run_settings['http://rmit.edu.au/schemas/stages/transform'][u'transformed'] = 1
         # run_settings['http://rmit.edu.au/schemas/input/mytardis']['experiment_id'] = str(self.experiment_id)
 
-        print "End of Transformation: \n %s" % self.audit
+        #print "End of Transformation: \n %s" % self.audit
 
         return run_settings
 
@@ -399,6 +402,6 @@ class Transform(Stage):
     def curate_dataset(self, run_settings, experiment_id, base_dir, all_settings):
         return 0
 
-    def process_outputs(self, run_settings, base_dir, output_url, output_storage_settings):
+    def process_outputs(self, run_settings, base_dir, output_url, output_storage_settings, offset):
         return
 

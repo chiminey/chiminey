@@ -805,18 +805,20 @@ def make_dynamic_field(parameter, **kwargs):
                 # categories.  Assume only nectar comp platforms ever allowed here.
 
                 if parameter['subtype'] == "platform" and 'directive' in kwargs.keys():
-                    comp_platform = kwargs['directive']['name']
-                    logger.debug("computation platform is %s" % comp_platform)
+                    directive_name = kwargs['directive']['name']
+                    logger.debug("computation platform is %s" % directive_name)
 
                     schema = RMIT_SCHEMA + '/platform/computation/'
-                    if comp_platform == 'sweep':
+                    if directive_name == 'sweep_hrmc':
                         schema += 'cloud/ec2-based'
-                    elif comp_platform == 'sweep_make':
+                    elif directive_name == 'sweep_make':
                         schema += 'cluster/pbs_based'
-                    elif comp_platform == 'sweep_vasp':
+                    elif directive_name == 'sweep_vasp':
                         schema += 'cluster/pbs_based'
-                    elif comp_platform == 'randumnumber':
+                    elif directive_name == 'sweep_random_number':
                         schema += 'cluster/pbs_based'
+                    elif directive_name == 'sweep_random_number2':
+                        schema += 'cloud/ec2-based'
                     else:
                         logger.warn("unknown computation platform")
                 elif parameter['subtype'] == 'mytardis':
