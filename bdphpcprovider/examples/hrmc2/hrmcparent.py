@@ -21,14 +21,12 @@
 
 import logging
 import ast
-import os
 
-from bdphpcprovider.smartconnectorscheduler.stages.composite import ParallelStage
+from bdphpcprovider.corestages.parent import Parent
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadSpecificationError
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
-from bdphpcprovider.runsettings import getval, update, SettingNotFoundException
-from bdphpcprovider import storage
-from bdphpcprovider.corestages import stage
+from bdphpcprovider.runsettings import update, getval, SettingNotFoundException
+
 
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
@@ -36,7 +34,7 @@ RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 logger = logging.getLogger(__name__)
 
 
-class HRMCParallelStage(ParallelStage):
+class HRMCParent(Parent):
     """
         A list of corestages
     """
@@ -53,41 +51,42 @@ class HRMCParallelStage(ParallelStage):
 
     def get_run_map(self, settings, **kwargs):
         local_settings = settings.copy()
+        run_settings = kwargs['run_settings']
+        logger.debug('run_settings=%s' % run_settings)
+        #fixme remove rand index
         try:
-            rand_index = kwargs['rand_index']
-        except KeyError, e:
-            rand_index = 42
-            logger.debug(e)
-        try:
-            run_settings = kwargs['run_settings']
-            logger.debug('run_settings=%s' % run_settings)
+            rand_index = int(getval(run_settings, '%s/stages/run/rand_index' % RMIT_SCHEMA))
+        except SettingNotFoundException:
+            try:
+                rand_index = int(getval(run_settings, '%s/input/hrmc/iseed' % RMIT_SCHEMA))
+            except SettingNotFoundException, e:
+                rand_index = 42
+                logger.debug(e)
+        update(local_settings, run_settings,
+            '%s/input/hrmc/fanout_per_kept_result' % RMIT_SCHEMA,
+            '%s/input/hrmc/optimisation_scheme' % RMIT_SCHEMA,
+            '%s/input/hrmc/threshold' % RMIT_SCHEMA,
+            '%s/input/hrmc/pottype' % RMIT_SCHEMA,
+            '%s/system/max_seed_int' % RMIT_SCHEMA,
+            '%s/system/random_numbers' % RMIT_SCHEMA,
+            '%s/system/id' % RMIT_SCHEMA)
 
-            update(local_settings, run_settings,
-                '%s/input/hrmc/fanout_per_kept_result' % RMIT_SCHEMA,
-                '%s/input/hrmc/optimisation_scheme' % RMIT_SCHEMA,
-                '%s/input/hrmc/threshold' % RMIT_SCHEMA,
-                '%s/input/hrmc/pottype' % RMIT_SCHEMA,
-                '%s/system/max_seed_int' % RMIT_SCHEMA,
-                '%s/system/random_numbers' % RMIT_SCHEMA,
-                '%s/system/id' % RMIT_SCHEMA)
+        # smartconnector.copy_settings(local_settings, run_settings,
+        #     'http://rmit.edu.au/schemas/input/hrmc/fanout_per_kept_result')
+        # smartconnector.copy_settings(local_settings, run_settings,
+        # 'http://rmit.edu.au/schemas/input/hrmc/optimisation_scheme')
+        # smartconnector.copy_settings(local_settings, run_settings,
+        #     'http://rmit.edu.au/schemas/input/hrmc/threshold')
+        # smartconnector.copy_settings(local_settings, run_settings,
+        #     'http://rmit.edu.au/schemas/input/hrmc/pottype')
+        # smartconnector.copy_settings(local_settings, run_settings,
+        #     'http://rmit.edu.au/schemas/system/max_seed_int')
+        # smartconnector.copy_settings(local_settings, run_settings,
+        #     'http://rmit.edu.au/schemas/system/random_numbers')
+        # smartconnector.copy_settings(local_settings, run_settings,
+        #     'http://rmit.edu.au/schemas/system/id')
 
-            # smartconnector.copy_settings(local_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/input/hrmc/fanout_per_kept_result')
-            # smartconnector.copy_settings(local_settings, run_settings,
-            # 'http://rmit.edu.au/schemas/input/hrmc/optimisation_scheme')
-            # smartconnector.copy_settings(local_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/input/hrmc/threshold')
-            # smartconnector.copy_settings(local_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/input/hrmc/pottype')
-            # smartconnector.copy_settings(local_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/system/max_seed_int')
-            # smartconnector.copy_settings(local_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/system/random_numbers')
-            # smartconnector.copy_settings(local_settings, run_settings,
-            #     'http://rmit.edu.au/schemas/system/id')
 
-        except KeyError, e:
-            logger.debug(e)
         logger.debug("local_settings=%s" % local_settings)
         try:
             id = local_settings['id']
