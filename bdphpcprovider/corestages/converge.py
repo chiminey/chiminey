@@ -176,8 +176,10 @@ class Converge(Stage):
                 all_settings.update(output_storage_settings)
 
                 logger.debug("source_url=%s" % source_url)
+                logger.debug("dest_url=%s" % dest_url)
+                logger.debug("job_dir=%s" % job_dir)
                 self.experiment_id = self.curate_dataset(run_settings, self.experiment_id,
-                                                         job_dir, source_url,
+                                                         job_dir, dest_url,
                                                          all_settings)
             else:
                 logger.warn('Data curation is off')
@@ -374,9 +376,11 @@ class Converge(Stage):
         # run_settings['http://rmit.edu.au/schemas/system'][u'id'] = self.id
         return run_settings
 
-        def process_outputs(self, run_settings, base_dir, output_url, all_settings):
-            return
+    def process_outputs(self, run_settings, base_dir, output_url, all_settings):
+        logger.debug("default process_outputs")
+        return (True, '')
 
-        def curate_dataset(self, run_settings, experiment_id, base_dir,
-                           output_url, all_settings):
-            return 0
+    def curate_dataset(self, run_settings, experiment_id, base_dir,
+                       output_url, all_settings):
+        logger.debug("default curate_dataset")
+        return 0
