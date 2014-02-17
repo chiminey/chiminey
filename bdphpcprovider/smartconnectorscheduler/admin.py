@@ -144,7 +144,14 @@ class StageParameterSetAdmin(admin.ModelAdmin):
 
 class ContextAdmin(admin.ModelAdmin):
     model = models.Context
-    list_display = ('owner', 'current_stage')
+
+    list_display = ('owner', 'curr_stage', 'deleted', 'directive')
+
+    def curr_stage(self, obj):
+        return "#%s %s" % (obj.current_stage.id, obj.current_stage.name)
+
+    def directive(self, obj):
+        return "#%s %s" % (obj.directive.id, obj.directive.name)
 
 
 # from datetime import date

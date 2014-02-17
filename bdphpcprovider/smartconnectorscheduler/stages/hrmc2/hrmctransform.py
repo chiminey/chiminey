@@ -40,6 +40,26 @@ DOMAIN_INPUT_FILES = ['input_bo.dat', 'input_gr.dat', 'input_sq.dat']
 
 
 class HRMCTransform(transform.Transform):
+
+    def input_valid(self, settings_to_test):
+        """ Return a tuple, where the first element is True settings_to_test
+        are syntactically and semantically valid for this stage.  Otherwise,
+        return False with the second element in the tuple describing the
+        problem
+        """
+        logger.debug("settings_to_test=%s" % settings_to_test)
+        error = []
+        try:
+            ast.literal_eval(getval(
+                                         settings_to_test,
+                                        '%s/input/hrmc/threshold' % RMIT_SCHEMA))
+        except (ValueError, SettingNotFoundException):
+            error.append("Cannot load threshold")
+
+        if error:
+            return (False, '. '.join(error))
+        return (True, "ok")
+
     def is_triggered(self, run_settings):
         super_trigger = super(HRMCTransform, self).is_triggered(run_settings)
         if super_trigger:
@@ -330,7 +350,7 @@ class HRMCTransform(transform.Transform):
                 # find criterion
                 crit = None  # is there an infinity criterion
                 for ni in self.outputs:
-                    if ni.dir == node_output_dirname:
+                    if ni.dirname == node_output_dirname:
                         crit = ni.criterion
                         break
                 else:
@@ -409,7 +429,8 @@ class HRMCTransform(transform.Transform):
                 EXP_DATASET_NAME_SPLIT = 2
 
                 def get_exp_name_for_output(settings, url, path):
-                    return str(os.sep.join(path.split(os.sep)[:-EXP_DATASET_NAME_SPLIT]))
+                    # return str(os.sep.join(path.split(os.sep)[:-EXP_DATASET_NAME_SPLIT]))
+                    return str(os.sep.join(path.split(os.sep)[-4:-2]))
 
                 def get_dataset_name_for_output(settings, url, path):
                     logger.debug("path=%s" % path)
