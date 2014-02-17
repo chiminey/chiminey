@@ -36,7 +36,6 @@ RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 def set_schedule_settings(run_settings, local_settings):
     update(local_settings, run_settings,
            '%s/system/contextid' % RMIT_SCHEMA,
-            '%s/input/reliability/maximum_retry' % RMIT_SCHEMA,
             '%s/stages/setup/payload_destination' % RMIT_SCHEMA,
             '%s/stages/setup/filename_for_PIDs' % RMIT_SCHEMA,
             '%s/stages/setup/payload_name' % RMIT_SCHEMA,
@@ -47,6 +46,11 @@ def set_schedule_settings(run_settings, local_settings):
 
 def schedule_task(schedule_class, run_settings, local_settings):
     schedule_class.nodes = get_registered_vms(local_settings, node_type='bootstrapped_nodes')
+    try:
+        maximum_retry = getval(run_settings, '%s/input/reliability/maximum_retry' % RMIT_SCHEMA)
+    except SettingNotFoundException:
+        maximum_retry = 0
+    local_settings['maximum_retry'] = maximum_retry
     if schedule_class.procs_2b_rescheduled:
         start_reschedule(schedule_class, run_settings, local_settings)
     else:
@@ -150,7 +154,7 @@ def start_schedule(schedule_class, run_settings, local_settings):
             run_settings, 'http://rmit.edu.au/schemas/platform/storage/output')
     offset = getval(run_settings, '%s/platform/storage/output/offset' % RMIT_SCHEMA)
     job_dir = get_job_dir(output_storage_settings, offset)
-    schedule_class.total_processes = get_total_templates(
+    schedule_class.total_processes = parent_stage.get_total_templates(
         [run_map], run_settings=run_settings,
         output_storage_settings=output_storage_settings, job_dir=job_dir)
     logger.debug('total_processes=%d' % schedule_class.total_processes)
@@ -374,38 +378,6 @@ def update_lookup_table(all_processes, reschedule=False, **kwargs):
     except KeyError, e:
         logger.debug(e)
     return all_processes
-
-#todo: check get_total_templates() in parent.py
-def get_total_templates(maps, **kwargs):
-        run_settings = kwargs['run_settings']
-        output_storage_settings = kwargs['output_storage_settings']
-        job_dir = kwargs['job_dir']
-        try:
-            id = int(getval(run_settings,
-                                 '%s/system/id' % RMIT_SCHEMA))
-        except (SettingNotFoundException, ValueError) as e:
-            logger.debug(e)
-            id = 0
-        iter_inputdir = os.path.join(job_dir, "input_%s" % id)
-        url_with_pkey = get_url_with_pkey(
-            output_storage_settings,
-            '%s://%s@%s' % (output_storage_settings['scheme'],
-                           output_storage_settings['type'],
-                            iter_inputdir),
-            is_relative_path=False)
-        logger.debug(url_with_pkey)
-        input_dirs = list_dirs(url_with_pkey)
-        for iter, template_map in enumerate(maps):
-            logger.debug("template_map=%s" % template_map)
-            map_keys = template_map.keys()
-            logger.debug("map_keys %s" % map_keys)
-            map_ranges = [list(template_map[x]) for x in map_keys]
-            product = 1
-            for i in map_ranges:
-                product = product * len(i)
-            total_templates = product * len(input_dirs)
-            logger.debug("total_templates=%d" % (total_templates))
-        return total_templates
 
 
 def _is_schedule_complete(ip, settings, destination):

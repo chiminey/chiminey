@@ -387,6 +387,19 @@ class Command(BaseCommand):
                 u'computation_platform': {'type':models.ParameterName.STRLIST, 'subtype':'platform', 'initial': '', 'description':'Computation Platform Name', 'ranking':0, 'help_text':'The name of the computation platform to be used'},
                 }
                 ],
+            u'http://rmit.edu.au/schemas/input/system/compplatform/cloud/ec2-based':
+                [u'Computation Platform',
+                {
+                u'computation_platform': {'type':models.ParameterName.STRLIST, 'subtype':'platform', 'initial': '', 'description':'Computation Platform Name', 'ranking':0, 'help_text':'The name of the computation platform to be used'},
+                }
+                ],
+            u'http://rmit.edu.au/schemas/input/system/compplatform/cluster/pbs_based':
+                [u'Computation Platform',
+                {
+                u'computation_platform': {'type':models.ParameterName.STRLIST, 'subtype':'platform', 'initial': '', 'description':'Computation Platform Name', 'ranking':0, 'help_text':'The name of the computation platform to be used'},
+                }
+                ],
+
             u'http://rmit.edu.au/schemas/input/system/cloud':
                 [u'Cloud Resources',
                 {
@@ -641,20 +654,20 @@ class Command(BaseCommand):
 
         logger.debug("local_filesys_rootpath=%s" % local_filesys_rootpath)
 
-        self.define_helloworld(local_filesys_rootpath)
-        self.define_copydir(local_filesys_rootpath)
-        self.define_smartconnector1(local_filesys_rootpath)
+        #self.define_helloworld(local_filesys_rootpath)
+        #self.define_copydir(local_filesys_rootpath)
+        #self.define_smartconnector1(local_filesys_rootpath)
 
-        self.define_hrmc()
-        self.define_hrmc_sweep()
+        #self.define_hrmc()
+        #self.define_hrmc_sweep()
 
-        self.define_remote_make()
-        self.define_sweep_remotemake()
+        #self.define_remote_make()
+        #self.define_sweep_remotemake()
 
-        self.define_vasp()
-        self.define_sweep_vasp()
+        #self.define_vasp()
+        #self.define_sweep_vasp()
 
-        self.setup_directive_args()
+        #self.setup_directive_args()
         print "done"
 
     def define_hrmc(self):

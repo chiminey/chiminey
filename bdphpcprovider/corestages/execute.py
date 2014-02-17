@@ -36,9 +36,11 @@ from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputExcepti
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider import storage
 from bdphpcprovider import messages
+from bdphpcprovider.sshconnection import open_connection
+from bdphpcprovider.compute import run_make
 
 from bdphpcprovider.runsettings import getval, setvals, getvals, update, SettingNotFoundException
-from bdphpcprovider.storage import get_url_with_pkey, list_dirs
+from bdphpcprovider.storage import get_url_with_pkey, list_dirs, get_make_path
 
 
 logger = logging.getLogger(__name__)
@@ -110,6 +112,15 @@ class Execute(stage.Stage):
         return False
 
     def process(self, run_settings):
+        try:
+            self.rand_index = int(getval(run_settings, '%s/stages/run/rand_index' % RMIT_SCHEMA))
+        except SettingNotFoundException:
+            try:
+                self.rand_index = int(getval(run_settings, '%s/input/hrmc/iseed' % RMIT_SCHEMA))
+            except SettingNotFoundException, e:
+                self.rand_index = 42
+                logger.debug(e)
+
         logger.debug("processing execute stage")
         local_settings = getvals(run_settings, models.UserProfile.PROFILE_SCHEMA_NS)
         #self.retrieve_boto_settings(run_settings, local_settings)
@@ -135,6 +146,7 @@ class Execute(stage.Stage):
             self.iter_inputdir = os.path.join(self.job_dir, "input_location")
         messages.info(run_settings, "%s: execute" % (self.id + 1))
         logger.debug("id = %s" % self.id)
+
         try:
             self.initial_numbfile = int(getval(run_settings, '%s/stages/run/initial_numbfile' % RMIT_SCHEMA))
         except (SettingNotFoundException, ValueError):
@@ -233,7 +245,33 @@ class Execute(stage.Stage):
         return run_settings
 
     def run_task(self, ip_address, process_id, settings, run_settings):
-        pass
+        """
+            Start the task on the instance, then hang and
+            periodically check its state.
+        """
+        logger.debug("run_task %s" % ip_address)
+        #ip = botocloudconnector.get_instance_ip(instance_id, settings)
+        #ip = ip_address
+        logger.debug("ip=%s" % ip_address)
+        # curr_username = settings['username']
+        #settings['username'] = 'root'
+        # ssh = sshconnector.open_connection(ip_address=ip,
+        #                                    settings=settings)
+        # settings['username'] = curr_username
+
+        #relative_path = settings['type'] + '@' + settings['payload_destination'] + "/" + process_id
+        relative_path_suffix = self.get_relative_output_path(settings)
+        relative_path = settings['type'] + '@' + os.path.join(relative_path_suffix, process_id)
+        destination = get_url_with_pkey(settings,
+            relative_path,
+            is_relative_path=True,
+            ip_address=ip_address)
+        makefile_path = get_make_path(destination)
+        try:
+            ssh = open_connection(ip_address=ip_address, settings=settings)
+            command, errs = run_make(ssh, makefile_path, 'startrun IDS=%s' % (settings['filename_for_PIDs']))
+        finally:
+            ssh.close()
 
     def run_multi_task(self, settings, run_settings):
         """
