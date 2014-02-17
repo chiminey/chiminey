@@ -58,10 +58,10 @@ class CoreInitial(object):
         return "%s_connector" % self.directive_name
 
     def define_parent_stage(self):
-        parent = "bdphpcprovider.smartconnectorscheduler.stages.composite.ParallelStage"
+        parent = "bdphpcprovider.corestages.parent.Parent"
         parent_stage, _ = models.Stage.objects.get_or_create(
             name=self.get_parent_name(),
-            description="Random number parent",
+            description="This is the core parent stage",
             package=parent,
             order=0)
         return parent_stage
@@ -106,7 +106,7 @@ class CoreInitial(object):
         bootstrap_package = "bdphpcprovider.corestages.bootstrap.Bootstrap"
         bootstrap_stage, _ = models.Stage.objects.get_or_create(
             name="bootstrap",
-            description="This is bootstrap stage of this smart connector",
+            description="This is the core bootstrap stage",
             parent=self.define_parent_stage(),
             package=bootstrap_package,
             order=20)
@@ -135,7 +135,7 @@ class CoreInitial(object):
     def define_execute_stage(self):
         execute_package = "bdphpcprovider.corestages.execute.Execute"
         execute_stage, _ = models.Stage.objects.get_or_create(name="execute",
-            description="This is a core execute stage",
+            description="This is the core execute stage",
             parent=self.define_parent_stage(),
             package=execute_package,
             order=30)
@@ -154,7 +154,7 @@ class CoreInitial(object):
         wait_package = "bdphpcprovider.corestages.wait.Wait"
         wait_stage, _ = models.Stage.objects.get_or_create(
             name="wait",
-            description="This is core wait stage",
+            description="This is the core wait stage",
             parent=self.define_parent_stage(),
             package=wait_package,
             order=40)
@@ -166,7 +166,7 @@ class CoreInitial(object):
         })
         return wait_stage
     def define_transform_stage(self):
-        transform_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc2.transform.Transform"
+        transform_package = "bdphpcprovider.corestages.transform.Transform"
         transform_stage, _ = models.Stage.objects.get_or_create(name="transform",
             description="This is the core transform stage",
             parent=self.define_parent_stage(),
@@ -176,7 +176,7 @@ class CoreInitial(object):
         return transform_stage
 
     def define_converge_stage(self):
-        converge_package = "bdphpcprovider.smartconnectorscheduler.stages.hrmc2.converge.Converge"
+        converge_package = "bdphpcprovider.corestages.converge.Converge"
         converge_stage, _ = models.Stage.objects.get_or_create(name="converge",
             description="This is the core converge stage",
             parent=self.define_parent_stage(),
@@ -198,7 +198,7 @@ class CoreInitial(object):
 
     def define_sweep_stage(self, subdirective):
         sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep_%s" % subdirective.name,
-            description="Sweep for %s" % subdirective.name,
+            description="This is the sweep stage of %s smart connector" % subdirective.name,
             package="bdphpcprovider.corestages.sweep.Sweep",
             order=100)
         sweep_stage.update_settings({
