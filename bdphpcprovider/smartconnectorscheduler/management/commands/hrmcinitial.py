@@ -43,7 +43,7 @@ class Command(BaseCommand):
             return
 
         directive = HRMCInitial()
-        directive.define_directive('hrmc', description='HRMC Smart Connector', sweep=True)
+        directive.define_directive('hrmc2', description='HRMC2 Smart Connector', sweep=True)
         print "done"
 
     def handle(self, *args, **options):
