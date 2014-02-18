@@ -158,7 +158,7 @@ class HRMCParent(Parent):
         logger.debug('map=%s' % map)
         return map, rand_index
 
-    def get_total_templates(maps, **kwargs):
+    def get_total_templates(self, maps, **kwargs):
         run_settings = kwargs['run_settings']
         output_storage_settings = kwargs['output_storage_settings']
         job_dir = kwargs['job_dir']

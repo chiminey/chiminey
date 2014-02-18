@@ -193,14 +193,21 @@ class Configure(Stage):
         storage.copy_directories(source_url, destination_url)
         '''
 
-
         output_location = self.output_loc_offset  # run_settings[RMIT_SCHEMA + '/input/system'][u'output_location']
-        self.experiment_id = 0
+
         try:
-            curate_data = run_settings['http://rmit.edu.au/schemas/input/mytardis']['curate_data']
-            self.experiment_id = self.curate_date(run_settings, location=output_location)
+            self.experiment_id = int(getval(run_settings, '%s/input/mytardis/experiment_id' % RMIT_SCHEMA))
         except KeyError:
-            pass
+            self.experiment_id = 0
+        except ValueError:
+            self.experiment_id = 0
+        try:
+            curate_data = getval(run_settings, '%s/input/mytardis/curate_data' % RMIT_SCHEMA)
+        except SettingNotFoundException:
+            curate_data = False
+        if curate_data:
+            self.experiment_id = self.curate_data(run_settings,
+                output_location, self.experiment_id)
 
         '''
 
@@ -336,45 +343,6 @@ class Configure(Stage):
             pass
         return output_loc_offset
 
-    def curate_date(self, run_settings, **kwargs):
-        bdp_username = run_settings['http://rmit.edu.au/schemas/bdp_userprofile']['username']
-        try:
-            experiment_id = int(getval(run_settings, '%s/input/mytardis/experiment_id' % RMIT_SCHEMA))
-            location = kwargs['location']
-        except KeyError:
-            experiment_id = 0
-        except ValueError:
-            experiment_id = 0
-        curate_data = run_settings['http://rmit.edu.au/schemas/input/mytardis']['curate_data']
-        if curate_data:
-            mytardis_url = run_settings['http://rmit.edu.au/schemas/input/mytardis']['mytardis_platform']
-            mytardis_settings = manage.get_platform_settings(mytardis_url, bdp_username)
-            logger.debug(mytardis_settings)
-            #local_settings.update(mytardis_settings)
-
-            if mytardis_settings['mytardis_host']:
-                EXP_DATASET_NAME_SPLIT = 2
-
-                def _get_exp_name_for_input(path):
-                    return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
-
-                logger.debug("location=%s" % location)
-                ename = _get_exp_name_for_input(location)
-                logger.debug("ename=%s" % ename)
-                experiment_id = mytardis.create_experiment(
-                    settings=mytardis_settings,
-                    exp_id=experiment_id,
-                    expname=ename,
-                    experiment_paramset=[
-                        mytardis.create_paramset("hrmcexp", []),
-                        mytardis.create_graph_paramset("expgraph",
-                            name="hrmcexp",
-                            graph_info={"axes":["iteration", "criterion"], "legends":["criterion"], "precision":[0, 2]},
-                            value_dict={},
-                            value_keys=[["hrmcdset/it", "hrmcdset/crit"]])
-                ])
-            else:
-                logger.warn("no mytardis host specified")
-        else:
-            logger.warn('Data curation is off')
+    def curate_data(self, run_settings, location, experiment_id):
         return experiment_id
+

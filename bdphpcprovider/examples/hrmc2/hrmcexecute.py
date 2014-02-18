@@ -32,7 +32,9 @@ from bdphpcprovider.mytardis import create_dataset, create_paramset
 logger = logging.getLogger(__name__)
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
+
 class HRMCExecute(Execute):
+
     def set_domain_settings(self, run_settings, local_settings):
         update(local_settings, run_settings,
                '%s/input/hrmc/iseed' % RMIT_SCHEMA,
@@ -76,12 +78,14 @@ class HRMCExecute(Execute):
             ssh.close()
     '''
 
-    def curate_data(self, local_settings, output_storage_settings,
+    def curate_data(self, experiment_id, local_settings, output_storage_settings,
                     mytardis_settings, source_files_url):
         output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
                                     output_storage_settings['type'])
         output_host = output_storage_settings['host']
+
         EXP_DATASET_NAME_SPLIT = 2
+
         def _get_exp_name_for_input(settings, url, path):
             return str(os.sep.join(path.split(os.sep)[:-EXP_DATASET_NAME_SPLIT]))
 
@@ -130,14 +134,15 @@ class HRMCExecute(Execute):
         # would required PUT of paramerset data to existing experiment.
         #fixme uncomment later
         local_settings.update(mytardis_settings)
-        self.experiment_id = create_dataset(
+        experiment_id = create_dataset(
             settings=local_settings,
             source_url=source_files_url,
-            exp_id=self.experiment_id,
+            exp_id=experiment_id,
             exp_name=_get_exp_name_for_input,
             dataset_name=_get_dataset_name_for_input,
             experiment_paramset=[],
             dataset_paramset=[
                 create_paramset('hrmcdataset/input', [])])
+        return experiment_id
 
 
