@@ -52,7 +52,7 @@ class AsynchronousWaitStrategy(Strategy):
             logger.debug('trying ssh')
             ssh = open_connection(ip_address=ip, settings=settings)
             logger.debug('successful ssh')
-            (command_out, errs) = run_make(ssh, makefile_path, "running_done")
+            (command_out, errs) = run_make(ssh, makefile_path, "process_running_done")
             ssh.close()
             logger.debug("command_out2=(%s, %s)" % (command_out, errs))
             if command_out:

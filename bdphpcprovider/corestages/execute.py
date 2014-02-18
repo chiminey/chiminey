@@ -269,7 +269,9 @@ class Execute(stage.Stage):
         makefile_path = get_make_path(destination)
         try:
             ssh = open_connection(ip_address=ip_address, settings=settings)
-            command, errs = run_make(ssh, makefile_path, 'start_running IDS=%s' % (settings['filename_for_PIDs']))
+            command, errs = run_make(ssh, makefile_path, 'start_running_process')
+            logger.debug('execute_command=%s' % command
+            )
         finally:
             ssh.close()
 

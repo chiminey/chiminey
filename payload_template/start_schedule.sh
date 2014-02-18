@@ -8,6 +8,6 @@ do
     mkdir -p $line
     cp -r $PAYLOAD_NAME/*  $line
     cd $line
-    make schedulestart PAYLOAD_NAME=$PAYLOAD_NAME IDS=$IDS
+    make start_process_schedule PAYLOAD_NAME=$PAYLOAD_NAME IDS=$IDS
     cd ..
 done < $IDS
