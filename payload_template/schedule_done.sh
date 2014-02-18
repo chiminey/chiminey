@@ -9,8 +9,8 @@ while read line
 do
     cd $line
     procs=`expr $procs + 1 `
-    msg=`make running IDS=$IDS`
-    if [[ "$msg" ==  *"stopped"* ]];
+    msg=`make process_schedule_done IDS=$IDS`
+    if [[ "$msg" ==  *"Process Setup Completed"* ]];
     then
             completed=`expr $completed + 1 `
             completed_procs=`echo  $completed_procs " $line,"`
@@ -18,19 +18,10 @@ do
     cd ..
 done < $IDS
 
-if [ $procs == 0 ]
-then
-        echo "The process ID file is empty "
-        exit
-fi
-
-
-#if [ $completed == $procs ] && [ $completed != 0 ];
-
 if [ $completed == $procs ];
 then
-        echo "All processes completed execution"
+        echo "All processes are scheduled"
 else
-        echo "$completed of $procs processes completed execution"
+        echo "$completed of $procs processes scheduled"
         echo  $completed_procs
 fi
