@@ -184,7 +184,7 @@ class Converge(Stage):
             else:
                 logger.warn('Data curation is off')
 
-            messages.success(run_settings, "%s: finished" % (self.id + 1))
+            messages.info(run_settings, "%s: converged" % (self.id + 1))
 
 
         # # TODO: store all audit info in single file in input_X directory in transform,

@@ -226,7 +226,7 @@ def start_round_robin_schedule(nodes, processes, schedule_index, settings, relat
         makefile_path = get_make_path(destination)
         logger.debug('makefile_path=%s' % makefile_path)
         command = "cd %s; make %s" % (makefile_path,
-            'schedulestart PAYLOAD_NAME=%s IDS=%s' % (
+            'start_schedule PAYLOAD_NAME=%s IDS=%s' % (
             settings['payload_name'], settings['filename_for_PIDs']))
         command_out = ''
         errs = ''
@@ -291,7 +291,7 @@ def start_round_robin_reschedule(nodes, procs_2b_rescheduled,
         makefile_path = get_make_path(destination)
         logger.debug('makefile_path=%s' % makefile_path)
         command = "cd %s; make %s" % (makefile_path,
-            'schedulestart PAYLOAD_NAME=%s IDS=%s' % (
+            'start_schedule PAYLOAD_NAME=%s IDS=%s' % (
             settings['payload_name'], settings['filename_for_PIDs']))
         command_out = ''
         errs = ''
@@ -387,9 +387,10 @@ def _is_schedule_complete(ip, settings, destination):
         ssh = open_connection(ip_address=ip, settings=settings)
         makefile_path = get_make_path(destination)
         command = "cd %s; make %s" % (makefile_path,
-                                      'scheduledone IDS=%s' % (
+                                      'schedule_done IDS=%s' % (
                                           settings['filename_for_PIDs']))
         command_out, _ = run_command_with_status(ssh, command)
+        logger.debug('command=%s' % command)
         if command_out:
             logger.debug("command_out = %s" % command_out)
             for line in command_out:

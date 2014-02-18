@@ -113,7 +113,7 @@ def _start_bootstrap(instance, ip,  settings, source, destination):
         ssh = open_connection(ip_address=ip, settings=settings)
         command_out, errs = run_command_with_status(ssh, install_make)
         logger.debug("command_out1=(%s, %s)" % (command_out, errs))
-        run_make(ssh, makefile_path, 'setupstart')
+        run_make(ssh, makefile_path, 'start_bootstrap')
     except Exception, e:#fixme: consider using reliability framework
         logger.error(e)
         raise
@@ -189,7 +189,7 @@ def _is_bootstrap_complete(ip, settings, destination):
     """
     ssh = open_connection(ip_address=ip, settings=settings)
     makefile_path = get_make_path(destination)
-    (command_out, err) = run_make(ssh, makefile_path, 'setupdone')
+    (command_out, err) = run_make(ssh, makefile_path, 'bootstrap_done')
     if command_out:
         logger.debug("command_out = %s" % command_out)
         for line in command_out:

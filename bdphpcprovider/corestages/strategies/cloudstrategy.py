@@ -102,7 +102,7 @@ class CloudStrategy(Strategy):
 
     def destroy_resource(self, destroy_class, run_settings, local_settings):
         node_type = ['created_nodes']
-        destroy_vms(local_settings, node_types=node_type)
+        destroy_vms(local_settings, node_types=node_type, registered_vms=[])
         for node in destroy_class.created_nodes:
             if node[3] == 'running':
                 node[3] = 'terminated'
