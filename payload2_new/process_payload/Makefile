@@ -1,26 +1,14 @@
-PAYLOAD_NAME='process_payload
-IDS='proc_ids'
-PSD_PACKAGE=PSDCode
-HRMC_PACKAGE=HRMC2
-# version 2.0
+start_process_schedule:
+	@sh ./start_process_schedule.sh
 
+process_schedule_done:
+	@sh ./process_schedule_done.sh
 
-schedulestart:
-	@sh ./process_schedulestart.sh
+start_running_process:
+	@echo running
+	@sh ./start_running_process.sh
 
-scheduledone:
-	@sh ./process_scheduledone.sh
-
-startrun: psd_run_setup run_hrmc
-
-run_hrmc:
-	@echo running hrmc
-	@sh ./start_run.sh
-
-psd_run_setup:
-	echo setting up psd
-	rm -f $(PSD_PACKAGE)/run.pid
-
-running:
+process_running_done:
 	@echo checking for running
-	@sh ./running.sh
+	@sh ./process_running_done.sh
+

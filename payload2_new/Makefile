@@ -1,31 +1,15 @@
-PSD_PACKAGE=PSDCode
-HRMC_PACKAGE=HRMC2
-PAYLOAD_NAME='process_payload
+YLOAD_NAME='process_payload'
 IDS='proc_ids'
-# version 2.0
 
-#deprecated
-setupstart: do_setup
+start_bootstrap:
+	@echo bootstrap starting
+	@sh ./start_bootstrap.sh >& bootstrap.output &
 
-startsetup: do_setup
+bootstrap_done:
+	@sh ./bootstrap_done.sh
 
-setupdone:
-	@sh ./env_setupdone.sh
+start_schedule:
+	@sh ./start_schedule.sh $(PAYLOAD_NAME) $(IDS)
 
-do_setup:
-	@echo do_setup starting
-	@sh ./env_setupstart.sh >& setup.output &
-
-schedulestart:
-	@sh ./schedule_start $(PAYLOAD_NAME) $(IDS)
-
-scheduledone:
-	@sh ./schedule_done $(IDS)
-
-startrun:
-	@sh ./start_run $(IDS)
-
-running:
-	@echo checking for running
-	@sh ./running.sh $(IDS)
-
+schedule_done:
+	@sh ./schedule_done.sh $(IDS)
