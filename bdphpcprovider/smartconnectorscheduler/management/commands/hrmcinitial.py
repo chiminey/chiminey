@@ -43,7 +43,7 @@ class Command(BaseCommand):
             return
 
         directive = HRMCInitial()
-        directive.define_directive('hrmc2', description='HRMC2 Smart Connector', sweep=True)
+        directive.define_directive('iman_hrmc', description='Iman Smart Connector', sweep=True)
         print "done"
 
     def handle(self, *args, **options):
@@ -163,7 +163,7 @@ class HRMCInitial(CoreInitial):
             u'http://rmit.edu.au/schemas/stages/sweep':
             {
                 u'template_name': 'HRMC.inp',
-                u'directive': 'hrmc'
+                u'directive': subdirective.name
 
             },
             # FIXME: move random_numbers into system schema

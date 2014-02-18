@@ -158,6 +158,7 @@ class HRMCParent(Parent):
         logger.debug('map=%s' % map)
         return map, rand_index
 
+    #fixme: consider moving to parent class. do we need input dirs to calculate?
     def get_total_templates(self, maps, **kwargs):
         run_settings = kwargs['run_settings']
         output_storage_settings = kwargs['output_storage_settings']

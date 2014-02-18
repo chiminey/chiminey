@@ -18,11 +18,20 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from bdphpcprovider.corestages.configure import Configure
-from bdphpcprovider.corestages.execute import Execute
-from bdphpcprovider.corestages.wait import Wait
-from bdphpcprovider.corestages.transform import Transform
-from bdphpcprovider.corestages.converge import Converge
-from bdphpcprovider.corestages.stage import Stage, copy_settings
-from bdphpcprovider.corestages.sweep import Sweep
-from bdphpcprovider.corestages.parent import Parent
+
+import logging
+from bdphpcprovider.corestages import Parent
+
+
+logger = logging.getLogger(__name__)
+
+
+class Rand2Parent(Parent):
+    def get_run_map(self, settings, **kwargs):
+        rand_index = 42
+        map = {'val': [1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2]}
+        logger.debug('map=%s' % map)
+        return map, rand_index
+
+    def get_total_templates(self, maps, **kwargs):
+        return 20
