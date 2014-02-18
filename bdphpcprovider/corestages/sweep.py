@@ -153,11 +153,22 @@ class Sweep(Stage):
             contextid)
 
         # mytardis
-        self.experiment_id = self.get_initial_experiment(run_settings)
 
+        try:
+            self.experiment_id = int(getval(run_settings, '%s/input/mytardis/experiment_id' % RMIT_SCHEMA))
+        except KeyError:
+            self.experiment_id = 0
+        except ValueError:
+            self.experiment_id = 0
+        try:
+            curate_data = getval(run_settings, '%s/input/mytardis/curate_data' % RMIT_SCHEMA)
+        except SettingNotFoundException:
+            curate_data = False
+        if curate_data:
+            self.experiment_id = self.curate_data(run_settings, self.experiment_id)
         setval(run_settings,
-                   '%s/input/mytardis/experiment_id' % RMIT_SCHEMA,
-                   str(self.experiment_id))
+               '%s/input/mytardis/experiment_id' % RMIT_SCHEMA,
+               str(self.experiment_id))
 
         # generate all variations
         map_text = getval(run_settings, '%s/input/sweep/sweep_map' % RMIT_SCHEMA)
@@ -392,7 +403,7 @@ class Sweep(Stage):
             messages.success(run_settings, "0: completed")
         return run_settings
 
-    def get_initial_experiment(self, run_settings):
+    def curate_data(self, run_settings, experiment_id):
         # TODO: this is a domain-specific so this function should be overridden
         # in domain specfic mytardis class
         #TODO: By default, this class should NOT CREATE an experiment
@@ -411,7 +422,7 @@ class Sweep(Stage):
 
         # return experiment_id
 
-        return 0
+        return experiment_id
 
 
 def _submit_subdirective(platform, run_settings, user, parentcontext):
@@ -472,29 +483,16 @@ def _expand_variations(maps, values):
 
 
 class RemoteMakeSweep(Sweep):
-    def get_initial_experiment(self, run_settings):
+    def curate_data(self, run_settings, experiment_id):
         # TODO: this is a domain-specific so this function should be overridden
         # in domain specfic mytardis class
         # mytardis
-        try:
-            self.experiment_id = int(getval(run_settings,
-                 '%s/input/mytardis/experiment_id' % RMIT_SCHEMA))
-        except SettingNotFoundException:
-            self.experiment_id = 0
-        except ValueError:
-            self.experiment_id = 0
 
         try:
             subdirective = getval(run_settings, '%s/stages/sweep/directive' % RMIT_SCHEMA)
         except SettingNotFoundException:
             logger.warn("cannot find subdirective name")
             subdirective = ''
-        try:
-            experiment_id = int(getval(run_settings, '%s/input/mytardis/experiment_id' % RMIT_SCHEMA))
-        except SettingNotFoundException:
-            experiment_id = 0
-        except ValueError:
-            experiment_id = 0
 
         if subdirective == "remotemake":
             experiment_id = post_mytardis_exp(
@@ -510,31 +508,31 @@ class RemoteMakeSweep(Sweep):
 
 
 class HRMCSweep(Sweep):
+    pass
+    # def curate_data(self, run_settings):
 
-    def get_initial_experiment(self, run_settings):
+    #     # mytardis
+    #     try:
+    #         subdirective = getval(run_settings, '%s/stages/sweep/directive' % RMIT_SCHEMA)
+    #     except SettingNotFoundException:
+    #         logger.warn("cannot find subdirective name")
+    #         subdirective = ''
+    #     try:
+    #         experiment_id = int(getval(run_settings, '%s/input/mytardis/experiment_id' % RMIT_SCHEMA))
+    #     except SettingNotFoundException:
+    #         experiment_id = 0
+    #     except ValueError:
+    #         experiment_id = 0
 
-        # mytardis
-        try:
-            subdirective = getval(run_settings, '%s/stages/sweep/directive' % RMIT_SCHEMA)
-        except SettingNotFoundException:
-            logger.warn("cannot find subdirective name")
-            subdirective = ''
-        try:
-            experiment_id = int(getval(run_settings, '%s/input/mytardis/experiment_id' % RMIT_SCHEMA))
-        except SettingNotFoundException:
-            experiment_id = 0
-        except ValueError:
-            experiment_id = 0
+    #     if subdirective == "hrmc":
+    #         experiment_id = post_mytardis_exp(
+    #             run_settings=run_settings,
+    #             experiment_id=experiment_id,
+    #             output_location=self.scratch_platform)
+    #     else:
+    #         logger.warn("cannot find subdirective name")
 
-        if subdirective == "hrmc":
-            experiment_id = post_mytardis_exp(
-                run_settings=run_settings,
-                experiment_id=experiment_id,
-                output_location=self.scratch_platform)
-        else:
-            logger.warn("cannot find subdirective name")
-
-        return experiment_id
+    #     return experiment_id
 
 
 def post_mytardis_exp(run_settings,

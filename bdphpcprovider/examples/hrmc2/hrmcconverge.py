@@ -71,13 +71,15 @@ class HRMCConverge(Converge):
         return (True, "ok")
 
     def curate_dataset(self, run_settings, experiment_id, base_dir, output_url, all_settings):
+        logger.debug("curate_dataset")
+        iter_output_dir = os.path.join(os.path.join(base_dir, "output"))
+        logger.debug("iter_output_dir=%s" % iter_output_dir)
 
-        iteration = int(getval(run_settings, '%s/system/id' % RMIT_SCHEMA))
-        iter_output_dir = os.path.join(os.path.join(base_dir, "output_%s" % iteration))
         output_prefix = '%s://%s@' % (all_settings['scheme'],
                                     all_settings['type'])
         iter_output_dir = "%s%s" % (output_prefix, iter_output_dir)
-
+        logger.debug("iter_output_dir=%s" % iter_output_dir)
+        logger.debug("output_url=%s" % output_url)
         (scheme, host, mypath, location, query_settings) = storage.parse_bdpurl(output_url)
         fsys = storage.get_filesystem(output_url)
 
@@ -182,6 +184,10 @@ class HRMCConverge(Converge):
 #                     val = columns[ERRGR_COLUMN_NUM]
 #                     val = re_dbl_fort.sub(r'\1E\2', val)
 #                     logger.debug("val=%s" % val)
+
+
+
+
 
                 EXP_DATASET_NAME_SPLIT = 2
 
@@ -322,7 +328,7 @@ class HRMCConverge(Converge):
                                 continue
                             columns = line.split()
 
-                            val = columns[0]
+                            val = columns[STEP_COLUMN_NUM]
                             val = re_dbl_fort.sub(r'\1E\2', val)
                             logger.debug("val=%s" % val)
                             try:
@@ -331,7 +337,7 @@ class HRMCConverge(Converge):
                                 logger.warn("could not parse value on line %s" % i)
                                 continue
 
-                            val = columns[1]
+                            val = columns[ERRGR_COLUMN_NUM]
                             val = re_dbl_fort.sub(r'\1E\2', val)
                             logger.debug("val=%s" % val)
                             try:
