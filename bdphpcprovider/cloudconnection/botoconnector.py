@@ -94,15 +94,19 @@ def destroy_vms(settings, all_vms):
             - a group of vms, or
             - a single vm
     """
+    terminated_vms = []
     if not all_vms:
         logging.error("No running vm(s)")
-        return
-    ids_of_all_vms = []
-    for vm in all_vms:
-        ids_of_all_vms.append(vm.id)
-    logger.info("Terminating %d vm(s)" % len(ids_of_all_vms))
+        return terminated_vms
+    logger.info("Terminating %d vm(s)" % len(all_vms))
     connection = _create_cloud_connection(settings)
-    terminated_vms = connection.terminate_instances(ids_of_all_vms)
+    for vm in all_vms:
+        try:
+            instance_list = connection.terminate_instances(
+                instance_ids=[vm.id])
+            terminated_vms.append(instance_list[0])
+        except Exception as e: #fixme: mask this error
+            logger.debug(e)
     return terminated_vms
 
 
