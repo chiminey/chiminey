@@ -46,7 +46,6 @@ class Command(BaseCommand):
         directive.define_directive('hrmc', description='HRMC Smart Connector', sweep=True)
         print "done"
 
-
     def handle(self, *args, **options):
         self.setup()
         print "done"
@@ -61,6 +60,22 @@ class HRMCInitial(CoreInitial):
             order=100)
         hrmc_composite_stage.update_settings({})
         return hrmc_composite_stage
+
+    def define_configure_stage(self):
+        configure_package = "bdphpcprovider.examples.hrmc2.hrmcconfigure.HRMCConfigure"
+        configure_stage, _ = models.Stage.objects.get_or_create(
+            name="hrmcconfigure",
+            description="This is the HRMC configure stage",
+            parent=self.define_parent_stage(),
+            package=configure_package,
+            order=0)
+        configure_stage.update_settings({
+            u'http://rmit.edu.au/schemas/system':
+                {
+                    u'random_numbers': 'file://127.0.0.1/randomnums.txt'
+                },
+        })
+        return configure_stage
 
     def define_bootstrap_stage(self):
         bootstrap_stage = super(HRMCInitial, self).define_bootstrap_stage()

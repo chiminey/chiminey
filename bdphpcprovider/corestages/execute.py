@@ -343,7 +343,7 @@ class Execute(stage.Stage):
         for input_dir in sorted(input_dirs):
             logger.debug("Input dir %s" % input_dir)
             self.upload_variation_inputs(
-                local_settings, self.generate_variations(
+                run_settings, local_settings, self.generate_variations(
                     input_dir, local_settings, output_storage_settings, run_settings),
                 processes, input_dir, output_storage_settings,
                 computation_platform_settings, mytardis_settings)
@@ -468,11 +468,11 @@ class Execute(stage.Stage):
                 logger.debug("%d files created" % (temp_num))
             return res
 
-    def curate_data(self, local_settings, output_storage_settings,
+    def curate_data(self, experiment_id, local_settings, output_storage_settings,
                     mytardis_settings, source_files_url):
-        pass
+        return self.experiment_id
 
-    def upload_variation_inputs(self, local_settings, variations, processes,
+    def upload_variation_inputs(self, run_settings, local_settings, variations, processes,
                                  input_dir, output_storage_settings,
                                  computation_platform_settings, mytardis_settings):
         '''
@@ -490,7 +490,7 @@ class Execute(stage.Stage):
         # Copy input directory to mytardis only after saving locally, so if
         # something goes wrong we still have the results
         if local_settings['curate_data']:
-            self.curate_data(local_settings, output_storage_settings,
+            self.experiment_id = self.curate_data(self.experiment_id, local_settings, output_storage_settings,
                              mytardis_settings, source_files_url)
         else:
             logger.warn('Data curation is off')

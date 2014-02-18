@@ -329,9 +329,6 @@ class HRMCTransform(Transform):
         logger.debug("criterion=%s" % criterion)
         return criterion
 
-
-
-
     def curate_dataset(self, run_settings, experiment_id, base_dir, output_url,
         all_settings):
 
