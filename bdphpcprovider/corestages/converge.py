@@ -388,4 +388,4 @@ class Converge(Stage):
 
         logger.debug("default curate_dataset")
 
-        return 0
+        return experiment_id
