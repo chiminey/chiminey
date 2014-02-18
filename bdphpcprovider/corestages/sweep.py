@@ -482,31 +482,6 @@ def _expand_variations(maps, values):
     return res
 
 
-class RemoteMakeSweep(Sweep):
-    def curate_data(self, run_settings, experiment_id):
-        # TODO: this is a domain-specific so this function should be overridden
-        # in domain specfic mytardis class
-        # mytardis
-
-        try:
-            subdirective = getval(run_settings, '%s/stages/sweep/directive' % RMIT_SCHEMA)
-        except SettingNotFoundException:
-            logger.warn("cannot find subdirective name")
-            subdirective = ''
-
-        if subdirective == "remotemake":
-            experiment_id = post_mytardis_exp(
-                run_settings=run_settings,
-                experiment_id=experiment_id,
-                output_location=self.scratch_platform,
-                experiment_paramset=[
-                    mytardis.create_paramset("remotemake", [])])
-        else:
-            logger.warn("cannot find subdirective name")
-
-        return experiment_id
-
-
 class HRMCSweep(Sweep):
     pass
     # def curate_data(self, run_settings):
