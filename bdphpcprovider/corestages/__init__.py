@@ -25,3 +25,4 @@ from bdphpcprovider.corestages.transform import Transform
 from bdphpcprovider.corestages.converge import Converge
 from bdphpcprovider.corestages.stage import Stage, copy_settings
 from bdphpcprovider.corestages.sweep import Sweep
+from bdphpcprovider.corestages.parent import Parent

@@ -43,7 +43,7 @@ class Command(BaseCommand):
             return
 
         directive = HRMC2Initial()
-        directive.define_directive('rand2', description='Rand 2 Smart Connector', sweep=True)
+        directive.define_directive('rand2_mytardis', description='Rand 2 MyTardis New  Smart Connector', sweep=True)
         print "done"
 
 
@@ -53,6 +53,31 @@ class Command(BaseCommand):
 
 
 class HRMC2Initial(CoreInitial):
+    def define_parent_stage(self):
+        parent_package = "bdphpcprovider.examples.randomnumbers2.rand2parent.Rand2Parent"
+        parent_stage, _ = models.Stage.objects.get_or_create(name=self.get_parent_name(),
+            description="Encapsultes HRMC2 smart connector workflow",
+            package=parent_package,
+            order=100)
+        parent_stage.update_settings({})
+        return parent_stage
+
+    def define_configure_stage(self):
+        configure_package = "bdphpcprovider.examples.randomnumbers2.rand2configure.Rand2Configure"
+        configure_stage, _ = models.Stage.objects.get_or_create(
+            name="rand2configure",
+            description="This is the Rand2 configure stage",
+            parent=self.define_parent_stage(),
+            package=configure_package,
+            order=0)
+        configure_stage.update_settings({
+            u'http://rmit.edu.au/schemas/system':
+                {
+                    u'random_numbers': 'file://127.0.0.1/randomnums.txt'
+                },
+        })
+        return configure_stage
+
     def define_bootstrap_stage(self):
         bootstrap_stage = super(HRMC2Initial, self).define_bootstrap_stage()
         bootstrap_stage.update_settings(
@@ -90,12 +115,23 @@ class HRMC2Initial(CoreInitial):
             })
         return execute_stage
 
+    def define_transform_stage(self):
+        transform_package = "bdphpcprovider.examples.randomnumbers2.rand2transform.Rand2Transform"
+        transform_stage, _ = models.Stage.objects.get_or_create(name="rand2transform",
+            description="This is the transform stage of Rand 2",
+            parent=self.define_parent_stage(),
+            package=transform_package,
+            order=50)
+        transform_stage.update_settings({})
+        return transform_stage
+
     def attach_directive_args(self, new_directive):
         RMIT_SCHEMA = "http://rmit.edu.au/schemas"
         for i, sch in enumerate([
                 RMIT_SCHEMA + "/input/system/compplatform",
                 RMIT_SCHEMA + "/input/location/output",
                 RMIT_SCHEMA + "/input/system/cloud",
+                RMIT_SCHEMA + "/input/mytardis",
                 ]):
             schema = models.Schema.objects.get(namespace=sch)
             das, _ = models.DirectiveArgSet.objects.get_or_create(
