@@ -109,7 +109,7 @@ class MakeRunStage(stage.Stage):
             bdp_username)
         logger.debug("comp_pltf_settings=%s" % pformat(comp_pltf_settings))
         settings.update(comp_pltf_settings)
-        encoded_d_url = storage.get_url_with_pkey(
+        encoded_d_url = storage.get_url_with_credentials(
             settings,
             dest_url,
             is_relative_path=True,

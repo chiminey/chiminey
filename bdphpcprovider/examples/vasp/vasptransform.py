@@ -25,7 +25,7 @@ from collections import namedtuple
 import fnmatch
 
 
-from bdphpcprovider.storage import get_url_with_pkey
+from bdphpcprovider.storage import get_url_with_credentials
 from bdphpcprovider.runsettings import getval, SettingNotFoundException
 
 from bdphpcprovider import storage
@@ -49,7 +49,7 @@ class VASPTransform(Transform):
 
         logger.debug("output_url=%s" % output_url)
 
-        outcar_url = storage.get_url_with_pkey(local_settings,
+        outcar_url = storage.get_url_with_credentials(local_settings,
             os.path.join(output_url, OUTCAR_FILE), is_relative_path=False)
         logger.debug("outcar_url=%s" % outcar_url)
 
@@ -73,7 +73,7 @@ class VASPTransform(Transform):
 
         logger.debug("toten=%s" % toten)
 
-        values_url = storage.get_url_with_pkey(local_settings,
+        values_url = storage.get_url_with_credentials(local_settings,
             os.path.join(output_url, VALUES_FILE), is_relative_path=False)
         logger.debug("values_url=%s" % values_url)
         try:
@@ -270,7 +270,7 @@ class VASPTransform(Transform):
         #             host = settings['host']
         #             prefix = 'ssh://%s@%s' % (settings['type'], host)
 
-        #             source_url = get_url_with_pkey(
+        #             source_url = get_url_with_credentials(
         #                 settings, os.path.join(prefix, path, "HRMC.inp_values"),
         #                 is_relative_path=False)
         #             logger.debug("source_url=%s" % source_url)
@@ -304,7 +304,7 @@ class VASPTransform(Transform):
         #             logger.debug("dataset_name=%s" % dataset_name)
         #             return dataset_name
 
-        #         source_dir_url = get_url_with_pkey(
+        #         source_dir_url = get_url_with_credentials(
         #             all_settings,
         #             node_path,
         #             is_relative_path=False)

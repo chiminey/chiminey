@@ -27,11 +27,30 @@ logger = logging.getLogger(__name__)
 
 
 class Rand2Parent(Parent):
+    '''
+        Holds common methods that are needed by two or more stages
+    '''
     def get_run_map(self, settings, **kwargs):
+        '''
+            Defines multiple processes within a single job
+            Number of processes generated is the cross-product of the values in the entire map
+            The values in the process can be used in a template instantiation
+            Returns a dict where its
+                - key correspond to template variable name,
+                - value is a list of possible values for that template variable
+            e.g., if map = {"var": [7,9]}, this map result in 2 processes being generated,
+                    - template variable "var" = 7 in process 1
+                    - template variable "var" = 9 in process 2
+            e.g., if map = {"var1": [7,9], "var2": [42]}, this map result in 2 processes being generated,
+                    - template variable "var1"=7, "var2"=42  in process 1
+                    - template variable "var2"=9, "var2"=42 in process 2
+        '''
         rand_index = 42
-        map = {'val': [1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2]}
-        logger.debug('map=%s' % map)
+        map = {'val': [1, 2]}
         return map, rand_index
 
     def get_total_templates(self, maps, **kwargs):
-        return 20
+        '''
+            Contains the cross product of map
+        '''
+        return 2

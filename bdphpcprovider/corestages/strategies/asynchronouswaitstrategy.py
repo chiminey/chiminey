@@ -21,7 +21,7 @@
 import logging
 import os
 from bdphpcprovider.sshconnection import open_connection
-from bdphpcprovider.storage import get_url_with_pkey
+from bdphpcprovider.storage import get_url_with_credentials
 from bdphpcprovider.storage import get_make_path
 from bdphpcprovider.compute import run_make
 from bdphpcprovider.corestages.strategies.strategy import Strategy
@@ -42,7 +42,7 @@ class AsynchronousWaitStrategy(Strategy):
         settings['username'] = 'root'
         #relative_path = settings['type'] + '@' + settings['payload_destination'] + "/" + process_id
         relative_path = settings['type'] + '@' + os.path.join(relative_path_suffix, process_id)
-        destination = get_url_with_pkey(settings,
+        destination = get_url_with_credentials(settings,
             relative_path,
             is_relative_path=True,
             ip_address=ip)

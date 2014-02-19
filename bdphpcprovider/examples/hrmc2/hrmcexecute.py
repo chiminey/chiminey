@@ -23,7 +23,7 @@ import os
 import json
 from bdphpcprovider.corestages import Execute
 from bdphpcprovider.runsettings import update
-from bdphpcprovider.storage import get_url_with_pkey, get_file, get_make_path
+from bdphpcprovider.storage import get_url_with_credentials, get_file, get_make_path
 from bdphpcprovider.sshconnection import open_connection
 from bdphpcprovider.compute import run_make
 from bdphpcprovider.mytardis import create_dataset, create_paramset
@@ -66,7 +66,7 @@ class HRMCExecute(Execute):
         #relative_path = settings['type'] + '@' + settings['payload_destination'] + "/" + process_id
         relative_path_suffix = self.get_relative_output_path(settings)
         relative_path = settings['type'] + '@' + os.path.join(relative_path_suffix, process_id)
-        destination = get_url_with_pkey(settings,
+        destination = get_url_with_credentials(settings,
             relative_path,
             is_relative_path=True,
             ip_address=ip_address)
@@ -91,7 +91,7 @@ class HRMCExecute(Execute):
 
         def _get_dataset_name_for_input(settings, url, path):
             logger.debug("path=%s" % path)
-            source_url = get_url_with_pkey(
+            source_url = get_url_with_credentials(
                 output_storage_settings,
                 output_prefix + os.path.join(output_host, path, "HRMC.inp_values"),
                 is_relative_path=False)

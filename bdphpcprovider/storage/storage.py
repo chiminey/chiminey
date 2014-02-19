@@ -741,7 +741,7 @@ def get_filep(file_bdp_url, sftp_reference=False):
     return fp
 
 
-def get_url_with_pkey(settings, url_or_relative_path,
+def get_url_with_credentials(settings, url_or_relative_path,
                       is_relative_path=False, ip_address='127.0.0.1'):
     '''
      This method appends private key, username, passowrd and/or rootpath
@@ -768,7 +768,7 @@ def get_url_with_pkey(settings, url_or_relative_path,
     username = ''
     password = ''
     key_file = ''
-    logger.debug("get_url_with_pkey(%s, %s, %s, %s)" % (
+    logger.debug("get_url_with_credentials(%s, %s, %s, %s)" % (
                  pformat(settings), url_or_relative_path,
                  is_relative_path, ip_address))
 

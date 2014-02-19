@@ -15,7 +15,7 @@ from bdphpcprovider import messages
 from bdphpcprovider import storage
 
 from bdphpcprovider.runsettings import getval, getvals, setval, update, SettingNotFoundException
-from bdphpcprovider.storage import get_url_with_pkey
+from bdphpcprovider.storage import get_url_with_credentials
 
 logger = logging.getLogger(__name__)
 

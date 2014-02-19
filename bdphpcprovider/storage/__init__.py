@@ -38,7 +38,7 @@ from bdphpcprovider.storage.storage import (
     list_all_files,
     get_bdp_root_path,
     RemoteStorage,
-    get_url_with_pkey
+    get_url_with_credentials
 )
 
 

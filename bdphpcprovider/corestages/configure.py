@@ -33,7 +33,7 @@ from bdphpcprovider import messages
 from bdphpcprovider import storage
 
 from bdphpcprovider.runsettings import getval, getvals, setval, update, SettingNotFoundException
-from bdphpcprovider.storage import get_url_with_pkey
+from bdphpcprovider.storage import get_url_with_credentials
 
 
 logger = logging.getLogger(__name__)
@@ -179,11 +179,11 @@ class Configure(Stage):
         #todo: input location will evenatually be replaced by the scratch space that was used by the sweep
         #todo: the sweep will indicate the location of the scratch space in the run_settings
         #todo: add scheme (ssh) to inputlocation
-        source_url = get_url_with_pkey(local_settings,
+        source_url = get_url_with_credentials(local_settings,
             input_location)
         logger.debug("source_url=%s" % source_url)
 
-        destination_url = get_url_with_pkey(
+        destination_url = get_url_with_credentials(
             output_storage_settings,
             '%s://%s@%s' % (output_storage_settings['scheme'],
                              output_storage_settings['type'],
@@ -314,10 +314,10 @@ class Configure(Stage):
         #todo: input location will evenatually be replaced by the scratch space that was used by the sweep
         #todo: the sweep will indicate the location of the scratch space in the run_settings
         #todo: add scheme (ssh) to inputlocation
-        source_url = get_url_with_pkey(local_settings, input_location)
+        source_url = get_url_with_credentials(local_settings, input_location)
         logger.debug("source_url=%s" % source_url)
 
-        destination_url = get_url_with_pkey(
+        destination_url = get_url_with_credentials(
             output_storage_settings,
             '%s://%s@%s' % (output_storage_settings['scheme'],
                              output_storage_settings['type'],

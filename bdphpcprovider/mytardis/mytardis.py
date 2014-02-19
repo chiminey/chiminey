@@ -389,7 +389,7 @@ def create_dataset(settings,
 
     logger.debug('args=%s' % args)
     '''
-    psd_url = smartconnector.get_url_with_pkey(output_storage_credentials,
+    psd_url = smartconnector.get_url_with_credentials(output_storage_credentials,
                         'ssh://unix@' + os.path.join(self.output_dir,
                             node_output_dir, "PSD_output", "psd.dat"), is_relative_path=False)
         logger.debug('psd_url=%s' % psd_url)

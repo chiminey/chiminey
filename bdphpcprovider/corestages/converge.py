@@ -21,7 +21,7 @@
 
 import os
 import logging
-from bdphpcprovider.storage import get_url_with_pkey
+from bdphpcprovider.storage import get_url_with_credentials
 
 from bdphpcprovider.corestages.stage import Stage
 
@@ -127,7 +127,7 @@ class Converge(Stage):
         except ValueError:
             self.experiment_id = 0
 
-        inputdir_url = get_url_with_pkey(output_storage_settings,
+        inputdir_url = get_url_with_credentials(output_storage_settings,
             output_prefix + self.iter_inputdir, is_relative_path=False)
         logger.debug('input_dir_url=%s' % inputdir_url)
 
@@ -157,9 +157,9 @@ class Converge(Stage):
             new_output_dir = os.path.join(job_dir, 'output')
             dest_url = "%s%s" % (output_prefix, new_output_dir)
 
-            source_url = get_url_with_pkey(output_storage_settings,
+            source_url = get_url_with_credentials(output_storage_settings,
                 output_prefix + os.path.join(iter_output_dir), is_relative_path=False)
-            dest_url = get_url_with_pkey(output_storage_settings,
+            dest_url = get_url_with_credentials(output_storage_settings,
                 output_prefix + os.path.join(new_output_dir), is_relative_path=False)
 
             storage.copy_directories(source_url, dest_url)
@@ -202,7 +202,7 @@ class Converge(Stage):
         # for input_dir in input_dirs:
         #     # Retrieve audit file
 
-        #     audit_url = get_url_with_pkey(output_storage_settings,
+        #     audit_url = get_url_with_credentials(output_storage_settings,
         #         output_prefix + os.path.join(self.iter_inputdir, input_dir, 'audit.txt'), is_relative_path=False)
         #     audit_content = storage.get_file(audit_url)
         #     logger.debug('audit_url=%s' % audit_url)

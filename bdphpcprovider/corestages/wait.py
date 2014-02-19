@@ -32,7 +32,7 @@ from bdphpcprovider import messages
 from bdphpcprovider import storage
 
 from bdphpcprovider.runsettings import getval, setvals, setval, getvals, SettingNotFoundException
-from bdphpcprovider.storage import get_url_with_pkey
+from bdphpcprovider.storage import get_url_with_credentials
 
 logger = logging.getLogger(__name__)
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
@@ -167,12 +167,12 @@ class Wait(Stage):
         source_files_location = "%s://%s@%s" % (computation_platform_settings['scheme'],
                                                 computation_platform_settings['type'],
                                                  os.path.join(ip, cloud_path))
-        source_files_url = get_url_with_pkey(
+        source_files_url = get_url_with_credentials(
             computation_platform_settings, source_files_location,
             is_relative_path=False)
         logger.debug('source_files_url=%s' % source_files_url)
 
-        dest_files_url = get_url_with_pkey(
+        dest_files_url = get_url_with_credentials(
             output_storage_settings,
             output_prefix + os.path.join(
                 self.job_dir, self.output_dir, process_id),
@@ -277,7 +277,7 @@ class Wait(Stage):
                                     local_settings, comp_pltf_settings,
                                     output_storage_settings, run_settings)
 
-                    audit_url = get_url_with_pkey(
+                    audit_url = get_url_with_credentials(
                         comp_pltf_settings, os.path.join(
                             self.output_dir, process_id, "audit.txt"),
                         is_relative_path=True)
