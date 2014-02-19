@@ -42,8 +42,8 @@ class Command(BaseCommand):
             print "action aborted by user"
             return
 
-        directive = HRMC2Initial()
-        directive.define_directive('rand2_mytardis', description='Rand 2 MyTardis New  Smart Connector', sweep=True)
+        directive = Rand2Initial()
+        directive.define_directive('rand2', description='Rand 2 Smart Connector', sweep=True)
         print "done"
 
 
@@ -52,7 +52,7 @@ class Command(BaseCommand):
         print "done"
 
 
-class HRMC2Initial(CoreInitial):
+class Rand2Initial(CoreInitial):
     def define_parent_stage(self):
         parent_package = "bdphpcprovider.examples.randomnumbers2.rand2parent.Rand2Parent"
         parent_stage, _ = models.Stage.objects.get_or_create(name=self.get_parent_name(),
@@ -79,7 +79,7 @@ class HRMC2Initial(CoreInitial):
         return configure_stage
 
     def define_bootstrap_stage(self):
-        bootstrap_stage = super(HRMC2Initial, self).define_bootstrap_stage()
+        bootstrap_stage = super(Rand2Initial, self).define_bootstrap_stage()
         bootstrap_stage.update_settings(
             {
                 u'http://rmit.edu.au/schemas/stages/setup':
@@ -93,7 +93,7 @@ class HRMC2Initial(CoreInitial):
         return bootstrap_stage
 
     def define_wait_stage(self):
-        wait_stage = super(HRMC2Initial, self).define_wait_stage()
+        wait_stage = super(Rand2Initial, self).define_wait_stage()
         wait_stage.update_settings({
             u'http://rmit.edu.au/schemas/stages/wait':
                 {
@@ -103,7 +103,7 @@ class HRMC2Initial(CoreInitial):
         return wait_stage
 
     def define_execute_stage(self):
-        execute_stage = super(HRMC2Initial, self).define_execute_stage()
+        execute_stage = super(Rand2Initial, self).define_execute_stage()
         execute_stage.update_settings(
             {
             u'http://rmit.edu.au/schemas/stages/run':
@@ -140,4 +140,4 @@ class HRMC2Initial(CoreInitial):
     def assemble_stages(self):
         self.define_transform_stage()
         self.define_converge_stage()
-        return super(HRMC2Initial, self).assemble_stages()
+        return super(Rand2Initial, self).assemble_stages()
