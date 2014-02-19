@@ -48,6 +48,7 @@ copy_commands = (
     ("payload2_new", "local/testpayload_new"),
     ("testpayload", "local/testpayload"),
     ("vasppayload", "local/vasppayload"),
+    ("payload_randomnumber", "local/payload_randomnumber"),
     )
 
 # mkdir /var/cloudenabling/remotesys/{$user}/myfiles
