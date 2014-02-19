@@ -63,6 +63,7 @@ class Rand2Transform(Transform):
         logger.debug('node_output_dirnames=%s' % node_output_dirnames)
 
         for i, node_output_dirname in enumerate(node_output_dirnames):
+            logger.debug('graph_point_id=%s' % str(i))
             node_path = os.path.join(iter_output_dir, node_output_dirname)
             logger.debug("output_url=%s" % output_url)
 
@@ -73,37 +74,32 @@ class Rand2Transform(Transform):
                 values_content = storage.get_file(values_url)
                 val1 = values_content.split()[0]
                 val2 = values_content.split()[1]
-                logger.debug('val1=%s, val2=%s' % (val1, val2))
-            except IOError, e:
-                logger.error(e)
+            except (IndexError, IOError) as e:
+                logger.warn(e)
+                continue
 
             # FIXME: all values from map are strings initially, so need to know
             # type to coerce.
-            x = val1
             try:
                 x = float(val1)
-            except IndexError:
-                pass
-            except ValueError:
-                pass
-
-            logger.debug("x=%s" % x)
-
-            y = val2
-
+            except (ValueError, IndexError) as e:
+                logger.warn(e)
+                continue
+            logger.debug("x_value=%s" % x)
             try:
                 y = float(val2)
-            except IndexError:
-                pass
-            except ValueError:
-                pass
-            logger.debug("y=%s" % y)
+            except (ValueError, IndexError) as e:
+                logger.warn(e)
+                continue
+            logger.debug("y_value=%s" % y)
 
+            '''
             def _get_exp_name_for_vasp(settings, url, path):
                 """
                 Break path based on EXP_DATASET_NAME_SPLIT
                 """
                 return str(path)
+            '''
 
             def _get_dataset_name_for_vasp(settings, url, path):
                 """
@@ -118,11 +114,12 @@ class Rand2Transform(Transform):
                     is_relative_path=False)
 
             all_settings['graph_point_id'] = str(i)
+            logger.debug('all_settings_graph_point_id=%s' % all_settings['graph_point_id'])
             experiment_id = mytardis.create_dataset(
                 settings=all_settings,
                 source_url=source_dir_url,
                 exp_id=experiment_id,
-                exp_name=_get_exp_name_for_vasp,
+                #exp_name=_get_exp_name_for_vasp,
                 dataset_name=_get_dataset_name_for_vasp,
                 dataset_paramset=[
                     mytardis.create_paramset("remotemake/output", []),
@@ -137,6 +134,7 @@ class Rand2Transform(Transform):
                         ),
                     ]
                 )
+            logger.debug('experiment_id=%s' % experiment_id)
 
         return experiment_id
 
