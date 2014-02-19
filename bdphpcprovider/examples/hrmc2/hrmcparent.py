@@ -26,7 +26,7 @@ from bdphpcprovider.corestages.parent import Parent
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadSpecificationError
 from bdphpcprovider.smartconnectorscheduler import hrmcstages
 from bdphpcprovider.runsettings import update, getval, SettingNotFoundException
-from bdphpcprovider.storage import get_url_with_pkey, list_dirs
+from bdphpcprovider.storage import get_url_with_credentials, list_dirs
 
 
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
@@ -170,7 +170,7 @@ class HRMCParent(Parent):
             logger.debug(e)
             id = 0
         iter_inputdir = os.path.join(job_dir, "input_%s" % id)
-        url_with_pkey = get_url_with_pkey(
+        url_with_pkey = get_url_with_credentials(
             output_storage_settings,
             '%s://%s@%s' % (output_storage_settings['scheme'],
                            output_storage_settings['type'],

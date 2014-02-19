@@ -36,7 +36,7 @@ from bdphpcprovider.smartconnectorscheduler.errors import ContextKeyMissing, Inv
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
 from bdphpcprovider.smartconnectorscheduler import models
 from bdphpcprovider.smartconnectorscheduler import storage
-from bdphpcprovider.storage import get_url_with_pkey
+from bdphpcprovider.storage import get_url_with_credentials
 
 from bdphpcprovider import messages
 
@@ -366,7 +366,7 @@ def _get_command_actual_args(directive_args, user_settings):
         #     # THis could be an expensive operations if remote, so may need
         #     # caching or maybe remote resolution?
         #     if rendering_context:
-        #         source_url = get_url_with_pkey(user_settings, file_url)
+        #         source_url = get_url_with_credentials(user_settings, file_url)
         #         content = get_file(source_url).decode('utf-8')  # FIXME: assume template are unicode, not bytestrings
         #         logger.debug("content=%s" % content)
         #         # Parse file parameter and retrieve data
@@ -381,7 +381,7 @@ def _get_command_actual_args(directive_args, user_settings):
         #         logger.debug("local_rul=%s" % local_url)
         #         rendered_content = t.render(con).encode('utf-8')
         #         logger.debug("rendered_content=%s" % rendered_content)
-        #         dest_url = get_url_with_pkey(user_settings, local_url)
+        #         dest_url = get_url_with_credentials(user_settings, local_url)
         #         put_file(dest_url, rendered_content)
         #     else:
         #         logger.debug("no render required")
@@ -719,11 +719,11 @@ def _make_run_settings_for_command(command_args, run_settings):
 #     # TODO: cache this result, because function used often
 #     # TODO/FIXME: need ability to delete this key, because
 #     # is senstive.  For example, delete at end of each stage execution.
-#     url = smartconnector.get_url_with_pkey(settings,
+#     url = smartconnector.get_url_with_credentials(settings,
 #         private_key_url)
 #     logger.debug("url=%s" % url)
 #     key_contents = get_file(url)
-#     local_url = smartconnector.get_url_with_pkey(settings,
+#     local_url = smartconnector.get_url_with_credentials(settings,
 #         os.path.join("centos", 'key'), is_relative_path=True)
 #     logger.debug("local_url=%s" % local_url)
 #     put_file(local_url, key_contents)
@@ -736,7 +736,7 @@ def generate_rands(settings, start_range,  end_range, num_required, start_index)
     # FIXME: there must be an third party library that does this more
     # effectively.
     rand_nums = []
-    num_url = get_url_with_pkey(settings, settings['random_numbers'],
+    num_url = get_url_with_credentials(settings, settings['random_numbers'],
         is_relative_path=False)
     random_content = storage.get_file(num_url)
     # FIXME: this loads the entire file, which could be very large.

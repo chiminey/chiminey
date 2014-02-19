@@ -24,7 +24,7 @@ import os
 from bdphpcprovider.platform import get_job_dir
 from bdphpcprovider.cloudconnection import is_vm_running, get_registered_vms
 from bdphpcprovider.runsettings import SettingNotFoundException, getval, update
-from bdphpcprovider.storage import get_url_with_pkey, get_make_path, put_file, list_dirs
+from bdphpcprovider.storage import get_url_with_credentials, get_make_path, put_file, list_dirs
 from bdphpcprovider.sshconnection import open_connection
 from bdphpcprovider.compute import run_command_with_status
 
@@ -95,7 +95,7 @@ def complete_schedule(schedule_class, local_settings):
             #    local_settings['payload_destination'])
             relative_path = "%s@%s" % (local_settings['type'],
                 schedule_class.get_relative_output_path(local_settings))
-            destination = get_url_with_pkey(
+            destination = get_url_with_credentials(
                 local_settings,
                 relative_path,
                 is_relative_path=True,
@@ -217,7 +217,7 @@ def start_round_robin_schedule(nodes, processes, schedule_index, settings, relat
             ids, ip_address, new_processes,
             maximum_retry=int(settings['maximum_retry']))
 
-        destination = get_url_with_pkey(
+        destination = get_url_with_credentials(
             settings,
             relative_path,
             is_relative_path=True,
@@ -283,7 +283,7 @@ def start_round_robin_reschedule(nodes, procs_2b_rescheduled,
             ids, ip_address, new_processes,
             status='reschedule_ready',
             maximum_retry=int(settings['maximum_retry']))
-        destination = get_url_with_pkey(settings,
+        destination = get_url_with_credentials(settings,
             relative_path,
             is_relative_path=True,
             ip_address=ip_address)
@@ -335,7 +335,7 @@ def put_proc_ids(relative_path, ids, ip, settings):
     relative_path = os.path.join(relative_path,
                                  settings['filename_for_PIDs'])
     logger.debug('put_proc_ids=%s' % relative_path)
-    destination = get_url_with_pkey(settings,
+    destination = get_url_with_credentials(settings,
         relative_path,
         is_relative_path=True,
         ip_address=ip)

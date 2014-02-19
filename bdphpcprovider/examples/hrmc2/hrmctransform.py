@@ -25,7 +25,7 @@ from collections import namedtuple
 import fnmatch
 
 
-from bdphpcprovider.storage import get_url_with_pkey
+from bdphpcprovider.storage import get_url_with_credentials
 from bdphpcprovider.runsettings import getval, SettingNotFoundException
 
 from bdphpcprovider import storage
@@ -112,7 +112,7 @@ class HRMCTransform(Transform):
             logger.debug("criterion=%s" % criterion)
 
             try:
-                values_url = get_url_with_pkey(
+                values_url = get_url_with_credentials(
                     all_settings, os.path.join(node_path,
                     '%s_values' % BASE_FNAME), is_relative_path=False)
 
@@ -162,8 +162,8 @@ class HRMCTransform(Transform):
             ip_address = all_settings['ip_address']
             for f in node_output_fnames:
                 if fnmatch.fnmatch(f, pattern):
-                    source_url = get_url_with_pkey(all_settings, output_prefix + os.path.join(ip_address, source_path, f), is_relative_path=False)
-                    dest_url = get_url_with_pkey(all_settings, output_prefix + os.path.join(ip_address, dest_path, f), is_relative_path=False)
+                    source_url = get_url_with_credentials(all_settings, output_prefix + os.path.join(ip_address, source_path, f), is_relative_path=False)
+                    dest_url = get_url_with_credentials(all_settings, output_prefix + os.path.join(ip_address, dest_path, f), is_relative_path=False)
                     logger.debug('source_url=%s, dest_url=%s' % (source_url, dest_url))
                     content = storage.get_file(source_url)
                     storage.put_file(dest_url, content)
@@ -183,9 +183,9 @@ class HRMCTransform(Transform):
 
             # Move all existing domain input files unchanged to next input directory
             for f in DOMAIN_INPUT_FILES:
-                source_url = get_url_with_pkey(
+                source_url = get_url_with_credentials(
                     all_settings, output_prefix + os.path.join(old_output_path, f), is_relative_path=False)
-                dest_url = get_url_with_pkey(
+                dest_url = get_url_with_credentials(
                     all_settings, output_prefix + os.path.join(new_input_path, f),
                     is_relative_path=False)
                 logger.debug('source_url=%s, dest_url=%s' % (source_url, dest_url))
@@ -213,7 +213,7 @@ class HRMCTransform(Transform):
             # NB: Converge stage triggers based on criterion value from audit.
             logger.debug('starting audit')
             info = "Run %s preserved (error %s)\n" % (Node_info.number, Node_info.criterion)
-            audit_url = get_url_with_pkey(
+            audit_url = get_url_with_credentials(
                 all_settings, output_prefix +
                 os.path.join(new_input_path, 'audit.txt'), is_relative_path=False)
             storage.put_file(audit_url, info)
@@ -222,10 +222,10 @@ class HRMCTransform(Transform):
             self.audit += info
 
             # move xyz_final.xyz to initial.xyz
-            source_url = get_url_with_pkey(
+            source_url = get_url_with_credentials(
                 all_settings, output_prefix + os.path.join(old_output_path, "xyz_final.xyz"), is_relative_path=False)
             logger.debug('source_url=%s' % source_url)
-            dest_url = get_url_with_pkey(
+            dest_url = get_url_with_credentials(
                 all_settings, output_prefix + os.path.join(new_input_path, 'input_initial.xyz'), is_relative_path=False)
             logger.debug('dest_url=%s' % dest_url)
             content = storage.get_file(source_url)
@@ -234,7 +234,7 @@ class HRMCTransform(Transform):
             self.audit += "spawning diamond runs\n"
 
         logger.debug("input_dir=%s" % (output_prefix + os.path.join(new_input_dir, 'audit.txt')))
-        audit_url = get_url_with_pkey(
+        audit_url = get_url_with_credentials(
             all_settings, output_prefix + os.path.join(new_input_dir, 'audit.txt'), is_relative_path=False)
         logger.debug('audit_url=%s' % audit_url)
         storage.put_file(audit_url, self.audit)
@@ -253,7 +253,7 @@ class HRMCTransform(Transform):
         logger.debug('node_path=%s' % node_path)
 
         logger.debug('compute psd---')
-        psd_url = get_url_with_pkey(all_settings,
+        psd_url = get_url_with_credentials(all_settings,
                         os.path.join(node_path, "PSD_output", "psd.dat"), is_relative_path=False)
         logger.debug('psd_url=%s' % psd_url)
 
@@ -263,7 +263,7 @@ class HRMCTransform(Transform):
         # psd_exp = os.path.join(globalFileSystem,
         #                        self.output_dir, node_output_dir,
         #                        "PSD_output/PSD_exp.dat")
-        psd_url = get_url_with_pkey(
+        psd_url = get_url_with_credentials(
             all_settings,
                          os.path.join(node_path, "PSD_output", "PSD_exp.dat"), is_relative_path=False)
         logger.debug('psd_url=%s' % psd_url)
@@ -298,7 +298,7 @@ class HRMCTransform(Transform):
             criterion += math.pow((y1_axis[i] - y2_axis[i]), 2)
         logger.debug("Criterion %f" % criterion)
 
-        criterion_url = get_url_with_pkey(
+        criterion_url = get_url_with_credentials(
             all_settings,
             os.path.join(node_path, "PSD_output", "criterion.txt"),
             is_relative_path=False)
@@ -311,7 +311,7 @@ class HRMCTransform(Transform):
                                     output_storage_settings['type'])
         grerr_file = 'grerr%s.dat' % str(number).zfill(2)
         logger.debug("grerr_file=%s " % grerr_file)
-        grerr_url = get_url_with_pkey(
+        grerr_url = get_url_with_credentials(
             output_storage_settings,
                         output_prefix + os.path.join(self.output_dir,
                             node_output_dir, 'grerr%s.dat' % str(number).zfill(2)), is_relative_path=False)
@@ -438,7 +438,7 @@ class HRMCTransform(Transform):
                     host = settings['host']
                     prefix = 'ssh://%s@%s' % (settings['type'], host)
 
-                    source_url = get_url_with_pkey(
+                    source_url = get_url_with_credentials(
                         settings, os.path.join(prefix, path, "HRMC.inp_values"),
                         is_relative_path=False)
                     logger.debug("source_url=%s" % source_url)
@@ -472,7 +472,7 @@ class HRMCTransform(Transform):
                     logger.debug("dataset_name=%s" % dataset_name)
                     return dataset_name
 
-                source_dir_url = get_url_with_pkey(
+                source_dir_url = get_url_with_credentials(
                     all_settings,
                     node_path,
                     is_relative_path=False)

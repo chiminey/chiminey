@@ -25,7 +25,7 @@ from bdphpcprovider import messages
 from bdphpcprovider.runsettings import getval, update
 from bdphpcprovider.smartconnectorscheduler.stages.errors \
     import InsufficientResourceError, VMTerminatedError, NoRegisteredVMError
-from bdphpcprovider.storage import get_url_with_pkey, copy_directories, get_make_path
+from bdphpcprovider.storage import get_url_with_credentials, copy_directories, get_make_path
 from bdphpcprovider.sshconnection import open_connection
 from bdphpcprovider.compute import run_command_with_status, run_make
 
@@ -81,11 +81,11 @@ def start_multi_bootstrap_task(settings, relative_path_suffix):
                 node_ip = instance.private_ip_address
             logger.debug("node_ip=%s" % node_ip)
             logger.debug('constructing source')
-            source = get_url_with_pkey(settings, settings['payload_source'])
+            source = get_url_with_credentials(settings, settings['payload_source'])
             logger.debug('source=%s' % source)
             #relative_path = '%s@%s' % (settings['type'], settings['payload_destination'])
             relative_path = '%s@%s' % (settings['type'], relative_path_suffix)
-            destination = get_url_with_pkey(settings, relative_path,
+            destination = get_url_with_credentials(settings, relative_path,
                                                  is_relative_path=True,
                                                  ip_address=node_ip)
             logger.debug("Source %s" % source)
@@ -145,7 +145,7 @@ def complete_bootstrap(bootstrap_class, local_settings):
         relative_path_suffix = bootstrap_class.get_relative_output_path(local_settings)
         relative_path = "%s@%s" % (local_settings['type'],
             relative_path_suffix)
-        destination = get_url_with_pkey(local_settings,
+        destination = get_url_with_credentials(local_settings,
             relative_path,
             is_relative_path=True,
             ip_address=node_ip)

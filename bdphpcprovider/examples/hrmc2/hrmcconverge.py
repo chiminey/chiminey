@@ -26,7 +26,7 @@ import os
 import logging
 import json
 import sys
-from bdphpcprovider.storage import get_url_with_pkey
+from bdphpcprovider.storage import get_url_with_credentials
 
 from bdphpcprovider.smartconnectorscheduler.stages.errors import BadInputException
 
@@ -103,7 +103,7 @@ class HRMCConverge(Converge):
 #                 host = settings['host']
 #                 prefix = 'ssh://%s@%s' % (settings['type'], host)
 
-#                 source_url = smartconnector.get_url_with_pkey(
+#                 source_url = smartconnector.get_url_with_credentials(
 #                     settings, os.path.join(prefix, path, "HRMC.inp_values"),
 #                     is_relative_path=False)
 #                 logger.debug("source_url=%s" % source_url)
@@ -145,7 +145,7 @@ class HRMCConverge(Converge):
 #             for m, node_dir in enumerate(node_dirs):
 #                 exp_value_keys.append(["hrmcdset%s/step" % m, "hrmcdset%s/err" % m])
 
-#                 source_url = smartconnector.get_url_with_pkey(output_storage_settings,
+#                 source_url = smartconnector.get_url_with_credentials(output_storage_settings,
 #                     output_prefix + os.path.join(new_output_dir, node_dir), is_relative_path=False)
 
 #                 (source_scheme, source_location, source_path, source_location,
@@ -166,7 +166,7 @@ class HRMCConverge(Converge):
 
 #             for m, node_dir in enumerate(node_dirs):
 
-#                 dataerrors_url = smartconnector.get_url_with_pkey(output_storage_settings,
+#                 dataerrors_url = smartconnector.get_url_with_credentials(output_storage_settings,
 #                     output_prefix + os.path.join(new_output_dir, node_dir, DATA_ERRORS_FILE), is_relative_path=False)
 #                 dataerrors_content = storage.get_file(dataerrors_url)
 #                 xs = []
@@ -200,7 +200,7 @@ class HRMCConverge(Converge):
                     host = settings['host']
                     prefix = 'ssh://%s@%s' % (settings['type'], host)
 
-                    source_url = get_url_with_pkey(
+                    source_url = get_url_with_credentials(
                         settings, os.path.join(prefix, path, "HRMC.inp_values"),
                         is_relative_path=False)
                     logger.debug("source_url=%s" % source_url)
@@ -243,7 +243,7 @@ class HRMCConverge(Converge):
 
                     exp_value_keys.append(["hrmcdset%s/step" % m, "hrmcdset%s/err" % m])
 
-                    source_url = get_url_with_pkey(all_settings,
+                    source_url = get_url_with_credentials(all_settings,
                                                    node_path, is_relative_path=False)
 
                     (source_scheme, source_location, source_path, source_location,
@@ -269,7 +269,7 @@ class HRMCConverge(Converge):
                     #FIXME: this calculation should be done as in extract_psd_func
                     # pulling directly from data_errors rather than passing in
                     # through nested function.
-                    dataerrors_url = get_url_with_pkey(all_settings,
+                    dataerrors_url = get_url_with_credentials(all_settings,
                         os.path.join(node_path, DATA_ERRORS_FILE),
                         is_relative_path=False)
                     logger.debug("dataerrors_url=%s" % dataerrors_url)
@@ -300,7 +300,7 @@ class HRMCConverge(Converge):
                     logger.debug("xs=%s" % xs)
                     logger.debug("ys=%s" % ys)
 
-                    crit_url = get_url_with_pkey(all_settings,
+                    crit_url = get_url_with_credentials(all_settings,
                         os.path.join(node_path, "criterion.txt"), is_relative_path=False)
                     try:
                         crit = storage.get_file(crit_url)
@@ -314,7 +314,7 @@ class HRMCConverge(Converge):
                     else:
                         hrmcdset_val = {}
 
-                    source_url = get_url_with_pkey(
+                    source_url = get_url_with_credentials(
                         all_settings, node_path, is_relative_path=False)
                     logger.debug("source_url=%s" % source_url)
 
@@ -484,9 +484,9 @@ class HRMCConverge(Converge):
 
             # Retrieve audit file
 
-            # audit_url = get_url_with_pkey(output_storage_settings,
+            # audit_url = get_url_with_credentials(output_storage_settings,
             #     output_prefix + os.path.join(self.iter_inputdir, input_dir, 'audit.txt'), is_relative_path=False)
-            audit_url = get_url_with_pkey(all_settings, os.path.join(node_path, "audit.txt"), is_relative_path=False)
+            audit_url = get_url_with_credentials(all_settings, os.path.join(node_path, "audit.txt"), is_relative_path=False)
             audit_content = storage.get_file(audit_url)
             logger.debug('audit_url=%s' % audit_url)
 

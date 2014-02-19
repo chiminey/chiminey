@@ -40,7 +40,7 @@ from bdphpcprovider.sshconnection import open_connection
 from bdphpcprovider.compute import run_make
 
 from bdphpcprovider.runsettings import getval, setvals, getvals, update, SettingNotFoundException
-from bdphpcprovider.storage import get_url_with_pkey, list_dirs, get_make_path
+from bdphpcprovider.storage import get_url_with_credentials, list_dirs, get_make_path
 
 
 logger = logging.getLogger(__name__)
@@ -200,7 +200,7 @@ class Execute(stage.Stage):
                                     output_storage_settings['type'])
         for proc in self.ready_processes:
             source_location = os.path.join(self.job_dir, "input_backup", proc['id'])
-            source_files_url = get_url_with_pkey(output_storage_settings,
+            source_files_url = get_url_with_credentials(output_storage_settings,
                     output_prefix + source_location, is_relative_path=False)
             relative_path_suffix = self.get_relative_output_path(local_settings)
             #dest_files_location = computation_platform_settings['type'] + "@"\
@@ -212,7 +212,7 @@ class Execute(stage.Stage):
                 proc['id'], local_settings['payload_cloud_dirname'])
             logger.debug('dest_files_location=%s' % dest_files_location)
 
-            dest_files_url = get_url_with_pkey(
+            dest_files_url = get_url_with_credentials(
                 computation_platform_settings, dest_files_location,
                 is_relative_path=True, ip_address=proc['ip_address'])
             logger.debug('dest_files_url=%s' % dest_files_url)
@@ -262,7 +262,7 @@ class Execute(stage.Stage):
         #relative_path = settings['type'] + '@' + settings['payload_destination'] + "/" + process_id
         relative_path_suffix = self.get_relative_output_path(settings)
         relative_path = settings['type'] + '@' + os.path.join(relative_path_suffix, process_id)
-        destination = get_url_with_pkey(settings,
+        destination = get_url_with_credentials(settings,
             relative_path,
             is_relative_path=True,
             ip_address=ip_address)
@@ -334,7 +334,7 @@ class Execute(stage.Stage):
         logger.debug("Iteration Input dir %s" % self.iter_inputdir)
         output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
                                 output_storage_settings['type'])
-        url_with_pkey = get_url_with_pkey(
+        url_with_pkey = get_url_with_credentials(
             output_storage_settings, output_prefix + self.iter_inputdir, is_relative_path=False)
         logger.debug("url_with_pkey=%s" % url_with_pkey)
         input_dirs = list_dirs(url_with_pkey)
@@ -355,7 +355,7 @@ class Execute(stage.Stage):
         output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
                                     output_storage_settings['type'])
         template_pat = re.compile("(.*)_template")
-        fname_url_with_pkey = get_url_with_pkey(
+        fname_url_with_pkey = get_url_with_credentials(
             output_storage_settings,
             output_prefix + os.path.join(self.iter_inputdir, input_dir),
             is_relative_path=False)
@@ -372,7 +372,7 @@ class Execute(stage.Stage):
             template_mat = template_pat.match(fname)
             if template_mat:
                 # get the template
-                basename_url_with_pkey = get_url_with_pkey(
+                basename_url_with_pkey = get_url_with_credentials(
                     output_storage_settings,
                     output_prefix + os.path.join(self.iter_inputdir, input_dir, fname),
                     is_relative_path=False)
@@ -383,7 +383,7 @@ class Execute(stage.Stage):
                 # find associated values file and generator_counter
                 values_map = {}
                 try:
-                    values_url_with_pkey = get_url_with_pkey(
+                    values_url_with_pkey = get_url_with_credentials(
                         output_storage_settings,
                         output_prefix + os.path.join(self.iter_inputdir,
                             input_dir,
@@ -481,7 +481,7 @@ class Execute(stage.Stage):
         logger.debug("upload_variation_inputs")
         output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
                                     output_storage_settings['type'])
-        source_files_url = get_url_with_pkey(
+        source_files_url = get_url_with_credentials(
             output_storage_settings, output_prefix + os.path.join(
                 self.iter_inputdir, input_dir),
             is_relative_path=False)
@@ -539,7 +539,7 @@ class Execute(stage.Stage):
 
                 logger.debug('dest_files_location=%s' % dest_files_location)
 
-                dest_files_url = get_url_with_pkey(
+                dest_files_url = get_url_with_credentials(
                     computation_platform_settings, dest_files_location,
                     is_relative_path=True, ip_address=ip)
                 logger.debug('dest_files_url=%s' % dest_files_url)
@@ -556,7 +556,7 @@ class Execute(stage.Stage):
 
                 if self.reschedule_failed_procs:
                     input_backup = os.path.join(self.job_dir, "input_backup", proc['id'])
-                    backup_url = get_url_with_pkey(
+                    backup_url = get_url_with_credentials(
                         output_storage_settings,
                         output_prefix + input_backup, is_relative_path=False)
                     storage.copy_directories(source_files_url, backup_url)
@@ -565,12 +565,12 @@ class Execute(stage.Stage):
                 import uuid
                 randsuffix = unicode(uuid.uuid4())  # should use some job id here
 
-                var_url = get_url_with_pkey(local_settings, os.path.join("tmp%s" % randsuffix, "var"),
+                var_url = get_url_with_credentials(local_settings, os.path.join("tmp%s" % randsuffix, "var"),
                     is_relative_path=True)
                 logger.debug("var_url=%s" % var_url)
                 storage.put_file(var_url, var_content.encode('utf-8'))
 
-                value_url = get_url_with_pkey(local_settings, os.path.join("tmp%s" % randsuffix, "value"),
+                value_url = get_url_with_credentials(local_settings, os.path.join("tmp%s" % randsuffix, "value"),
                     is_relative_path=True)
                 logger.debug("value_url=%s" % value_url)
                 storage.put_file(value_url, json.dumps(values))
@@ -588,14 +588,14 @@ class Execute(stage.Stage):
                                          local_settings['payload_cloud_dirname'],
                                          var_fname)
 
-                var_fname_pkey = get_url_with_pkey(
+                var_fname_pkey = get_url_with_credentials(
                     computation_platform_settings, var_fname_remote,
                     is_relative_path=True, ip_address=ip)
                 var_content = storage.get_file(var_url)
                 storage.put_file(var_fname_pkey, var_content)
 
                 logger.debug("var_fname_pkey=%s" % var_fname_pkey)
-                values_fname_pkey = get_url_with_pkey(
+                values_fname_pkey = get_url_with_credentials(
                     computation_platform_settings,
                     os.path.join(dest_files_location,
                                  "%s_values" % var_fname),
@@ -606,14 +606,14 @@ class Execute(stage.Stage):
 
                 #copying values and var_content to backup folder
                 if self.reschedule_failed_procs:
-                    value_url = get_url_with_pkey(
+                    value_url = get_url_with_credentials(
                         output_storage_settings,
                         output_prefix + os.path.join(input_backup, "%s_values" % var_fname),
                         is_relative_path=False)
                     logger.debug("value_url=%s" % value_url)
                     storage.put_file(value_url, json.dumps(values))
 
-                    var_fname_pkey = get_url_with_pkey(
+                    var_fname_pkey = get_url_with_credentials(
                         output_storage_settings,
                         output_prefix + os.path.join(input_backup, var_fname),
                         is_relative_path=False)
@@ -621,7 +621,7 @@ class Execute(stage.Stage):
                     storage.put_file(var_fname_pkey, var_content)
 
                 # cleanup
-                tmp_url = get_url_with_pkey(local_settings, os.path.join("tmp%s" % randsuffix),
+                tmp_url = get_url_with_credentials(local_settings, os.path.join("tmp%s" % randsuffix),
                     is_relative_path=True)
                 logger.debug("deleting %s" % tmp_url)
 

@@ -23,7 +23,7 @@ import os
 import ast
 import logging
 
-from bdphpcprovider.storage import get_url_with_pkey
+from bdphpcprovider.storage import get_url_with_credentials
 from bdphpcprovider.corestages.stage import Stage
 
 from bdphpcprovider.platform import manage
@@ -145,7 +145,7 @@ class Transform(Stage):
         except ValueError:
             self.experiment_id = 0
 
-        output_url = get_url_with_pkey(
+        output_url = get_url_with_credentials(
             output_storage_settings,
             output_prefix + self.output_dir, is_relative_path=False)
 
@@ -177,7 +177,7 @@ class Transform(Stage):
         # for node_output_dir in node_output_dirs:
         #     base_fname = "HRMC.inp"
         #     try:
-        #         values_url = get_url_with_pkey(
+        #         values_url = get_url_with_credentials(
         #             output_storage_settings,
         #             output_prefix + os.path.join(self.output_dir, node_output_dir,
         #             '%s_values' % base_fname), is_relative_path=False)
@@ -222,10 +222,10 @@ class Transform(Stage):
 
         #     # Move all existing domain input files unchanged to next input directory
         #     for f in self.DOMAIN_INPUT_FILES:
-        #         source_url = get_url_with_pkey(
+        #         source_url = get_url_with_credentials(
         #             output_storage_settings,
         #             output_prefix + os.path.join(self.output_dir, Node_info.dir, f), is_relative_path=False)
-        #         dest_url = get_url_with_pkey(
+        #         dest_url = get_url_with_credentials(
         #             output_storage_settings,
         #             output_prefix + os.path.join(self.new_input_node_dir, f),
         #             is_relative_path=False)
@@ -250,7 +250,7 @@ class Transform(Stage):
         #     # NB: Converge stage triggers based on criterion value from audit.
 
         #     info = "Run %s preserved (error %s)\n" % (Node_info.number, Node_info.criterion)
-        #     audit_url = get_url_with_pkey(
+        #     audit_url = get_url_with_credentials(
         #         output_storage_settings,
         #             output_prefix + os.path.join(self.new_input_node_dir, 'audit.txt'), is_relative_path=False)
         #     storage.put_file(audit_url, info)
@@ -258,17 +258,17 @@ class Transform(Stage):
         #     self.audit += info
 
         #     # move xyz_final.xyz to initial.xyz
-        #     source_url = get_url_with_pkey(
+        #     source_url = get_url_with_credentials(
         #         output_storage_settings,
         #         output_prefix + os.path.join(self.output_dir, Node_info.dir, "xyz_final.xyz"), is_relative_path=False)
-        #     dest_url = get_url_with_pkey(
+        #     dest_url = get_url_with_credentials(
         #         output_storage_settings,
         #         output_prefix + os.path.join(self.new_input_node_dir, 'input_initial.xyz'), is_relative_path=False)
         #     content = storage.get_file(source_url)
         #     storage.put_file(dest_url, content)
         #     self.audit += "spawning diamond runs\n"
 
-        # audit_url = get_url_with_pkey(
+        # audit_url = get_url_with_credentials(
         #     output_storage_settings,
         #                 output_prefix + os.path.join(self.new_input_dir, 'audit.txt'), is_relative_path=False)
         # storage.put_file(audit_url, self.audit)
@@ -315,7 +315,7 @@ class Transform(Stage):
     #                                 output_storage_settings['type'])
     #     grerr_file = 'grerr%s.dat' % str(number).zfill(2)
     #     logger.debug("grerr_file=%s " % grerr_file)
-    #     grerr_url = get_url_with_pkey(
+    #     grerr_url = get_url_with_credentials(
     #         output_storage_settings,
     #                     output_prefix + os.path.join(self.output_dir,
     #                         node_output_dir, 'grerr%s.dat' % str(number).zfill(2)), is_relative_path=False)
@@ -344,7 +344,7 @@ class Transform(Stage):
     #     output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
     #                                 output_storage_settings['type'])
     #     logger.debug('compute psd---')
-    #     psd_url = get_url_with_pkey(output_storage_settings,
+    #     psd_url = get_url_with_credentials(output_storage_settings,
     #                     output_prefix + os.path.join(self.output_dir,
     #                         node_output_dir, "PSD_output", "psd.dat"), is_relative_path=False)
     #     logger.debug('psd_url=%s' % psd_url)
@@ -355,7 +355,7 @@ class Transform(Stage):
     #     # psd_exp = os.path.join(globalFileSystem,
     #     #                        self.output_dir, node_output_dir,
     #     #                        "PSD_output/PSD_exp.dat")
-    #     psd_url = get_url_with_pkey(
+    #     psd_url = get_url_with_credentials(
     #         output_storage_settings,
     #                     output_prefix + os.path.join(self.output_dir,
     #                         node_output_dir, "PSD_output", "PSD_exp.dat"), is_relative_path=False)
@@ -391,7 +391,7 @@ class Transform(Stage):
     #         criterion += math.pow((y1_axis[i] - y2_axis[i]), 2)
     #     logger.debug("Criterion %f" % criterion)
 
-    #     criterion_url = get_url_with_pkey(
+    #     criterion_url = get_url_with_credentials(
     #         output_storage_settings,
     #         output_prefix + os.path.join(self.output_dir, node_output_dir, "PSD_output", "criterion.txt"),
     #         is_relative_path=False)

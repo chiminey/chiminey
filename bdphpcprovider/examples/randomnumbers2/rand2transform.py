@@ -20,122 +20,85 @@
 
 
 import os
-import json
 import logging
-from pprint import pformat
-from bdphpcprovider.platform import manage
 from bdphpcprovider.corestages import Transform
-
-from bdphpcprovider.corestages.stage import Stage, UI
-from bdphpcprovider.smartconnectorscheduler import models
-
 from bdphpcprovider import mytardis
-from bdphpcprovider import messages
 from bdphpcprovider import storage
-
-from bdphpcprovider.runsettings import getval, getvals, setval, update, SettingNotFoundException
-from bdphpcprovider.storage import get_url_with_pkey
-
-
+from bdphpcprovider.runsettings import getval
+from bdphpcprovider.storage import get_url_with_credentials
 
 logger = logging.getLogger(__name__)
-
-
-RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+SCHEMA_PREFIX = "http://rmit.edu.au/schemas"
+OUTPUT_FILE = "output"
 
 
 class Rand2Transform(Transform):
-    def curate_dataset(self, run_settings, experiment_id, base_dir, output_url,
-        all_settings):
-
-        OUTCAR_FILE = "OUTCAR"
-        VALUES_FILE = "output"
-        logger.debug('output_url=%s' % output_url)
-        iteration = int(getval(run_settings, '%s/system/id' % RMIT_SCHEMA))
-        iter_output_dir = os.path.join(os.path.join(base_dir, "output_%s" % iteration))
+    '''
+        Curates dataset into existing MyTardis experiment
+    '''
+    def curate_dataset(self, run_settings, experiment_id,
+                       base_url, output_url, all_settings):
+        '''
+            Curates dataset
+        '''
+        # Retrieves process directories below the current output location
+        iteration = int(getval(run_settings, '%s/system/id' % SCHEMA_PREFIX))
         output_prefix = '%s://%s@' % (all_settings['scheme'],
                                     all_settings['type'])
-        iter_output_dir = "%s%s" % (output_prefix, iter_output_dir)
-        logger.debug('iter_output_dir=%s' % iter_output_dir)
-        (scheme, host, mypath, location, query_settings) = storage.parse_bdpurl(output_url)
-        fsys = storage.get_filesystem(output_url)
-        node_output_dirnames, _ = fsys.listdir(mypath)
-        logger.debug('node_output_dirnames=%s' % node_output_dirnames)
+        current_output_url = "%s%s" % (output_prefix, os.path.join(os.path.join(
+            base_url, "output_%s" % iteration)))
+        (scheme, host, current_output_path, location, query_settings) = storage.parse_bdpurl(output_url)
+        output_fsys = storage.get_filesystem(output_url)
+        process_output_dirs, _ = output_fsys.listdir(current_output_path)
 
-        for i, node_output_dirname in enumerate(node_output_dirnames):
-            logger.debug('graph_point_id=%s' % str(i))
-            node_path = os.path.join(iter_output_dir, node_output_dirname)
-            logger.debug("output_url=%s" % output_url)
-
-            values_url = storage.get_url_with_pkey(all_settings,
-                os.path.join(node_path, VALUES_FILE), is_relative_path=False)
-            logger.debug("values_url=%s" % values_url)
+        # Curates a dataset with metadata per process
+        for i, process_output_dir in enumerate(process_output_dirs):
+            # Expand the process output directory and add credentials for access
+            process_output_url = '/'.join([current_output_url, process_output_dir])
+            process_output_url_with_cred = get_url_with_credentials(
+                    all_settings,
+                    process_output_url,
+                    is_relative_path=False)
+            # Expand the process output file and add credentials for access
+            output_file_url_with_cred = storage.get_url_with_credentials(
+                all_settings, '/'.join([process_output_url, OUTPUT_FILE]),
+                is_relative_path=False)
             try:
-                values_content = storage.get_file(values_url)
-                val1 = values_content.split()[0]
-                val2 = values_content.split()[1]
+                output_content = storage.get_file(output_file_url_with_cred)
+                val1, val2 = output_content.split()
             except (IndexError, IOError) as e:
                 logger.warn(e)
                 continue
-
-            # FIXME: all values from map are strings initially, so need to know
-            # type to coerce.
             try:
                 x = float(val1)
-            except (ValueError, IndexError) as e:
-                logger.warn(e)
-                continue
-            logger.debug("x_value=%s" % x)
-            try:
                 y = float(val2)
             except (ValueError, IndexError) as e:
                 logger.warn(e)
                 continue
-            logger.debug("y_value=%s" % y)
 
-            '''
-            def _get_exp_name_for_vasp(settings, url, path):
-                """
-                Break path based on EXP_DATASET_NAME_SPLIT
-                """
-                return str(path)
-            '''
-
-            def _get_dataset_name_for_vasp(settings, url, path):
-                """
-                Break path based on EXP_DATASET_NAME_SPLIT
-                """
-                return all_settings['graph_point_id']
-                #return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
-
-            source_dir_url = get_url_with_pkey(
-                    all_settings,
-                    node_path,
-                    is_relative_path=False)
-
+            # Returns the process id as MyTardis dataset name
             all_settings['graph_point_id'] = str(i)
-            logger.debug('all_settings_graph_point_id=%s' % all_settings['graph_point_id'])
+            def _get_dataset_name(settings, url, path):
+                return all_settings['graph_point_id']
+
+            # Creates new dataset and adds to experiment
+            # If experiment_id==0, creates new experiment
             experiment_id = mytardis.create_dataset(
-                settings=all_settings,
-                source_url=source_dir_url,
+                settings=all_settings, # MyTardis credentials
+                source_url=process_output_url_with_cred,
                 exp_id=experiment_id,
-                #exp_name=_get_exp_name_for_vasp,
-                dataset_name=_get_dataset_name_for_vasp,
+                dataset_name=_get_dataset_name, # the function that defines dataset name
                 dataset_paramset=[
+                    # a new blank parameter set conforming to schema 'remotemake/output'
                     mytardis.create_paramset("remotemake/output", []),
-                    mytardis.create_graph_paramset("dsetgraph",
-                        name="randdset",
+                    mytardis.create_graph_paramset("dsetgraph", # name of schema
+                        name="randdset", # a unique dataset name
                         graph_info={},
-                        value_dict={"randdset/x": x, "randdset/y": y}
-                            if (x is not None)
-                                and (y is not None)
-                                else {},
+                        value_dict={"randdset/x": x, "randdset/y": y},  # values to be used in experiment graphs
                         value_keys=[]
                         ),
                     ]
                 )
-            logger.debug('experiment_id=%s' % experiment_id)
-
         return experiment_id
 
 
