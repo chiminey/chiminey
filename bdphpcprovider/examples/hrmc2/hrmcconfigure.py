@@ -1,21 +1,9 @@
-from bdphpcprovider.corestages import Configure
-
-
 import os
 import logging
-from pprint import pformat
+
 from bdphpcprovider.platform import manage
-from bdphpcprovider.corestages import stage
-
-from bdphpcprovider.corestages.stage import Stage, UI
-from bdphpcprovider.smartconnectorscheduler import models
-
+from bdphpcprovider.corestages import Configure
 from bdphpcprovider import mytardis
-from bdphpcprovider import messages
-from bdphpcprovider import storage
-
-from bdphpcprovider.runsettings import getval, getvals, setval, update, SettingNotFoundException
-from bdphpcprovider.storage import get_url_with_credentials
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +11,6 @@ RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
 
 class HRMCConfigure(Configure):
-
 
     def curate_data(self, run_settings, location, experiment_id):
         bdp_username = run_settings['http://rmit.edu.au/schemas/bdp_userprofile']['username']
@@ -33,7 +20,6 @@ class HRMCConfigure(Configure):
             mytardis_url = run_settings['http://rmit.edu.au/schemas/input/mytardis']['mytardis_platform']
             mytardis_settings = manage.get_platform_settings(mytardis_url, bdp_username)
             logger.debug(mytardis_settings)
-            #local_settings.update(mytardis_settings)
 
             EXP_DATASET_NAME_SPLIT = 2
 
