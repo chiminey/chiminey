@@ -437,7 +437,7 @@ class FinishedContextUpdateView(UpdateView):
 #     def get_context_data(self, **kwargs):
 #         context = super(ListDirList, self).get_context_data(**kwargs)
 
-#         url = smartconnector.get_url_with_credentials({}, ".", is_relative_path=True)
+#         url = smartconnectorscheduler.get_url_with_credentials({}, ".", is_relative_path=True)
 #         file_paths = [x[1:] for x in hrmcstages.list_all_files(url)]
 #         context['paths'] = file_paths
 #         return context

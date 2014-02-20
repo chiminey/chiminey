@@ -22,7 +22,7 @@ import os
 import logging
 from pprint import pformat
 
-# from chiminey.smartconnectorscheduler.smartconnector import Stage
+# from chiminey.smartconnectorscheduler.smartconnectorscheduler import Stage
 
 from chiminey.platform import manage
 from chiminey import messages
@@ -68,12 +68,12 @@ class MakeRunStage(stage.Stage):
 
         return False
 
-        # if smartconnector.multilevel_key_exists(
+        # if smartconnectorscheduler.multilevel_key_exists(
         #     run_settings,
         #     'http://rmit.edu.au/schemas/stages/upload_makefile',
         #     'done'):
         #     try:
-        #         upload_makefile_done = int(smartconnector.get_existing_key(run_settings,
+        #         upload_makefile_done = int(smartconnectorscheduler.get_existing_key(run_settings,
         #             'http://rmit.edu.au/schemas/stages/upload_makefile/done'))
         #     except ValueError, e:
         #         logger.error(e)

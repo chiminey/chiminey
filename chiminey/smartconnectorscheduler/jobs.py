@@ -32,43 +32,15 @@ from django.core.exceptions import ImproperlyConfigured
 from django.contrib.auth.models import User
 from storages.backends.sftpstorage import SFTPStorage
 
-from chiminey.smartconnectorscheduler.errors import ContextKeyMissing, InvalidInputError, deprecated
-from chiminey.smartconnectorscheduler.stages.errors import BadInputException
+from chiminey.smartconnectorscheduler.errors \
+    import ContextKeyMissing, InvalidInputError, deprecated, BadInputException
 from chiminey.smartconnectorscheduler import models
-from chiminey.smartconnectorscheduler import storage
-from chiminey.storage import get_url_with_credentials
+from chiminey.storage import get_url_with_credentials, get_file
 
 from chiminey import messages
 
 logger = logging.getLogger(__name__)
 
-
-
-# @deprecated
-# def get_filesys(context):
-#     """
-#     Return the filesys in the context
-#     """
-#     try:
-#         val = context['filesys']
-#     except KeyError:
-#         message = 'Context missing "filesys" key'
-#         logger.exception(message)
-#         raise ContextKeyMissing(message)
-#     return val
-
-
-# @deprecated
-# def _load_file(fsys, fname):
-#     """
-#     Returns the dataobject for fname in fsys, or empty data object if error
-#     """
-#     try:
-#         config = fsys.retrieve(fname)
-#     except KeyError, e:
-#         config = DataObject(fname, '')
-#         logger.warn("Cannot load %s %s" % (fname, e))
-#     return config
 
 def retrieve_settings(profile):
     """
@@ -88,18 +60,7 @@ def retrieve_settings(profile):
     return settings
 
 
-# @deprecated
-# def get_file_from_context(context, fname):
-#     """
-#     Retrieve the content of a remote file with fname
-#     """
-#     fsys_path = context['fsys']
-#     remote_fs = FileSystemStorage(location=fsys_path)
-#     f = context[fname]
-#     content = remote_fs.open(f).read()
-#     return content
 
-'''
 @deprecated
 def get_settings(context):
     """
@@ -119,122 +80,7 @@ def get_settings(context):
         logger.debug('ContextKeyMissing exception')
         raise
 
-'''
-# @deprecated
-# def _get_run_info_file(context):
-#     """
-#     Returns the actual runinfo data object. If problem, return blank data object
-#     """
-#     fsys = get_filesys(context)
-#     #logger.debug("fsys= %s" % fsys)
-#     config = _load_file(fsys, "default/runinfo.sys")
-#     #logger.debug("config= %s" % config)
-#     return config
 
-
-# @deprecated
-# def get_run_info(context):
-#     """
-#     Returns the content of the run info as file a dict. If problem, return {}
-#     """
-#     try:
-#         get_filesys(context)
-#     except ContextKeyMissing:
-#         return {}
-#     #logger.debug("fsys= %s" % fsys)
-#     config = _get_run_info_file(context)
-#     #logger.debug("config= %s" % config)
-#     if config:
-#         settings_text = config.retrieve()
-#         #logger.debug("runinfo_text= %s" % settings_text)
-#         res = json.loads(settings_text)
-#         #logger.debug("res=%s" % dict(res))
-#         return dict(res)
-#     return {}
-
-
-# # @deprecated
-# # def get_all_settings(context):
-# #     """
-# #     Returns a single dict containing content of config.sys and runinfo.sys
-# #     """
-# #     settings = get_settings(context)
-# #     run_info = get_run_info(context)
-# #     settings.update(run_info)
-# #     settings.update(context)
-# #     return settings
-
-
-# @deprecated
-# def update_key(key, value, context):
-#     """
-#     Updates key from the filesystem runinfo.sys file to a new values
-#     """
-#     filesystem = get_filesys(context)
-#     logger.debug("filesystem= %s" % filesystem)
-
-#     run_info_file = _load_file(filesystem, "default/runinfo.sys")
-#     logger.debug("run_info_file= %s" % run_info_file)
-
-#     run_info_file_content = run_info_file.retrieve()
-#     logger.debug("runinfo_content= %s" % run_info_file_content)
-
-#     settings = json.loads(run_info_file_content)
-#     logger.debug("removing %s" % key)
-#     settings[key] = value  # FIXME: possible race condition?
-#     logger.debug("configuration=%s" % settings)
-
-#     run_info_content_blob = json.dumps(settings)
-#     run_info_file.setContent(run_info_content_blob)
-#     filesystem.update("default", run_info_file)
-
-
-# @deprecated
-# def delete_key(key, context):
-#     """
-#     Removes key from the filesystem runinfo.sys file
-#     """
-#     filesystem = get_filesys(context)
-#     logger.debug("filesystem= %s" % filesystem)
-
-#     run_info_file = _load_file(filesystem, "default/runinfo.sys")
-#     logger.debug("run_info_file= %s" % run_info_file)
-
-#     run_info_file_content = run_info_file.retrieve()
-#     logger.debug("runinfo_content= %s" % run_info_file_content)
-
-#     settings = json.loads(run_info_file_content)
-#     del settings[key]
-#     logger.debug("configuration=%s" % settings)
-
-#     run_info_content_blob = json.dumps(settings)
-#     run_info_file.setContent(run_info_content_blob)
-#     filesystem.update("default", run_info_file)
-
-
-# def get_fanout(parameter_value_list):
-#     '''
-#     total_fanout = 1
-#     if len(self.threshold) > 1:
-#         for i in self.threshold:
-#             total_fanout *= self.threshold[i]
-#     else:
-#         total_picks = self.threshold[0]
-#     '''
-#     pass
-
-
-# @deprecated
-# def get_job_dir_old(run_settings):
-#     output_storage_schema = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['namespace']
-#     ip_address = run_settings[output_storage_schema][u'ip_address']
-#     offset = run_settings[output_storage_schema][u'offset']
-#     job_dir = os.path.join(ip_address, offset)
-#     return job_dir
-
-
-def get_threshold():
-    pass
 
 
 def safe_import(path, args, kw):
@@ -275,36 +121,6 @@ def values_match_schema(schema, values):
     """
     # TODO:
     return True
-
-
-# def get_new_local_url(url):
-#     """
-#     Create local resource to hold instantiated template for command execution.
-
-#     """
-
-#     # # The top of the remote filesystem that will hold a user's files
-#     remote_base_path = os.path.join("centos")
-
-#     o = urlparse(url)
-#     file_path = o.path.decode('utf-8')
-#     logger.debug("file_path=%s" % file_path)
-#     # if file_path[0] == os.path.sep:
-#     #     file_path = file_path[:-1]
-#     import uuid
-#     randsuffix = unicode(uuid.uuid4())  # should use some job id here
-
-#     relpath = u"%s_%s" % (file_path, randsuffix)
-
-#     if relpath[0] == os.path.sep:
-#         relpath = relpath[1:]
-#     logger.debug("relpath=%s" % relpath)
-
-#     # FIXME: for django storage, do we need to create
-#     # intermediate directories
-#     dest_path = os.path.join(remote_base_path, relpath)
-#     logger.debug("dest_path=%s" % dest_path)
-#     return u'file://%s' % dest_path.decode('utf8')
 
 
 def _get_command_actual_args(directive_args, user_settings):
@@ -360,124 +176,7 @@ def _get_command_actual_args(directive_args, user_settings):
                         else:
                             command_args.append((("%s/%s" % (metadata_schema.namespace, k))
                                 .decode('utf8'), typed_val))
-
-        # retrieve the file url and resolve against rendering_context
-        # if file_url:
-        #     # THis could be an expensive operations if remote, so may need
-        #     # caching or maybe remote resolution?
-        #     if rendering_context:
-        #         source_url = get_url_with_credentials(user_settings, file_url)
-        #         content = get_file(source_url).decode('utf-8')  # FIXME: assume template are unicode, not bytestrings
-        #         logger.debug("content=%s" % content)
-        #         # Parse file parameter and retrieve data
-        #         logger.debug("file_url %s" % file_url)
-        #         # TODO: don't use temp file, use remote file with
-        #         # name file_url with suffix based on the command job number?
-        #         t = Template(content)
-        #         logger.debug("rendering_context = %s" % rendering_context)
-        #         con = Context(rendering_context)
-        #         logger.debug("prerending content = %s" % t)
-        #         local_url = get_new_local_url(file_url)  # TODO: make remote
-        #         logger.debug("local_rul=%s" % local_url)
-        #         rendered_content = t.render(con).encode('utf-8')
-        #         logger.debug("rendered_content=%s" % rendered_content)
-        #         dest_url = get_url_with_credentials(user_settings, local_url)
-        #         put_file(dest_url, rendered_content)
-        #     else:
-        #         logger.debug("no render required")
-        #         local_url = file_url
-        #     #localfs.save(remote_file_path, ContentFile(cont.encode('utf-8')))  # NB: ContentFile only takes bytes
-        #     #command_args.append((u'', remote_file_path.decode('utf-8')))
-        #     command_args.append((u'', local_url))
-        #     #_put_file(file_url, cont.encode('utf8'), fs)
-        #     #command_args.append((u'', file_url))
     return command_args
-
-
-# @deprecated
-# class NCIStorage(SFTPStorage):
-
-#     def __init__(self, settings=None):
-#         import pkg_resources
-#         version = pkg_resources.get_distribution("django_storages").version
-#         if not str(version) == "1.1.8":
-#             logger.warn("NCIStorage overrides version 1.1.8 of django_storages. found version %s" % version)
-
-#         super(NCIStorage, self).__init__()
-#         if 'params' in settings:
-#             super(NCIStorage, self).__dict__["_params"] = settings['params']
-#         if 'root' in settings:
-#             super(NCIStorage, self).__dict__["_root_path"] = settings['root']
-#         if 'host' in settings:
-#             super(NCIStorage, self).__dict__["_host"] = settings['host']
-#         super(NCIStorage, self).__dict__["_dir_mode"] = 0700
-#         print super(NCIStorage, self)
-
-#     def _connect(self):
-#         """ Overrides internal behaviour to not store host keys
-#             Warning: may stop working for later version of SFTPStorage
-#             FIXME: this approach is brittle for later version of SFTPStorage
-#         """
-#         self._ssh = paramiko.SSHClient()
-
-#         if self._known_host_file is not None:
-#             self._ssh.load_host_keys(self._known_host_file)
-#         else:
-#             # warn BUT DONT ADD host keys from current user.
-#             self._ssh.load_host_keys(os.path.expanduser(os.path.join("~", ".ssh", "known_hosts")))
-
-#         # and automatically add new host keys for hosts we haven't seen before.
-#         self._ssh.set_missing_host_key_policy(paramiko.WarningPolicy())
-
-#         try:
-#             self._ssh.connect(self._host, **self._params)
-#         except paramiko.AuthenticationException, e:
-#             if self._interactive and 'password' not in self._params:
-#                 # If authentication has failed, and we haven't already tried
-#                 # username/password, and configuration allows it, then try
-#                 # again with username/password.
-#                 if 'username' not in self._params:
-#                     self._params['username'] = getpass.getuser()
-#                 self._params['password'] = getpass.getpass()
-#                 self._connect()
-#             else:
-#                 raise paramiko.AuthenticationException, e
-#         except Exception, e:
-#             print e
-
-#         if not hasattr(self, '_sftp'):
-#             self._sftp = self._ssh.open_sftp()
-
-#     def get_available_name(self, name):
-#         """
-#         Returns a filename that's free on the target storage system, and
-#         available for new content to be written to.
-#         """
-#         if self.exists(name):
-#             self.delete(name)
-#         return name
-
-
-# @deprecated
-# class LocalStorage(FileSystemStorage):
-#     def __init__(self, location=None, base_url=None):
-#         super(LocalStorage, self).__init__(location, base_url)
-
-#     def get_available_name(self, name):
-#         """
-#         Returns a filename that's free on the target storage system, and
-#         available for new content to be written to.
-#         """
-#         if self.exists(name):
-#             self.delete(name)
-#         return name
-
-
-# @deprecated
-# def get_http_url(non_http_url):
-#     curr_scheme = non_http_url.split(':')[0]
-#     http_url = "http" + non_http_url[len(curr_scheme):]
-#     return http_url
 
 
 
@@ -617,71 +316,6 @@ def _make_new_run_context(stage, profile, directive, parent, run_settings):
     return run_context
 
 
-# @deprecated
-# def process_all_contexts():
-#     """
-#     The main processing loop.  For each context owned by a user, find the next stage to execute,
-#     get the actual code to execute, then update the context and the filesystem as needed, then advance
-#     current stage according to the composite stage structure.
-#     TODO: this loop will run continuously as celery task to take Directives into commands into contexts
-#     for execution.
-#     """
-#     logger.warn("process_contexts_context is deprecated")
-#     test_info = []
-#     while (True):
-#         run_contexts = models.Context.objects.all()
-#         if not run_contexts:
-#             break
-#         done = None
-#         for run_context in run_contexts:
-#             # retrive the stage model to process
-#             current_stage = run_context.current_stage
-#             logger.debug("current_stage=%s" % current_stage)
-
-#             profile = run_context.owner
-#             logger.debug("profile=%s" % profile)
-
-#             run_settings = run_context.get_context()
-#             logger.debug("retrieved run_settings=%s" % run_settings)
-
-#             user_settings = retrieve_settings(profile)
-#             logger.debug("user_settings=%s" % user_settings)
-
-#             # FIXME: do we want to combine cont and user_settings to
-#             # pass into the stage?  The original code but the problem is separating them
-#             # again before they are serialised.
-
-#             # get the actual stage object
-#             stage = safe_import(current_stage.package, [],
-#              {'user_settings': user_settings})  # obviously need to cache this
-#             logger.debug("stage=%s", stage)
-
-#             if stage.is_triggered(run_settings):
-#                 logger.debug("is_triggered")
-#                 stage.process(run_settings)
-#                 run_settings = stage.output(run_settings)
-#                 logger.debug("updated run_settings=%s" % run_settings)
-#                 run_context.update_run_settings(run_settings)
-#                 logger.debug("run_settings=%s" % run_settings)
-#             else:
-#                 logger.debug("not is_triggered")
-
-#             # advance to the next stage
-#             current_stage = run_context.current_stage.get_next_stage(run_settings)
-#             if not current_stage:
-#                 done = run_context
-#                 break
-
-#             # save away new stage to process
-#             run_context.current_stage = current_stage
-#             run_context.save()
-#         if done:
-#             test_info.append(run_settings)
-#             run_context.delete()
-#     logger.debug("finished main loop")
-#     return test_info
-
-
 def _make_run_settings_for_command(command_args, run_settings):
     """
     Create run_settings for the command to execute with
@@ -719,11 +353,11 @@ def _make_run_settings_for_command(command_args, run_settings):
 #     # TODO: cache this result, because function used often
 #     # TODO/FIXME: need ability to delete this key, because
 #     # is senstive.  For example, delete at end of each stage execution.
-#     url = smartconnector.get_url_with_credentials(settings,
+#     url = smartconnectorscheduler.get_url_with_credentials(settings,
 #         private_key_url)
 #     logger.debug("url=%s" % url)
 #     key_contents = get_file(url)
-#     local_url = smartconnector.get_url_with_credentials(settings,
+#     local_url = smartconnectorscheduler.get_url_with_credentials(settings,
 #         os.path.join("centos", 'key'), is_relative_path=True)
 #     logger.debug("local_url=%s" % local_url)
 #     put_file(local_url, key_contents)
@@ -738,7 +372,7 @@ def generate_rands(settings, start_range,  end_range, num_required, start_index)
     rand_nums = []
     num_url = get_url_with_credentials(settings, settings['random_numbers'],
         is_relative_path=False)
-    random_content = storage.get_file(num_url)
+    random_content = get_file(num_url)
     # FIXME: this loads the entire file, which could be very large.
     numbers = random_content.split('\n')
 
@@ -771,18 +405,3 @@ def generate_rands(settings, start_range,  end_range, num_required, start_index)
     logger.debug("Generated %s random numbers from %s in range [%s, %s): %s "
         % (num_required, num_url, start_range, end_range, pformat(rand_nums)))
     return rand_nums
-
-@deprecated
-def clear_temp_files(context):
-    """
-    Deletes "default" files from filesystem
-    """
-    filesystem = get_filesys(context)
-    print "Deleting temporary files ..."
-    filesystem.delete_local_filesystem('default')
-    print "done."
-
-
-def test_task():
-    print "Hello World"
-

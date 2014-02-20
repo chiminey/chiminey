@@ -25,7 +25,7 @@ import paramiko
 import socket
 
 from requests.auth import HTTPBasicAuth
-from chiminey.smartconnectorscheduler import storage
+from chiminey import storage
 
 
 logger = logging.getLogger(__name__)

@@ -204,7 +204,7 @@ class Migration(SchemaMigration):
             'name': ('django.db.models.fields.SlugField', [], {'default': "''", 'max_length': '50'}),
             'namespace': ('django.db.models.fields.URLField', [], {'max_length': '400'})
         },
-        'smartconnectorscheduler.smartconnector': {
+        'smartconnectorscheduler.smartconnectorscheduler': {
             'Meta': {'object_name': 'SmartConnector'},
             'composite_stage': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['smartconnectorscheduler.Stage']"}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'})
