@@ -27,8 +27,8 @@ import logging
 
 from chiminey.cloudconnection import botoconnector
 from boto.exception import EC2ResponseError
+from chiminey.smartconnectorscheduler.errors import NoRegisteredVMError
 from chiminey.sshconnection import open_connection
-from chiminey.smartconnectorscheduler.stages.errors import NoRegisteredVMError
 
 
 logger = logging.getLogger(__name__)

@@ -24,10 +24,11 @@ import logging
 import socket
 
 from django.core.files.base import ContentFile
-from chiminey.smartconnectorscheduler import storage
+from chiminey import storage
 from chiminey.sshconnection import open_connection, AuthError
 from chiminey.compute import run_command_with_status
-from chiminey.cloudconnection import create_ssh_security_group, create_key_pair, EC2ResponseError
+from chiminey.cloudconnection import \
+    create_ssh_security_group, create_key_pair, EC2ResponseError
 
 
 logger = logging.getLogger(__name__)
