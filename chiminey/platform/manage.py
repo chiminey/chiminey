@@ -26,7 +26,7 @@ from django.db.models import ObjectDoesNotExist
 from django.db.utils import IntegrityError
 from django.db import transaction
 
-from chiminey.smartconnectorscheduler import storage
+from chiminey import storage
 from chiminey.smartconnectorscheduler import models
 from chiminey.platform.validate import \
     validate_mytardis_parameters, validate_remote_path

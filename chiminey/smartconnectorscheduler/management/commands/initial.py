@@ -179,7 +179,7 @@ class Command(BaseCommand):
             #      }
             #      ],
             # u'http://rmit.edu.au/schemas/hrmc/files':
-            #      [u'the smartconnector hrmc input files',
+            #      [u'the smartconnectorscheduler hrmc input files',
             #      {
             #      }
             #      ],
@@ -548,7 +548,7 @@ class Command(BaseCommand):
                 }
                 ],
             # u'http://rmit.edu.au/schemas/sweep/files':
-            #     [u'the smartconnector hrmc input files',
+            #     [u'the smartconnectorscheduler hrmc input files',
             #     {
             #     }
             #     ],
@@ -565,7 +565,7 @@ class Command(BaseCommand):
                 }
                 ],
             u'http://rmit.edu.au/schemas/stages/upload_makefile':
-                [u'the smartconnector hrmc input files',
+                [u'the smartconnectorscheduler hrmc input files',
                 {
                 u'done': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':1, 'help_text':''}
                 }

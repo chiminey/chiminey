@@ -23,8 +23,8 @@ from chiminey.cloudconnection import get_registered_vms
 from chiminey.reliabilityframework import FTManager
 from chiminey import messages
 from chiminey.runsettings import getval, update
-from chiminey.smartconnectorscheduler.stages.errors \
-    import InsufficientResourceError, VMTerminatedError, NoRegisteredVMError
+from chiminey.smartconnectorscheduler.errors \
+    import InsufficientResourceError, NoRegisteredVMError, VMTerminatedError
 from chiminey.storage import get_url_with_credentials, copy_directories, get_make_path
 from chiminey.sshconnection import open_connection
 from chiminey.compute import run_command_with_status, run_make

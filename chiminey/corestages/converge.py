@@ -26,7 +26,7 @@ from chiminey.storage import get_url_with_credentials
 from chiminey.corestages.stage import Stage
 
 from chiminey.smartconnectorscheduler import models
-from chiminey.smartconnectorscheduler import storage
+from chiminey import storage
 
 from chiminey.platform import manage
 from chiminey import messages

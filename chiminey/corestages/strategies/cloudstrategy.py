@@ -21,7 +21,7 @@
 import logging
 from chiminey.corestages.strategies.strategy import Strategy
 from chiminey.cloudconnection import create_vms, destroy_vms, print_vms, get_registered_vms
-from chiminey.smartconnectorscheduler.stages.errors import InsufficientVMError
+from chiminey.smartconnectorscheduler.errors import InsufficientVMError
 from chiminey.reliabilityframework import FTManager
 from chiminey import messages
 from chiminey.runsettings import SettingNotFoundException, getval, update

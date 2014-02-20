@@ -1,8 +1,0 @@
-ssh
-paramiko==1.7.7.2
-apache-libcloud
-flexmock
-pep8
-decisiontree
-fs
-nose

@@ -23,8 +23,8 @@ import logging
 import ast
 import os
 from chiminey.corestages.parent import Parent
-from chiminey.smartconnectorscheduler.stages.errors import BadSpecificationError
-from chiminey.smartconnectorscheduler import managejobs
+from chiminey.smartconnectorscheduler.errors import BadSpecificationError
+from chiminey.smartconnectorscheduler import jobs
 from chiminey.runsettings import update, getval, SettingNotFoundException
 from chiminey.storage import get_url_with_credentials, list_dirs
 
@@ -72,26 +72,26 @@ class HRMCParent(Parent):
             '%s/system/random_numbers' % RMIT_SCHEMA,
             '%s/system/id' % RMIT_SCHEMA)
 
-        # smartconnector.copy_settings(local_settings, run_settings,
+        # smartconnectorscheduler.copy_settings(local_settings, run_settings,
         #     'http://rmit.edu.au/schemas/input/hrmc/fanout_per_kept_result')
-        # smartconnector.copy_settings(local_settings, run_settings,
+        # smartconnectorscheduler.copy_settings(local_settings, run_settings,
         # 'http://rmit.edu.au/schemas/input/hrmc/optimisation_scheme')
-        # smartconnector.copy_settings(local_settings, run_settings,
+        # smartconnectorscheduler.copy_settings(local_settings, run_settings,
         #     'http://rmit.edu.au/schemas/input/hrmc/threshold')
-        # smartconnector.copy_settings(local_settings, run_settings,
+        # smartconnectorscheduler.copy_settings(local_settings, run_settings,
         #     'http://rmit.edu.au/schemas/input/hrmc/pottype')
-        # smartconnector.copy_settings(local_settings, run_settings,
+        # smartconnectorscheduler.copy_settings(local_settings, run_settings,
         #     'http://rmit.edu.au/schemas/system/max_seed_int')
-        # smartconnector.copy_settings(local_settings, run_settings,
+        # smartconnectorscheduler.copy_settings(local_settings, run_settings,
         #     'http://rmit.edu.au/schemas/system/random_numbers')
-        # smartconnector.copy_settings(local_settings, run_settings,
+        # smartconnectorscheduler.copy_settings(local_settings, run_settings,
         #     'http://rmit.edu.au/schemas/system/id')
 
 
         logger.debug("local_settings=%s" % local_settings)
         try:
             id = local_settings['id']
-            #id = smartconnector.get_existing_key(run_settings,
+            #id = smartconnectorscheduler.get_existing_key(run_settings,
             #    'http://rmit.edu.au/schemas/system/misc/id')
         except KeyError, e:
             logger.error(e)
@@ -111,7 +111,7 @@ class HRMCParent(Parent):
         optimisation_scheme = local_settings['optimisation_scheme']
         if optimisation_scheme == 'MC':
             N = local_settings['fanout_per_kept_result']
-            rand_nums = managejobs.generate_rands(local_settings,
+            rand_nums = jobs.generate_rands(local_settings,
                 0, local_settings['max_seed_int'],
                 N, rand_index)
             rand_index += N
@@ -128,7 +128,7 @@ class HRMCParent(Parent):
             N = int(ast.literal_eval(threshold)[0])
             logger.debug("N=%s" % N)
             if not id:
-                rand_nums = managejobs.generate_rands(
+                rand_nums = jobs.generate_rands(
                     local_settings,
                     0, local_settings['max_seed_int'],
                     4 * N, rand_index)
@@ -140,7 +140,7 @@ class HRMCParent(Parent):
                     'pottype': [pottype],
                 }
             else:
-                rand_nums = managejobs.generate_rands(
+                rand_nums = jobs.generate_rands(
                     local_settings,
                     0, local_settings['max_seed_int'],
                     1, rand_index)

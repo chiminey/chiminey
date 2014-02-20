@@ -28,7 +28,6 @@ from django.contrib import admin
 admin.autodiscover()
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 
-from chiminey.smartconnectorscheduler import views as scsviews
 from chiminey.simpleui import views as uiviews
 from chiminey.simpleui.views import (
     computation_platform_settings,
@@ -39,7 +38,7 @@ from chiminey.simpleui.views import (
 from chiminey.simpleui.wizard.views import AddDirective1View
 from chiminey.simpleui.wizard.views import AddDirective2View
 
-from core.views import (
+from smartconnectorscheduler.views import (
     UserProfileResource,
     SchemaResource,
     ParameterNameResource,
@@ -111,7 +110,7 @@ urlpatterns = patterns('',
     #     name='finishedcontext-edit',),
 
     # api urls
-    url(r'^coreapi/', include('chiminey.core.urls')),
+    url(r'^coreapi/', include('chiminey.smartconnectorscheduler.urls')),
     url(r'^api/', include(v1_api.urls)),
 
     #url(r'^login/$',  'django.contrib.auth.views.login', name="mylogin"),
