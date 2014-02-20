@@ -26,16 +26,17 @@ from pprint import pformat
 
 from chiminey.corestages.stage import Stage
 from chiminey.smartconnectorscheduler import models
-from chiminey.smartconnectorscheduler import jobs
+from chiminey.smartconnectorscheduler.jobs \
+    import generate_rands, make_runcontext_for_directive
 
 from chiminey import messages
 from chiminey.platform import manage
-from chiminey import storage
 from chiminey import mytardis
 
 from chiminey.runsettings import getval, getvals, \
     setval, update, get_schema_namespaces, SettingNotFoundException
-from chiminey.storage import get_url_with_credentials
+from chiminey.storage import get_url_with_credentials, copy_directories, get_file, put_file
+
 
 
 logger = logging.getLogger(__name__)
@@ -202,21 +203,22 @@ class Sweep(Stage):
 
             try:
                 num_url = getval(run_settings, "%s/system/random_numbers" % RMIT_SCHEMA)
+                logger.debug('num_url=%s' % num_url)
             except SettingNotFoundException:
                 pass
             else:
                 try:
                     local_settings['random_numbers'] = num_url
-                    rands = jobs.generate_rands(settings=local_settings,
+                    rands = generate_rands(settings=local_settings,
                     start_range=0,
                     end_range=-1,
                     num_required=len(runs),
                     start_index=self.rand_index)
                     logger.debug("rands=%s" % rands)
                 except Exception, e:
+                    logger.debug('error')
                     logger.error(e)
                     raise
-
         # load initial values map in the input directory which
         # contains variable to use for all subdirectives
         starting_map = {}
@@ -240,7 +242,7 @@ class Sweep(Stage):
                     values_url,
                     is_relative_path=False)
                 logger.debug("values_url=%s" % values_e_url)
-                values_content = storage.get_file(values_e_url)
+                values_content = get_file(values_e_url)
                 logger.debug("values_content=%s" % values_content)
                 starting_map = dict(json.loads(values_content))
             except IOError:
@@ -298,7 +300,7 @@ class Sweep(Stage):
                 logger.debug("context=%s" % context)
                 logger.debug("systemsettings=%s"
                          % pformat(getvals(run_settings, RMIT_SCHEMA + '/input/system')))
-                storage.copy_directories(input_url, run_iter_url)
+                copy_directories(input_url, run_iter_url)
 
             # Need to load up existing values, because original input_dir could
             # have contained values for the whole run
@@ -322,7 +324,7 @@ class Sweep(Stage):
                              VALUES_MAP_TEMPLATE_FILE % {'template_name': template_name}),
                         is_relative_path=False)
                     logger.debug("values_url=%s" % values_url)
-                    values_content = storage.get_file(values_url)
+                    values_content = get_file(values_url)
                     logger.debug("values_content=%s" % values_content)
                     v_map = dict(json.loads(values_content), indent=4)
                 except IOError:
@@ -333,7 +335,7 @@ class Sweep(Stage):
                 v_map.update(starting_map)
                 v_map.update(context)
                 logger.debug("new v_map=%s" % v_map)
-                storage.put_file(values_url, json.dumps(v_map, indent=4))
+                put_file(values_url, json.dumps(v_map, indent=4))
 
             v_map = {}
             try:
@@ -343,7 +345,7 @@ class Sweep(Stage):
                         VALUES_MAP_FILE),
                     is_relative_path=False)
                 logger.debug("values_url=%s" % values_url)
-                values_content = storage.get_file(values_url)
+                values_content = get_file(values_url)
                 logger.debug("values_content=%s" % values_content)
                 v_map = dict(json.loads(values_content), )
             except IOError:
@@ -354,7 +356,7 @@ class Sweep(Stage):
             v_map.update(starting_map)
             v_map.update(context)
             logger.debug("new v_map=%s" % v_map)
-            storage.put_file(values_url, json.dumps(v_map, indent=4))
+            put_file(values_url, json.dumps(v_map, indent=4))
 
             # Set random numbers for subdirective
             logger.debug("run_settings=%s" % pformat(run_settings))
@@ -449,7 +451,7 @@ def _submit_subdirective(platform, run_settings, user, parentcontext):
     logger.debug('subdirective_name=%s' % subdirective_name)
 
     (task_run_settings, command_args, run_context) \
-        = jobs.make_runcontext_for_directive(
+        = make_runcontext_for_directive(
             platform,
             subdirective_name, directive_args, {}, user, parent=parentcontext)
 
