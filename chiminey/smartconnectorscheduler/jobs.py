@@ -32,9 +32,10 @@ from django.core.exceptions import ImproperlyConfigured
 from django.contrib.auth.models import User
 from storages.backends.sftpstorage import SFTPStorage
 
-from chiminey.smartconnectorscheduler.errors import ContextKeyMissing, InvalidInputError, deprecated, BadInputException
+from chiminey.smartconnectorscheduler.errors \
+    import ContextKeyMissing, InvalidInputError, deprecated, BadInputException
 from chiminey.smartconnectorscheduler import models
-from chiminey.storage import get_url_with_credentials
+from chiminey.storage import get_url_with_credentials, get_file
 
 from chiminey import messages
 
@@ -371,7 +372,7 @@ def generate_rands(settings, start_range,  end_range, num_required, start_index)
     rand_nums = []
     num_url = get_url_with_credentials(settings, settings['random_numbers'],
         is_relative_path=False)
-    random_content = storage.get_file(num_url)
+    random_content = get_file(num_url)
     # FIXME: this loads the entire file, which could be very large.
     numbers = random_content.split('\n')
 
