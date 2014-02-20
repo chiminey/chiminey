@@ -114,7 +114,7 @@ class Stage(object):
         return ""
 
     def import_parent_stage(self, run_settings):
-        from chiminey.smartconnectorscheduler import managejobs
+        from chiminey.smartconnectorscheduler import jobs
         from django.core.exceptions import ImproperlyConfigured
         directive_name = getval(run_settings, "http://rmit.edu.au/schemas/directive_profile/directive_name")
         directive = models.Directive.objects.get(name=directive_name)
@@ -122,7 +122,7 @@ class Stage(object):
         parent_stage = directive.stage
         try:
             logger.debug('parent_package=%s' % (parent_stage.package))
-            stage = managejobs.safe_import(parent_stage.package, [],
+            stage = jobs.safe_import(parent_stage.package, [],
                                            {})
             logger.debug("stage=%s" % stage)
             return stage

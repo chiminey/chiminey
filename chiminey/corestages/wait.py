@@ -54,7 +54,7 @@ class Wait(Stage):
         """
         self.ftmanager = FTManager()
         self.failure_detector = FailureDetection()
-        #self.cleanup_nodes = self.ftmanager.get_cleanup_nodes(run_settings, smartconnector)
+        #self.cleanup_nodes = self.ftmanager.get_cleanup_nodes(run_settings, smartconnectorscheduler)
         try:
             failed_str = getval(run_settings, '%s/stages/create/failed_nodes' % RMIT_SCHEMA)
             self.failed_nodes = ast.literal_eval(failed_str)
@@ -204,14 +204,14 @@ class Wait(Stage):
 
         try:
             self.finished_nodes = getval(run_settings, '%s/stages/run/finished_nodes' % RMIT_SCHEMA)
-            # self.finished_nodes = smartconnector.get_existing_key(run_settings,
+            # self.finished_nodes = smartconnectorscheduler.get_existing_key(run_settings,
             #     'http://rmit.edu.au/schemas/stages/run/finished_nodes')
         except SettingNotFoundException:
             self.finished_nodes = '[]'
 
         try:
             self.id = int(getval(run_settings, '%s/system/id' % RMIT_SCHEMA))
-            # self.id = int(smartconnector.get_existing_key(run_settings,
+            # self.id = int(smartconnectorscheduler.get_existing_key(run_settings,
             #     'http://rmit.edu.au/schemas/system/id'))
 
             self.output_dir = "output_%s" % self.id

@@ -26,7 +26,7 @@ from pprint import pformat
 
 from chiminey.corestages.stage import Stage
 from chiminey.smartconnectorscheduler import models
-from chiminey.smartconnectorscheduler import managejobs
+from chiminey.smartconnectorscheduler import jobs
 
 from chiminey import messages
 from chiminey.platform import manage
@@ -205,7 +205,7 @@ class Sweep(Stage):
             else:
                 try:
                     local_settings['random_numbers'] = num_url
-                    rands = managejobs.generate_rands(settings=local_settings,
+                    rands = jobs.generate_rands(settings=local_settings,
                     start_range=0,
                     end_range=-1,
                     num_required=len(runs),
@@ -447,7 +447,7 @@ def _submit_subdirective(platform, run_settings, user, parentcontext):
     logger.debug('subdirective_name=%s' % subdirective_name)
 
     (task_run_settings, command_args, run_context) \
-        = managejobs.make_runcontext_for_directive(
+        = jobs.make_runcontext_for_directive(
             platform,
             subdirective_name, directive_args, {}, user, parent=parentcontext)
 

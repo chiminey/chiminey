@@ -21,10 +21,9 @@
 import logging
 import socket
 from chiminey.reliabilityframework.failuredetection import FailureDetection
-from chiminey.cloudconnection import get_this_vm
+from chiminey.smartconnectorscheduler.errors import \
+    NoRegisteredVMError, InsufficientVMError, VMTerminatedError
 from chiminey.sshconnection import AuthError, SSHException
-from chiminey.smartconnectorscheduler.stages.errors import \
-    InsufficientVMError, NoRegisteredVMError, VMTerminatedError
 from chiminey.cloudconnection import destroy_vms, get_registered_vms
 
 

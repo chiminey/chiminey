@@ -47,6 +47,10 @@ class PackageFailedError(BDPException):
     pass
 
 
+class VMTerminatedError(Exception):
+    pass
+
+
 def deprecated(func):
     """This is a decorator which can be used to mark functions
     as deprecated. It will result in a warning being emmitted
@@ -58,3 +62,32 @@ def deprecated(func):
     newFunc.__doc__ = func.__doc__
     newFunc.__dict__.update(func.__dict__)
     return newFunc
+
+
+class StageException(Exception):
+    """ A problem in the stage library"""
+    pass
+
+
+class BadInputException(StageException):
+    pass
+
+
+class BadSpecificationError(StageException):
+    pass
+
+
+class InsufficientResourceError(StageException):
+    pass
+
+
+class NoRegisteredVMError(Exception):
+    pass
+
+
+class InsufficientVMError(Exception):
+    pass
+
+
+class MissingConfigurationError(StageException):
+    pass

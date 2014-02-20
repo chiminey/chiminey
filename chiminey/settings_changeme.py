@@ -59,7 +59,7 @@ USE_I18N = True
 USE_L10N = True
 
 STATIC_DOC_ROOT = path.join(path.dirname(__file__),
-                               'smartconnectorscheduler/site_media').replace('\\', '/')
+                            'smartconnectorscheduler/site_media').replace('\\', '/')
 
 #STATIC_URL = path.join(path.dirname(__file__),'smra_portal/site_media').replace('\\','/')
 #STATIC_URL = path.join('/site_media/').replace('\\','/')
@@ -104,9 +104,9 @@ TEMPLATE_DIRS = (
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
     path.join(path.dirname(__file__),
-    'smartconnectorscheduler/templates/').replace('\\','/'),
+              'smartconnectorscheduler/templates/').replace('\\','/'),
     path.join(path.dirname(__file__),
-    'smartconnectorscheduler/publish/').replace('\\','/'),
+              'smartconnectorscheduler/publish/').replace('\\','/'),
     path.join(path.dirname(__file__),
     'simpleui/templates/').replace('\\','/'),
 )
@@ -260,7 +260,7 @@ TASTYPIE_DEFAULT_FORMATS = ['json']
 
 FIXTURE_DIRS = (
                 path.join(path.dirname(__file__),
-                               'smartconnectorscheduler/site_media').replace('\\', '/'),)
+                          'smartconnectorscheduler/site_media').replace('\\', '/'),)
 
 
 AUTH_PROFILE_MODULE = "smartconnectorscheduler.UserProfile"

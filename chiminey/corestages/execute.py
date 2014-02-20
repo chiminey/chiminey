@@ -31,8 +31,7 @@ from django.template import Context, Template
 from chiminey.platform import manage
 from chiminey.corestages import stage
 
-from chiminey.smartconnectorscheduler.errors import PackageFailedError
-from chiminey.smartconnectorscheduler.stages.errors import BadInputException
+from chiminey.smartconnectorscheduler.errors import PackageFailedError, BadInputException
 from chiminey.smartconnectorscheduler import models
 from chiminey import storage
 from chiminey import messages
@@ -63,11 +62,11 @@ class Execute(stage.Stage):
         """
         try:
             schedule_completed = int(getval(run_settings, '%s/stages/schedule/schedule_completed' % RMIT_SCHEMA))
-            # schedule_completed = int(smartconnector.get_existing_key(run_settings,
+            # schedule_completed = int(smartconnectorscheduler.get_existing_key(run_settings,
             #     'http://rmit.edu.au/schemas/stages/schedule/schedule_completed'))
 
             self.all_processes = ast.literal_eval(getval(run_settings, '%s/stages/schedule/all_processes' % RMIT_SCHEMA))
-            # self.all_processes = ast.literal_eval(smartconnector.get_existing_key(run_settings,
+            # self.all_processes = ast.literal_eval(smartconnectorscheduler.get_existing_key(run_settings,
             #     'http://rmit.edu.au/schemas/stages/schedule/all_processes'))
 
         except SettingNotFoundException, e:
@@ -95,7 +94,7 @@ class Execute(stage.Stage):
             self.reschedule_failed_procs = 0  # FIXME: check this is correct
         try:
             exec_procs_str = getval(run_settings, '%s/stages/execute/executed_procs' % RMIT_SCHEMA)
-            # exec_procs_str = smartconnector.get_existing_key(run_settings,
+            # exec_procs_str = smartconnectorscheduler.get_existing_key(run_settings,
             #     'http://rmit.edu.au/schemas/stages/execute/executed_procs')
             self.exec_procs = ast.literal_eval(exec_procs_str)
             logger.debug('executed procs=%d, scheduled procs = %d'
@@ -154,7 +153,7 @@ class Execute(stage.Stage):
             self.initial_numbfile = 1
         try:
             self.experiment_id = int(getval(run_settings, '%s/input/mytardis/experiment_id' % RMIT_SCHEMA))
-            # self.experiment_id = int(smartconnector.get_existing_key(run_settings,
+            # self.experiment_id = int(smartconnectorscheduler.get_existing_key(run_settings,
             #     'http://rmit.edu.au/schemas/input/mytardis/experiment_id'))
         except SettingNotFoundException:
             self.experiment_id = 0
@@ -514,7 +513,7 @@ class Execute(stage.Stage):
                         break
                 else:
                     logger.error("no process found matching run_counter")
-                    #smartconnector.error(run_settings, "%s: wait" % (self.id + 1))
+                    #smartconnectorscheduler.error(run_settings, "%s: wait" % (self.id + 1))
                     # TODO: catch this error and recover
                     raise BadInputException()
 

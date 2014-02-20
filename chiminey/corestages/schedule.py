@@ -107,7 +107,7 @@ class Schedule(Stage):
         try:
             scheduled_str = getval(run_settings, '%s/stages/schedule/scheduled_nodes' % RMIT_SCHEMA)
 
-            # scheduled_str = smartconnector.get_existing_key(
+            # scheduled_str = smartconnectorscheduler.get_existing_key(
             #     run_settings,
             #     'http://rmit.edu.au/schemas/stages/schedule/scheduled_nodes')
 
@@ -122,7 +122,7 @@ class Schedule(Stage):
 
         try:
             rescheduled_str = getval(run_settings, '%s/stages/schedule/rescheduled_nodes' % RMIT_SCHEMA)
-            # rescheduled_str = smartconnector.get_existing_key(
+            # rescheduled_str = smartconnectorscheduler.get_existing_key(
             #     run_settings,
             #     'http://rmit.edu.au/schemas/stages/schedule/rescheduled_nodes')
             self.rescheduled_nodes = ast.literal_eval(rescheduled_str)
@@ -134,7 +134,7 @@ class Schedule(Stage):
 
         try:
             current_processes_str = getval(run_settings, '%s/stages/schedule/current_processes' % RMIT_SCHEMA)
-            # current_processes_str = smartconnector.get_existing_key(
+            # current_processes_str = smartconnectorscheduler.get_existing_key(
             #     run_settings,
             #     'http://rmit.edu.au/schemas/stages/schedule/current_processes')
             #self.scheduled_nodes = ast.literal_eval(scheduled_str)
@@ -148,7 +148,7 @@ class Schedule(Stage):
 
         try:
             all_processes_str = getval(run_settings, '%s/stages/schedule/all_processes' % RMIT_SCHEMA)
-            # all_processes_str = smartconnector.get_existing_key(run_settings,
+            # all_processes_str = smartconnectorscheduler.get_existing_key(run_settings,
             # 'http://rmit.edu.au/schemas/stages/schedule/all_processes')
             self.all_processes = ast.literal_eval(all_processes_str)
         except SettingNotFoundException:

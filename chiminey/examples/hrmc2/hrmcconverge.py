@@ -26,16 +26,11 @@ import os
 import logging
 import json
 import sys
+from chiminey.smartconnectorscheduler.errors import BadInputException
 from chiminey.storage import get_url_with_credentials
-
-from chiminey.smartconnectorscheduler.stages.errors import BadInputException
-
-from chiminey.smartconnectorscheduler import storage
-
+from chiminey import storage
 from chiminey import mytardis
 from chiminey.runsettings import getval, SettingNotFoundException
-
-
 from chiminey.corestages import Converge
 
 logger = logging.getLogger(__name__)
@@ -103,7 +98,7 @@ class HRMCConverge(Converge):
 #                 host = settings['host']
 #                 prefix = 'ssh://%s@%s' % (settings['type'], host)
 
-#                 source_url = smartconnector.get_url_with_credentials(
+#                 source_url = smartconnectorscheduler.get_url_with_credentials(
 #                     settings, os.path.join(prefix, path, "HRMC.inp_values"),
 #                     is_relative_path=False)
 #                 logger.debug("source_url=%s" % source_url)
@@ -145,7 +140,7 @@ class HRMCConverge(Converge):
 #             for m, node_dir in enumerate(node_dirs):
 #                 exp_value_keys.append(["hrmcdset%s/step" % m, "hrmcdset%s/err" % m])
 
-#                 source_url = smartconnector.get_url_with_credentials(output_storage_settings,
+#                 source_url = smartconnectorscheduler.get_url_with_credentials(output_storage_settings,
 #                     output_prefix + os.path.join(new_output_dir, node_dir), is_relative_path=False)
 
 #                 (source_scheme, source_location, source_path, source_location,
@@ -166,7 +161,7 @@ class HRMCConverge(Converge):
 
 #             for m, node_dir in enumerate(node_dirs):
 
-#                 dataerrors_url = smartconnector.get_url_with_credentials(output_storage_settings,
+#                 dataerrors_url = smartconnectorscheduler.get_url_with_credentials(output_storage_settings,
 #                     output_prefix + os.path.join(new_output_dir, node_dir, DATA_ERRORS_FILE), is_relative_path=False)
 #                 dataerrors_content = storage.get_file(dataerrors_url)
 #                 xs = []

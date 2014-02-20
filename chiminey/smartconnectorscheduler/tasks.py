@@ -29,7 +29,7 @@ from django.db import transaction
 from django.db import DatabaseError
 from django.core.exceptions import ImproperlyConfigured
 from chiminey.smartconnectorscheduler import models
-from chiminey.smartconnectorscheduler import managejobs
+from chiminey.smartconnectorscheduler import jobs
 
 from chiminey import messages
 
@@ -224,7 +224,7 @@ def _process_context(context_id):
             logger.debug("checking stage %s for trigger" % current_stage.name)
             # get the actual stage object
             try:
-                stage = managejobs.safe_import(current_stage.package, [],
+                stage = jobs.safe_import(current_stage.package, [],
                 {'user_settings': deepcopy(user_settings)})  # obviously need to cache this
             except ImproperlyConfigured, e:
                 logger.error(e)
@@ -240,7 +240,7 @@ def _process_context(context_id):
             logger.debug("stage_settings=%s" % stage_settings)
 
             # This is nasty
-            task_run_settings = managejobs.transfer(task_run_settings, stage_settings)
+            task_run_settings = jobs.transfer(task_run_settings, stage_settings)
             #task_run_settings.update(stage_settings)
             logger.debug("task run_settings=%s" % task_run_settings)
 
@@ -376,7 +376,7 @@ def progress_context_broken(context_id):
                 for current_stage in stageset:
 
                     # get the actual stage object
-                    stage = managejobs.safe_import(current_stage.package, [],
+                    stage = jobs.safe_import(current_stage.package, [],
                         {'user_settings': deepcopy(user_settings)})  # obviously need to cache this
                     logger.debug("process stage=%s", stage)
 
@@ -387,7 +387,7 @@ def progress_context_broken(context_id):
                     logger.debug("stage_settings=%s" % stage_settings)
 
                     # This is nasty
-                    task_run_settings = managejobs.transfer(task_run_settings, stage_settings)
+                    task_run_settings = jobs.transfer(task_run_settings, stage_settings)
                     #task_run_settings.update(stage_settings)
                     logger.debug("task run_settings=%s" % task_run_settings)
 
