@@ -116,6 +116,7 @@ class Sweep(Stage):
         logger.debug("sweep_name=%s" % sweep_name)
 
         output_loc = self.output_exists(run_settings)
+        location = ""
         if output_loc:
             location = getval(run_settings, output_loc)
             output_storage_name, output_storage_offset = \
@@ -154,21 +155,22 @@ class Sweep(Stage):
 
         # mytardis
 
-        try:
-            self.experiment_id = int(getval(run_settings, '%s/input/mytardis/experiment_id' % RMIT_SCHEMA))
-        except KeyError:
-            self.experiment_id = 0
-        except ValueError:
-            self.experiment_id = 0
-        try:
-            curate_data = getval(run_settings, '%s/input/mytardis/curate_data' % RMIT_SCHEMA)
-        except SettingNotFoundException:
-            curate_data = False
-        if curate_data:
-            self.experiment_id = self.curate_data(run_settings, self.experiment_id)
-        setval(run_settings,
-               '%s/input/mytardis/experiment_id' % RMIT_SCHEMA,
-               str(self.experiment_id))
+        if output_loc:
+            try:
+                self.experiment_id = int(getval(run_settings, '%s/input/mytardis/experiment_id' % RMIT_SCHEMA))
+            except KeyError:
+                self.experiment_id = 0
+            except ValueError:
+                self.experiment_id = 0
+            try:
+                curate_data = getval(run_settings, '%s/input/mytardis/curate_data' % RMIT_SCHEMA)
+            except SettingNotFoundException:
+                curate_data = False
+            if curate_data:
+                self.experiment_id = self.curate_data(run_settings, location, self.experiment_id)
+            setval(run_settings,
+                   '%s/input/mytardis/experiment_id' % RMIT_SCHEMA,
+                   str(self.experiment_id))
 
         # generate all variations
         map_text = getval(run_settings, '%s/input/sweep/sweep_map' % RMIT_SCHEMA)
@@ -403,7 +405,7 @@ class Sweep(Stage):
             messages.success(run_settings, "0: completed")
         return run_settings
 
-    def curate_data(self, run_settings, experiment_id):
+    def curate_data(self, run_settings, location, experiment_id):
         # TODO: this is a domain-specific so this function should be overridden
         # in domain specfic mytardis class
         #TODO: By default, this class should NOT CREATE an experiment
@@ -493,7 +495,7 @@ class HRMCSweep(Sweep):
     #         logger.warn("cannot find subdirective name")
     #         subdirective = ''
     #     try:
-    #         experiment_id = int(getval(run_settings, '%s/input/mytardis/experiment_id' % RMIT_SCHEMA))
+    #         experiment_id = int(getvala(run_settings, '%s/input/mytardis/experiment_id' % RMIT_SCHEMA))
     #     except SettingNotFoundException:
     #         experiment_id = 0
     #     except ValueError:

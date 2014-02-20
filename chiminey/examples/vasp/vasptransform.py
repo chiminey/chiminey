@@ -18,15 +18,8 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 import os
-import ast
 import json
 import logging
-from collections import namedtuple
-import fnmatch
-
-
-from chiminey.storage import get_url_with_credentials
-from chiminey.runsettings import getval, SettingNotFoundException
 
 from chiminey import storage
 from chiminey import mytardis
@@ -49,7 +42,7 @@ class VASPTransform(Transform):
 
         logger.debug("output_url=%s" % output_url)
 
-        outcar_url = storage.get_url_with_credentials(local_settings,
+        outcar_url = storage.get_url_with_credentials(all_settings,
             os.path.join(output_url, OUTCAR_FILE), is_relative_path=False)
         logger.debug("outcar_url=%s" % outcar_url)
 
@@ -73,7 +66,7 @@ class VASPTransform(Transform):
 
         logger.debug("toten=%s" % toten)
 
-        values_url = storage.get_url_with_credentials(local_settings,
+        values_url = storage.get_url_with_credentials(all_settings,
             os.path.join(output_url, VALUES_FILE), is_relative_path=False)
         logger.debug("values_url=%s" % values_url)
         try:
@@ -129,12 +122,12 @@ class VASPTransform(Transform):
             return "%s:encut=%s,num_kp=%s" % (runcounter, encut, numkp)
             #return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
 
-        mytardis_settings['ENCUT'] = encut
-        mytardis_settings['NUMKP'] = num_kp
-        mytardis_settings['RUNCOUNTER'] = local_settings['contextid']
+        all_settings['ENCUT'] = encut
+        all_settings['NUMKP'] = num_kp
+        all_settings['RUNCOUNTER'] = all_settings['contextid']
 
         experiment_id = mytardis.create_dataset(
-            settings=mytardis_settings,
+            settings=all_settings,
             source_url=output_url,
             exp_id=experiment_id,
             exp_name=_get_exp_name_for_vasp,
@@ -256,7 +249,7 @@ class VASPTransform(Transform):
 
         #         #TODO: hrmcexp graph should be tagged to input directories (not output directories)
         #         #because we want the result after pruning.
-        #         #todo: replace self.boto_setttings with mytardis_settings
+        #         #todo: replace self.boto_setttings with all_settings
 
         #         EXP_DATASET_NAME_SPLIT = 2
 

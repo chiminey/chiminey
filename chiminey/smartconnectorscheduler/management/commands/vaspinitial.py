@@ -43,7 +43,7 @@ class Command(BaseCommand):
             return
 
         directive = VASPInitial()
-        directive.define_directive('vaso', description='VASP Smart Connector', sweep=True)
+        directive.define_directive('vasp', description='VASP Smart Connector', sweep=True)
         print "done"
 
     def handle(self, *args, **options):
@@ -103,8 +103,6 @@ class VASPInitial(CoreInitial):
         RMIT_SCHEMA = "http://rmit.edu.au/schemas"
         for i, sch in enumerate([
                 RMIT_SCHEMA + "/input/system/compplatform",
-                RMIT_SCHEMA + "/input/system/cloud",
-                RMIT_SCHEMA + "/input/reliability",
                 RMIT_SCHEMA + "/input/system",
                 RMIT_SCHEMA + "/input/vasp",
                 RMIT_SCHEMA + "/input/mytardis",
