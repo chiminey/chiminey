@@ -15,7 +15,7 @@ setup(
     author='Ian Thomas',
     author_email='Ian.Edward.Thomas@rmit.edu.au',
     packages=find_packages(),
-    namespace_packages=['bdphpcprovider'],
+    namespace_packages=['chiminey'],
     install_requires=[
         'setuptools',
         'django==1.4.5',
