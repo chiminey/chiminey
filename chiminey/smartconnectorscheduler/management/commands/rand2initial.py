@@ -45,7 +45,7 @@ class Command(BaseCommand):
             return
 
         directive = Rand2Initial()
-        directive.define_directive('rand2', description='Rand 2 Smart Connector', sweep=True)
+        directive.define_directive('random_number_cloud', description='Random Number Cloud Smart Connector')
         print "done"
 
 
@@ -131,8 +131,8 @@ class Rand2Initial(CoreInitial):
         RMIT_SCHEMA = "http://rmit.edu.au/schemas"
         for i, sch in enumerate([
                 RMIT_SCHEMA + "/input/system/compplatform",
-                RMIT_SCHEMA + "/input/location/output",
                 RMIT_SCHEMA + "/input/system/cloud",
+                RMIT_SCHEMA + "/input/location/output",
                 RMIT_SCHEMA + "/input/mytardis",
                 ]):
             schema = models.Schema.objects.get(namespace=sch)
