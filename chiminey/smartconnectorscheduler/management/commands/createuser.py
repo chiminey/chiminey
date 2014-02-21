@@ -81,7 +81,7 @@ class Command(BaseCommand):
                   'You must use --username and --email with --noinput.')),
     )
 
-    help = 'Used to create a BDPHPCProvider user.'
+    help = 'Used to create a Chiminey user.'
 
     def handle(self, *args, **options):
         username = options.get('username', None)
@@ -250,4 +250,4 @@ class Command(BaseCommand):
             os.path.join(settings.LOCAL_FILESYS_ROOT_PATH, username))
 
         if verbosity >= 1:
-            self.stdout.write("BDPHPCProvider user created successfully.\n")
+            self.stdout.write("Chiminey user created successfully.\n")
