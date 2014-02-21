@@ -21,7 +21,8 @@
 from chiminey.compute.command import (
     run_command_with_status,
     run_command_with_tty,
-    run_make
+    run_make,
+    run_command
 )
 
 
