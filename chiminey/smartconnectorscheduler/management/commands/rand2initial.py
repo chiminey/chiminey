@@ -25,6 +25,9 @@ from chiminey.smartconnectorscheduler.management.commands.coreinitial import Cor
 
 logger = logging.getLogger(__name__)
 
+MESSAGE = "This will add a new directive to the catalogue of available connectors.  Are you sure [Yes/No]?"
+
+
 
 class Command(BaseCommand):
     """
@@ -36,8 +39,7 @@ class Command(BaseCommand):
     help = 'Setup an initial task structure.'
 
     def setup(self):
-        confirm = raw_input("This will ERASE and reset the database. "
-            " Are you sure [Yes|No]")
+        confirm = raw_input(MESSAGE)
         if confirm != "Yes":
             print "action aborted by user"
             return
@@ -84,7 +86,7 @@ class Rand2Initial(CoreInitial):
             {
                 u'http://rmit.edu.au/schemas/stages/setup':
                     {
-                        u'payload_source': 'file://127.0.0.1/local/randomnumber2_payload',
+                        u'payload_source': 'file://127.0.0.1/local/payload_randomnumber',
                         u'payload_destination': 'rand2_destination',
                         u'payload_name': 'process_payload',
                         u'filename_for_PIDs': 'PIDs_collections',

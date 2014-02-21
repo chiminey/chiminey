@@ -318,7 +318,7 @@ class ContextResource(ModelResource):
                 'sweep_vasp': self._post_to_sweep_vasp,
                 'copydir': self._post_to_copy,
                 'remotemake': self._post_to_remotemake,
-                'randomnumber': self._post_to_randomnumber}
+                'randomnumber': self._post_to_directive}
         '''
 
 
@@ -341,26 +341,30 @@ class ContextResource(ModelResource):
                     logger.error("post_list error %s" % e)
                     raise ImmediateHttpResponse(http.HttpBadRequest(e))
             else:
-                dispatch_table = {
-                    'hrmc': self._post_to_hrmc,
-                    # 'sweep': self._post_to_sweep_hrmc,
-                    'sweep_make': self._post_to_sweep_make,
-                    # 'sweep_vasp': self._post_to_sweep_vasp,
-                    'copydir': self._post_to_copy,
-                    'remotemake': self._post_to_remotemake,
-                    'randomnumber': self._post_to_randomnumber}
+                # dispatch_table = {
+                #     # 'sweep': self._post_to_sweep_hrmc,
+                #     # 'sweep_make': self._post_to_sweep_make,
+                #     # 'sweep_vasp': self._post_to_sweep_vasp,
+                #     # 'copydir': self._post_to_copy,
+                #     'hrmc': self._post_to_hrmc,
+                #     # 'remotemake': self._post_to_remotemake,
+                #     'randomnumber': self._post_to_directive}
 
                 smart_connector = bundle.data['smart_connector']
                 logger.debug("smart_connector=%s" % smart_connector)
 
                 try:
-                    if smart_connector in dispatch_table:
-                        logger.debug("dispatching %s" % smart_connector)
-                        (myplatform, directive_name,
-                        directive_args, system_settings) = dispatch_table[
-                            smart_connector](bundle, smart_connector)
-                    else:
-                        return http.HttpBadRequest()
+                    logger.debug("dispatching %s" % smart_connector)
+                    (myplatform, directive_name,
+                    directive_args, system_settings) = self._post_to_directive(bundle, smart_connector)
+
+                    # if smart_connector in dispatch_table:
+                    #     logger.debug("dispatching %s" % smart_connector)
+                    #     (myplatform, directive_name,
+                    #     directive_args, system_settings) = dispatch_table[
+                    #         smart_connector](bundle, smart_connector)
+                    # else:
+                    #     return http.HttpBadRequest()
                 except Exception, e:
                     logger.error("post_list error %s" % e)
                     raise ImmediateHttpResponse(http.HttpBadRequest(e))
@@ -557,7 +561,7 @@ class ContextResource(ModelResource):
         return (platform, directive, [directive_args], {})
 
 
-    def _post_to_randomnumber(self, bundle, directive):
+    def _post_to_directive(self, bundle, directive):
         platform = 'local'
         logger.debug("%s" % directive)
 
