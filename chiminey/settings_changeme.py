@@ -185,7 +185,7 @@ LOGGING = {
     'handlers': {
     'file': {
     'class': 'logging.handlers.RotatingFileHandler',
-    'filename': '/var/log/cloudenabling/chiminey.log',
+    'filename': '/var/log/chiminey/chiminey.log',
     'formatter': 'timestamped',
             'maxBytes': 1024 * 1024 * 100,  # 100 mb
             'backupCount': 2
@@ -296,7 +296,7 @@ TEST_MTARDIS_USER = ""
 TEST_MYTARDIS_PASSWORD = ""
 
 
-LOCAL_FILESYS_ROOT_PATH = "/var/cloudenabling/remotesys"
+LOCAL_FILESYS_ROOT_PATH = "/var/chiminey/remotesys"
 
 # CLOUD CONFIGURATION
 

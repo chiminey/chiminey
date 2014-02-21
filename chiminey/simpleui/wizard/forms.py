@@ -134,7 +134,7 @@ class InputSchemaForm(forms.Form):
 
 
 def get_stage_path_choices():
-    res = [(x, x) for x in unix_find("/opt/cloudenabling/current/chiminey/smartconnectorscheduler/stages")]
+    res = [(x, x) for x in unix_find("/opt/chiminey/current/chiminey/smartconnectorscheduler/stages")]
     return res
 
 
@@ -142,7 +142,7 @@ class StageSetForm(forms.Form):
     help_text = "Sets the stages"
     legend_text = "Stage Set"
     # stage_set = forms.FilePathField(recursive=True, match='.*\.py$',
-    #     path="/opt/cloudenabling/current/chiminey/smartconnectorscheduler/stages")
+    #     path="/opt/chiminey/current/chiminey/smartconnectorscheduler/stages")
     stages_set = forms.TypedMultipleChoiceField(
         choices=get_stage_path_choices(),
         help_text="Select stages to include in this directive",

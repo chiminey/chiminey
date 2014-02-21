@@ -74,7 +74,7 @@ class Command(BaseCommand):
         make_option('--email', dest='email', default=None,
             help='Specifies the email address for the user.'),
         make_option('--remotefsys', dest='remotefsys',
-            default="/opt/cloudenabling/current/chiminey/smartconnectorscheduler/testing/remotesys/",
+            default="/opt/chiminey/current/chiminey/smartconnectorscheduler/testing/remotesys/",
             help='Specifies the email address for the user.'),
         make_option('--noinput', action='store_false', dest='interactive', default=True,
             help=('Tells Django to NOT prompt the user for input of any kind. '
