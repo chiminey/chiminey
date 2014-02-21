@@ -86,7 +86,7 @@ class Rand2Initial(CoreInitial):
             {
                 u'http://rmit.edu.au/schemas/stages/setup':
                     {
-                        u'payload_source': 'file://127.0.0.1/local/randomnumber2_payload',
+                        u'payload_source': 'file://127.0.0.1/local/payload_randomnumber',
                         u'payload_destination': 'rand2_destination',
                         u'payload_name': 'process_payload',
                         u'filename_for_PIDs': 'PIDs_collections',
