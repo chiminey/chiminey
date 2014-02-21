@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_bdp_root_path():
-    bdp_root_path = '/var/cloudenabling/remotesys'  # fixme avoid hard coding; systematically determine bdp_root_path
+    bdp_root_path = '/var/chiminey/remotesys'  # fixme avoid hard coding; systematically determine bdp_root_path
     return bdp_root_path
 
 
