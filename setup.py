@@ -24,15 +24,16 @@ setup(
         'django-form-utils',
         'django-haystack',
         'django-bootstrap-form',
-        'celery==3.1.7',
-        'django-celery==3.1.1',
+        'celery==3.1.9',
+        'django-celery>=3.1.1',
         'django-kombu==0.9.4',
         'decisiontree',
         'django-mptt',
         'django-storages',
         'requests==2.0',
         'django-widget-tweaks',
-        'python-dateutil'
+        'python-dateutil',
+        'six==1.4.1'
         ],
     dependency_links = [
         'https://github.com/dahlia/wand/tarball/warning-bugfix#egg=Wand-0.1.10',
