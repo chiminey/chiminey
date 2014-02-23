@@ -45,7 +45,7 @@ class Command(BaseCommand):
             return
 
         directive = RandInitial()
-        directive.define_directive('rand_org', description='Rand Smart Connector')
+        directive.define_directive('random_number', description='Rand Smart Connector')
         print "done"
 
 

@@ -21,8 +21,17 @@
 import logging
 
 from chiminey.smartconnectorscheduler.errors import deprecated
-
+from chiminey.sshconnection import open_connection
 logger = logging.getLogger(__name__)
+
+
+def run_command(command, ip_address, settings):
+    ssh = open_connection(ip_address=ip_address, settings=settings)
+    try:
+        output, err = run_command_with_status(ssh, command)
+    finally:
+        ssh.close()
+    return (output, err)
 
 
 def run_command_with_status(ssh_client, command, current_dir=None):

@@ -20,29 +20,17 @@
 
 import logging
 from chiminey.corestages import Execute
-from chiminey.sshconnection import open_connection
-from chiminey.compute import run_command_with_status
+from chiminey.compute import run_command
 
 
 logger = logging.getLogger(__name__)
 
 class RandExecute(Execute):
-    #fixme: should removed out after execute is refactored
-    def set_domain_settings(self, run_settings, local_settings):
-        pass
+    def run_task(self, ip_address, process_id, connection_settings, run_settings):
 
-    def run_task(self, ip_address, process_id, local_settings, run_settings):
-        logger
         filename = 'rand'
-        output_path = self.get_process_output_path(run_settings, process_id, local_settings)
+        output_path = self.get_process_output_path(run_settings, process_id, connection_settings)
         logger.debug('output_path=%s' % output_path)
-        ssh = open_connection(ip_address=ip_address, settings=local_settings)
-        try:
-            command, errs = run_command_with_status(
-                ssh, "mkdir -p %s; cd %s ;"
-                     " python -c 'import random; "
-                     "print random.random()' > %s" %
-                     (output_path, output_path, filename))
-            logger.debug('command=%s errs=%s' % (command, errs))
-        finally:
-            ssh.close()
+        command = "mkdir -p %s; cd %s ; python -c 'import random; print random.random()' > %s" \
+                  % (output_path, output_path, filename)
+        output, err = run_command(command, ip_address, connection_settings)
