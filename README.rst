@@ -6,8 +6,9 @@ The Cloud and Cluster Computing Platform.
 Introduction
 ============
 
-The Chiminey system is a cloud-based scheduler for building scentific applications for use by scientists on a day-by-day basis.
-It enables cloud-enabling of existing long-running sequential and parallel applications.
+The Chiminey system is a cloud-based computing platform that enables scientists to perform complex computation on cloud-based and traditional high performance computing (HPC) facilities and  handle failure during the execution of their application. 
+The Chiminey system gives special importance to resource access and management abstraction. Scientists are not expected to have a technical understanding of cloud-computing, HPC, or  fault tolerance in order to leverage the benefits provided by the Chiminey
+system. 
 
 Chiminey provides
 
