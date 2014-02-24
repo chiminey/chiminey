@@ -25,6 +25,7 @@ import logging
 import time
 import getpass
 import paramiko
+from chiminey import settings
 
 from pprint import pformat
 from urlparse import urlparse, parse_qsl
@@ -40,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_bdp_root_path():
-    bdp_root_path = '/var/chiminey/remotesys'  # fixme avoid hard coding; systematically determine bdp_root_path
+    bdp_root_path = settings.LOCAL_FILESYS_ROOT_PATH  # fixme avoid hard coding; systematically determine bdp_root_path
     return bdp_root_path
 
 

@@ -99,7 +99,18 @@ $(document).ready(function () {
 <div>
 {% for platform_type, platform_details in all_headers.items %}
      {% for header, schema in platform_details.items %}
-         <h2>{{ platform_type }}</h2>
+          {% if platform_type == 'unix' %}
+            <h2>Unix</h2>
+         {% elif platform_type == 'mytardis' %}
+
+            <h2>MyTardis</h2>
+
+         {% else %}
+            <h2>{{ platform_type }}</h2>
+
+         {% endif %}
+
+
          <table class="footable_{{platform_type}} table table-hover table-striped table-bordered platform_table">
             <thead>
                 <tr>

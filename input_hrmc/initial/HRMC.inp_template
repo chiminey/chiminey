@@ -1,0 +1,92 @@
+1              scrwrite           write out simulation detail to screen
+{{istart}}              istart             start config:1-initial.xyz,2-random, 3-restart
+
+Si             configA            name of element A
+Ge             configB            name of element B
+C              configC            name of element C
+1215           n_configA          n atoms of element A
+0              n_configB          n atoms of element B
+0              n_configC          n atoms of element C
+
+2.75           bond_length1       bond_length A-A (gr minimum btw 1st & 2nd peak) 1.9
+2.30           bong_length2       bond_length B-B                                 2.3
+2.50           bond_length3       bond_length C-C                                 2.5
+1.90           bond_length12      bond_length A-B                                 1.9
+1.60           bond_length13      bond_length A-C                                 1.6
+1.90           bond_length23      bond_length B-C                                 1.9
+
+0.045          rho                reduced density (0.0006022 X density(kg/m3)/atomic weight(avg))
+30.000         xl                 x cell length
+30.000         yl                 y cell length
+30.000         zl                 z cell length
+2              pbc_option         pbc_option  (0 no PBC,1 xy PBC, 2 xyz PBC)
+0              fix_var            fix atoms positions from 0 to fix_var in Z direction
+
+{{npre}}      npre               number of main steps
+{{irun}}         irun               number of data steps
+10000          ierror             number of steps b/w writing data to file
+10000          iconfig            number of steps b/w writing out to xyz file
+
+4097           nqpts              number of points in fft nqpts = 2^n + 1
+1.0            hdcore             hard sphere diameter of minimum approach
+-{{iseed}}           iseed              seed for random number generator (negative integer)
+
+F              pore_option        T=read in input_pore.xyz (ensure cell dim same)
+50             po_res             Pore grids in x direction
+
+{{pottype}}              pot_type           0=C EDIP,1=Si EDIP,2=Si mS-W,3=Si S-W,4=Ge S-W
+
+1              en_option          potential constraint       (0=OFF, 1=ON, 2=VIEW)
+1              gr_option          g(r) constraint            (0=OFF, 1=ON, 2=VIEW)
+0              sq_option          S(q) constraint            (0=OFF, 1=ON, 2=VIEW)
+0              co_option          coordination constraint    (0=OFF, 1=ON, 2=VIEW)
+0              vo_option          volume constraint          (0=OFF, 1=ON, 2=VIEW)
+0              bo_option          bond angle dist.constraint (0=OFF, 1=ON, 2=VIEW)
+0              ring3_option       3 member ring constraint   (0=OFF, 1=ON)
+
+F              nobond_option      no bond changes occur from initial
+
+1              quench_option      1=linear quench, 2=exp quench
+0.1            quenchR            Quench rate  T = (tempS-tempF)*quenchR^steps+tempF (steps in millions) for exp quench
+
+300                              Temperature (LINEAR QUENCH - Stage 1 (stage1 values used in exp quench start)
+0.08 0.08 0.10 0.00004               gr,sq,vo,bo weightings (variance)
+0.10 0.10 0.10 0.0004                coA,coB,coC,coT weightings (variance)
+1.00 0.80                            3 ring constraint acceptance probability, stepsize
+0.25                              lengthstage1 - fraction of steps at the end of stage 1
+
+{{temp}}                              Temperature (LINEAR QUENCH - Stage 2)
+0.04 0.04 0.10 0.00002               gr,sq,vo,bo weightings
+0.10 0.10 0.10 0.0002                coA,coB,coC,coT weightings
+0.50 0.40                            3 ring constraint acceptance probability, stepsize
+0.50                              lengthstage2 - fraction of steps at the end of stage 2
+
+{{temp}}                              Temperature (LINEAR QUENCH - Stage 3)
+0.02 0.02 0.10 0.00001               gr,sq,vo,bo weightings
+0.10 0.10 0.10 0.0001                coA,coB,coC,coT weightings
+0.25 0.20                            3 ring constraint acceptance probability, stepsize
+0.75                              lengthstage3 - fraction of steps at the end of stage 3
+
+300                               Temperature (LINEAR QUENCH - Stage 4)(stage4 values used in exp quench finish)
+0.010 0.010 0.10 0.000005            gr,sq,vo,bo weightings
+0.10 0.10 0.10 0.00005               coA,coB,coC,coT weightings
+0.10 0.10                            3 ring constraint acceptance probability, stepsize
+
+
+978            nptsgr_expt        number of points in experimental g(r)
+641            nptssq_expt        number of points in experimental S(q)
+10             nqstart            min S(q) value fitted, qmin > 2*pi/xl
+641            nqfinish           max S(q) value fitted, qf = (nqfinish-1)*delq
+0.050          delq               spacing of exp S(q) points [note: delr=pi/(delq*(nqpts-1))]
+
+0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00  config A coordination histogram
+0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00  config B coordination histogram
+0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00  config C coordination histogram
+0.00 0.00 0.00 0.21 0.79 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00  Total config coordination histogram
+
+0              co_opt(1)          A atoms option for fitt(0)nothing or (1)avg coord or (2)coord histogram
+0              co_opt(2)          B atoms option ....
+0              co_opt(3)          C atoms option ....
+2              co_opt(4)          All atoms option ....
+
+1.0000         volume             cell occupancy(0 = all void to 1.0 = atom in each grid,  porosity = 1 - volume)
