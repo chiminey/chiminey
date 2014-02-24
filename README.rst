@@ -6,22 +6,22 @@ The Cloud and Cluster Computing Platform.
 Introduction
 ============
 
-The Chiminey system is a cloud-based computing platform that enables scientists to perform complex computation on cloud-based and traditional high performance computing (HPC) facilities and  handle failure during the execution of their application. 
-The Chiminey system gives special importance to resource access and management abstraction. Scientists are not expected to have a technical understanding of cloud-computing, HPC, or  fault tolerance in order to leverage the benefits provided by the Chiminey
+The Chiminey system is a cloud-based computing platform that enables scientists to perform complex computation on cloud-based and traditional high performance computing (HPC) facilities, and  to handle failure during the execution of their application. 
+This system gives special importance to resource access and management abstraction. Scientists are not expected to have a technical understanding of cloud-computing, HPC, or  fault tolerance in order to leverage the benefits provided by the Chiminey
 system. 
 
 Chiminey provides
 
 * Definition, execution and monitoring of high-performance and cloud computing applications.
 
-* A user interface that both focusses on domain-specific parts of a task for scientists and provides a framework that allows IT research engineers and researchers
+* A user interface that focusses  both on the  domain-specific parts of a task for scientists and  a framework that allows IT research engineers 
 to build computation tasks. 
 
 * Automatic generation of  parameter sweeps over variables that can be schduled on HPC clusers or across cloud IaaS nodes.
 
 * Ability to wrap arbitrary legacy code applications (e.g. fortran), with a minimum of extra work.
 
-* Advanced Fault Detection Framework.
+* Advanced fault tolerance framework. A smart connector at most recovers a failed execution, at least prevents the failed execution from causing a failure in the entire system:
 
 * Connectors for data transfer to and from remote data sources and remote execution platforms for both unix and cloud computation resources.
 
@@ -33,7 +33,7 @@ to build computation tasks.
 The Bioscience Data Platform
 ----------------------------
 
-Chiminey is a key product of the BioScience Data Platform project: Tardis in the Cloud Project (see X), which is project beween Monash University and RMIT University, Victoria Australia funded by NeCTAR.  This project fosuses on bringing existing computational systems together in a way that allows scientists to seemslessly work with data from capture through to publication.
+Chiminey is a key product of the Bioscience Data Platform project: Tardis in the Cloud Project (see X), which is project beween Monash University and RMIT University, Victoria Australia funded by NeCTAR.  This project fosuses on bringing existing computational systems together in a way that allows scientists to seemslessly work with data from capture through to publication.
 
 See Y for more details
 
@@ -49,14 +49,16 @@ An installation manual is available at XXX.
 The user manual is available at XXX.
 
 
+
 License
 =======
 
 This code is copyright Monash Unversity and RMIT University 2014, and is distributed under the New BSD License
 
+
 Acknowledgements
 ================
 
-The BDP Project includes development funded by the NeCTAR, the National eResearch Collaboration Tools and Resources.  NeCTAR is an Australian Government project to build new infrastructure specifically for the needs of Australian researchers.
+The BDP project is funded by the NeCTAR, the National eResearch Collaboration Tools and Resources.  NeCTAR is an Australian Government project to build new infrastructure specifically for the needs of Australian researchers.
 
  
