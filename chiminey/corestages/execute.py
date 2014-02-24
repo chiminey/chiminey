@@ -290,6 +290,7 @@ class Execute(stage.Stage):
                 logger.debug('not adding=%s' % proc)
         self.exec_procs = tmp_exec_procs
         logger.debug('exec_procs=%s' % self.exec_procs)
+        logger.debug('self.schedule_procs=%s' % self.schedule_procs)
         for proc in self.schedule_procs:
             if proc['status'] != 'ready':
                 continue
@@ -308,11 +309,13 @@ class Execute(stage.Stage):
                 logger.error(e)
                 logger.error("unable to start package on node %s" % ip_address)
                 #TODO: cleanup node of copied input files etc.
-            except Exception:
+            except Exception, e:
+                logger.debug('error=%s' % e)
                 #fixme FT management
                 pass
             else:
                 pids.append(pids_for_task)
+                logger.debug('pids=%s' % pids)
         #all_pids = dict(zip(nodes, pids))
         all_pids = pids
         logger.debug('all_pids=%s' % all_pids)

@@ -750,11 +750,12 @@ class CopyFormView(FormView):
 
 
 def make_dynamic_field(parameter, **kwargs):
-
+    help_text = ''
     if 'subtype' in parameter and parameter['subtype']:
         logger.debug('platform==%s' % parameter)
-        help_text = "%s (%s)" % (parameter['help_text'],
-            subtype_validation[parameter['subtype']][0])
+        if 'password' not in  parameter['subtype']:
+            help_text = "%s (%s)" % (parameter['help_text'],
+                subtype_validation[parameter['subtype']][0])
     else:
         help_text = parameter['help_text']
     # TODO: finish all types

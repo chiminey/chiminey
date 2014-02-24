@@ -22,7 +22,7 @@ $(document).ready(function () {
             <div class="modal-body">
                 <ul class="nav nav-tabs" id="myTab">
                   <li class="active"><a href="#cloud" data-toggle="tab">Cloud</a></li>
-                  <li><a href="#cluster" data-toggle="tab">Cluster</a></li>
+                  <li><a href="#cluster" data-toggle="tab">Cluster/Unix</a></li>
                 </ul>
                 <div class="tab-content">
                     <div class="tab-pane active" id="cloud">
@@ -100,8 +100,23 @@ $(document).ready(function () {
 <p><a data-toggle="modal" href="#createModal" class="btn btn-primary"  onclick="formreset();">Add Computation Platform</a></p>
 <div>
 {% for platform_type, platform_details in all_headers.items %}
+
+
      {% for header, schema in platform_details.items %}
-         <h2>{{ platform_type }}</h2>
+         {% if platform_type == 'nci' %}
+
+            <h2>Cluster/Unix</h2>
+         {% elif platform_type == 'nectar' %}
+
+            <h2>NeCTAR</h2>
+         {% elif platform_type == 'csrack' %}
+
+            <h2>CSRack</h2>
+         {% else %}
+            <h2>{{ platform_type }}</h2>
+
+         {% endif %}
+
           <table class="footable-{{platform_type}} table table-hover table-striped table-bordered platform_table">
             <thead>
                 <tr>
