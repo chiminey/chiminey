@@ -45,7 +45,7 @@ class Command(BaseCommand):
             return
 
         directive = RandInitial()
-        directive.define_directive('random_number', description='Rand Smart Connector')
+        directive.define_directive('random_number', description='Rand Smart Connector', sweep=True)
         print "done"
 
 
@@ -76,11 +76,10 @@ class RandInitial(CoreInitial):
             })
 
     def attach_directive_args(self, new_directive):
-         schema = models.Schema.objects.get(namespace=
-            RMIT_SCHEMA + "/input/system/compplatform")
+        RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+        schema = models.Schema.objects.get(namespace=RMIT_SCHEMA + "/input/system/compplatform")
         das, _ = models.DirectiveArgSet.objects.get_or_create(
             directive=new_directive, order=1, schema=schema)
-        schema = models.Schema.objects.get(namespace=
-            RMIT_SCHEMA + "/input/location/output")
+        schema = models.Schema.objects.get(namespace=RMIT_SCHEMA + "/input/location/output")
         das, _ = models.DirectiveArgSet.objects.get_or_create(
             directive=new_directive, order=2, schema=schema)
