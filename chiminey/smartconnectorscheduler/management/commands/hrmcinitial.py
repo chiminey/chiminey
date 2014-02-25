@@ -84,7 +84,7 @@ class HRMCInitial(CoreInitial):
             {
                 u'http://rmit.edu.au/schemas/stages/setup':
                     {
-                        u'payload_source': 'file://127.0.0.1/local/testpayload_new',
+                        u'payload_source': 'file://127.0.0.1/local/payload_hrmc',
                         u'payload_destination': 'celery_payload_2',
                         u'payload_name': 'process_payload',
                         u'filename_for_PIDs': 'PIDs_collections',

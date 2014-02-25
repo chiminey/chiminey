@@ -42,12 +42,14 @@ EMAIL_RE = re.compile(
 
 
 copy_commands = (
-    ("input2", "myfiles/input/initial"),
-    ("vaspinput", "local/vaspinput/initial"),
-    ("testinput", "local/testinput/initial"),
-    ("payload2_new", "local/testpayload_new"),
-    ("testpayload", "local/testpayload"),
-    ("vasppayload", "local/vasppayload"),
+    #("input2", "myfiles/input/initial"),
+    #("vaspinput", "local/vaspinput/initial"),
+    #("testinput", "local/testinput/initial"),
+    #("payload2_new", "local/testpayload_new"),
+    #("testpayload", "local/testpayload"),
+    #("vasppayload", "local/vasppayload"),
+    ("input_hrmc", "local/input_hrmc/initial"),
+    ("payload_hrmc", "local/payload_hrmc"),
     ("payload_randomnumber", "local/payload_randomnumber"),
     )
 
