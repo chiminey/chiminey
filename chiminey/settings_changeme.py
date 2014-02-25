@@ -1,7 +1,7 @@
 import djcelery
 from datetime import timedelta
 
-DEBUG = True
+DEBUG=False
 
 from os import path
 
@@ -20,12 +20,12 @@ MANAGERS = ADMINS
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',  # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': path.join(path.dirname(__file__), 'db/django.sql').replace('\\', '/'),                      # Or path to database file if using sqlite3.
-        'USER': '',                      # Not used with sqlite3.
-        'PASSWORD': '',                  # Not used with sqlite3.
-        'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
-        'PORT': '',                      # Set to empty string for default. Not used with sqlite3.
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'bdphpc',
+        'USER': 'bdphpc',
+        'PASSWORD': 'bdphpc', # unused with ident auth
+        'HOST': '',
+        'PORT': '',
     }
 }
 
@@ -194,51 +194,51 @@ LOGGING = {
     'loggers': {
 
     'chiminey': {
-    'level': 'DEBUG',
+    'level': 'WARN',
     'handlers': ['file'],
     },
     'chiminey.smartconnectorscheduler': {
-    'level': 'DEBUG',
+    'level': 'WARN',
     'handlers': ['file'],
     },
     'chiminey.sshconnection': {
-    'level': 'DEBUG',
+    'level': 'WARN',
     'handlers': ['file'],
     },
     'chiminey.platform': {
-    'level': 'DEBUG',
+    'level': 'WARN',
     'handlers': ['file'],
     },
     'chiminey.cloudconnection': {
-    'level': 'DEBUG',
+    'level': 'WARN',
     'handlers': ['file'],
     },
     'chiminey.reliabilityframework': {
-    'level': 'DEBUG',
+    'level': 'WARN',
     'handlers': ['file'],
     },
     'chiminey.simpleui': {
-    'level': 'DEBUG',
+    'level': 'WARN',
     'handlers': ['file'],
     },
     'chiminey.mytardis': {
-    'level': 'DEBUG',
+    'level': 'WARN',
     'handlers': ['file'],
     },
     'chiminey.simpleui.wizard': {
-    'level': 'DEBUG',
+    'level': 'WARN',
     'handlers': ['file'],
     },
     'chiminey.storage': {
-    'level': 'DEBUG',
+    'level': 'WARN',
     'handlers': ['file'],
     },
     'chiminey.sshconnector': {
-    'level': 'DEBUG',
+    'level': 'WARN',
     'handlers': ['file'],
     },
     'chiminey.core': {
-    'level': 'DEBUG',
+    'level': 'WARN',
     'handlers': ['file'],
     },
     'chiminey.smartconnectorscheduler.tasks': {
@@ -246,11 +246,11 @@ LOGGING = {
     'handlers': ['file'],
     },
     'celery.task': {
-    'level': 'DEBUG',
+    'level': 'ERROR',
     'handlers': ['file'],
     },
     'django.db.backends': {
-    'level': 'WARN',
+    'level': 'ERROR',
     'handlers': ['file'],
     },
 }
@@ -299,7 +299,6 @@ TEST_MYTARDIS_PASSWORD = ""
 LOCAL_FILESYS_ROOT_PATH = "/var/chiminey/remotesys"
 
 # CLOUD CONFIGURATION
-
 
 
 #VM_IMAGES = {'csrack': {'placement': None, 'vm_image': "ami-00000004"},
