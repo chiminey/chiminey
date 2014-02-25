@@ -334,6 +334,7 @@ class Sweep(Stage):
                     pass
                 v_map.update(starting_map)
                 v_map.update(context)
+                v_map['run_counter'] = 1
                 logger.debug("new v_map=%s" % v_map)
                 put_file(values_url, json.dumps(v_map, indent=4))
 
@@ -355,6 +356,8 @@ class Sweep(Stage):
                 pass
             v_map.update(starting_map)
             v_map.update(context)
+            v_map['run_counter'] = 1
+
             logger.debug("new v_map=%s" % v_map)
             put_file(values_url, json.dumps(v_map, indent=4))
 
