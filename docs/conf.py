@@ -11,10 +11,11 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-#import sys, os
-#from smra import test_settings as settings
-#from django.core.management import setup_environ
-#setup_environ(settings)
+import sys
+import os
+from chiminey import settings
+from django.core.management import setup_environ
+setup_environ(settings)
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -44,7 +45,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Chiminey'
-copyright = u'2014, Ian Thomas, Iman Yusuf, Daniel Drumm, George Opletal'
+copyright = u'2014, Ian Thomas, Iman Yusuf, Heinz Schmidt, Daniel Drumm, George Opletal'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
