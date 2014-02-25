@@ -44,7 +44,7 @@ Configure the user environment::
 
     su - bdphpc -c "ssh-keygen"   #return for all prompts
     su - bdphpc -c "mkdir ~/.python-eggs"
-    su - bdphpc -c “touch /home/bdphpc/.ssh/known_hosts”
+    su - bdphpc -c "touch /home/bdphpc/.ssh/known_hosts"
 
 Install the Chiminey app::
 
