@@ -15,6 +15,7 @@ Contents:
 
    installation
    usermanual
+   enduser_manual
    tutorial
    ref/views
 

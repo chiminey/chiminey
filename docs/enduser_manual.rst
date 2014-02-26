@@ -1,40 +1,58 @@
+================
+ Enduser Manual
+================
 An end-user submits a smart connector job, monitors the job, visualises
 job results and publishes the result to the public BDP index. In this
-documentation, following topics are covered: \* `Getting Chiminey
-Account <#getting_chiminey_account>`__ \* `Login <#login>`__ \*
-`Logout <#logout>`__ \* `Configuring platform
-settings <#configure_platform>`__ \* `Submitting a
-job <#submitting_job>`__ \* `Monitoring a job <#monitoring_job>`__ \*
-`Terminating a job <#terminating_job>`__ \* `Managing
-presets <#managing_presets>`__
+documentation, following topics are covered:
 
- ### Getting Chiminey Account
+* `Getting Chiminey Account`_
+
+* `Login`_
+
+* `Logout`_
+
+* `Configuring platform settings`_
+
+* `Submitting a job`_
+
+* `Monitoring a job`_
+
+* `Terminating a job`_
+
+* `Managing presets`_
+
+.. _`Getting Chiminey Account`:
+Getting Chiminey Account
+------------------------
 
 Chiminey accounts are managed by admin users. Therefore, in order to get
 access to a specific Chiminey server, the end-user should contact the
 admin of the Chiminey server.
 
- ### Login
+.. _Login:
+Login
+------------------------
 
 End-users login via the web interface of the Chiminey server
 
-1. click 'login' on the home page
-2. enter Chiminey credentials
-3. click 'Login'
+1. Click 'login' on the home page
+2. Enter Chiminey credentials
+3. Click 'Login'
 
 .. figure:: images/login.png
-   :alt: Login page
 
-   Login Page
- ### Logout
+.. _Logout:
+Logout
+------------------------
 
 1. click 'Logout
 
 .. figure:: images/logout.png
-   :alt: Logout
 
-   Logout Page
- ### Platform Settings Configuration
+
+.. _Configuring platform settings:
+Platform Settings Configuration
+------------------------
 
 A Chiminey server supports two types of platforms: computation and
 storage. A computation platform is where the core functionality of a
@@ -48,6 +66,8 @@ section, following topics are covered:
 -  `Updating Computation/Storage Platform <#update_platform>`__
 -  `Deleting Computation/Storage Platform <#delete_platform>`__
 
+
+<a name="register_computation_platform"></a>
  #### Registering Computation Platform
 
 Two types of computation platforms can be registered within the Chiminey
