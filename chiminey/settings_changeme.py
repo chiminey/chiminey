@@ -185,7 +185,7 @@ LOGGING = {
     'handlers': {
     'file': {
     'class': 'logging.handlers.RotatingFileHandler',
-    'filename': '/var/log/chiminey/chiminey.log',
+    'filename': 'chiminey.log',
     'formatter': 'timestamped',
             'maxBytes': 1024 * 1024 * 100,  # 100 mb
             'backupCount': 2
