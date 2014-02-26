@@ -13,13 +13,14 @@ documentation, following topics are covered:
 
 * :ref:`configure_platform_settings`
 
-* `Submitting a job`_
+* :ref:`submit_job`
 
-* `Monitoring a job`_
+* :ref:`monitor_job`
 
-* `Terminating a job`_
+* :ref:`terminate_job`
 
-* `Managing presets`_
+* :ref:`manage_presets`
+
 
 .. _getting_chiminey_account:
 
@@ -101,7 +102,7 @@ computation platform|
 
 .. _cluster_unix_platform:
 
-Cluster/Unix
+Cluster/Unix  Computation Platform
 """"""""
 
 1.  Navigate to the Chiminey server homepage
@@ -118,8 +119,15 @@ Cluster/Unix
 12. Click ``Add``
 13. The newly added computation platform will be displayed under ``Cluster/Unix`` list.
 
-Fig. Adding cluster/unix-based computation platform |Adding
-cluster/unix-based computation platform|
+
+.. figure:: img/enduser_manual/add_comp_pltf.png
+    :align: center
+    :alt: Adding cluster/unix computation platform
+    :figclass: align-center
+
+    Figure. Adding cluster/unix-based computation platform
+
+
 
 Registering Storage Platform
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -128,7 +136,7 @@ Two types of storage platforms can be registered within the Chiminey UI. The typ
 
 .. _unix_storage_platform:
 
-Unix
+Unix Storage Platform
 """""
 
 1.  Navigate to the Chiminey server homepage
@@ -145,12 +153,18 @@ Unix
 12. Click ``Add``
 13. The newly added storage platform will be displayed under ``Unix`` list.
 
-Fig. Adding unix-based storage platform |Adding unix-based storage
-platform|
+
+.. figure:: img/enduser_manual/add_unix-strg_pltf.png
+    :align: center
+    :alt: Adding unix-based storage platform
+    :figclass: align-center
+
+    Figure. Adding unix-based storage platform
+
 
 .. _mytardis_storage_platform:
 
-MyTardis
+MyTardis Storage Platform
 """"""
 
 1.  Navigate to the Chiminey server homepage
@@ -165,8 +179,15 @@ MyTardis
 10. Click ``Add``
 11. The newly added storage platform will be displayed under MyTardis list.
 
-Fig. Adding MyTardis-based storage platform |Adding MyTardis-based
-storage platform|
+
+.. figure:: img/enduser_manual/add_mytardis_pltf.png
+    :align: center
+    :alt:  Adding MyTardis-based storage platform
+    :figclass: align-center
+
+    Figure.  Adding MyTardis-based storage platform
+
+
 
 
 Updating Computation/Storage Platform
@@ -179,7 +200,14 @@ Updating Computation/Storage Platform
 5. Locate the platform you wish to update, then click ``Update``
 6. Make the changes, and when finished click ``Update``
 
-Fig. Updating a platform |Updating a platform|
+
+.. figure:: img/enduser_manual/update_platform.png
+    :align: center
+    :alt:  Updating a platform
+    :figclass: align-center
+
+    Figure.  Updating a platform
+
 
 
 Deleting Computation/Storage Platform
@@ -192,4 +220,128 @@ Deleting Computation/Storage Platform
 5. Locate the platform you wish to delete, then click Delete
 6. All the contents of the platform will be shown on a dialogue box. If you want to continue deleting the platform, click ``Delete``. Otherwise, click ``Cancel``
 
-Fig. Deleting a platform |Deleting a platform|
+
+.. figure:: img/enduser_manual/delete_platform.png
+    :align: center
+    :alt:  Deleting a platform
+    :figclass: align-center
+
+    Figure.  Deleting a platform
+
+
+.. _submit_job:
+
+Job Submission
+------------------------
+
+Follow the steps below
+
+1. Navigate to the Chiminey server homepage
+2. Log in with credentials
+3. Click ``Create Job`` from the menu bar
+4. Select the smart connector from the list of smart connectors
+5. Enter the values for the parameters of the selected smart connector. Parameters of any smart connector fall into either of the following types: *Computation platform, Cloud resource, Location, Reliability, MyTardis, Parameter Sweep* and  *Domain-specific*. See :ref:`form_field_types` for detailed discussion about these parameter types.
+6. Click ``Submit Job`` button, then ``OK``
+
+
+.. figure:: img/enduser_manual/submit.png
+    :align: center
+    :alt:   Submitting a job
+    :figclass: align-center
+
+    Figure.  Submitting a job
+
+
+.. _monitor_job:
+
+Job Monitoring
+------------------------
+
+Once a job is submitted, the end-user can monitor the status of the job.
+
+1. Submit a job (see :ref:`submit_job`)
+2. Click ``Jobs``. A job status summary of all jobs will be displayed. The most recently submitted job is displayed at the top.
+3. Click ``Info`` button next to each job to view a detailed status report.
+
+
+.. figure:: img/enduser_manual/monitor.png
+    :align: center
+    :alt:   Monitoring a job
+    :figclass: align-center
+
+    Figure.  Monitoring a job
+
+
+
+.. _terminate_job:
+
+Job Termination
+------------------------
+
+The end-user can terminate already submitted jobs.
+
+1. Submit a job (see :ref:`submit_job`)
+2. Click ``Jobs`` to view all submitted jobs.
+3. Check the box at the end of the status summary of each job that you wish terminate.
+4. Click ``Terminate selected jobs`` button. The termination of the
+   selected jobs will be scheduled. Depending on the current
+   activity of each job, terminating one job may take longer than
+   the other.
+
+
+
+.. figure:: img/enduser_manual/terminate.png
+    :align: center
+    :alt:   Terminating a job
+    :figclass: align-center
+
+    Figure.  Terminating a job
+
+
+.. _manage_presets:
+
+Presets Management
+------------------------
+
+The end-user can save the set of parameters values of a job as a preset.
+Each preset must have a unique name. Using the unique preset name, the
+end-user can retrieve, update and delete saved presets.
+
+
+.. figure:: img/enduser_manual/preset.png
+    :align: center
+    :alt:   Managing presets
+    :figclass: align-center
+
+    Figure.  Managing presets
+
+
+Adding Preset
+^^^^^^^^^^^^^
+
+1. Fill the parameter values for the job you are about to submit
+2. Click **+** button next to the ``Preset Name`` drop down menu
+3. Enter a unique name for the new preset
+4. Click ``Add``
+
+Retrieving Preset
+^^^^^^^^^^^^^^^^^
+
+1. Select the preset name from the ``Preset Name`` drop down menu. The
+   parameters on the submit job will be filled using parameters
+   values that are retrieved from the selected preset.
+
+Updating Preset
+^^^^^^^^^^^^^^^
+
+1. Select the preset name from the 'Preset Name' drop down menu.
+2. Change the value of parameters as needed
+3. Save your changes by clicking  the save button next to the ``Preset Name`` drop down menu.
+
+Deleting Preset
+^^^^^^^^^^^^^^^
+
+1. Select the preset name from the ``Preset Name`` drop down menu.
+2. Click **-** button next to the 'Preset Name' drop down
+   menu. Then, confirmation box appears.
+3. Click ``OK`` to confirm.
