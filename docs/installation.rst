@@ -1,3 +1,5 @@
+.. _installation_guide:
+
 Chiminey Installation Guide
 ===========================
 
