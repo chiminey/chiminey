@@ -97,8 +97,14 @@ Cloud Computation Platform
 10. You can optionally enter the VM image size
 11. Click ``Add``. The newly added cloud-based computation platform will be displayed.
 
-Fig. Adding cloud-based computation platform |Adding cloud-based
-computation platform|
+
+.. figure:: img/enduser_manual/add_cloud_pltf.png
+    :align: center
+    :alt: Adding cloud-based computation platform
+    :figclass: align-center
+
+    Figure. Adding cloud-based computation platform
+
 
 .. _cluster_unix_platform:
 
@@ -122,12 +128,13 @@ Cluster/Unix  Computation Platform
 
 .. figure:: img/enduser_manual/add_comp_pltf.png
     :align: center
-    :alt: Adding cluster/unix computation platform
+    :alt: Adding cluster/unix-based computation platform
     :figclass: align-center
 
     Figure. Adding cluster/unix-based computation platform
 
 
+.. _register_storage_platform:
 
 Registering Storage Platform
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -188,7 +195,7 @@ MyTardis Storage Platform
     Figure.  Adding MyTardis-based storage platform
 
 
-
+.. _update_platform:
 
 Updating Computation/Storage Platform
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -208,7 +215,7 @@ Updating Computation/Storage Platform
 
     Figure.  Updating a platform
 
-
+.. _delete_platform:
 
 Deleting Computation/Storage Platform
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
