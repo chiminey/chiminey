@@ -416,7 +416,7 @@ class Execute(stage.Stage):
                 input_dir,
                 self.VALUES_FNAME),
             is_relative_path=False)
-        logger.debug("values_file=%s" % values_url_with_pkey)
+        logger.debug("initial values_file=%s" % values_url_with_pkey)
         values = {}
         try:
             values_content = storage.get_file(values_url_with_pkey)
