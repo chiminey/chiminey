@@ -732,7 +732,7 @@ class PlatformParameterSetResource(ModelResource):
     schema = fields.ForeignKey(SchemaResource, attribute='schema', full=True)
 
     class Meta:
-        queryset = models.PlatformParameterSet.objects.all()
+        queryset = models.PlatformParameterSet.objects.filter()
         resource_name = 'platformparamset'
         # TODO: FIXME: BasicAuth is horribly insecure without using SSL.
         # Digest is better, but configuration proved tricky.
@@ -743,6 +743,7 @@ class PlatformParameterSetResource(ModelResource):
         allowed_methods = ['get', 'post']
         filtering = {
             'schema': ALL_WITH_RELATIONS,
+            'owner': ALL_WITH_RELATIONS,
         }
 
     def apply_authorization_limits(self, request, object_list):
@@ -868,8 +869,10 @@ class PlatformParameterResource(ModelResource):
         logger.debug('query=%s' % query)
         logger.debug('query_settings=%s' % query_settings)
         schema = query_settings['schema']
+        logger.debug("paramset owner=%s" % request.user.username)
         return models.PlatformParameter.objects.filter(
-            paramset__schema__namespace__startswith=schema)
+            paramset__schema__namespace__startswith=schema,
+            paramset__owner__user__username=request.user.username)
 
 
 def has_session_key(func):
