@@ -64,8 +64,9 @@ class VASPTransform(Transform):
         logger.debug("toten=%s" % toten)
 
         values_url = storage.get_url_with_credentials(all_settings,
-            os.path.join(output_url, self.VALUES_FNAME), is_relative_path=False)
+            '%s%s' % (output_url, self.VALUES_FNAME), is_relative_path=False)
         logger.debug("values_url=%s" % values_url)
+
         try:
             values_content = storage.get_file(values_url)
         except IOError, e:
