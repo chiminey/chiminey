@@ -63,7 +63,7 @@ class Bootstrap(Stage):
         return False
 
     def process(self, run_settings):
-        messages.info(run_settings, "bootstrapping nodes")
+        messages.info(run_settings, "0: bootstrapping nodes")
         comp_pltf_settings = self.get_platform_settings(
             run_settings, 'http://rmit.edu.au/schemas/platform/computation')
         try:
