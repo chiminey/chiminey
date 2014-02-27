@@ -28,6 +28,8 @@ import re
 from itertools import product
 
 from django.template import Context, Template
+from django.template import TemplateSyntaxError
+
 from chiminey.platform import manage
 from chiminey.corestages import stage
 
@@ -44,13 +46,15 @@ from chiminey.storage import get_url_with_credentials, list_dirs, get_make_path
 
 logger = logging.getLogger(__name__)
 
-RMIT_SCHEMA = "http://rmit.edu.au/schemas"
-
 
 class Execute(stage.Stage):
     """
     Start application on nodes and return status
     """
+
+    SCHEMA_PREFIX = "http://rmit.edu.au/schemas"
+    VALUES_FNAME = "values"
+
     def __init__(self, user_settings=None):
         self.numbfile = 0
         logger.debug("Execute stage initialized")
@@ -61,11 +65,11 @@ class Execute(stage.Stage):
          input_dir is assumed to be populated.
         """
         try:
-            schedule_completed = int(getval(run_settings, '%s/stages/schedule/schedule_completed' % RMIT_SCHEMA))
+            schedule_completed = int(getval(run_settings, '%s/stages/schedule/schedule_completed' % self.SCHEMA_PREFIX))
             # schedule_completed = int(smartconnectorscheduler.get_existing_key(run_settings,
             #     'http://rmit.edu.au/schemas/stages/schedule/schedule_completed'))
 
-            self.all_processes = ast.literal_eval(getval(run_settings, '%s/stages/schedule/all_processes' % RMIT_SCHEMA))
+            self.all_processes = ast.literal_eval(getval(run_settings, '%s/stages/schedule/all_processes' % self.SCHEMA_PREFIX))
             # self.all_processes = ast.literal_eval(smartconnectorscheduler.get_existing_key(run_settings,
             #     'http://rmit.edu.au/schemas/stages/schedule/all_processes'))
 
@@ -77,7 +81,7 @@ class Execute(stage.Stage):
         if not schedule_completed:
             return False
         try:
-            scheduled_procs_str = getval(run_settings, '%s/stages/schedule/current_processes' % RMIT_SCHEMA)
+            scheduled_procs_str = getval(run_settings, '%s/stages/schedule/current_processes' % self.SCHEMA_PREFIX)
             # scheduled_procs_str = run_settings['http://rmit.edu.au/schemas/stages/schedule'][u'current_processes']
         except SettingNotFoundException:
             return False
@@ -89,11 +93,11 @@ class Execute(stage.Stage):
         if len(self.schedule_procs) == 0:
             return False
         try:
-            self.reschedule_failed_procs = getval(run_settings, '%s/input/reliability/reschedule_failed_processes' % RMIT_SCHEMA)
+            self.reschedule_failed_procs = getval(run_settings, '%s/input/reliability/reschedule_failed_processes' % self.SCHEMA_PREFIX)
         except SettingNotFoundException:
             self.reschedule_failed_procs = 0  # FIXME: check this is correct
         try:
-            exec_procs_str = getval(run_settings, '%s/stages/execute/executed_procs' % RMIT_SCHEMA)
+            exec_procs_str = getval(run_settings, '%s/stages/execute/executed_procs' % self.SCHEMA_PREFIX)
             # exec_procs_str = smartconnectorscheduler.get_existing_key(run_settings,
             #     'http://rmit.edu.au/schemas/stages/execute/executed_procs')
             self.exec_procs = ast.literal_eval(exec_procs_str)
@@ -112,33 +116,31 @@ class Execute(stage.Stage):
 
     def process(self, run_settings):
         try:
-            self.rand_index = int(getval(run_settings, '%s/stages/run/rand_index' % RMIT_SCHEMA))
+            self.rand_index = int(getval(run_settings, '%s/stages/run/rand_index' % self.SCHEMA_PREFIX))
         except SettingNotFoundException:
             try:
-                self.rand_index = int(getval(run_settings, '%s/input/hrmc/iseed' % RMIT_SCHEMA))
+                self.rand_index = int(getval(run_settings, '%s/input/hrmc/iseed' % self.SCHEMA_PREFIX))
             except SettingNotFoundException, e:
                 self.rand_index = 42
                 logger.debug(e)
 
         logger.debug("processing execute stage")
         local_settings = getvals(run_settings, models.UserProfile.PROFILE_SCHEMA_NS)
-        #self.retrieve_boto_settings(run_settings, local_settings)
         self.set_execute_settings(run_settings, local_settings)
 
-
-        self.contextid = getval(run_settings, '%s/system/contextid' % RMIT_SCHEMA)
+        self.contextid = getval(run_settings, '%s/system/contextid' % self.SCHEMA_PREFIX)
         # NB: Don't catch SettingNotFoundException because we can't recover
         # run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
 
-        output_storage_url = getval(run_settings, '%s/platform/storage/output/platform_url' % RMIT_SCHEMA)
+        output_storage_url = getval(run_settings, '%s/platform/storage/output/platform_url' % self.SCHEMA_PREFIX)
         output_storage_settings = manage.get_platform_settings(output_storage_url, local_settings['bdp_username'])
-        offset = getval(run_settings, '%s/platform/storage/output/offset' % RMIT_SCHEMA)
+        offset = getval(run_settings, '%s/platform/storage/output/offset' % self.SCHEMA_PREFIX)
         # offset = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset']
         self.job_dir = manage.get_job_dir(output_storage_settings, offset)
         # TODO: we assume initial input is in "%s/input_0" % self.job_dir
         # in configure stage we could copy initial data in 'input_location' into this location
         try:
-            self.id = int(getval(run_settings, '%s/system/id' % RMIT_SCHEMA))
+            self.id = int(getval(run_settings, '%s/system/id' % self.SCHEMA_PREFIX))
             self.iter_inputdir = os.path.join(self.job_dir, "input_%s" % self.id)
         except (SettingNotFoundException, ValueError):
             self.id = 0
@@ -147,12 +149,12 @@ class Execute(stage.Stage):
         logger.debug("id = %s" % self.id)
 
         try:
-            self.initial_numbfile = int(getval(run_settings, '%s/stages/run/initial_numbfile' % RMIT_SCHEMA))
+            self.initial_numbfile = int(getval(run_settings, '%s/stages/run/initial_numbfile' % self.SCHEMA_PREFIX))
         except (SettingNotFoundException, ValueError):
             logger.warn("setting initial_numbfile for first iteration")
             self.initial_numbfile = 1
         try:
-            self.experiment_id = int(getval(run_settings, '%s/input/mytardis/experiment_id' % RMIT_SCHEMA))
+            self.experiment_id = int(getval(run_settings, '%s/input/mytardis/experiment_id' % self.SCHEMA_PREFIX))
             # self.experiment_id = int(smartconnectorscheduler.get_existing_key(run_settings,
             #     'http://rmit.edu.au/schemas/input/mytardis/experiment_id'))
         except SettingNotFoundException:
@@ -162,14 +164,13 @@ class Execute(stage.Stage):
 
         logger.debug("process run_settings=%s" % pformat(run_settings))
 
-        computation_platform_url = getval(run_settings, '%s/platform/computation/platform_url' % RMIT_SCHEMA)
+        computation_platform_url = getval(run_settings, '%s/platform/computation/platform_url' % self.SCHEMA_PREFIX)
         comp_pltf_settings = manage.get_platform_settings(computation_platform_url, local_settings['bdp_username'])
         if local_settings['curate_data']:
-            mytardis_url = getval(run_settings, '%s/input/mytardis/mytardis_platform' % RMIT_SCHEMA)
+            mytardis_url = getval(run_settings, '%s/input/mytardis/mytardis_platform' % self.SCHEMA_PREFIX)
             mytardis_settings = manage.get_platform_settings(mytardis_url, local_settings['bdp_username'])
         else:
             mytardis_settings = {}
-
 
         #generic_output_schema = 'http://rmit.edu.au/schemas/platform/storage/output'
 
@@ -223,9 +224,9 @@ class Execute(stage.Stage):
         """
 
         setvals(run_settings, {
-                '%s/stages/execute/executed_procs' % RMIT_SCHEMA: str(self.exec_procs),
-                '%s/stages/schedule/current_processes' % RMIT_SCHEMA: str(self.schedule_procs),
-                '%s/stages/schedule/all_processes' % RMIT_SCHEMA: str(self.all_processes)
+                '%s/stages/execute/executed_procs' % self.SCHEMA_PREFIX: str(self.exec_procs),
+                '%s/stages/schedule/current_processes' % self.SCHEMA_PREFIX: str(self.schedule_procs),
+                '%s/stages/schedule/all_processes' % self.SCHEMA_PREFIX: str(self.all_processes)
                 })
 
         #completed_processes = [x for x in self.exec_procs if x['status'] == 'completed']
@@ -233,13 +234,13 @@ class Execute(stage.Stage):
         running_processes = [x for x in self.schedule_procs if x['status'] == 'running']
         logger.debug('completed_processes=%d' % len(completed_processes))
         setvals(run_settings, {
-                '%s/stages/run/runs_left' % RMIT_SCHEMA:
+                '%s/stages/run/runs_left' % self.SCHEMA_PREFIX:
                     len(running_processes),
 
                     # len(self.exec_procs) - len(completed_processes),
-                '%s/stages/run/initial_numbfile' % RMIT_SCHEMA: self.initial_numbfile,
-                '%s/stages/run/rand_index' % RMIT_SCHEMA: self.rand_index, #fixme remove rand_index
-                '%s/input/mytardis/experiment_id' % RMIT_SCHEMA: str(self.experiment_id)
+                '%s/stages/run/initial_numbfile' % self.SCHEMA_PREFIX: self.initial_numbfile,
+                '%s/stages/run/rand_index' % self.SCHEMA_PREFIX: self.rand_index,  # fixme remove rand_index
+                '%s/input/mytardis/experiment_id' % self.SCHEMA_PREFIX: str(self.experiment_id)
                 })
         return run_settings
 
@@ -321,10 +322,42 @@ class Execute(stage.Stage):
         logger.debug('all_pids=%s' % all_pids)
         return all_pids
 
+    def _get_variation_contexts(self, run_maps, values_map, initial_numbfile):
+            """
+            Based on run_maps, generate all range variations from the template
+            """
+            contexts = []
+            generator_counter = 0
+            num_file = initial_numbfile
+            try:
+                generator_counter = values_map['run_counter']
+            except KeyError:
+                logger.warn("could not retrieve generator counter")
+            for iter, run_map in enumerate(run_maps):
+                logger.debug("run_map=%s" % run_map)
+                logger.debug("iter #%d" % iter)
+                temp_num = 0
+                # ensure ordering of the run_map entries
+                map_keys = run_map.keys()
+                logger.debug("map_keys %s" % map_keys)
+                map_ranges = [list(run_map[x]) for x in map_keys]
+                for z in product(*map_ranges):
+                    context = dict(values_map)
+                    for i, k in enumerate(map_keys):
+                        context[k] = str(z[i])  # str() so that 0 doesn't default value
+                    #instance special variables into the template context
+                    context['run_counter'] = num_file
+                    context['generator_counter'] = generator_counter  # FIXME: not needed?
+                    contexts.append(context)
+                    temp_num += 1
+                    num_file += 1
+                logger.debug("%d contexts created" % (temp_num))
+            return contexts
+
     def prepare_inputs(self, local_settings, output_storage_settings,
                         computation_platform_settings, mytardis_settings, run_settings):
         """
-        Upload all input files for this run
+        Upload all input directories for this iteration
         """
         logger.debug("preparing inputs")
         # TODO: to ensure reproducability, may want to precalculate all random numbers and
@@ -337,313 +370,208 @@ class Execute(stage.Stage):
         output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
                                 output_storage_settings['type'])
         url_with_pkey = get_url_with_credentials(
-            output_storage_settings, output_prefix + self.iter_inputdir, is_relative_path=False)
-        logger.debug("url_with_pkey=%s" % url_with_pkey)
+        output_storage_settings, output_prefix + self.iter_inputdir, is_relative_path=False)
+
         input_dirs = list_dirs(url_with_pkey)
         if not input_dirs:
             raise BadInputException("require an initial subdirectory of input directory")
+
         for input_dir in sorted(input_dirs):
-            logger.debug("Input dir %s" % input_dir)
-            self.upload_variation_inputs(
-                run_settings, local_settings, self.generate_variations(
-                    input_dir, local_settings, output_storage_settings, run_settings),
-                processes, input_dir, output_storage_settings,
-                computation_platform_settings, mytardis_settings)
+            self._upload_input_dir_variations(processes,
+                local_settings,
+                computation_platform_settings,
+                output_storage_settings, mytardis_settings,
+                input_dir, run_settings)
 
-    def generate_variations(self, input_dir, local_settings, output_storage_settings, run_settings):
-        """
-        For each templated file in input_dir, generate all variations
-        """
+    def _upload_input_dir_variations(self, processes, local_settings,
+                                     computation_platform_settings,
+                                     output_storage_settings,
+                                     mytardis_settings,
+                                     input_dir, run_settings):
         output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
-                                    output_storage_settings['type'])
-        template_pat = re.compile("(.*)_template")
-        fname_url_with_pkey = get_url_with_credentials(
-            output_storage_settings,
-            output_prefix + os.path.join(self.iter_inputdir, input_dir),
+                                        output_storage_settings['type'])
+        input_url_with_credentials = get_url_with_credentials(
+            output_storage_settings, output_prefix + os.path.join(
+                self.iter_inputdir, input_dir),
             is_relative_path=False)
-        input_files = storage.list_dirs(fname_url_with_pkey,
-            list_files=True)
+        logger.debug('input_url_with_credentials=%s' % input_url_with_credentials)
+        if local_settings['curate_data']:
+            self.experiment_id = self.curate_data(self.experiment_id,
+                                                local_settings,
+                                                output_storage_settings,
+                                                mytardis_settings,
+                                                input_url_with_credentials)
+        else:
+            logger.warn('Data curation is off')
 
-        variations = {}
-        # TODO: only tested with single template file per input
+        # get run Map
         parent_stage = self.import_parent_stage(run_settings)
+        run_map, self.rand_index = parent_stage.get_run_map(local_settings,
+                               run_settings=run_settings)
 
-        for fname in input_files:
-            logger.debug("trying %s/%s/%s" % (self.iter_inputdir, input_dir,
-                                              fname))
-            template_mat = template_pat.match(fname)
-            if template_mat:
-                # get the template
-                basename_url_with_pkey = get_url_with_credentials(
+        # load value_map
+        values_url_with_pkey = get_url_with_credentials(
+            output_storage_settings,
+            output_prefix + os.path.join(self.iter_inputdir,
+                input_dir,
+                self.VALUES_FNAME),
+            is_relative_path=False)
+        logger.debug("values_file=%s" % values_url_with_pkey)
+        values = {}
+        try:
+            values_content = storage.get_file(values_url_with_pkey)
+        except IOError:
+            logger.warn("no values file found")
+        else:
+            logger.debug("values_content = %s" % values_content)
+            values = dict(json.loads(values_content))
+        logger.debug("values=%s" % values)
+
+        # generates a set of variations for the template fname
+        contexts = self._get_variation_contexts(
+            [run_map], values,  self.initial_numbfile)
+        self.initial_numbfile += len(contexts)
+
+        # for each context, copy each file to dest and any
+        # templates to be instantiated, then store in values.
+
+        template_pat = re.compile("(.*)_template")
+        relative_path_suffix = self.get_relative_output_path(local_settings)
+
+        for context in contexts:
+            logger.debug("context=%s" % context)
+            # get list of all files in input_dir
+            fname_url_with_pkey = get_url_with_credentials(
+                output_storage_settings,
+                output_prefix + os.path.join(self.iter_inputdir, input_dir),
+                is_relative_path=False)
+            input_files = storage.list_dirs(fname_url_with_pkey,
+                list_files=True)
+
+            # get process information
+            run_counter = context['run_counter']
+            logger.debug("run_counter=%s" % run_counter)
+            proc = None
+            for p in processes:
+                # TODO: how to handle invalid run_counter
+                pid = int(p['id'])
+                logger.debug("pid=%s" % pid)
+                if pid == run_counter:
+                    proc = p
+                    break
+            else:
+                logger.error("no process found matching run_counter")
+                raise BadInputException()
+            logger.debug("proc=%s" % pformat(proc))
+
+            for fname in input_files:
+                logger.debug("fname=%s" % fname)
+                templ_mat = template_pat.match(fname)
+                fname_url_with_credentials = storage.get_url_with_credentials(
                     output_storage_settings,
                     output_prefix + os.path.join(self.iter_inputdir, input_dir, fname),
                     is_relative_path=False)
-                template = storage.get_file(basename_url_with_pkey)
-                base_fname = template_mat.group(1)
-                logger.debug("base_fname=%s" % base_fname)
+                logger.debug("fname_url_with_credentials=%s" % fname_url_with_credentials)
 
-                # find associated values file and generator_counter
-                values_map = {}
-                try:
-                    values_url_with_pkey = get_url_with_credentials(
-                        output_storage_settings,
-                        output_prefix + os.path.join(self.iter_inputdir,
-                            input_dir,
-                            '%s_values' % base_fname),
-                        is_relative_path=False)
+                def put_dest_file(proc, fname,
+                                  dest_file_location, resched_file_location,
+                                 content):
+                    dest_url = get_url_with_credentials(
+                            computation_platform_settings, os.path.join(dest_file_location, fname),
+                            is_relative_path=True, ip_address=proc['ip_address'])
+                    logger.debug("writing to =%s" % dest_url)
+                    #logger.debug("content=%s" % content)
+                    storage.put_file(dest_url, content)
+                    if self.reschedule_failed_procs:
+                        logger.debug("resched=%s" % resched_file_location)
+                        logger.debug("fname=%s" % fname)
+                        logger.debug("output_storage_settings=%s" % output_storage_settings)
 
-                    logger.debug("values_file=%s" % values_url_with_pkey)
-                    values_content = storage.get_file(values_url_with_pkey)
-                except IOError:
-                    logger.warn("no values file found")
+                        logger.debug("here")
+                        test = "%s/%s" % (resched_file_location, fname)
+                        logger.debug("test=%s" % test)
+                        resched_url = get_url_with_credentials(
+                                output_storage_settings, test)
+                        logger.debug("writing backup to %s" % resched_url)
+                        storage.put_file(resched_url, content)
+                    logger.debug("done")
+
+                outputs = []
+                if templ_mat:
+                    base_fname = templ_mat.group(1)
+                    template_content = storage.get_file(fname_url_with_credentials)
+                    try:
+                        templ = Template(template_content)
+                    except TemplateSyntaxError, e:
+                        logger.error(e)
+                        #FIXME: should detect this during submission of job,
+                        #as no sensible way to recover here.
+                        #TODO: signal error conditions in job status
+                        continue
+                    new_context = Context(context)
+                    logger.debug("new_content=%s" % new_context)
+                    render_output = templ.render(new_context)
+                    render_output = render_output.encode('utf-8')
+                    outputs.append((base_fname, render_output))
+                    outputs.append((fname, template_content))
+
                 else:
-                    logger.debug("values_content = %s" % values_content)
-                    values_map = dict(json.loads(values_content))
+                    content = storage.get_file(fname_url_with_credentials)
+                    outputs.append((fname, content))
 
-                    # TODO: rather than loading up specific vars for info
-                    # to send to next set of variations, pass whole values_map
-                    # and then override with map.  This means we need no
-                    # special variables here, could easily propogate values
-                    # between iterations and we might also pass an list
-                    # of values...
+                for (new_fname, content) in outputs:
+                    dest_file_location = computation_platform_settings['type']\
+                        + "@" + os.path.join(relative_path_suffix,
+                                             proc['id'],
+                                             local_settings['payload_cloud_dirname'])
+                    logger.debug("dest_file_location =%s" % dest_file_location)
+                    resched_file_location = "%s%s" % (output_prefix, os.path.join(
+                                self.job_dir, "input_backup", proc['id']))
 
-                map, self.rand_index = parent_stage.get_run_map(local_settings,
-                                       run_settings=run_settings)
+                    logger.debug("resched_file_location=%s" % resched_file_location)
+                    put_dest_file(proc, new_fname, dest_file_location,
+                                  resched_file_location, content)
 
-                if not template_mat.groups():
-                    logger.info("found odd template matching file %s" % fname)
-                else:
+            # then copy context new values file
+            logger.debug("writing values file")
+            values_dest_location = computation_platform_settings['type']\
+                + "@" + os.path.join(relative_path_suffix,
+                                     proc['id'],
+                                     local_settings['payload_cloud_dirname'],
+                                     self.VALUES_FNAME)
+            logger.debug("values_dest_location =%s" % values_dest_location)
 
-                    logger.debug("self.initial_numbfile=%s" % self.initial_numbfile)
-                    # generates a set of variations for the template fname
-                    variation_set = self._expand_variations(template,
-                                                            [map], values_map,  self.initial_numbfile)
-                    self.initial_numbfile += len(variation_set)
-                    logger.debug('variation_set=%d' % len(variation_set))
-                    logger.debug("self.initial_numbfile=%s" % self.initial_numbfile)
-                    variations[base_fname] = variation_set
-                logger.debug("map=%s" % map)
-        else:
-            # normal file
-            pass
-        logger.debug('Variations %s' % variations)
-        logger.debug("Variations items %d" % len(variations.items()))
-        return variations
+            values_dest_url = get_url_with_credentials(
+                    computation_platform_settings, values_dest_location,
+                    is_relative_path=True, ip_address=proc['ip_address'])
 
+            storage.put_file(values_dest_url, json.dumps(context, indent=4))
 
-    def _expand_variations(self, template, maps, values, initial_numbfile):
-            """
-            Based on maps, generate all range variations from the template
-            """
-            # FIXME: doesn't handle multipe template files together
-            logger.debug("values=%s" % values)
-            res = []
-            generator_counter = 0
-            numbfile = initial_numbfile
-            try:
-                generator_counter = values['run_counter']
-            except KeyError:
-                logger.warn("could not retrieve generator counter")
-            for iter, template_map in enumerate(maps):
-                logger.debug("template_map=%s" % template_map)
-                logger.debug("iter #%d" % iter)
-                temp_num = 0
-                # ensure ordering of the template_map entries
-                map_keys = template_map.keys()
-                logger.debug("map_keys %s" % map_keys)
-                map_ranges = [list(template_map[x]) for x in map_keys]
-                for z in product(*map_ranges):
-                    context = dict(values)
-                    for i, k in enumerate(map_keys):
-                        context[k] = str(z[i])  # str() so that 0 doesn't default value
-                    #instance special variables into the template context
-                    context['run_counter'] = numbfile
-                    context['generator_counter'] = generator_counter  # FIXME: not needed?
-                    logger.debug("context=%s" % context)
-                    numbfile += 1
-                    #logger.debug(context)
-                    t = Template(template)
-                    con = Context(context)
+        logger.debug("done input upload")
 
-                    res.append((t.render(con), context))
-                    temp_num += 1
-                logger.debug("%d files created" % (temp_num))
-            return res
+    def set_execute_settings(self, run_settings, local_settings):
+        self.set_domain_settings(run_settings, local_settings)
+        update(local_settings, run_settings,
+               '%s/stages/setup/payload_destination' % self.SCHEMA_PREFIX,
+               '%s/stages/setup/filename_for_PIDs' % self.SCHEMA_PREFIX,
+               '%s/stages/run/payload_cloud_dirname' % self.SCHEMA_PREFIX,
+               '%s/stages/run/compile_file' % self.SCHEMA_PREFIX,
+               '%s/stages/run/retry_attempts' % self.SCHEMA_PREFIX,
+               '%s/system/contextid' % self.SCHEMA_PREFIX,
+               '%s/system/random_numbers' % self.SCHEMA_PREFIX,
+               '%s/system/id' % self.SCHEMA_PREFIX
+        )
+        try:
+            local_settings['curate_data'] = getval(run_settings,
+            '%s/input/mytardis/curate_data' % self.SCHEMA_PREFIX)
+        except SettingNotFoundException:
+            local_settings['curate_data'] = 0
+        local_settings['bdp_username'] = getval(run_settings,
+            '%s/bdp_userprofile/username' % self.SCHEMA_PREFIX)
 
     def curate_data(self, experiment_id, local_settings, output_storage_settings,
                     mytardis_settings, source_files_url):
         return self.experiment_id
 
-    def upload_variation_inputs(self, run_settings, local_settings, variations, processes,
-                                 input_dir, output_storage_settings,
-                                 computation_platform_settings, mytardis_settings):
-        '''
-        Create input packages for each variation and upload the vms
-        '''
-        logger.debug("upload_variation_inputs")
-        output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
-                                    output_storage_settings['type'])
-        source_files_url = get_url_with_credentials(
-            output_storage_settings, output_prefix + os.path.join(
-                self.iter_inputdir, input_dir),
-            is_relative_path=False)
-
-        logger.debug('source_files_url=%s' % source_files_url)
-        # Copy input directory to mytardis only after saving locally, so if
-        # something goes wrong we still have the results
-        if local_settings['curate_data']:
-            self.experiment_id = self.curate_data(self.experiment_id, local_settings, output_storage_settings,
-                             mytardis_settings, source_files_url)
-        else:
-            logger.warn('Data curation is off')
-        #proc_ind = 0
-        for var_fname in variations.keys():
-            logger.debug("var_fname=%s" % var_fname)
-            logger.debug('variations[var_fname]=%s' % variations[var_fname])
-            for var_content, values in variations[var_fname]:
-                #logger.debug("var_content = %s" % var_content)
-                #logger.debug('proc_ind=%s' % proc_ind)
-                logger.debug('processes=%s' % processes)
-                run_counter = values['run_counter']
-                logger.debug("run_counter=%s" % run_counter)
-                proc = None
-                for p in processes:
-                    # TODO: how to handle invalid run_counter
-                    pid = int(p['id'])
-                    logger.debug("pid=%s" % pid)
-                    if pid == run_counter:
-                        proc = p
-                        break
-                else:
-                    logger.error("no process found matching run_counter")
-                    #smartconnectorscheduler.error(run_settings, "%s: wait" % (self.id + 1))
-                    # TODO: catch this error and recover
-                    raise BadInputException()
-
-                logger.debug("proc=%s" % pformat(proc))
-
-                #proc = processes[proc_ind]
-                #proc_ind += 1
-                #ip = botocloudconnector.get_instance_ip(var_node.id, local_settings)
-                ip = proc['ip_address']
-
-                #dest_files_location = computation_platform_settings['type'] + "@"\
-                #                      + os.path.join(local_settings['payload_destination'],
-                #                                     proc['id'],
-                #                                     local_settings['payload_cloud_dirname']
-                #                                     )
-                relative_path_suffix = self.get_relative_output_path(local_settings)
-                dest_files_location = computation_platform_settings['type'] + "@"\
-                                      + os.path.join(relative_path_suffix,
-                                                     proc['id'],
-                                                     local_settings['payload_cloud_dirname']
-                                                     )
-
-                logger.debug('dest_files_location=%s' % dest_files_location)
-
-                dest_files_url = get_url_with_credentials(
-                    computation_platform_settings, dest_files_location,
-                    is_relative_path=True, ip_address=ip)
-                logger.debug('dest_files_url=%s' % dest_files_url)
-
-                # FIXME: Cleanup any existing runs already there
-                # FIXME: keep the compile exec from setup
-                #FIXME: exceptions should be given as parameter
-                #FIXme we should not delete anyfile. SInce each process runs in its own directory
-                exceptions = [local_settings['compile_file'], "..", ".",
-                              'PSD', 'PSD.f', 'PSD_exp.dat', 'PSD.inp',
-                              'Makefile', 'running.sh',
-                              'process_scheduledone.sh', 'process_schedulestart.sh']
-                storage.copy_directories(source_files_url, dest_files_url)
-
-                if self.reschedule_failed_procs:
-                    input_backup = os.path.join(self.job_dir, "input_backup", proc['id'])
-                    backup_url = get_url_with_credentials(
-                        output_storage_settings,
-                        output_prefix + input_backup, is_relative_path=False)
-                    storage.copy_directories(source_files_url, backup_url)
-
-                # Why do we need to create a tempory file to make this copy?
-                import uuid
-                randsuffix = unicode(uuid.uuid4())  # should use some job id here
-
-                var_url = get_url_with_credentials(local_settings, os.path.join("tmp%s" % randsuffix, "var"),
-                    is_relative_path=True)
-                logger.debug("var_url=%s" % var_url)
-                storage.put_file(var_url, var_content.encode('utf-8'))
-
-                value_url = get_url_with_credentials(local_settings, os.path.join("tmp%s" % randsuffix, "value"),
-                    is_relative_path=True)
-                logger.debug("value_url=%s" % value_url)
-                storage.put_file(value_url, json.dumps(values))
-
-                #local_settings['platform'] should be replaced
-                # and overwrite on the remote
-                #var_fname_remote = computation_platform_settings['type']\
-                #    + "@" + os.path.join(local_settings['payload_destination'],
-                #                         proc['id'],
-                #                         local_settings['payload_cloud_dirname'],
-                #                         var_fname)
-                var_fname_remote = computation_platform_settings['type']\
-                    + "@" + os.path.join(relative_path_suffix,
-                                         proc['id'],
-                                         local_settings['payload_cloud_dirname'],
-                                         var_fname)
-
-                var_fname_pkey = get_url_with_credentials(
-                    computation_platform_settings, var_fname_remote,
-                    is_relative_path=True, ip_address=ip)
-                var_content = storage.get_file(var_url)
-                storage.put_file(var_fname_pkey, var_content)
-
-                logger.debug("var_fname_pkey=%s" % var_fname_pkey)
-                values_fname_pkey = get_url_with_credentials(
-                    computation_platform_settings,
-                    os.path.join(dest_files_location,
-                                 "%s_values" % var_fname),
-                    is_relative_path=True, ip_address=ip)
-                values_content = storage.get_file(value_url)
-                storage.put_file(values_fname_pkey, values_content)
-                logger.debug("values_fname_pkey=%s" % values_fname_pkey)
-
-                #copying values and var_content to backup folder
-                if self.reschedule_failed_procs:
-                    value_url = get_url_with_credentials(
-                        output_storage_settings,
-                        output_prefix + os.path.join(input_backup, "%s_values" % var_fname),
-                        is_relative_path=False)
-                    logger.debug("value_url=%s" % value_url)
-                    storage.put_file(value_url, json.dumps(values))
-
-                    var_fname_pkey = get_url_with_credentials(
-                        output_storage_settings,
-                        output_prefix + os.path.join(input_backup, var_fname),
-                        is_relative_path=False)
-                    var_content = storage.get_file(var_url)
-                    storage.put_file(var_fname_pkey, var_content)
-
-                # cleanup
-                tmp_url = get_url_with_credentials(local_settings, os.path.join("tmp%s" % randsuffix),
-                    is_relative_path=True)
-                logger.debug("deleting %s" % tmp_url)
-
-    def set_execute_settings(self, run_settings, local_settings):
-        self.set_domain_settings(run_settings, local_settings)
-        update(local_settings, run_settings,
-               '%s/stages/setup/payload_destination' % RMIT_SCHEMA,
-               '%s/stages/setup/filename_for_PIDs' % RMIT_SCHEMA,
-               '%s/stages/run/payload_cloud_dirname' % RMIT_SCHEMA,
-               '%s/stages/run/compile_file' % RMIT_SCHEMA,
-               '%s/stages/run/retry_attempts' % RMIT_SCHEMA,
-               '%s/system/contextid' % RMIT_SCHEMA,
-               '%s/system/random_numbers' % RMIT_SCHEMA,
-               '%s/system/id' % RMIT_SCHEMA
-        )
-        try:
-            local_settings['curate_data'] = getval(run_settings, '%s/input/mytardis/curate_data' % RMIT_SCHEMA)
-        except SettingNotFoundException:
-            local_settings['curate_data'] = 0
-        local_settings['bdp_username'] = getval(run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA )
-
-
-
+    def set_domain_settings(self, run_settings, local_settings):
+        pass

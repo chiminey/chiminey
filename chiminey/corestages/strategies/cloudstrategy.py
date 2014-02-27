@@ -74,13 +74,32 @@ class CloudStrategy(Strategy):
 
     def set_bootstrap_settings(self, run_settings, local_settings):
         super(CloudStrategy, self).set_bootstrap_settings(run_settings, local_settings)
-        bootstrap.set_bootstrap_settings(run_settings, local_settings)
+        try:
+            payload_source = getval(
+                run_settings, '%s/stages/setup/payload_source' % RMIT_SCHEMA)
+        except SettingNotFoundException:
+            pass
+
+        if payload_source:
+            bootstrap.set_bootstrap_settings(run_settings, local_settings)
 
     def start_multi_bootstrap_task(self, settings, relative_path_suffix):
-        bootstrap.start_multi_bootstrap_task(settings, relative_path_suffix)
+        try:
+            payload_source = settings['payload_source']
+        except IndexError:
+            pass
+
+        if payload_source:
+            bootstrap.start_multi_bootstrap_task(settings, relative_path_suffix)
 
     def complete_bootstrap(self, bootstrap_class, local_settings):
-        bootstrap.complete_bootstrap(bootstrap_class, local_settings)
+        try:
+            payload_source = local_settings['payload_source']
+        except IndexError:
+            pass
+
+        if payload_source:
+            bootstrap.complete_bootstrap(bootstrap_class, local_settings)
 
     def set_schedule_settings(self, run_settings, local_settings):
         super(CloudStrategy, self).set_schedule_settings(run_settings, local_settings)

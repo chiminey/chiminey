@@ -21,15 +21,12 @@
 
 import logging
 import ast
-import os
+from itertools import product
 from chiminey.corestages.parent import Parent
 from chiminey.smartconnectorscheduler.errors import BadSpecificationError
 from chiminey.smartconnectorscheduler import jobs
 from chiminey.runsettings import update, getval, SettingNotFoundException
 from chiminey.storage import get_url_with_credentials, list_dirs
-
-
-RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
 
 logger = logging.getLogger(__name__)
@@ -39,6 +36,8 @@ class HRMCParent(Parent):
     """
         A list of corestages
     """
+
+    SCHEMA_PREFIX = "http://rmit.edu.au/schemas"
 
     def __init__(self, user_settings=None):
         logger.debug("HRMCParallelStage")
@@ -56,21 +55,21 @@ class HRMCParent(Parent):
         logger.debug('run_settings=%s' % run_settings)
         #fixme remove rand index
         try:
-            rand_index = int(getval(run_settings, '%s/stages/run/rand_index' % RMIT_SCHEMA))
+            rand_index = int(getval(run_settings, '%s/stages/run/rand_index' % self.SCHEMA_PREFIX))
         except SettingNotFoundException:
             try:
-                rand_index = int(getval(run_settings, '%s/input/hrmc/iseed' % RMIT_SCHEMA))
+                rand_index = int(getval(run_settings, '%s/input/hrmc/iseed' % self.SCHEMA_PREFIX))
             except SettingNotFoundException, e:
                 rand_index = 42
                 logger.debug(e)
         update(local_settings, run_settings,
-            '%s/input/hrmc/fanout_per_kept_result' % RMIT_SCHEMA,
-            '%s/input/hrmc/optimisation_scheme' % RMIT_SCHEMA,
-            '%s/input/hrmc/threshold' % RMIT_SCHEMA,
-            '%s/input/hrmc/pottype' % RMIT_SCHEMA,
-            '%s/system/max_seed_int' % RMIT_SCHEMA,
-            '%s/system/random_numbers' % RMIT_SCHEMA,
-            '%s/system/id' % RMIT_SCHEMA)
+            '%s/input/hrmc/fanout_per_kept_result' % self.SCHEMA_PREFIX,
+            '%s/input/hrmc/optimisation_scheme' % self.SCHEMA_PREFIX,
+            '%s/input/hrmc/threshold' % self.SCHEMA_PREFIX,
+            '%s/input/hrmc/pottype' % self.SCHEMA_PREFIX,
+            '%s/system/max_seed_int' % self.SCHEMA_PREFIX,
+            '%s/system/random_numbers' % self.SCHEMA_PREFIX,
+            '%s/system/id' % self.SCHEMA_PREFIX)
 
         # smartconnectorscheduler.copy_settings(local_settings, run_settings,
         #     'http://rmit.edu.au/schemas/input/hrmc/fanout_per_kept_result')
@@ -86,7 +85,6 @@ class HRMCParent(Parent):
         #     'http://rmit.edu.au/schemas/system/random_numbers')
         # smartconnectorscheduler.copy_settings(local_settings, run_settings,
         #     'http://rmit.edu.au/schemas/system/id')
-
 
         logger.debug("local_settings=%s" % local_settings)
         try:
@@ -158,36 +156,50 @@ class HRMCParent(Parent):
         logger.debug('map=%s' % map)
         return map, rand_index
 
-    #fixme: consider moving to parent class. do we need input dirs to calculate?
+    # #fixme: consider moving to parent class. do we need input dirs to calculate?
+    # def get_total_templates(self, maps, **kwargs):
+    #     run_settings = kwargs['run_settings']
+    #     output_storage_settings = kwargs['output_storage_settings']
+    #     job_dir = kwargs['job_dir']
+    #     try:
+    #         id = int(getval(run_settings,
+    #                              '%s/system/id' % self.SCHEMA_PREFIX))
+    #     except (SettingNotFoundException, ValueError) as e:
+    #         logger.debug(e)
+    #         id = 0
+    #     iter_inputdir = os.path.join(job_dir, "input_%s" % id)
+    #     url_with_pkey = get_url_with_credentials(
+    #         output_storage_settings,
+    #         '%s://%s@%s' % (output_storage_settings['scheme'],
+    #                        output_storage_settings['type'],
+    #                         iter_inputdir),
+    #         is_relative_path=False)
+    #     logger.debug(url_with_pkey)
+    #     input_dirs = list_dirs(url_with_pkey)
+    #     for iter, template_map in enumerate(maps):
+    #         logger.debug("template_map=%s" % template_map)
+    #         map_keys = template_map.keys()
+    #         logger.debug("map_keys %s" % map_keys)
+    #         map_ranges = [list(template_map[x]) for x in map_keys]
+    #         product = 1
+    #         for i in map_ranges:
+    #             product = product * len(i)
+    #         total_templates = product * len(input_dirs)
+    #         logger.debug("total_templates=%d" % (total_templates))
+    #     return total_templates
+
     def get_total_templates(self, maps, **kwargs):
-        run_settings = kwargs['run_settings']
-        output_storage_settings = kwargs['output_storage_settings']
-        job_dir = kwargs['job_dir']
-        try:
-            id = int(getval(run_settings,
-                                 '%s/system/id' % RMIT_SCHEMA))
-        except (SettingNotFoundException, ValueError) as e:
-            logger.debug(e)
-            id = 0
-        iter_inputdir = os.path.join(job_dir, "input_%s" % id)
-        url_with_pkey = get_url_with_credentials(
-            output_storage_settings,
-            '%s://%s@%s' % (output_storage_settings['scheme'],
-                           output_storage_settings['type'],
-                            iter_inputdir),
-            is_relative_path=False)
-        logger.debug(url_with_pkey)
-        input_dirs = list_dirs(url_with_pkey)
-        for iter, template_map in enumerate(maps):
-            logger.debug("template_map=%s" % template_map)
-            map_keys = template_map.keys()
-            logger.debug("map_keys %s" % map_keys)
-            map_ranges = [list(template_map[x]) for x in map_keys]
-            product = 1
-            for i in map_ranges:
-                product = product * len(i)
-            total_templates = product * len(input_dirs)
-            logger.debug("total_templates=%d" % (total_templates))
-        return total_templates
-
-
+        logger.debug("maps=%s" % maps)
+        contexts = []
+        num_variations = 0
+        for run_map in maps:
+            map_keys = run_map.keys()
+            map_ranges = [list(run_map[x]) for x in map_keys]
+            for z in product(*map_ranges):
+                context = {}
+                for i, k in enumerate(map_keys):
+                    context[k] = str(z[i])  # str() so that 0 doesn't default value
+                contexts.append(context)
+                num_variations += 1
+        logger.debug("num_variations=%s" % num_variations)
+        return num_variations

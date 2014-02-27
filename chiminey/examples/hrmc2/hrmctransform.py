@@ -35,11 +35,12 @@ from chiminey.corestages import Transform
 
 logger = logging.getLogger(__name__)
 
-RMIT_SCHEMA = "http://rmit.edu.au/schemas"
-DOMAIN_INPUT_FILES = ['input_bo.dat', 'input_gr.dat', 'input_sq.dat']
-
 
 class HRMCTransform(Transform):
+
+    SCHEMA_PREFIX = "http://rmit.edu.au/schemas"
+    VALUES_FNAME = "values"
+    DOMAIN_INPUT_FILES = ['input_bo.dat', 'input_gr.dat', 'input_sq.dat']
 
     def input_valid(self, settings_to_test):
         """ Return a tuple, where the first element is True settings_to_test
@@ -52,7 +53,7 @@ class HRMCTransform(Transform):
         try:
             ast.literal_eval(getval(
                                          settings_to_test,
-                                        '%s/input/hrmc/threshold' % RMIT_SCHEMA))
+                                        '%s/input/hrmc/threshold' % self.SCHEMA_PREFIX))
         except (ValueError, SettingNotFoundException):
             error.append("Cannot load threshold")
 
@@ -67,7 +68,7 @@ class HRMCTransform(Transform):
                 # FIXME: need to validate this output to make sure list of int
                 ast.literal_eval(getval(
                                              run_settings,
-                                            '%s/input/hrmc/threshold' % RMIT_SCHEMA))
+                                            '%s/input/hrmc/threshold' % self.SCHEMA_PREFIX))
             except (SettingNotFoundException, ValueError):
                 logger.warn("no threshold found when expected")
                 return False
@@ -82,7 +83,7 @@ class HRMCTransform(Transform):
         output_prefix = '%s://%s@' % (all_settings['scheme'],
                                     all_settings['type'])
 
-        id = int(getval(run_settings, '%s/system/id' % RMIT_SCHEMA))
+        id = int(getval(run_settings, '%s/system/id' % self.SCHEMA_PREFIX))
         iter_output_dir = os.path.join(os.path.join(base_dir, "output_%s" % id))
         logger.debug('iter_output_dir=%s' % iter_output_dir)
         output_prefix = '%s://%s@' % (all_settings['scheme'],
@@ -101,8 +102,6 @@ class HRMCTransform(Transform):
         Node_info = namedtuple('Node_info',
             ['dirname', 'number', 'criterion'])
 
-        BASE_FNAME = "HRMC.inp"
-
         # generate criterias
         self.outputs = []
         for node_output_dirname in node_output_dirnames:
@@ -114,7 +113,7 @@ class HRMCTransform(Transform):
             try:
                 values_url = get_url_with_credentials(
                     all_settings, os.path.join(node_path,
-                    '%s_values' % BASE_FNAME), is_relative_path=False)
+                       self.VALUES_FNAME), is_relative_path=False)
 
                 values_content = storage.get_file(values_url)
 
@@ -124,9 +123,8 @@ class HRMCTransform(Transform):
                 values_map = {}
             else:
                 values_map = dict(json.loads(values_content))
-
-            self.outputs.append(Node_info(dirname=node_output_dirname,
-                           number=values_map['run_counter'], criterion=criterion))
+                self.outputs.append(Node_info(dirname=node_output_dirname,
+                               number=values_map['run_counter'], criterion=criterion))
 
         if not self.outputs:
             logger.error("no ouput found for this iteration")
@@ -137,7 +135,7 @@ class HRMCTransform(Transform):
 
         try:
             # FIXME: need to validate this output to make sure list of int
-            threshold = ast.literal_eval(getval(run_settings, '%s/input/hrmc/threshold' % RMIT_SCHEMA))
+            threshold = ast.literal_eval(getval(run_settings, '%s/input/hrmc/threshold' % self.SCHEMA_PREFIX))
         except (SettingNotFoundException, ValueError):
             logger.warn("no threshold found when expected")
             return False
@@ -182,7 +180,7 @@ class HRMCTransform(Transform):
             old_output_path = os.path.join(iter_output_dir, Node_info.dirname)
 
             # Move all existing domain input files unchanged to next input directory
-            for f in DOMAIN_INPUT_FILES:
+            for f in self.DOMAIN_INPUT_FILES:
                 source_url = get_url_with_credentials(
                     all_settings, output_prefix + os.path.join(old_output_path, f), is_relative_path=False)
                 dest_url = get_url_with_credentials(
@@ -196,7 +194,7 @@ class HRMCTransform(Transform):
                 logger.debug('put successfully')
 
             logger.debug('put file successfully')
-            pattern = "*_values"
+            pattern = "values"
             output_offset = os.path.join(os.path.join(offset, "output_%s" % id, Node_info.dirname))
             input_offset = os.path.join(os.path.join(offset, "input_%s" % (id + 1), Node_info.dirname))
             copy_files_with_pattern(iter_out_fsys,
@@ -332,7 +330,7 @@ class HRMCTransform(Transform):
     def curate_dataset(self, run_settings, experiment_id, base_dir, output_url,
         all_settings):
 
-        iteration = int(getval(run_settings, '%s/system/id' % RMIT_SCHEMA))
+        iteration = int(getval(run_settings, '%s/system/id' % self.SCHEMA_PREFIX))
         iter_output_dir = os.path.join(os.path.join(base_dir, "output_%s" % iteration))
         output_prefix = '%s://%s@' % (all_settings['scheme'],
                                     all_settings['type'])
@@ -439,7 +437,7 @@ class HRMCTransform(Transform):
                     prefix = 'ssh://%s@%s' % (settings['type'], host)
 
                     source_url = get_url_with_credentials(
-                        settings, os.path.join(prefix, path, "HRMC.inp_values"),
+                        settings, os.path.join(prefix, path, self.VALUES_FNAME),
                         is_relative_path=False)
                     logger.debug("source_url=%s" % source_url)
                     try:

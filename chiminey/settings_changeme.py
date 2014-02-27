@@ -1,7 +1,7 @@
 import djcelery
 from datetime import timedelta
 
-DEBUG=False
+DEBUG = False
 
 from os import path
 
@@ -23,7 +23,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': 'bdphpc',
         'USER': 'bdphpc',
-        'PASSWORD': 'bdphpc', # unused with ident auth
+        'PASSWORD': 'bdphpc',  # unused with ident auth
         'HOST': '',
         'PORT': '',
     }

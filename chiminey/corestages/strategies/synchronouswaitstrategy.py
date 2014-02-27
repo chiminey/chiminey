@@ -25,5 +25,5 @@ logger = logging.getLogger(__name__)
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
 class SynchronousWaitStrategy(Strategy):
-    def is_job_finished(self, ip_address, process_id, retry_left, settings, relative_path_suffix):
+    def is_job_finished(self, wait_class, ip_address, process_id, retry_left, settings, relative_path_suffix):
         return True

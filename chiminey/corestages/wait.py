@@ -258,7 +258,7 @@ class Wait(Stage):
             #    self.error_nodes.append(node)
             #    continue
             relative_path_suffix = self.get_relative_output_path(local_settings)
-            fin = wait_strategy.is_job_finished(
+            fin = wait_strategy.is_job_finished( self,
                 ip_address, process_id, retry_left,
                 local_settings, relative_path_suffix)
             logger.debug("fin=%s" % fin)

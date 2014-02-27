@@ -65,5 +65,5 @@ class Strategy(object):
     def destroy_resource(self, destroy_class, run_settings, local_settings):
         pass
 
-    def is_job_finished(self, ip_address, process_id, retry_left, settings):
+    def is_job_finished(self, wait_class, ip_address, process_id, retry_left, settings):
         pass

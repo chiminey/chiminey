@@ -73,7 +73,7 @@ class RemoteStorage(SFTPStorage):
         if 'host' in settings:
             super(RemoteStorage, self).__dict__["_host"] = settings['host']
         super(RemoteStorage, self).__dict__["_dir_mode"] = 0700
-        print super(RemoteStorage, self)
+        super(RemoteStorage, self)
 
     def _connect(self):
         """ Overrides internal behaviour to not store host keys
@@ -650,8 +650,12 @@ def get_file(file_url):
     Reads in content at file_url using config info from user_settings
     Returns byte strings
     """
-    fp = get_filep(file_url)
-    content = fp.read()
+    try:
+        fp = get_filep(file_url)
+        content = fp.read()
+    except IOError, e:
+        (scheme, host, mypath, location, query_settings) = parse_bdpurl(file_url)
+        raise IOError("IO Error on file %s: %s" % (mypath, e))
 
     if content and (len(content) > 100):
         logger.debug("content(abbrev)=\n%s\n ... \n%s\nEOF\n" % (content[:100], content[-100:]))

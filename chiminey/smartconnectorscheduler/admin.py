@@ -142,8 +142,15 @@ class StageParameterSetAdmin(admin.ModelAdmin):
     inlines = [StageParameterInline]
 
 
+# def make_running(modeladmin, request, queryset):
+#     queryset.update(deleted=False)
+# make_running.short_description = "Restart stopped stages"
+
 class ContextAdmin(admin.ModelAdmin):
     model = models.Context
+
+    # actions = [make_running]
+    list_editable = ('deleted',)
 
     list_display = ('owner', 'curr_stage', 'deleted', 'directive')
 
@@ -256,6 +263,8 @@ class PresetParameterInline(admin.TabularInline):
 class PresetParameterSetAdmin(admin.ModelAdmin):
     inlines = [PresetParameterInline]
     # list_display = ('preset', 'schema')
+
+
 
 
 #admin.site.register(ApiKey)
