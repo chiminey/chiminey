@@ -25,6 +25,7 @@ from chiminey import storage
 from chiminey import mytardis
 from chiminey.corestages import Transform
 
+RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
 logger = logging.getLogger(__name__)
 
@@ -37,10 +38,15 @@ class VASPTransform(Transform):
     def curate_dataset(self, run_settings, experiment_id, base_dir, output_url,
         all_settings):
 
-        logger.debug("output_url=%s" % output_url)
+        (scheme, host, mypath, location, query_settings) = storage.parse_bdpurl(output_url)
 
-        outcar_url = storage.get_url_with_credentials(all_settings,
-            os.path.join(output_url, self.OUTCAR_FILE), is_relative_path=False)
+        logger.debug("output_url=%s" % output_url)
+        output_settings = self.get_platform_settings(run_settings, RMIT_SCHEMA + '/platform/storage/output')
+        current_output_url= "%s://%s@%s/%s" %(scheme, output_settings['type'], host,
+            os.path.join(mypath, '1/'))
+        logger.debug('current-dest=%s' % current_output_url)
+        outcar_url = storage.get_url_with_credentials(
+            output_settings, current_output_url +self.OUTCAR_FILE, is_relative_path=False)
         logger.debug("outcar_url=%s" % outcar_url)
 
         try:
@@ -64,7 +70,7 @@ class VASPTransform(Transform):
         logger.debug("toten=%s" % toten)
 
         values_url = storage.get_url_with_credentials(all_settings,
-            '%s%s' % (output_url, self.VALUES_FNAME), is_relative_path=False)
+            '%s%s' % (current_output_url, self.VALUES_FNAME), is_relative_path=False)
         logger.debug("values_url=%s" % values_url)
 
         try:
@@ -124,9 +130,11 @@ class VASPTransform(Transform):
         all_settings['NUMKP'] = num_kp
         all_settings['RUNCOUNTER'] = all_settings['contextid']
 
+        current_putput_url_cred = storage.get_url_with_credentials(all_settings,
+            (current_output_url), is_relative_path=False)
         experiment_id = mytardis.create_dataset(
             settings=all_settings,
-            source_url=output_url,
+            source_url=current_putput_url_cred,
             exp_id=experiment_id,
             exp_name=_get_exp_name_for_vasp,
             dataset_name=_get_dataset_name_for_vasp,

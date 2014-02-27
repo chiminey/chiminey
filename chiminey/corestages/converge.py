@@ -69,6 +69,11 @@ class Converge(Stage):
         return False
 
     def process(self, run_settings):
+        try:
+            id = int(getval(run_settings, '%s/system/id' % RMIT_SCHEMA))
+        except (SettingNotFoundException, ValueError):
+            id = 0
+        messages.info(run_settings, '%d: converging' % (id+1))
 
         def retrieve_local_settings(run_settings, local_settings):
 
@@ -186,7 +191,7 @@ class Converge(Stage):
             else:
                 logger.warn('Data curation is off')
 
-            messages.info(run_settings, "%s: converged" % (self.id + 1))
+            #messages.info(run_settings, "%s: converged" % (self.id + 1))
 
 
         # # TODO: store all audit info in single file in input_X directory in transform,

@@ -26,6 +26,7 @@ from chiminey.cloudconnection import is_vm_running, get_registered_vms
 from chiminey.runsettings import SettingNotFoundException, getval, update
 from chiminey.storage import get_url_with_credentials, get_make_path, put_file, list_dirs
 from chiminey.sshconnection import open_connection
+from chiminey import messages
 from chiminey.compute import run_command_with_status
 
 
@@ -51,9 +52,15 @@ def schedule_task(schedule_class, run_settings, local_settings):
     except SettingNotFoundException:
         maximum_retry = 0
     local_settings['maximum_retry'] = maximum_retry
+    try:
+        id = int(getval(run_settings, '%s/system/id' % RMIT_SCHEMA))
+    except (SettingNotFoundException, ValueError):
+        id = 0
     if schedule_class.procs_2b_rescheduled:
+        messages.info(run_settings, '%d: rescheduling failed processes' % (id))
         start_reschedule(schedule_class, run_settings, local_settings)
     else:
+        messages.info(run_settings, '%d: scheduling processes' % id)
         start_schedule(schedule_class, run_settings, local_settings)
 
 

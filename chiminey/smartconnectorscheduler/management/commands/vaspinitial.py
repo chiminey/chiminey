@@ -59,8 +59,8 @@ class VASPInitial(CoreInitial):
             {
                 u'http://rmit.edu.au/schemas/stages/setup':
                     {
-                        u'payload_source': 'file://127.0.0.1/local/payload_vasp',
-                        u'payload_destination': 'iet595/remotemake',
+                        u'payload_source': 'file://127.0.0.1/payload_vasp',
+                        u'payload_destination': 'chiminey_demo',
                     },
             })
         return bootstrap_stage

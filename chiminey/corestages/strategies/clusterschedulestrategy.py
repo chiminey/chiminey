@@ -28,7 +28,7 @@ from chiminey.runsettings import SettingNotFoundException, getval, update
 from chiminey.storage import get_url_with_credentials, get_make_path, put_file, list_dirs
 from chiminey.sshconnection import open_connection
 from chiminey.compute import run_command_with_status
-
+from chiminey import messages
 
 logger = logging.getLogger(__name__)
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
@@ -53,9 +53,15 @@ def schedule_task(schedule_class, run_settings, local_settings):
     except SettingNotFoundException:
         maximum_retry = 0
     local_settings['maximum_retry'] = maximum_retry
+    try:
+        id = int(getval(run_settings, '%s/system/id' % RMIT_SCHEMA))
+    except (SettingNotFoundException, ValueError):
+        id = 0
     if schedule_class.procs_2b_rescheduled:
+        messages.info(run_settings, '%d: rescheduling failed processes' % int(id))
         start_reschedule(schedule_class, run_settings, local_settings)
     else:
+        messages.info(run_settings, '%d: scheduling processes' % int(id))
         start_schedule(schedule_class, run_settings, local_settings)
 
 

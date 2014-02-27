@@ -168,6 +168,8 @@ class Sweep(Stage):
             except SettingNotFoundException:
                 curate_data = False
             if curate_data:
+                logger.debug('location=%s' %location)
+                location = "%s%s" %(sweep_name, contextid)
                 self.experiment_id = self.curate_data(run_settings, location, self.experiment_id)
             setval(run_settings,
                    '%s/input/mytardis/experiment_id' % RMIT_SCHEMA,

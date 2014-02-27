@@ -29,7 +29,7 @@ from chiminey.corestages.stage import Stage
 from chiminey.platform import manage
 from chiminey import storage
 from chiminey.runsettings import getval, setvals, SettingNotFoundException
-
+from chiminey import messages
 
 logger = logging.getLogger(__name__)
 
@@ -113,6 +113,11 @@ class Transform(Stage):
         return False
 
     def process(self, run_settings):
+        try:
+            id = int(getval(run_settings, '%s/system/id' % RMIT_SCHEMA))
+        except (SettingNotFoundException, ValueError):
+            id = 0
+        messages.info(run_settings, '%d: transforming' % (id+1))
 
         # self.contextid = getval(run_settings, '%s/system/contextid' % RMIT_SCHEMA)
         bdp_username = getval(run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA)
@@ -285,10 +290,11 @@ class Transform(Stage):
 
             all_settings = dict(mytardis_settings)
             all_settings.update(output_storage_settings)
-
+            all_settings['contextid'] = getval(run_settings, '%s/system/contextid' % RMIT_SCHEMA)
             self.experiment_id = self.curate_dataset(run_settings, self.experiment_id,
                                                      self.job_dir, output_url,
                                                      all_settings)
+
         else:
             logger.warn('Data curation is off')
 
