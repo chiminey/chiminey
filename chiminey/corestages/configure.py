@@ -308,13 +308,21 @@ class Configure(Stage):
         iter_inputdir = os.path.join(self.job_dir, "input_0")
         logger.debug("iter_inputdir=%s" % iter_inputdir)
 
+        input_storage_settings = self.get_platform_settings(run_settings, 'http://rmit.edu.au/schemas/platform/storage/input')
         input_location = run_settings[
             RMIT_SCHEMA + '/input/system']['input_location']
         logger.debug("input_location=%s" % input_location)
         #todo: input location will evenatually be replaced by the scratch space that was used by the sweep
         #todo: the sweep will indicate the location of the scratch space in the run_settings
         #todo: add scheme (ssh) to inputlocation
-        source_url = get_url_with_credentials(local_settings, input_location)
+
+        input_offset = run_settings['http://rmit.edu.au/schemas/platform/storage/input']['offset']
+        input_url = "%s://%s@%s/%s" % (input_storage_settings['scheme'],
+                                       input_storage_settings['type'],
+                                       input_storage_settings['host'], input_offset)
+        source_url = get_url_with_credentials(
+            input_storage_settings, input_url, is_relative_path=False)
+
         logger.debug("source_url=%s" % source_url)
 
         destination_url = get_url_with_credentials(

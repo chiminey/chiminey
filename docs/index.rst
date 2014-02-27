@@ -14,7 +14,8 @@ Contents:
    :maxdepth: 5
 
    installation
-   usermanual
+   enduser_manual
+   developer_manual
    tutorial
    ref/views
 
