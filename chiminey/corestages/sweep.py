@@ -307,36 +307,35 @@ class Sweep(Stage):
             # This code is deprecated in favour of single values file.
             self.error_detected = False
 
-
-            try:
-                template_name = getval(run_settings,
-                                       '%s/stages/sweep/template_name'
-                                            % RMIT_SCHEMA)
-            except SettingNotFoundException:
-                pass
-            else:
-                logger.debug("template_name=%s" % template_name)
-                v_map = {}
-                try:
-                    values_url = get_url_with_credentials(
-                        local_settings,
-                        os.path.join(run_inputdir, "initial",
-                             VALUES_MAP_TEMPLATE_FILE % {'template_name': template_name}),
-                        is_relative_path=False)
-                    logger.debug("values_url=%s" % values_url)
-                    values_content = get_file(values_url)
-                    logger.debug("values_content=%s" % values_content)
-                    v_map = dict(json.loads(values_content), indent=4)
-                except IOError:
-                    logger.warn("no values file found")
-                except ValueError:
-                    logger.error("problem parsing contents of %s" % VALUES_MAP_FILE)
-                    pass
-                v_map.update(starting_map)
-                v_map.update(context)
-                v_map['run_counter'] = 1
-                logger.debug("new v_map=%s" % v_map)
-                put_file(values_url, json.dumps(v_map, indent=4))
+            # try:
+            #     template_name = getval(run_settings,
+            #                            '%s/stages/sweep/template_name'
+            #                                 % RMIT_SCHEMA)
+            # except SettingNotFoundException:
+            #     pass
+            # else:
+            #     logger.debug("template_name=%s" % template_name)
+            #     v_map = {}
+            #     try:
+            #         values_url = get_url_with_credentials(
+            #             local_settings,
+            #             os.path.join(run_inputdir, "initial",
+            #                  VALUES_MAP_TEMPLATE_FILE % {'template_name': template_name}),
+            #             is_relative_path=False)
+            #         logger.debug("values_url=%s" % values_url)
+            #         values_content = get_file(values_url)
+            #         logger.debug("values_content=%s" % values_content)
+            #         v_map = dict(json.loads(values_content), indent=4)
+            #     except IOError:
+            #         logger.warn("no values file found")
+            #     except ValueError:
+            #         logger.error("problem parsing contents of %s" % VALUES_MAP_FILE)
+            #         pass
+            #     v_map.update(starting_map)
+            #     v_map.update(context)
+            #     v_map['run_counter'] = 1
+            #     logger.debug("new v_map=%s" % v_map)
+            #     put_file(values_url, json.dumps(v_map, indent=4))
 
             v_map = {}
             try:

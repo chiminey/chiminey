@@ -23,60 +23,26 @@ import os
 import json
 from chiminey.corestages import Execute
 from chiminey.runsettings import update
-from chiminey.storage import get_url_with_credentials, get_file, get_make_path
-from chiminey.sshconnection import open_connection
-from chiminey.compute import run_make
+from chiminey.storage import get_url_with_credentials, get_file
 from chiminey.mytardis import create_dataset, create_paramset
 
 
 logger = logging.getLogger(__name__)
-RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
 
 class HRMCExecute(Execute):
 
     def set_domain_settings(self, run_settings, local_settings):
         update(local_settings, run_settings,
-               '%s/input/hrmc/iseed' % RMIT_SCHEMA,
-               '%s/input/hrmc/optimisation_scheme'  % RMIT_SCHEMA,
-               '%s/input/hrmc/threshold' % RMIT_SCHEMA,
-               '%s/input/hrmc/pottype' % RMIT_SCHEMA,
-               '%s/input/hrmc/fanout_per_kept_result' % RMIT_SCHEMA,
-               '%s/input/hrmc/optimisation_scheme' % RMIT_SCHEMA,
-               '%s/input/hrmc/threshold' % RMIT_SCHEMA,
-               '%s/input/hrmc/pottype' % RMIT_SCHEMA,
-               '%s/system/max_seed_int' % RMIT_SCHEMA,)
-
-    '''
-    def run_task(self, ip_address, process_id, settings, run_settings):
-        """
-            Start the task on the instance, then hang and
-            periodically check its state.
-        """
-        logger.debug("run_task %s" % ip_address)
-        #ip = botocloudconnector.get_instance_ip(instance_id, settings)
-        #ip = ip_address
-        logger.debug("ip=%s" % ip_address)
-        # curr_username = settings['username']
-        #settings['username'] = 'root'
-        # ssh = sshconnector.open_connection(ip_address=ip,
-        #                                    settings=settings)
-        # settings['username'] = curr_username
-
-        #relative_path = settings['type'] + '@' + settings['payload_destination'] + "/" + process_id
-        relative_path_suffix = self.get_relative_output_path(settings)
-        relative_path = settings['type'] + '@' + os.path.join(relative_path_suffix, process_id)
-        destination = get_url_with_credentials(settings,
-            relative_path,
-            is_relative_path=True,
-            ip_address=ip_address)
-        makefile_path = get_make_path(destination)
-        try:
-            ssh = open_connection(ip_address=ip_address, settings=settings)
-            command, errs = run_make(ssh, makefile_path, 'start_running IDS=%s' % (settings['filename_for_PIDs']))
-        finally:
-            ssh.close()
-    '''
+               '%s/input/hrmc/iseed' % self.SCHEMA_PREFIX,
+               '%s/input/hrmc/optimisation_scheme' % self.SCHEMA_PREFIX,
+               '%s/input/hrmc/threshold' % self.SCHEMA_PREFIX,
+               '%s/input/hrmc/pottype' % self.SCHEMA_PREFIX,
+               '%s/input/hrmc/fanout_per_kept_result' % self.SCHEMA_PREFIX,
+               '%s/input/hrmc/optimisation_scheme' % self.SCHEMA_PREFIX,
+               '%s/input/hrmc/threshold' % self.SCHEMA_PREFIX,
+               '%s/input/hrmc/pottype' % self.SCHEMA_PREFIX,
+               '%s/system/max_seed_int' % self.SCHEMA_PREFIX,)
 
     def curate_data(self, experiment_id, local_settings, output_storage_settings,
                     mytardis_settings, source_files_url):
@@ -93,7 +59,7 @@ class HRMCExecute(Execute):
             logger.debug("path=%s" % path)
             source_url = get_url_with_credentials(
                 output_storage_settings,
-                output_prefix + os.path.join(output_host, path, "HRMC.inp_values"),
+                output_prefix + os.path.join(output_host, path, self.VALUES_FNAME),
                 is_relative_path=False)
             logger.debug("source_url=%s" % source_url)
             try:
@@ -129,10 +95,6 @@ class HRMCExecute(Execute):
             logger.debug("dataset_name=%s" % dataset_name)
             return dataset_name
 
-        # FIXME: better to create experiment_paramsets
-        # later closer to when corresponding datasets are created, but
-        # would required PUT of paramerset data to existing experiment.
-        #fixme uncomment later
         local_settings.update(mytardis_settings)
         experiment_id = create_dataset(
             settings=local_settings,
@@ -144,5 +106,3 @@ class HRMCExecute(Execute):
             dataset_paramset=[
                 create_paramset('hrmcdataset/input', [])])
         return experiment_id
-
-

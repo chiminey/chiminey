@@ -116,7 +116,7 @@ class CoreInitial(object):
                     {
                         u'payload_source': '',
                         u'payload_destination': '',
-                        u'payload_name': '',
+                        u'payload_name': 'process_payload',
                         u'filename_for_PIDs': 'PIDs_collections',
                     },
             })

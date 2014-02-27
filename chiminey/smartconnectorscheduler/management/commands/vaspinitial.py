@@ -59,7 +59,7 @@ class VASPInitial(CoreInitial):
             {
                 u'http://rmit.edu.au/schemas/stages/setup':
                     {
-                        u'payload_source': 'file://127.0.0.1/vasppayload',
+                        u'payload_source': 'file://127.0.0.1/local/payload_vasp',
                         u'payload_destination': 'iet595/remotemake',
                     },
             })
@@ -120,7 +120,7 @@ class VASPInitial(CoreInitial):
                                     {
             u'http://rmit.edu.au/schemas/stages/sweep':
             {
-                u'template_name': 'VASP.inp',
+                u'template_name': 'VASP.inp',  # FIXME: probably don't need this
                 u'directive': 'vasp'
 
             },

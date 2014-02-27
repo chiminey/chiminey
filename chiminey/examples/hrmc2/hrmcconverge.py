@@ -44,6 +44,9 @@ ERRGR_COLUMN_NUM = 28
 
 class HRMCConverge(Converge):
 
+    SCHEMA_PREFIX = "http://rmit.edu.au/schemas"
+    VALUES_FNAME = "values"
+
     def input_valid(self, settings_to_test):
         """ Return a tuple, where the first element is True settings_to_test
         are syntactically and semantically valid for this stage.  Otherwise,
@@ -196,7 +199,7 @@ class HRMCConverge(Converge):
                     prefix = 'ssh://%s@%s' % (settings['type'], host)
 
                     source_url = get_url_with_credentials(
-                        settings, os.path.join(prefix, path, "HRMC.inp_values"),
+                        settings, os.path.join(prefix, path, self.VALUES_FNAME),
                         is_relative_path=False)
                     logger.debug("source_url=%s" % source_url)
                     try:

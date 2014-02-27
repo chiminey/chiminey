@@ -10,23 +10,24 @@ from chiminey.runsettings import getval, SettingNotFoundException
 logger = logging.getLogger(__name__)
 
 
-SCHEMA_PREFIX = "http://rmit.edu.au/schemas"
 
 
 class VASPSweep(Sweep):
 
+    SCHEMA_PREFIX = "http://rmit.edu.au/schemas"
+
     def curate_data(self, run_settings, location, experiment_id):
 
-        logger.debug("vasp durate_data")
+        logger.debug("vasp curate_data")
         try:
-            subdirective = getval(run_settings, '%s/stages/sweep/directive' % SCHEMA_PREFIX)
+            subdirective = getval(run_settings, '%s/stages/sweep/directive' % self.SCHEMA_PREFIX)
         except SettingNotFoundException:
             logger.warn("cannot find subdirective name")
             subdirective = ''
 
         if subdirective == "vasp":
 
-            bdp_username = getval(run_settings, '%s/bdp_userprofile/username' % SCHEMA_PREFIX)
+            bdp_username = getval(run_settings, '%s/bdp_userprofile/username' % self.SCHEMA_PREFIX)
             mytardis_url = run_settings['http://rmit.edu.au/schemas/input/mytardis']['mytardis_platform']
             mytardis_settings = manage.get_platform_settings(mytardis_url, bdp_username)
             logger.debug(mytardis_settings)

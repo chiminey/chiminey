@@ -28,22 +28,19 @@ from chiminey.corestages import Transform
 
 logger = logging.getLogger(__name__)
 
-RMIT_SCHEMA = "http://rmit.edu.au/schemas"
-DOMAIN_INPUT_FILES = ['input_bo.dat', 'input_gr.dat', 'input_sq.dat']
-
 
 class VASPTransform(Transform):
+
+    OUTCAR_FILE = "OUTCAR"
+    VALUES_FNAME = "values"
 
     def curate_dataset(self, run_settings, experiment_id, base_dir, output_url,
         all_settings):
 
-        OUTCAR_FILE = "OUTCAR"
-        VALUES_FILE = "values"
-
         logger.debug("output_url=%s" % output_url)
 
         outcar_url = storage.get_url_with_credentials(all_settings,
-            os.path.join(output_url, OUTCAR_FILE), is_relative_path=False)
+            os.path.join(output_url, self.OUTCAR_FILE), is_relative_path=False)
         logger.debug("outcar_url=%s" % outcar_url)
 
         try:
@@ -67,7 +64,7 @@ class VASPTransform(Transform):
         logger.debug("toten=%s" % toten)
 
         values_url = storage.get_url_with_credentials(all_settings,
-            os.path.join(output_url, VALUES_FILE), is_relative_path=False)
+            os.path.join(output_url, self.VALUES_FNAME), is_relative_path=False)
         logger.debug("values_url=%s" % values_url)
         try:
             values_content = storage.get_file(values_url)
@@ -148,204 +145,3 @@ class VASPTransform(Transform):
 
         return experiment_id
 
-
-
-
-
-
-
-
-
-
-        # iteration = int(getval(run_settings, '%s/system/id' % RMIT_SCHEMA))
-        # iter_output_dir = os.path.join(os.path.join(base_dir, "output_%s" % iteration))
-        # output_prefix = '%s://%s@' % (all_settings['scheme'],
-        #                             all_settings['type'])
-        # iter_output_dir = "%s%s" % (output_prefix, iter_output_dir)
-
-        # (scheme, host, mypath, location, query_settings) = storage.parse_bdpurl(output_url)
-        # fsys = storage.get_filesystem(output_url)
-
-        # node_output_dirnames, _ = fsys.listdir(mypath)
-        # logger.debug("node_output_dirnames=%s" % node_output_dirnames)
-
-        # if all_settings['mytardis_host']:
-        #     for i, node_output_dirname in enumerate(node_output_dirnames):
-        #         node_path = os.path.join(iter_output_dir, node_output_dirname)
-        #         # find criterion
-        #         crit = None  # is there an infinity criterion
-        #         for ni in self.outputs:
-        #             if ni.dirname == node_output_dirname:
-        #                 crit = ni.criterion
-        #                 break
-        #         else:
-        #             logger.debug("criterion not found")
-        #             continue
-        #         logger.debug("crit=%s" % crit)
-
-        #         # graph_params = []
-
-        #         def extract_psd_func(fp):
-        #             res = []
-        #             xs = []
-        #             ys = []
-        #             for i, line in enumerate(fp):
-        #                 columns = line.split()
-        #                 xs.append(float(columns[0]))
-        #                 ys.append(float(columns[1]))
-        #             res = {"hrmcdfile/r1": xs, "hrmcdfile/g1": ys}
-        #             return res
-
-        #         def extract_psdexp_func(fp):
-        #             res = []
-        #             xs = []
-        #             ys = []
-        #             for i, line in enumerate(fp):
-        #                 columns = line.split()
-        #                 xs.append(float(columns[0]))
-        #                 ys.append(float(columns[1]))
-        #             res = {"hrmcdfile/r2": xs, "hrmcdfile/g2": ys}
-        #             return res
-
-        #         def extract_grfinal_func(fp):
-        #             res = []
-        #             xs = []
-        #             ys = []
-        #             for i, line in enumerate(fp):
-        #                 columns = line.split()
-        #                 xs.append(float(columns[0]))
-        #                 ys.append(float(columns[1]))
-        #             #FIXME: len(xs) == len(ys) for this to work.
-        #             #TODO: hack to handle when xs and ys are too
-        #             # large to fit in Parameter with db_index.
-        #             # solved by function call at destination
-        #             cut_xs = [xs[i] for i, x in enumerate(xs)
-        #                 if (i % (len(xs) / 20) == 0)]
-        #             cut_ys = [ys[i] for i, x in enumerate(ys)
-        #                 if (i % (len(ys) / 20) == 0)]
-
-        #             res = {"hrmcdfile/r3": cut_xs, "hrmcdfile/g3": cut_ys}
-        #             return res
-
-        #         def extract_inputgr_func(fp):
-        #             res = []
-        #             xs = []
-        #             ys = []
-        #             for i, line in enumerate(fp):
-        #                 columns = line.split()
-        #                 xs.append(float(columns[0]))
-        #                 ys.append(float(columns[1]))
-        #             #FIXME: len(xs) == len(ys) for this to work.
-        #             #TODO: hack to handle when xs and ys are too
-        #             # large to fit in Parameter with db_index.
-        #             # solved by function call at destination
-        #             cut_xs = [xs[i] for i, x in enumerate(xs)
-        #                 if (i % (len(xs) / 20) == 0)]
-        #             cut_ys = [ys[i] for i, x in enumerate(ys)
-        #                 if (i % (len(ys) / 20) == 0)]
-
-        #             res = {"hrmcdfile/r4": cut_xs, "hrmcdfile/g4": cut_ys}
-        #             return res
-
-        #         #TODO: hrmcexp graph should be tagged to input directories (not output directories)
-        #         #because we want the result after pruning.
-        #         #todo: replace self.boto_setttings with all_settings
-
-        #         EXP_DATASET_NAME_SPLIT = 2
-
-        #         def get_exp_name_for_output(settings, url, path):
-        #             # return str(os.sep.join(path.split(os.sep)[:-EXP_DATASET_NAME_SPLIT]))
-        #             return str(os.sep.join(path.split(os.sep)[-4:-2]))
-
-        #         def get_dataset_name_for_output(settings, url, path):
-        #             logger.debug("path=%s" % path)
-
-        #             host = settings['host']
-        #             prefix = 'ssh://%s@%s' % (settings['type'], host)
-
-        #             source_url = get_url_with_credentials(
-        #                 settings, os.path.join(prefix, path, "HRMC.inp_values"),
-        #                 is_relative_path=False)
-        #             logger.debug("source_url=%s" % source_url)
-        #             try:
-        #                 content = storage.get_file(source_url)
-        #             except IOError, e:
-        #                 logger.warn("cannot read file %s" % e)
-        #                 return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
-
-        #             logger.debug("content=%s" % content)
-        #             try:
-        #                 values_map = dict(json.loads(str(content)))
-        #             except Exception, e:
-        #                 logger.warn("cannot load %s: %s" % (content, e))
-        #                 return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
-
-        #             try:
-        #                 iteration = str(path.split(os.sep)[-2:-1][0])
-        #             except Exception, e:
-        #                 logger.error(e)
-        #                 iteration = ""
-
-        #             if "_" in iteration:
-        #                 iteration = iteration.split("_")[1]
-        #             else:
-        #                 iteration = "final"
-
-        #             dataset_name = "%s_%s_%s" % (iteration,
-        #                 values_map['generator_counter'],
-        #                 values_map['run_counter'])
-        #             logger.debug("dataset_name=%s" % dataset_name)
-        #             return dataset_name
-
-        #         source_dir_url = get_url_with_credentials(
-        #             all_settings,
-        #             node_path,
-        #             is_relative_path=False)
-        #         logger.debug("source_dir_url=%s" % source_dir_url)
-        #         logger.debug('all_settings=%s' % all_settings)
-        #         experiment_id = mytardis.create_dataset(
-        #             settings=all_settings,
-        #             source_url=source_dir_url,
-        #             exp_id=experiment_id,
-        #             exp_name=get_exp_name_for_output,
-        #             dataset_name=get_dataset_name_for_output,
-        #             dataset_paramset=[
-        #                 mytardis.create_paramset("hrmcdataset/output", []),
-        #                 mytardis.create_graph_paramset("dsetgraph",
-        #                     name="hrmcdset",
-        #                     graph_info={"axes":["r (Angstroms)", "PSD"],
-        #                         "legends":["psd", "PSD_exp"], "type":"line"},
-        #                     value_dict={"hrmcdset/it": self.id,
-        #                          "hrmcdset/crit": crit},
-        #                     value_keys=[["hrmcdfile/r1", "hrmcdfile/g1"],
-        #                         ["hrmcdfile/r2", "hrmcdfile/g2"]]
-        #                     ),
-        #                 mytardis.create_graph_paramset("dsetgraph",
-        #                     name="hrmcdset2",
-        #                     graph_info={"axes":["r (Angstroms)", "g(r)"],
-        #                         "legends":["data_grfinal", "input_gr"],
-        #                         "type":"line"},
-        #                     value_dict={},
-        #                     value_keys=[["hrmcdfile/r3", "hrmcdfile/g3"],
-        #                         ["hrmcdfile/r4", "hrmcdfile/g4"]]
-        #                     ),
-
-        #                 ],
-        #            datafile_paramset=[
-        #                 mytardis.create_graph_paramset("dfilegraph",
-        #                     name="hrmcdfile",
-        #                     graph_info={},
-        #                     value_dict={},
-        #                     value_keys=[])
-        #                 ],
-        #            # TODO: move extract function into paramset structure
-        #            dfile_extract_func={'psd.dat': extract_psd_func,
-        #                 'PSD_exp.dat': extract_psdexp_func,
-        #                 'data_grfinal.dat': extract_grfinal_func,
-        #                 'input_gr.dat': extract_inputgr_func}
-
-        #            )
-        # else:
-        #     logger.warn("no mytardis host specified")
-        #     return 0
-        # return experiment_id

@@ -50,7 +50,12 @@ copy_commands = (
     #("vasppayload", "local/vasppayload"),
     ("input_hrmc", "local/input_hrmc"),
     ("payload_hrmc", "local/payload_hrmc"),
+
     ("payload_randomnumber", "local/payload_randomnumber"),
+
+    ("input_vasp", "local/input_vasp"),
+    ("payload_vasp", "local/payload_vasp")
+
     )
 
 # mkdir /var/cloudenabling/remotesys/{$user}/myfiles
@@ -229,9 +234,9 @@ class Command(BaseCommand):
                 username,
                 "myfiles",
                 "input"))
-        except IOError, e:
+        except IOError:
             raise CommandError("cannot create user filesystem")
-        except AttributeError, e:
+        except AttributeError:
             raise CommandError(
                 "LOCAL_FILESYS_ROOT_PATH must be set in settings.py")
 
@@ -244,8 +249,8 @@ class Command(BaseCommand):
                 d = os.path.join(settings.LOCAL_FILESYS_ROOT_PATH, username, dest)
                 self.stdout.write("%s -> %s" % (s, d))
                 shutil.copytree(s, d)
-            except IOError, e:
-                raise CommandError("ERROR:%s\n" % e)
+            except IOError:
+                self.stderr.write("WARNING: could not setup %s\n" % src)
 
         shutil.copy(os.path.abspath(
             os.path.join(source_prefix, "chiminey", "randomnums.txt")),
