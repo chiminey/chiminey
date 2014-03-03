@@ -405,13 +405,13 @@ class Command(BaseCommand):
             u'http://rmit.edu.au/schemas/input/hrmc':
                 [u'HRMC Smart Connector',
                 {
-                u'pottype': {'type':models.ParameterName.NUMERIC, 'subtype':'natural', 'description':'Pottype', 'ranking':1, 'help_text':'', 'initial':1},
-                u'max_iteration': {'type':models.ParameterName.NUMERIC, 'subtype':'whole', 'description':'Maximum no. iterations', 'ranking':2, 'initial': 10, 'help_text':'Computation ends when either convergence or maximum iteration reached'},
-                u'error_threshold': {'type':models.ParameterName.STRING, 'subtype':'float', 'description':'Error Threshold', 'ranking':3, 'initial':'0.03', 'help_text':'Delta for iteration convergence'},  # FIXME: should use float here
-                u'threshold': {'type':models.ParameterName.STRING, 'subtype':'string', 'description':'No. results kept per iteration', 'ranking':4, 'initial':'[1]', 'help_text':'Number of outputs to keep between iterations. eg. [2] would keep the top 2 results.'},  # FIXME: should be list of ints
-                u'optimisation_scheme': {'type':models.ParameterName.STRLIST, 'subtype':'choicefield', 'description':'No. varying parameters', 'ranking':5, 'choices': '[("MC","Monte Carlo"), ("MCSA", "Monte Carlo with Simulated Annealing")]', 'initial': 'MC', 'help_text':'', 'hidefield': 'http://rmit.edu.au/schemas/input/hrmc/fanout_per_kept_result', 'hidecondition':'== "MCSA"'},
-                u'iseed': {'type':models.ParameterName.NUMERIC, 'subtype':'natural', 'description':'Random Number Seed', 'ranking':7, 'initial': 42, 'help_text':'Initial seed for random numbers'},
-                u'fanout_per_kept_result': {'type':models.ParameterName.NUMERIC, 'subtype':'natural', 'description':'No. fanout kept per result', 'initial': 1, 'ranking':12, 'help_text':''},
+                u'iseed': {'type':models.ParameterName.NUMERIC, 'subtype':'natural', 'description':'Random Number Seed', 'ranking':0, 'initial': 42, 'help_text':'Initial seed for random numbers'},
+                u'pottype': {'type':models.ParameterName.NUMERIC, 'subtype':'natural', 'description':'Pottype', 'ranking':10, 'help_text':'', 'initial':1},
+                u'error_threshold': {'type':models.ParameterName.STRING, 'subtype':'float', 'description':'Error Threshold', 'ranking':23, 'initial':'0.03', 'help_text':'Delta for iteration convergence'},  # FIXME: should use float here
+                u'optimisation_scheme': {'type':models.ParameterName.STRLIST, 'subtype':'choicefield', 'description':'No. varying parameters', 'ranking':45, 'choices': '[("MC","Monte Carlo"), ("MCSA", "Monte Carlo with Simulated Annealing")]', 'initial': 'MC', 'help_text':'', 'hidefield': 'http://rmit.edu.au/schemas/input/hrmc/fanout_per_kept_result', 'hidecondition':'== "MCSA"'},
+                u'fanout_per_kept_result': {'type':models.ParameterName.NUMERIC, 'subtype':'natural', 'description':'No. fanout kept per result', 'initial': 1, 'ranking':52, 'help_text':''},
+                u'threshold': {'type':models.ParameterName.STRING, 'subtype':'string', 'description':'No. results kept per iteration', 'ranking':60, 'initial':'[1]', 'help_text':'Number of outputs to keep between iterations. eg. [2] would keep the top 2 results.'}, # FIXME: should be list of ints
+                u'max_iteration': {'type':models.ParameterName.NUMERIC, 'subtype':'whole', 'description':'Maximum no. iterations', 'ranking':72, 'initial': 10, 'help_text':'Computation ends when either convergence or maximum iteration reached'},
                 }
                 ],
             u'http://rmit.edu.au/schemas/input/sweep':
