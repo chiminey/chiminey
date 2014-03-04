@@ -275,8 +275,10 @@ def validate_jsondict(value):
     try:
         json.loads(value)
     except Exception:
-        msg = u'JSON is invalid'
-        raise ValidationError(msg)
+        if value:
+            msg = u'JSON is invalid'
+            raise ValidationError(msg)
+        value = {}
     return str(value)
 
 

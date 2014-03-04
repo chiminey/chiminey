@@ -177,6 +177,8 @@ class Sweep(Stage):
 
         # generate all variations
         map_text = getval(run_settings, '%s/input/sweep/sweep_map' % RMIT_SCHEMA)
+        if not map_text:
+            map_text = {}
         # map_text = run_settings[RMIT_SCHEMA + '/input/sweep']['sweep_map']
         sweep_map = json.loads(map_text)
         logger.debug("sweep_map=%s" % pformat(sweep_map))
