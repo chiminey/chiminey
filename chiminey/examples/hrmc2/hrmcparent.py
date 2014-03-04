@@ -25,8 +25,8 @@ from itertools import product
 from chiminey.corestages.parent import Parent
 from chiminey.smartconnectorscheduler.errors import BadSpecificationError
 from chiminey.smartconnectorscheduler import jobs
-from chiminey.runsettings import update, getval, SettingNotFoundException
-from chiminey.storage import get_url_with_credentials, list_dirs
+from chiminey.runsettings import update, getval, getvals, SettingNotFoundException
+from chiminey.storage import get_url_with_credentials, list_all_files, get_basename, dir_exists
 
 
 logger = logging.getLogger(__name__)
@@ -48,6 +48,37 @@ class HRMCParent(Parent):
 
     def __unicode__(self):
         return u"HRMCParallelStage"
+
+    def input_valid(self, settings_to_test):
+        logger.debug('settings_to_test=%s' % settings_to_test)
+        try:
+            sweep = getvals(settings_to_test, '%s/input/sweep' % self.SCHEMA_PREFIX)
+            input_platform_offset = settings_to_test[self.SCHEMA_PREFIX + '/platform/storage/input']['offset']
+        except SettingNotFoundException:
+            try:
+                input_location = getval(settings_to_test, '%s/input/system/input_location' % self.SCHEMA_PREFIX)
+            except SettingNotFoundException:
+                input_location = getval(settings_to_test, '%s/input/location/input/input_location' % self.SCHEMA_PREFIX)
+            input_platform_name, input_platform_offset = self.break_bdp_url(input_location)
+            settings_to_test[self.SCHEMA_PREFIX + '/platform/storage/input'] = {}
+            settings_to_test[self.SCHEMA_PREFIX + '/platform/storage/input'][
+            'platform_url'] = input_platform_name
+            settings_to_test[self.SCHEMA_PREFIX + '/platform/storage/input']['offset'] = input_platform_offset
+        input_settings = self.get_platform_settings(settings_to_test, '%s/platform/storage/input' % self.SCHEMA_PREFIX)
+        logger.debug('input-settings=%s' % input_settings)
+        input_url = "%s://%s@%s/%s/initial" % (
+            input_settings['scheme'], input_settings['type'],
+            input_settings['host'], input_platform_offset)
+        logger.debug('input_url=%s' % input_url)
+        input_url_cred = get_url_with_credentials(input_settings, input_url, is_relative_path=False)
+        expected_input_files = ['input_bo.dat', 'input_gr.dat', 'input_initial.xyz', 'input_sq.dat']
+        provided_input_files = get_basename(list_all_files(input_url_cred))
+        for file in expected_input_files:
+            if file not in provided_input_files:
+                logger.debug('expected file %s' % file)
+                return (False, 'Expected HRMC input files under initial/ not found. Expected %s; Provided %s'
+                               % (expected_input_files, provided_input_files))
+        return (True, 'valid_input')
 
     def get_run_map(self, settings, **kwargs):
         local_settings = settings.copy()

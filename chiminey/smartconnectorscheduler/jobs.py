@@ -200,10 +200,10 @@ def check_settings_valid(settings_to_test, user_settings, thestage):
     """
 
     children = models.Stage.objects.filter(parent=thestage)
+    stageset = [thestage]
     if children:
-        stageset = children
-    else:
-        stageset = [thestage]
+        stageset.extend(children)
+
     for current_stage in stageset:
         stage_settings = current_stage.get_settings()
         logger.debug("stage_settings=%s" % stage_settings)
@@ -218,8 +218,9 @@ def check_settings_valid(settings_to_test, user_settings, thestage):
         logger.debug("stage=%s", stage)
         is_valid, problem = stage.input_valid(settings_to_test)
         if not is_valid:
-            return (False, "precondition error in stage: %s: %s"
+            logger.debug("precondition error in stage: %s: %s"
                 % (current_stage.name, problem))
+            return (False, problem)
     return (True, "ok")
 
 
@@ -267,10 +268,8 @@ def make_runcontext_for_directive(platform_name, directive_name,
             directive.stage)
     except Exception, e:
         logger.error(e)
-        messages.error(run_settings, "0: internal error (%s stage):%s" %
-                       (directive.stage.name, e))
-        raise InvalidInputError("0: internal error (%s stage):%s" %
-                       (directive.stage.name, e))
+        messages.error(run_settings, "0: internal error (%s stage):%s" % (directive.stage.name, e))
+        raise InvalidInputError("0: internal error (%s stage):%s" % (directive.stage.name, e))
 
     if not settings_valid:
         raise InvalidInputError(problem)

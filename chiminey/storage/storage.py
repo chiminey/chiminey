@@ -382,6 +382,13 @@ def list_all_files(source_url):
     return sorted(file_paths)
 
 
+def get_basename(files_list):
+    files = []
+    for file in files_list:
+        files.append(os.path.basename(file))
+    return files
+
+
 def copy_directories(source_url, destination_url):
     """
     Supports only file and ssh schemes

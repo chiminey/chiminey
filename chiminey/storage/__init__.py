@@ -26,6 +26,7 @@ from chiminey.storage.storage import (
     list_dirs,
     get_file,
     get_filesystem,
+    get_basename,
 
     file_exists,
     dir_exists,

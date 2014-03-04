@@ -57,10 +57,10 @@ def schedule_task(schedule_class, run_settings, local_settings):
     except (SettingNotFoundException, ValueError):
         id = 0
     if schedule_class.procs_2b_rescheduled:
-        messages.info(run_settings, '%d: rescheduling failed processes' % (id))
+        messages.info(run_settings, '%d: rescheduling failed processes' % (id+1))
         start_reschedule(schedule_class, run_settings, local_settings)
     else:
-        messages.info(run_settings, '%d: scheduling processes' % id)
+        messages.info(run_settings, '%d: scheduling processes' % (id+1))
         start_schedule(schedule_class, run_settings, local_settings)
 
 
