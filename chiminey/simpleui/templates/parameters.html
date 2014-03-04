@@ -13,13 +13,14 @@
   <div>
     <h4>Smart Connectors</h4>
           <ul class="nav nav-list">
-
-            {% for directive in directives %}
-            {% if not directive.resource_uri %}
+            {% for direct in directives %}
+            {% if not direct.resource_uri %}
             <li class="divider"></li>
             {% else %}
-            {% url makedirective directive.id as account %}
-            <li {% if request.path == account %} class="active"{% endif %}><a href="{% url makedirective directive.id %}">{{directive.description}}</a></li>
+            {% url makedirective direct.id as account %}
+
+            <li {% if directive.id == direct.id  %} class="active"{% endif %}
+                ><a href="{% url makedirective direct.id %}">{{direct.description}}</a></li>
             {% endif %}
             {% endfor %}
           </ul>
@@ -70,7 +71,8 @@
     {% if data.1  %}
     </fieldset>
     <fieldset>
-        <legend>{{data.1}} </legend>
+        <legend>{{data.1}}</legend>
+
     {% endif %}
         {% if field.errors %}
           <div class="control-group error span11 offset1">
