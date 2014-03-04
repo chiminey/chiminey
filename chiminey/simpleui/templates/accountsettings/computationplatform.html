@@ -8,8 +8,25 @@ $(document).ready(function () {
     {% for platform_type, platform_details in all_headers.items %}
     $('.footable-{{platform_type}}').footable();
     {% endfor %}
+    {% for field in cloud_form %}
+    $('#cloud_1_{{forloop.counter}}').tooltip();
+    $('#cloud_2_{{forloop.counter}}').tooltip();
+    $('#cloud_3_{{forloop.counter}}').tooltip();
+    {% endfor %}
+    {% for field in cluster_form %}
+    $('#cluster_1_{{forloop.counter}}').tooltip();
+    $('#cluster_2_{{forloop.counter}}').tooltip();
+    $('#cluster_3_{{forloop.counter}}').tooltip();
+
+    {% endfor %}
    });
 </script>
+
+
+
+
+
+
 
 <!--create modal -->
 <div class="modal hide fade" id="createModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
@@ -27,14 +44,52 @@ $(document).ready(function () {
                 <div class="tab-content">
                     <div class="tab-pane active" id="cloud">
                         <form class="form-horizontal" action="{{ action }}" method="POST" id="cloud_form_create"> {% csrf_token %}
-                            {{ cloud_form.as_p }}
-                            <button type="submit" class="btn btn-primary" onclick="submitForm('create', 'cloud_form_create');">Add</button>
+
+
+                            {% for field in cloud_form.visible_fields %}
+                                <div class="control-group">
+                                <label class="control-label">{{field.label}}</label>
+                                <div class="controls">
+                                    {{field}}
+                                    {% if field.errors %}
+                                    <span class="help-inline">{{field.errors}}</span>
+                                    {% endif %}
+                                    {% if field.help_text %}
+                                    <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{field.help_text}}" id='cloud_1_{{forloop.counter}}'><i  class="fa fa-question-circle"></i></a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                           {% endfor %}
+                           {% for hidden in cloud_form.hidden_fields %}
+                               {{ hidden }}
+                           {% endfor %}
+
+
+                             <button type="submit" class="btn btn-primary" onclick="submitForm('create', 'cloud_form_create');">Add</button>
                             <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                         </form>
                     </div>
                     <div class="tab-pane" id="cluster">
                         <form class="form-horizontal" action="{{ action }}" method="POST" id="cluster_form_create"> {% csrf_token %}
-                            {{cluster_form.as_p}}
+
+                             {% for field in cluster_form.visible_fields %}
+                                 <div class="control-group">
+                                 <label class="control-label">{{field.label}}</label>
+                                 <div class="controls">
+                                     {{field}}
+                                     {% if field.errors %}
+                                     <span class="help-inline">{{field.errors}}</span>
+                                     {% endif %}
+                                     {% if field.help_text %}
+                                     <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{field.help_text}}" id='cluster_1_{{forloop.counter}}'><i  class="fa fa-question-circle"></i></a>
+                                     {% endif %}
+                                 </div>
+                             </div>
+                            {% endfor %}
+                            {% for hidden in cluster_form.hidden_fields %}
+                                {{ hidden }}
+                            {% endfor %}
+
                             <button type="submit" class="btn btn-primary" onclick="submitForm('create', 'cluster_form_create');">Add</button>
                             <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                         </form>
@@ -55,12 +110,48 @@ $(document).ready(function () {
             </div>
             <div class="modal-body">
                 <form class="form-horizontal" action="{{ action }}" method="POST" id="cloud_form_update"> {% csrf_token %}
-                    {{ cloud_form.as_p }}
+
+                     {% for field in cloud_form.visible_fields %}
+                         <div class="control-group">
+                         <label class="control-label">{{field.label}}</label>
+                         <div class="controls">
+                             {{field}}
+                             {% if field.errors %}
+                             <span class="help-inline">{{field.errors}}</span>
+                             {% endif %}
+                             {% if field.help_text %}
+                             <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{field.help_text}}" id='cloud_2_{{forloop.counter}}'><i  class="fa fa-question-circle"></i></a>
+                             {% endif %}
+                         </div>
+                     </div>
+                    {% endfor %}
+                    {% for hidden in cloud_form.hidden_fields %}
+                        {{ hidden }}
+                    {% endfor %}
+
                     <button type="submit" class="btn btn-primary" onclick="submitForm('update', 'cloud_form_update');">Update</button>
                     <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                 </form>
                 <form class="form-horizontal" action="{{ action }}" method="POST" id="cluster_form_update"> {% csrf_token %}
-                    {{ cluster_form.as_p }}
+
+                     {% for field in cluster_form.visible_fields %}
+                         <div class="control-group">
+                         <label class="control-label">{{field.label}}</label>
+                         <div class="controls">
+                             {{field}}
+                             {% if field.errors %}
+                             <span class="help-inline">{{field.errors}}</span>
+                             {% endif %}
+                             {% if field.help_text %}
+                             <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{field.help_text}}" id='cluster_2_{{forloop.counter}}'><i  class="fa fa-question-circle"></i></a>
+                             {% endif %}
+                         </div>
+                     </div>
+                    {% endfor %}
+                    {% for hidden in cluster_form.hidden_fields %}
+                        {{ hidden }}
+                    {% endfor %}
+
                     <button type="submit" class="btn btn-primary" onclick="submitForm('update', 'cluster_form_update');">Update</button>
                     <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                 </form>
@@ -80,12 +171,48 @@ $(document).ready(function () {
             </div>
             <div class="modal-body">
                 <form class="form-horizontal" action="{{ action }}" method="POST" id="cloud_form_delete"> {% csrf_token %}
-                    {{ cloud_form.as_p }}
+
+                     {% for field in cloud_form.visible_fields %}
+                         <div class="control-group">
+                         <label class="control-label">{{field.label}}</label>
+                         <div class="controls">
+                             {{field}}
+                             {% if field.errors %}
+                             <span class="help-inline">{{field.errors}}</span>
+                             {% endif %}
+                             {% if field.help_text %}
+                             <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{field.help_text}}" id='cloud_3_{{forloop.counter}}'><i  class="fa fa-question-circle"></i></a>
+                             {% endif %}
+                         </div>
+                     </div>
+                    {% endfor %}
+                    {% for hidden in cloud_form.hidden_fields %}
+                        {{ hidden }}
+                    {% endfor %}
+
                     <button type="submit" class="btn btn-primary" onclick="submitForm('delete', 'cloud_form_delete');">Delete</button>
                     <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                 </form>
                 <form class="form-horizontal" action="{{ action }}" method="POST" id="cluster_form_delete"> {% csrf_token %}
-                    {{ cluster_form.as_p }}
+
+                     {% for field in cluster_form.visible_fields %}
+                         <div class="control-group">
+                         <label class="control-label">{{field.label}}</label>
+                         <div class="controls">
+                             {{field}}
+                             {% if field.errors %}
+                             <span class="help-inline">{{field.errors}}</span>
+                             {% endif %}
+                             {% if field.help_text %}
+                             <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{field.help_text}}" id='cluster_3_{{forloop.counter}}'><i  class="fa fa-question-circle"></i></a>
+                             {% endif %}
+                         </div>
+                     </div>
+                    {% endfor %}
+                    {% for hidden in cluster_form.hidden_fields %}
+                        {{ hidden }}
+                    {% endfor %}
+
                     <button type="submit" class="btn btn-primary" onclick="submitForm('delete', 'cluster_form_delete');">Delete</button>
                     <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
 
