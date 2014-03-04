@@ -21,12 +21,13 @@
 
 import logging
 import ast
+import os
 from itertools import product
 from chiminey.corestages.parent import Parent
 from chiminey.smartconnectorscheduler.errors import BadSpecificationError
 from chiminey.smartconnectorscheduler import jobs
 from chiminey.runsettings import update, getval, getvals, SettingNotFoundException
-from chiminey.storage import get_url_with_credentials, list_all_files, get_basename, dir_exists
+from chiminey.storage import get_url_with_credentials, list_all_files, get_basename, list_dirs
 
 
 logger = logging.getLogger(__name__)
@@ -223,6 +224,43 @@ class HRMCParent(Parent):
     #     return total_templates
 
     def get_total_templates(self, maps, **kwargs):
+        run_settings = kwargs['run_settings']
+        output_storage_settings = kwargs['output_storage_settings']
+        job_dir = kwargs['job_dir']
+
+        try:
+            id = getval(run_settings, '%s/system/id' % self.SCHEMA_PREFIX)
+        except SettingNotFoundException as e:
+            logger.error(e)
+            id = 0
+        # try:
+        #     id = smartconnector.get_existing_key(
+        #         run_settings, 'http://rmit.edu.au/schemas/system/id')
+        # except KeyError, e:
+        #     logger.error(e)
+        #     id = 0
+        iter_inputdir = os.path.join(job_dir, "input_%s" % id)
+        url_with_pkey = get_url_with_credentials(
+            output_storage_settings,
+            '%s://%s@%s' % (output_storage_settings['scheme'],
+                           output_storage_settings['type'],
+                            iter_inputdir),
+            is_relative_path=False)
+        logger.debug(url_with_pkey)
+        input_dirs = list_dirs(url_with_pkey)
+        for iter, template_map in enumerate(maps):
+            logger.debug("template_map=%s" % template_map)
+            map_keys = template_map.keys()
+            logger.debug("map_keys %s" % map_keys)
+            map_ranges = [list(template_map[x]) for x in map_keys]
+            product = 1
+            for i in map_ranges:
+                product = product * len(i)
+            total_templates = product * len(input_dirs)
+            logger.debug("total_templates=%d" % (total_templates))
+        return total_templates
+    '''
+    def get_total_templates(self, maps, **kwargs):
         logger.debug("maps=%s" % maps)
         contexts = []
         num_variations = 0
@@ -237,3 +275,4 @@ class HRMCParent(Parent):
                 num_variations += 1
         logger.debug("num_variations=%s" % num_variations)
         return num_variations
+    '''
