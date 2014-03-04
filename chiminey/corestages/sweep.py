@@ -89,7 +89,7 @@ class Sweep(Stage):
 
     def process(self, run_settings):
         logger.debug('run_settings=%s' % run_settings)
-
+        messages.info(run_settings, "0: sweep started")
         # Need to make copy because we pass on run_settings to sub connector
         # so any changes we make here to run_settings WILL be inherited
         def make_local_settings(run_settings):
@@ -423,7 +423,7 @@ class Sweep(Stage):
             pass
 
         if not self.error_detected:
-            messages.success(run_settings, "0: completed")
+            messages.success(run_settings, "0: sweep completed")
         return run_settings
 
     def curate_data(self, run_settings, location, experiment_id):
