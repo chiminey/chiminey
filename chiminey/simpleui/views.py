@@ -1193,7 +1193,6 @@ def submit_job(request, form, directive):
     logger.debug("r.status_code=%s" % r.status_code)
     logger.debug("r.text=%s" % r.text)
     logger.debug("r.headers=%s" % r.headers)
-    logger.debug("r.json=%s" % r.json()['error_message'])
     if r.status_code != 201:
         if r.json()['error_message']:
             messages.error(request, r.json()['error_message'])
@@ -1202,7 +1201,6 @@ def submit_job(request, form, directive):
                 % (r.status_code, r.text))
 
         return False
-    logger.debug("r.json=%s" % r.json()['error_message'])
     logger.debug("r.status_code=%s" % r.status_code)
     logger.debug("r.text=%s" % r.text)
     logger.debug("r.headers=%s" % r.headers)

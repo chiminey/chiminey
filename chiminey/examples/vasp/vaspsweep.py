@@ -6,7 +6,8 @@ from chiminey import mytardis
 from chiminey.platform import manage
 from chiminey.runsettings import getval, getvals, SettingNotFoundException
 from chiminey.storage import get_url_with_credentials, list_dirs, list_all_files, get_basename
-
+import json
+import ast
 logger = logging.getLogger(__name__)
 
 
@@ -19,7 +20,7 @@ class VASPSweep(Sweep):
     def input_valid(self, settings_to_test):
         logger.debug('settings_to_test=%s' % settings_to_test)
         try:
-                input_location = getval(settings_to_test, '%s/input/system/input_location' % self.SCHEMA_PREFIX)
+            input_location = getval(settings_to_test, '%s/input/system/input_location' % self.SCHEMA_PREFIX)
         except SettingNotFoundException:
             input_location = getval(settings_to_test, '%s/input/location/input/input_location' % self.SCHEMA_PREFIX)
         input_platform_name, input_platform_offset = self.break_bdp_url(input_location)
@@ -36,13 +37,28 @@ class VASPSweep(Sweep):
             input_settings['host'], input_platform_offset)
         logger.debug('input_url=%s' % input_url)
         input_url_cred = get_url_with_credentials(input_settings, input_url, is_relative_path=False)
-        expected_input_files = ['INCAR_template', 'KPOINTS_template', 'POSCAR', 'POTCAR', 'vasp_sub_template']
+        expected_input_files = ['INCAR', 'KPOINTS', 'POSCAR', 'POTCAR', 'vasp_sub']
         provided_input_files = get_basename(list_all_files(input_url_cred))
-        for file in expected_input_files:
-            logger.debug('expected file %s' % file)
-            if file not in provided_input_files:
+        for fp in expected_input_files:
+            fp_template = "%s_template" % fp
+            if fp not in provided_input_files and fp_template not in provided_input_files:
                 return (False, 'Expected VASP input files under initial/ not found. Expected %s; Provided %s'
                                % (expected_input_files, provided_input_files))
+        try:
+            sweep_map = getval(settings_to_test, '%s/input/sweep/sweep_map' % self.SCHEMA_PREFIX)
+            sweep_map_dict = dict(json.loads(sweep_map))
+            num_kp = (sweep_map_dict['num_kp'])
+            encut = (sweep_map_dict['encut'])
+            for num in num_kp:
+                logger.debug("num_kp num=%s" % num)
+                if num < 1 or num > 12:
+                    raise ValueError
+            for num in encut:
+                logger.debug("encut num=%s" % num)
+                if num < 50 or num > 700 or num % 50:
+                    raise ValueError
+        except (SettingNotFoundException, ValueError, TypeError, KeyError) as e:
+            return (False, 'Must supply valid num_kp [1, 12, 1] and encut [50, 700, 50] in the sweep map %s ' % e)
         return (True, 'valid_input')
 
 

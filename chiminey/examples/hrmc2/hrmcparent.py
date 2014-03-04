@@ -71,14 +71,17 @@ class HRMCParent(Parent):
             input_settings['host'], input_platform_offset)
         logger.debug('input_url=%s' % input_url)
         input_url_cred = get_url_with_credentials(input_settings, input_url, is_relative_path=False)
-        expected_input_files = ['input_bo.dat', 'input_gr.dat', 'input_initial.xyz', 'input_sq.dat']
+        expected_input_files = ['input_bo.dat', 'input_gr.dat', 'input_initial.xyz', 'input_sq.dat', "HRMC.inp"]
         provided_input_files = get_basename(list_all_files(input_url_cred))
-        for file in expected_input_files:
-            if file not in provided_input_files:
-                logger.debug('expected file %s' % file)
+        for fp in expected_input_files:
+            fp_template = "%s_template" % fp
+            if fp not in provided_input_files and fp_template not in provided_input_files:
+                logger.debug('expected file %s' % fp)
                 return (False, 'Expected HRMC input files under initial/ not found. Expected %s; Provided %s'
                                % (expected_input_files, provided_input_files))
         return (True, 'valid_input')
+
+    # ["%s_template" % x for x in provided_input_files]:
 
     def get_run_map(self, settings, **kwargs):
         local_settings = settings.copy()

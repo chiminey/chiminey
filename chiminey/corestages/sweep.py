@@ -56,6 +56,19 @@ class Sweep(Stage):
         self.numbfile = 0
         logger.debug("Sweep stage initialized")
 
+
+    def input_valid(self, settings_to_test):
+        #fixme: move to hrmc
+        try:
+            iseed = int(getval(settings_to_test, '%s/input/hrmc/iseed' % RMIT_SCHEMA))
+            NUMBER_SEEDS = 10000 #fixme: should be length of no lines on random_number file
+            if not iseed in range(0, NUMBER_SEEDS):
+                return (False, 'Random Number Seed should be in range (0, %d)' % (NUMBER_SEEDS -1))
+        except (SettingNotFoundException, ValueError):
+            pass
+        return (True, 'valid input')
+
+
     def is_triggered(self, run_settings):
         logger.debug('run_settings=%s' % run_settings)
 
