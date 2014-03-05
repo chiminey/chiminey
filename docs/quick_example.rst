@@ -1,9 +1,9 @@
 
 .. _quick_example:
 
-======================================================================
+========================================================================
 Quick Example: The Random Number Smart Connector for Non-Cloud Execution
-======================================================================
+========================================================================
 
 In this example, we create a basic smart connector that generates a
 random number on a compute cluster node (or the Chiminey server machine,
@@ -12,7 +12,7 @@ to a provided output location. This smart connector will be known as the
 Random Number Smart Connector.
 
 Requirements
--------------
+------------
 
 1. Installation and configuration of the Chiminey server on a virtual machine,
    according to the :ref:`Installation Guide <installation_guide>`.
@@ -27,7 +27,7 @@ Requirements
 
 
 Creating the Random Number Smart Connector
--------------
+------------------------------------------
 
 A smart connector is composed of at least seven predefined core stages:
 configure, create, bootstrap, schedule, execute, wait and destroy.
@@ -56,7 +56,7 @@ Specifically, creating the random number smart connector requires
 .. _customize_execute_stage:
 
 1. Customizing the Execute Stage
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The core execute stage (located at ``chiminey/corestages/execute.py``)
 includes all the basic functionality that a smart connector's execute
@@ -92,7 +92,7 @@ Below is the content of the ``RandExecute`` class, in
         def run_task(self, ip_address, process_id, connection_settings, run_settings):
             filename = 'rand'
             output_path = self.get_process_output_path(run_settings, process_id, connection_settings)
-            command = "mkdir -p %s; cd %s ; python -c 'import random;"\ 
+            command = "mkdir -p %s; cd %s ; python -c 'import random;"\
                   "print random.random()' > %s" \
                   % (output_path, output_path, filename)
             output, err = run_command(command, ip_address,connection_settings)
@@ -101,7 +101,7 @@ Below is the content of the ``RandExecute`` class, in
 .. _define_smart_conn:
 
 2. Defining the Random Number Smart Connector
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The process of defining a smart connector, in general, involves \*
 defining stages: which require specifying a name and the full package
@@ -119,7 +119,7 @@ Specifically, defining the random number smart connector involves,
 .. _redefine_exec_stage:
 
 Redefining the execute stage
-""""
+""""""""""""""""""""""""""""
 
 1. Create an empty ``chiminey/smartconnectorscheduler/management/commands/randinitial.py``
 
@@ -140,7 +140,7 @@ Below is the new definition of the execute stage of the random number smart conn
         execute_stage, _ = models.Stage.objects.get_or_create(
                            name="randexecute", package=execute_package,
                            parent=self.define_parent_stage(),
-                           defaults={'description': "This is the rand execute stage", 
+                           defaults={'description': "This is the rand execute stage",
                            'order': 11})
         execute_stage.update_settings(
             {
@@ -156,7 +156,7 @@ Below is the new definition of the execute stage of the random number smart conn
 .. _attach_form_fields:
 
 Attaching UI form fields
-""""""
+""""""""""""""""""""""""
 
 There are two types of input fields that are needed to submit a random
 number smart connector job, i.e., the :ref:`name of the computation platform <computation_platform>`
@@ -190,7 +190,7 @@ Below is the full content of the ``RandInitial`` class found in
             execute_stage, _ = models.Stage.objects.get_or_create(
                            name="randexecute", package=execute_package,
                            parent=self.define_parent_stage(),
-                           defaults={'description': "This is the rand execute stage", 
+                           defaults={'description': "This is the rand execute stage",
                            'order': 11})
             execute_stage.update_settings(
               {
@@ -215,7 +215,7 @@ Below is the full content of the ``RandInitial`` class found in
 .. _register_smart_conn:
 
 3. Registering the Random Number Smart Connector within Chiminey
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A smart connector can be registered within the Chiminey server in
 various ways. Here, a `Django management
@@ -232,7 +232,7 @@ i. Append the following class to ``chiminey/smartconnectorscheduler/management/c
         def handle(self, *args, **options):
             smart_connector_name = 'random_number'
             directive = RandInitial()
-            directive.define_directive(smart_connector_name, 
+            directive.define_directive(smart_connector_name,
                 description='Random Number Smart Connector')
             print "done"
 
@@ -260,15 +260,15 @@ iii. Visit your Chiminey front page Click 'Create Jobs'. You should see ``Random
 
 
 Testing the Random Number Smart Connector
-""""""""""""""""""
+"""""""""""""""""""""""""""""""""""""""""
 
 Now, test the correct definition and registration of the  random number smart connector by :ref:`submitting a random number job <test_randnum_job>` and :ref:`viewing its output<view_randnum_output>`.
 
 .. _test_randnum_job:
 
 Submitting a random number smart connector job
-''''''
-                    
+''''''''''''''''''''''''''''''''''''''''''''''
+
 
 1. Select a Cluster/Unix computation platform from the drop down  ``Computation Platform Name``
 2. Enter a Unix storage platform name and optionally enter a path offset from the storage platform's root path.
@@ -287,8 +287,8 @@ Submitting a random number smart connector job
 .. _view_randnum_output:
 
 Viewing the job output
-'''''''''
-                      
+''''''''''''''''''''''
+
 
 The job is completed when the ``Iteration:Current`` column of ``Jobs`` page
 displays ``1: waiting 1 processes (1 completed, 0 failed)``
@@ -301,7 +301,7 @@ displays ``1: waiting 1 processes (1 completed, 0 failed)``
 .. _sweep:
 
 4. Adding a Parameter Sweep to the Random Number Smart Connector
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Parameter sweep is used to create multiple jobs, each with its set of
 parameter values (see `Parameter
@@ -320,7 +320,7 @@ i. Turn on the sweep flag by updating the ``Command`` class in ``chiminey/smartc
         def handle(self, *args, **options):
             smart_connector_name = 'random_number'
             directive = RandInitial()
-            directive.define_directive(smart_connector_name, 
+            directive.define_directive(smart_connector_name,
                 description='Random Number Smart Connector', **sweep=True**)
             print "done"
 
@@ -347,7 +347,7 @@ iii. Visit your Chiminey front page Click ``Create Jobs``. You should see
 
 
 Testing the Sweep Random Number Smart Connector
-""""""""""""""""""
+"""""""""""""""""""""""""""""""""""""""""""""""
 
 Now, test the correct definition and registration of the  *sweep* random number smart connector by :ref:`submitting a sweep random number job <test_sweep_randnum_job>` and :ref:`viewing its output<view_sweep_randnum_output>`.
 
@@ -356,7 +356,7 @@ Now, test the correct definition and registration of the  *sweep* random number 
 .. _test_sweep_randnum_job:
 
 Submitting a sweep job
-'''''''''
+''''''''''''''''''''''
 
 1. Select a Cluster/Unix computation platform from the drop down ``Computation Platform Name``
 2. Enter a Unix storage platform name and optionally enter a path offset from the storage platform's root path.
@@ -382,7 +382,7 @@ a sweep random number smart connector job|
 .. _view_sweep_randnum_output:
 
 Viewing the job output
-'''''''''
+''''''''''''''''''''''
 
 
 The job is completed when the ``Iteration:Current`` column of ``Jobs`` page displays ``1: waiting 1 processes (1 completed, 0 failed)``

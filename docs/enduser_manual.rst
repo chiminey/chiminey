@@ -1,6 +1,6 @@
-================
+===============
  Enduser Manual
-================
+===============
 An end-user submits a smart connector job, monitors the job, visualises
 job results and publishes the result to the public BDP index. In this
 documentation, following topics are covered:
@@ -34,7 +34,7 @@ admin of the Chiminey server.
 .. _login:
 
 Login
-------------------------
+-----
 
 End-users login via the web interface of the Chiminey server
 
@@ -47,7 +47,7 @@ End-users login via the web interface of the Chiminey server
 .. _logout:
 
 Logout
-------------------------
+------
 
 1. click 'Logout
 
@@ -57,7 +57,7 @@ Logout
 .. _configure_platform_settings:
 
 Platform Settings Configuration
-------------------------
+-------------------------------
 
 A Chiminey server supports two types of platforms: computation and
 storage. A computation platform is where the core functionality of a
@@ -75,7 +75,7 @@ section, following topics are covered:
 .. _register_computation_platform:
 
 Registering Computation Platform
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Two types of computation platforms can be registered within the Chiminey
 UI. The types are :ref:`cloud_comp_pltf` and :ref:`cluster_unix_platform`.
@@ -83,7 +83,7 @@ UI. The types are :ref:`cloud_comp_pltf` and :ref:`cluster_unix_platform`.
 .. _cloud_platform:
 
 Cloud Computation Platform
-""""""""
+""""""""""""""""""""""""""
 
 1.  Navigate to the Chiminey server homepage
 2.  Log in with credentials
@@ -109,7 +109,7 @@ Cloud Computation Platform
 .. _cluster_unix_platform:
 
 Cluster/Unix  Computation Platform
-""""""""
+""""""""""""""""""""""""""""""""""
 
 1.  Navigate to the Chiminey server homepage
 2.  Log in with credentials
@@ -137,14 +137,14 @@ Cluster/Unix  Computation Platform
 .. _register_storage_platform:
 
 Registering Storage Platform
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Two types of storage platforms can be registered within the Chiminey UI. The types are :ref:`unix_storage_platform` and :ref:`mytardis_storage_platform`.
 
 .. _unix_storage_platform:
 
 Unix Storage Platform
-"""""
+"""""""""""""""""""""
 
 1.  Navigate to the Chiminey server homepage
 2.  Log in with credentials
@@ -172,7 +172,7 @@ Unix Storage Platform
 .. _mytardis_storage_platform:
 
 MyTardis Storage Platform
-""""""
+"""""""""""""""""""""""""
 
 1.  Navigate to the Chiminey server homepage
 2.  Log in with credentials
@@ -198,7 +198,7 @@ MyTardis Storage Platform
 .. _update_platform:
 
 Updating Computation/Storage Platform
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 1. Navigate to the Chiminey server homepage
 2. Log in with credentials
@@ -218,7 +218,7 @@ Updating Computation/Storage Platform
 .. _delete_platform:
 
 Deleting Computation/Storage Platform
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 1. Navigate to the the Chiminey server homepage
 2. Log in with credentials
@@ -239,7 +239,7 @@ Deleting Computation/Storage Platform
 .. _submit_job:
 
 Job Submission
-------------------------
+--------------
 
 Follow the steps below
 
@@ -262,7 +262,7 @@ Follow the steps below
 .. _monitor_job:
 
 Job Monitoring
-------------------------
+--------------
 
 Once a job is submitted, the end-user can monitor the status of the job.
 
@@ -283,7 +283,7 @@ Once a job is submitted, the end-user can monitor the status of the job.
 .. _terminate_job:
 
 Job Termination
-------------------------
+---------------
 
 The end-user can terminate already submitted jobs.
 
@@ -308,7 +308,7 @@ The end-user can terminate already submitted jobs.
 .. _manage_presets:
 
 Presets Management
-------------------------
+------------------
 
 The end-user can save the set of parameters values of a job as a preset.
 Each preset must have a unique name. Using the unique preset name, the

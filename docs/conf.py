@@ -11,8 +11,6 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys
-import os
 from chiminey import settings
 from django.core.management import setup_environ
 setup_environ(settings)
