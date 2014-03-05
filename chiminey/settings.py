@@ -1,1 +1,1 @@
-/opt/chiminey/shared/settings.py
+from chiminey.settings_changeme import *
