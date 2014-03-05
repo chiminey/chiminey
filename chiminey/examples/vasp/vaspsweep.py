@@ -58,7 +58,7 @@ class VASPSweep(Sweep):
                 if num < 50 or num > 700 or num % 50:
                     raise ValueError
         except (SettingNotFoundException, ValueError, TypeError, KeyError) as e:
-            return (False, 'Must supply valid num_kp [1, 12, 1] and encut [50, 700, 50] in the sweep map %s ' % e)
+            return (False, 'Must supply valid num_kp [1, 12, 1] and encut [50, 700, 50] in the sweep map')
         return (True, 'valid_input')
 
 
