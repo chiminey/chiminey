@@ -29,7 +29,7 @@ DATABASES = {
     }
 }
 
-LOGIN_REDIRECT_URL = "/"
+LOGIN_REDIRECT_URL = "/jobs"
 
 # Celery queue uses Django for persistence
 BROKER_TRANSPORT = 'django'
