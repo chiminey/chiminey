@@ -44,7 +44,7 @@ def set_bootstrap_settings(run_settings, local_settings):
            '%s/system/contextid' % RMIT_SCHEMA
            )
     local_settings['bdp_username'] = getval(run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA)
-    #logger.debug('out=%s' % local_settings)
+    logger.debug('out=%s' % local_settings)
 
 
 def start_multi_bootstrap_task(settings, relative_path_suffix):

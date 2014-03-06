@@ -41,8 +41,14 @@ def set_schedule_settings(run_settings, local_settings):
             '%s/stages/setup/filename_for_PIDs' % RMIT_SCHEMA,
             '%s/stages/setup/payload_name' % RMIT_SCHEMA,
             '%s/stages/bootstrap/bootstrapped_nodes' % RMIT_SCHEMA,
+            '%s/stages/setup/payload_source' % RMIT_SCHEMA,
              )
-    local_settings['bdp_username'] = getval(run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA)
+    local_settings['bdp_username'] = getval(
+        run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA)
+    try:
+        local_settings['non_cloud_proc_id'] = int(getval(run_settings, '%s/system/id' % RMIT_SCHEMA)) + 1
+    except (SettingNotFoundException, ValueError):
+        local_settings['non_cloud_proc_id'] = 1
 
 
 def schedule_task(schedule_class, run_settings, local_settings):

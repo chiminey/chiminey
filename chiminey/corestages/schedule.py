@@ -265,7 +265,6 @@ class Schedule(Stage):
                         '%s/stages/schedule/rescheduled_nodes' % RMIT_SCHEMA: [],
                         })
             else:
-
                 setval(run_settings,
                        '%s/stages/schedule/total_scheduled_procs' % RMIT_SCHEMA,
                        self.total_scheduled_procs)
