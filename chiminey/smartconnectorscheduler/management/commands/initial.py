@@ -376,7 +376,7 @@ class Command(BaseCommand):
                 u'project': {'type':models.ParameterName.STRING, 'subtype': 'string', 'initial':'h72', 'description':'Project Identifier', 'ranking':2, 'help_text':''},
                 u'job_name': {'type':models.ParameterName.STRING, 'subtype': 'string', 'initial':'Si-FCC', 'description':'Job Name', 'ranking':3, 'help_text':''},
                 u'queue': {'type':models.ParameterName.STRING, 'subtype': 'string', 'initial':'express', 'description':'Task Queue to use', 'ranking':4, 'help_text':''},
-                u'walltime': {'type':models.ParameterName.STRING, 'subtype': 'string', 'initial':'00:10:00', 'description':'Wall Time', 'ranking':5, 'help_text':''},
+                u'walltime': {'type':models.ParameterName.STRING, 'subtype': 'timedelta', 'initial':'00:10:00', 'description':'Wall Time', 'ranking':5, 'help_text':''},
                 u'mem': {'type':models.ParameterName.STRING, 'subtype': 'string', 'initial':'16GB', 'description':'Memory', 'ranking':6, 'help_text':''},
                 u'max_iteration': {'type':models.ParameterName.NUMERIC, 'subtype':'whole', 'description':'Maximum no. iterations', 'ranking':7, 'initial': 10, 'help_text':'Computation ends when either convergence or maximum iteration reached'},
                 }

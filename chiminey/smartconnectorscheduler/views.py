@@ -102,6 +102,8 @@ subtype_validation = {
     'choicefield': ('choicefield', functools.partial(
         serverside_validators.myvalidate_choice_field,
         choices=('MC', 'MCSA')), forms.Select(),  None),
+    'timedelta': ('time delta: try 00:10:00, or 10 mins', serverside_validators.validate_timedelta, None, None),
+
 
 }
 

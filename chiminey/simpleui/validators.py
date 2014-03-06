@@ -1,6 +1,9 @@
 import json
 import logging
 from django.core.validators import ValidationError
+from chiminey.simpleui.timeparse import timeparse
+from datetime import timedelta
+
 
 logger = logging.getLogger(__name__)
 
@@ -9,7 +12,7 @@ def validate_sweep_map(value):
     # FIXME: more detailed validation required here
     sweep_map = value
     try:
-        map = json.loads(sweep_map)
+        json.loads(sweep_map)
     except Exception:
         msg = u'JSON is invalid'
         raise ValidationError(msg)
@@ -20,7 +23,7 @@ def validate_run_map(value):
     # FIXME: more detailed validation required here
     run_map = value
     try:
-        map = json.loads(run_map)
+        json.loads(run_map)
     except Exception:
         msg = u'JSON is invalid'
         raise ValidationError(msg)
@@ -69,7 +72,6 @@ def validate_fanout_per_kept_result(value):
     return fanout_per_kept_result
 
 
-
 def validate_threshold(value):
     threshold = value
 
@@ -114,11 +116,10 @@ def validate_pottype(value):
         vms = int(pottype)
     except ValueError:
         raise ValidationError(msg)
-    if not vms in [0,1]:
+    if not vms in [0, 1]:
         raise ValidationError(msg)
 
     return pottype
-
 
 
 def validate_max_iteration(value):
@@ -176,6 +177,7 @@ def validate_experiment_id(value):
 def validate_hidden(value):
     return True
 
+
 def validate_natural_number(value):
     # If the field is blank we assume zero
     if value is None or value == "":
@@ -203,6 +205,7 @@ def validate_whole_number(value):
         raise ValidationError(msg)
     return value
 
+
 def validate_float_number(value):
     msg = u'real number'
     try:
@@ -211,6 +214,7 @@ def validate_float_number(value):
     except ValueError, e:
         raise ValidationError(msg)
     return value
+
 
 def validate_even_number(value):
     msg = u'even number'
@@ -260,7 +264,7 @@ def validate_bool(value):
     logger.debug("checking bool %s" % value)
     msg = u'boolean not valid'
     try:
-        v = bool(value)
+        bool(value)
     except ValueError:
         raise ValidationError(msg)
     return int(value)
@@ -269,10 +273,10 @@ def validate_bool(value):
 def validate_jsondict(value):
     logger.debug("checking jsondict")
     try:
-        map = json.loads(value)
+        json.loads(value)
     except Exception:
         if value:
-            msg = u'JSON is invalid'
+            msg = u'There is a problem with the JSON string'
             raise ValidationError(msg)
         value = {}
     return str(value)
@@ -292,7 +296,6 @@ def check_addition(cleaned_data):
         logger.debug("okay")
 
 
-
 def myvalidate_choice_field(value, choices):
     msg = "Submitted value %s not found in choices %s" % (value, choices)
     logger.debug("checking %s for %s" % (value, choices))
@@ -305,4 +308,12 @@ def myvalidate_choice_field(value, choices):
 
 
 
-
+def validate_timedelta(value):
+    msg = "time delta: try 00:10:00, or 10 mins"
+    logger.debug("checking %s" % value)
+    tp = timeparse(value)
+    if tp:
+        td = timedelta(seconds=tp)
+        return str(td)
+    else:
+        raise ValidationError(msg)
