@@ -81,6 +81,8 @@ subtype_validation = {
     'platform': ('platform', validators.validate_platform_url, forms.Select(),  None),
     'mytardis': ('MyTardis platform name', validators.validate_platform_url, forms.Select(),  None),
     'choicefield': ('choicefield', None, forms.Select(),  None),
+    'timedelta': ('time delta: try 00:10:00, or 10 mins', validators.validate_timedelta, None, None),
+
 }
 
 

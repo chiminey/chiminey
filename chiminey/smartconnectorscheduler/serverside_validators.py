@@ -27,6 +27,9 @@ from django.core.validators import ValidationError
 
 from chiminey.platform.manage import retrieve_platform
 
+from chiminey.smartconnectorscheduler.timeparse import timeparse
+from datetime import timedelta
+
 logger = logging.getLogger(__name__)
 
 
@@ -304,3 +307,13 @@ def myvalidate_choice_field(value, choices):
     else:
         raise ValidationError(msg)
     return value
+
+def validate_timedelta(value):
+    msg = "invalid time delta %s" % value
+    logger.debug("checking %s" % value)
+    tp = timeparse(value)
+    if tp:
+        td = timedelta(seconds=tp)
+        return str(td)
+    else:
+        raise ValidationError(msg)
