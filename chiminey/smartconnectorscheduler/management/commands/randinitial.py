@@ -22,7 +22,7 @@
 import logging
 from django.core.management.base import BaseCommand
 from chiminey.smartconnectorscheduler import models
-from chiminey.smartconnectorscheduler.management.commands.coreinitial import CoreInitial
+from chiminey.examples.randnumunix.randinitial import RandInitial
 
 logger = logging.getLogger(__name__)
 
@@ -34,10 +34,8 @@ class Command(BaseCommand):
     Load up the initial state of the database (replaces use of
     fixtures).  Assumes specific structure.
     """
-
     args = ''
     help = 'Setup an initial task structure.'
-
     def setup(self):
         confirm = raw_input(MESSAGE)
         if confirm != "Yes":
@@ -45,41 +43,10 @@ class Command(BaseCommand):
             return
 
         directive = RandInitial()
-        directive.define_directive('random_number', description='Rand Smart Connector', sweep=True)
+        directive.define_directive('rand_num_unix', description='RandNum Unix Smart Connector', sweep=True)
         print "done"
 
 
     def handle(self, *args, **options):
         self.setup()
         print "done"
-
-
-class RandInitial(CoreInitial):
-    def define_execute_stage(self):
-        '''
-        overwrites the core execute stage definition
-        '''
-        execute_package = "chiminey.examples.randomnumbers.randexecute.RandExecute"
-        execute_stage, _ = models.Stage.objects.get_or_create(
-            name="randexecute",
-            package=execute_package,
-            parent=self.define_parent_stage(),
-            defaults={'description': "This is the rand execute stage", 'order': 11})
-        execute_stage.update_settings(
-            {
-            u'http://rmit.edu.au/schemas/stages/run':
-                {
-                    u'payload_cloud_dirname': '',
-                    u'compile_file': '',
-                    u'retry_attempts': 3,
-                },
-            })
-
-    def attach_directive_args(self, new_directive):
-        RMIT_SCHEMA = "http://rmit.edu.au/schemas"
-        schema = models.Schema.objects.get(namespace=RMIT_SCHEMA + "/input/system/compplatform")
-        das, _ = models.DirectiveArgSet.objects.get_or_create(
-            directive=new_directive, order=1, schema=schema)
-        schema = models.Schema.objects.get(namespace=RMIT_SCHEMA + "/input/location/output")
-        das, _ = models.DirectiveArgSet.objects.get_or_create(
-            directive=new_directive, order=2, schema=schema)

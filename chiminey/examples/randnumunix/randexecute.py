@@ -19,38 +19,18 @@
 # IN THE SOFTWARE.
 
 import logging
-from django.core.management.base import BaseCommand
-from chiminey.initialisation import CoreInitial
+from chiminey.corestages import Execute
+from chiminey.compute import run_command
 
-RMIT_SCHEMA = "http://rmit.edu.au/schemas"
-SWEEP_SCHEMA = RMIT_SCHEMA + "/input/sweep"
+
 logger = logging.getLogger(__name__)
 
-
-class Command(BaseCommand):
-    """
-    Load up the initial state of the database (replaces use of
-    fixtures).  Assumes specific structure.
-    """
-    args = ''
-    help = 'Setup an initial task structure.'
-    def setup(self):
-        confirm = raw_input("This will ERASE and reset the database. "
-            " Are you sure [Yes|No]")
-        if confirm != "Yes":
-            print "action aborted by user"
-            return
-        directive = CoreInitial()
-        directive.define_directive('core', description='Core Smart Connector')
-        print "done"
-
-
-    def handle(self, *args, **options):
-        self.setup()
-        print "done"
-
-
-
-
-
-
+class RandExecute(Execute):
+    def run_task(self, ip_address, process_id, connection_settings, run_settings):
+        filename = 'rand'
+        output_path = self.get_process_output_path(
+            run_settings, process_id, connection_settings)
+        logger.debug('output_path=%s' % output_path)
+        command = "mkdir -p %s; cd %s ; python -c 'import random; print random.random()' > %s" \
+                  % (output_path, output_path, filename)
+        output, err = run_command(command, ip_address, connection_settings)

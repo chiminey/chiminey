@@ -21,7 +21,7 @@
 import logging
 from django.core.management.base import BaseCommand
 from chiminey.smartconnectorscheduler import models
-from chiminey.smartconnectorscheduler.management.commands.coreinitial import CoreInitial
+from chiminey.initialisation import CoreInitial
 
 logger = logging.getLogger(__name__)
 
