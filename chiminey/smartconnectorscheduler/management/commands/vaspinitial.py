@@ -59,21 +59,11 @@ class VASPInitial(CoreInitial):
             {
                 u'http://rmit.edu.au/schemas/stages/setup':
                     {
-                        u'payload_source': 'file://127.0.0.1/payload_vasp',
+                        u'payload_source': 'local/payload_vasp',
                         u'payload_destination': 'chiminey_demo',
                     },
             })
         return bootstrap_stage
-
-    def define_wait_stage(self):
-        wait_stage = super(VASPInitial, self).define_wait_stage()
-        wait_stage.update_settings({
-            u'http://rmit.edu.au/schemas/stages/wait':
-                {
-                    u'synchronous': 0
-                },
-        })
-        return wait_stage
 
     def define_execute_stage(self):
         execute_stage = super(VASPInitial, self).define_execute_stage()
@@ -99,17 +89,15 @@ class VASPInitial(CoreInitial):
         transform_stage.update_settings({})
         return transform_stage
 
-    def attach_directive_args(self, new_directive):
+    def get_ui_schemas(self):
         RMIT_SCHEMA = "http://rmit.edu.au/schemas"
-        for i, sch in enumerate([
+        schemas = [
                 RMIT_SCHEMA + "/input/system/compplatform",
                 RMIT_SCHEMA + "/input/system",
                 RMIT_SCHEMA + "/input/vasp",
                 RMIT_SCHEMA + "/input/mytardis",
-                ]):
-            schema = models.Schema.objects.get(namespace=sch)
-            das, _ = models.DirectiveArgSet.objects.get_or_create(
-                directive=new_directive, order=i, schema=schema)
+                ]
+        return schemas
 
     def define_sweep_stage(self, subdirective):
         sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep_%s" % subdirective.name,

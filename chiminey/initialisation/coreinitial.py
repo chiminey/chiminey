@@ -19,6 +19,7 @@
 # IN THE SOFTWARE.
 
 import logging
+import abc
 from chiminey.smartconnectorscheduler import models
 
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
@@ -134,13 +135,9 @@ class CoreInitial(object):
             parent=self.define_parent_stage(),
             package=wait_package,
             order=40)
-        wait_stage.update_settings({
-            u'http://rmit.edu.au/schemas/stages/wait':
-                {
-                    u'synchronous': 1
-                },
-        })
+        wait_stage.update_settings({})
         return wait_stage
+
     def define_transform_stage(self):
         transform_package = "chiminey.corestages.transform.Transform"
         transform_stage, _ = models.Stage.objects.get_or_create(name="transform",
@@ -223,6 +220,15 @@ class CoreInitial(object):
         return subdirective
 
     def attach_directive_args(self, new_directive):
+        ui_schemas = self.get_ui_schemas()
+        for i, sch in enumerate(ui_schemas):
+            schema = models.Schema.objects.get(namespace=sch)
+            das, _ = models.DirectiveArgSet.objects.get_or_create(
+                directive=new_directive, order=i, schema=schema)
+        pass
+
+    @abc.abstractmethod
+    def get_ui_schemas(self):
         pass
 
     def assemble_stages(self):
@@ -233,5 +239,7 @@ class CoreInitial(object):
         self.define_schedule_stage()
         self.define_execute_stage()
         self.define_wait_stage()
+        self.define_transform_stage()
+        self.define_converge_stage()
         self.define_destroy_stage()
         return parent_stage

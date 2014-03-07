@@ -81,7 +81,7 @@ def start_multi_bootstrap_task(settings, relative_path_suffix):
                 node_ip = instance.private_ip_address
             logger.debug("node_ip=%s" % node_ip)
             logger.debug('constructing source')
-            source = get_url_with_credentials(settings, settings['payload_source'])
+            source = get_url_with_credentials(settings, "/" + settings['payload_source'])
             logger.debug('source=%s' % source)
             #relative_path = '%s@%s' % (settings['type'], settings['payload_destination'])
             relative_path = '%s@%s' % (settings['type'], relative_path_suffix)

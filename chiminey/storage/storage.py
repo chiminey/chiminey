@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_bdp_root_path():
-    bdp_root_path = settings.LOCAL_FILESYS_ROOT_PATH  # fixme avoid hard coding; systematically determine bdp_root_path
+    bdp_root_path = settings.LOCAL_FILESYS_ROOT_PATH
     return bdp_root_path
 
 
@@ -858,15 +858,7 @@ def get_url_with_credentials(settings, url_or_relative_path,
     if platform == 'local':
         # fixme His gets the root path for the user's local file system.  This
         # could be hardcoded rather than using real platform object
-        try:
-            platform_object = models.Platform.objects.get(name=platform)  # fixme remove Platform model
-            bdp_username = settings['bdp_username']
-            logger.debug("bdp_username=%s" % bdp_username)
-            root_path = os.path.join(platform_object.root_path, bdp_username)
-            url_settings['root_path'] = root_path
-        except models.Platform.DoesNotExist:
-            logger.error('compatible platform for %s not found' % platform)
-
+        url_settings['root_path'] = get_bdp_root_path()
     # FIXME: URIs cannot contain unicode data, but IRI can. So need to convert IRI to URL
     # if parameters can be non-ascii
     # https://docs.djangoproject.com/en/dev/ref/unicode/#uri-and-iri-handling
@@ -897,6 +889,8 @@ def get_url_with_credentials(settings, url_or_relative_path,
         # url_or_relative_path must be a valid url here,
         # which means we have to remove username, as it is a BDPurl.
         hostname = parsed_url.netloc
+        if not hostname:
+            hostname = "127.0.0.1"
         logger.debug("hostname=%s" % hostname)
         relative_path = parsed_url.path
 

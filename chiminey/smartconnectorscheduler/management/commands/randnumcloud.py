@@ -18,15 +18,15 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-
 import logging
 from django.core.management.base import BaseCommand
 from chiminey.smartconnectorscheduler import models
-from chiminey.examples.randnumunix.randinitial import RandInitial
+from chiminey.examples.randnumcloud.initialise import RandNumCloudInitial
 
 logger = logging.getLogger(__name__)
 
 MESSAGE = "This will add a new directive to the catalogue of available connectors.  Are you sure [Yes/No]?"
+
 
 
 class Command(BaseCommand):
@@ -34,16 +34,19 @@ class Command(BaseCommand):
     Load up the initial state of the database (replaces use of
     fixtures).  Assumes specific structure.
     """
+
     args = ''
     help = 'Setup an initial task structure.'
+
     def setup(self):
         confirm = raw_input(MESSAGE)
         if confirm != "Yes":
             print "action aborted by user"
             return
 
-        directive = RandInitial()
-        directive.define_directive('rand_num_unix', description='RandNum Unix Smart Connector', sweep=True)
+        directive = RandNumCloudInitial()
+        directive.define_directive(
+            'random_number_cloud', description='RandNum Cloud Smart Connector')
         print "done"
 
 

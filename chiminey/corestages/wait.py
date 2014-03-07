@@ -237,8 +237,8 @@ class Wait(Stage):
 
         wait_strategy = strategies.SynchronousWaitStrategy()
         try:
-            synchronous_wait = getval(run_settings, '%s/stages/wait/synchronous' % RMIT_SCHEMA)
-            if not synchronous_wait:
+            payload_source = getval(run_settings, '%s/stages/setup/payload_source' % RMIT_SCHEMA)
+            if payload_source:
                 wait_strategy = strategies.AsynchronousWaitStrategy()
         except SettingNotFoundException:
             pass

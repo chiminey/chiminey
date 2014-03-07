@@ -73,7 +73,7 @@ class HRMCInitial(CoreInitial):
         configure_stage.update_settings({
             u'http://rmit.edu.au/schemas/system':
                 {
-                    u'random_numbers': 'file://127.0.0.1/randomnums.txt'
+                    u'random_numbers': 'local/randomnums.txt'
                 },
         })
         return configure_stage
@@ -84,23 +84,13 @@ class HRMCInitial(CoreInitial):
             {
                 u'http://rmit.edu.au/schemas/stages/setup':
                     {
-                        u'payload_source': 'file://127.0.0.1/local/payload_hrmc',
+                        u'payload_source': 'local/payload_hrmc',
                         u'payload_destination': 'celery_payload_2',
                         u'payload_name': 'process_payload',
                         u'filename_for_PIDs': 'PIDs_collections',
                     },
             })
         return bootstrap_stage
-
-    def define_wait_stage(self):
-        wait_stage = super(HRMCInitial, self).define_wait_stage()
-        wait_stage.update_settings({
-            u'http://rmit.edu.au/schemas/stages/wait':
-                {
-                    u'synchronous': 0
-                },
-        })
-        return wait_stage
 
     def define_execute_stage(self):
         execute_package = "chiminey.examples.hrmc2.hrmcexecute.HRMCExecute"
@@ -140,19 +130,17 @@ class HRMCInitial(CoreInitial):
         converge_stage.update_settings({})
         return converge_stage
 
-    def attach_directive_args(self, new_directive):
+    def get_ui_schemas(self):
         RMIT_SCHEMA = "http://rmit.edu.au/schemas"
-        for i, sch in enumerate([
+        schemas = [
                 RMIT_SCHEMA + "/input/system/compplatform",
                 RMIT_SCHEMA + "/input/system/cloud",
                 RMIT_SCHEMA + "/input/reliability",
                 RMIT_SCHEMA + "/input/system",
                 RMIT_SCHEMA + "/input/hrmc",
                 RMIT_SCHEMA + "/input/mytardis",
-                ]):
-            schema = models.Schema.objects.get(namespace=sch)
-            das, _ = models.DirectiveArgSet.objects.get_or_create(
-                directive=new_directive, order=i, schema=schema)
+                ]
+        return schemas
 
     def define_sweep_stage(self, subdirective):
         sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep_%s" % subdirective.name,

@@ -49,11 +49,10 @@ class RandInitial(CoreInitial):
                 },
             })
 
-    def attach_directive_args(self, new_directive):
+    def get_ui_schemas(self):
         RMIT_SCHEMA = "http://rmit.edu.au/schemas"
-        schema = models.Schema.objects.get(namespace=RMIT_SCHEMA + "/input/system/compplatform")
-        das, _ = models.DirectiveArgSet.objects.get_or_create(
-            directive=new_directive, order=1, schema=schema)
-        schema = models.Schema.objects.get(namespace=RMIT_SCHEMA + "/input/location/output")
-        das, _ = models.DirectiveArgSet.objects.get_or_create(
-            directive=new_directive, order=2, schema=schema)
+        schemas = [
+                RMIT_SCHEMA + "/input/system/compplatform",
+                RMIT_SCHEMA + "/input/location/output",
+                ]
+        return schemas

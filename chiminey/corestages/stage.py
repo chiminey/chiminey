@@ -133,7 +133,6 @@ class Stage(object):
             logger.error(e)
             raise
 
-
     @deprecated
     def _exists(self, context, *parts):
             c = dict(context)
