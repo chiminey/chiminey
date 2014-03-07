@@ -228,9 +228,9 @@ def _retrieve_missing_params(schema_namespace, parameters):
 
 
 def _configure_platform(platform_type, username, parameters):
-    if platform_type == 'nectar' or platform_type == 'csrack':
+    if platform_type in ['csrack', 'nectar', 'amazon']:
         configure_nectar_platform(platform_type, username, parameters)
-    elif platform_type == 'unix' or platform_type == 'nci':
+    elif platform_type in ['unix', 'nci']:
         configure_unix_platform(platform_type, username, parameters)
 
 
@@ -244,9 +244,9 @@ def _validate_parameters(platform_type, parameters, passwd_auth=False):
 
 
 def _generate_key(platform_type, parameters):
-    if platform_type == 'nectar' or platform_type == 'csrack':
+    if platform_type in ['csrack', 'nectar', 'amazon']:
         return generate_cloud_key(parameters)
-    elif platform_type == 'nci' or platform_type == 'unix':
+    elif platform_type in ['nci', 'unix']:
         return generate_unix_key(parameters)
     elif platform_type == 'mytardis':
         return True, ''
@@ -269,7 +269,7 @@ def _update_platform_settings(settings):
     #platform_type = os.path.basename(schema_namespace)
     platform_type = settings['platform_type']
     settings['type'] = platform_type
-    if platform_type == 'nectar' or platform_type == 'csrack':
+    if platform_type in ['csrack', 'nectar', 'amazon']:
         settings['username'] = 'root' #fixme avoid hardcoding
         settings['private_key_name'] = settings['private_key']
         settings['private_key'] = os.path.join(storage.get_bdp_root_path(),

@@ -253,7 +253,7 @@ function submitForm(description, form_id) {
 function updatePlatform(parameters, platform_type) {
     $('form[id*="_form_update"]').hide();
     formreset()
-    if (platform_type == 'csrack' || platform_type == 'nectar'){
+    if (platform_type == 'csrack' || platform_type == 'nectar' || platform_type == 'amazon'){
         platform_type = 'cloud'
     }
     else if (platform_type == 'nci'){
@@ -279,7 +279,7 @@ function updatePlatform(parameters, platform_type) {
 function deletePlatform(parameters, platform_type) {
     $('form[id*="_form_delete"]').hide();
     fieldReadonly()
-    if (platform_type == 'csrack' || platform_type == 'nectar'){
+    if (platform_type == 'csrack' || platform_type == 'nectar' || platform_type == 'amazon'){
         platform_type = 'cloud'
     }
     else if (platform_type == 'nci'){

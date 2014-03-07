@@ -22,6 +22,7 @@ import sys
 import boto
 import time
 import logging
+import os
 
 from boto.ec2.regioninfo import RegionInfo
 from boto.exception import EC2ResponseError
@@ -210,7 +211,6 @@ def get_running_vms(settings):
             running_vms.append(vm)
     return running_vms
 
-import os
 def create_key_pair(settings):
     connection = _create_cloud_connection(settings)
     unique_key = False
@@ -246,6 +246,8 @@ def create_ssh_security_group(settings):
             _create_ssh_group(connection, security_group_name)
     except EC2ResponseError as e:
         if 'SecurityGroupNotFoundForProject' in e.error_code:
+            _create_ssh_group(connection, security_group_name)
+        elif 'InvalidGroup.NotFound' in e.error_code:
             _create_ssh_group(connection, security_group_name)
         else:
             logger.exception(e)
@@ -302,7 +304,12 @@ def _create_csrack_connection(settings):
 
 
 def _create_amazon_connection(settings):
-    pass
+    connection = boto.ec2.connect_to_region("ap-southeast-2", # connects to Sydney region
+        aws_access_key_id=settings['ec2_access_key'],
+        aws_secret_access_key=settings['ec2_secret_key'],
+        is_secure=True,
+        )
+    return connection
 
 
 def _does_vm_exist(vm):

@@ -197,9 +197,9 @@ class Schedule(Stage):
             logger.error(e)
             messages.error(run_settings, e)
             return
-        if platform_type == 'nectar' or platform_type == 'csrack':
+        if platform_type in ['nectar', 'csrack', 'amazon']:
             self.strategy = strategies.CloudStrategy()
-        elif platform_type == 'nci':
+        elif platform_type in ['nci']:
             self.strategy = strategies.ClusterStrategy()
         local_settings = {}
         try:

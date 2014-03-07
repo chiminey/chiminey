@@ -105,7 +105,7 @@ def _start_bootstrap(instance, ip,  settings, source, destination):
     # TODO, FIXME:  need to have timeout for yum install make
     # and then test can access, otherwise, loop.
     #install_make = 'yum install -y make'
-    install_make = '`command -v make  > /dev/null 2>&1 || echo sudo yum install -y make`; '
+    install_make = '`command -v make  > /dev/null 2>&1 || echo yum install -y make`; '
     command_out = ''
     errs = ''
     logger.debug("starting command for %s" % ip)

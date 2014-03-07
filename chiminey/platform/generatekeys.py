@@ -49,7 +49,7 @@ def generate_cloud_key(parameters):
         logger.debug('platform_type=%s' % platform_type)
         parameters['key_dir'] = key_dir
 
-        if platform_type == 'csrack' or platform_type == 'nectar':
+        if platform_type in ['csrack', 'nectar', 'amazon']:
             create_key_pair(parameters)
             create_ssh_security_group(parameters)
         else:

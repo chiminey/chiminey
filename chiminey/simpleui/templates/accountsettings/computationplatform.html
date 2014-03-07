@@ -226,19 +226,13 @@ $(document).ready(function () {
 <!--second column-->
 <p><a data-toggle="modal" href="#createModal" class="btn btn-primary"  onclick="formreset();">Add Computation Platform</a></p>
 <div>
+
 {% for platform_type, platform_details in all_headers.items %}
-
-
      {% for header, schema in platform_details.items %}
          {% if platform_type == 'nci' %}
-
             <h2>Cluster/Unix</h2>
-         {% elif platform_type == 'nectar' %}
-
-            <h2>NeCTAR</h2>
-         {% elif platform_type == 'csrack' %}
-
-            <h2>CSRack</h2>
+         {% elif platform_type == 'nectar' or platform_type == 'csrack' or  platform_type == 'amazon' %}
+            <h2>NeCTAR/CSRack/Amazon EC2</h2>
          {% else %}
             <h2>{{ platform_type }}</h2>
 

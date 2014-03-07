@@ -7,7 +7,6 @@ from os import path
 
 TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 
-DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
@@ -301,12 +300,11 @@ LOCAL_FILESYS_ROOT_PATH = "/var/chiminey/remotesys"
 # CLOUD CONFIGURATION
 
 
-#VM_IMAGES = {'csrack': {'placement': None, 'vm_image': "ami-00000004"},
-#             'nectar': {'placement': 'monash', 'vm_image': "ami-0000000d"}}
 
 # According to Nectar Image Catalog 24/1/14
 VM_IMAGES = {'csrack': {'placement': None, 'vm_image': "ami-00000004"},
-              'nectar': {'placement': 'monash', 'vm_image': "ami-00001c06"}}
+              'nectar': {'placement': 'monash', 'vm_image': "ami-00001c06"},
+              'amazon': {'placement': '', 'vm_image': "ami-9352c1a9"}}
 
 
 # CELERY CONFIGURATRION
