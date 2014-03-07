@@ -123,7 +123,7 @@ Redefining the execute stage
 
 1. Create an empty ``chiminey/smartconnectorscheduler/management/commands/randinitial.py``
 
-2. Make a subclass of ``CoreInitial`` class called RandInitial, contained in ``randinitial.py``. Defining a smart connector requires inheriting from the generic connector in the ``CoreInitial`` class, which is located at ``chiminey/smartconnectorscheduler/management/commands/coreinitial.py``.
+2. Make a subclass of ``CoreInitial`` class called RandInitial, contained in ``randinitial.py``. Defining a smart connector requires inheriting from the generic connector in the ``CoreInitial`` class, which is located at ``chiminey.initialisation.coreinitial.py``.
 
 3. Redefine the execute stage:  Since the execute stage is overridden by the random number smart connector, the definition of the execute stage should similarly be overridden in the class ``RandInitial`` to point to the ``RandExecute`` class. Defining the execute stage requires
    - the full package path to the stage's source code, i.e., ``chimney.randomnumber.randexecute.RandExecute``,
@@ -181,9 +181,8 @@ Below is the full content of the ``RandInitial`` class found in
 ::
 
     from chiminey.smartconnectorscheduler import models
-    from chiminey.smartconnectorscheduler.management.commands import coreinitial
-
-    class RandInitial(coreinitial.CoreInitial):
+    from chiminey.initialisation import CoreInitial
+    class RandInitial(CoreInitial):
         #overwrites the core execute stage definition
         def define_execute_stage(self):
             execute_package = "chimney.randomnumber.randexecute.RandExecute"
