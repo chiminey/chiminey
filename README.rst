@@ -33,7 +33,7 @@ to build computation tasks.
 The Bioscience Data Platform
 ----------------------------
 
-Chiminey is a key product of the `Bioscience Data Platform project: Tardis in the Cloud Project <http://bioscience-data-platform.tumblr.com/>`_, which is project beween Monash University and RMIT University, Victoria Australia funded by NeCTAR.  This project fosuses on bringing existing computational systems together in a way that allows scientists to seemslessly work with data from capture through to publication.
+Chiminey is a key product of the `Bioscience Data Platform: Tardis in the Cloud project <http://bioscience-data-platform.tumblr.com/>`_, which is a prject beween Monash University and RMIT University, Victoria Australia funded by NeCTAR.  This project fosuses on bringing existing computational systems together in a way that allows scientists to seemslessly work with data from capture through to publication.
 
 See Y for more details
 
