@@ -42,11 +42,11 @@ Documentation
 =============
 
 
-A Getting Started tutorial is available at XXX, which walks through installation and running simple and then more complicated examples.
+A Getting Started tutorial is available at `http://chiminey.readthedocs.org/ <http://chiminey.readthedocs.org/>`_, which walks through installation and running simple and then more complicated examples.
 
-An installation manual is available at XXX.
+.. An installation manual is available at XXX.
 
-The user manual is available at XXX.
+.. The user manual is available at XXX.
 
 
 
