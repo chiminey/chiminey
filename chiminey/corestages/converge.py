@@ -84,7 +84,6 @@ class Converge(Stage):
                     # # '%s/stages/create/custom_prompt' % RMIT_SCHEMA,
                     # # '%s/stages/create/cloud_sleep_interval' % RMIT_SCHEMA,
                     # # '%s/stages/create/created_nodes' % RMIT_SCHEMA,
-                    # '%s/stages/run/payload_cloud_dirname' % RMIT_SCHEMA,
                     # '%s/system/max_seed_int' % RMIT_SCHEMA,
                     # '%s/stages/run/compile_file' % RMIT_SCHEMA,
                     # '%s/stages/run/retry_attempts' % RMIT_SCHEMA,

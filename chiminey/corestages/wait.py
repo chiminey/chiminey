@@ -152,12 +152,12 @@ class Wait(Stage):
         #cloud_path = os.path.join(local_settings['payload_destination'],
         #                          #str(contextid), #fixme: uncomment
         #                          str(process_id),
-        #                          local_settings['payload_cloud_dirname']
+        #                          local_settings['process_output_dirname']
         #                          )
         relative_path_suffix = self.get_relative_output_path(local_settings)
         cloud_path = os.path.join(relative_path_suffix,
                                   str(process_id),
-                                  local_settings['payload_cloud_dirname']
+                                  local_settings['process_output_dirname']
                                   )
         #cloud_path = self.get_process_output_path(run_settings, process_id)
         logger.debug("cloud_path=%s" % cloud_path)
@@ -382,7 +382,7 @@ def retrieve_local_settings(run_settings, local_settings):
     stage.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/system/platform')
     stage.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/stages/run/payload_cloud_dirname')
+        'http://rmit.edu.au/schemas/stages/run/process_output_dirname')
     stage.copy_settings(local_settings, run_settings,
         '%s/system/contextid' % RMIT_SCHEMA)
     local_settings['bdp_username'] = run_settings[

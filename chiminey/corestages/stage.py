@@ -161,7 +161,7 @@ class Stage(object):
         output_path = os.path.join(
             computation_platform['root_path'],
             self.get_relative_output_path(local_settings), str(process_id),
-            getval(run_settings, 'http://rmit.edu.au/schemas/stages/run/payload_cloud_dirname'))
+            getval(run_settings, 'http://rmit.edu.au/schemas/stages/run/process_output_dirname'))
         return output_path
 
     def get_relative_output_path(self, local_settings):

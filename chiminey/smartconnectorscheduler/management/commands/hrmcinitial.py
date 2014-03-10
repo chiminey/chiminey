@@ -103,7 +103,7 @@ class HRMCInitial(CoreInitial):
             {
             u'http://rmit.edu.au/schemas/stages/run':
                 {
-                    u'payload_cloud_dirname': 'HRMC2',
+                    u'process_output_dirname': 'HRMC2',
                     u'compile_file': 'HRMC',
                     u'retry_attempts': 3,
                 },

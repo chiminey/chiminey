@@ -131,11 +131,10 @@ class Execute(stage.Stage):
         self.contextid = getval(run_settings, '%s/system/contextid' % self.SCHEMA_PREFIX)
         # NB: Don't catch SettingNotFoundException because we can't recover
         # run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
-
+        logger.debug('contextid=%s' % self.contextid)
         output_storage_url = getval(run_settings, '%s/platform/storage/output/platform_url' % self.SCHEMA_PREFIX)
         output_storage_settings = manage.get_platform_settings(output_storage_url, local_settings['bdp_username'])
         offset = getval(run_settings, '%s/platform/storage/output/offset' % self.SCHEMA_PREFIX)
-        # offset = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset']
         self.job_dir = manage.get_job_dir(output_storage_settings, offset)
         # TODO: we assume initial input is in "%s/input_0" % self.job_dir
         # in configure stage we could copy initial data in 'input_location' into this location
@@ -206,10 +205,10 @@ class Execute(stage.Stage):
             #dest_files_location = computation_platform_settings['type'] + "@"\
             #                      + os.path.join(
             #    local_settings['payload_destination'],
-            #    proc['id'], local_settings['payload_cloud_dirname'])
+            #    proc['id'], local_settings['process_output_dirname'])
             dest_files_location = computation_platform_settings['type'] + "@"\
                                   + os.path.join(relative_path_suffix,
-                proc['id'], local_settings['payload_cloud_dirname'])
+                proc['id'], local_settings['process_output_dirname'])
             logger.debug('dest_files_location=%s' % dest_files_location)
 
             dest_files_url = get_url_with_credentials(
@@ -523,7 +522,7 @@ class Execute(stage.Stage):
                     dest_file_location = computation_platform_settings['type']\
                         + "@" + os.path.join(relative_path_suffix,
                                              proc['id'],
-                                             local_settings['payload_cloud_dirname'])
+                                             local_settings['process_output_dirname'])
                     logger.debug("dest_file_location =%s" % dest_file_location)
                     resched_file_location = "%s%s" % (output_prefix, os.path.join(
                                 self.job_dir, "input_backup", proc['id']))
@@ -537,7 +536,7 @@ class Execute(stage.Stage):
             values_dest_location = computation_platform_settings['type']\
                 + "@" + os.path.join(relative_path_suffix,
                                      proc['id'],
-                                     local_settings['payload_cloud_dirname'],
+                                     local_settings['process_output_dirname'],
                                      self.VALUES_FNAME)
             logger.debug("values_dest_location =%s" % values_dest_location)
 
@@ -554,7 +553,7 @@ class Execute(stage.Stage):
         update(local_settings, run_settings,
                '%s/stages/setup/payload_destination' % self.SCHEMA_PREFIX,
                '%s/stages/setup/filename_for_PIDs' % self.SCHEMA_PREFIX,
-               '%s/stages/run/payload_cloud_dirname' % self.SCHEMA_PREFIX,
+               '%s/stages/run/process_output_dirname' % self.SCHEMA_PREFIX,
                '%s/stages/run/compile_file' % self.SCHEMA_PREFIX,
                '%s/stages/run/retry_attempts' % self.SCHEMA_PREFIX,
                '%s/system/contextid' % self.SCHEMA_PREFIX,

@@ -497,7 +497,7 @@ class Command(BaseCommand):
                 [u'the create stage of the smartconnector1',
                 {
                 u'runs_left': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':8, 'help_text':''},
-                u'payload_cloud_dirname': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':7, 'help_text':''},
+                u'process_output_dirname': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':7, 'help_text':''},
                 u'compile_file': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':6, 'help_text':''},
                 u'retry_attempts': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':5, 'help_text':''},
                 u'error_nodes': {'type':models.ParameterName.NUMERIC, 'subtype':'', 'description':'', 'ranking':4, 'help_text':''},
@@ -739,7 +739,7 @@ class Command(BaseCommand):
             {
             u'http://rmit.edu.au/schemas/stages/run':
                 {
-                    u'payload_cloud_dirname': 'HRMC2',
+                    u'process_output_dirname': 'HRMC2',
                     u'compile_file': 'HRMC',
                     u'retry_attempts': 3,
                     #u'max_seed_int': 1000,  # FIXME: should we use maxint here?

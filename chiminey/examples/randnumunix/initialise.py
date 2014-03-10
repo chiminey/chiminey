@@ -43,7 +43,7 @@ class RandInitial(CoreInitial):
             {
             u'http://rmit.edu.au/schemas/stages/run':
                 {
-                    u'payload_cloud_dirname': '',
+                    u'process_output_dirname': '',
                     u'compile_file': '',
                     u'retry_attempts': 3,
                 },

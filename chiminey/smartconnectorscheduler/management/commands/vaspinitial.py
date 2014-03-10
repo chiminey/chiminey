@@ -72,7 +72,7 @@ class VASPInitial(CoreInitial):
             {
             u'http://rmit.edu.au/schemas/stages/run':
                 {
-                    u'payload_cloud_dirname': 'vasp',
+                    u'process_output_dirname': 'vasp',
                     u'compile_file': 'VASP',
                     u'retry_attempts': 3,
                 },
