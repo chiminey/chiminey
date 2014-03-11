@@ -20,7 +20,7 @@
 
 
 from django.core.management.base import BaseCommand
-from chiminey.initialisation.chimineyinitial import ChimineyInitial
+from chiminey.initialisation.chimineyinitial import initialise
 
 
 class Command(BaseCommand):
@@ -38,6 +38,5 @@ class Command(BaseCommand):
         if confirm != "Yes":
             print "action aborted by user"
             return
-        initial = ChimineyInitial()
-        initial.setup()
+        initialise()
 

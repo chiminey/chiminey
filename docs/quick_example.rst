@@ -166,7 +166,7 @@ Below is shown how the input fields are attached
 
 ::
 
-    def attach_directive_args(self, new_directive):
+    def _attach_directive_args(self, new_directive):
         RMIT_SCHEMA = "http://rmit.edu.au/schemas"
         schema = models.Schema.objects.get(namespace=RMIT_SCHEMA + "/input/system/compplatform")
         das, _ = models.DirectiveArgSet.objects.get_or_create(
@@ -201,7 +201,7 @@ Below is the full content of the ``RandInitial`` class found in
                  },
               })
        # attaches computation platform name and output location to UI
-       def attach_directive_args(self, new_directive):
+       def _attach_directive_args(self, new_directive):
            RMIT_SCHEMA = "http://rmit.edu.au/schemas"
            schema = models.Schema.objects.get(namespace=RMIT_SCHEMA + "/input/system/compplatform")
            das, _ = models.DirectiveArgSet.objects.get_or_create(

@@ -61,7 +61,7 @@ class VASPInitial(CoreInitial):
         transform_stage.update_settings({})
         return transform_stage
 
-    def get_ui_schemas(self):
+    def get_ui_schema_namespace(self):
         RMIT_SCHEMA = "http://rmit.edu.au/schemas"
         schemas = [
                 RMIT_SCHEMA + "/input/system/compplatform",
@@ -70,6 +70,31 @@ class VASPInitial(CoreInitial):
                 RMIT_SCHEMA + "/input/mytardis",
                 ]
         return schemas
+
+    def get_domain_specific_schemas(self):
+        schema_data = {
+            u'http://rmit.edu.au/schemas/input/vasp':
+            [u'VASP Smart Connector',
+             {
+                 u'ncpus': {'type': models.ParameterName.NUMERIC, 'subtype': 'whole', 'initial': 16,
+                            'description': 'Number of CPUs', 'ranking': 1, 'help_text': ''},
+                 u'project': {'type': models.ParameterName.STRING, 'subtype': 'string', 'initial': 'h72',
+                              'description': 'Project Identifier', 'ranking': 2, 'help_text': ''},
+                 u'job_name': {'type': models.ParameterName.STRING, 'subtype': 'string', 'initial': 'Si-FCC',
+                               'description': 'Job Name', 'ranking': 3, 'help_text': ''},
+                 u'queue': {'type': models.ParameterName.STRING, 'subtype': 'string', 'initial': 'express',
+                            'description': 'Task Queue to use', 'ranking': 4, 'help_text': ''},
+                 u'walltime': {'type': models.ParameterName.STRING, 'subtype': 'timedelta', 'initial': '00:10:00',
+                               'description': 'Wall Time', 'ranking': 5, 'help_text': ''},
+                 u'mem': {'type': models.ParameterName.STRING, 'subtype': 'string', 'initial': '16GB',
+                          'description': 'Memory', 'ranking': 6, 'help_text': ''},
+                 u'max_iteration': {'type': models.ParameterName.NUMERIC, 'subtype': 'whole',
+                                    'description': 'Maximum no. iterations', 'ranking': 7, 'initial': 10,
+                                    'help_text': 'Computation ends when either convergence or maximum iteration reached'},
+             }
+            ],
+        }
+        return schema_data
 
     def define_sweep_stage(self, subdirective):
         sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep_%s" % subdirective.name,

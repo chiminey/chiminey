@@ -67,7 +67,7 @@ class RandNumMyTardisInitial(CoreInitial):
         return transform_stage
 
 
-    def get_ui_schemas(self):
+    def get_ui_schema_namespace(self):
         RMIT_SCHEMA = "http://rmit.edu.au/schemas"
         schemas = [
                 RMIT_SCHEMA + "/input/system/compplatform",

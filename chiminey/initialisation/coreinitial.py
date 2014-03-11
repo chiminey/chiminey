@@ -21,6 +21,7 @@
 import logging
 import abc
 from chiminey.smartconnectorscheduler import models
+from chiminey.initialisation.chimineyinitial import register_schemas
 
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 SWEEP_SCHEMA = RMIT_SCHEMA + "/input/sweep"
@@ -184,6 +185,7 @@ class CoreInitial(object):
         self.directive_name = directive_name
         if not description:
             description = '%s Smart Connector' % self.directive_name
+        register_schemas(self.get_domain_specific_schemas())
         parent_stage = self.assemble_stages()
         directive, _ = models.Directive.objects.get_or_create(
             name=self.directive_name,
@@ -191,11 +193,11 @@ class CoreInitial(object):
                       'description': description,
                       'hidden': sweep}
         )
-        self.attach_directive_args(directive)
+        self._attach_directive_args(directive)
         if sweep:
             sweep_directive = self.define_sweep_directive(
                 directive, description)
-            self.attach_directive_args(sweep_directive)
+            self._attach_directive_args(sweep_directive)
 
 
     def define_sweep_directive(self, subdirective, description):
@@ -217,16 +219,18 @@ class CoreInitial(object):
             directive=sweep_directive, order=max_order + 1, schema=schema)
         return subdirective
 
-    def attach_directive_args(self, new_directive):
-        ui_schemas = self.get_ui_schemas()
-        for i, sch in enumerate(ui_schemas):
+    def _attach_directive_args(self, new_directive):
+        ui_schema_namespace = self.get_ui_schema_namespace()
+        for i, sch in enumerate(ui_schema_namespace):
             schema = models.Schema.objects.get(namespace=sch)
             das, _ = models.DirectiveArgSet.objects.get_or_create(
                 directive=new_directive, order=i, schema=schema)
-        pass
 
     @abc.abstractmethod
-    def get_ui_schemas(self):
+    def get_ui_schema_namespace(self):
+        return ''
+
+    def get_domain_specific_schemas(self):
         return ''
 
     def assemble_stages(self):
