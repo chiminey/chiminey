@@ -120,9 +120,7 @@ class CoreInitial(object):
             {
             u'http://rmit.edu.au/schemas/stages/run':
                 {
-                    u'process_output_dirname': '',
-                    u'compile_file': '',
-                    u'retry_attempts': 1,
+                    u'process_output_dirname': 'chiminey',
                 },
             })
         return execute_stage
@@ -229,7 +227,7 @@ class CoreInitial(object):
 
     @abc.abstractmethod
     def get_ui_schemas(self):
-        pass
+        return ''
 
     def assemble_stages(self):
         parent_stage = self.define_parent_stage()

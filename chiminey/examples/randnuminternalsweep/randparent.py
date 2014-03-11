@@ -26,11 +26,11 @@ from chiminey.corestages import Parent
 logger = logging.getLogger(__name__)
 
 
-class Rand2Parent(Parent):
+class RandParent(Parent):
     '''
         Holds common methods that are needed by two or more stages
     '''
-    def get_run_map(self, settings, **kwargs):
+    def get_internal_sweep_map(self, settings, **kwargs):
         '''
             Defines multiple processes within a single job
             Number of processes generated is the cross-product of the values in the entire map
@@ -48,9 +48,3 @@ class Rand2Parent(Parent):
         rand_index = 42
         map = {'val': [1, 2]}
         return map, rand_index
-
-    def get_total_templates(self, maps, **kwargs):
-        '''
-            Contains the cross product of map
-        '''
-        return 2

@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 SCHEMA_PREFIX = "http://rmit.edu.au/schemas"
 
 
-class Rand2Configure(Configure):
+class RandConfigure(Configure):
     '''
         Sets up output locations and credentials, MyTardis credentials,
         and creates experiment in MyTardis

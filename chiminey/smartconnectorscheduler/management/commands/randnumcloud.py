@@ -46,7 +46,7 @@ class Command(BaseCommand):
 
         directive = RandNumCloudInitial()
         directive.define_directive(
-            '11random_number_cloud', description='11RandNum Cloud Smart Connector')
+            'random_number_cloud', description='RandNum Cloud Smart Connector')
         print "done"
 
 

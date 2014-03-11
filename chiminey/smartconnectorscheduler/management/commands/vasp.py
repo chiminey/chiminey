@@ -19,18 +19,34 @@
 # IN THE SOFTWARE.
 
 import logging
-from chiminey.corestages import Execute
-from chiminey.compute import run_command
-
+from django.core.management.base import BaseCommand
+from chiminey.smartconnectorscheduler import models
+from chiminey.examples.vasp.initialise import VASPInitial
 
 logger = logging.getLogger(__name__)
 
-class RandExecute(Execute):
-    def run_task(self, ip_address, process_id, connection_settings, run_settings):
+MESSAGE = "This will add a new directive to the catalogue of available connectors.  Are you sure [Yes/No]?"
 
-        filename = 'rand'
-        output_path = self.get_process_output_path(run_settings, process_id, connection_settings)
-        logger.debug('output_path=%s' % output_path)
-        command = "mkdir -p %s; cd %s ; python -c 'import random; print random.random()' > %s" \
-                  % (output_path, output_path, filename)
-        output, err = run_command(command, ip_address, connection_settings)
+class Command(BaseCommand):
+    """
+    Load up the initial state of the database (replaces use of
+    fixtures).  Assumes specific structure.
+    """
+
+    args = ''
+    help = 'Setup an initial task structure.'
+
+    def setup(self):
+        confirm = raw_input(MESSAGE)
+        if confirm != "Yes":
+            print "action aborted by user"
+            return
+
+        directive = VASPInitial()
+        directive.define_directive('vasp', description='VASP Smart Connector', sweep=True)
+        print "done"
+
+    def handle(self, *args, **options):
+        self.setup()
+        print "done"
+

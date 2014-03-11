@@ -18,39 +18,42 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-
 import logging
-from chiminey.smartconnectorscheduler import models
 from chiminey.initialisation import CoreInitial
+from chiminey.smartconnectorscheduler import models
+
 
 logger = logging.getLogger(__name__)
 
-MESSAGE = "This will add a new directive to the catalogue of available connectors.  Are you sure [Yes/No]?"
+class RandNumInternaSweepInitial(CoreInitial):
+    def define_parent_stage(self):
+        parent_package = "chiminey.examples.randnuminternalsweep.randparent.RandParent"
+        parent_stage, _ = models.Stage.objects.get_or_create(name=self.get_parent_name(),
+            description="This is the RandNum parent stage",
+            package=parent_package,
+            order=100)
+        parent_stage.update_settings({})
+        return parent_stage
 
-
-class RandInitial(CoreInitial):
-    def define_execute_stage(self):
-        '''
-        overwrites the core execute stage definition
-        '''
-        execute_package = "chiminey.examples.randnumunix.randexecute.RandExecute"
-        execute_stage, _ = models.Stage.objects.get_or_create(
-            name="randexecute",
-            package=execute_package,
-            parent=self.define_parent_stage(),
-            defaults={'description': "This is the rand execute stage", 'order': 11})
-        execute_stage.update_settings(
+    def define_bootstrap_stage(self):
+        bootstrap_stage = super(RandNumInternaSweepInitial, self).define_bootstrap_stage()
+        bootstrap_stage.update_settings(
             {
-            u'http://rmit.edu.au/schemas/stages/run':
-                {
-                    u'process_output_dirname': 'chiminey',
-                },
+                u'http://rmit.edu.au/schemas/stages/setup':
+                    {
+                        u'payload_source': 'local/payload_randnum',
+                        u'payload_destination': 'randnum_dest',
+                        u'payload_name': 'process_payload',
+                        u'filename_for_PIDs': 'PIDs_collections',
+                    },
             })
+        return bootstrap_stage
 
     def get_ui_schemas(self):
         RMIT_SCHEMA = "http://rmit.edu.au/schemas"
         schemas = [
                 RMIT_SCHEMA + "/input/system/compplatform",
+                RMIT_SCHEMA + "/input/system/cloud",
                 RMIT_SCHEMA + "/input/location/output",
                 ]
         return schemas

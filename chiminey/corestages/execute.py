@@ -405,7 +405,7 @@ class Execute(stage.Stage):
 
         # get run Map
         parent_stage = self.import_parent_stage(run_settings)
-        run_map, self.rand_index = parent_stage.get_run_map(local_settings,
+        run_map, self.rand_index = parent_stage.get_internal_sweep_map(local_settings,
                                run_settings=run_settings)
 
         # load value_map
@@ -554,8 +554,6 @@ class Execute(stage.Stage):
                '%s/stages/setup/payload_destination' % self.SCHEMA_PREFIX,
                '%s/stages/setup/filename_for_PIDs' % self.SCHEMA_PREFIX,
                '%s/stages/run/process_output_dirname' % self.SCHEMA_PREFIX,
-               '%s/stages/run/compile_file' % self.SCHEMA_PREFIX,
-               '%s/stages/run/retry_attempts' % self.SCHEMA_PREFIX,
                '%s/system/contextid' % self.SCHEMA_PREFIX,
                '%s/system/random_numbers' % self.SCHEMA_PREFIX,
                '%s/system/id' % self.SCHEMA_PREFIX

@@ -32,7 +32,7 @@ SCHEMA_PREFIX = "http://rmit.edu.au/schemas"
 OUTPUT_FILE = "output"
 
 
-class Rand2Transform(Transform):
+class RandTransform(Transform):
     '''
         Curates dataset into existing MyTardis experiment
     '''

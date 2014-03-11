@@ -1,5 +1,5 @@
 
-# Copyright (C) 2012, RMIT University
+# Copyright (C) 2014, RMIT University
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to
@@ -85,8 +85,6 @@ class Converge(Stage):
                     # # '%s/stages/create/cloud_sleep_interval' % RMIT_SCHEMA,
                     # # '%s/stages/create/created_nodes' % RMIT_SCHEMA,
                     # '%s/system/max_seed_int' % RMIT_SCHEMA,
-                    # '%s/stages/run/compile_file' % RMIT_SCHEMA,
-                    # '%s/stages/run/retry_attempts' % RMIT_SCHEMA,
                     # '%s/input/system/cloud/number_vm_instances' % RMIT_SCHEMA,
                     # '%s/input/hrmc/iseed' % RMIT_SCHEMA,
                     # '%s/input/hrmc/optimisation_scheme' % RMIT_SCHEMA,

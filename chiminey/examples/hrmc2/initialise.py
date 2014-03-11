@@ -19,37 +19,10 @@
 # IN THE SOFTWARE.
 
 import logging
-from django.core.management.base import BaseCommand
 from chiminey.smartconnectorscheduler import models
 from chiminey.initialisation import CoreInitial
 
 logger = logging.getLogger(__name__)
-
-MESSAGE = "This will add a new directive to the catalogue of available connectors.  Are you sure [Yes/No]?"
-
-
-class Command(BaseCommand):
-    """
-    Load up the initial state of the database (replaces use of
-    fixtures).  Assumes specific structure.
-    """
-
-    args = ''
-    help = 'Setup an initial task structure.'
-
-    def setup(self):
-        confirm = raw_input(MESSAGE)
-        if confirm != "Yes":
-            print "action aborted by user"
-            return
-
-        directive = HRMCInitial()
-        directive.define_directive('hrmc', description='HRMC Smart Connector', sweep=True)
-        print "done"
-
-    def handle(self, *args, **options):
-        self.setup()
-        print "done"
 
 
 class HRMCInitial(CoreInitial):
@@ -104,8 +77,6 @@ class HRMCInitial(CoreInitial):
             u'http://rmit.edu.au/schemas/stages/run':
                 {
                     u'process_output_dirname': 'HRMC2',
-                    u'compile_file': 'HRMC',
-                    u'retry_attempts': 3,
                 },
             })
         return execute_stage
@@ -162,8 +133,3 @@ class HRMCInitial(CoreInitial):
             },
             })
         return sweep_stage
-
-    def assemble_stages(self):
-        self.define_transform_stage()
-        self.define_converge_stage()
-        return super(HRMCInitial, self).assemble_stages()

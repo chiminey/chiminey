@@ -151,7 +151,7 @@ def complete_schedule(schedule_class, local_settings):
 
 def start_schedule(schedule_class, run_settings, local_settings):
     parent_stage = schedule_class.import_parent_stage(run_settings)
-    map = parent_stage.get_run_map(local_settings, run_settings=run_settings)
+    map = parent_stage.get_internal_sweep_map(local_settings, run_settings=run_settings)
     try:
         isinstance(map, tuple)
         run_map = map[0]
@@ -162,7 +162,7 @@ def start_schedule(schedule_class, run_settings, local_settings):
             run_settings, 'http://rmit.edu.au/schemas/platform/storage/output')
     offset = getval(run_settings, '%s/platform/storage/output/offset' % RMIT_SCHEMA)
     job_dir = get_job_dir(output_storage_settings, offset)
-    schedule_class.total_processes = parent_stage.get_total_templates(
+    schedule_class.total_processes = parent_stage.get_total_procs_per_iteration(
         [run_map], run_settings=run_settings,
         output_storage_settings=output_storage_settings, job_dir=job_dir)
     logger.debug('total_processes=%d' % schedule_class.total_processes)

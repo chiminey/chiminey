@@ -20,12 +20,30 @@
 
 import logging
 from chiminey.initialisation import CoreInitial
+from chiminey.smartconnectorscheduler import models
+
 
 logger = logging.getLogger(__name__)
 
-class RandNumCloudInitial(CoreInitial):
+class RandNumMyTardisInitial(CoreInitial):
+    def define_configure_stage(self):
+        configure_package = "chiminey.examples.randnummytardis.randconfigure.RandConfigure"
+        configure_stage, _ = models.Stage.objects.get_or_create(
+            name="rand2configure",
+            description="This is the RandNum configure stage",
+            parent=self.define_parent_stage(),
+            package=configure_package,
+            order=0)
+        configure_stage.update_settings({
+            u'http://rmit.edu.au/schemas/system':
+                {
+                    u'random_numbers': 'file://127.0.0.1/randomnums.txt'
+                },
+        })
+        return configure_stage
+
     def define_bootstrap_stage(self):
-        bootstrap_stage = super(RandNumCloudInitial, self).define_bootstrap_stage()
+        bootstrap_stage = super(RandNumMyTardisInitial, self).define_bootstrap_stage()
         bootstrap_stage.update_settings(
             {
                 u'http://rmit.edu.au/schemas/stages/setup':
@@ -38,11 +56,23 @@ class RandNumCloudInitial(CoreInitial):
             })
         return bootstrap_stage
 
+    def define_transform_stage(self):
+        transform_package = "chiminey.examples.randnummytardis.randtransform.RandTransform"
+        transform_stage, _ = models.Stage.objects.get_or_create(name="rand2transform",
+            description="This is the RandNum transform stage",
+            parent=self.define_parent_stage(),
+            package=transform_package,
+            order=50)
+        transform_stage.update_settings({})
+        return transform_stage
+
+
     def get_ui_schemas(self):
         RMIT_SCHEMA = "http://rmit.edu.au/schemas"
         schemas = [
                 RMIT_SCHEMA + "/input/system/compplatform",
                 RMIT_SCHEMA + "/input/system/cloud",
                 RMIT_SCHEMA + "/input/location/output",
+                RMIT_SCHEMA + "/input/mytardis"
                 ]
         return schemas

@@ -50,41 +50,9 @@ class HRMCParent(Parent):
     def __unicode__(self):
         return u"HRMCParallelStage"
 
-    def input_valid(self, settings_to_test):
-        logger.debug('settings_to_test=%s' % settings_to_test)
-        try:
-            sweep = getvals(settings_to_test, '%s/input/sweep' % self.SCHEMA_PREFIX)
-            input_platform_offset = settings_to_test[self.SCHEMA_PREFIX + '/platform/storage/input']['offset']
-        except SettingNotFoundException:
-            try:
-                input_location = getval(settings_to_test, '%s/input/system/input_location' % self.SCHEMA_PREFIX)
-            except SettingNotFoundException:
-                input_location = getval(settings_to_test, '%s/input/location/input/input_location' % self.SCHEMA_PREFIX)
-            input_platform_name, input_platform_offset = self.break_bdp_url(input_location)
-            settings_to_test[self.SCHEMA_PREFIX + '/platform/storage/input'] = {}
-            settings_to_test[self.SCHEMA_PREFIX + '/platform/storage/input'][
-            'platform_url'] = input_platform_name
-            settings_to_test[self.SCHEMA_PREFIX + '/platform/storage/input']['offset'] = input_platform_offset
-        input_settings = self.get_platform_settings(settings_to_test, '%s/platform/storage/input' % self.SCHEMA_PREFIX)
-        logger.debug('input-settings=%s' % input_settings)
-        input_url = "%s://%s@%s/%s/initial" % (
-            input_settings['scheme'], input_settings['type'],
-            input_settings['host'], input_platform_offset)
-        logger.debug('input_url=%s' % input_url)
-        input_url_cred = get_url_with_credentials(input_settings, input_url, is_relative_path=False)
-        expected_input_files = ['input_bo.dat', 'input_gr.dat', 'input_initial.xyz', 'input_sq.dat', "HRMC.inp"]
-        provided_input_files = get_basename(list_all_files(input_url_cred))
-        for fp in expected_input_files:
-            fp_template = "%s_template" % fp
-            if fp not in provided_input_files and fp_template not in provided_input_files:
-                logger.debug('expected file %s' % fp)
-                return (False, 'Expected HRMC input files under initial/ not found. Expected %s; Provided %s'
-                               % (expected_input_files, provided_input_files))
-        return (True, 'valid_input')
-
     # ["%s_template" % x for x in provided_input_files]:
 
-    def get_run_map(self, settings, **kwargs):
+    def get_internal_sweep_map(self, settings, **kwargs):
         local_settings = settings.copy()
         run_settings = kwargs['run_settings']
         logger.debug('run_settings=%s' % run_settings)
@@ -192,7 +160,7 @@ class HRMCParent(Parent):
         return map, rand_index
 
     # #fixme: consider moving to parent class. do we need input dirs to calculate?
-    # def get_total_templates(self, maps, **kwargs):
+    # def get_total_procs_per_iteration(self, maps, **kwargs):
     #     run_settings = kwargs['run_settings']
     #     output_storage_settings = kwargs['output_storage_settings']
     #     job_dir = kwargs['job_dir']
@@ -223,7 +191,7 @@ class HRMCParent(Parent):
     #         logger.debug("total_templates=%d" % (total_templates))
     #     return total_templates
 
-    def get_total_templates(self, maps, **kwargs):
+    def get_total_procs_per_iteration(self, maps, **kwargs):
         run_settings = kwargs['run_settings']
         output_storage_settings = kwargs['output_storage_settings']
         job_dir = kwargs['job_dir']
@@ -260,7 +228,7 @@ class HRMCParent(Parent):
             logger.debug("total_templates=%d" % (total_templates))
         return total_templates
     '''
-    def get_total_templates(self, maps, **kwargs):
+    def get_total_procs_per_iteration(self, maps, **kwargs):
         logger.debug("maps=%s" % maps)
         contexts = []
         num_variations = 0
