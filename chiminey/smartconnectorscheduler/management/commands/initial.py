@@ -18,23 +18,9 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import logging
-import logging.config
-from urlparse import urlparse
 
-from django.contrib.auth.models import Group
-from django.contrib.auth.models import Permission
-from django.core.files.base import ContentFile
-from django.core.files.storage import FileSystemStorage
 from django.core.management.base import BaseCommand
-from django.conf import settings
-from django.template.defaultfilters import slugify
-
-from chiminey.smartconnectorscheduler import models
-from chiminey.initialisation.coreinitial import CoreInitial
 from chiminey.initialisation.chimineyinitial import ChimineyInitial
-
-logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
