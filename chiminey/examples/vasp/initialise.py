@@ -26,7 +26,6 @@ logger = logging.getLogger(__name__)
 
 
 class VASPInitial(CoreInitial):
-
     def define_bootstrap_stage(self):
         bootstrap_stage = super(VASPInitial, self).define_bootstrap_stage()
         bootstrap_stage.update_settings(

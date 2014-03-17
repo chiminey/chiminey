@@ -87,8 +87,8 @@ class Stage(object):
 
     def input_exists(self, run_settings):
         try:
-            getval(run_settings, 'http://rmit.edu.au/schemas/input/location/input/input_location')
-            return 'http://rmit.edu.au/schemas/input/location/input/input_location'
+            getval(run_settings, 'http://rmit.edu.au/schemas/input/location/input_location')
+            return 'http://rmit.edu.au/schemas/input/location/input_location'
         except SettingNotFoundException:
             pass
         try:
@@ -100,10 +100,9 @@ class Stage(object):
 
 
     def output_exists(self, run_settings):
-
         try:
-            getval(run_settings, 'http://rmit.edu.au/schemas/input/location/output/output_location')
-            return 'http://rmit.edu.au/schemas/input/location/output/output_location'
+            getval(run_settings, 'http://rmit.edu.au/schemas/input/location/output_location')
+            return 'http://rmit.edu.au/schemas/input/location/output_location'
         except SettingNotFoundException:
             pass
         try:

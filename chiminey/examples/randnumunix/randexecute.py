@@ -31,6 +31,7 @@ class RandExecute(Execute):
         output_path = self.get_process_output_path(
             run_settings, process_id, connection_settings)
         logger.debug('output_path=%s' % output_path)
-        command = "mkdir -p %s; cd %s ; python -c 'import random; print random.random()' > %s" \
+        command = "mkdir -p %s; cd %s ; python -c 'import random;" \
+                  " print random.random(); print random.random()' > %s" \
                   % (output_path, output_path, filename)
         output, err = run_command(command, ip_address, connection_settings)

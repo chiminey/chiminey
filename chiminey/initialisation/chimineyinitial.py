@@ -51,7 +51,7 @@ def initialise():
         #group.permissions.add(add_model)
         group.permissions.add(change_model)
         #group.permissions.add(delete_model)
-    schema_data = get_chiminey_schemas()
+    schema_data = _get_chiminey_schemas()
     register_schemas(schema_data)
     print "done"
 
@@ -84,7 +84,7 @@ def register_schemas(schema_data):
                 logger.debug('Parameters are added to a schema using old format.')
 
 
-def get_chiminey_schemas():
+def _get_chiminey_schemas():
     schema_data = {
         u'http://rmit.edu.au/schemas/platform/storage/mytardis':
             [u'schema for Unix storage platform instances',

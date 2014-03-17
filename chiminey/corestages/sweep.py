@@ -315,8 +315,6 @@ class Sweep(Stage):
             # Duplicate any input_directory into runX duplicates
             if input_loc:
                 logger.debug("context=%s" % context)
-                logger.debug("systemsettings=%s"
-                         % pformat(getvals(run_settings, RMIT_SCHEMA + '/input/system')))
                 copy_directories(input_url, run_iter_url)
 
             # Need to load up existing values, because original input_dir could

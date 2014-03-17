@@ -73,6 +73,7 @@ class Configure(Stage):
         self.compute_platform_name = ''
         self.compute_platform_offset = ''
         if self.output_exists(run_settings):
+            logger.debug('special=%s' % run_settings)
             try:
                  run_settings['http://rmit.edu.au/schemas/platform/storage/output']
             except KeyError:
@@ -81,7 +82,7 @@ class Configure(Stage):
                     bdp_url = getval(run_settings, RMIT_SCHEMA + '/input/system/output_location')
                     logger.debug('bdp_url=%s' % bdp_url)
                 except SettingNotFoundException:
-                    bdp_url = getval(run_settings, RMIT_SCHEMA + '/input/location/output/output_location')
+                    bdp_url = getval(run_settings, RMIT_SCHEMA + '/input/location/output_location')
                     logger.debug('bdp_url=%s' % bdp_url)
                 self.output_platform_name, self.output_platform_offset = self.break_bdp_url(bdp_url)
                 run_settings[RMIT_SCHEMA + '/platform/storage/output'] = {}
@@ -96,7 +97,7 @@ class Configure(Stage):
                 try:
                     bdp_url = getval(run_settings, RMIT_SCHEMA + '/input/system/input_location')
                 except SettingNotFoundException:
-                    bdp_url = getval(run_settings, RMIT_SCHEMA + '/input/location/input/input_location')
+                    bdp_url = getval(run_settings, RMIT_SCHEMA + '/input/location/input_location')
                 self.input_platform_name, self.input_platform_offset = self.break_bdp_url(bdp_url)
                 run_settings[RMIT_SCHEMA + '/platform/storage/input'] = {}
                 run_settings[RMIT_SCHEMA + '/platform/storage/input'][
@@ -113,7 +114,7 @@ class Configure(Stage):
             run_settings[RMIT_SCHEMA + '/platform/computation']['platform_url'] = self.compute_platform_name
             run_settings[RMIT_SCHEMA + '/platform/computation']['offset'] = self.compute_platform_offset
 
-        messages.info(run_settings, "1: configure")
+        messages.info(run_settings, "0: configure")
 
         local_settings = getvals(run_settings, models.UserProfile.PROFILE_SCHEMA_NS)
 
@@ -309,8 +310,14 @@ class Configure(Stage):
         logger.debug("iter_inputdir=%s" % iter_inputdir)
 
         #input_storage_settings = self.get_platform_settings(run_settings, 'http://rmit.edu.au/schemas/platform/storage/input')
-        input_location = run_settings[
-            RMIT_SCHEMA + '/input/system']['input_location']
+        #input_location = run_settings[
+        #    RMIT_SCHEMA + '/input/system']['input_location']
+
+        try:
+            input_location = getval(run_settings, RMIT_SCHEMA + '/input/system/input_location')
+        except SettingNotFoundException:
+            input_location = getval(run_settings, RMIT_SCHEMA + '/input/location/input_location')
+
         logger.debug("input_location=%s" % input_location)
         #todo: input location will evenatually be replaced by the scratch space that was used by the sweep
         #todo: the sweep will indicate the location of the scratch space in the run_settings

@@ -22,7 +22,7 @@ class VASPSweep(Sweep):
         try:
             input_location = getval(settings_to_test, '%s/input/system/input_location' % self.SCHEMA_PREFIX)
         except SettingNotFoundException:
-            input_location = getval(settings_to_test, '%s/input/location/input/input_location' % self.SCHEMA_PREFIX)
+            input_location = getval(settings_to_test, '%s/input/location/input_location' % self.SCHEMA_PREFIX)
         input_platform_name, input_platform_offset = self.break_bdp_url(input_location)
         settings_to_test[self.SCHEMA_PREFIX + '/platform/storage/input'] = {}
         settings_to_test[self.SCHEMA_PREFIX + '/platform/storage/input'][
