@@ -235,8 +235,8 @@ Parameter sweep is used to create multiple jobs, each with its set of
 parameter values (see `Parameter
 Sweep <https://github.com/chiminey/chiminey/wiki/Types-of-Input-Form-Fields#sweep>`__
 for details). This feature can be added to a smart connector by turning
-the sweep flag on during the `registration of the smart
-connector <#register_smart_conn>`__.
+the sweep flag on during the :ref:`registration of the smart
+connector <register_smart_conn>`.
 
 1. Add ``sweep=True`` parameter when you call ``define_directive(...)``. Below is the code snippet from the Django management command:
 
@@ -277,11 +277,7 @@ connector <#register_smart_conn>`__.
 Testing the Sweep Unix Random Number Smart Connector
 """"""""""""""""""""""""""""""""""""""""""""""""""""
 
-Similar to our :ref:`previous test <test_randnumunix>`, we  test
-the newly registered smart connector.
- For this, you will :ref:`submit  <test_submit_sweepjob>` a *sweep* for unix random number smart connector job,
-:ref:`monitor <test_monitor_sweepjob>`  the job,
-and :ref:`view <test_view_sweepoutput>` the output of the job.
+Similar to our :ref:`previous test <test_randnumunix>`, we  test the newly registered smart connector. For this, you will :ref:`submit  <test_submit_sweepjob>` a *sweep* for unix random number smart connector job :ref:`monitor <test_monitor_sweepjob>`  the job, and :ref:`view <test_view_sweepoutput>` the output of the job.
 
 
 .. _test_submit_sweepjob:
@@ -291,8 +287,7 @@ Submit a sweep for unix random number smart connector job
 
 See :ref:`Job Submission <submit_job>` for details.
 
-**NB**: If you leave ``Values to sweep over`` field empty, only a single job will be created. In this case,  put
-  ``{"var": [1,2]}`` to create two jobs. See `Parameter Sweep <https://github.com/chiminey/chiminey/wiki/Types-of-Input-Form-Fields#sweep>`__ for details
+**NB**: If you leave ``Values to sweep over`` field empty, only a single job will be created. In this case,  put ``{"var": [1,2]}`` to create two jobs. See `Parameter Sweep <https://github.com/chiminey/chiminey/wiki/Types-of-Input-Form-Fields#sweep>`__ for details
 
 .. _test_monitor_sweepjob:
 
