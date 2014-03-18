@@ -43,7 +43,7 @@ class Command(BaseCommand):
             return
 
         directive = VASPInitial()
-        directive.define_directive('vasp_update', description='VASP', sweep=True)
+        directive.define_directive('vasp', description='VASP', sweep=True)
         print "done"
 
     def handle(self, *args, **options):

@@ -57,7 +57,7 @@ class CoreInitial(object):
     def get_updated_parent_params(self):
         return {}
 
-    def define_parent_stage(self):
+    def _define_parent_stage(self):
         default_params = self._get_default_parent_params()
         updated_params = self.get_updated_parent_params()
         self.update_default_stage_params(default_params, updated_params)
@@ -92,7 +92,7 @@ class CoreInitial(object):
     def get_updated_create_params(self):
         return {}
 
-    def define_create_stage(self):
+    def _define_create_stage(self):
         default_params = self._get_default_create_params()
         updated_params = self.get_updated_create_params()
         self.update_default_stage_params(default_params, updated_params)
@@ -100,7 +100,7 @@ class CoreInitial(object):
         create_stage, _ = models.Stage.objects.get_or_create(
             name=default_params['name'],
             description=default_params['description'],
-            parent=self.define_parent_stage(),
+            parent=self._define_parent_stage(),
             package=create_package,
             order=1)
         create_stage.update_settings(default_params['settings'])
@@ -122,7 +122,7 @@ class CoreInitial(object):
     def get_updated_configure_params(self):
         return {}
 
-    def define_configure_stage(self):
+    def _define_configure_stage(self):
         default_params = self._get_default_configure_params()
         updated_params = self.get_updated_configure_params()
         self.update_default_stage_params(default_params, updated_params)
@@ -130,7 +130,7 @@ class CoreInitial(object):
         configure_stage, _ = models.Stage.objects.get_or_create\
             (name=default_params['name'],
             description=default_params['description'],
-            parent=self.define_parent_stage(),
+            parent=self._define_parent_stage(),
             package=configure_package,
             order=0)
         configure_stage.update_settings(default_params['settings'])
@@ -157,7 +157,7 @@ class CoreInitial(object):
     def get_updated_bootstrap_params(self):
         return {}
 
-    def define_bootstrap_stage(self):
+    def _define_bootstrap_stage(self):
         default_params = self._get_default_bootstrap_params()
         updated_params = self.get_updated_bootstrap_params()
         self.update_default_stage_params(default_params, updated_params)
@@ -165,7 +165,7 @@ class CoreInitial(object):
         bootstrap_stage, _ = models.Stage.objects.get_or_create(
             name=default_params['name'],
             description=default_params['description'],
-            parent=self.define_parent_stage(),
+            parent=self._define_parent_stage(),
             package=bootstrap_package,
             order=20)
         bootstrap_stage.update_settings(default_params['settings'])
@@ -183,7 +183,7 @@ class CoreInitial(object):
     def get_updated_schedule_params(self):
         return {}
 
-    def define_schedule_stage(self):
+    def _define_schedule_stage(self):
         default_params = self._get_default_schedule_params()
         updated_params = self.get_updated_schedule_params()
         self.update_default_stage_params(default_params, updated_params)
@@ -191,7 +191,7 @@ class CoreInitial(object):
         schedule_stage, _ = models.Stage.objects.get_or_create(
             name=default_params['name'],
             description=default_params['description'],
-            parent=self.define_parent_stage(),
+            parent=self._define_parent_stage()(),
             package=schedule_package,
             order=25)
         schedule_stage.update_settings(default_params['settings'])
@@ -214,7 +214,7 @@ class CoreInitial(object):
     def get_updated_execute_params(self):
         return {}
 
-    def define_execute_stage(self):
+    def _define_execute_stage(self):
         default_params = self._get_default_execute_params()
         updated_params = self.get_updated_execute_params()
         self.update_default_stage_params(default_params, updated_params)
@@ -222,7 +222,7 @@ class CoreInitial(object):
         execute_stage, _ = models.Stage.objects.get_or_create(
             name=default_params['name'],
             description=default_params['description'],
-            parent=self.define_parent_stage(),
+            parent=self._define_parent_stage()(),
             package=execute_package,
             order=30)
         execute_stage.update_settings(default_params['settings'])
@@ -240,7 +240,7 @@ class CoreInitial(object):
     def get_updated_wait_params(self):
         return {}
 
-    def define_wait_stage(self):
+    def _define_wait_stage(self):
         default_params = self._get_default_wait_params()
         updated_params = self.get_updated_wait_params()
         self.update_default_stage_params(default_params, updated_params)
@@ -248,7 +248,7 @@ class CoreInitial(object):
         wait_stage, _ = models.Stage.objects.get_or_create(
             name=default_params['name'],
             description=default_params['description'],
-            parent=self.define_parent_stage(),
+            parent=self._define_parent_stage()(),
             package=wait_package,
             order=40)
         wait_stage.update_settings(default_params['settings'])
@@ -266,7 +266,7 @@ class CoreInitial(object):
     def get_updated_transform_params(self):
         return {}
 
-    def define_transform_stage(self):
+    def _define_transform_stage(self):
         default_params = self._get_default_transform_params()
         updated_params = self.get_updated_transform_params()
         self.update_default_stage_params(default_params, updated_params)
@@ -274,7 +274,7 @@ class CoreInitial(object):
         transform_stage, _ = models.Stage.objects.get_or_create(
             name=default_params['name'],
             description=default_params['description'],
-            parent=self.define_parent_stage(),
+            parent=self._define_parent_stage()(),
             package=transform_package,
             order=50)
         transform_stage.update_settings(default_params['settings'])
@@ -292,7 +292,7 @@ class CoreInitial(object):
     def get_updated_converge_params(self):
         return {}
 
-    def define_converge_stage(self):
+    def _define_converge_stage(self):
         default_params = self._get_default_converge_params()
         updated_params = self.get_updated_converge_params()
         self.update_default_stage_params(default_params, updated_params)
@@ -300,7 +300,7 @@ class CoreInitial(object):
         converge_stage, _ = models.Stage.objects.get_or_create(
             name=default_params['name'],
             description=default_params['description'],
-            parent=self.define_parent_stage(),
+            parent=self._define_parent_stage()(),
             package=converge_package,
             order=60)
         converge_stage.update_settings(default_params['settings'])
@@ -318,7 +318,7 @@ class CoreInitial(object):
     def get_updated_destroy_params(self):
         return {}
 
-    def define_destroy_stage(self):
+    def _define_destroy_stage(self):
         default_params = self._get_default_destroy_params()
         updated_params = self.get_updated_destroy_params()
         self.update_default_stage_params(default_params, updated_params)
@@ -326,7 +326,7 @@ class CoreInitial(object):
         destroy_stage, _ = models.Stage.objects.get_or_create(
             name=default_params['name'],
             description=default_params['description'],
-            parent=self.define_parent_stage(),
+            parent=self._define_parent_stage()(),
             package=destroy_package,
             order=70)
         destroy_stage.update_settings(default_params['settings'])
@@ -350,7 +350,7 @@ class CoreInitial(object):
     def get_updated_sweep_params(self, subdirective):
         return {}
 
-    def define_sweep_stage(self, subdirective):
+    def _define_sweep_stage(self, subdirective):
         default_params = self._get_default_sweep_params(subdirective)
         updated_params = self.get_updated_sweep_params(subdirective)
         self.update_default_stage_params(default_params, updated_params)
@@ -415,14 +415,14 @@ class CoreInitial(object):
         return ''
 
     def assemble_stages(self):
-        parent_stage = self.define_parent_stage()
-        self.define_configure_stage()
-        self.define_create_stage()
-        self.define_bootstrap_stage()
-        self.define_schedule_stage()
-        self.define_execute_stage()
-        self.define_wait_stage()
-        self.define_transform_stage()
-        self.define_converge_stage()
-        self.define_destroy_stage()
+        parent_stage = self._define_parent_stage()
+        self._define_configure_stage()
+        self._define_create_stage()
+        self._define_bootstrap_stage()
+        self._define_schedule_stage()
+        self._define_execute_stage()
+        self._define_wait_stage()
+        self._define_transform_stage()
+        self._define_converge_stage()
+        self._define_destroy_stage()
         return parent_stage
