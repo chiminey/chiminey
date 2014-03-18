@@ -51,7 +51,7 @@ The customised execute stage, i.e., ``RandExecute``, is available at ``chiminey/
 
 1. ``RandExecute`` subclasses the core execute stage ``Execute``, which is located at ``chiminey/corestages/execute.py``. ``RandExecute`` overwrites ``def run_task(self, ....)`` to include the code that generates the random numbers (NB: ``def run_task(self, ....)`` does nothing by default)
 
-2. Here is the code that generates two random numbers: ``python -c 'import random; print random.random()'``
+2. Here is the code that generates two random numbers: ``python -c 'import random; print random.random();  print random.random()'``
 
 3. Chimney  expects the output of a computation to be in a specific location.  Therefore, ``get_process_output_path(...)`` is used to retrieve the path to which the output of your computation should be sent. For this example, this path is not create automatically by Chiminey, therefore must be created prior to generating random numbers.
 
@@ -70,7 +70,7 @@ Below is the content of the ``RandExecute`` class:
             output_path = self.get_process_output_path(
                 run_settings, process_id, connection_settings)
             command = "mkdir -p %s; cd %s ; python -c 'import random;"\
-                "print random.random()' > %s" \
+                "print random.random();  print random.random()' > %s" \
                 % (output_path, output_path, filename)
             output, err = run_command(command, ip_address,connection_settings)
 
