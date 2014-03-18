@@ -382,7 +382,7 @@ class CoreInitial(object):
 
 
     def define_sweep_directive(self, subdirective, description):
-        sweep_stage = self.define_sweep_stage(subdirective)
+        sweep_stage = self._define_sweep_stage(subdirective)
         sweep_directive_name = "sweep_%s" % subdirective.name
         sweep_directive, _ = models.Directive.objects.get_or_create(
             name=sweep_directive_name,
