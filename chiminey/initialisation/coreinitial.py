@@ -191,7 +191,7 @@ class CoreInitial(object):
         schedule_stage, _ = models.Stage.objects.get_or_create(
             name=default_params['name'],
             description=default_params['description'],
-            parent=self._define_parent_stage()(),
+            parent=self._define_parent_stage(),
             package=schedule_package,
             order=25)
         schedule_stage.update_settings(default_params['settings'])
@@ -222,7 +222,7 @@ class CoreInitial(object):
         execute_stage, _ = models.Stage.objects.get_or_create(
             name=default_params['name'],
             description=default_params['description'],
-            parent=self._define_parent_stage()(),
+            parent=self._define_parent_stage(),
             package=execute_package,
             order=30)
         execute_stage.update_settings(default_params['settings'])
@@ -248,7 +248,7 @@ class CoreInitial(object):
         wait_stage, _ = models.Stage.objects.get_or_create(
             name=default_params['name'],
             description=default_params['description'],
-            parent=self._define_parent_stage()(),
+            parent=self._define_parent_stage(),
             package=wait_package,
             order=40)
         wait_stage.update_settings(default_params['settings'])
@@ -274,7 +274,7 @@ class CoreInitial(object):
         transform_stage, _ = models.Stage.objects.get_or_create(
             name=default_params['name'],
             description=default_params['description'],
-            parent=self._define_parent_stage()(),
+            parent=self._define_parent_stage(),
             package=transform_package,
             order=50)
         transform_stage.update_settings(default_params['settings'])
@@ -300,7 +300,7 @@ class CoreInitial(object):
         converge_stage, _ = models.Stage.objects.get_or_create(
             name=default_params['name'],
             description=default_params['description'],
-            parent=self._define_parent_stage()(),
+            parent=self._define_parent_stage(),
             package=converge_package,
             order=60)
         converge_stage.update_settings(default_params['settings'])
@@ -326,7 +326,7 @@ class CoreInitial(object):
         destroy_stage, _ = models.Stage.objects.get_or_create(
             name=default_params['name'],
             description=default_params['description'],
-            parent=self._define_parent_stage()(),
+            parent=self._define_parent_stage(),
             package=destroy_package,
             order=70)
         destroy_stage.update_settings(default_params['settings'])
