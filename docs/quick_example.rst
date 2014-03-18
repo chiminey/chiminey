@@ -277,7 +277,7 @@ connector <register_smart_conn>`.
 Testing the Sweep Unix Random Number Smart Connector
 """"""""""""""""""""""""""""""""""""""""""""""""""""
 
-Similar to our :ref:`previous test <test_randnumunix>`, we  test the newly registered smart connector. For this, you will :ref:`submit  <test_submit_sweepjob>` a *sweep* for unix random number smart connector job :ref:`monitor <test_monitor_sweepjob>`  the job, and :ref:`view <test_view_sweepoutput>` the output of the job.
+Similar to our :ref:`previous test <test_randnumunix>`, we  test the newly registered smart connector. For this, you will :ref:`submit  <test_submit_sweepjob>` a *sweep* for unix random number smart connector job, :ref:`monitor <test_monitor_sweepjob>`  the job, and :ref:`view <test_view_sweepoutput>` the output of the job.
 
 
 .. _test_submit_sweepjob:
