@@ -306,7 +306,7 @@ See :ref:`Job Monitoring <monitor_job>` for details.
     :alt: The unix random number smart connector job is completed
     :figclass: align-center
 
-    Figure. The unix random number smart connector job is completed
+    Figure. Monitoring a sweep job (two unix random number smart connectors)
 
 
 .. _test_view_sweepoutput:
