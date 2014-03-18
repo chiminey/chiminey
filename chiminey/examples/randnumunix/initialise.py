@@ -20,32 +20,16 @@
 
 
 import logging
-from chiminey.smartconnectorscheduler import models
 from chiminey.initialisation import CoreInitial
 
 logger = logging.getLogger(__name__)
 
-MESSAGE = "This will add a new directive to the catalogue of available connectors.  Are you sure [Yes/No]?"
 
 
 class RandInitial(CoreInitial):
-    def define_execute_stage(self):
-        '''
-        overwrites the core execute stage definition
-        '''
-        execute_package = "chiminey.examples.randnumunix.randexecute.RandExecute"
-        execute_stage, _ = models.Stage.objects.get_or_create(
-            name="randexecute",
-            package=execute_package,
-            parent=self.define_parent_stage(),
-            defaults={'description': "This is the rand execute stage", 'order': 11})
-        execute_stage.update_settings(
-            {
-            u'http://rmit.edu.au/schemas/stages/run':
-                {
-                    u'process_output_dirname': 'chiminey',
-                },
-            })
+
+    def get_updated_execute_params(self):
+        return {'package': "chiminey.examples.randnumunix.randexecute.RandExecute"}
 
     def get_ui_schema_namespace(self):
         RMIT_SCHEMA = "http://rmit.edu.au/schemas"
@@ -54,3 +38,4 @@ class RandInitial(CoreInitial):
                 RMIT_SCHEMA + "/input/location/output",
                 ]
         return schemas
+

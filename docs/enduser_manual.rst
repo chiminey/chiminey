@@ -269,6 +269,7 @@ Once a job is submitted, the end-user can monitor the status of the job.
 1. Submit a job (see :ref:`submit_job`)
 2. Click ``Jobs``. A job status summary of all jobs will be displayed. The most recently submitted job is displayed at the top.
 3. Click ``Info`` button next to each job to view a detailed status report.
+4. A job is completed when the ``Iteration:Current`` column of ``Jobs`` page displays  ``x: finished``, where ``x`` is the last iteration number.
 
 
 .. figure:: img/enduser_manual/monitor.png

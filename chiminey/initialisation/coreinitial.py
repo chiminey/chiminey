@@ -110,20 +110,51 @@ class CoreInitial(object):
             order=25)
         return schedule_stage
 
+    def get_updated_execute_params(self):
+        return {}
+
+    def _get_default_execute_params(self):
+        package = "chiminey.corestages.execute.Execute"
+        name = 'execute'
+        description = "This is the execute stage"
+        settings = {u'http://rmit.edu.au/schemas/stages/run':
+                    {
+                        u'process_output_dirname': 'chiminey',
+                    },
+                   }
+        params = {'package': package, 'name': name,
+                  'description': description, 'settings': settings}
+        return params
+
+    def update_default_stage_params(self, default_params, updated={}):
+        if updated:
+            for k in default_params.keys():
+                try:
+                    default_params[k] = updated[k]
+                    print("k=%s, v=%s" % (k, default_params[k]))
+                except KeyError:
+                    pass
+        return default_params
+
     def define_execute_stage(self):
-        execute_package = "chiminey.corestages.execute.Execute"
-        execute_stage, _ = models.Stage.objects.get_or_create(name="execute",
-            description="This is the core execute stage",
+        default_params = self._get_default_execute_params()
+        updated_params = self.get_updated_execute_params()
+        self.update_default_stage_params(default_params, updated_params)
+        #execute_package = "chiminey.corestages.execute.Execute"
+        execute_package = default_params['package']
+        execute_stage, _ = models.Stage.objects.get_or_create(name=default_params['name'], # "execute",
+            description=default_params['description'], # "This is the core execute stage",
             parent=self.define_parent_stage(),
             package=execute_package,
             order=30)
-        execute_stage.update_settings(
-            {
-            u'http://rmit.edu.au/schemas/stages/run':
-                {
-                    u'process_output_dirname': 'chiminey',
-                },
-            })
+        execute_stage.update_settings(default_params['settings'])
+
+           # {
+           # u'http://rmit.edu.au/schemas/stages/run':
+           #     {
+           #         u'process_output_dirname': 'chiminey',
+           #     },
+           # })
         return execute_stage
 
     def define_wait_stage(self):

@@ -19,12 +19,8 @@
 # IN THE SOFTWARE.
 
 
-import logging
 from django.core.management.base import BaseCommand
-from chiminey.smartconnectorscheduler import models
 from chiminey.examples.randnumunix.initialise import RandInitial
-
-logger = logging.getLogger(__name__)
 
 MESSAGE = "This will add a new directive to the catalogue of available connectors.  Are you sure [Yes/No]?"
 

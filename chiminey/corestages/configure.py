@@ -82,8 +82,12 @@ class Configure(Stage):
                     bdp_url = getval(run_settings, RMIT_SCHEMA + '/input/system/output_location')
                     logger.debug('bdp_url=%s' % bdp_url)
                 except SettingNotFoundException:
-                    bdp_url = getval(run_settings, RMIT_SCHEMA + '/input/location/output_location')
-                    logger.debug('bdp_url=%s' % bdp_url)
+                    try:
+                        bdp_url = getval(run_settings, RMIT_SCHEMA + '/input/location/output_location')
+                        logger.debug('bdp_url=%s' % bdp_url)
+                    except SettingNotFoundException:
+                        bdp_url = getval(run_settings, RMIT_SCHEMA + '/input/location/output/output_location')
+                        logger.debug('bdp_url=%s' % bdp_url)
                 self.output_platform_name, self.output_platform_offset = self.break_bdp_url(bdp_url)
                 run_settings[RMIT_SCHEMA + '/platform/storage/output'] = {}
                 run_settings[RMIT_SCHEMA + '/platform/storage/output'][
@@ -170,7 +174,10 @@ class Configure(Stage):
         self.output_loc_offset = self.get_results_dirname(run_settings)
         logger.debug('self.output_loc_offset=%s' % self.output_loc_offset)
         if self.input_exists(run_settings):
+            logger.debug('copy to scratch')
             self.copy_to_scratch_space(run_settings, local_settings)
+        else:
+            logger.debug('not copy to scratch')
         '''
         run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset'] = self.output_loc_offset
         offset = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset']
