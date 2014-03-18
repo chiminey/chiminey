@@ -18,16 +18,12 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import logging
+
 from chiminey.initialisation import CoreInitial
 
-logger = logging.getLogger(__name__)
-
 class RandNumCloudInitial(CoreInitial):
-    def define_bootstrap_stage(self):
-        bootstrap_stage = super(RandNumCloudInitial, self).define_bootstrap_stage()
-        bootstrap_stage.update_settings(
-            {
+    def get_updated_bootstrap_params(self):
+        settings = {
                 u'http://rmit.edu.au/schemas/stages/setup':
                     {
                         u'payload_source': 'local/payload_randnum',
@@ -35,8 +31,8 @@ class RandNumCloudInitial(CoreInitial):
                         u'payload_name': 'process_payload',
                         u'filename_for_PIDs': 'PIDs_collections',
                     },
-            })
-        return bootstrap_stage
+            }
+        return {'settings': settings}
 
     def get_ui_schema_namespace(self):
         RMIT_SCHEMA = "http://rmit.edu.au/schemas"

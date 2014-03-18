@@ -26,19 +26,11 @@ from chiminey.smartconnectorscheduler import models
 logger = logging.getLogger(__name__)
 
 class RandNumInternaSweepInitial(CoreInitial):
-    def define_parent_stage(self):
-        parent_package = "chiminey.examples.randnuminternalsweep.randparent.RandParent"
-        parent_stage, _ = models.Stage.objects.get_or_create(name=self.get_parent_name(),
-            description="This is the RandNum parent stage",
-            package=parent_package,
-            order=100)
-        parent_stage.update_settings({})
-        return parent_stage
+    def get_updated_parent_params(self):
+        return {'package': "chiminey.examples.randnuminternalsweep.randparent.RandParent"}
 
-    def define_bootstrap_stage(self):
-        bootstrap_stage = super(RandNumInternaSweepInitial, self).define_bootstrap_stage()
-        bootstrap_stage.update_settings(
-            {
+    def get_updated_bootstrap_params(self):
+        settings = {
                 u'http://rmit.edu.au/schemas/stages/setup':
                     {
                         u'payload_source': 'local/payload_randnum',
@@ -46,8 +38,8 @@ class RandNumInternaSweepInitial(CoreInitial):
                         u'payload_name': 'process_payload',
                         u'filename_for_PIDs': 'PIDs_collections',
                     },
-            })
-        return bootstrap_stage
+            }
+        return {'settings': settings}
 
     def get_ui_schema_namespace(self):
         RMIT_SCHEMA = "http://rmit.edu.au/schemas"

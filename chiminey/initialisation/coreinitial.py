@@ -35,23 +35,46 @@ class CoreInitial(object):
     def get_parent_name(self):
         return "%s_connector" % self.directive_name
 
+    def update_default_stage_params(self, default_params, updated={}):
+        if updated:
+            for k in default_params.keys():
+                try:
+                    default_params[k] = updated[k]
+                    print("k=%s, v=%s" % (k, default_params[k]))
+                except KeyError:
+                    pass
+        return default_params
+
+    def _get_default_parent_params(self):
+        package = "chiminey.corestages.parent.Parent"
+        name = self.get_parent_name()
+        description = "This is the  parent stage"
+        settings = {}
+        params = {'package': package, 'name': name,
+                  'description': description, 'settings': settings}
+        return params
+
+    def get_updated_parent_params(self):
+        return {}
+
     def define_parent_stage(self):
-        parent = "chiminey.corestages.parent.Parent"
+        default_params = self._get_default_parent_params()
+        updated_params = self.get_updated_parent_params()
+        self.update_default_stage_params(default_params, updated_params)
+        parent = default_params['package']
         parent_stage, _ = models.Stage.objects.get_or_create(
-            name=self.get_parent_name(),
-            description="This is the core parent stage",
+            name=default_params['name'],
+            description=default_params['description'],
             package=parent,
             order=0)
+        parent_stage.update_settings(default_params['settings'])
         return parent_stage
 
-    def define_create_stage(self):
-        create_package = "chiminey.corestages.create.Create"
-        create_stage, _ = models.Stage.objects.get_or_create(name="create",
-            description="This is the core create stage",
-            parent=self.define_parent_stage(),
-            package=create_package,
-            order=1)
-        create_stage.update_settings({u'http://rmit.edu.au/schemas/stages/create':
+    def _get_default_create_params(self):
+        package = "chiminey.corestages.create.Create"
+        name = "create"
+        description = "This is the create stage"
+        settings = {u'http://rmit.edu.au/schemas/stages/create':
                 {
                     u'vm_size': "m1.small",
                     u'vm_image': "ami-0000000d",
@@ -61,34 +84,63 @@ class CoreInitial(object):
                     u'custom_prompt': '[smart-connector_prompt]$',
                     u'nectar_username': 'root',
                     u'nectar_password': ''
-                }})
+                }}
+        params = {'package': package, 'name': name,
+                  'description': description, 'settings': settings}
+        return params
+
+    def get_updated_create_params(self):
+        return {}
+
+    def define_create_stage(self):
+        default_params = self._get_default_create_params()
+        updated_params = self.get_updated_create_params()
+        self.update_default_stage_params(default_params, updated_params)
+        create_package = default_params['package']
+        create_stage, _ = models.Stage.objects.get_or_create(
+            name=default_params['name'],
+            description=default_params['description'],
+            parent=self.define_parent_stage(),
+            package=create_package,
+            order=1)
+        create_stage.update_settings(default_params['settings'])
         return create_stage
 
+    def _get_default_configure_params(self):
+        package = "chiminey.corestages.configure.Configure"
+        name = "configure"
+        description = "This is the configure stage"
+        settings = {u'http://rmit.edu.au/schemas/system':
+                    {
+                    u'random_numbers': 'file://127.0.0.1/randomnums.txt'
+                    },
+                 }
+        params = {'package': package, 'name': name,
+                  'description': description, 'settings': settings}
+        return params
+
+    def get_updated_configure_params(self):
+        return {}
+
     def define_configure_stage(self):
-        configure_package = "chiminey.corestages.configure.Configure"
+        default_params = self._get_default_configure_params()
+        updated_params = self.get_updated_configure_params()
+        self.update_default_stage_params(default_params, updated_params)
+        configure_package = default_params['package']
         configure_stage, _ = models.Stage.objects.get_or_create\
-            (name="configure",
-            description="This is the core configure stage",
+            (name=default_params['name'],
+            description=default_params['description'],
             parent=self.define_parent_stage(),
             package=configure_package,
             order=0)
-        configure_stage.update_settings({
-            u'http://rmit.edu.au/schemas/system':
-                {
-                    u'random_numbers': 'file://127.0.0.1/randomnums.txt'
-                },
-        })
+        configure_stage.update_settings(default_params['settings'])
         return configure_stage
 
-    def define_bootstrap_stage(self):
-        bootstrap_package = "chiminey.corestages.bootstrap.Bootstrap"
-        bootstrap_stage, _ = models.Stage.objects.get_or_create(
-            name="bootstrap",
-            description="This is the core bootstrap stage",
-            parent=self.define_parent_stage(),
-            package=bootstrap_package,
-            order=20)
-        bootstrap_stage.update_settings(
+    def _get_default_bootstrap_params(self):
+        package = "chiminey.corestages.bootstrap.Bootstrap"
+        name = "bootstrap"
+        description = "This is the bootstrap stage"
+        settings = \
             {
                 u'http://rmit.edu.au/schemas/stages/setup':
                     {
@@ -97,21 +149,54 @@ class CoreInitial(object):
                         u'payload_name': 'process_payload',
                         u'filename_for_PIDs': 'PIDs_collections',
                     },
-            })
+            }
+        params = {'package': package, 'name': name,
+                  'description': description, 'settings': settings}
+        return params
+
+    def get_updated_bootstrap_params(self):
+        return {}
+
+    def define_bootstrap_stage(self):
+        default_params = self._get_default_bootstrap_params()
+        updated_params = self.get_updated_bootstrap_params()
+        self.update_default_stage_params(default_params, updated_params)
+        bootstrap_package = default_params['package']
+        bootstrap_stage, _ = models.Stage.objects.get_or_create(
+            name=default_params['name'],
+            description=default_params['description'],
+            parent=self.define_parent_stage(),
+            package=bootstrap_package,
+            order=20)
+        bootstrap_stage.update_settings(default_params['settings'])
         return bootstrap_stage
 
+    def _get_default_schedule_params(self):
+        package = "chiminey.corestages.schedule.Schedule"
+        name = "schedule"
+        description = "This is the schedule stage"
+        settings = {}
+        params = {'package': package, 'name': name,
+                  'description': description, 'settings': settings}
+        return params
+
+    def get_updated_schedule_params(self):
+        return {}
+
     def define_schedule_stage(self):
-        schedule_package = "chiminey.corestages.schedule.Schedule"
+        default_params = self._get_default_schedule_params()
+        updated_params = self.get_updated_schedule_params()
+        self.update_default_stage_params(default_params, updated_params)
+        schedule_package = default_params['package']
         schedule_stage, _ = models.Stage.objects.get_or_create(
-            name="schedule",
-            description="This is schedule stage of this smart connector",
+            name=default_params['name'],
+            description=default_params['description'],
             parent=self.define_parent_stage(),
             package=schedule_package,
             order=25)
+        schedule_stage.update_settings(default_params['settings'])
         return schedule_stage
 
-    def get_updated_execute_params(self):
-        return {}
 
     def _get_default_execute_params(self):
         package = "chiminey.corestages.execute.Execute"
@@ -126,90 +211,155 @@ class CoreInitial(object):
                   'description': description, 'settings': settings}
         return params
 
-    def update_default_stage_params(self, default_params, updated={}):
-        if updated:
-            for k in default_params.keys():
-                try:
-                    default_params[k] = updated[k]
-                    print("k=%s, v=%s" % (k, default_params[k]))
-                except KeyError:
-                    pass
-        return default_params
+    def get_updated_execute_params(self):
+        return {}
 
     def define_execute_stage(self):
         default_params = self._get_default_execute_params()
         updated_params = self.get_updated_execute_params()
         self.update_default_stage_params(default_params, updated_params)
-        #execute_package = "chiminey.corestages.execute.Execute"
         execute_package = default_params['package']
-        execute_stage, _ = models.Stage.objects.get_or_create(name=default_params['name'], # "execute",
-            description=default_params['description'], # "This is the core execute stage",
+        execute_stage, _ = models.Stage.objects.get_or_create(
+            name=default_params['name'],
+            description=default_params['description'],
             parent=self.define_parent_stage(),
             package=execute_package,
             order=30)
         execute_stage.update_settings(default_params['settings'])
-
-           # {
-           # u'http://rmit.edu.au/schemas/stages/run':
-           #     {
-           #         u'process_output_dirname': 'chiminey',
-           #     },
-           # })
         return execute_stage
 
+    def _get_default_wait_params(self):
+        package = "chiminey.corestages.wait.Wait"
+        name = "wait"
+        description = "This is the wait stage"
+        settings = {}
+        params = {'package': package, 'name': name,
+                  'description': description, 'settings': settings}
+        return params
+
+    def get_updated_wait_params(self):
+        return {}
+
     def define_wait_stage(self):
-        wait_package = "chiminey.corestages.wait.Wait"
+        default_params = self._get_default_wait_params()
+        updated_params = self.get_updated_wait_params()
+        self.update_default_stage_params(default_params, updated_params)
+        wait_package = default_params['package']
         wait_stage, _ = models.Stage.objects.get_or_create(
-            name="wait",
-            description="This is the core wait stage",
+            name=default_params['name'],
+            description=default_params['description'],
             parent=self.define_parent_stage(),
             package=wait_package,
             order=40)
-        wait_stage.update_settings({})
+        wait_stage.update_settings(default_params['settings'])
         return wait_stage
 
+    def _get_default_transform_params(self):
+        package = "chiminey.corestages.transform.Transform"
+        name = "transform"
+        description = "This is the transform stage"
+        settings = {}
+        params = {'package': package, 'name': name,
+                  'description': description, 'settings': settings}
+        return params
+
+    def get_updated_transform_params(self):
+        return {}
+
     def define_transform_stage(self):
-        transform_package = "chiminey.corestages.transform.Transform"
-        transform_stage, _ = models.Stage.objects.get_or_create(name="transform",
-            description="This is the core transform stage",
+        default_params = self._get_default_transform_params()
+        updated_params = self.get_updated_transform_params()
+        self.update_default_stage_params(default_params, updated_params)
+        transform_package = default_params['package']
+        transform_stage, _ = models.Stage.objects.get_or_create(
+            name=default_params['name'],
+            description=default_params['description'],
             parent=self.define_parent_stage(),
             package=transform_package,
             order=50)
-        transform_stage.update_settings({})
+        transform_stage.update_settings(default_params['settings'])
         return transform_stage
 
+    def _get_default_converge_params(self):
+        package = "chiminey.corestages.converge.Converge"
+        name = "converge"
+        description = "This is the converge stage"
+        settings = {}
+        params = {'package': package, 'name': name,
+                  'description': description, 'settings': settings}
+        return params
+
+    def get_updated_converge_params(self):
+        return {}
+
     def define_converge_stage(self):
-        converge_package = "chiminey.corestages.converge.Converge"
-        converge_stage, _ = models.Stage.objects.get_or_create(name="converge",
-            description="This is the core converge stage",
+        default_params = self._get_default_converge_params()
+        updated_params = self.get_updated_converge_params()
+        self.update_default_stage_params(default_params, updated_params)
+        converge_package = default_params['package']
+        converge_stage, _ = models.Stage.objects.get_or_create(
+            name=default_params['name'],
+            description=default_params['description'],
             parent=self.define_parent_stage(),
             package=converge_package,
             order=60)
-        converge_stage.update_settings({})
+        converge_stage.update_settings(default_params['settings'])
         return converge_stage
 
+    def _get_default_destroy_params(self):
+        package = "chiminey.corestages.destroy.Destroy"
+        name = "destroy"
+        description = "This is the destroy stage"
+        settings = {}
+        params = {'package': package, 'name': name,
+                  'description': description, 'settings': settings}
+        return params
+
+    def get_updated_destroy_params(self):
+        return {}
+
     def define_destroy_stage(self):
-        destroy_package = "chiminey.corestages.destroy.Destroy"
+        default_params = self._get_default_destroy_params()
+        updated_params = self.get_updated_destroy_params()
+        self.update_default_stage_params(default_params, updated_params)
+        destroy_package = default_params['package']
         destroy_stage, _ = models.Stage.objects.get_or_create(
-            name="destroy",
-            description="This is core destroy stage",
+            name=default_params['name'],
+            description=default_params['description'],
             parent=self.define_parent_stage(),
             package=destroy_package,
             order=70)
-        destroy_stage.update_settings({})
+        destroy_stage.update_settings(default_params['settings'])
         return destroy_stage
 
-    def define_sweep_stage(self, subdirective):
-        sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep_%s" % subdirective.name,
-            description="This is the sweep stage of %s smart connector" % subdirective.name,
-            package="chiminey.corestages.sweep.Sweep",
-            order=100)
-        sweep_stage.update_settings({
+    def _get_default_sweep_params(self, subdirective):
+        package = "chiminey.corestages.sweep.Sweep"
+        name = "sweep_%s" % subdirective.name
+        description = "This is the sweep stage of %s smart connector" % subdirective.name
+        settings = \
+            {
             u'http://rmit.edu.au/schemas/stages/sweep':
             {
                 u'directive': subdirective.name
             }
-            })
+            }
+        params = {'package': package, 'name': name,
+                  'description': description, 'settings': settings}
+        return params
+
+    def get_updated_sweep_params(self, subdirective):
+        return {}
+
+    def define_sweep_stage(self, subdirective):
+        default_params = self._get_default_sweep_params(subdirective)
+        updated_params = self.get_updated_sweep_params(subdirective)
+        self.update_default_stage_params(default_params, updated_params)
+        sweep_stage, _ = models.Stage.objects.get_or_create(
+            name=default_params['name'],
+            description=default_params['description'],
+            package=default_params['package'],
+            order=100)
+        sweep_stage.update_settings(default_params['settings'])
         return sweep_stage
 
     def define_directive(self, directive_name, description='', sweep=False):

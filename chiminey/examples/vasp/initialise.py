@@ -26,39 +26,29 @@ logger = logging.getLogger(__name__)
 
 
 class VASPInitial(CoreInitial):
-    def define_bootstrap_stage(self):
-        bootstrap_stage = super(VASPInitial, self).define_bootstrap_stage()
-        bootstrap_stage.update_settings(
+    def get_updated_bootstrap_params(self):
+        settings =  \
             {
                 u'http://rmit.edu.au/schemas/stages/setup':
                     {
                         u'payload_source': 'local/payload_vasp',
                         u'payload_destination': 'chiminey_demo',
                     },
-            })
-        return bootstrap_stage
+            }
+        return {'settings': settings}
 
-    def define_execute_stage(self):
-        execute_stage = super(VASPInitial, self).define_execute_stage()
-
-        execute_stage.update_settings(
+    def get_updated_execute_params(self):
+        settings = \
             {
             u'http://rmit.edu.au/schemas/stages/run':
                 {
                     u'process_output_dirname': 'vasp',
                 },
-            })
-        return execute_stage
+            }
+        return {'settings': settings}
 
-    def define_transform_stage(self):
-        transform_package = "chiminey.examples.vasp.vasptransform.VASPTransform"
-        transform_stage, _ = models.Stage.objects.get_or_create(name="vasptransform",
-            description="This is the transform stage of VASP",
-            parent=self.define_parent_stage(),
-            package=transform_package,
-            order=50)
-        transform_stage.update_settings({})
-        return transform_stage
+    def get_updated_transform_params(self):
+        return {'package': "chiminey.examples.vasp.vasptransform.VASPTransform"}
 
     def get_ui_schema_namespace(self):
         RMIT_SCHEMA = "http://rmit.edu.au/schemas"
@@ -95,19 +85,15 @@ class VASPInitial(CoreInitial):
         }
         return schema_data
 
-    def define_sweep_stage(self, subdirective):
-        sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep_%s" % subdirective.name,
-            description="Sweep for %s" % subdirective.name,
-            package="chiminey.examples.vasp.vaspsweep.VASPSweep",
-            order=100)
-        sweep_stage.update_settings(
-                                    {
+    def get_updated_sweep_params(self, subdirective):
+        package = "chiminey.examples.vasp.vaspsweep.VASPSweep"
+        settings = {
             u'http://rmit.edu.au/schemas/stages/sweep':
             {
                 u'template_name': 'VASP.inp',  # FIXME: probably don't need this
                 u'directive': 'vasp'
 
             },
-            })
-        return sweep_stage
+            }
+        return {'package': package, 'settings': settings}
 

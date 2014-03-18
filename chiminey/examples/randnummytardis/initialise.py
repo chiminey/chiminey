@@ -18,34 +18,22 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import logging
+
 from chiminey.initialisation import CoreInitial
-from chiminey.smartconnectorscheduler import models
-
-
-logger = logging.getLogger(__name__)
 
 class RandNumMyTardisInitial(CoreInitial):
-    def define_configure_stage(self):
-        configure_package = "chiminey.examples.randnummytardis.randconfigure.RandConfigure"
-        configure_stage, _ = models.Stage.objects.get_or_create(
-            name="rand2configure",
-            description="This is the RandNum configure stage",
-            parent=self.define_parent_stage(),
-            package=configure_package,
-            order=0)
-        configure_stage.update_settings({
+    def get_updated_configure_params(self):
+        package = "chiminey.examples.randnummytardis.randconfigure.RandConfigure"
+        settings = {
             u'http://rmit.edu.au/schemas/system':
                 {
                     u'random_numbers': 'file://127.0.0.1/randomnums.txt'
                 },
-        })
-        return configure_stage
+        }
+        return {'package': package, 'settings': settings}
 
-    def define_bootstrap_stage(self):
-        bootstrap_stage = super(RandNumMyTardisInitial, self).define_bootstrap_stage()
-        bootstrap_stage.update_settings(
-            {
+    def get_updated_bootstrap_params(self):
+        settings = {
                 u'http://rmit.edu.au/schemas/stages/setup':
                     {
                         u'payload_source': 'local/payload_randnum',
@@ -53,19 +41,11 @@ class RandNumMyTardisInitial(CoreInitial):
                         u'payload_name': 'process_payload',
                         u'filename_for_PIDs': 'PIDs_collections',
                     },
-            })
-        return bootstrap_stage
+            }
+        return {'settings': settings}
 
-    def define_transform_stage(self):
-        transform_package = "chiminey.examples.randnummytardis.randtransform.RandTransform"
-        transform_stage, _ = models.Stage.objects.get_or_create(name="rand2transform",
-            description="This is the RandNum transform stage",
-            parent=self.define_parent_stage(),
-            package=transform_package,
-            order=50)
-        transform_stage.update_settings({})
-        return transform_stage
-
+    def get_updated_transform_params(self):
+        return {'package': "chiminey.examples.randnummytardis.randtransform.RandTransform"}
 
     def get_ui_schema_namespace(self):
         RMIT_SCHEMA = "http://rmit.edu.au/schemas"

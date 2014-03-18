@@ -46,7 +46,7 @@ class Command(BaseCommand):
 
         directive = RandNumInternaSweepInitial()
         directive.define_directive(
-            'random_number_internal_sweep', description='RandNum Internal Sweep Smart Connector')
+            'randnum_internal_sweep', description='RandNum Internal Sweep')
         print "done"
 
 

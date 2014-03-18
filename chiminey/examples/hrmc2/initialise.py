@@ -26,34 +26,22 @@ logger = logging.getLogger(__name__)
 
 
 class HRMCInitial(CoreInitial):
-    def define_parent_stage(self):
-        hrmc_parallel_package = "chiminey.examples.hrmc2.hrmcparent.HRMCParent"
-        hrmc_composite_stage, _ = models.Stage.objects.get_or_create(name=self.get_parent_name(),
-            description="Encapsultes HRMC smart connector workflow",
-            package=hrmc_parallel_package,
-            order=100)
-        hrmc_composite_stage.update_settings({})
-        return hrmc_composite_stage
+    def get_updated_parent_params(self):
+        return {'package': "chiminey.examples.hrmc2.hrmcparent.HRMCParent"}
 
-    def define_configure_stage(self):
-        configure_package = "chiminey.examples.hrmc2.hrmcconfigure.HRMCConfigure"
-        configure_stage, _ = models.Stage.objects.get_or_create(
-            name="hrmcconfigure",
-            description="This is the HRMC configure stage",
-            parent=self.define_parent_stage(),
-            package=configure_package,
-            order=0)
-        configure_stage.update_settings({
+    def get_updated_configure_params(self):
+        package = "chiminey.examples.hrmc2.hrmcconfigure.HRMCConfigure"
+        settings = \
+            {
             u'http://rmit.edu.au/schemas/system':
                 {
                     u'random_numbers': 'local/randomnums.txt'
                 },
-        })
-        return configure_stage
+        }
+        return {'package': package, 'settings': settings}
 
-    def define_bootstrap_stage(self):
-        bootstrap_stage = super(HRMCInitial, self).define_bootstrap_stage()
-        bootstrap_stage.update_settings(
+    def get_updated_bootstrap_params(self):
+        settings = \
             {
                 u'http://rmit.edu.au/schemas/stages/setup':
                     {
@@ -62,44 +50,25 @@ class HRMCInitial(CoreInitial):
                         u'payload_name': 'process_payload',
                         u'filename_for_PIDs': 'PIDs_collections',
                     },
-            })
-        return bootstrap_stage
+            }
+        return {'settings': settings}
 
-    def define_execute_stage(self):
-        execute_package = "chiminey.examples.hrmc2.hrmcexecute.HRMCExecute"
-        execute_stage, _ = models.Stage.objects.get_or_create(name="hrmcexecute",
-            description="This is the HRMC execute stage",
-            parent=self.define_parent_stage(),
-            package=execute_package,
-            order=30)
-        execute_stage.update_settings(
+    def get_updated_execute_params(self):
+        package = "chiminey.examples.hrmc2.hrmcexecute.HRMCExecute"
+        settings = \
             {
             u'http://rmit.edu.au/schemas/stages/run':
                 {
                     u'process_output_dirname': 'HRMC2',
                 },
-            })
-        return execute_stage
+            }
+        return {'package': package, 'settings': settings}
 
-    def define_transform_stage(self):
-        transform_package = "chiminey.examples.hrmc2.hrmctransform.HRMCTransform"
-        transform_stage, _ = models.Stage.objects.get_or_create(name="hrmctransform",
-            description="This is the transform stage of HRMC",
-            parent=self.define_parent_stage(),
-            package=transform_package,
-            order=50)
-        transform_stage.update_settings({})
-        return transform_stage
+    def get_updated_transform_params(self):
+        return {'package': "chiminey.examples.hrmc2.hrmctransform.HRMCTransform"}
 
-    def define_converge_stage(self):
-        converge_package = "chiminey.examples.hrmc2.hrmcconverge.HRMCConverge"
-        converge_stage, _ = models.Stage.objects.get_or_create(name="hrmcconverge",
-            description="This is the converge stage of HRMC",
-            parent=self.define_parent_stage(),
-            package=converge_package,
-            order=60)
-        converge_stage.update_settings({})
-        return converge_stage
+    def get_updated_converge_params(self):
+        return {'package': "chiminey.examples.hrmc2.hrmcconverge.HRMCConverge"}
 
     def get_ui_schema_namespace(self):
         RMIT_SCHEMA = "http://rmit.edu.au/schemas"
@@ -148,13 +117,9 @@ class HRMCInitial(CoreInitial):
         }
         return schema_data
 
-    def define_sweep_stage(self, subdirective):
-        sweep_stage, _ = models.Stage.objects.get_or_create(name="sweep_%s" % subdirective.name,
-            description="Sweep for %s" % subdirective.name,
-            package="chiminey.corestages.sweep.HRMCSweep",
-            order=100)
-        sweep_stage.update_settings(
-                                    {
+    def get_updated_sweep_params(self, subdirective):
+        package = "chiminey.corestages.sweep.HRMCSweep"
+        settings = {
             u'http://rmit.edu.au/schemas/stages/sweep':
             {
                 u'template_name': 'HRMC.inp',
@@ -166,5 +131,5 @@ class HRMCInitial(CoreInitial):
             {
                 u'random_numbers': 'file://127.0.0.1/randomnums.txt'
             },
-            })
-        return sweep_stage
+            }
+        return {'package': package, 'settings': settings}

@@ -46,7 +46,7 @@ class Command(BaseCommand):
 
         directive = RandNumMyTardisInitial()
         directive.define_directive(
-            'random_number_mytardis', description='RandNum MyTardis Sweep Smart Connector')
+            'randnum_mytardis', description='RandNum MyTardis')
         print "done"
 
 

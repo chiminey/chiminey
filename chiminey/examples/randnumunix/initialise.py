@@ -19,11 +19,7 @@
 # IN THE SOFTWARE.
 
 
-import logging
 from chiminey.initialisation import CoreInitial
-
-logger = logging.getLogger(__name__)
-
 
 
 class RandInitial(CoreInitial):
