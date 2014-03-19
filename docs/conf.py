@@ -15,14 +15,14 @@ import sys
 import os
 
 
-import mock
-MOCK_MODULES = ['tastypie', 'tastypie.models', 'python-digest', 
-	'django-celery-with-redis', 'redis', 'hiredis', 'paramiko', 'paramiko.ssh_exception','fs', 
-	'flexmock', 'boto', 'apache-libcloud', 'bpython', 'nosexcover', 'django-nose', 'nose' ]
-for mod_name in MOCK_MODULES:
-	sys.modules[mod_name] = mock.Mock()
+# import mock
+# MOCK_MODULES = ['tastypie', 'tastypie.models', 'python-digest', 
+# 	'django-celery-with-redis', 'redis', 'hiredis', 'paramiko', 'paramiko.ssh_exception','fs', 
+# 	'flexmock', 'boto', 'apache-libcloud', 'bpython', 'nosexcover', 'django-nose', 'nose' ]
+# for mod_name in MOCK_MODULES:
+# 	sys.modules[mod_name] = mock.Mock()
 sys.path.insert(0, os.path.abspath('..'))
-sys.path.append(os.path.abspath('../eggs/Django-1.4.5-py2.7.egg'))
+# sys.path.append(os.path.abspath('../eggs/Django-1.4.5-py2.7.egg'))
 # sys.path.append(os.path.abspath('../eggs/psycopg2-2.5.2-py2.7.egg'))
 
 print sys.path
