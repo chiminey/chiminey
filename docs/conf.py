@@ -14,7 +14,15 @@
 import sys
 import os
 
-sys.path.insert(0, os.path.abspath('.'))
+
+import mock
+ 
+MOCK_MODULES = ['psycopg2.extensions']
+for mod_name in MOCK_MODULES:
+	sys.modules[mod_name] = mock.Mock()
+
+
+sys.path.insert(0, os.path.abspath('..'))
 from chiminey import settings_changeme as settings
 from django.core.management import setup_environ
 setup_environ(settings)
