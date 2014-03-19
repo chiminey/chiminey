@@ -16,7 +16,7 @@ import os
 
 
 import mock
-MOCK_MODULES = ['psycopg2.extensions']
+MOCK_MODULES = ['psycopg2']
 for mod_name in MOCK_MODULES:
 	sys.modules[mod_name] = mock.Mock()
 sys.path.insert(0, os.path.abspath('..'))
