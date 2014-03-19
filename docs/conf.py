@@ -26,14 +26,7 @@ sys.path.insert(0, os.path.abspath('..'))
 # sys.path.append(os.path.abspath('../eggs/psycopg2-2.5.2-py2.7.egg'))
 
 print sys.path
-from chiminey import settings_changeme as settings
-
-settings.DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': 'mydatabase',
-    }
-}
+from chiminey import test_settings as settings
 
 from django.core.management import setup_environ
 setup_environ(settings)
@@ -189,7 +182,7 @@ html_theme = 'default'
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'SMRAdoc'
+htmlhelp_basename = 'CHIMINEYdoc'
 
 
 # -- Options for LaTeX output --------------------------------------------------
