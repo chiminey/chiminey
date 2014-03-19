@@ -25,7 +25,7 @@ import logging
 import time
 import getpass
 import paramiko
-from chiminey import settings
+from django.conf import settings
 
 from pprint import pformat
 from urlparse import urlparse, parse_qsl
