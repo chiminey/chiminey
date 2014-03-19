@@ -5,9 +5,6 @@ Welcome to the Chiminey Documentation
 
 .. note:: This documentation is under construction!
 
-.. module:: chiminey.simpleui.views
-    :members:
-
 Contents:
 
 .. toctree::
