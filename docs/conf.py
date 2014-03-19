@@ -23,6 +23,13 @@ sys.path.insert(0, os.path.abspath('..'))
 sys.path.append(os.path.abspath('../eggs/Django-1.4.5-py2.7.egg'))
 sys.path.append(os.path.abspath('../eggs/psycopg2-2.5.2-py2.7.egg'))
 
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': 'mydatabase',
+    }
+}
+
 print sys.path
 from chiminey import settings_changeme as settings
 from django.core.management import setup_environ
