@@ -1,9 +1,9 @@
 
 .. _quick_example:
 
-========================================================================
+=====================================================
 Quick Example: The Unix Random Number Smart Connector
-========================================================================
+=====================================================
 
 In this example, we create a basic smart connector that generates two
 random numbers on a unix machine (or the Chiminey server machine,
@@ -29,7 +29,7 @@ Requirements
 
 
 Creating the Unix Random Number Smart Connector
-------------------------------------------
+-----------------------------------------------
 
 Here, we a create the unix random number :ref:`smart connector <smart_connector_desc>`.
 For that, we need to carry out the following steps, in order:
@@ -149,9 +149,9 @@ A smart connector can be registered within the Chiminey server in various ways. 
             print "done"
 
 
-1. When registering a smart connector, a unique name must be provided. In this case, *rand_num_unix*. If a smart connector exists with the same name, the command will be ignored.
+1. When registering a smart connector, a **unique name** must be provided. In this case, *rand_num_unix*. If a smart connector exists with the same name, the command will be ignored.
 
-2. A short description is also needed. In this case, *RandNum Unix Smart Connector*.  Both the unique name and the description will be displayed on the Chiminey UI.
+2. A short **description** is also needed. In this case, *RandNum Unix Smart Connector*.  Both the unique name and the description will be displayed on the Chiminey UI.
 
 3. Execute the following commands on the Chiminey server terminal
 
@@ -164,7 +164,7 @@ A smart connector can be registered within the Chiminey server in various ways. 
 
 
 
-4. Visit your Chiminey web page Click ``Create Job``. You should see ``RandNum Unix Smart Connector`` under ``Smart Connectors`` menu.
+4. Visit your Chiminey web page; click ``Create Job``. You should see ``RandNum Unix Smart Connector`` under ``Smart Connectors`` menu.
 
 
 .. figure:: img/quick_example/create_randnumunix.png
@@ -202,7 +202,7 @@ See :ref:`Job Submission <submit_job>` for details.
 .. _test_monitor_job:
 
 Monitor the progress of the job
-'''''''''''''''''''''''''''''''''''''''''''''''
+'''''''''''''''''''''''''''''''
 
 See :ref:`Job Monitoring <monitor_job>` for details.
 
@@ -263,7 +263,7 @@ connector <register_smart_conn>`.
 
 
 
-3. Visit your Chiminey web page; Click ``Create Job``. You should see ``Sweep RandNum Unix Smart Connector`` under ``Smart Connectors`` menu.
+3. Visit your Chiminey web page; click ``Create Job``. You should see ``Sweep RandNum Unix Smart Connector`` under ``Smart Connectors`` menu.
 
 
 .. figure:: img/quick_example/create_sweeprandnumunix.png

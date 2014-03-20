@@ -18,15 +18,10 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import logging
 from django.core.management.base import BaseCommand
-from chiminey.smartconnectorscheduler import models
 from chiminey.examples.randnumcloud.initialise import RandNumCloudInitial
 
-logger = logging.getLogger(__name__)
-
 MESSAGE = "This will add a new directive to the catalogue of available connectors.  Are you sure [Yes/No]?"
-
 
 
 class Command(BaseCommand):
@@ -48,7 +43,6 @@ class Command(BaseCommand):
         directive.define_directive(
             'randnum_cloud', description='RandNum Cloud')
         print "done"
-
 
     def handle(self, *args, **options):
         self.setup()
