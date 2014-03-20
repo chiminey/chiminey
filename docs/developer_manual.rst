@@ -64,8 +64,8 @@ Examining the contents of a payload
 """""""""""""""""""""""""""""""""""
 
 A payload contains two types of files: *domain-specific* and *system*. All domain-specific files are provided by the developer while
-the system files are included in the Chiminey package. The system files are composed Makefiles and bash scripts.
-The contents of some of the system files needs to be changed to satisfy the requirements of a specific smart connector.
+the system files are included in the Chiminey package. The system files are composed of Makefiles and bash scripts.
+The content of some of the system files needs to be changed to satisfy the requirements of a specific smart connector.
 
     - The **Makefiles** provide API through which the Chiminey server sets-up execution environment, executes domain-specific programs and monitor setup and execution progress. Therefore, the contents of the Makesfiles must not be changed.
 
@@ -75,7 +75,7 @@ The contents of some of the system files needs to be changed to satisfy the requ
 Updating the domain-specific blocks of system files
 """""""""""""""""""""""""""""""""""""""""""""""""""
 
-Here is the list of system files, in logical group and order:
+Here is the list of system files (only bash scripts),  in logical group and order:
 
     - :ref:`start_bootstrap.sh and bootstrap_done.sh <bootstrap_script>`
     - :ref:`start_schedule.sh and schedule_done.sh <schedule_script>`
@@ -122,7 +122,7 @@ start_process_schedule.sh, start_running_process.sh
 '''''''''''''''''''''''''''''''''''''''''''''''''''
 
 These files are needed during the schedule stage for configuring/setting up the environment for individual process.
-These scripts are useful especially when a smart connector has multiple processes, each with their own
+These scripts are useful especially when a smart connector has multiple processes, each with its  own
 configuration requirement.
 
     - ``start_process_schedule.sh``  contains the configuration instructions.
@@ -146,7 +146,9 @@ These files are needed in the execute stage for running the domain-specific code
 
         cd domain-specific; ./domain.sh > chiminey/output
 
-    - ``process_running_done.sh`` contains the instructions for checking whether the execution is completed. Upon completion, the scripts must write ``stopped``. If the execution is synchronous, then the content should be
+    - ``process_running_done.sh`` contains the instructions for checking whether the execution is completed. Upon completion, the scripts must write ``stopped``.
+
+      For  synchronous executions,  the content of ``process_running_done`` is
 
       ::
 
@@ -181,6 +183,7 @@ These files are needed in the execute stage for running the domain-specific code
         else
             echo stopped
 ..
+
 
 
 
