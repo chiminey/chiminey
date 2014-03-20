@@ -14,8 +14,20 @@
 import sys
 import os
 
-sys.path.insert(0, os.path.abspath('.'))
-from chiminey import settings_changeme as settings
+
+# import mock
+# MOCK_MODULES = ['tastypie', 'tastypie.models', 'python-digest', 
+# 	'django-celery-with-redis', 'redis', 'hiredis', 'paramiko', 'paramiko.ssh_exception','fs', 
+# 	'flexmock', 'boto', 'apache-libcloud', 'bpython', 'nosexcover', 'django-nose', 'nose' ]
+# for mod_name in MOCK_MODULES:
+# 	sys.modules[mod_name] = mock.Mock()
+sys.path.insert(0, os.path.abspath('..'))
+# sys.path.append(os.path.abspath('../eggs/Django-1.4.5-py2.7.egg'))
+# sys.path.append(os.path.abspath('../eggs/psycopg2-2.5.2-py2.7.egg'))
+
+print sys.path
+from chiminey import test_settings as settings
+
 from django.core.management import setup_environ
 setup_environ(settings)
 
@@ -170,7 +182,7 @@ html_theme = 'default'
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'SMRAdoc'
+htmlhelp_basename = 'CHIMINEYdoc'
 
 
 # -- Options for LaTeX output --------------------------------------------------

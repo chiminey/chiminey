@@ -117,23 +117,53 @@ def error_context(context_id, msg):
 
 
 def debug(run_settings, msg):
+    """
+    Send a msg at the required priority level, as per the django logging module.  
+
+    :param run_settings: the run_settings used for configuring logging
+    :param msg: the message to send
+    """
     return addMessage(run_settings, 'debug', msg)
 
 
 def info(run_settings, msg):
+    """
+    Send a msg at the required priority level, as per the django logging module.  
+
+    :param run_settings: the run_settings used for configuring logging
+    :param msg: the message to send
+    """
     return addMessage(run_settings, 'info', msg)
 
 
 def success(run_settings, msg):
+    """
+    Send a msg at the required priority level, as per the django logging module.  
+
+    :param run_settings: the run_settings used for configuring logging
+    :param msg: the message to send
+    """
     return addMessage(run_settings, 'success', msg)
 
 
 
 def warn(run_settings, msg):
+    """
+    Send a msg at the required priority level, as per the django logging module.  
+
+    :param run_settings: the run_settings used for configuring logging
+    :param msg: the message to send
+    """
     return addMessage(run_settings, 'warning', msg)
 
 
 def error(run_settings, msg):
+    """
+    Send a msg at the required priority level, as per the django logging module.  
+
+    :param run_settings: the run_settings used for configuring logging
+    :param msg: the message to send
+    """
     return addMessage(run_settings, 'error', msg)
 
 

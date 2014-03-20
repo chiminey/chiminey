@@ -31,9 +31,13 @@ setup(
         'django-mptt',
         'django-storages',
         'requests==2.0',
-        'django-widget-tweaks',
-        'python-dateutil',
-        'six==1.4.1'
+        'django-widget-tweaks==1.3',
+        'python-dateutil==2.2',
+        'six==1.4.1',
+	'paramiko==1.12.2',
+	'boto==2.5.2',
+	'django-tastypie==0.9.15',
+        'django-celery-with-redis==3.0'
         ],
     dependency_links = [
         'https://github.com/dahlia/wand/tarball/warning-bugfix#egg=Wand-0.1.10',
