@@ -13,8 +13,7 @@ Contents:
    installation
    enduser_manual
    developer_manual
-   tutorial
-   ref/views
+   reference
 
 Indices and tables
 ==================

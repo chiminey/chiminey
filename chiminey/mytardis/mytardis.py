@@ -84,21 +84,16 @@ def _get_value(key, dictionary):
 
 def create_graph_paramset(schema_ns, name, graph_info, value_dict, value_keys):
     """
+
     Construct graph related parameterset
 
-    Notes:
-
-    Args:
-        schema_ns: the schema namespace suffix
-        name: graph name
-        graph_info: attributes for generated graph
-        value_dict: attribute values
-        value_keys: indexes for read attributes
-
-    Returns:
-        Mytardis metadata parameterset format as dict.
-
-    Raises:
+    :param schema_ns: the schema namespace suffix
+    :param name: graph name
+    :param graph_info: attributes for generated graph
+    :param value_dict: attribute values
+    :param value_keys: indexes for read attributes
+    :return: metadata parameterset
+    :rtype: dict
 
     """
 
@@ -128,12 +123,10 @@ def create_paramset(schema_ns, parameters):
     """
     Construct MyTardis parameterset format
 
-    Args:
-        schema_ns:
-        parameters:
-
-    Returns:
-        Mytardis metadata parameterset format as dict.
+    :param schema_ns: the schema namespace suffix
+    :param paramseters: 
+    :return: metadata parameterset
+    :rtype: dict
 
     """
     res = {}
@@ -159,24 +152,22 @@ def _get_dataset_name(settings, url, path):
 
 def create_experiment(settings, exp_id, expname, experiment_paramset=[]):
     """
-        Build Experiment on Remote tardis containing files and metadata
 
-        Notes:
-            If exp_id is given, adds to existing experiment, else new created
-            and id returned.  experiment_paramset is appended to any
-            existing metadata and does not overwrite.
-        Args:
-            settings.keys():  ['mytardis_user', 'mytardis_password,
-                               'mytardis_host']
-            exp_id: unique experiment id for existing experiment or 0 for new
-            expname: Name for the experiment
-            experiment_paramset: Metadata package for experiment parameterset
+        Build A MyTardis Experiment on a remote MyTardis containing files and metadata
 
-        Returns:
-            New mytardis experiment id
+        :param dict settings.keys(): ['mytardis_user', 'mytardis_password', 'mytardis_host']
+        :param int exp_id: unique experiment id for existing experiment or 0 for new
+        :param str expname: Name for the experiment
+        :param paramset experiment_paramset: Metadata package for experiment parameterset
+        :return: new mytardis experiment id
+        :rtype: int
+        :raises: IndexError if setttings does not contain required configuration fields or is otherwise invalid.
 
-        Raises:
-            IndexError if bad settings
+        If exp_id is non-zero, adds to existing experiment with exp_id, else new created
+        identifier returned.  experiment_paramset is appended to any existing
+        metadata and does not overwrite.
+
+
     """
     # get existing experiment or create new
     new_exp_id = exp_id
@@ -289,33 +280,37 @@ def create_dataset(settings,
         dataset_paramset=[],
         datafile_paramset=[],
         dfile_extract_func=None):
-    """
 
-    Notes:
+    """
+    
+
         POST to mytardis_host REST API with mytardis_user and mytardis_password
         credentials to create or update experiment for a new dataset containing
         datafiles from source_url BDP directory.
 
-    Args:
-        settings:
+        :param dict settings.keys(): ['mytardis_user', 'mytardis_password', 'mytardis_host']
+        :param str source_url: chiminey URL for the source of dataset
+        :param int exp_id: unique experiment id for existing experiment or 0 for new
+        :param func exp_name: function that returns experiment name based on url and path
+        :param func dataset_name: function that returns dataset name based on url and path
+        :param paramset dataset_param: metadata package for dataset
+        :param paramset datafile_paramset: metadata package for datafiles
+        :param func dfile_extract_func: function that extracts datafile information
+        :return: new mytardis experiment id
+        :rtype: int
+        :raises: IndexError if setttings does not contain required configuration fields or is otherwise invalid.
 
-        source_url: url containing data to be ingested
-        exp_id:
-        [exp_name,dataset_name]:  functions that return new
-    experiment and dataset names respectively based on url and path
-        experiment_paramset: ...
-        dataset_paramset: ...
-        datafile_paramset:
-        dfile_extract_func:
+        If exp_id is non-zero, adds to existing experiment with exp_id, else new created
+        identifier returned.  experiment_paramset is appended to any existing
+        metadata and does not overwrite.
 
-
-    FIXME,TODO: What if tardis in unavailable?  Connection to mytardis probably
-    better handled as sperate celery subtask, which can retry until working and
-    be async
-
-    FIXME: missing all error checking and retrying of connection to mytardis.
-    Reliability framework should be able to supply this?
     """
+    #FIXME,TODO: What if tardis in unavailable?  Connection to mytardis probably
+    #better handled as sperate celery subtask, which can retry until working and
+    #be async
+
+    #FIXME: missing all error checking and retrying of connection to mytardis.
+    #Reliability framework should be able to supply this?
 
     #TODO: method should take BDP url source_url not, expanded one.
 
@@ -506,12 +501,6 @@ def create_dataset(settings,
 
 
 def retrieve_datafile(url):
-    """
-    Retrieve contents from a mytardis datafile based on url
-
-    NB: Has this function been tested?
-
-    """
 
     (source_scheme, tardis_host_url, source_path, source_location,
         query_settings) = storage.parse_bdpurl(url)

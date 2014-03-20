@@ -55,7 +55,16 @@ def _multilevel_key_exists(context, *parts):
 
 
 def setval(context, key, value):
+    """
+    Sets the value of the key within the run settings context.
 
+    :param context: current context
+    :param key: the key to search
+    :throws: runsettings.SettingNotFoundException if the schema part of key is not in the context.
+
+    :throws: runsettings.IncompatibleTypeException  if the value is not compatible with the type of the key, according to the associated schema definition.
+
+    """
     #TODO: Should check type of value to make sure it is conformant
     # to the required schema else raise IncompatibleTypeException
     try:
@@ -74,8 +83,12 @@ def setvals(context, key_vals):
 
 def getval(context, key):
     """
-    Extract the key field from the context, but if not present throw KeyError.
-    Return
+    Retrieves the current value of the key within the run setttings context.
+
+    :param context: current context
+    :param key: the key to search
+    :raises: SettingNotFoundException if the schema part of the key is not in the context
+    :return: the value for the key
     """
     res = None
 

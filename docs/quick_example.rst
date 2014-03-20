@@ -29,7 +29,7 @@ Requirements
 
 
 Creating the Unix Random Number Smart Connector
-------------------------------------------
+-----------------------------------------------
 
 Here, we a create the unix random number :ref:`smart connector <smart_connector_desc>`.
 For that, we need to carry out the following steps, in order:

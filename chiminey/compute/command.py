@@ -35,9 +35,18 @@ def run_command(command, ip_address, settings):
 
 
 def run_command_with_status(ssh_client, command, current_dir=None):
+
     """
-    Given a ssh_client, execute command from the current_dir
-    on the remote host and return stdout and stderr
+    Provides an abstraction layer over the remote execution of an arbitrary
+    shell command at the given target.
+
+    :param ssh_client: the ssh_connector package handle.
+
+    :param command: shell command to execute.
+
+    :param current_dir: root_path to the location of the on the remote system. If None, uses the default path (home directory).
+
+    :Return: tuple (out, err) containing command stdout and stderr, respectively.
     """
     # TODO: need a proper timeout for this command
 
@@ -62,6 +71,18 @@ def run_command_with_status(ssh_client, command, current_dir=None):
 
 
 def run_make(ssh_client, makefile_path, target):
+    """
+    Provides an abstraction layer over the remote execution of a makefile
+    command at the given target.
+
+    :param ssh_client: the ssh_connector package handle.
+
+    :param makefile_path: the location of the Makefile
+
+    :param target: Makefile target to execute
+
+    :Return: tuple (out, err) containing command stdout and stderr, respectively.
+    """
     logger.debug("makefile_path=%s" % makefile_path)
     logger.debug("target=%s" % target)
 
