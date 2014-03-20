@@ -11,7 +11,7 @@ executes a number generator on the VM to produce two random numbers,
 and then transfers  the file that contains the random numbers to a user-designated
 location.
 
-    - The **source code** for this example is available at ``LOCAL_FILESYS_ROOT_PATH/chiminey/examples/randnumcloud``.
+    - The **source code** for this example is available at ``chiminey/examples/randnumcloud``.
 
     - The **purpose** of this example is to show how to create a smart connector that executes programs on the cloud_.
 
@@ -33,7 +33,35 @@ Requirements
 
 
 
+Creating the Cloud Random Number Smart Connector
+    ------------------------------------------------
+Here, we a create the cloud random number :ref:`smart connector <smart_connector_desc>`.
+For that, we need to carry out the following steps, in order:
 
+1. :ref:`prepare <prepare_payload_cloud>` a payload
+
+2. :ref:`define <define_cloud_randnum_conn>`  the smart connector using the pre-defined core stages, and
+
+3. :ref:`register  <register_smart_conn_cloud>` the smart connector within Chiminey so it can be executed.
+
+
+
+
+
+
+
+.. _prepare_payload_cloud:
+
+I. Preparing Payload
+~~~~~~~~~~~~~~~~~~~~
+
+:ref:`payload <payload>`
+
+1. edit files
+
+2. copy to under LOCAL_FILESYS_ROOT_PATH, which is by default "/var/chiminey/remotesys"
+
+.. _define_cloud_randnum_conn:
 
 
 ..  Creating the Cloud Random Number Smart Connector

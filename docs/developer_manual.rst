@@ -37,7 +37,7 @@ of setup and execution.
 **NB:** All smart connectors that are executed on  cloud and cluster infrastructure must have a payload.
 However, smart connectors that are executed on unix servers do not need a payload unless the  execution is asynchronous.
 
-Below is the structure of a payload; a payload template is available at  ``LOCAL_FILESYS_ROOT_PATH/payload_template``.
+Below is the structure of a payload; a payload template is available at  ``payload_template``.
 
 
 
