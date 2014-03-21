@@ -70,7 +70,7 @@ a cloud infrastructure and :ref:`all cloud-based smart connectors must include t
 
 2. As recommended in :ref:`payload <payload>`, ``payload_template`` is used as tge starting point to prepare ``payload_randnum``. In order to satisfy  The system file that is changed is  ``start_running_process.sh``.
 
-    - ``start_running_process.sh`` includes  the logic for generating the random numbers. As expected by the Chiminey server, the output of the program is redirected to ``chiminey``. Since this random generator is synchronous, the process ID is not  saved. Here is the content of ``start_running_process.sh``:
+    a. ``start_running_process.sh`` includes  the logic for generating the random numbers. As expected by the Chiminey server, the output of the program is redirected to ``chiminey``. Since this random generator is synchronous, the process ID is not  saved. Here is the content of ``start_running_process.sh``:
 
      ::
 
@@ -79,11 +79,11 @@ a cloud infrastructure and :ref:`all cloud-based smart connectors must include t
         python -c 'import random;  print random.random(); print random.random()'  >& chiminey/rand
 
 
-    - ``process_running_done.sh`` remains the same because the random number generating program is synchronous.
+    b. ``process_running_done.sh`` remains the same because the random number generating program is synchronous.
 
-    - ``start_bootstrap.sh`` and ``bootstrap_done.sh`` remain the same. This is because the random number  generation depends only on ``python``, and the  included ``python`` in  linux-based OS  fulfills the requirement.
+    c. ``start_bootstrap.sh`` and ``bootstrap_done.sh`` remain the same. This is because the random number  generation depends only on ``python``, and the  included ``python`` in  linux-based OS  fulfills the requirement.
 
-    - ``start_process_schedule.sh`` and  ``start_running_process.sh`` remain the same because there is no process-level configuration requirement.
+    d. ``start_process_schedule.sh`` and  ``start_running_process.sh`` remain the same because there is no process-level configuration requirement.
 
 
 
