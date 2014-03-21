@@ -52,10 +52,15 @@ Install the Chiminey app::
 
     chef-solo -c solo/solo.rb -j solo/node.json -ldebug
 
+Check testcases::
+    
+    su bdphpc
+    cd /opt/chiminey/current/
+    bin/test
+
 Setup Chiminey app::
 
-    su bdphpc
-    cd /opt/chiminey/current/chiminey
+    cd chiminey
     ../bin/django createsuperuser   # should only be used for admin tasks
     ../bin/django initial           # gets the database ready
     ../bin/django createuser        # a user who runs smart connectors

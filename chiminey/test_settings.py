@@ -2,17 +2,21 @@ from chiminey.settings_changeme import *
 
 DEBUG=True
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': ':memory:',
-    }
+     'default': {
+         'ENGINE': 'django.db.backends.sqlite3',
+     }
 }
 
-ROOT_URLCONF = "chiminey.urls"
+TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 
 TEMPLATE_DIRS = ["."]
 INSTALLED_APPS += ('django_nose', )
 
-NOSE_ARGS = ['--verbosity=3']
+ROOT_URLCONF = "chiminey.urls"
+
+# PASSWORD_HASHERS = (
+#     'django.contrib.auth.hashers.MD5PasswordHasher',
+# )
+
 
 
