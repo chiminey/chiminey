@@ -11,7 +11,10 @@ for simplicity), saves the numbers to a file, and then transfers the file
 to a provided output location. This smart connector will be known as the
 Unix Random Number Smart Connector.
 
-**NB:** The source code for this example is available at ``chiminey/examples/randnumunix``.
+    - The **purpose** of this example is to  create a basic smart connector that executes programs on a unix server.
+
+    - The **source code** for this example is available at ``chiminey/examples/randnumunix``.
+
 
 Requirements
 ------------
@@ -79,7 +82,7 @@ Below is the content of the ``RandExecute`` class:
 
 II. Defining the Unix Random Number Smart Connector
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The new  definition of this smart connector, i.e., ``RandInitial``, is available at ``chiminey/examples/randnumunix/initialise.py``
+The   definition of this smart connector, i.e., ``RandInitial``, is available at ``chiminey/examples/randnumunix/initialise.py``
 
 1. ``RandInitial`` subclasses ``CoreInitial``, which is located at ``chiminey/initialise/coreinitial.py``.  ``RandInitial``  overwrites ``get_updated_execute_params(self)`` and  ``get_ui_schema_namespace(self)``.
 
@@ -194,10 +197,10 @@ See :ref:`Job Submission <submit_job>` for details.
 
 .. figure:: img/quick_example/submit_randnumunix.png
     :align: center
-    :alt: A unix random number smart connector job
+    :alt: A unix random number smart connector job is submitted
     :figclass: align-center
 
-    Figure. A unix random number smart connector job
+    Figure. A unix random number smart connector job is submitted
 
 .. _test_monitor_job:
 
@@ -208,10 +211,10 @@ See :ref:`Job Monitoring <monitor_job>` for details.
 
 .. figure:: img/quick_example/completed_randnumunix.png
     :align: center
-    :alt: The unix random number smart connector job is completed
+    :alt: A unix random number smart connector job is completed
     :figclass: align-center
 
-    Figure. The unix random number smart connector job is completed
+    Figure. A unix random number smart connector job is completed
 
 
 .. _test_view_output:

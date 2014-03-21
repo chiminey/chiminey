@@ -47,7 +47,13 @@ class DirectiveArgSetInline(admin.TabularInline):
 
 
 class DirectiveAdmin(admin.ModelAdmin):
-    inlines = [DirectiveArgSetInline]
+    #inlines = [DirectiveArgSetInline]
+    model = models.Directive
+    list_editable = ('hidden',)
+
+    list_display = ('name', 'hidden')
+
+
 
 
 class ContextParameterInline(admin.TabularInline):
