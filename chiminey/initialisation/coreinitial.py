@@ -145,9 +145,6 @@ class CoreInitial(object):
                 u'http://rmit.edu.au/schemas/stages/setup':
                     {
                         u'payload_source': '',
-                        u'payload_destination': '',
-                        u'payload_name': 'process_payload',
-                        u'filename_for_PIDs': 'PIDs_collections',
                     },
             }
         params = {'package': package, 'name': name,
@@ -168,7 +165,18 @@ class CoreInitial(object):
             parent=self._define_parent_stage(),
             package=bootstrap_package,
             order=20)
+        fixed_settings = \
+            {
+                u'http://rmit.edu.au/schemas/stages/setup':
+                    {
+                        u'payload_destination': 'chiminey_payload',
+                        u'payload_name': 'process_payload',
+                        u'filename_for_PIDs': 'PIDs_collections',
+                    },
+            }
+        bootstrap_stage.update_settings(fixed_settings)
         bootstrap_stage.update_settings(default_params['settings'])
+
         return bootstrap_stage
 
     def _get_default_schedule_params(self):

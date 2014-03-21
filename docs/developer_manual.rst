@@ -34,12 +34,12 @@ setup the execution environment, execute domain-specific programs, and monitor t
 of setup and execution.
 
 
-**NB:** All smart connectors that are executed on  cloud and cluster infrastructure must have a payload.
-However, smart connectors that are executed on unix servers do not need a payload unless the  execution is asynchronous.
+**NB:**
+    - All smart connectors that are executed on  a cloud and a cluster infrastructure must have a payload. However, smart connectors that are executed on unix servers do not need a payload unless the  execution is asynchronous.
 
-Below is the structure of a payload; a payload template is available at  ``payload_template``.
+    - A payload template is available at  ``payload_template``, which should be used as the starting point to prepare a payload for any  smart connector. The main part of preparing a payload is  :ref:`including domain-specific contents <update_domain_specific_content>`  to  satisfy the requirements of a specific smart connector. The    naming convention of payloads is ``payload_unique_name``.
 
-
+Below is the structure of a payload.
 
 ::
 
@@ -71,6 +71,7 @@ The content of some of the system files needs to be changed to satisfy the requi
 
     - The **bash scripts** contain system and domain-specific information. The scripts that contain domain-specific blocks should be updated as needed.
 
+.. _update_domain_specific_content:
 
 Updating the domain-specific blocks of system files
 """""""""""""""""""""""""""""""""""""""""""""""""""
@@ -182,6 +183,7 @@ These files are needed in the execute stage for running the domain-specific code
           echo still running
         else
             echo stopped
+
 ..
 
 
