@@ -166,7 +166,7 @@ INSTALLED_APPS = (
     'djcelery',
     'djkombu',
     'tastypie',
-    'widget_tweaks',
+    'widget_tweaks'
 
 ) + OUR_APPS
 
