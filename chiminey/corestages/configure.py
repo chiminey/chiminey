@@ -111,7 +111,12 @@ class Configure(Stage):
         try:
              run_settings['http://rmit.edu.au/schemas/platform/computation']
         except KeyError:
-            bdp_url =  run_settings[RMIT_SCHEMA + '/input/system/compplatform']['computation_platform']
+            logger.debug('compplatform=empty')
+            compplatform = [k for k, v in run_settings.items()
+                            if k.startswith('%s/input/system/compplatform' % RMIT_SCHEMA)]
+            logger.debug('compplatform=%s' % compplatform)
+
+            bdp_url =  run_settings[compplatform]['computation_platform']
             logger.debug('tbdp_url=%s' % bdp_url)
             self.compute_platform_name, self.compute_platform_offset = self.break_bdp_url(bdp_url)
             run_settings[RMIT_SCHEMA + '/platform/computation'] = {}

@@ -3,9 +3,28 @@
 Developer Manual
 ================
 
+
+
+.. _chiminey:
+
+Chiminey
+--------
+
+Main topics
+
+- :ref:`Smart Connector <smart_connector_desc>`
+
+- :ref:`Payload <payload>`
+
+- :ref:`UI <ui>`
+
+- :ref:`Examples <examples>`
+
+
 .. _smart_connector_desc:
+
 Smart Connector
----------------
+~~~~~~~~~~~~~~~
 
 A smart connector is composed of at least seven predefined core stages:
 configure, create, bootstrap, schedule, execute, wait and destroy.
@@ -19,6 +38,7 @@ In general, creating a smart connector involves
 -  customising existing and/or adding new stages as needed,
 -  defining the smart connector based on these stages, and
 -  registering the smart connector within Chiminey.
+
 
 
 .. _payload:
@@ -247,8 +267,16 @@ These files are needed in the execute stage for running the domain-specific code
     1. :ref:`Quick Example: The Random Number Smart Connector for Non-Cloud Execution <quick_example>`
 
 
+.. _ui:
+
+UI
+~~~~~
+
+
+.. _examples:
+
 Examples
---------
+~~~~~~~~~
 
 Here, we use the following examples to show the different features of a smart connector
 and how a smart connector is defined and registered within a Chiminey server.

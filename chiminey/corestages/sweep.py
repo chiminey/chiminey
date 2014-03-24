@@ -108,11 +108,14 @@ class Sweep(Stage):
         local_settings = make_local_settings(run_settings)
         logger.debug('local_settings=%s' % local_settings)
 
+        compplatform = [k for k, v in run_settings.items()
+                        if k.startswith('%s/input/system/compplatform' % RMIT_SCHEMA)]
+
         setval(run_settings,
                '%s/platform/computation/platform_url' % RMIT_SCHEMA,
                getval(run_settings,
-                      '%s/input/system/compplatform/computation_platform'
-                            % RMIT_SCHEMA))
+                      '%s/computation_platform'
+                          % compplatform))
 
         def _parse_output_location(run_settings, location):
 

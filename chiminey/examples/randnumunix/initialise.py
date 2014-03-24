@@ -30,7 +30,7 @@ class RandInitial(CoreInitial):
     def get_ui_schema_namespace(self):
         RMIT_SCHEMA = "http://rmit.edu.au/schemas"
         schemas = [
-                RMIT_SCHEMA + "/input/system/compplatform",
+                RMIT_SCHEMA + "/input/system/compplatform/unix",
                 RMIT_SCHEMA + "/input/location/output",
                 ]
         return schemas

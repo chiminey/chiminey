@@ -34,7 +34,7 @@ class RandNumCloudInitial(CoreInitial):
     def get_ui_schema_namespace(self):
         RMIT_SCHEMA = "http://rmit.edu.au/schemas"
         schemas = [
-                RMIT_SCHEMA + "/input/system/compplatform",
+                RMIT_SCHEMA + "/input/system/compplatform/cloud",
                 RMIT_SCHEMA + "/input/system/cloud",
                 RMIT_SCHEMA + "/input/location/output",
                 ]

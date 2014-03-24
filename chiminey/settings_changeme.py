@@ -334,6 +334,12 @@ CELERY_ROUTES = {
 },
 }
 
+SCHEMA_PREFIX = "http://rmit.edu.au/schemas"
+COMPUTATION_PLATFORM_SCHEMA_NAMESPACE = \
+    {SCHEMA_PREFIX + '/input/system/compplatform/cloud': '/cloud/ec2-based',
+     SCHEMA_PREFIX + '/input/system/compplatform/unix': '/cluster/pbs_based'
+    }
+
 #BROKER_TRANSPORT = 'django'
 BROKER_URL = 'redis://localhost:6379/0'
 CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
