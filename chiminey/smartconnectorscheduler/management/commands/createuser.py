@@ -48,13 +48,13 @@ copy_commands = (
     #("payload2_new", "local/testpayload_new"),
     #("testpayload", "local/testpayload"),
     #("vasppayload", "local/vasppayload"),
-    ("input_hrmc", "local/input_hrmc"),
-    ("payload_hrmc", "local/payload_hrmc"),
+    #("input_hrmc", "local/input_hrmc"),
+    #("payload_hrmc", "local/payload_hrmc"),
 
     ("payload_randomnumber", "local/payload_randomnumber"),
 
-    ("input_vasp", "local/input_vasp"),
-    ("payload_vasp", "local/payload_vasp")
+    #("input_vasp", "local/input_vasp"),
+    #("payload_vasp", "local/payload_vasp")
 
     )
 
