@@ -1,0 +1,18 @@
+#!/bin/bash
+#PBS -N {{job_name}}
+#PBS -P {{project}} 
+#PBS -q {{queue}} 
+#PBS -l walltime={{walltime}}
+#PBS -l mem={{mem}}
+#PBS -l other=physmem
+# 1 cpu MPI jobs need set request -lother=mpi, i.e.
+# PBS -l other=mpi
+# if you uese >8 cpus ncpus= multiples of 8
+#PBS -l ncpus={{ncpus}}
+#PBS -l software=vasp
+#PBS -l wd
+
+module load vasp/5.3.3
+
+mpirun vasp > output
+
