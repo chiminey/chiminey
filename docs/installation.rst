@@ -10,13 +10,20 @@ in NeCTAR cloud, Vagrant or some other cloud solution.
 Requirements
 ------------
 
-Tested on VM with NeCTAR Centos 6.5 x86x64 Image and size m1.small, with 443/80/22 ports open
+At least one VM on a IaaS cloud provider 
+
+(Tested on NeCTAR Centos 6.5 x86x64 Image and size m1.small, with 443/80/22 ports open)
+
+Information on the NeCTAR cloud:
+http://support.rc.nectar.org.au/docs/getting-started
+
+Information on AWS: https://aws.amazon.com/
 
 
 Instructions
 ------------
 
-Install Chef-solo::
+On the created VM::
 
     sudo -s
     rpm  -Uvh http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
