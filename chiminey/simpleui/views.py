@@ -808,22 +808,27 @@ def make_dynamic_field(parameter, **kwargs):
                 # categories.  Assume only nectar comp platforms ever allowed here.
 
                 if parameter['subtype'] == "platform" and 'directive' in kwargs.keys():
-                    directive_name = kwargs['directive']['name']
-                    logger.debug("computation platform is %s" % directive_name)
+                    #directive_name = kwargs['directive']['name']
+                    #logger.debug("computation platform is %s" % directive_name)
+                    namespace = kwargs['namespace']
+                    schema = RMIT_SCHEMA + '/platform/computation'
+                    from django.conf import settings
+                    try:
+                        schema += settings.COMPUTATION_PLATFORM_SCHEMA_NAMESPACE[namespace]
+                    except KeyError:
+                        logger.warn("unknown computation platform")
 
-                    schema = RMIT_SCHEMA + '/platform/computation/'
-                    if directive_name == 'sweep_hrmc':
+                    '''
+
+                    if namespace == RMIT_SCHEMA + '/input/system/compplatform/cloud':
                         schema += 'cloud/ec2-based'
-                    elif directive_name == 'sweep_make':
+                    elif namespace == RMIT_SCHEMA + '/input/system/compplatform/unix':
                         schema += 'cluster/pbs_based'
-                    elif directive_name == 'sweep_vasp':
-                        schema += 'cluster/pbs_based'
-                    elif directive_name == 'sweep_random_number':
-                        schema += 'cluster/pbs_based'
-                    elif directive_name == 'sweep_random_number2':
-                        schema += 'cloud/ec2-based'
+                    elif namespace == RMIT_SCHEMA + '/input/system/compplatform':
+                        schema += ''
                     else:
                         logger.warn("unknown computation platform")
+                    '''
                 elif parameter['subtype'] == 'mytardis':
                     schema = RMIT_SCHEMA + '/platform/storage/mytardis'
 
@@ -924,9 +929,12 @@ def make_directive_form(**kwargs):
                 form_data.append((field_key, schema_data['description'] if not j else "", parameter['subtype'], parameter['hidefield'], parameter['hidecondition']))
                 #FIXME: replace if else by fields[field_key] = make_dynamic_field(parameter) after unique key platform model is developed
                 if 'username' in kwargs:
-                    fields[field_key] = make_dynamic_field(parameter, username=kwargs['username'], directive=kwargs['directive'])
+                    fields[field_key] = make_dynamic_field(parameter, username=kwargs['username'],
+                                                           directive=kwargs['directive'],
+                                                           namespace=schema_data['namespace'])
                 else:
-                    fields[field_key] = make_dynamic_field(parameter, directive=kwargs['directive'])
+                    fields[field_key] = make_dynamic_field(parameter, directive=kwargs['directive'],
+                                                           namespace=schema_data['namespace'])
                 logger.debug("field=%s" % fields[field_key].validators)
     elif 'platform_params' in kwargs.keys():
         for i, schema_data in enumerate(kwargs['platform_params']):
@@ -939,9 +947,12 @@ def make_directive_form(**kwargs):
                 form_data.append((field_key, schema_data['description'] if not j else "", parameter['subtype'], parameter['hidefield'], parameter['hidecondition']))
                 #fixme replce if else by fields[field_key] = make_dynamic_field(parameter) after unique key platform model is developed
                 if 'username' in kwargs:
-                    fields[field_key] = make_dynamic_field(parameter, username=kwargs['username'], platform=True)
+                    fields[field_key] = make_dynamic_field(
+                        parameter, username=kwargs['username'],
+                        platform=True, namespace=schema_data['namespace'])
                 else:
-                    fields[field_key] = make_dynamic_field(parameter, platform=True)
+                    fields[field_key] = make_dynamic_field(
+                        parameter, platform=True, namespace=schema_data['namespace'])
                 logger.debug("field=%s" % fields[field_key].validators)
 
     logger.debug("fields = %s" % fields)

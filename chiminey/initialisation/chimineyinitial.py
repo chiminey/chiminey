@@ -452,6 +452,29 @@ def _get_chiminey_schemas():
                                            'help_text': 'The name of the computation platform to be used'},
              }
             ],
+        u'http://rmit.edu.au/schemas/input/system/compplatform/cloud':
+            [u'Computation Platform',
+             {
+                 u'computation_platform': {'type': models.ParameterName.STRLIST, 'subtype': 'platform',
+                                           'initial': '', 'description': 'Computation Platform Name', 'ranking': 0,
+                                           'help_text': 'The name of the computation platform to be used'},
+             }
+            ],
+
+
+
+ u'http://rmit.edu.au/schemas/input/system/compplatform/unix':
+            [u'Computation Platform',
+             {
+                 u'computation_platform': {'type': models.ParameterName.STRLIST, 'subtype': 'platform',
+                                           'initial': '', 'description': 'Computation Platform Name', 'ranking': 0,
+                                           'help_text': 'The name of the computation platform to be used'},
+             }
+            ],
+
+
+
+
         u'http://rmit.edu.au/schemas/input/system/cloud':
             [u'Cloud Resources',
              {
