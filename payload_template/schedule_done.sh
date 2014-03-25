@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# Checks that the schedule execution task is complete.
+
 IDS=$1
 completed=0
 completed_procs=""

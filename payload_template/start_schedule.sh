@@ -1,4 +1,7 @@
 #!/bin/sh
+# Starts the processes of making separate execution environments for all
+# processes that will run on this VM.  Normally, this code should not need to be
+# changed.
 
 PAYLOAD_NAME=$1
 IDS=$2
