@@ -115,7 +115,7 @@ class Sweep(Stage):
                '%s/platform/computation/platform_url' % RMIT_SCHEMA,
                getval(run_settings,
                       '%s/computation_platform'
-                          % compplatform))
+                          % compplatform[0]))
 
         def _parse_output_location(run_settings, location):
 

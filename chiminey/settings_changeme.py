@@ -170,6 +170,7 @@ INSTALLED_APPS = (
 
 ) + OUR_APPS
 
+LOGGER_LEVEL = "DEBUG"
 
 LOGGING = {
     'version': 1,
@@ -193,55 +194,55 @@ LOGGING = {
     'loggers': {
 
     'chiminey': {
-    'level': 'WARN',
+    'level': LOGGER_LEVEL,
     'handlers': ['file'],
     },
     'chiminey.smartconnectorscheduler': {
-    'level': 'WARN',
+    'level': LOGGER_LEVEL,
     'handlers': ['file'],
     },
     'chiminey.sshconnection': {
-    'level': 'WARN',
+    'level': LOGGER_LEVEL,
     'handlers': ['file'],
     },
     'chiminey.platform': {
-    'level': 'WARN',
+    'level': LOGGER_LEVEL,
     'handlers': ['file'],
     },
     'chiminey.cloudconnection': {
-    'level': 'WARN',
+    'level': LOGGER_LEVEL,
     'handlers': ['file'],
     },
     'chiminey.reliabilityframework': {
-    'level': 'WARN',
+    'level': LOGGER_LEVEL,
     'handlers': ['file'],
     },
     'chiminey.simpleui': {
-    'level': 'WARN',
+    'level': LOGGER_LEVEL,
     'handlers': ['file'],
     },
     'chiminey.mytardis': {
-    'level': 'WARN',
+    'level': LOGGER_LEVEL,
     'handlers': ['file'],
     },
     'chiminey.simpleui.wizard': {
-    'level': 'WARN',
+    'level': LOGGER_LEVEL,
     'handlers': ['file'],
     },
     'chiminey.storage': {
-    'level': 'WARN',
+    'level': LOGGER_LEVEL,
     'handlers': ['file'],
     },
     'chiminey.sshconnector': {
-    'level': 'WARN',
+    'level': LOGGER_LEVEL,
     'handlers': ['file'],
     },
     'chiminey.core': {
-    'level': 'WARN',
+    'level': LOGGER_LEVEL,
     'handlers': ['file'],
     },
     'chiminey.smartconnectorscheduler.tasks': {
-    'level': 'WARN',
+    'level': LOGGER_LEVEL,
     'handlers': ['file'],
     },
     'celery.task': {
