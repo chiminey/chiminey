@@ -68,7 +68,7 @@ a cloud infrastructure and :ref:`all cloud-based smart connectors must include t
    cp -r  /opt/chiminey/current/chiminey/examples/randnumcloud/payload_randnum /var/chiminey/remotesys/my_payloads/
 
 
-2. As recommended in :ref:`payload <payload>`, ``payload_template`` is used as tge starting point to prepare ``payload_randnum``. In order to satisfy  The system file that is changed is  ``start_running_process.sh``.
+2. As recommended in :ref:`payload <payload>`, ``payload_template`` is used as the starting point to prepare ``payload_randnum``. In order to satisfy  The system file that is changed is  ``start_running_process.sh``.
 
     a. ``start_running_process.sh`` includes  the logic for generating the random numbers. As expected by the Chiminey server, the output of the program is redirected to ``chiminey``. Since this random generator is synchronous, the process ID is not  saved. Here is the content of ``start_running_process.sh``:
 
