@@ -89,10 +89,8 @@ The   definition of this smart connector, i.e., ``RandInitial``, is available at
 2. In the :ref:`previous step  <customize_execute_stage>`, the execute stage is customised. Therefore, ``get_updated_execute_params(self)`` updates the package path  to point to the customised execute stage class, which is
     ``chiminey.examples.randnumunix.randexexute.RandExecute``.
 
-3. The new ``get_ui_schema_namespace(self)`` contains two schema namespaces that represent two types of input fields:
+3. The new ``get_ui_schema_namespace(self)`` contains two schema namespaces that represent two types of input fields  for specifying the name of a unix-based computation platform and an output location (see :ref:`smart_connector_ui`).
 
-    a. *RMIT_SCHEMA + "/input/system/compplatform"* for specifying the name of the `computation platform <https://github.com/chiminey/chiminey/wiki/Types-of-Input-Form-Fields#computation_platform>`__, and
-    b. *RMIT_SCHEMA + "/input/location/output"* for specifying the `output location <https://github.com/chiminey/chiminey/wiki/Types-of-Input-Form-Fields#location>`__.
 
 Below is the content of ``RandInitial``.
 
@@ -109,7 +107,7 @@ Below is the content of ``RandInitial``.
         def get_ui_schema_namespace(self):
             RMIT_SCHEMA = "http://rmit.edu.au/schemas"
             schemas = [
-                    RMIT_SCHEMA + "/input/system/compplatform",
+                    RMIT_SCHEMA + "/input/system/compplatform/unix",
                     RMIT_SCHEMA + "/input/location/output",
                     ]
             return schemas

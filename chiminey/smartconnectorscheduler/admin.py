@@ -54,8 +54,6 @@ class DirectiveAdmin(admin.ModelAdmin):
     list_display = ('name', 'hidden')
 
 
-
-
 class ContextParameterInline(admin.TabularInline):
     model = models.ContextParameter
     extra = 0
@@ -73,29 +71,6 @@ class ContextParameterSetAdmin(admin.ModelAdmin):
 
     def context_owner(self, obj):
         return obj.context.owner
-
-
-class PlatformInstanceParameterInline(admin.TabularInline):
-    model = models.PlatformInstanceParameter
-    extra = 0
-    # formfield_overrides = {
-    #   django.db.models.TextField: {'widget': TextInput},
-    # }
-
-
-class PlatformInstanceParameterSetAdmin(admin.ModelAdmin):
-    inlines = [PlatformInstanceParameterInline]
-    list_display = ('owner', 'schema_prefix', 'schema', )
-
-    def name(self, obj):
-        return obj.schema.name
-
-    def schema_prefix(self, obj):
-        return obj.platform.schema_namespace_prefix
-
-    def owner(self, obj):
-        return obj.platform.owner
-
 
 class PlatformParameterInline(admin.TabularInline):
     model = models.PlatformParameter
@@ -296,9 +271,6 @@ admin.site.register(models.StageParameterSet, StageParameterSetAdmin)
 admin.site.register(models.StageParameter)
 admin.site.register(models.Directive, DirectiveAdmin)
 admin.site.register(models.DirectiveArgSet, DirectiveArgSetAdmin)
-admin.site.register(models.PlatformInstance)
-admin.site.register(models.PlatformInstanceParameterSet, PlatformInstanceParameterSetAdmin)
-admin.site.register(models.PlatformInstanceParameter)
 admin.site.register(models.PlatformParameterSet, PlatformParameterSetAdmin)
 admin.site.register(models.PlatformParameter)
 admin.site.register(models.Preset)

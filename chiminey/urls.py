@@ -51,7 +51,6 @@ from smartconnectorscheduler.views import (
     UserResource,
     DirectiveResource,
     DirectiveArgSetResource,
-    PlatformInstanceResource,
     PlatformParameterSetResource,
     PlatformParameterResource,
     # PresetResource,
@@ -73,7 +72,6 @@ v1_api.register(ContextParameterSetResource())
 v1_api.register(ContextMessageResource())
 v1_api.register(DirectiveResource())
 v1_api.register(DirectiveArgSetResource())
-v1_api.register(PlatformInstanceResource())
 v1_api.register(PlatformParameterSetResource())
 v1_api.register(PlatformParameterResource())
 # v1_api.register(PresetResource())

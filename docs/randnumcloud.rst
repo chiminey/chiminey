@@ -98,11 +98,7 @@ The   definition of this smart connector, i.e., ``RandNumCloudInitial``, is avai
 
 2.  ``get_updated_bootstrap_params(self)`` updates settings to point the Chiminey server to the location of  the new payload. The location of any payload is given relative to ``LOCAL_FILESYS_ROOT_PATH``. Since we :ref:`previously <prepare_payload_cloud>`  copied ``payload_randnum`` to  ``LOCAL_FILESYS_ROOT_PATH/my_payloads/payload_randnum``, the location of the payload is ``my_payloads/payload_randnum``.
 
-3. The new ``get_ui_schema_namespace(self)`` contains three schema namespaces that represent three types of input fields:
-
-    a. *RMIT_SCHEMA + "/input/system/compplatform"* for specifying the name of the `computation platform <https://github.com/chiminey/chiminey/wiki/Types-of-Input-Form-Fields#computation_platform>`__,
-    b. *RMIT_SCHEMA + "/input/system/cloud"* for specifying the `maximum and minimum number of VMs <https://github.com/chiminey/chiminey/wiki/Types-of-Input-Form-Fields#cloud_resource>`__  needed for the job, and
-    c. *RMIT_SCHEMA + "/input/location/output"* for specifying the `output location <https://github.com/chiminey/chiminey/wiki/Types-of-Input-Form-Fields#location>`__.
+3. The new ``get_ui_schema_namespace(self)`` contains three schema namespaces that represent three types of input fields for specifying the name of a cloud-based computation platform, the maximum and minimum number of VMs  needed for the job, and an output location (see :ref:`smart_connector_ui`).
 
 Below is the content of ``RandNumCloudInitial``.
 
@@ -123,7 +119,7 @@ Below is the content of ``RandNumCloudInitial``.
         def get_ui_schema_namespace(self):
             RMIT_SCHEMA = "http://rmit.edu.au/schemas"
             schemas = [
-                    RMIT_SCHEMA + "/input/system/compplatform",
+                    RMIT_SCHEMA + "/input/system/compplatform/cloud",
                     RMIT_SCHEMA + "/input/system/cloud",
                     RMIT_SCHEMA + "/input/location/output",
                     ]

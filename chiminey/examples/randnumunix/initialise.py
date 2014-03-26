@@ -27,6 +27,7 @@ class RandInitial(CoreInitial):
     def get_updated_execute_params(self):
         return {'package': "chiminey.examples.randnumunix.randexecute.RandExecute"}
 
+
     def get_ui_schema_namespace(self):
         RMIT_SCHEMA = "http://rmit.edu.au/schemas"
         schemas = [
