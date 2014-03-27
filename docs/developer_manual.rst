@@ -83,13 +83,13 @@ The following table shows the list of input field types and their corresponding 
 +-----------------------------------------------------+----------------------------------------------------+
 |``SCHEMA_PREFIX+"/input/system/cloud"``              | | Two textfields for entering the maximum          |
 |                                                     |   and minimum number of virtual                    |
-|                                                     | |  machines needed for the job                     |
+|                                                     | | machines needed for the job                      |
 +-----------------------------------------------------+----------------------------------------------------+
 |``SCHEMA_PREFIX+"/input/location"``                  | | Two textfields for entering input and output     |
 |                                                     | | locations (unix storage platform names)          |
 +-----------------------------------------------------+----------------------------------------------------+
 |``SCHEMA_PREFIX+"/input/location/output"``           | | A textfield for entering an output location      |
-|                                                     | | (a unix storage platform name)                  |
+|                                                     | | (a unix storage platform name)                   |
 +-----------------------------------------------------+----------------------------------------------------+
 |``SCHEMA_PREFIX+"/input/location/input"``            | | A textfield for entering an input location       |
 |                                                     | | (a unix storage platform name)                   |
