@@ -68,40 +68,40 @@ The following table shows the list of input field types and their corresponding 
 **NB**: The default value of ``SCHEMA_PREFIX`` is ``"http://rmit.edu.au/schemas"``
 
 
-+-----------------------------------------------------+----------------------------------------------------+
-|                    Schema Namespace                 |            Input Field Type                        |
-+=====================================================+====================================================+
-|``SCHEMA_PREFIX+"/input/system/compplatform"``       | | A dropdown menu containing **all** registered    |
-|                                                     | | computation platform names                       |
-+-----------------------------------------------------+----------------------------------------------------+
-|``SCHEMA_PREFIX+"/input/system/compplatform/unix"``  | | A dropdown menu containing only **unix**         |
-|                                                     |   and                                              |
-|                                                     | | **cluster** computation platform names           |
-+-----------------------------------------------------+----------------------------------------------------+
-|``SCHEMA_PREFIX+"/input/system/compplatform/cloud"`` | | A dropdown menu containing only **cloud**        |
-|                                                     | | computation platform names                       |
-+-----------------------------------------------------+----------------------------------------------------+
-|``SCHEMA_PREFIX+"/input/system/cloud"``              | | Two textfields for entering the maximum          |
-|                                                     | | and minimum number of virtual                    |
-|                                                     | | machines needed for the job                      |
-+-----------------------------------------------------+----------------------------------------------------+
-|``SCHEMA_PREFIX+"/input/location"``                  | | Two textfields for entering input and output     |
-|                                                     | | locations (unix storage platform names)          |
-+-----------------------------------------------------+----------------------------------------------------+
-|``SCHEMA_PREFIX+"/input/location/output"``           | | A textfield for entering an output location      |
-|                                                     | | (a unix storage platform name)                   |
-+-----------------------------------------------------+----------------------------------------------------+
-|``SCHEMA_PREFIX+"/input/location/input"``            | | A textfield for entering an input location       |
-|                                                     | | (a unix storage platform name)                   |
-+-----------------------------------------------------+----------------------------------------------------+
-|``SCHEMA_PREFIX+"/input/reliability"``               | | A set of fields to control the degree of the     |
-|                                                     | | provided fault tolerance support                 |
-+-----------------------------------------------------+----------------------------------------------------+
-|``SCHEMA_PREFIX+"/input/mytardis"``                  | | A dropdown menu containing all registered        |
-|                                                     | | MyTardis deployments, a checkbox to turn on      |
-|                                                     | | data curation,  and a textfield to specify       |
-|                                                     | | MyTardis experiment number                       |
-+-----------------------------------------------------+----------------------------------------------------+
++-----------------------------------------------------+------------------------------------------------+
+|                    Schema Namespace                 |            Input Field Type                    |
++=====================================================+================================================+
+|``SCHEMA_PREFIX+"/input/system/compplatform"``       | | A dropdown menu containing **all**           |
+|                                                     | | registered computation platform names        |
++-----------------------------------------------------+------------------------------------------------+
+|``SCHEMA_PREFIX+"/input/system/compplatform/unix"``  | | A dropdown menu containing only **unix**     |
+|                                                     | | and                                          |
+|                                                     | | **cluster** computation platform names       |
++-----------------------------------------------------+------------------------------------------------+
+|``SCHEMA_PREFIX+"/input/system/compplatform/cloud"`` | | A dropdown menu containing only **cloud**    |
+|                                                     | | computation platform names                   |
++-----------------------------------------------------+------------------------------------------------+
+|``SCHEMA_PREFIX+"/input/system/cloud"``              | | Two textfields for entering the maximum      |
+|                                                     | | and minimum number of virtual                |
+|                                                     | | machines needed for the job                  |
++-----------------------------------------------------+------------------------------------------------+
+|``SCHEMA_PREFIX+"/input/location"``                  | | Two textfields for entering input and output |
+|                                                     | | locations (unix storage platform names)      |
++-----------------------------------------------------+------------------------------------------------+
+|``SCHEMA_PREFIX+"/input/location/output"``           | | A textfield for entering an output location  |
+|                                                     | | (a unix storage platform name)               |
++-----------------------------------------------------+------------------------------------------------+
+|``SCHEMA_PREFIX+"/input/location/input"``            | | A textfield for entering an input location   |
+|                                                     | | (a unix storage platform name)               |
++-----------------------------------------------------+------------------------------------------------+
+|``SCHEMA_PREFIX+"/input/reliability"``               | | A set of fields to control the degree of the |
+|                                                     | | provided fault tolerance support             |
++-----------------------------------------------------+------------------------------------------------+
+|``SCHEMA_PREFIX+"/input/mytardis"``                  | | A dropdown menu containing all registered    |
+|                                                     | | MyTardis deployments, a checkbox to turn on  |
+|                                                     | | data curation,  and a textfield to specify   |
+|                                                     | | MyTardis experiment number                   |
++-----------------------------------------------------+------------------------------------------------+
 
 
 
