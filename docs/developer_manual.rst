@@ -69,13 +69,17 @@ The following table shows the list of input field types and their corresponding 
 
 
 +-----------------------------------------------------------+-----------------------------------------------------------+
-|                    Schema Namespace                       |            Input Field Type                               |
+                     Schema Namespace                       |            Input Field Type
 +===========================================================+===========================================================+
-| ``NAMESPACE_PREFIX+"/input/system/compplatform"``         |   A dropdown menu containing **all** registered
-|                                                           |   computation platform names
+ ``NAMESPACE_PREFIX+"/input/system/compplatform"``          |   A dropdown menu containing **all** registered
+                                                            |   computation platform names
 +-----------------------------------------------------------+-----------------------------------------------------------+
-| ``NAMESPACE_PREFIX+"/input/system/compplatform/unix"``    | A dropdown menu containing only **unix** and
-|                                                           | **cluster** computation platform names
+ ``NAMESPACE_PREFIX+"/input/system/compplatform/unix"``     |   A dropdown menu containing only **unix**
+                                                                and
+                                                            |   **cluster** computation platform names
++-----------------------------------------------------------+-----------------------------------------------------------+
+
+
 +-----------------------------------------------------------+-----------------------------------------------------------+
 | ``NAMESPACE_PREFIX+"/input/system/compplatform/cloud"``   | A dropdown menu containing only **cloud**
 |                                                           | computation platform names
@@ -103,9 +107,22 @@ The following table shows the list of input field types and their corresponding 
 +-----------------------------------------------------------+-----------------------------------------------------------+
 
 
+=====================================================  =================================================
+``NAMESPACE_PREFIX+"/input/system/compplatform"``     |  A dropdown menu containing **all** registered
+                                                      |computation platform names
+=====================================================  =================================================
+
+
+-----------------------------------------------------  -------------------------------------------------
+Schema Namespace                                        Input Field Type
+=====================================================  =================================================
+``NAMESPACE_PREFIX+"/input/system/compplatform"``     |  A dropdown menu containing **all** registered
+                                                      |computation platform names
+=====================================================  =================================================
+
+
 ===========  ================
-1. Hallo     | blah blah blah
-               blah blah blah
+             |  blah blah blah
                blah
              | blah blah
 2. Here      We can wrap the
