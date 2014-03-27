@@ -68,16 +68,16 @@ The following table shows the list of input field types and their corresponding 
 **NB**: The default value of ``NAMESPACE_PREFIX`` is ``"http://rmit.edu.au/schemas"``
 
 
-+----------------------------------------------------------+-----------------------------------------------------------+
-|                    Schema Namespace                      |            Input Field Type                               |
-+==========================================================+===========================================================+
-| ``NAMESPACE_PREFIX+"/input/system/compplatform"``        |  | A dropdown menu containing **all** registered          |
-|                                                          |  | computation platform names                             |
-+----------------------------------------------------------+-----------------------------------------------------------+
-| ``NAMESPACE_PREFIX+"/input/system/compplatform/unix"``   |   | A dropdown menu containing only **unix**              |
-|                                                          |     and                                                   |
-|                                                          |   | **cluster** computation platform names                |
-+----------------------------------------------------------+-----------------------------------------------------------+
++-------------------------------------------------------+----------------------------------------------------+
+|                    Schema Namespace                   |            Input Field Type                        |
++=======================================================+====================================================+
+|``NAMESPACE_PREFIX+"/input/system/compplatform"``      | | A dropdown menu containing **all** registered    |
+|                                                       | | computation platform names                       |
++-------------------------------------------------------+----------------------------------------------------+
+|``NAMESPACE_PREFIX+"/input/system/compplatform/unix"`` | | A dropdown menu containing only **unix**         |
+|                                                       |   and                                              |
+|                                                       | | **cluster** computation platform names           |
++-------------------------------------------------------+----------------------------------------------------+
 
 
 
