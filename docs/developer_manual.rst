@@ -75,15 +75,14 @@ The following table shows the list of input field types and their corresponding 
 |                                                     | | registered computation platform names        |
 +-----------------------------------------------------+------------------------------------------------+
 |``SCHEMA_PREFIX+"/input/system/compplatform/unix"``  | | A dropdown menu containing only **unix**     |
-|                                                     | | and                                          |
-|                                                     | | **cluster** computation platform names       |
+|                                                     | | and  **cluster** computation platform names  |
 +-----------------------------------------------------+------------------------------------------------+
 |``SCHEMA_PREFIX+"/input/system/compplatform/cloud"`` | | A dropdown menu containing only **cloud**    |
 |                                                     | | computation platform names                   |
 +-----------------------------------------------------+------------------------------------------------+
 |``SCHEMA_PREFIX+"/input/system/cloud"``              | | Two textfields for entering the maximum      |
-|                                                     | | and minimum number of virtual                |
-|                                                     | | machines needed for the job                  |
+|                                                     | | and minimum number of virtual machines       |
+|                                                     | | needed for the job                           |
 +-----------------------------------------------------+------------------------------------------------+
 |``SCHEMA_PREFIX+"/input/location"``                  | | Two textfields for entering input and output |
 |                                                     | | locations (unix storage platform names)      |
@@ -98,8 +97,8 @@ The following table shows the list of input field types and their corresponding 
 |                                                     | | provided fault tolerance support             |
 +-----------------------------------------------------+------------------------------------------------+
 |``SCHEMA_PREFIX+"/input/mytardis"``                  | | A dropdown menu containing all registered    |
-|                                                     | | MyTardis deployments, a checkbox to turn on  |
-|                                                     | | data curation,  and a textfield to specify   |
+|                                                     | | MyTardis deployments, a checkbox to turn     |
+|                                                     | | on data curation, and a textfield to specify |
 |                                                     | | MyTardis experiment number                   |
 +-----------------------------------------------------+------------------------------------------------+
 
