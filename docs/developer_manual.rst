@@ -65,40 +65,44 @@ Some of the fields are already included within the Chiminey platform. But others
 ones, will be defined by the developer.
 The following table shows the list of input field types and their corresponding schema namespaces included within the Chiminey platform.
 
-**NB**: The default value of ``NAMESPACE_PREFIX`` is ``"http://rmit.edu.au/schemas"``
-
-
-+-------------------------------------------------------+----------------------------------------------------+
-|                    Schema Namespace                   |            Input Field Type                        |
-+=======================================================+====================================================+
-|``NAMESPACE_PREFIX+"/input/system/compplatform"``      | | A dropdown menu containing **all** registered    |
-|                                                       | | computation platform names                       |
-+-------------------------------------------------------+----------------------------------------------------+
-|``NAMESPACE_PREFIX+"/input/system/compplatform/unix"`` | | A dropdown menu containing only **unix**         |
-|                                                       |   and                                              |
-|                                                       | | **cluster** computation platform names           |
-+-------------------------------------------------------+----------------------------------------------------+
-
+**NB**: The default value of ``SCHEMA_PREFIX`` is ``"http://rmit.edu.au/schemas"``
 
 
 +-----------------------------------------------------+----------------------------------------------------+
-|   Schema Namespace                                  |   Input Field Type                                 |
+|                    Schema Namespace                 |            Input Field Type                        |
 +=====================================================+====================================================+
-| ``NAMESPACE_PREFIX+"/input/system/compplatform"``   |  | A dropdown menu containing **all** registered   |
-|                                                     |  | computation platform names                      |
+|``SCHEMA_PREFIX+"/input/system/compplatform"``       | | A dropdown menu containing **all** registered    |
+|                                                     | | computation platform names                       |
++-----------------------------------------------------+----------------------------------------------------+
+|``SCHEMA_PREFIX+"/input/system/compplatform/unix"``  | | A dropdown menu containing only **unix**         |
+|                                                     |   and                                              |
+|                                                     | | **cluster** computation platform names           |
++-----------------------------------------------------+----------------------------------------------------+
+|``SCHEMA_PREFIX+"/input/system/compplatform/cloud"`` | | A dropdown menu containing only **cloud**        |
+|                                                     | | computation platform names                       |
++-----------------------------------------------------+----------------------------------------------------+
+|``SCHEMA_PREFIX+"/input/system/cloud"``              | | Two textfields for entering the maximum          |
+|                                                     |   and minimum number of virtual                    |
+|                                                     | |  machines needed for the job                     |
++-----------------------------------------------------+----------------------------------------------------+
+|``SCHEMA_PREFIX+"/input/location"``                  | | Two textfields for entering input and output     |
+|                                                     | | locations (unix storage platform names)          |
++-----------------------------------------------------+----------------------------------------------------+
+|``SCHEMA_PREFIX+"/input/location/output"``           | | A textfield for entering an output location      |
+|                                                     | | (a unix storage platform name)                  |
++-----------------------------------------------------+----------------------------------------------------+
+|``SCHEMA_PREFIX+"/input/location/input"``            | | A textfield for entering an input location       |
+|                                                     | | (a unix storage platform name)                   |
++-----------------------------------------------------+----------------------------------------------------+
+|``SCHEMA_PREFIX+"/input/reliability"``               | | A set of fields to control the degree of the     |
+|                                                     | | provided fault tolerance support                 |
++-----------------------------------------------------+----------------------------------------------------+
+|``SCHEMA_PREFIX+"/input/mytardis"``                  | | A dropdown menu containing all registered        |
+|                                                     |   MyTardis deployments, a checkbox to turn on      |
+|                                                     |   data curation,  and a textfield to specify       |
+|                                                     | | MyTardis experiment number                       |
 +-----------------------------------------------------+----------------------------------------------------+
 
-
-
-+--------+--------+-----------+
-| Header | Header with 2 cols |
-+========+========+===========+
-| A      | Lists: | **C**     |
-+--------+  - aha +-----------+
-| B::    |  - yes | | a block |
-|        |        |   of text |
-|  *hey* |  #. hi | | a break |
-+--------+--------+-----------+
 
 
 
@@ -118,19 +122,19 @@ Therefore, the job submission page of this smart connector must include two inpu
 a cloud-based computation platform  and a unix-based output location. This is done by overwriting
 ``get_ui_schema_namespace(self)`` to include the following:
 
-- ``NAMESPACE_PREFIX+"/input/system/compplatform/cloud"``
+- ``SCHEMA_PREFIX+"/input/system/compplatform/cloud"``
 
-- ``NAMESPACE_PREFIX+"/input/location/output"``.
+- ``SCHEMA_PREFIX+"/input/location/output"``.
 
 Here is the full content of ``get_ui_schema_namespace(self)``:
 
 ::
 
     def get_ui_schema_namespace(self):
-        NAMESPACE_PREFIX = "http://rmit.edu.au/schemas"
+        SCHEMA_PREFIX = "http://rmit.edu.au/schemas"
         schema_namespaces = [
-                NAMESPACE_PREFIX + "/input/system/compplatform/cloud",
-                NAMESPACE_PREFIX + "/input/location/output",
+                SCHEMA_PREFIX + "/input/system/compplatform/cloud",
+                SCHEMA_PREFIX + "/input/location/output",
                 ]
         return schema_namespaces
 
@@ -144,7 +148,7 @@ Input field types that are included within the Chiminey platform are generic, an
 fields must be defined when needed. New input field types are defined in  ``get_domain_specific_schemas(self)``
 of the  ``CoreInitial`` class. The definition includes
 
-- **schema namespace** like ``NAMESPACE_PREFIX+"/input/domain_specific"``
+- **schema namespace** like ``SCHEMA_PREFIX+"/input/domain_specific"``
 
 - **descrption** of the type like *Domain-specific input field type*
 
@@ -172,7 +176,7 @@ Below is an example of a new input field type definition: which contains a natur
 
     def get_domain_specific_schemas(self):
         schema_data = {
-            u'%s/input/domain_specific' % NAMESPACE_PREFIX:
+            u'%s/input/domain_specific' % SCHEMA_PREFIX:
             [u'Domain-specific input field type',
              {
                  u'number_input':   {'type': models.ParameterName.NUMERIC,
