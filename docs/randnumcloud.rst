@@ -1,6 +1,6 @@
-    .. _cloud: http://aws.amazon.com/what-is-cloud-computing/
+.. _cloud: http://aws.amazon.com/what-is-cloud-computing/
 
-=======================================
+
 The Cloud Random Number Smart Connector
 =======================================
 
@@ -50,8 +50,8 @@ For this, we need to carry out the following steps, in order:
 
 .. _prepare_payload_cloud:
 
-I. Preparing a Payload
-~~~~~~~~~~~~~~~~~~~~~~
+Preparing a Payload
+~~~~~~~~~~~~~~~~~~~
 
 We now discuss how to prepare a :ref:`payload <payload>` for the cloud random number smart connector.
 This step is required because the computation platform of this smart connector is
@@ -89,8 +89,8 @@ a cloud infrastructure and :ref:`all cloud-based smart connectors must include t
 
 .. _define_cloud_randnum_conn:
 
-II. Defining the Cloud Random Number Smart Connector
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Defining the Cloud Random Number Smart Connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The   definition of this smart connector, i.e., ``RandNumCloudInitial``, is available at ``chiminey/examples/randnumcloud/initialise.py``.
 
@@ -98,7 +98,7 @@ The   definition of this smart connector, i.e., ``RandNumCloudInitial``, is avai
 
 2.  ``get_updated_bootstrap_params(self)`` updates settings to point the Chiminey server to the location of  the new payload. The location of any payload is given relative to ``LOCAL_FILESYS_ROOT_PATH``. Since we :ref:`previously <prepare_payload_cloud>`  copied ``payload_randnum`` to  ``LOCAL_FILESYS_ROOT_PATH/my_payloads/payload_randnum``, the location of the payload is ``my_payloads/payload_randnum``.
 
-3. The new ``get_ui_schema_namespace(self)`` contains three schema namespaces that represent three types of input fields for specifying the name of a cloud-based computation platform, the maximum and minimum number of VMs  needed for the job, and an output location (see :ref:`smart_connector_ui`).
+3. The new ``get_ui_schema_namespace(self)`` contains three schema namespaces that represent three types of input fields for specifying the name of a cloud-based computation platform, the maximum and minimum number of VMs  needed for the job, and an output location (see :ref:`chiminey_ui`).
 
 Below is the content of ``RandNumCloudInitial``.
 
@@ -129,8 +129,8 @@ Below is the content of ``RandNumCloudInitial``.
 
 .. _register_smart_conn_cloud:
 
-III. Registering the Cloud Random Number Smart Connector within Chiminey
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Registering the Cloud Random Number Smart Connector within Chiminey
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A smart connector can be registered within the Chiminey server in various ways. Here,
 a `Django management command <https://docs.djangoproject.com/en/dev/howto/custom-management-commands/#management-commands-and-locales>`__ is used.
