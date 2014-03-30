@@ -22,20 +22,20 @@ Below is the structure of a payload.
 ::
 
     payload_template/
-        ├── bootstrap_done.sh
-        ├── Makefile
-        ├── process_payload
-        │   ├── domain_specific
-        │   │   ├── domain.sh
-        │   │   └── ...
-        │   ├── Makefile
-        │   ├── process_running_done.sh
-        │   ├── process_schedule_done.sh
-        │   ├── start_process_schedule.sh
-        │   └── start_running_process.sh
-        ├── schedule_done.sh
-        ├── start_bootstrap.sh
-        └── start_schedule.sh
+        |--- bootstrap_done.sh
+        |--- Makefile
+        |--- process_payload
+        │   |--- domain_specific
+        │   │   |--- domain.sh
+        │   │   |--- ...
+        │   |--- Makefile
+        │   |--- process_running_done.sh
+        │   |--- process_schedule_done.sh
+        │   |--- start_process_schedule.sh
+        │   |--- start_running_process.sh
+        |--- schedule_done.sh
+        |--- start_bootstrap.sh
+        |--- start_schedule.sh
 
 
 Examining the contents of a payload
