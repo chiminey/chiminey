@@ -1,4 +1,5 @@
 import djcelery
+import sys
 from datetime import timedelta
 
 DEBUG = False
@@ -17,16 +18,28 @@ ADMINS = (
 
 MANAGERS = ADMINS
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'bdphpc',
-        'USER': 'bdphpc',
-        'PASSWORD': 'bdphpc',  # unused with ident auth
-        'HOST': '',
-        'PORT': '',
+if 'test' in sys.argv:
+    DATABASES = {
+        'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': ':memory:'
+        }
     }
-}
+
+
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql_psycopg2',
+            'NAME': 'bdphpc',
+            'USER': 'bdphpc',
+            'PASSWORD': 'bdphpc',  # unused with ident auth
+            'HOST': '',
+            'PORT': '',
+        }
+    }
+    ROOT_URLCONF = 'chiminey.urls'
+
 
 LOGIN_REDIRECT_URL = "/jobs"
 
@@ -96,7 +109,6 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.transaction.TransactionMiddleware'
     )
 
-ROOT_URLCONF = 'chiminey.urls'
 
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
@@ -149,6 +161,7 @@ AUTH_PROFILE_MODULE='smartconnectorscheduler.UserProfile'
 
 
 INSTALLED_APPS = (
+    'django_nose',
     'django_extensions',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -160,15 +173,18 @@ INSTALLED_APPS = (
     'django.contrib.markup',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
-    'south',
-    'django_nose',
     'storages',
     'djcelery',
     'djkombu',
     'tastypie',
-    'widget_tweaks'
-
+    'widget_tweaks',
+    'south'
 ) + OUR_APPS
+
+#INSTALLED_APPS += ( 'south',)
+
+
+#print '\n'.join(INSTALLED_APPS)
 
 LOGGER_LEVEL = "DEBUG"
 
@@ -253,8 +269,13 @@ LOGGING = {
     'level': 'ERROR',
     'handlers': ['file'],
     },
-}
-}
+    'south': {
+     'level': 'DEBUG',
+     'handlers': ['file'],
+
+    },
+    }
+    }
 
 TASTYPIE_DEFAULT_FORMATS = ['json']
 

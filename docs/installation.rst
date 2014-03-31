@@ -10,7 +10,7 @@ in NeCTAR cloud, Vagrant or some other cloud solution.
 Requirements
 ------------
 
-At least one VM on a IaaS cloud provider 
+At least one VM on a IaaS cloud provider
 
 (Tested on NeCTAR Centos 6.5 x86x64 Image and size m1.small, with 443/80/22 ports open)
 
@@ -60,10 +60,10 @@ Install the Chiminey app::
     chef-solo -c solo/solo.rb -j solo/node.json -ldebug
 
 Check testcases::
-    
+
     su bdphpc
     cd /opt/chiminey/current/
-    bin/test
+    bin/django test .
 
 Setup Chiminey app::
 
