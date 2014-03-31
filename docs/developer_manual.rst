@@ -30,7 +30,7 @@ each stage  with  a unique functionality. The Chiminey server expects each stage
         This is the main functionality of a stage. Such functionality includes creating virtual machines, waiting for computations to complete, and the like. Once the Chiminey server determines the next stage to execute, the server executes the stage via  the ``process(self, ...)`` method.
 
     - **post-condition:**
-        This is where the  new state of the smart connector job is written to a persistent storage upon the successful completion of  a stage execution. During the execution of a stage, the state of a smart connector job changes. This change is saved via the ``process(self, ...)`` method.
+        This is where the  new state of the smart connector job is written to a persistent storage upon the successful completion of  a stage execution. During the execution of a stage, the state of a smart connector job changes. This change is saved via the ``output(self, ...)`` method.
 
 
 
