@@ -712,24 +712,6 @@ class ContextParameterSetResource(ModelResource):
         return models.ContextParameterSet.objects.filter(
             context__owner__user=request.user)
 
-
-class PlatformInstanceResource(ModelResource):
-
-    class Meta:
-        queryset = models.PlatformInstance.objects.all()
-        resource_name = 'platform'
-        # TODO: FIXME: BasicAuth is horribly insecure without using SSL.
-        # Digest is better, but configuration proved tricky.
-        authentication = MultiAuthentication(ApiKeyAuthentication(),
-            MyBasicAuthentication())
-        #authentication = DigestAuthentication()
-        authorization = DjangoAuthorization()
-        allowed_methods = ['get']
-
-    def apply_authorization_limits(self, request, object_list):
-        return object_list.filter(user=request.user)
-
-
 class PlatformParameterSetResource(ModelResource):
     schema = fields.ForeignKey(SchemaResource, attribute='schema', full=True)
 

@@ -1,7 +1,7 @@
 
 .. _quick_example:
 
-=====================================================
+
 Quick Example: The Unix Random Number Smart Connector
 =====================================================
 
@@ -47,8 +47,9 @@ For that, we need to carry out the following steps, in order:
 
 .. _customize_execute_stage:
 
-I. Customizing the Execute Stage
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Customizing the Execute Stage
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 The customised execute stage, i.e., ``RandExecute``, is available at ``chiminey/examples/randnumunix/randexexute.py``.
 
@@ -80,8 +81,8 @@ Below is the content of the ``RandExecute`` class:
 
 .. _define_unix_randnum_conn:
 
-II. Defining the Unix Random Number Smart Connector
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Defining the Unix Random Number Smart Connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The   definition of this smart connector, i.e., ``RandInitial``, is available at ``chiminey/examples/randnumunix/initialise.py``
 
 1. ``RandInitial`` subclasses ``CoreInitial``, which is located at ``chiminey/initialise/coreinitial.py``.  ``RandInitial``  overwrites ``get_updated_execute_params(self)`` and  ``get_ui_schema_namespace(self)``.
@@ -89,10 +90,8 @@ The   definition of this smart connector, i.e., ``RandInitial``, is available at
 2. In the :ref:`previous step  <customize_execute_stage>`, the execute stage is customised. Therefore, ``get_updated_execute_params(self)`` updates the package path  to point to the customised execute stage class, which is
     ``chiminey.examples.randnumunix.randexexute.RandExecute``.
 
-3. The new ``get_ui_schema_namespace(self)`` contains two schema namespaces that represent two types of input fields:
+3. The new ``get_ui_schema_namespace(self)`` contains two schema namespaces that represent two types of input fields  for specifying the name of a unix-based computation platform and an output location (see :ref:`chiminey_ui`).
 
-    a. *RMIT_SCHEMA + "/input/system/compplatform"* for specifying the name of the `computation platform <https://github.com/chiminey/chiminey/wiki/Types-of-Input-Form-Fields#computation_platform>`__, and
-    b. *RMIT_SCHEMA + "/input/location/output"* for specifying the `output location <https://github.com/chiminey/chiminey/wiki/Types-of-Input-Form-Fields#location>`__.
 
 Below is the content of ``RandInitial``.
 
@@ -109,7 +108,7 @@ Below is the content of ``RandInitial``.
         def get_ui_schema_namespace(self):
             RMIT_SCHEMA = "http://rmit.edu.au/schemas"
             schemas = [
-                    RMIT_SCHEMA + "/input/system/compplatform",
+                    RMIT_SCHEMA + "/input/system/compplatform/unix",
                     RMIT_SCHEMA + "/input/location/output",
                     ]
             return schemas
@@ -117,8 +116,8 @@ Below is the content of ``RandInitial``.
 
 .. _register_smart_conn:
 
-III. Registering the Unix Random Number Smart Connector within Chiminey
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Registering the Unix Random Number Smart Connector within Chiminey
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A smart connector can be registered within the Chiminey server in various ways. Here, a `Django management command <https://docs.djangoproject.com/en/dev/howto/custom-management-commands/#management-commands-and-locales>`__ is used. ``chiminey/smartconnectorscheduler/management/commands/randnumunix.py`` contains the Django management command for registering the unix random number smart connector. Below is the full content.
 
@@ -231,8 +230,8 @@ When the job is completed, view the two generated random numbers
 
 .. _sweep:
 
-IV. Parameter Sweep for the Unix  Random Number Smart Connector
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Parameter Sweep for the Unix  Random Number Smart Connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Parameter sweep is used to create multiple jobs, each with its set of
 parameter values (see `Parameter
