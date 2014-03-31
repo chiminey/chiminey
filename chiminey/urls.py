@@ -98,10 +98,10 @@ urlpatterns = patterns('',
     url(r'^accounts/settings/platform/storage/$', login_required(storage_platform_settings),
         name='storage-platform-settings',),
 
-    url(r'^wizard/$', login_required(AddDirective1View.as_view()),
-        name='wizard',),
-    url(r'^wizard2/$', login_required(AddDirective2View.as_view()),
-        name='wizard2',),
+    # url(r'^wizard/$', login_required(AddDirective1View.as_view()),
+    #     name='wizard',),
+    # url(r'^wizard2/$', login_required(AddDirective2View.as_view()),
+    #     name='wizard2',),
 
     # # FIXME: this method is deprecated by list_jobs button.
     # url(r'^jobs/finished/edit/(?P<pk>\d+)/$', login_required(uiviews.FinishedContextUpdateView.as_view()),

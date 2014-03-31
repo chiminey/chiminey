@@ -88,14 +88,19 @@ class Command(BaseCommand):
                   'You must use --username and --email with --noinput.')),
     )
 
+    filesys_root_path = settings.LOCAL_FILESYS_ROOT_PATH
+
     help = 'Used to create a Chiminey user.'
 
     def handle(self, *args, **options):
+        sys.stdout.write("options=%s" % options)
         username = options.get('username', None)
         email = options.get('email', None)
         interactive = options.get('interactive')
         remotefsys = options.get('remotefsys')
         verbosity = int(options.get('verbosity', 1))
+        sys.stdout.write("username=%s" % username)
+        sys.stdout.write("email=%s" % email)
 
         # Do quick and dirty validation if --noinput
         if not interactive:
@@ -196,7 +201,7 @@ class Command(BaseCommand):
         userProfile = models.UserProfile(user=user)
         userProfile.save()
 
-        self.stdout.write("remotefsys=%s\n" % remotefsys)
+        sys.stdout.write("remotefsys=%s\n" % remotefsys)
 
         # Setup the schema for user configuration information (kept in profile)
         self.PARAMS = {
@@ -227,18 +232,17 @@ class Command(BaseCommand):
                 value=v)
         try:
             os.makedirs(os.path.join(
-                settings.LOCAL_FILESYS_ROOT_PATH,
+                self.filesys_root_path,
                 username))
             os.makedirs(os.path.join(
-                settings.LOCAL_FILESYS_ROOT_PATH,
+                self.filesys_root_path,
                 username,
                 "myfiles",
                 "input"))
         except IOError:
             raise CommandError("cannot create user filesystem")
         except AttributeError:
-            raise CommandError(
-                "LOCAL_FILESYS_ROOT_PATH must be set in settings.py")
+            raise CommandError("filesys_root_path must be set in settings.py")
 
         curr_dir = os.path.dirname(os.path.realpath(__file__))
         source_prefix = os.path.join(curr_dir, "..", "..", "..", "..")
@@ -246,15 +250,15 @@ class Command(BaseCommand):
         for src, dest in copy_commands:
             try:
                 s = os.path.abspath(os.path.join(source_prefix, src))
-                d = os.path.join(settings.LOCAL_FILESYS_ROOT_PATH, username, dest)
-                self.stdout.write("%s -> %s" % (s, d))
+                d = os.path.join(self.filesys_root_path, username, dest)
+                sys.stdout.write("%s -> %s" % (s, d))
                 shutil.copytree(s, d)
             except IOError:
                 self.stderr.write("WARNING: could not setup %s\n" % src)
 
         shutil.copy(os.path.abspath(
             os.path.join(source_prefix, "chiminey", "randomnums.txt")),
-            os.path.join(settings.LOCAL_FILESYS_ROOT_PATH, username))
+            os.path.join(self.filesys_root_path, username))
 
         if verbosity >= 1:
-            self.stdout.write("Chiminey user created successfully.\n")
+            sys.stdout.write("Chiminey user created successfully.\n")
