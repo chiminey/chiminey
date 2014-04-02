@@ -7,6 +7,7 @@ Developer Manual
 
    smartconnector
    payload
+   parametersweep
    chimineyui
    examples
 

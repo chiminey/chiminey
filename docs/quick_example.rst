@@ -11,7 +11,9 @@ for simplicity), saves the numbers to a file, and then transfers the file
 to a provided output location. This smart connector will be known as the
 Unix Random Number Smart Connector.
 
-    - The **purpose** of this example is to  create a basic smart connector that executes programs on a unix server.
+    - The **purpose** of this example is to create a basic smart connector that executes programs on a unix server. We also add an :ref:`external parameter sweep <external_parameter_sweep>` to this connector.
+
+
 
     - The **source code** for this example is available at ``chiminey/examples/randnumunix``.
 
@@ -42,7 +44,7 @@ For that, we need to carry out the following steps, in order:
    execute stage and the pre-defined core stages, and
 3. :ref:`register  <register_smart_conn>` the smart connector within
    Chiminey so it can be executed.
-4. In this example, we also show how to add a :ref:`sweep functionality <sweep>`  to a smart connector .
+4. In this example, we also show how to add an  :ref:`external parameter sweep <sweep>`  to a smart connector .
 
 
 .. _customize_execute_stage:
@@ -230,12 +232,11 @@ When the job is completed, view the two generated random numbers
 
 .. _sweep:
 
-Parameter Sweep for the Unix  Random Number Smart Connector
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+External Parameter Sweep for the Unix  Random Number Smart Connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Parameter sweep is used to create multiple jobs, each with its set of
-parameter values (see `Parameter
-Sweep <https://github.com/chiminey/chiminey/wiki/Types-of-Input-Form-Fields#sweep>`__
+External parameter sweep is used to create multiple jobs, each with its set of
+parameter values (see :ref:`Parameter Sweep <parametersweep>`
 for details). This feature can be added to a smart connector by turning
 the sweep flag on during the :ref:`registration of the smart
 connector <register_smart_conn>`.
@@ -289,7 +290,7 @@ Submit a sweep for unix random number smart connector job
 
 See :ref:`Job Submission <submit_job>` for details.
 
-**NB**: If you leave ``Values to sweep over`` field empty, only a single job will be created. In this case,  put ``{"var": [1,2]}`` to create two jobs. See `Parameter Sweep <https://github.com/chiminey/chiminey/wiki/Types-of-Input-Form-Fields#sweep>`__ for details
+**NB**: If you leave ``Values to sweep over`` field empty, only a single job will be created. In this case,  put ``{"var": [1,2]}`` to create two jobs. See :ref:`Parameter Sweep <parametersweep>` for details.
 
 .. _test_monitor_sweepjob:
 
