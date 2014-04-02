@@ -111,7 +111,6 @@ whether the jobs produce the same output.
 .. seealso::
 
         :ref:`Quick Example: The Unix Random Number Smart Connector <quick_example>`
-           
 
         :ref:`The Internal Sweep Random Number Smart Connector <internal_sweep_randnum>`
 
