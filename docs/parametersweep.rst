@@ -59,31 +59,15 @@ The default sweep map generates one task.
 
 ::
 
-    from chiminey.corestages.stage import Stage
+    def get_internal_sweep_map(self, settings, **kwargs):
+        rand_index = 42
+        map = {'val': [1]}
+        return map, rand_index
+
+    ...
 
 
-    class Parent(Stage)
-
-        def get_internal_sweep_map(self, settings, **kwargs):
-            rand_index = 42
-            map = {'val': [1]}
-            return map, rand_index
-
-        ...
-
-
-
-
-..
-    The actual values of the parameters
-    can be
-    - hardcoded during the smart connector definition or
-    - collected from the end-user input during job submission.
-
-
-
-
-A smart connector job that is composed of multiple tasks, due to an  internal parameter sweep,  is considered to be complete when
+**NB**: A smart connector job that is composed of multiple tasks, due to an  internal parameter sweep,  is considered to be complete when
 each task  either  finishes successfully or fails beyond recovery.
 
 
