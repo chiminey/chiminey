@@ -22,10 +22,10 @@ The external  sweep gives power to the end-users to provide a range of input val
 for a set of parameters of their choice,
 and the resulting set of jobs span all possible values from that parameter space.
 
-The set of parameters are defined at job submission time,
+The set of parameters are defined as part of input data preparation,
 rather than being "hard-coded" to the definition of the smart connector.
 This is done using `templating language <https://docs.djangoproject.com/en/dev/ref/templates/api/>`__.
-Here are the steps
+Here are the steps:
     #. Identify the input files that contain the parameters of your choice.
 
     #. Surround each parameter name with double curly brackets. Suppose an input file entry is ``var1 15``. Replace this line by ``{{var1}} 15``; where ``15`` is the default value.
@@ -52,11 +52,36 @@ that will  determine the number of tasks  spawned during the execution
 of the smart connector.
 
 The developer uses a :ref:`sweep map <sweep_map>` to specify a range of
-values for the selected set of parameters during a smart connector definition. The actual values of the parameters
-can be
-    - hardcoded during the smart connector definition or
+values for the selected set of parameters during a smart connector definition. This is done by
+subclassing  ``Parent``, which is located at ``chiminey/corestages/parent.py``, and
+overwriting the method ``get_internal_sweep_map(self, ...)`` to include the new sweep map.
+The default sweep map generates one task.
 
-    - collected from the enduser input during job submission.
+::
+
+    from chiminey.corestages.stage import Stage
+
+
+    class Parent(Stage)
+
+        def get_internal_sweep_map(self, settings, **kwargs):
+            rand_index = 42
+            map = {'val': [1]}
+            return map, rand_index
+
+        ...
+
+
+
+
+..
+    The actual values of the parameters
+    can be
+    - hardcoded during the smart connector definition or
+    - collected from the end-user input during job submission.
+
+
+
 
 A smart connector job that is composed of multiple tasks, due to an  internal parameter sweep,  is considered to be complete when
 each task  either  finishes successfully or fails beyond recovery.
