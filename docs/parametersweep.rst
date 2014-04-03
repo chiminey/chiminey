@@ -64,8 +64,6 @@ The default sweep map generates one task.
         map = {'val': [1]}
         return map, rand_index
 
-    ...
-
 
 **NB**: A smart connector job that is composed of multiple tasks, due to an  internal parameter sweep,  is considered to be complete when
 each task  either  finishes successfully or fails beyond recovery.
@@ -96,22 +94,40 @@ number of tasks or jobs generated during job submission.  The above sweep map, f
     - **two tasks** per job if used for internal parameter sweep
 
 
+.. _unknown_param:
+
 Imapct of unknown parameters in a sweep map
 '''''''''''''''''''''''''''''''''''''''''''
 
-Including an unknown parameter
-to a sweep map increases the generated number of tasks/jobs, provided that
-the number of the values of the unknown parameter is more than 1.
+An **unknown parameter** is a parameter that is not needed during the execution of a smart
+connector. A **known parameter**, on the other hand, is a parameter whose value is needed
+for the correct functioning of a smart connector.
 
-Suppose ``var1`` and ``var2`` are known parameters to  a specific
-smart connector, and these parameters are used as part of an external sweep.
-If the end-user mistakenly provided a sweep map ``{"var1": [7,9], "var2": [42], "x": [1,2]}``,
-four jobs, instead of two jobs, will be created.
 
-The additional jobs
-waste computing and storage resources. However, there are cases where such  feature is useful.
-The end-user can use this feature to run identical jobs, and then check
-whether the jobs produce the same output.
+Including an unknown parameter in a sweep map does not have
+any ill-effect during execution. However,
+this parameter causes an increase in the number of generated
+tasks/jobs, provided that
+the number of the values of the unknown parameter is more than one.
+
+
+Suppose ``var1`` and ``var2`` are known parameters, and ``x`` is an unknown parameter of a specific
+smart connector; and  the sweep map is ``{"var1": [7,9], "var2": [42], "x": [1,2]}``.
+
+    - If the sweep map is used for external parameter sweep, the number of jobs doubles due to the
+      inclusion of parameter ``x`` with two values. If the sweep map is used for internal sweep, the number of tasks
+      doubles as well. If the value of ``x`` is changed to ``[1,2,3]``, the number of jobs/tasks
+      triples, and so on.
+
+The additional jobs or tasks waste computing, storage and network resources.  However,
+there are cases where such feature is useful.
+    - The end-user can use this feature to run  jobs with identical inputs, and then compare
+      whether the jobs produce the same output.
+
+    - If each task has unpredictable output irrespective of other variables being constant,
+      the developer can use the feature to run many of these tasks per job, each task with different output.
+      For example, generating a random number without fixing the seed almost always guarantees a new number.
+
 
 
 .. [*] The total number of tasks that are generated per job depends on the type of the smart connector. In addition to the sweep map, domain-specific variables or constraints  play a role in determining the number of tasks  per job.
@@ -119,9 +135,11 @@ whether the jobs produce the same output.
 
 .. seealso::
 
-        :ref:`Quick Example: The Unix Random Number Smart Connector <quick_example>`
+        External sweep parameter:
+            - :ref:`Quick Example: The Unix Random Number Smart Connector <quick_example>`
 
-        :ref:`The Internal Sweep Random Number Smart Connector <internal_sweep_randnum>`
+        Internal sweep parameter:
+            - :ref:`The Internal Sweep Random Number Smart Connector <internal_sweep_randnum>`
 
 
 

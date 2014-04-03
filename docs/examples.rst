@@ -1,3 +1,6 @@
+
+.. _cloud: http://aws.amazon.com/what-is-cloud-computing/
+
 .. _examples:
 
 Examples
@@ -10,8 +13,6 @@ and how a smart connector is defined and registered within a Chiminey server.
     :titlesonly:
     :numbered: 3
 
-
-
     quick_example
     randnumcloud
-    internalsweeprandnum
+    randnuminternalsweep
