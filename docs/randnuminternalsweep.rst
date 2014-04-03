@@ -13,9 +13,9 @@ will be  transferred  to a user-designated
 location.
 We call this smart connect the *internal sweep random number smart connector*.
 
-    - The **purpose** of this example is to create a smart connector with an :ref:`internal parameter sweep <internal_parameter_sweep>`.
+- The **purpose** of this example is to create a smart connector with an :ref:`internal parameter sweep <internal_parameter_sweep>`.
 
-    - The **source code** for this example is available at ``chiminey/examples/randnuminternalsweep``.
+- The **source code** for this example is available at ``chiminey/examples/randnuminternalsweep``.
 
 
 Requirements

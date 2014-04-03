@@ -10,11 +10,11 @@ and then transfers  the file that contains the random numbers to a user-designat
 location.
 We call this smart connector the *cloud random number smart connector*.
 
-    - The **purpose** of this example is to create a smart connector that executes programs on the cloud_.
+- The **purpose** of this example is to create a smart connector that executes programs on the cloud_.
 
-    - The **source code** for this example is available at ``chiminey/examples/randnumcloud``.
+- The **source code** for this example is available at ``chiminey/examples/randnumcloud``.
 
-    - To add :ref:`external parameter sweep <external_parameter_sweep>` to this smart connector, see :ref:`quick example <sweep>`.
+- To add :ref:`external parameter sweep <external_parameter_sweep>` to this smart connector, see :ref:`quick example <sweep>`.
 
 
 Requirements

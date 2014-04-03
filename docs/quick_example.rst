@@ -11,11 +11,9 @@ for simplicity), saves the numbers to a file, and then transfers the file
 to a provided output location. This smart connector will be known as the
 *Unix Random Number Smart Connector*.
 
-    - The **purpose** of this example is to create a basic smart connector that executes programs on a unix server. We also add an :ref:`external parameter sweep <external_parameter_sweep>` to this connector.
+- The **purpose** of this example is to create a basic smart connector that executes programs on a unix server. We also add an :ref:`external parameter sweep <external_parameter_sweep>` to this connector.
 
-
-
-    - The **source code** for this example is available at ``chiminey/examples/randnumunix``.
+- The **source code** for this example is available at ``chiminey/examples/randnumunix``.
 
 
 Requirements
@@ -123,7 +121,7 @@ Below is the content of ``RandInitial``.
 .. _register_smart_conn:
 
 Registering the Unix Random Number Smart Connector within Chiminey
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A smart connector can be registered within the Chiminey server in various ways.
 Here, a `Django management command <https://docs.djangoproject.com/en/dev/howto/custom-management-commands/#management-commands-and-locales>`__
