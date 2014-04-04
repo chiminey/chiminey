@@ -135,16 +135,8 @@ there are cases where such feature is useful.
 
 .. seealso::
 
-        External sweep parameter:
-            - :ref:`Quick Example: The Unix Random Number Smart Connector <quick_example>`
+        External parameter sweep:
+            - :ref:`Unix-based smart connector with external parameter sweep <quick_example>`
 
-        Internal sweep parameter:
-            - :ref:`The Internal Sweep Random Number Smart Connector <internal_sweep_randnum>`
-
-
-
-
-
-
-
-
+        Internal parameter sweep:
+            - :ref:`Cloud-based smart connector with internal parameter sweep <internal_sweep_randnum>`
