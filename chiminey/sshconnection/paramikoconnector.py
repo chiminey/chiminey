@@ -64,7 +64,7 @@ def open_connection(ip_address, settings):
         elif 'password' in settings and 'username' in settings:
             logger.debug("Connecting to %s as %s" % (ip_address,
                                 settings['username']))
-            print(ssh_client)
+            logger.debug(ssh_client)
             ssh_client.connect(ip_address, username=settings['username'],
                                password=settings['password'], timeout=60.0)
         else:

@@ -20,7 +20,6 @@
 
 import ast
 import logging
-from chiminey.cloudconnection import get_registered_vms
 from chiminey.reliabilityframework import FTManager
 from chiminey import messages
 from chiminey.runsettings import getval, update

@@ -115,7 +115,7 @@ def _start_bootstrap(instance, ip,  settings, source, destination):
         command_out, errs = run_command_with_status(ssh, install_make)
         logger.debug("command_out1=(%s, %s)" % (command_out, errs))
         run_make(ssh, makefile_path, 'start_bootstrap')
-    except Exception, e:#fixme: consider using reliability framework
+    except Exception, e:  # fixme: consider using reliability framework
         logger.error(e)
         raise
     finally:

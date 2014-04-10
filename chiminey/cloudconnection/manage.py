@@ -38,11 +38,14 @@ def create_vms(settings):
         Create virtual machines and return id
     """
     logger.debug("create_vms")
+
     all_vms = botoconnector.create_vms(settings)
     if all_vms:
+        logger.debug("waiting")
         all_running_vms = botoconnector.wait_for_vms_to_start_running(
             all_vms, settings)
         if all_running_vms:
+            logger.debug("getting ready")
             ssh_ready_vms = _get_ssh_ready_vms(
                 all_running_vms, settings)
             if ssh_ready_vms:

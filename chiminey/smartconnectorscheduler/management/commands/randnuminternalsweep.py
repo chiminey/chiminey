@@ -50,6 +50,7 @@ class Command(BaseCommand):
         print "done"
 
 
+
     def handle(self, *args, **options):
         self.setup()
         print "done"

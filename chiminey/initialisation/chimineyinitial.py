@@ -53,7 +53,7 @@ def initialise():
         #group.permissions.add(delete_model)
     schema_data = _get_chiminey_schemas()
     register_schemas(schema_data)
-    print "done"
+    logger.info("done")
 
 
 def register_schemas(schema_data):
@@ -68,20 +68,23 @@ def register_schemas(schema_data):
         logger.debug("kv=%s", kv)
 
         url = urlparse(ns)
-        print ns
+        logger.debug(ns)
         context_schema, _ = models.Schema.objects.get_or_create(
             namespace=ns,
             defaults={'name': slugify(url.path.replace('/', ' ')),
                       'description': desc})
 
+        pn = []
         for k, v in kv.items():
             try:
                 model, _ = models.ParameterName.objects.get_or_create(
                     schema=context_schema,
                     name=k,
                     defaults=dict(v))
+                pn.append(model.pk)
             except TypeError:
                 logger.debug('Parameters are added to a schema using old format.')
+    return (context_schema.pk, pn)
 
 
 def _get_chiminey_schemas():

@@ -93,14 +93,15 @@ class Command(BaseCommand):
     help = 'Used to create a Chiminey user.'
 
     def handle(self, *args, **options):
-        sys.stdout.write("options=%s" % options)
+        #sys.stdout.write("options=%s" % options)
         username = options.get('username', None)
         email = options.get('email', None)
         interactive = options.get('interactive')
         remotefsys = options.get('remotefsys')
+        returnuser = options.get('returnuser')
         verbosity = int(options.get('verbosity', 1))
-        sys.stdout.write("username=%s" % username)
-        sys.stdout.write("email=%s" % email)
+        # sys.stdout.write("username=%s" % username)
+        # sys.stdout.write("email=%s" % email)
 
         # Do quick and dirty validation if --noinput
         if not interactive:
@@ -201,7 +202,8 @@ class Command(BaseCommand):
         userProfile = models.UserProfile(user=user)
         userProfile.save()
 
-        sys.stdout.write("remotefsys=%s\n" % remotefsys)
+        if verbosity >= 2:
+            sys.stdout.write("remotefsys=%s\n" % remotefsys)
 
         # Setup the schema for user configuration information (kept in profile)
         self.PARAMS = {
@@ -251,7 +253,8 @@ class Command(BaseCommand):
             try:
                 s = os.path.abspath(os.path.join(source_prefix, src))
                 d = os.path.join(self.filesys_root_path, username, dest)
-                sys.stdout.write("%s -> %s" % (s, d))
+                if verbosity >= 1:
+                    sys.stdout.write("%s -> %s" % (s, d))
                 shutil.copytree(s, d)
             except IOError:
                 self.stderr.write("WARNING: could not setup %s\n" % src)
@@ -262,3 +265,6 @@ class Command(BaseCommand):
 
         if verbosity >= 1:
             sys.stdout.write("Chiminey user created successfully.\n")
+
+        if returnuser:
+            return userProfile
