@@ -36,7 +36,7 @@ setup(
         'paramiko==1.12.2',
         'boto>=2.5.2',
         'django-tastypie==0.9.15',
-        'django-celery-with-redis==3.0'
+        'django-celery-with-redis==3.0',
         ],
     dependency_links=[
         'https://github.com/dahlia/wand/tarball/warning-bugfix#egg=Wand-0.1.10',

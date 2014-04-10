@@ -88,7 +88,7 @@ class Command(BaseCommand):
                   'You must use --username and --email with --noinput.')),
     )
 
-    filesys_root_path = settings.LOCAL_FILESYS_ROOT_PATH
+    filesys_root_path = os.path.join(settings.LOCAL_FILESYS_ROOT_PATH, "test")
 
     help = 'Used to create a Chiminey user.'
 

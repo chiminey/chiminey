@@ -465,7 +465,7 @@ def copy_directories(source_url, destination_url):
     logger.debug("fs=%s" % fs)
     dir_file_info = fs.listdir(source_path)
     if dir_file_info:
-        logger.debug("dir_file_info=%s" % dir_file_info)
+        logger.debug("dir_file_info=%s" % str(dir_file_info))
     current_dirname = source_path
     logger.debug("current_dirname=%s" % current_dirname)
     file_paths = []

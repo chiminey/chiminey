@@ -124,9 +124,11 @@ def _start_bootstrap(instance, ip,  settings, source, destination):
 
 
 def complete_bootstrap(bootstrap_class, local_settings):
+    logger.debug("complete_bootstrap")
     try:
         nodes = get_registered_vms(local_settings)
         running_created_nodes = [x for x in bootstrap_class.created_nodes if str(x[3]) == 'running']
+        logger.debug("running_created_nodes=%s" % running_created_nodes)
         if len(nodes) < len(running_created_nodes):
             raise VMTerminatedError
     except NoRegisteredVMError as e:
@@ -137,13 +139,20 @@ def complete_bootstrap(bootstrap_class, local_settings):
         logger.debug('VMTerminatedError detected')
         ftmanager = FTManager()
         ftmanager.manage_failure(e, stage_class=bootstrap_class,  settings=local_settings)
+    logger.debug("nodes=%s" % nodes)
     for node in nodes:
+        logger.debug("node=%s" % node)
         node_ip = node.ip_address
         if not node_ip:
             node_ip = node.private_ip_address
-        if (node_ip in [x[1] for x in bootstrap_class.bootstrapped_nodes if x[1] == node_ip]):
+        logger.debug("node_ip=%s" % node_ip)
+        logger.debug("bootstrap_class.bootstrapped_nodes=%s" % bootstrap_class.bootstrapped_nodes)
+        node_list = [x[1] for x in bootstrap_class.bootstrapped_nodes if x[1] == node_ip]
+        logger.debug("node_list=%s" % node_list)
+        if (node_ip in node_list):
             continue
         relative_path_suffix = bootstrap_class.get_relative_output_path(local_settings)
+        logger.debug("relative_path_suffix=%s" % relative_path_suffix)
         relative_path = "%s@%s" % (local_settings['type'],
             relative_path_suffix)
         destination = get_url_with_credentials(local_settings,

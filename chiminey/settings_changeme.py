@@ -27,6 +27,13 @@ if 'test' in sys.argv:
     }
     SOUTH_TESTS_MIGRATE = False
 
+    NOSE_ARGS = [
+        # turn on to always generate coverage report
+        #'--with-coverage',
+        '--cover-package=chiminey.simpleui, chiminey.smartconnectorscheduler',
+        '--cover-inclusive',
+    ]
+
 else:
     DATABASES = {
         'default': {
