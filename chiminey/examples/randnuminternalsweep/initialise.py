@@ -18,12 +18,9 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import logging
+
 from chiminey.initialisation import CoreInitial
-from chiminey.smartconnectorscheduler import models
 
-
-logger = logging.getLogger(__name__)
 
 class RandNumInternaSweepInitial(CoreInitial):
     def get_updated_parent_params(self):
@@ -33,10 +30,7 @@ class RandNumInternaSweepInitial(CoreInitial):
         settings = {
                 u'http://rmit.edu.au/schemas/stages/setup':
                     {
-                        u'payload_source': 'local/payload_randnum',
-                        u'payload_destination': 'randnum_dest',
-                        u'payload_name': 'process_payload',
-                        u'filename_for_PIDs': 'PIDs_collections',
+                        u'payload_source': 'my_payloads/payload_randnum',
                     },
             }
         return {'settings': settings}

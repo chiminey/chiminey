@@ -8,7 +8,7 @@ Welcome to the Chiminey Documentation
 Contents:
 
 .. toctree::
-   :maxdepth: 5
+   :maxdepth: 6
 
    installation
    enduser_manual

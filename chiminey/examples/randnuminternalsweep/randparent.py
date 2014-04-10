@@ -46,5 +46,5 @@ class RandParent(Parent):
                     - template variable "var2"=9, "var2"=42 in process 2
         '''
         rand_index = 42
-        map = {'val': [1, 2]}
+        map = {'var': [1, 2]}
         return map, rand_index

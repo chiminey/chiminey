@@ -9,26 +9,26 @@ In this example, we create a basic smart connector that generates two
 random numbers on a unix machine (or the Chiminey server machine,
 for simplicity), saves the numbers to a file, and then transfers the file
 to a provided output location. This smart connector will be known as the
-Unix Random Number Smart Connector.
+*Unix Random Number Smart Connector*.
 
-    - The **purpose** of this example is to  create a basic smart connector that executes programs on a unix server.
+- The **purpose** of this example is to create a basic smart connector that executes programs on a unix server. We also add an :ref:`external parameter sweep <external_parameter_sweep>` to this connector.
 
-    - The **source code** for this example is available at ``chiminey/examples/randnumunix``.
+- The **source code** for this example is available at ``chiminey/examples/randnumunix``.
 
 
 Requirements
 ------------
 
-1. Installation and configuration of the Chiminey server on a virtual machine,
+#. Installation and configuration of the Chiminey server on a virtual machine,
    according to the :ref:`Installation Guide <installation_guide>`.
-2. Registration of a computation platform, which is where the core
+#. Registration of a computation platform, which is where the core
    functionality of a smart connector is executed within the Chiminey
    UI. For this example, the platform could be any unix server,
-   including the Chiminey server itself. (see registering :ref:`Cluster/Unix  Computation Platform <cluster_unix_platform>`).
-3. Registration of a storage platform, which is the destination of the
+   including the Chiminey server itself (see registering :ref:`Cluster/Unix  Computation Platform <cluster_unix_platform>`).
+#. Registration of a storage platform, which is the destination of the
    smart connector output within the Chiminey UI. As for the computation
    platform above, the platform could be any unix server, again
-   including the Chiminey server itself. (see registering :ref:`Unix Storage Platform <unix_storage_platform>`).
+   including the Chiminey server itself (see registering :ref:`Unix Storage Platform <unix_storage_platform>`).
 
 
 Creating the Unix Random Number Smart Connector
@@ -37,12 +37,12 @@ Creating the Unix Random Number Smart Connector
 Here, we a create the unix random number :ref:`smart connector <smart_connector_desc>`.
 For that, we need to carry out the following steps, in order:
 
-1. :ref:`customise <customize_execute_stage>`  the execute stage,
-2. :ref:`define <define_unix_randnum_conn>`  the smart connector with the new
+#. :ref:`customise <customize_execute_stage>`  the execute stage,
+#. :ref:`define <define_unix_randnum_conn>`  the smart connector with the new
    execute stage and the pre-defined core stages, and
-3. :ref:`register  <register_smart_conn>` the smart connector within
+#. :ref:`register  <register_smart_conn>` the smart connector within
    Chiminey so it can be executed.
-4. In this example, we also show how to add a :ref:`sweep functionality <sweep>`  to a smart connector .
+#. In this example, we also show how to add an  :ref:`external parameter sweep <sweep>`  to a smart connector .
 
 
 .. _customize_execute_stage:
@@ -53,13 +53,17 @@ Customizing the Execute Stage
 
 The customised execute stage, i.e., ``RandExecute``, is available at ``chiminey/examples/randnumunix/randexexute.py``.
 
-1. ``RandExecute`` subclasses the core execute stage ``Execute``, which is located at ``chiminey/corestages/execute.py``. ``RandExecute`` overwrites ``def run_task(self, ....)`` to include the code that generates the random numbers (NB: ``def run_task(self, ....)`` does nothing by default)
+#. ``RandExecute`` subclasses the core execute stage ``Execute``, which is located at ``chiminey/corestages/execute.py``.
+   ``RandExecute`` overwrites ``def run_task(self, ....)`` to include the code that generates the random numbers (NB: ``run_task(self, ....)``
+   does nothing by default)
 
-2. Here is the code that generates two random numbers: ``python -c 'import random; print random.random();  print random.random()'``
+#. Here is the code that generates two random numbers: ``python -c 'import random; print random.random();  print random.random()'``
 
-3. Chimney  expects the output of a computation to be in a specific location.  Therefore, ``get_process_output_path(...)`` is used to retrieve the path to which the output of your computation should be sent. For this example, this path is not create automatically by Chiminey, therefore must be created prior to generating random numbers.
+#. Chimney  expects the output of a computation to be in a specific location.  Therefore, ``get_process_output_path(...)``
+   is used to retrieve the path to which the output of your computation should be sent. For this example, this path is not create
+   automatically by Chiminey, therefore must be created prior to generating random numbers.
 
-4. We then use ``run_command(...)``, which is a compute API, to make the output directory and then generate and save the two random numbers
+#. We then use ``run_command(...)``, which is a compute API, to make the output directory and then generate and save the two random numbers
 
 Below is the content of the ``RandExecute`` class:
 
@@ -83,14 +87,14 @@ Below is the content of the ``RandExecute`` class:
 
 Defining the Unix Random Number Smart Connector
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The   definition of this smart connector, i.e., ``RandInitial``, is available at ``chiminey/examples/randnumunix/initialise.py``
+The  definition of this smart connector, i.e., ``RandInitial``, is available at ``chiminey/examples/randnumunix/initialise.py``
 
-1. ``RandInitial`` subclasses ``CoreInitial``, which is located at ``chiminey/initialise/coreinitial.py``.  ``RandInitial``  overwrites ``get_updated_execute_params(self)`` and  ``get_ui_schema_namespace(self)``.
+#. ``RandInitial`` subclasses ``CoreInitial``, which is located at ``chiminey/initialise/coreinitial.py``.  ``RandInitial``  overwrites ``get_updated_execute_params(self)`` and  ``get_ui_schema_namespace(self)``.
 
-2. In the :ref:`previous step  <customize_execute_stage>`, the execute stage is customised. Therefore, ``get_updated_execute_params(self)`` updates the package path  to point to the customised execute stage class, which is
+#. In the :ref:`previous step  <customize_execute_stage>`, the execute stage is customised. Therefore, ``get_updated_execute_params(self)`` updates the package path  to point to the customised execute stage class, which is
     ``chiminey.examples.randnumunix.randexexute.RandExecute``.
 
-3. The new ``get_ui_schema_namespace(self)`` contains two schema namespaces that represent two types of input fields  for specifying the name of a unix-based computation platform and an output location (see :ref:`chiminey_ui`).
+#. The new ``get_ui_schema_namespace(self)`` contains two schema namespaces that represent two types of input fields  for specifying the name of a unix-based computation platform and an output location (see :ref:`chiminey_ui`).
 
 
 Below is the content of ``RandInitial``.
@@ -117,9 +121,12 @@ Below is the content of ``RandInitial``.
 .. _register_smart_conn:
 
 Registering the Unix Random Number Smart Connector within Chiminey
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A smart connector can be registered within the Chiminey server in various ways. Here, a `Django management command <https://docs.djangoproject.com/en/dev/howto/custom-management-commands/#management-commands-and-locales>`__ is used. ``chiminey/smartconnectorscheduler/management/commands/randnumunix.py`` contains the Django management command for registering the unix random number smart connector. Below is the full content.
+A smart connector can be registered within the Chiminey server in various ways.
+Here, a `Django management command <https://docs.djangoproject.com/en/dev/howto/custom-management-commands/#management-commands-and-locales>`__
+is used. ``chiminey/smartconnectorscheduler/management/commands/randnumunix.py`` contains the Django management command for
+registering the unix random number smart connector. Below is the full content.
 
 ::
 
@@ -151,30 +158,31 @@ A smart connector can be registered within the Chiminey server in various ways. 
             print "done"
 
 
-1. When registering a smart connector, a **unique name** must be provided. In this case, *rand_num_unix*. If a smart connector exists with the same name, the command will be ignored.
+#. When registering a smart connector, a **unique name** must be provided. In this case, *rand_num_unix*.
+   If a smart connector exists with the same name, the command will be ignored.
 
-2. A short **description** is also needed. In this case, *RandNum Unix Smart Connector*.  Both the unique name and the description will be displayed on the Chiminey UI.
+#. A short **description** is also needed. In this case, *RandNum Unix Smart Connector*.
+   Both the unique name and the description will be displayed on the Chiminey UI.
 
-3. Execute the following commands on the Chiminey server terminal
+#. Execute the following commands on the Chiminey server terminal
 
-::
+   ::
 
-    cd /opt/chiminey/current
-    sudo su bdphpc
-    bin/django randnumunix
-    Yes
+        sudo su bdphpc
+        cd /opt/chiminey/current
+        bin/django randnumunix
+        Yes
 
-
-
-4. Visit your Chiminey web page; click ``Create Job``. You should see ``RandNum Unix Smart Connector`` under ``Smart Connectors`` menu.
+#. Visit your Chiminey web page; click ``Create Job``. You should see ``RandNum Unix Smart Connector`` under ``Smart Connectors`` menu.
 
 
-.. figure:: img/quick_example/create_randnumunix.png
-    :align: center
-    :alt: The Unix Random Number Smart Connector
-    :figclass: align-center
+   .. figure:: img/quick_example/create_randnumunix.png
+        :align: center
+        :alt: The Unix Random Number Smart Connector
+        :figclass: align-center
 
-    Figure. The Unix Random Number Smart Connector
+        Figure. The Unix Random Number Smart Connector
+
 
 
 .. _test_randnumunix:
@@ -223,63 +231,64 @@ View job output
 
 When the job is completed, view the two generated random numbers
 
-    a. Login to your storage platform
-    b. Change directory to the root path of your storage platform
-    c. The output is located under *smart_connector_uniquenameJOBID*, e.g. rand_num_unix180
+#. Login to your storage platform
+#. Change directory to the root path of your storage platform
+#.  The output is located under *smart_connector_uniquenameJOBID*, e.g. rand_num_unix180
 
 
 .. _sweep:
 
-Parameter Sweep for the Unix  Random Number Smart Connector
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+External Parameter Sweep for the Unix  Random Number Smart Connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Parameter sweep is used to create multiple jobs, each with its set of
-parameter values (see `Parameter
-Sweep <https://github.com/chiminey/chiminey/wiki/Types-of-Input-Form-Fields#sweep>`__
+External parameter sweep is used to create multiple jobs, each with its set of
+parameter values (see :ref:`Parameter Sweep <parametersweep>`
 for details). This feature can be added to a smart connector by turning
 the sweep flag on during the :ref:`registration of the smart
 connector <register_smart_conn>`.
 
-1. Add ``sweep=True`` parameter when you call ``define_directive(...)``. Below is the code snippet from the Django management command:
+#. Add ``sweep=True`` parameter when you call ``define_directive(...)``. Below is the code snippet from the Django management command:
 
-::
+   ::
 
-    class Command(BaseCommand)
-    ...
-
-    def setup(self):
+        class Command(BaseCommand)
         ...
 
-        directive = RandInitial()
-        directive.define_directive('rand_num_unix', description='RandNum Unix Smart Connector', sweep=True)
-        print "done"
+        def setup(self):
+            ...
 
-2. Re-execute the following commands on the Chiminey server terminal
+            directive = RandInitial()
+            directive.define_directive('rand_num_unix', description='RandNum Unix Smart Connector', sweep=True)
+            print "done"
 
-::
+#. Re-execute the following commands on the Chiminey server terminal
 
-    cd /opt/chiminey/current
-    sudo su bdphpc
-    bin/django randnumunix
-    Yes
+   ::
 
-
-
-3. Visit your Chiminey web page; click ``Create Job``. You should see ``Sweep RandNum Unix Smart Connector`` under ``Smart Connectors`` menu.
+        sudo su bdphpc
+        cd /opt/chiminey/current
+        bin/django randnumunix
+        Yes
 
 
-.. figure:: img/quick_example/create_sweeprandnumunix.png
-    :align: center
-    :alt: The Sweep Unix Random Number Smart Connector
-    :figclass: align-center
 
-    Figure. The Sweep Unix Random Number Smart Connector
+#. Visit your Chiminey web page; click ``Create Job``. You should see ``Sweep RandNum Unix Smart Connector`` under ``Smart Connectors`` menu.
+
+
+   .. figure:: img/quick_example/create_connector.png
+        :align: center
+        :alt: The Sweep Unix Random Number Smart Connector
+        :figclass: align-center
+
+        Figure. The Sweep Unix Random Number Smart Connector
 
 
 Testing the Sweep Unix Random Number Smart Connector
 """"""""""""""""""""""""""""""""""""""""""""""""""""
 
-Similar to our :ref:`previous test <test_randnumunix>`, we  test the newly registered smart connector. For this, you will :ref:`submit  <test_submit_sweepjob>` a *sweep* for unix random number smart connector job, :ref:`monitor <test_monitor_sweepjob>`  the job, and :ref:`view <test_view_sweepoutput>` the output of the job.
+Similar to our :ref:`previous test <test_randnumunix>`, we  test the newly registered smart connector.
+For this, you will :ref:`submit  <test_submit_sweepjob>` a *sweep* for unix random number smart connector job,
+:ref:`monitor <test_monitor_sweepjob>`  the job, and :ref:`view <test_view_sweepoutput>` the output of the job.
 
 
 .. _test_submit_sweepjob:
@@ -289,7 +298,8 @@ Submit a sweep for unix random number smart connector job
 
 See :ref:`Job Submission <submit_job>` for details.
 
-**NB**: If you leave ``Values to sweep over`` field empty, only a single job will be created. In this case,  put ``{"var": [1,2]}`` to create two jobs. See `Parameter Sweep <https://github.com/chiminey/chiminey/wiki/Types-of-Input-Form-Fields#sweep>`__ for details
+**NB**: If you leave ``Values to sweep over`` field empty, only a single job will be created. In this case,  put ``{"var": [1,2]}`` to create two jobs, where ``var`` is an :ref:`unknown parameter <unknown_param>`.
+
 
 .. _test_monitor_sweepjob:
 
@@ -311,8 +321,8 @@ See :ref:`Job Monitoring <monitor_job>` for details.
 View job output
 '''''''''''''''
 
-When the job is completed, view the two generated random numbers
+When the job is completed, view the two generated random numbers.
 
-    a. Login to your storage platform
-    b. Change directory to the root path of your storage platform
-    c. The output is located under *sweep_smart_connector_nameJOBID*, e.g. sweep_rand_num_unix181
+#. Login to your storage platform
+#. Change directory to the root path of your storage platform
+#. The output is located under *sweep_smart_connector_nameJOBID*, e.g. sweep_rand_num_unix181
