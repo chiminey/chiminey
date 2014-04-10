@@ -2,7 +2,7 @@ import djcelery
 import sys
 from datetime import timedelta
 
-DEBUG = False
+DEBUG = True
 
 from os import path
 
@@ -25,7 +25,7 @@ if 'test' in sys.argv:
         'NAME': ':memory:'
         }
     }
-
+    SOUTH_TESTS_MIGRATE = False
 
 else:
     DATABASES = {
@@ -161,7 +161,6 @@ AUTH_PROFILE_MODULE='smartconnectorscheduler.UserProfile'
 
 
 INSTALLED_APPS = (
-    'django_nose',
     'django_extensions',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -178,7 +177,11 @@ INSTALLED_APPS = (
     'djkombu',
     'tastypie',
     'widget_tweaks',
-    'south'
+    'httpretty',
+    'moto',
+    'mock',
+    'south',
+    'django_nose',
 ) + OUR_APPS
 
 #INSTALLED_APPS += ( 'south',)
@@ -270,7 +273,7 @@ LOGGING = {
     'handlers': ['file'],
     },
     'south': {
-     'level': 'DEBUG',
+     'level': LOGGER_LEVEL,
      'handlers': ['file'],
 
     },
