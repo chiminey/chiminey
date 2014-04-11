@@ -33,6 +33,7 @@ if 'test' in sys.argv:
         '--cover-package=chiminey.simpleui, chiminey.smartconnectorscheduler',
         '--cover-inclusive',
     ]
+    LOCAL_FILESYS_ROOT_PATH = "/var/chiminey/tests"
 
 else:
     DATABASES = {
@@ -46,6 +47,8 @@ else:
         }
     }
     ROOT_URLCONF = 'chiminey.urls'
+    LOCAL_FILESYS_ROOT_PATH = "/var/chiminey/remotesys"
+
 
 
 LOGIN_REDIRECT_URL = "/jobs"
@@ -327,7 +330,6 @@ TEST_MTARDIS_USER = ""
 TEST_MYTARDIS_PASSWORD = ""
 
 
-LOCAL_FILESYS_ROOT_PATH = "/var/chiminey/remotesys"
 
 # CLOUD CONFIGURATION
 

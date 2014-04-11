@@ -102,8 +102,7 @@ class RandomNumbersTest(SimpleTestCase):
         'returnuser': True,
         }
 
-    BASE_FILESYS_PATH = os.path.join(settings.LOCAL_FILESYS_ROOT_PATH, "test")
-    FILESYS_ROOT_PATH = os.path.join(BASE_FILESYS_PATH, USERNAME)
+    FILESYS_ROOT_PATH = os.path.join(settings.LOCAL_FILESYS_ROOT_PATH, USERNAME)
 
     CLOUD_COMP_PLATFORM = "mycloudcompute"
     INPUT_PLATFORM = "myinput"
@@ -159,7 +158,7 @@ class RandomNumbersTest(SimpleTestCase):
         logger.debug("setup")
         try:
             shutil.rmtree(os.path.join(
-            self.BASE_FILESYS_PATH))
+            settings.LOCAL_FILESYS_ROOT_PATH))
         except OSError:
             pass
 
@@ -274,6 +273,13 @@ class RandomNumbersTest(SimpleTestCase):
                 pp.save()
 
     def test_basicrun(self):
+
+        curr_dir = os.path.dirname(os.path.realpath(__file__))
+        try:
+            shutil.copytree(os.path.join(curr_dir, "..", "payload_randnum"),
+             os.path.join(settings.LOCAL_FILESYS_ROOT_PATH, "local", "payload_randnum"))
+        except OSError:
+            raise
 
         # Initialise Chiminey db
         chimineyinitial.initialise()
