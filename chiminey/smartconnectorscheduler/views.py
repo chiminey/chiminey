@@ -358,8 +358,8 @@ class ContextResource(ModelResource):
                 try:
                     logger.debug("dispatching %s" % smart_connector)
                     (myplatform, directive_name,
-                    directive_args, system_settings) = self._post_to_directive(bundle, smart_connector)
-
+                    directive_args, system_settings) = _post_to_directive(bundle, smart_connector)
+                    logger.debug("done")
                     # if smart_connector in dispatch_table:
                     #     logger.debug("dispatching %s" % smart_connector)
                     #     (myplatform, directive_name,
@@ -626,13 +626,14 @@ def _post_to_sweep(bundle, directive, subdirective):
 
 def _post_to_directive(bundle, directive):
     platform = 'local'
-    logger.debug("%s" % directive)
+    logger.debug("directive=%s" % directive)
 
     try:
         validate_input(bundle.data, directive)
     except ValidationError, e:
         logger.error(e)
         raise
+    logger.debug("made past validation")
     directive_obj = models.Directive.objects.get(name=directive)
     dirargs = models.DirectiveArgSet.objects.filter(
         directive=directive_obj)
