@@ -20,8 +20,8 @@
 
 import logging
 from chiminey.corestages.strategies.strategy import Strategy
-from chiminey.cloudconnection import create_vms, destroy_vms, print_vms, get_registered_vms
-from chiminey.smartconnectorscheduler.errors import InsufficientVMError
+from chiminey.cloudconnection import create_vms, destroy_vms, print_vms
+from chiminey.corestages.errors import InsufficientVMError
 from chiminey.reliabilityframework import FTManager
 from chiminey import messages
 from chiminey.runsettings import SettingNotFoundException, getval, update
@@ -79,7 +79,6 @@ class CloudStrategy(Strategy):
                 run_settings, '%s/stages/setup/payload_source' % RMIT_SCHEMA)
         except SettingNotFoundException:
             pass
-
         if payload_source:
             bootstrap.set_bootstrap_settings(run_settings, local_settings)
 
@@ -122,6 +121,7 @@ class CloudStrategy(Strategy):
     def destroy_resource(self, destroy_class, run_settings, local_settings):
         node_type = ['created_nodes']
         destroy_vms(local_settings, node_types=node_type, registered_vms=[])
+        logger.debug('-all vms terminated')
         for node in destroy_class.created_nodes:
             if node[3] == 'running':
                 node[3] = 'terminated'

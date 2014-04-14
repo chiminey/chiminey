@@ -20,15 +20,15 @@
 
 import ast
 import logging
-from chiminey.cloudconnection import get_registered_vms
 from chiminey.reliabilityframework import FTManager
 from chiminey import messages
 from chiminey.runsettings import getval, update
-from chiminey.smartconnectorscheduler.errors \
-    import InsufficientResourceError, NoRegisteredVMError, VMTerminatedError
+from chiminey.corestages.errors \
+    import InsufficientResourceError, VMTerminatedError
 from chiminey.storage import get_url_with_credentials, copy_directories, get_make_path
 from chiminey.sshconnection import open_connection
 from chiminey.compute import run_command_with_status, run_make
+from chiminey.cloudconnection import NoRegisteredVMError
 
 
 logger = logging.getLogger(__name__)

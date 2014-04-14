@@ -18,7 +18,6 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import sys
 import boto
 import time
 import logging
@@ -26,7 +25,10 @@ import os
 
 from boto.ec2.regioninfo import RegionInfo
 from boto.exception import EC2ResponseError
-
+from django.conf import settings as django_settings
+from chiminey.cloudconnection.errors import\
+    VMNotFoundError, UnknownCloudProviderError,\
+    CreatingVMFailedError
 
 logger = logging.getLogger(__name__)
 NODE_STATE = ['RUNNING', 'REBOOTING', 'TERMINATED', 'PENDING', 'UNKNOWN']
@@ -36,18 +38,7 @@ def create_vms(settings):
     """
         Create vms and return ip_address
     """
-    # #fixme avoid hardcoding, move to settings.py
-    # if settings['platform_type'] == 'csrack':
-    #     placement = None
-    #     vm_image = "ami-00000004"
-    # elif settings['platform_type'] == 'nectar':
-    #     placement = 'monash'
-    #     vm_image = "ami-0000000d"
-    # else:
-    #     return []
-
-    from django.conf import settings as django_settings
-
+    all_vms = []
     try:
         platform_type = settings['platform_type']
         if platform_type in django_settings.VM_IMAGES:
@@ -55,15 +46,9 @@ def create_vms(settings):
             placement = params['placement']
             vm_image = params['vm_image']
         else:
-            return []
-    except IndexError, e:
-        logger.error("cannot load vm parameters")
-        return []
-
-    connection = _create_cloud_connection(settings)
-    all_vms = []
-    logger.info("Creating %d VM(s)" % settings['max_count'])
-    try:
+            raise UnknownCloudProviderError
+        connection = _create_cloud_connection(settings)
+        logger.info("Creating %d VM(s)" % settings['max_count'])
         reservation = connection.run_instances(
                     placement=placement,
                     image_id=vm_image,
@@ -75,6 +60,11 @@ def create_vms(settings):
         logger.debug("Created Reservation %s" % reservation)
         for vm in reservation.instances:
             all_vms.append(vm)
+    except IndexError, e:
+        logger.error("cannot load vm parameters")
+    except UnknownCloudProviderError, e:
+        logger.error("unknown cloud provider")
+        logger.debug(e)
     except EC2ResponseError as e:
         logger.error(e)
         logger.debug('error_code=%s' % e.error_code)
@@ -82,6 +72,8 @@ def create_vms(settings):
         if 'TooManyInstances' not in e.error_code:
             logger.debug(e)
             raise
+    except Exception:
+        raise CreatingVMFailedError
     logger.debug(all_vms)
     logger.debug('%d of %d requested VM(s) created'
                  % (len(all_vms), settings['max_count']))
@@ -106,7 +98,7 @@ def destroy_vms(settings, all_vms):
             instance_list = connection.terminate_instances(
                 instance_ids=[vm.id])
             terminated_vms.append(instance_list[0])
-        except Exception as e: #fixme: mask this error
+        except Exception as e:
             logger.debug(e)
     return terminated_vms
 
@@ -167,10 +159,10 @@ def get_this_vm(vm_id, settings):
         for i in reservation_list[0].instances:
             if i.id in vm_id:
                 return i
-    except Exception, e:
+    except Exception as e:
         logger.debug('caught %s '% e)
         logger.debug(e)
-        raise
+        raise VMNotFoundError
 
 
 def get_vm_ip(vm_id, settings):
@@ -186,7 +178,7 @@ def get_vm_ip(vm_id, settings):
                 return ip_address
     except Exception, e:
         logger.debug(e)
-        raise
+        raise VMNotFoundError
 
 
 def is_vm_running(vm):
@@ -198,7 +190,7 @@ def is_vm_running(vm):
         vm.update()
         if vm.state in 'running':
             return True
-    except boto.exception.EC2ResponseError, e:
+    except EC2ResponseError, e:
         logger.debug(e)
     return False
 
@@ -271,7 +263,7 @@ def _create_cloud_connection(settings):
         return _create_csrack_connection(settings)
     else:
         logger.info("Unknown provider: %s" % provider)
-        sys.exit()  # FIXME: throw exception
+        raise UnknownCloudProviderError
 
 
 def _create_nectar_connection(settings):
@@ -315,7 +307,7 @@ def _create_amazon_connection(settings):
 def _does_vm_exist(vm):
     try:
         vm.update()
-    except boto.exception.EC2ResponseError as e:
+    except EC2ResponseError as e:
         if 'InstanceNotFound' in e.error_code:
             return False
     return True
@@ -330,10 +322,15 @@ def _is_vm_terminated(vm):
         vm.update()
         if vm.state in 'terminated':
             return True
-    except boto.exception.EC2ResponseError as e:
+    except EC2ResponseError as e:
+        logger.debug('EC2ResponseError caught')
         if 'InstanceNotFound' in e.error_code \
             or 'InvalidInstanceID' in e.error_code:
             return True
+        logger.debug('error not caught %s' % e.error_code)
+        raise
+    except Exception, e:
+        logger.debug('EC2ResponseError NOT caught %s' % e)
         raise
     return False
 

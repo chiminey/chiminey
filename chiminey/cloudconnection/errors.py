@@ -18,14 +18,14 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from chiminey.corestages.configure import Configure
-from chiminey.corestages.execute import Execute
-from chiminey.corestages.wait import Wait
-from chiminey.corestages.transform import Transform
-from chiminey.corestages.converge import Converge
-from chiminey.corestages.stage import Stage, copy_settings
-from chiminey.corestages.sweep import Sweep
-from chiminey.corestages.parent import Parent
-from chiminey.corestages.errors import InsufficientVMError, \
-    StageException, VMTerminatedError, InsufficientResourceError
+class NoRegisteredVMError(Exception):
+    pass
 
+class VMNotFoundError(Exception):
+    pass
+
+class CreatingVMFailedError(Exception):
+    pass
+
+class UnknownCloudProviderError(Exception):
+    pass

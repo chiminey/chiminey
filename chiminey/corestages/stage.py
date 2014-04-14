@@ -21,16 +21,12 @@
 import os
 import logging
 import logging.config
-from pprint import pformat
 
-from urlparse import urlparse
 from chiminey.smartconnectorscheduler import models
-from chiminey.smartconnectorscheduler.errors import InvalidInputError
 from chiminey.smartconnectorscheduler.errors import deprecated
 from chiminey.platform.manage import retrieve_platform
-from django.contrib import messages
 from chiminey.platform import get_platform_settings
-from chiminey.runsettings import getval, setvals, SettingNotFoundException
+from chiminey.runsettings import getval, SettingNotFoundException
 
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
