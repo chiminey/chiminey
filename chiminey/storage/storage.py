@@ -450,7 +450,6 @@ def copy_directories(source_url, destination_url):
                         'root': str(root_path) + "/"}
         logger.debug("nci_settings=%s" % pformat(ssh_settings))
         fs = RemoteStorage(settings=ssh_settings)
-        logger.debug("fs=%s" % fs)
     else:
         logger.warn("scheme: %s not supported" % source_scheme)
         return
@@ -462,10 +461,9 @@ def copy_directories(source_url, destination_url):
             source_path = source_path[:-1]
     logger.debug("source_path=%s" % source_path)
 
-    logger.debug("fs=%s" % fs)
     dir_file_info = fs.listdir(source_path)
-    if dir_file_info:
-        logger.debug("dir_file_info=%s" % str(dir_file_info))
+    # if dir_file_info:
+    #     logger.debug("dir_file_info=%s" % str(dir_file_info))
     current_dirname = source_path
     logger.debug("current_dirname=%s" % current_dirname)
     file_paths = []
@@ -659,13 +657,10 @@ def get_file(file_url):
     Reads in content at file_url using config info from user_settings
     Returns byte strings
     """
-    try:
-        fp = get_filep(file_url)
-        content = fp.read()
-    except IOError, e:
-        raise
-        # (scheme, host, mypath, location, query_settings) = parse_bdpurl(file_url)
-        # raise IOError("IO Error on file %s: %s" % (mypath, e))
+    fp = get_filep(file_url)
+    content = fp.read()
+    # (scheme, host, mypath, location, query_settings) = parse_bdpurl(file_url)
+    # raise IOError("IO Error on file %s: %s" % (mypath, e))
 
     if content and (len(content) > 100):
         logger.debug("content(abbrev)=\n%s\n ... \n%s\nEOF\n" % (content[:100], content[-100:]))
@@ -731,8 +726,7 @@ def get_filep(file_bdp_url, sftp_reference=False):
         logger.debug("mypath=%s" % mypath)
         fp = fs.open(mypath)
         logger.debug("fp opened")
-        logger.debug("fp_dict %s" % fp.__dict__)
-        #content = fp.read()
+        #content = fp.read()q
         #logger.debug("content=%s" % content)
     elif scheme == "tardis":
         # TODO: implement GET of a datafile in a given exp and dataset
@@ -752,6 +746,7 @@ def get_filep(file_bdp_url, sftp_reference=False):
         #content = fs.open(mypath).read()
         #logger.debug("content=%s" % content)
     if sftp_reference:
+        logger.debug("sftp_reference")
         return fp, fs
     logger.debug("fp=%s" % fp)
     return fp
