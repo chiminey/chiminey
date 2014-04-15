@@ -1,4 +1,4 @@
-# Copyright (C) 2013, RMIT University
+# Copyright (C) 2014, RMIT University
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to
@@ -47,9 +47,6 @@ class PackageFailedError(BDPException):
     pass
 
 
-class VMTerminatedError(Exception):
-    pass
-
 
 def deprecated(func):
     """This is a decorator which can be used to mark functions
@@ -74,18 +71,6 @@ class BadInputException(StageException):
 
 
 class BadSpecificationError(StageException):
-    pass
-
-
-class InsufficientResourceError(StageException):
-    pass
-
-
-class NoRegisteredVMError(Exception):
-    pass
-
-
-class InsufficientVMError(Exception):
     pass
 
 

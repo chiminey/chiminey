@@ -28,7 +28,8 @@ from chiminey import storage
 from chiminey.sshconnection import open_connection, AuthError
 from chiminey.compute import run_command_with_status
 from chiminey.cloudconnection import \
-    create_ssh_security_group, create_key_pair, EC2ResponseError
+    create_ssh_security_group, create_key_pair
+from boto.exception import EC2ResponseError
 
 
 logger = logging.getLogger(__name__)

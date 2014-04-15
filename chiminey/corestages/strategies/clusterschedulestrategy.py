@@ -19,13 +19,11 @@
 # IN THE SOFTWARE.
 
 import logging
-import ast
 import os
 
 from chiminey.platform import get_job_dir
-from chiminey.cloudconnection import is_vm_running, get_registered_vms
 from chiminey.runsettings import SettingNotFoundException, getval, update
-from chiminey.storage import get_url_with_credentials, get_make_path, put_file, list_dirs
+from chiminey.storage import get_url_with_credentials, get_make_path, put_file
 from chiminey.sshconnection import open_connection
 from chiminey.compute import run_command_with_status
 from chiminey import messages

@@ -25,6 +25,5 @@ from chiminey.cloudconnection.manage import (
 from chiminey.cloudconnection.botoconnector import \
     create_ssh_security_group, create_key_pair
 
-import boto
-class EC2ResponseError(boto.exception.EC2ResponseError):
-    pass
+from chiminey.cloudconnection.errors import NoRegisteredVMError,\
+    VMNotFoundError,  CreatingVMFailedError, UnknownCloudProviderError

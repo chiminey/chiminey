@@ -19,8 +19,7 @@
 # IN THE SOFTWARE.
 
 import logging
-from chiminey.cloudconnection import get_this_vm
-#from paramiko import BadHostKeyException, AuthenticationException, SSHException
+from chiminey.cloudconnection import get_this_vm, VMNotFoundError
 from chiminey.sshconnection import AuthError, BadHostKeyException, AuthenticationException, SSHException
 import socket
 
@@ -52,7 +51,7 @@ class FailureDetection():
         try:
             get_this_vm(node_id, settings)
             return False
-        except Exception, e:
+        except VMNotFoundError as e:
            return True
 
     def recorded_failed_node(self, failed_nodes, ip_address):

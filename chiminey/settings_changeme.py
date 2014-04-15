@@ -191,7 +191,6 @@ INSTALLED_APPS = (
     'tastypie',
     'widget_tweaks',
     'httpretty',
-    'moto',
     'mock',
     'south',
     'django_nose',

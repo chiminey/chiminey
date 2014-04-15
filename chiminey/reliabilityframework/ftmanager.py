@@ -21,10 +21,9 @@
 import logging
 import socket
 from chiminey.reliabilityframework.failuredetection import FailureDetection
-from chiminey.smartconnectorscheduler.errors import \
-    NoRegisteredVMError, InsufficientVMError, VMTerminatedError
+from chiminey.corestages.errors import VMTerminatedError, InsufficientVMError
 from chiminey.sshconnection import AuthError, SSHException
-from chiminey.cloudconnection import destroy_vms, get_registered_vms
+from chiminey.cloudconnection import destroy_vms, get_registered_vms, NoRegisteredVMError
 
 
 logger = logging.getLogger(__name__)
@@ -169,8 +168,9 @@ class FTManager():
             logger.info("Sufficient number VMs cannot be created for this computation."
                         "Increase your quota or decrease your minimum requirement")
             destroy_vms(kwargs['settings'], registered_vms=kwargs['created_vms'])
-        except KeyError:
-            pass
+        except KeyError as e:
+            logger.warn('key error %s' % e)
+            raise
 
     def _manage_no_registered_vm_error(self, kwargs):
         logger.debug('managing NoRegisteredVMError')

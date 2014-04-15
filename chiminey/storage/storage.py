@@ -1,4 +1,4 @@
-# Copyright (C) 2013, RMIT University
+# Copyright (C) 2014, RMIT University
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to
@@ -748,7 +748,7 @@ def get_filep(file_bdp_url, sftp_reference=False):
     if sftp_reference:
         logger.debug("sftp_reference")
         return fp, fs
-    logger.debug("fp=%s" % fp)
+    #logger.debug("fp=%s" % fp)
     return fp
 
 

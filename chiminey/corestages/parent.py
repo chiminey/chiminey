@@ -24,7 +24,6 @@ import os
 from itertools import product
 from chiminey.runsettings import getval, SettingNotFoundException
 from chiminey.storage import get_url_with_credentials, list_dirs
-
 from chiminey.corestages.stage import Stage
 
 

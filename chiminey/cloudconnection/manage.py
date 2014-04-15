@@ -26,8 +26,8 @@ import logging
 
 
 from chiminey.cloudconnection import botoconnector
-from boto.exception import EC2ResponseError
-from chiminey.smartconnectorscheduler.errors import NoRegisteredVMError
+from chiminey.cloudconnection.errors import NoRegisteredVMError,\
+    CreatingVMFailedError, VMNotFoundError
 from chiminey.sshconnection import open_connection
 
 
@@ -38,20 +38,20 @@ def create_vms(settings):
         Create virtual machines and return id
     """
     logger.debug("create_vms")
-
-    all_vms = botoconnector.create_vms(settings)
-    if all_vms:
-        logger.debug("waiting")
-        all_running_vms = botoconnector.wait_for_vms_to_start_running(
-            all_vms, settings)
-        if all_running_vms:
-            logger.debug("getting ready")
-            ssh_ready_vms = _get_ssh_ready_vms(
-                all_running_vms, settings)
-            if ssh_ready_vms:
-                group_id = _generate_group_id(ssh_ready_vms)
-                return (group_id, ssh_ready_vms)
-    return ('', [])
+    try:
+        all_vms = botoconnector.create_vms(settings)
+        if all_vms:
+            all_running_vms = botoconnector.wait_for_vms_to_start_running(
+                all_vms, settings)
+            if all_running_vms:
+                ssh_ready_vms = _get_ssh_ready_vms(
+                    all_running_vms, settings)
+                if ssh_ready_vms:
+                    group_id = _generate_group_id(ssh_ready_vms)
+                    return group_id, ssh_ready_vms
+    except CreatingVMFailedError as e:
+        logger.debug(e)
+    return '', []
 
 
 def get_registered_vms(settings, node_type='created_nodes'):
@@ -64,9 +64,9 @@ def get_registered_vms(settings, node_type='created_nodes'):
         if nodes:
             for node in nodes:
                 try:
-                    vm = botoconnector.get_this_vm(node[0], settings)
+                    vm = get_this_vm(node[0], settings)
                     res.append(vm)
-                except Exception as e: #fixme: use custom exception
+                except VMNotFoundError as e:
                     logger.debug('vm [%s:%s] not found' % (node[0], node[1]))
                     logger.debug(e)
     except KeyError as e:
@@ -113,7 +113,6 @@ def print_vms(settings, all_vms=None):
         if not all_vms:
             logger.info('\t No running vms')
             return
-
     counter = 1
     logger.info('\tNo.\tID\t\tIP\t\tPackage\t\tGroup')
     for vm in all_vms:
