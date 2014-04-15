@@ -748,7 +748,7 @@ def get_filep(file_bdp_url, sftp_reference=False):
     if sftp_reference:
         logger.debug("sftp_reference")
         return fp, fs
-    logger.debug("fp=%s" % fp)
+    #logger.debug("fp=%s" % fp)
     return fp
 
 
