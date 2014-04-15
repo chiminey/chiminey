@@ -50,7 +50,6 @@ from chiminey.platform import manage
 from chiminey.simpleui import validators
 from chiminey.simpleui.hrmc.hrmcsubmit import HRMCSubmitForm
 from chiminey.simpleui.makeform import MakeSubmitForm
-from chiminey.simpleui.sweepform import SweepSubmitForm
 from chiminey.simpleui.hrmc.copy import CopyForm
 
 
@@ -558,41 +557,41 @@ class HRMCSubmitFormView(FormView):
         return super(HRMCSubmitFormView, self).form_valid(form)
 
 
-@deprecated
-class SweepSubmitFormView(FormView):
-    template_name = 'sweep.html'
-    form_class = SweepSubmitForm
-    success_url = '/jobs'
-    initial = {'number_vm_instances': 0,
-               'minimum_number_vm_instances': 0,
-        'iseed': 42,
-        'maximum_retry': 1,
-        'reschedule_failed_processes': 1,
-        #'input_location': 'file://127.0.0.1/myfiles/input',
-        'optimisation_scheme': "MCSA",
-        'threshold': "[1]",
-        'error_threshold': "0.03",
-        'max_iteration': 2,
-        'fanout_per_kept_result': 2,
-        'pottype': 1,
-        'sweep_map': '{}',  # "var1": [3, 7], "var2": [1, 2]}',
-        'run_map': '{}',
-        'experiment_id': 0
-        #'output_location': 'file://local@127.0.0.1/sweep'
-        }
+# @deprecated
+# class SweepSubmitFormView(FormView):
+#     template_name = 'sweep.html'
+#     form_class = SweepSubmitForm
+#     success_url = '/jobs'
+#     initial = {'number_vm_instances': 0,
+#                'minimum_number_vm_instances': 0,
+#         'iseed': 42,
+#         'maximum_retry': 1,
+#         'reschedule_failed_processes': 1,
+#         #'input_location': 'file://127.0.0.1/myfiles/input',
+#         'optimisation_scheme': "MCSA",
+#         'threshold': "[1]",
+#         'error_threshold': "0.03",
+#         'max_iteration': 2,
+#         'fanout_per_kept_result': 2,
+#         'pottype': 1,
+#         'sweep_map': '{}',  # "var1": [3, 7], "var2": [1, 2]}',
+#         'run_map': '{}',
+#         'experiment_id': 0
+#         #'output_location': 'file://local@127.0.0.1/sweep'
+#         }
 
-    # This method is called when valid form data has been POSTed.
-    # It should return an HttpResponse.
-    def form_valid(self, form):
-        schemas = {
-        'hrmc_schema': RMIT_SCHEMA + "/hrmc/",
-        'system_schema': "http://rmit.edu.au/q/misc/",
-        'run_schema': RMIT_SCHEMA + "/stages/run/",
-        'sweep_schema': RMIT_SCHEMA + "/stages/sweep/",
-        'mytardis_schema': RMIT_SCHEMA + '/input/mytardis'
-        }
-        submit_sweep_job(self.request, form, schemas)
-        return super(SweepSubmitFormView, self).form_valid(form)
+#     # This method is called when valid form data has been POSTed.
+#     # It should return an HttpResponse.
+#     def form_valid(self, form):
+#         schemas = {
+#         'hrmc_schema': RMIT_SCHEMA + "/hrmc/",
+#         'system_schema': "http://rmit.edu.au/q/misc/",
+#         'run_schema': RMIT_SCHEMA + "/stages/run/",
+#         'sweep_schema': RMIT_SCHEMA + "/stages/sweep/",
+#         'mytardis_schema': RMIT_SCHEMA + '/input/mytardis'
+#         }
+#         submit_sweep_job(self.request, form, schemas)
+#         return super(SweepSubmitFormView, self).form_valid(form)
 
 
 @deprecated

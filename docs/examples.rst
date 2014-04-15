@@ -16,3 +16,5 @@ and how a smart connector is defined and registered within a Chiminey server.
     Unix-based smart connector with external parameter sweep <quick_example>
     Cloud-based smart connector <randnumcloud>
     Cloud-based smart connector with internal parameter sweep <randnuminternalsweep>
+    Cloud-based smart connector with MyTardis support <randnummytardis>
+    Hidden Reverse Monte Carlo Smart connector <hrmc>
