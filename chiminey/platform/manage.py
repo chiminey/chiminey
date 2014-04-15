@@ -259,6 +259,9 @@ def get_platform_settings(platform_url, username):
     if platform_name == "local":
         return {"scheme": 'file', 'type': 'local', 'host': '127.0.0.1'}
     record, schema_namespace = retrieve_platform(platform_name, username)
+    logger.debug("record=%s" % record)
+    logger.debug("schema_namespace=%s" % schema_namespace)
+
     _update_platform_settings(record)
     record['bdp_username'] = username
     return record
@@ -267,7 +270,11 @@ def get_platform_settings(platform_url, username):
 #fixme: in the schema definition, change private_key to private_key_name
 def _update_platform_settings(settings):
     #platform_type = os.path.basename(schema_namespace)
-    platform_type = settings['platform_type']
+    try:
+        platform_type = settings['platform_type']
+    except KeyError:
+        logger.error("settings=%s" % settings)
+        raise
     settings['type'] = platform_type
     if platform_type in ['csrack', 'nectar', 'amazon']:
         settings['username'] = 'root' #fixme avoid hardcoding

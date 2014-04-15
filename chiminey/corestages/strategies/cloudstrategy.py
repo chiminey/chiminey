@@ -52,6 +52,8 @@ class CloudStrategy(Strategy):
     def create_resource(self, local_settings):
         created_nodes = []
         group_id, vms_detail_list = create_vms(local_settings)
+        logger.debug("group_id=%s vms_detail_list=%s" % (group_id, vms_detail_list))
+
         try:
             if not vms_detail_list or len(vms_detail_list) < local_settings['min_count']:
                 raise InsufficientVMError
@@ -61,7 +63,7 @@ class CloudStrategy(Strategy):
                     vm.ip_address = vm.private_ip_address
             created_nodes = [[x.id, x.ip_address, unicode(x.region), 'running'] for x in vms_detail_list]
             messages.info_context(int(local_settings['contextid']),
-                                  "1: create (%s nodes created)" % len(vms_detail_list))
+                                 "1: create (%s nodes created)" % len(vms_detail_list))
         except InsufficientVMError as e:
             group_id = 'UNKNOWN'
             messages.error_context(int(local_settings['contextid']),

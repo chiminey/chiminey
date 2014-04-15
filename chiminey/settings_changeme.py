@@ -2,7 +2,7 @@ import djcelery
 import sys
 from datetime import timedelta
 
-DEBUG = False
+DEBUG = True
 
 from os import path
 
@@ -25,7 +25,15 @@ if 'test' in sys.argv:
         'NAME': ':memory:'
         }
     }
+    SOUTH_TESTS_MIGRATE = False
 
+    NOSE_ARGS = [
+        # turn on to always generate coverage report
+        #'--with-coverage',
+        '--cover-package=chiminey.simpleui, chiminey.smartconnectorscheduler',
+        '--cover-inclusive',
+    ]
+    LOCAL_FILESYS_ROOT_PATH = "/var/chiminey/tests"
 
 else:
     DATABASES = {
@@ -39,6 +47,8 @@ else:
         }
     }
     ROOT_URLCONF = 'chiminey.urls'
+    LOCAL_FILESYS_ROOT_PATH = "/var/chiminey/remotesys"
+
 
 
 LOGIN_REDIRECT_URL = "/jobs"
@@ -161,7 +171,6 @@ AUTH_PROFILE_MODULE='smartconnectorscheduler.UserProfile'
 
 
 INSTALLED_APPS = (
-    'django_nose',
     'django_extensions',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -178,7 +187,10 @@ INSTALLED_APPS = (
     'djkombu',
     'tastypie',
     'widget_tweaks',
-    'south'
+    'httpretty',
+    'mock',
+    'south',
+    'django_nose',
 ) + OUR_APPS
 
 #INSTALLED_APPS += ( 'south',)
@@ -270,7 +282,7 @@ LOGGING = {
     'handlers': ['file'],
     },
     'south': {
-     'level': 'DEBUG',
+     'level': LOGGER_LEVEL,
      'handlers': ['file'],
 
     },
@@ -317,7 +329,6 @@ TEST_MTARDIS_USER = ""
 TEST_MYTARDIS_PASSWORD = ""
 
 
-LOCAL_FILESYS_ROOT_PATH = "/var/chiminey/remotesys"
 
 # CLOUD CONFIGURATION
 

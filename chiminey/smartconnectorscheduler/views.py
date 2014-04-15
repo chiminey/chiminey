@@ -338,7 +338,7 @@ class ContextResource(ModelResource):
                 try:
                     (myplatform, directive_name,
                      directive_args, system_settings) = \
-                    self._post_to_sweep(bundle, smartconnector, subdirective)
+                    _post_to_sweep(bundle, smartconnector, subdirective)
                 except Exception, e:
                     logger.error("post_list error %s" % e)
                     raise ImmediateHttpResponse(http.HttpBadRequest(e))
@@ -358,8 +358,8 @@ class ContextResource(ModelResource):
                 try:
                     logger.debug("dispatching %s" % smart_connector)
                     (myplatform, directive_name,
-                    directive_args, system_settings) = self._post_to_directive(bundle, smart_connector)
-
+                    directive_args, system_settings) = _post_to_directive(bundle, smart_connector)
+                    logger.debug("done")
                     # if smart_connector in dispatch_table:
                     #     logger.debug("dispatching %s" % smart_connector)
                     #     (myplatform, directive_name,
@@ -454,166 +454,6 @@ class ContextResource(ModelResource):
 
         return (platform, directive_name, directive_args, system_settings)
 
-    def validate_input(self, data, directive_name):
-        logger.debug(data)
-        username = data['http://rmit.edu.au/schemas/bdp_userprofile/username']
-        logger.debug(username)
-
-        directive = models.Directive.objects.get(name=directive_name)
-        for das in models.DirectiveArgSet.objects.filter(directive=directive):
-            logger.debug("checking das=%s" % das)
-            for param in models.ParameterName.objects.filter(schema=das.schema):
-                logger.debug("checking param=%s" % param.name)
-                value = data[os.path.join(das.schema.namespace, param.name)]
-                # # FIXME: if a input field is blank, then may have been disabled.
-                # # Therefore, we pass in initial default value, with assumption
-                # # that it will be ignored anyway.  This might not be the best
-                # # idea, because user that leaves field blank will get default value
-                # # sent and not blank.  Therefore, fields cannot be blank.
-
-                # if str(value) == "":
-                #     logger.warn("skipping %s because disabled as input" % param.name)
-                #     data[os.path.join(das.schema.namespace, param.name)] = param.initial
-                #     logger.debug("data=%s" % data)
-                #     continue;
-
-                validator = subtype_validation[param.subtype][1]
-                logger.debug("validator=%s" % validator)
-                current_subtype = param.subtype
-                logger.debug(current_subtype)
-                if current_subtype in ['storage_bdpurl',
-                                      'nectar_platform',
-                                      'platform',
-                                      'mytardis']:
-                    value = validator(value, username)
-                else:
-                    value = validator(value)
-                data[os.path.join(das.schema.namespace, param.name)] = value
-
-    def _post_to_sweep_hrmc(self, bundle, directive):
-        return self._post_to_sweep(bundle=bundle,
-            directive=directive,
-            subdirective="hrmc")
-
-    def _post_to_sweep_make(self, bundle, directive):
-        return self._post_to_sweep(bundle=bundle,
-            directive=directive,
-            subdirective="remotemake")
-
-    def _post_to_sweep_vasp(self, bundle, directive):
-        return self._post_to_sweep(bundle=bundle,
-            directive=directive,
-            subdirective="vasp")
-
-    def _post_to_sweep(self, bundle, directive, subdirective):
-        logger.debug("_post_to_sweep for %s" % subdirective)
-        platform = 'local'
-        logger.debug("%s" % directive)
-
-        try:
-            self.validate_input(bundle.data, directive)
-        except ValidationError, e:
-            logger.error(e)
-            raise
-        directive_obj = models.Directive.objects.get(name=directive)
-        dirargs = models.DirectiveArgSet.objects.filter(
-            directive=directive_obj)
-        schemas = [x.schema.namespace for x in dirargs]
-        dargs = {}
-        for key in bundle.data:
-            if os.path.dirname(key) in schemas:
-                d = dargs.setdefault(os.path.dirname(key), {})
-                d[os.path.basename(key)] = bundle.data[key]
-
-        logger.debug("dargs=%s" % pformat(dargs))
-
-        d_arg = []
-        for key in dargs:
-            directive_arg = []
-            directive_arg.append(key)
-            for k, v in dargs[key].items():
-                directive_arg.append((k, v))
-            d_arg.append(directive_arg)
-
-        d_arg.append(
-        ['http://rmit.edu.au/schemas/system',
-            # (u'random_numbers', 'file://127.0.0.1/randomnums.txt'),
-            ('system', 'settings'),
-            ('max_seed_int', 1000),
-        ])
-        # d_arg.append(
-        # ['http://rmit.edu.au/schemas/stages/sweep',
-        #     ('directive', subdirective)
-        # ])
-        d_arg.append(
-        ['http://rmit.edu.au/schemas/bdp_userprofile',
-            (u'username',
-             str(bundle.data[
-                'http://rmit.edu.au/schemas/bdp_userprofile/username'])),
-        ])
-        if not subdirective:
-            subdirective = directive
-        d_arg.append(
-        ['http://rmit.edu.au/schemas/directive_profile',
-            (u'directive_name', subdirective),
-            (u'sweep_name', directive),
-        ])
-        directive_args = [''] + d_arg
-        logger.debug("directive_args=%s" % pformat(directive_args))
-        return (platform, directive, [directive_args], {})
-
-
-    def _post_to_directive(self, bundle, directive):
-        platform = 'local'
-        logger.debug("%s" % directive)
-
-        try:
-            self.validate_input(bundle.data, directive)
-        except ValidationError, e:
-            logger.error(e)
-            raise
-        directive_obj = models.Directive.objects.get(name=directive)
-        dirargs = models.DirectiveArgSet.objects.filter(
-            directive=directive_obj)
-        schemas = [x.schema.namespace for x in dirargs]
-        dargs = {}
-        for key in bundle.data:
-            if os.path.dirname(key) in schemas:
-                d = dargs.setdefault(os.path.dirname(key), {})
-                d[os.path.basename(key)] = bundle.data[key]
-
-        logger.debug("dargs=%s" % pformat(dargs))
-
-        d_arg = []
-        for key in dargs:
-            directive_arg = []
-            directive_arg.append(key)
-            for k, v in dargs[key].items():
-                directive_arg.append((k, v))
-            d_arg.append(directive_arg)
-
-        d_arg.append(
-        ['http://rmit.edu.au/schemas/system',
-            (u'random_numbers', 'file://127.0.0.1/randomnums.txt'),
-            ('system', 'settings'),
-            ('max_seed_int', 1000),
-        ])
-        d_arg.append(
-        ['http://rmit.edu.au/schemas/bdp_userprofile',
-            (u'username',
-             str(bundle.data[
-                'http://rmit.edu.au/schemas/bdp_userprofile/username'])),
-        ])
-        d_arg.append(
-        ['http://rmit.edu.au/schemas/directive_profile',
-            (u'directive_name', directive),
-        ])
-        directive_args = [''] + d_arg
-        logger.debug("directive_args=%s" % pformat(directive_args))
-        return (platform, directive, [directive_args], {})
-
-
-
     # TODO: likely not allow remotemake to be called directly and will
     # force through  sweep in all cases
     @deprecated
@@ -623,7 +463,7 @@ class ContextResource(ModelResource):
         logger.debug("%s" % directive_name)
         directive_args = []
         try:
-            self.validate_input(bundle.data, directive_name)
+            validate_input(bundle.data, directive_name)
         except ValidationError, e:
             logger.error(e)
             raise
@@ -669,6 +509,170 @@ class ContextResource(ModelResource):
         logger.debug("directive_name=%s" % directive_name)
         logger.debug("directive_args=%s" % directive_args)
         return (platform, directive_name, directive_args, system_settings)
+
+
+def validate_input(data, directive_name):
+    logger.debug(data)
+    username = data['http://rmit.edu.au/schemas/bdp_userprofile/username']
+    logger.debug(username)
+
+    directive = models.Directive.objects.get(name=directive_name)
+    for das in models.DirectiveArgSet.objects.filter(directive=directive):
+        logger.debug("checking das=%s" % das)
+        for param in models.ParameterName.objects.filter(schema=das.schema):
+            logger.debug("checking param=%s" % param.name)
+            value = data[os.path.join(das.schema.namespace, param.name)]
+            # # FIXME: if a input field is blank, then may have been disabled.
+            # # Therefore, we pass in initial default value, with assumption
+            # # that it will be ignored anyway.  This might not be the best
+            # # idea, because user that leaves field blank will get default value
+            # # sent and not blank.  Therefore, fields cannot be blank.
+
+            # if str(value) == "":
+            #     logger.warn("skipping %s because disabled as input" % param.name)
+            #     data[os.path.join(das.schema.namespace, param.name)] = param.initial
+            #     logger.debug("data=%s" % data)
+            #     continue;
+
+            validator = subtype_validation[param.subtype][1]
+            logger.debug("validator=%s" % validator)
+            current_subtype = param.subtype
+            logger.debug(current_subtype)
+            if current_subtype in ['storage_bdpurl',
+                                  'nectar_platform',
+                                  'platform',
+                                  'mytardis']:
+                value = validator(value, username)
+            else:
+                value = validator(value)
+            data[os.path.join(das.schema.namespace, param.name)] = value
+
+
+def _post_to_sweep_hrmc(bundle, directive):
+    return _post_to_sweep(bundle=bundle,
+        directive=directive,
+        subdirective="hrmc")
+
+
+def _post_to_sweep_make(bundle, directive):
+    return _post_to_sweep(bundle=bundle,
+        directive=directive,
+        subdirective="remotemake")
+
+
+def _post_to_sweep_vasp(bundle, directive):
+    return _post_to_sweep(bundle=bundle,
+        directive=directive,
+        subdirective="vasp")
+
+
+def _post_to_sweep(bundle, directive, subdirective):
+    logger.debug("_post_to_sweep for %s" % subdirective)
+    platform = 'local'
+    logger.debug("%s" % directive)
+
+    try:
+        validate_input(bundle.data, directive)
+    except ValidationError, e:
+        logger.error(e)
+        raise
+    directive_obj = models.Directive.objects.get(name=directive)
+    dirargs = models.DirectiveArgSet.objects.filter(
+        directive=directive_obj)
+    schemas = [x.schema.namespace for x in dirargs]
+    dargs = {}
+    for key in bundle.data:
+        if os.path.dirname(key) in schemas:
+            d = dargs.setdefault(os.path.dirname(key), {})
+            d[os.path.basename(key)] = bundle.data[key]
+
+    logger.debug("dargs=%s" % pformat(dargs))
+
+    d_arg = []
+    for key in dargs:
+        directive_arg = []
+        directive_arg.append(key)
+        for k, v in dargs[key].items():
+            directive_arg.append((k, v))
+        d_arg.append(directive_arg)
+
+    d_arg.append(
+    ['http://rmit.edu.au/schemas/system',
+        # (u'random_numbers', 'file://127.0.0.1/randomnums.txt'),
+        ('system', 'settings'),
+        ('max_seed_int', 1000),
+    ])
+    # d_arg.append(
+    # ['http://rmit.edu.au/schemas/stages/sweep',
+    #     ('directive', subdirective)
+    # ])
+    d_arg.append(
+    ['http://rmit.edu.au/schemas/bdp_userprofile',
+        (u'username',
+         str(bundle.data[
+            'http://rmit.edu.au/schemas/bdp_userprofile/username'])),
+    ])
+    if not subdirective:
+        subdirective = directive
+    d_arg.append(
+    ['http://rmit.edu.au/schemas/directive_profile',
+        (u'directive_name', subdirective),
+        (u'sweep_name', directive),
+    ])
+    directive_args = [''] + d_arg
+    logger.debug("directive_args=%s" % pformat(directive_args))
+    return (platform, directive, [directive_args], {})
+
+
+def _post_to_directive(bundle, directive):
+    platform = 'local'
+    logger.debug("directive=%s" % directive)
+
+    try:
+        validate_input(bundle.data, directive)
+    except ValidationError, e:
+        logger.error(e)
+        raise
+    logger.debug("made past validation")
+    directive_obj = models.Directive.objects.get(name=directive)
+    dirargs = models.DirectiveArgSet.objects.filter(
+        directive=directive_obj)
+    schemas = [x.schema.namespace for x in dirargs]
+    dargs = {}
+    for key in bundle.data:
+        if os.path.dirname(key) in schemas:
+            d = dargs.setdefault(os.path.dirname(key), {})
+            d[os.path.basename(key)] = bundle.data[key]
+
+    logger.debug("dargs=%s" % pformat(dargs))
+
+    d_arg = []
+    for key in dargs:
+        directive_arg = []
+        directive_arg.append(key)
+        for k, v in dargs[key].items():
+            directive_arg.append((k, v))
+        d_arg.append(directive_arg)
+
+    d_arg.append(
+    ['http://rmit.edu.au/schemas/system',
+        (u'random_numbers', 'file://127.0.0.1/randomnums.txt'),
+        ('system', 'settings'),
+        ('max_seed_int', 1000),
+    ])
+    d_arg.append(
+    ['http://rmit.edu.au/schemas/bdp_userprofile',
+        (u'username',
+         str(bundle.data[
+            'http://rmit.edu.au/schemas/bdp_userprofile/username'])),
+    ])
+    d_arg.append(
+    ['http://rmit.edu.au/schemas/directive_profile',
+        (u'directive_name', directive),
+    ])
+    directive_args = [''] + d_arg
+    logger.debug("directive_args=%s" % pformat(directive_args))
+    return (platform, directive, [directive_args], {})
 
 
 class ContextMessageResource(ModelResource):

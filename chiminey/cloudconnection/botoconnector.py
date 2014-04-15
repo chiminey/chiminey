@@ -58,7 +58,10 @@ def create_vms(settings):
                     security_groups=[settings['security_group']],
                     instance_type=settings['vm_image_size'])
         logger.debug("Created Reservation %s" % reservation)
-        for vm in reservation.instances:
+        instances = reservation.instances
+        logger.debug("instances=%s" % str(instances))
+        for vm in instances:
+            logger.debug("vm=%s" % vm)
             all_vms.append(vm)
     except IndexError, e:
         logger.error("cannot load vm parameters")
@@ -153,10 +156,16 @@ def wait_for_vms_to_terminate(all_vms, settings):
 
 def get_this_vm(vm_id, settings):
     connection = _create_cloud_connection(settings)
+    logger.debug("cc=%s" % connection)
     try:
         reservation_list = connection.get_all_instances(
             instance_ids=[vm_id], filters=None)
+        logger.debug("reservation_list=%s" % reservation_list)
+        logger.debug("reservation_list[0]=%s" % reservation_list[0])
+        logger.debug("reservation_list[0].instances=%s" % reservation_list[0].instances)
+
         for i in reservation_list[0].instances:
+            logger.debug("i=%s" % i)
             if i.id in vm_id:
                 return i
     except Exception as e:
@@ -340,8 +349,10 @@ def _get_all_vms(settings):
     reservations = connection.get_all_instances()
     res = {}
     all_vms = []
+    logger.debug("reservations=%s" % reservations)
     for reservation in reservations:
         nodes = reservation.instances
+        logger.debug("nodes=%s" % res)
         res[reservation] = nodes
         for i in nodes:
             all_vms.append(i)

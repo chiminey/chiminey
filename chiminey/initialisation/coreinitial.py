@@ -40,7 +40,7 @@ class CoreInitial(object):
             for k in default_params.keys():
                 try:
                     default_params[k] = updated[k]
-                    print("k=%s, v=%s" % (k, default_params[k]))
+                    logger.debug("k=%s, v=%s" % (k, default_params[k]))
                 except KeyError:
                     pass
         return default_params

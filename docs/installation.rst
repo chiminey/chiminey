@@ -33,7 +33,7 @@ On the created VM::
     tar zxf rubygems-1.8.10.tgz
     cd rubygems-1.8.10
     ruby setup.rb --no-format-executable
-    gem install chef --no-ri --no-rdoc
+    gem install chef --no-ri --no-rdoc -v 11.10.4
 
 
 Get the chef script for the Chiminey app::

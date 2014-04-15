@@ -43,6 +43,7 @@ class RandConfigure(Configure):
         bdp_username = getval(run_settings, '%s/bdp_userprofile/username' % SCHEMA_PREFIX)
         mytardis_url = getval(run_settings, '%s/input/mytardis/mytardis_platform' % SCHEMA_PREFIX)
         mytardis_settings = manage.get_platform_settings(mytardis_url, bdp_username)
+        logger.debug("mytardis_settings=%s" % mytardis_settings)
 
         def _get_experiment_name(path):
             '''
@@ -54,19 +55,19 @@ class RandConfigure(Configure):
         # Creates new experiment if experiment_id=0
         # If experiment_id is non-zero, the experiment is updated
         experiment_id = mytardis.create_experiment(
-            settings=mytardis_settings, # MyTardis credentials
+            settings=mytardis_settings,  # MyTardis credentials
             exp_id=experiment_id,
-            expname=_get_experiment_name(output_location), # name of the experiment in MyTardis
+            expname=_get_experiment_name(output_location),  # name of the experiment in MyTardis
             # metadata associated with the experiment
             # a list of parameter sets
             experiment_paramset=[
                 # a new blank parameter set conforming to schema 'remotemake'
                 mytardis.create_paramset("remotemake", []),
                 # a graph parameter set
-                mytardis.create_graph_paramset("expgraph", # name of schema
-                    name="randexp1", # unique graph name
-                    graph_info={"axes":["x", "y"], "legends":["Random points"]}, # information about the graph
-                    value_dict={}, # values to be used in parent graphs if appropriate
-                    value_keys=[["randdset/x", "randdset/y"]]), # values from datasets to produce points in the graph
+                mytardis.create_graph_paramset("expgraph",  # name of schema
+                    name="randexp1",  # unique graph name
+                    graph_info={"axes":["x", "y"], "legends":["Random points"]},  # information about the graph
+                    value_dict={},  # values to be used in parent graphs if appropriate
+                    value_keys=[["randdset/x", "randdset/y"]]),  # values from datasets to produce points in the graph
                            ])
         return experiment_id

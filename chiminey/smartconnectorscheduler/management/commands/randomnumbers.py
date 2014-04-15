@@ -26,9 +26,7 @@ from chiminey.examples.randomnumbers.initialise import RandomNumbersInitial
 logger = logging.getLogger(__name__)
 
 MESSAGE = ("""This will add a new directive to the catalogue of available connectors."""
-		  """  Are you sure [Yes/No]?""")
-
-
+          """  Are you sure [Yes/No]?""")
 
 class Command(BaseCommand):
     """
@@ -49,7 +47,6 @@ class Command(BaseCommand):
         directive.define_directive(
             'randomnumbers', description='RandomNumbers', sweep=True)
         print "done"
-
 
     def handle(self, *args, **options):
         self.setup()

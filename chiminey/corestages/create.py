@@ -66,16 +66,19 @@ class Create(Stage):
         messages.info(run_settings, "1: create")
         comp_pltf_settings = self.get_platform_settings(
             run_settings, 'http://rmit.edu.au/schemas/platform/computation')
+        logger.debug("comp_pltf_settings=%s" % comp_pltf_settings)
         try:
             platform_type = comp_pltf_settings['platform_type']
         except KeyError, e:
             logger.error(e)
             messages.error(run_settings, e)
             return
+        logger.debug("platform_type=%s" % platform_type)
         if platform_type in ['nectar', 'csrack', 'amazon']:
             self.strategy = strategies.CloudStrategy()
         elif platform_type in ['nci']:
             self.strategy = strategies.ClusterStrategy()
+        logger.debug("self.strategy=%s" % self.strategy)
         local_settings = {}
         try:
             self.strategy.set_create_settings(run_settings, local_settings)
@@ -85,6 +88,7 @@ class Create(Stage):
             logger.error(e)
             messages.error(run_settings, e)
             return
+
         self.group_id, self.created_nodes = self.strategy.create_resource(local_settings)
 
     def output(self, run_settings):
