@@ -261,7 +261,7 @@ class Command(BaseCommand):
 
         shutil.copy(os.path.abspath(
             os.path.join(source_prefix, "chiminey", "randomnums.txt")),
-            os.path.join(self.filesys_root_path, username))
+                filesys_root_path)
 
         if verbosity >= 1:
             sys.stdout.write("Chiminey user created successfully.\n")
