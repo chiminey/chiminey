@@ -35,7 +35,7 @@ class HRMCInitial(CoreInitial):
             {
             u'http://rmit.edu.au/schemas/system':
                 {
-                    u'random_numbers': 'local/randomnums.txt'
+                    u'random_numbers': 'file://127.0.0.1/randomnums.txt'
                 },
         }
         return {'package': package, 'settings': settings}
@@ -45,7 +45,7 @@ class HRMCInitial(CoreInitial):
             {
                 u'http://rmit.edu.au/schemas/stages/setup':
                     {
-                        u'payload_source': 'local/payload_hrmc',
+                        u'payload_source': 'my_payloads/payload_hrmc',
                         u'payload_destination': 'celery_payload_2',
                         u'payload_name': 'process_payload',
                         u'filename_for_PIDs': 'PIDs_collections',
