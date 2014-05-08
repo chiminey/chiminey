@@ -27,7 +27,7 @@ class RandomNumbersInitial(CoreInitial):
         settings = {
                 u'http://rmit.edu.au/schemas/stages/setup':
                     {
-                        u'payload_source': 'local/payload_randnum',
+                        u'payload_source': 'my_payloads/payload_randnum',
                         u'payload_destination': 'randnum_dest',
                         u'payload_name': 'process_payload',
                         u'filename_for_PIDs': 'PIDs_collections',
@@ -42,7 +42,7 @@ class RandomNumbersInitial(CoreInitial):
         settings = {
                 u'http://rmit.edu.au/schemas/stages/setup':
                     {
-                        u'payload_source': 'local/payload_randnum',
+                        u'payload_source': 'my_payloads/payload_randnum',
                         # u'payload_destination': 'randnum_dest',
                         # u'payload_name': 'process_payload',
                         # u'filename_for_PIDs': 'PIDs_collections',
