@@ -82,7 +82,7 @@ class CoreInitial(object):
                     u'security_group': '["ssh"]',
                     u'group_id_dir': 'group_id',
                     u'custom_prompt': '[smart-connector_prompt]$',
-                    u'nectar_username': 'root',
+                    u'nectar_username': 'centos',
                     u'nectar_password': ''
                 }}
         params = {'package': package, 'name': name,

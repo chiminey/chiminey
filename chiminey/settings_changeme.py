@@ -337,10 +337,18 @@ TEST_MYTARDIS_PASSWORD = ""
 
 
 
-# According to Nectar Image Catalog 24/1/14
-VM_IMAGES = {'csrack': {'placement': None, 'vm_image': "ami-00000004"},
-              'nectar': {'placement': 'monash', 'vm_image': "ami-00001c06"},
-              'amazon': {'placement': '', 'vm_image': "ami-9352c1a9"}}
+CSRACK_USERDATA = """#!/bin/bash
+chmod 700 /etc/sudoers
+sed -i '/requiretty/d' /etc/sudoers
+chmod 440 /etc/sudoers
+echo changedsudo
+"""
+
+# According to Nectar Image Catalog 12/4/14
+VM_IMAGES = {'csrack': {'placement': None, 'vm_image': "ami-00000004", 'user_data': CSRACK_USERDATA},
+              #'nectar': {'placement': None, 'vm_image': "ami-00001c06", 'user_data': ''},
+              'nectar': {'placement': None, 'vm_image': "ami-00001e2b", 'user_data': ''},
+              'amazon': {'placement': '', 'vm_image': "ami-9352c1a9", 'user_data': ''}}
 
 
 # CELERY CONFIGURATRION

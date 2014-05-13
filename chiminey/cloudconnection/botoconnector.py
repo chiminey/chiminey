@@ -45,6 +45,7 @@ def create_vms(settings):
             params = django_settings.VM_IMAGES[platform_type]
             placement = params['placement']
             vm_image = params['vm_image']
+            user_data=params['user_data']
         else:
             raise UnknownCloudProviderError
         connection = _create_cloud_connection(settings)
@@ -54,6 +55,7 @@ def create_vms(settings):
                     image_id=vm_image,
                     min_count=settings['min_count'],
                     max_count=settings['max_count'],
+                    user_data=user_data,
                     key_name=settings['private_key_name'],
                     security_groups=[settings['security_group']],
                     instance_type=settings['vm_image_size'])
@@ -291,7 +293,8 @@ def _create_nectar_connection(settings):
 
 def _create_csrack_connection(settings):
     logger.debug('Connecting to csrack')
-    region = RegionInfo(name="nova", endpoint="10.234.0.1")
+    #region = RegionInfo(name="nova", endpoint="10.234.0.1")
+    region = RegionInfo(name="nova", endpoint="131.170.250.250")
     connection = boto.connect_ec2(
         aws_access_key_id=settings['ec2_access_key'],
         aws_secret_access_key=settings['ec2_secret_key'],

@@ -276,8 +276,17 @@ def _update_platform_settings(settings):
         logger.error("settings=%s" % settings)
         raise
     settings['type'] = platform_type
-    if platform_type in ['csrack', 'nectar', 'amazon']:
-        settings['username'] = 'root' #fixme avoid hardcoding
+    if platform_type in ['csrack', 'amazon']:
+        #settings['username'] = 'root' #fixme avoid hardcoding
+        settings['username'] = 'centos' #fixme avoid hardcoding
+        settings['private_key_name'] = settings['private_key']
+        settings['private_key'] = os.path.join(storage.get_bdp_root_path(),
+                                               settings['private_key_path'])
+        settings['root_path'] = '/home/centos'  # fixme avoid hardcoding
+        settings['scheme'] = 'ssh'
+    
+    elif platform_type in ['nectar']:
+        settings['username'] = 'ec2-user' #fixme avoid hardcoding
         settings['private_key_name'] = settings['private_key']
         settings['private_key'] = os.path.join(storage.get_bdp_root_path(),
                                                settings['private_key_path'])
