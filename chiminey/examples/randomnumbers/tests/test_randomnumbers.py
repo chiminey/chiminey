@@ -22,8 +22,6 @@ import shutil
 import os
 from django.test import SimpleTestCase
 
-from nose.plugins.skip import SkipTest
-
 import logging
 from pprint import pformat
 from collections import namedtuple
@@ -277,7 +275,7 @@ class RandomNumbersTest(SimpleTestCase):
         curr_dir = os.path.dirname(os.path.realpath(__file__))
         try:
             shutil.copytree(os.path.join(curr_dir, "..", "payload_randnum"),
-             os.path.join(settings.LOCAL_FILESYS_ROOT_PATH, "local", "payload_randnum"))
+             os.path.join(settings.LOCAL_FILESYS_ROOT_PATH, "my_payloads", "payload_randnum"))
         except OSError:
             raise
 
@@ -464,7 +462,7 @@ class RandomNumbersTest(SimpleTestCase):
         # fp_mock2.read.return_value = "remote read content"
         # remote_storage_mock.return_value.open.return_value = fp_mock2
         # remote_storage_mock.return_value = m2
-        # storage.RemoteStorage = remote_storage_mock
+        # storage.RemoteStorage = remote_storage_moc
         # s = storage.RemoteStorage()
         # self.assertEqual(s.open().read(), "remote read content")
         # # self.assertEqual(s.listdir(), ['/remotetestdir1', '/remotetestdir2'])
@@ -562,4 +560,3 @@ class RandomNumbersTest(SimpleTestCase):
 
         httpretty.disable()  # disable afterwards, so that you will have no problems in code that uses that socket module
         httpretty.reset()    # reset HTTPretty state (clean up registered urls and request history)
-
