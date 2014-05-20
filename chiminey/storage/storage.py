@@ -485,10 +485,11 @@ def copy_directories(source_url, destination_url):
                 + source_suffix
             logger.debug("Current source url %s" % curr_source_url)
 
+            RETRY_ATTEMPTS = 10
             fail = False
             delay = 1
             #fixme move to ftmanager
-            for i in xrange(1, 10):
+            for i in xrange(1, RETRY_ATTEMPTS):
                 try:
                     content = get_file(curr_source_url)
                 except SSHException, e:
@@ -513,7 +514,29 @@ def copy_directories(source_url, destination_url):
             curr_dest_url = os.path.join(destination_prefix, updated_file_path) \
                             + destination_suffix
             logger.debug("Current destination url %s" % curr_dest_url)
-            put_file(curr_dest_url, content)
+
+            fail = False
+            delay = 1
+            #fixme move to ftmanager
+            for i in xrange(1, RETRY_ATTEMPTS):
+                try:
+                    put_file(curr_dest_url, content)
+                except SSHException, e:
+                    logger.error(e)
+                    fail = True
+                except Exception, e:
+                    logger.error(e)
+                    fail = True
+                else:
+                    fail = False
+                if not fail:
+                    break
+                logger.warn("problem with putfile, sleeping %s" % delay)
+                time.sleep(delay)
+                delay += delay
+            if fail:
+                raise e
+            # put_file(curr_dest_url, content)
         # for each directory below current directory
         for directory in dir_file_info[0]:
             logger.debug("directory=%s" % directory)
