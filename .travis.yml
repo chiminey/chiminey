@@ -1,0 +1,14 @@
+language: python
+python:
+  - "2.6"
+# command to install dependencies
+install:
+ - sudo apt-get install python python-dev python-pip libpq-dev libssl-dev libsasl2-dev libldap2-dev libxslt1.1 libxslt1-dev libexiv2-dev
+ - python bootstrap.py -v 1.7.0
+ - bin/buildout -v install
+# # command to run tests
+script: "bin/django . test "
+after_failure: "cat tardis-test.log"
+branches:
+  except:
+    - doc-cleanup
