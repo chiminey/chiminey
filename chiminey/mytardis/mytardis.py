@@ -22,8 +22,11 @@ import logging
 import os
 import hashlib
 import re
+import shutil
+import tempfile
 import json
 import requests
+import StringIO
 from requests.auth import HTTPBasicAuth
 
 from chiminey import storage
@@ -124,7 +127,7 @@ def create_paramset(schema_ns, parameters):
     Construct MyTardis parameterset format
 
     :param schema_ns: the schema namespace suffix
-    :param paramseters: 
+    :param paramseters:
     :return: metadata parameterset
     :rtype: dict
 
@@ -282,7 +285,7 @@ def create_dataset(settings,
         dfile_extract_func=None):
 
     """
-    
+
 
         POST to mytardis_host REST API with mytardis_user and mytardis_password
         credentials to create or update experiment for a new dataset containing
@@ -378,124 +381,132 @@ def create_dataset(settings,
     source_files = storage.list_all_files(source_url)
     logger.debug("source_files=%s" % source_files)
     url = "%s/api/v1/dataset_file/" % tardis_host_url
-    headers = {'Accept': 'application/json'}
 
     args = source_url.split('?')[1]
 
     logger.debug('args=%s' % args)
-    '''
-    psd_url = smartconnectorscheduler.get_url_with_credentials(output_storage_credentials,
-                        'ssh://unix@' + os.path.join(self.output_dir,
-                            node_output_dir, "PSD_output", "psd.dat"), is_relative_path=False)
-        logger.debug('psd_url=%s' % psd_url)
 
-        psd = hrmcstages.storage.get_filep(psd_url)
-    '''
-    for file_location in source_files:
-        logger.debug('file_location=%s' % os.path.join(source_location, file_location))
-        source_file_url = "%s://%s?%s" % (source_scheme, os.path.join(source_location, file_location), args)
-        logger.debug('source_file_url=%s' % source_file_url)
-        source_file, source_file_ref = storage.get_filep(source_file_url, sftp_reference=True)
-        logger.debug('source_file=%s' % source_file._name)
-        #file_path = os.path.join(root_path, file_location)
-        #file_path = os.path.join(source_url, file_location)
-        #logger.debug("file_path=%s" % file_path)
-        #logger.debug("content=%s" % open(file_path,'rb').read())
+    staging_dir = tempfile.mkdtemp(suffix="", prefix="chiminey")
+    try:
+        for fname in source_files:
+            logger.debug('fname=%s'
+                         % os.path.join(source_location, fname))
 
-        new_datafile_paramset = []
-        logger.debug("datafile_paramset=%s" % datafile_paramset)
-        for paramset in datafile_paramset:
-            new_paramset = {}
-            logger.debug("paramset=%s" % paramset)
-            new_paramset['schema'] = paramset['schema']
+            source_file_url = "%s://%s?%s" % (
+                source_scheme, os.path.join(source_location, fname), args)
+            logger.debug('source_file_url=%s' % source_file_url)
 
-            has_value = False
-            has_keys = False
-            new_param_vals = []
-            for param in paramset['parameters']:
-                new_param = {}
-                for param_key, v in param.items():
+            source_file = storage.get_filep(source_file_url, sftp_reference=False)
+            logger.debug('source_file=%s' % source_file._name)
 
-                    if param_key == 'name' and v == "value_dict":
-                        new_param['name'] = 'value_dict'
-                        new_value = {}
+            # we have load contents locally at least once.
+            f_contents = source_file.read()
 
-                        #val = param['string_value']
+            # Make temporary copy as mytardis datafile pos requires filename
+            tempfname = os.path.basename(fname)
+            with open(os.path.join(staging_dir, tempfname), 'wb') as fp:
+                fp.write(f_contents)
 
-                        # if not isinstance(val, basestring):
-                        #     dfile_extract_func = val
+            new_datafile_paramset = []
+            logger.debug("datafile_paramset=%s" % datafile_paramset)
 
-                        found_func_match = False
-                        for fname, func in dfile_extract_func.items():
-                            logger.debug("fname=%s,func=%s" % (fname, func))
-                            if fname == os.path.basename(file_location):
-                                #new_value.update(func(open(file_path, 'r')))
-                                source_file.seek(0)
-                                new_value.update(func(source_file))
+            for paramset in datafile_paramset:
+                new_paramset = {}
+                logger.debug("paramset=%s" % paramset)
+                new_paramset['schema'] = paramset['schema']
 
-                                found_func_match = True  # FIXME: can multiple funcs match?
+                has_value = False
+                has_keys = False
+                new_param_vals = []
 
-                        logger.debug("new_value=%s" % new_value)
+                for param in paramset['parameters']:
+                    new_param = {}
 
-                        if found_func_match:
-                            new_param['string_value'] = json.dumps(new_value)
+                    for param_key, v in param.items():
+                        logger.debug("param_key=%s v=%s" % (param_key,v))
+                        if param_key == 'name' and v == "value_dict":
+                            new_param['name'] = 'value_dict'
+                            new_value = {}
+
+                            found_func_match = False
+                            for fn, func in dfile_extract_func.items():
+                                logger.debug("fn=%s,func=%s" % (fn, func))
+                                if fn == os.path.basename(fname):
+                                    # if fn file is very long, this is inefficient
+                                    logger.debug("fname=%s" % os.path.join(staging_dir, fn))
+                                    with open(
+                                          os.path.join(staging_dir, fn),
+                                         'r') as fp:
+                                        new_value.update(func(fp))
+                                    found_func_match = True  # FIXME: can multiple funcs match?
+                                    logger.debug("matched %s %s" % (fn, func))
+
+                            logger.debug("new_value=%s" % new_value)
+
+                            new_param['string_value'] = json.dumps(new_value) if found_func_match else param['string_value']
+
+                            break
                         else:
-                            new_param['string_value'] = param['string_value']
-                        break
-                    else:
-                        # incase string_value is processed first
-                        new_param[param_key] = v
+                            # incase string_value is processed first
+                            new_param[param_key] = v
 
-                if new_param['name'] == "value_dict" and len(json.loads(new_param['string_value'])):
-                    has_value = True
-                if new_param['name'] == "value_keys" and len(json.loads(new_param['string_value'])):
-                    has_keys = True
-                new_param_vals.append(new_param)
+                    logger.debug("string_value len=%s" % new_param['string_value'])
 
-            new_paramset['parameters'] = new_param_vals
+                    if new_param['name'] == "value_dict" and len(json.loads(new_param['string_value'])):
+                        has_value = True
+                    logger.debug("has_value=%s" % has_value)
 
-            logger.debug("has_value=%s" % has_value)
-            logger.debug("has_keys=%s" % has_keys)
+                    if new_param['name'] == "value_keys" and len(json.loads(new_param['string_value'])):
+                        has_keys = True
+                    logger.debug("has_keys=%s" % has_keys)
 
-            if has_value or has_keys:
-                new_datafile_paramset.append(new_paramset)
+                    new_param_vals.append(new_param)
+
+                new_paramset['parameters'] = new_param_vals
+
+                logger.debug("has_value=%s" % has_value)
+                logger.debug("has_keys=%s" % has_keys)
+
+                if has_value or has_keys:
+                    new_datafile_paramset.append(new_paramset)
+                else:
+                    logger.debug("not adding %s" % new_paramset)
+
+            logger.debug("new_datafile_paramset=%s" % new_datafile_paramset)
+            file_size = len(f_contents)
+            logger.debug("file_size=%s" % file_size)
+            if file_size:
+
+                data = json.dumps({
+                    u'dataset': str(new_dataset_uri),
+                    u'parameter_sets': new_datafile_paramset,
+                    u'filename': os.path.basename(fname),
+                    u'size': file_size,
+                    u'mimetype': 'text/plain',
+                    u'md5sum': hashlib.md5(f_contents).hexdigest()
+                    })
+                logger.debug("data=%s" % data)
+
+                with open(os.path.join(staging_dir, tempfname), 'rb') as fp:
+
+                    r = requests.post(url,
+                        data={"json_data": data},
+                        headers={'Accept': 'application/json'},
+                        files={'attached_file': fp},
+                        auth=HTTPBasicAuth(tardis_user, tardis_pass)
+                        )
+
+                    # FIXME: need to check for status_code and handle failures.
+                    logger.debug("r.js=%s" % r.json)
+                    logger.debug("r.te=%s" % r.text)
+                    logger.debug("r.he=%s" % r.headers)
+
             else:
-                logger.debug("not adding %s" % new_paramset)
+                logger.warn("not transferring empty file %s" % fname)
+                #TODO: check whether mytardis api can accept zero length files
 
-        logger.debug("new_datafile_paramset=%s" % new_datafile_paramset)
-        logger.debug("file_namee=%s" % source_file._name)
-        file_size = source_file_ref.size(source_file._name)
-        logger.debug("file_size=%s" % file_size)
-        if file_size > 0:
-            source_file.seek(0)
-            data = json.dumps({
-                'dataset': str(new_dataset_uri),
-                "parameter_sets": new_datafile_paramset,
-                'filename': os.path.basename(file_location),
-                #'filename': os.path.basename(file_path),
-                'size': file_size,
-                'mimetype': 'text/plain',
-                'md5sum': hashlib.md5(source_file.read()).hexdigest()
-                #'md5sum': hashlib.md5(open(file_path, 'r').read()).hexdigest()
-                })
-            logger.debug("data=%s" % data)
-            #import pdb; pdb.set_trace()
-            source_file.seek(0)
-            #logger.debug(source_file.read())
-            source_file.seek(0)
-            r = requests.post(url, data={'json_data': data}, headers=headers,
-                files={'attached_file': source_file},  # open(file_path, 'rb')},
-                auth=HTTPBasicAuth(tardis_user, tardis_pass)
-                )
-
-            # FIXME: need to check for status_code and handle failures.
-
-            logger.debug("r.js=%s" % r.json)
-            logger.debug("r.te=%s" % r.text)
-            logger.debug("r.he=%s" % r.headers)
-        else:
-            logger.warn("not transferring empty file %s" % file_location)
-            #TODO: check whether mytardis api can accept zero length files
+    finally:
+        shutil.rmtree(staging_dir)
 
     return new_exp_id
 
@@ -701,11 +712,12 @@ def _post_datafile(dest_url, content):
     headers = {'Accept': 'application/json'}
     new_dataset_uri = "/api/v1/dataset/%s/" % dataset_id
 
-    import tempfile
-    temp = tempfile.NamedTemporaryFile()
-    temp.write(content)
-    temp.flush()
-    temp.seek(0)
+    # import tempfile
+    # temp = tempfile.NamedTemporaryFile()
+    # temp.write(content)
+    # temp.flush()
+    # temp.seek(0)
+
 
     logger.debug("fname=%s" % fname)
     file_path = os.path.join(root_path, fname)
@@ -713,14 +725,20 @@ def _post_datafile(dest_url, content):
     #logger.debug("content=%s" % open(file_path,'rb').read())
     data = json.dumps({
         'dataset': str(new_dataset_uri),
+
         'filename': os.path.basename(fname),
-        'size': os.stat(temp.name).st_size,
+#        'size': os.stat(temp.name).st_size,
+        'size': len(content),
         'mimetype': 'text/plain',
-        'md5sum': hashlib.md5(temp.read()).hexdigest()
+        'md5sum': hashlib.md5(content).hexdigest()
+        #'md5sum': hashlib.md5(temp.read()).hexdigest()
         })
     logger.debug("data=%s" % data)
 
-    temp.seek(0)
+    #temp.seek(0)
+
+    temp = StringIO.StringIO(content)
+
     r = requests.post(url, data={'json_data': data}, headers=headers,
         files={'attached_file': temp},
         auth=HTTPBasicAuth(tardis_user, tardis_pass)
