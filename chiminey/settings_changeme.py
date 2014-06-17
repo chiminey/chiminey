@@ -32,7 +32,7 @@ if 'test' in sys.argv:
         #'--with-coverage',
         '--cover-package=chiminey.simpleui, chiminey.smartconnectorscheduler',
         '--cover-inclusive',
-        '--with-yanc',
+        #'--with-yanc',
         '--with-xtraceback',
         '--logging-clear-handlers'
     ]
