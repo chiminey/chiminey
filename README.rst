@@ -3,8 +3,8 @@
 Chiminey
 ========
 
-
-!https://travis-ci.org/chiminey/chiminey.svg?branch=master!:https://travis-ci.org/chiminey/chiminey
+.. image:: https://travis-ci.org/chiminey/chiminey.svg?branch=master
+   :target: https://travis-ci.org/chiminey/chiminey
 
 
 The Cloud and Cluster Computing Platform.
