@@ -30,11 +30,11 @@ if 'test' in sys.argv:
     NOSE_ARGS = [
         # turn on to always generate coverage report
         #'--with-coverage',
-        '--cover-package=chiminey.simpleui, chiminey.smartconnectorscheduler',
-        '--cover-inclusive',
-        '--with-yanc',
-        '--with-xtraceback',
-        '--logging-clear-handlers'
+        #'--cover-package=chiminey.simpleui, chiminey.smartconnectorscheduler',
+        #'--cover-inclusive',
+        #'--with-yanc',
+        #'--with-xtraceback',
+        #'--logging-clear-handlers'
     ]
     LOCAL_FILESYS_ROOT_PATH = "/var/chiminey/tests"
 

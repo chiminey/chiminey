@@ -1,5 +1,11 @@
+
+
 Chiminey
 ========
+
+.. image:: https://travis-ci.org/chiminey/chiminey.svg?branch=master
+   :target: https://travis-ci.org/chiminey/chiminey
+
 
 The Cloud and Cluster Computing Platform.
 
