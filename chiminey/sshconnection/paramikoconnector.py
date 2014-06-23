@@ -43,7 +43,7 @@ def open_connection(ip_address, settings):
     Creates a ssh_client connection to the SSH at ip_address using
     credentials in settings
     """
-    # open up the connection
+    logger.debug("settings=%s" % settings) # open up the connection
     ssh_client = paramiko.SSHClient()
     logger.debug('ssh_client=%s' % ssh_client)
     known_hosts_file = os.path.join("~", ".ssh", "known_hosts")
