@@ -60,7 +60,7 @@ def open_connection(ip_address, settings):
                                    timeout=60.0, pkey=mykey)
                 logger.debug('private_keyfile_=%s' % private_key_file)
             else:
-                raise IOError
+                raise IOError('Cannot read private key')
         elif 'password' in settings and 'username' in settings:
             logger.debug("Connecting to %s as %s" % (ip_address,
                                 settings['username']))

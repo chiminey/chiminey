@@ -137,7 +137,7 @@ class RandomNumbersTest(SimpleTestCase):
                             'ec2_access_key': 'jdksghaskjghadjksghadskjhgadg',
                             'ec2_secret_key': 'jadfhgajkghadjkfhgakluyarueiwy',
                             'private_key': "mykey",
-                            'private_key_path': "/opt/chiminey/current/README.rst",
+                            'private_key_path': "/", # need location known to exist
                             'vm_image_size': 'm1.small',
                             'security_group': "mysecuritygroup"
 
