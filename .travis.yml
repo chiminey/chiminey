@@ -7,7 +7,7 @@ install:
  - python bootstrap.py -v 1.7.0
  - bin/buildout -v install
 # # command to run tests
-script: "bin/django test --verbosity=2 ."
+script: "bin/django test chiminey/examples -v2"
 after_failure: "cat tardis-test.log"
 branches:
   except:
