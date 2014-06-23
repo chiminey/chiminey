@@ -36,7 +36,7 @@ if 'test' in sys.argv:
         #'--with-xtraceback',
         #'--logging-clear-handlers'
     ]
-    LOCAL_FILESYS_ROOT_PATH = "/var/chiminey/tests"
+    LOCAL_FILESYS_ROOT_PATH = "/tmp/chiminey/tests"
 
 else:
     DATABASES = {
