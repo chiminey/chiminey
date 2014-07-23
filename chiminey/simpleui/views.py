@@ -1206,12 +1206,15 @@ def submit_job(request, form, directive):
     logger.debug("r.text=%s" % r.text)
     logger.debug("r.headers=%s" % r.headers)
     if r.status_code != 201:
-        if r.json()['error_message']:
-            messages.error(request, r.json()['error_message'])
-        else:
-            messages.error(request, "Task Failed with status code %s: %s"
-                % (r.status_code, r.text))
-
+        try:
+            if r.json()['error_message']:
+                messages.error(request, r.json()['error_message'])
+            else:
+                messages.error(request, "Task Failed with status code %s: %s"
+                    % (r.status_code, r.text))
+        except ValueError,e:
+                messages.error(request, "Task Failed with status code %s: %s"
+                    % (r.status_code, r.text))
         return False
     logger.debug("r.status_code=%s" % r.status_code)
     logger.debug("r.text=%s" % r.text)
