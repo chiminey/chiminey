@@ -17,7 +17,7 @@ setup(
     packages=find_packages(),
     namespace_packages=['chiminey'],
     install_requires=[
-        'setuptools',
+        'setuptools==0.9.8',
         'django==1.4.5',
         'django-registration',
         'django-extensions',
