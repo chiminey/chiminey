@@ -32,6 +32,20 @@ On the created VM::
     curl -O http://production.cf.rubygems.org/rubygems/rubygems-1.8.10.tgz
     tar zxf rubygems-1.8.10.tgz
     cd rubygems-1.8.10
+
+    # install ruby 1.9.3 as centos 6.5 has only 1.8 which is no good for chef
+    # http://tecadmin.net/install-ruby-1-9-3-or-multiple-ruby-verson-on-centos-6-3-using-rvm/
+    yum update
+    yum install gcc-c++ patch readline readline-devel zlib zlib-devel
+    yum install libyaml-devel libffi-devel openssl-devel make
+    yum install bzip2 autoconf automake libtool bison iconv-devel
+    yum remove libyaml-0.1.6
+    cd /tmp
+    curl -L get.rvm.io | bash -s stable
+    source /etc/profile.d/rvm.sh
+    rvm install 1.9.3
+
+    #install chef
     ruby setup.rb --no-format-executable
     gem install chef --no-ri --no-rdoc -v 11.10.4
 
