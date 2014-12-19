@@ -116,25 +116,35 @@ def wait_for_vms_to_start_running(all_vms, settings):
     #todo: cleanup nodes that are spawning indefinitely (timeout)
     logger.debug("Started waiting")
     #maximum rwait time 3 minutes
-    minutes = 3 #fixme avoid hard coding; move to settings.py
+    minutes = 10 #fixme avoid hard coding; move to settings.py
     max_retries = (minutes * 60)/settings['cloud_sleep_interval']
+    logger.debug("max_retries=%s" % max_retries)
     retries = 0
     while all_vms:
-        for vm in all_vms:
+        for vm in list(all_vms):
             ip_address = vm.ip_address
             if not ip_address:
                 ip_address = vm.private_ip_address
-            logger.debug("this vm %s" % vm)
+            logger.debug("#%s this vm %s" % (retries, vm))
             if _does_vm_exist(vm):
+                logger.debug("exists")
                 if is_vm_running(vm):
+                    logger.debug("isrunning")
                     all_running_vms.append(vm)
                     all_vms.remove(vm)
             else:
+                logger.debug("not exist")
                 all_vms.remove(vm)
             logger.debug('Current status of %s: %s' % (ip_address, vm.state))
-            if vm.state in 'error' or retries == max_retries:
+            if vm.state in 'error':
+                logger.debug("error")
                 all_vms.remove(vm)
+            if  retries == max_retries:
+                logger.debug("timeout")
+                break
+            logger.debug("finished check")
         retries += 1
+        logger.debug("sleeping")
         time.sleep(settings['cloud_sleep_interval'])
     return all_running_vms
 

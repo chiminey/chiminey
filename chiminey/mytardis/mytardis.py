@@ -102,7 +102,7 @@ def create_graph_paramset(schema_ns, name, graph_info, value_dict, value_keys):
 
     res = {}
     res['schema'] = "%s/%s" % (SCHEMA_PREFIX, schema_ns)
-    paramset = []
+    #paramset = []
 
     def _make_param(x, y):
         param = {}
@@ -110,13 +110,20 @@ def create_graph_paramset(schema_ns, name, graph_info, value_dict, value_keys):
         param['string_value'] = y
         return param
 
-    for x, y in (
+    paramset = [_make_param(x,y) for x,y in (
         ("graph_info", json.dumps(graph_info)),
         ("name", name),
         ('value_dict', json.dumps(value_dict)),
-        ("value_keys", json.dumps(value_keys))):
+        ("value_keys", json.dumps(value_keys)))]
 
-        paramset.append(_make_param(x, y))
+
+    # for x, y in (
+    #     ("graph_info", json.dumps(graph_info)),
+    #     ("name", name),
+    #     ('value_dict', json.dumps(value_dict)),
+    #     ("value_keys", json.dumps(value_keys))):
+
+    #     paramset.append(_make_param(x, y))
     res['parameters'] = paramset
 
     return res
@@ -422,14 +429,14 @@ def create_dataset(settings,
                 for param in paramset['parameters']:
                     new_param = {}
 
-                    for param_key, v in param.items():
+                    for param_key, v in param.iteritems():
                         logger.debug("param_key=%s v=%s" % (param_key,v))
                         if param_key == 'name' and v == "value_dict":
                             new_param['name'] = 'value_dict'
                             new_value = {}
 
                             found_func_match = False
-                            for fn, func in dfile_extract_func.items():
+                            for fn, func in dfile_extract_func.iteritems():
                                 logger.debug("fn=%s,func=%s" % (fn, func))
                                 if fn == os.path.basename(fname):
                                     # if fn file is very long, this is inefficient

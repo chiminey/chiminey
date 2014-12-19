@@ -23,6 +23,8 @@ import logging
 import json
 from itertools import product
 from pprint import pformat
+from collections import deque
+
 
 from chiminey.corestages.stage import Stage
 from chiminey.smartconnectorscheduler import models
@@ -37,7 +39,7 @@ from chiminey.runsettings import getval, getvals, \
     setval, update, get_schema_namespaces, SettingNotFoundException
 from chiminey.storage import get_url_with_credentials, copy_directories, get_file, put_file
 
-
+from contextlib import contextmanager
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +52,13 @@ VALUES_MAP_TEMPLATE_FILE = '%(template_name)s_values'
 VALUES_MAP_FILE = "values"
 
 
+@contextmanager
+def ignored(*exceptions):
+    try:
+        yield
+    except exceptions:
+        pass
+
 class Sweep(Stage):
 
     def __init__(self, user_settings=None):
@@ -59,13 +68,11 @@ class Sweep(Stage):
 
     def input_valid(self, settings_to_test):
         #fixme: move to hrmc
-        try:
+        with ignored(SettingNotFoundException, ValueError):
             iseed = int(getval(settings_to_test, '%s/input/hrmc/iseed' % RMIT_SCHEMA))
             NUMBER_SEEDS = 10000 #fixme: should be length of no lines on random_number file
             if not iseed in range(0, NUMBER_SEEDS):
                 return (False, 'Random Number Seed should be in range (0, %d)' % (NUMBER_SEEDS -1))
-        except (SettingNotFoundException, ValueError):
-            pass
         return (True, 'valid input')
 
 
@@ -82,10 +89,9 @@ class Sweep(Stage):
 
     def _get_sweep_name(self, run_settings):
         try:
-            sweep_name = getval(run_settings, '%s/directive_profile/sweep_name' % RMIT_SCHEMA)
+            return getval(run_settings, '%s/directive_profile/sweep_name' % RMIT_SCHEMA)
         except SettingNotFoundException:
-            sweep_name = 'unknown_sweep'
-        return sweep_name
+            return 'unknown_sweep'
 
     def process(self, run_settings):
         logger.debug('run_settings=%s' % run_settings)
@@ -108,7 +114,7 @@ class Sweep(Stage):
         local_settings = make_local_settings(run_settings)
         logger.debug('local_settings=%s' % local_settings)
 
-        compplatform = [k for k, v in run_settings.items()
+        compplatform = [k for k, v in run_settings.iteritems()
                         if k.startswith('%s/input/system/compplatform' % RMIT_SCHEMA)]
 
         setval(run_settings,
@@ -129,6 +135,7 @@ class Sweep(Stage):
 
         contextid = int(getval(run_settings, '%s/system/contextid' % RMIT_SCHEMA))
         logger.debug("contextid=%s" % contextid)
+
         sweep_name = self._get_sweep_name(run_settings)
         logger.debug("sweep_name=%s" % sweep_name)
 
@@ -175,9 +182,7 @@ class Sweep(Stage):
         if output_loc:
             try:
                 self.experiment_id = int(getval(run_settings, '%s/input/mytardis/experiment_id' % RMIT_SCHEMA))
-            except KeyError:
-                self.experiment_id = 0
-            except ValueError:
+            except KeyError, ValueError:
                 self.experiment_id = 0
             try:
                 curate_data = getval(run_settings, '%s/input/mytardis/curate_data' % RMIT_SCHEMA)
@@ -230,15 +235,16 @@ class Sweep(Stage):
                 try:
                     local_settings['random_numbers'] = num_url
                     rands = generate_rands(settings=local_settings,
-                    start_range=0,
-                    end_range=-1,
-                    num_required=len(runs),
-                    start_index=self.rand_index)
+                        start_range=0,
+                        end_range=-1,
+                        num_required=len(runs),
+                        start_index=self.rand_index)
                     logger.debug("rands=%s" % rands)
                 except Exception, e:
                     logger.debug('error')
                     logger.error(e)
                     raise
+
         # load initial values map in the input directory which
         # contains variable to use for all subdirectives
         starting_map = {}
@@ -278,8 +284,9 @@ class Sweep(Stage):
         # starting values.
         for ns in run_settings:
             if ns.startswith(RMIT_SCHEMA + "/input"):
+                #starting_map.update(dict([(k,v) for k,v in getvals(run_settings, ns).iteritems()]))
                 # for k, v in run_settings[ns].items():
-                for k, v in getvals(run_settings, ns).items():
+                for k, v in getvals(run_settings, ns).iteritems():
                     starting_map[k] = v
         logger.debug("starting_map after form=%s" % pformat(starting_map))
 
@@ -415,13 +422,11 @@ class Sweep(Stage):
         setval(run_settings, '%s/stages/sweep/sweep_done' % RMIT_SCHEMA, 1)
         logger.debug('interesting run_settings=%s' % run_settings)
 
-        try:
+        with ignored(SettingNotFoundException):
             if getvals(run_settings, '%s/input/mytardis' % RMIT_SCHEMA):
                 setval(run_settings,
                        '%s/input/mytardis/experiment_id' % RMIT_SCHEMA,
                        str(self.experiment_id))
-        except SettingNotFoundException:
-            pass
 
         if not self.error_detected:
             messages.success(run_settings, "0: sweep completed")
@@ -456,24 +461,30 @@ def _submit_subdirective(platform, run_settings, user, parentcontext):
         logger.warn("cannot find subdirective_name name")
         raise
 
-    directive_args = []
+    directive_args = deque()
     for schema in get_schema_namespaces(run_settings):
         keys = getvals(run_settings, schema)
-        d = []
-        logger.debug("keys=%s" % keys)
-        for k, v in keys.items():
-            d.append((k, v))
-        d.insert(0, schema)
-        directive_args.append(d)
-    directive_args.insert(0, '')
-    directive_args = [directive_args]
+        #d = []
+        d = deque([(k,v) for k,v in keys.iteritems()])
+        logger.debug("keys=%s" % keys.iteritems())
+        # for k, v in keys.iteritems():
+        #     d.append((k, v))
+        d.appendleft(schema)
+        #d.insert(0, schema)
+        directive_args.append(list(d))
+    directive_args.appendleft('')
+    #directive_args.insert(0, '')
+    directive_args = [list(directive_args)]
     logger.debug("directive_args=%s" % pformat(directive_args))
     logger.debug('subdirective_name=%s' % subdirective_name)
 
     (task_run_settings, command_args, run_context) \
         = make_runcontext_for_directive(
-            platform,
-            subdirective_name, directive_args, {}, user, parent=parentcontext)
+            platform_name=platform,
+            directive_name=subdirective_name,
+            directive_args=directive_args,
+            initial_settings={},
+            username=user, parent=parentcontext)
 
     logger.debug("sweep process done")
 

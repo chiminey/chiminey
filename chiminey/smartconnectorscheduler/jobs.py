@@ -185,8 +185,8 @@ def transfer(old, new):
     Transfer new dict into new dict at two levels by items rather than wholesale
     update (which would overwrite at the second level)
     """
-    for k, v in new.items():
-        for k1, v1 in v.items():
+    for k, v in new.iteritems():
+        for k1, v1 in v.iteritems():
             if not k in old:
                 old[k] = {}
             old[k][k1] = v1
@@ -382,7 +382,7 @@ def generate_rands(settings, start_range,  end_range, num_required, start_index)
         start_range = 0
         end_range = len(numbers)
 
-    for i in range(0, num_required):
+    for i in xrange(0, num_required):
 
         raw_num = float(numbers[random_counter])
         num = int((raw_num * float(end_range - start_range)) + start_range)
