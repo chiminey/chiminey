@@ -78,13 +78,15 @@ v1_api.register(PlatformParameterResource())
 # v1_api.register(PresetParameterSetResource())
 # v1_api.register(PresetParameterResource())
 
+from django.views.generic.base import RedirectView
 
 urlpatterns = patterns('',
 
     url(r'^admin/', include(admin.site.urls)),
     ('^accounts/', include('django.contrib.auth.urls')),
     url(r'^$', uiviews.AboutView.as_view(), name="home"),
-    url(r'^$', 'django.views.generic.simple.redirect_to', {'url':  '/'}, name='home'),
+    #url(r'^$', 'django.views.generic.simple.redirect_to', {'url':  '/'}, name='home'),
+    url(r'^$',RedirectView.as_view(url='/'), name='home'),
     url(r'^jobs/$', login_required(uiviews.get_contexts),
         name='hrmcjob-list',),
     url(r'^job/(?P<pk>\d+)/$', login_required(uiviews.ContextView.as_view()),

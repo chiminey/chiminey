@@ -851,7 +851,8 @@ class PlatformParameterResource(ModelResource):
 
     def get_object_list(self, request):
         from urlparse import urlparse, parse_qsl
-        url = urlparse(request.META['REQUEST_URI'])
+        url = urlparse(request.get_full_path())
+        #url = urlparse(request.META['REQUEST_URI'])
         query = parse_qsl(url.query)
         query_settings = dict(x[0:] for x in query)
         logger.debug('query=%s' % query)

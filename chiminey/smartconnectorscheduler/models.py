@@ -53,7 +53,7 @@ class Schema(models.Model):
         :attribute description: displayable text describing the schema
 
     """
-    namespace = models.URLField(verify_exists=False, max_length=400, help_text="A URI that uniquely ids the schema")
+    namespace = models.URLField(max_length=400, help_text="A URI that uniquely ids the schema")
     description = models.CharField(max_length=80, default="", help_text="The description of this schema")
     name = models.SlugField(default="", help_text="A unique identifier for the schema")
     hidden = models.BooleanField(default=False)
@@ -132,7 +132,7 @@ class ParameterName(models.Model):
                                  verbose_name="Subtype for the parameter")
     description = models.TextField(default="", blank=True,
         verbose_name="Human readable name for the parameter")
-    hidefield = models.URLField(verify_exists=False, max_length=400, help_text="", blank=True, default="", null=True)
+    hidefield = models.URLField(max_length=400, help_text="", blank=True, default="", null=True)
     # FIXME: as hidecondition becomes rhs of expression in html, could be
     # untrusted context.  Therefore, only superusers should be able to change
     # this field....

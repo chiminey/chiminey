@@ -139,7 +139,7 @@ $(document).on('click','.delete', function(e) {
         {% if offset <= 0  %}
         <li class="disabled">&laquo</span></li>
         {% else %}
-        <li><a href='{% url hrmcjob-list %}?offset={{ offset|add:"-20"}}'>&laquo;</a></li>
+        <li><a href='{% url "hrmcjob-list" %}?offset={{ offset|add:"-20"}}'>&laquo;</a></li>
         {% endif %}
 
         {% for page_offset in page_offsets %}
@@ -148,13 +148,13 @@ $(document).on('click','.delete', function(e) {
         {% else %}
         <li>
        {% endif %}
-       <a href='{% url hrmcjob-list %}?offset={{page_offset}}'>{{ forloop.counter}}</a></li>
+       <a href='{% url "hrmcjob-list" %}?offset={{page_offset}}'>{{ forloop.counter}}</a></li>
         {% endfor %}
 
         {% if total_count <= offset|add:"20"  %}
         <li class="disabled"><span>&raquo</span></li>
         {% else %}
-        <li><a href='{% url hrmcjob-list %}?offset={{ offset|add:"20"}}'>&raquo;</a></li>
+        <li><a href='{% url "hrmcjob-list" %}?offset={{ offset|add:"20"}}'>&raquo;</a></li>
         {% endif %}
 
 </ul>

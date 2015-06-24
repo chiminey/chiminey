@@ -348,17 +348,17 @@ function formreset(){
               <div class="nav-collapse">
                 <ul class="nav">
                     {% if not user.is_authenticated %}
-                    <li><a  href="{% url login %}" onclick='addPreset("myform-id", "{{ directive.name }}", "last_{{ directive.name }}_preset")'>login</a></li>
+                    <li><a  href="{% url 'login' %}" onclick='addPreset("myform-id", "{{ directive.name }}", "last_{{ directive.name }}_preset")'>login</a></li>
                     {% else %}
-                    <li><a  href="{% url logout %}" onclick='addPreset("myform-id", "{{ directive.name }}", "last_{{ directive.name }}_preset")'>logout</a></li>
+                    <li><a  href="{% url 'logout' %}" onclick='addPreset("myform-id", "{{ directive.name }}", "last_{{ directive.name }}_preset")'>logout</a></li>
 
-                    <li><a  href="{% url makedirective 0 %}">Create Job</a></li>
+                    <li><a  href="{% url 'makedirective' 0 %}">Create Job</a></li>
 
-                    <li><a  href="{% url hrmcjob-list %}" onclick='addPreset("myform-id", "{{ directive.name }}", "last_{{ directive.name }}_preset")'>Jobs</a></li>
+                    <li><a  href="{% url 'hrmcjob-list' %}" onclick='addPreset("myform-id", "{{ directive.name }}", "last_{{ directive.name }}_preset")'>Jobs</a></li>
                     {% if user.is_superuser %}
                      <li><a  href="/admin">Admin</a></li>
                      {%endif %}
-                    <li><a href="{% url computation-platform-settings %}" onclick='addPreset("myform-id", "{{ directive.name }}", "last_{{ directive.name }}_preset")'>Settings</a></li>
+                    <li><a href="{% url 'computation-platform-settings' %}" onclick='addPreset("myform-id", "{{ directive.name }}", "last_{{ directive.name }}_preset")'>Settings</a></li>
                   <!-- <p class="navbar-text pull-right">
                        <a href="" class="navbar-link">Settings</a>
                    </p> -->

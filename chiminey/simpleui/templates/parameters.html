@@ -17,10 +17,10 @@
             {% if not direct.resource_uri %}
             <li class="divider"></li>
             {% else %}
-            {% url makedirective direct.id as account %}
+            {% url 'makedirective' direct.id as account %}
 
             <li {% if directive.id == direct.id  %} class="active"{% endif %}
-                ><a href="{% url makedirective direct.id %}">{{direct.description}}</a></li>
+                ><a href="{% url 'makedirective' direct.id %}">{{direct.description}}</a></li>
             {% endif %}
             {% endfor %}
           </ul>

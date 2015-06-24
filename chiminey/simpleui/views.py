@@ -134,7 +134,7 @@ def computation_platform_settings(request):
             return HttpResponsePermanentRedirect(reverse('computation-platform-settings'))
 
     #FIXME: consider using non-locahost URL for api_host
-    api_host = "http://127.0.0.1"
+    api_host = "http://172.16.231.130"
     url = "%s/api/v1/platformparameter/?format=json&limit=0&schema=http://rmit.edu.au/schemas/platform/computation" % api_host
     cookies = dict(request.COOKIES)
     logger.debug("cookies=%s" % cookies)
@@ -203,7 +203,7 @@ def storage_platform_settings(request):
             return HttpResponsePermanentRedirect(reverse('storage-platform-settings'))
 
     #FIXME: consider using non-locahost URL for api_host
-    api_host = "http://127.0.0.1"
+    api_host = "http://172.16.231.130/"
     url = "%s/api/v1/platformparameter/" \
         "?format=json&limit=0&schema=" \
         "http://rmit.edu.au/schemas/platform/storage" % api_host
@@ -237,7 +237,7 @@ def storage_platform_settings(request):
 
 def post_platform(schema, form_data, request, type=None):
     logger.debug('operation=%s' % form_data['operation'])
-    api_host = "http://127.0.0.1"  # fixme: remove local host address
+    api_host = "http://172.16.231.130"  # fixme: remove local host address
     url = "%s/api/v1/platformparamset/?format=json" % api_host
     # pass the sessionid cookie through to the internal API
     cookies = dict(request.COOKIES)
@@ -499,14 +499,14 @@ class HRMCSubmitFormView(FormView):
     initial = {'number_vm_instances': 1,
         'minimum_number_vm_instances': 1,
         'iseed': 42,
-        'input_location': 'file://127.0.0.1/myfiles/input',
+        'input_location': 'file://172.16.231.130/myfiles/input',
         'optimisation_scheme': "MC",
         'threshold': "[2]",
         'error_threshold': "0.03",
         'max_iteration': 10,
         'pottype': 1,
         'experiment_id': 0,
-        'output_location': 'file://local@127.0.0.1/hrmcrun'
+        'output_location': 'file://local@172.16.231.130/hrmcrun'
         }
 
     # This method is called when valid form data has been POSTed.
@@ -517,7 +517,7 @@ class HRMCSubmitFormView(FormView):
         # TODO: do the same for other parts of UI, e.g., user settings form
         # should call user_setttings API endpoint.
         #FIXME: consider using non-locahost URL for api_host
-        api_host = "http://127.0.0.1"
+        api_host = "http://172.16.231.130"
         url = "%s/api/v1/context/?format=json" % api_host
 
         logger.debug("self.request.user.username=%s" % self.request.user.username)
@@ -598,7 +598,7 @@ class HRMCSubmitFormView(FormView):
 def submit_sweep_job(request, form, schemas):
 
     #FIXME: consider using non-locahost URL for api_host
-    api_host = "http://127.0.0.1"
+    api_host = "http://172.16.231.130"
     url = "%s/api/v1/context/?format=json" % api_host
 
     logger.debug("request.user.username=%s" % request.user.username)
@@ -654,8 +654,8 @@ class MakeSubmitFormView(FormView):
     system_schema = RMIT_SCHEMA + "/system/misc/"
 
     initial = {
-        'input_location': 'file://local@127.0.0.1/myfiles/vasppayload',
-        'output_location': 'file://local@127.0.0.1/myfiles/vaspoutput',
+        'input_location': 'file://local@172.16.231.130/myfiles/vasppayload',
+        'output_location': 'file://local@172.16.231.130/myfiles/vaspoutput',
         'experiment_id': 0,
         'sweep_map': '{"num_kp": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], "encut": [50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600, 650, 700]}'
     }
@@ -664,7 +664,7 @@ class MakeSubmitFormView(FormView):
     # It should return an HttpResponse.
     def form_valid(self, form):
         #FIXME: consider using non-locahost URL for api_host
-        api_host = "http://127.0.0.1"
+        api_host = "http://172.16.231.130"
         url = "%s/api/v1/context/?format=json" % api_host
 
         logger.debug("self.request.user.username=%s" % self.request.user.username)
@@ -708,15 +708,15 @@ class CopyFormView(FormView):
     form_class = CopyForm
     success_url = '/jobs'
 
-    initial = {'source_bdp_url': 'file://local@127.0.0.1/myfiles/sourcedir',
-        'destination_bdp_url': 'file://local@127.0.0.1/myfiles/destdir',
+    initial = {'source_bdp_url': 'file://local@172.16.231.130/myfiles/sourcedir',
+        'destination_bdp_url': 'file://local@172.16.231.130/myfiles/destdir',
         }
 
     # This method is called when valid form data has been POSTed.
     # It should return an HttpResponse.
     def form_valid(self, form):
         #FIXME: consider using non-locahost URL for api_host
-        api_host = "http://127.0.0.1"
+        api_host = "http://172.16.231.130"
         url = "%s/api/v1/context/?format=json" % api_host
 
         logger.debug("self.request.user.username=%s" % self.request.user.username)
@@ -1009,7 +1009,7 @@ def make_directive_form(**kwargs):
 
 def get_schema_info(request, schema_id):
     headers = {'content-type': 'application/json'}
-    host_ip = "127.0.0.1"
+    host_ip = "172.16.231.130"
     api_host = "http://%s" % host_ip
     url = "%s/api/v1/schema/%s/?format=json" % (api_host, schema_id)
     cookies = dict(request.COOKIES)
@@ -1026,7 +1026,7 @@ def get_schema_info(request, schema_id):
 
 def get_schema_id(request, namespace):
     headers = {'content-type': 'application/json'}
-    host_ip = "127.0.0.1"
+    host_ip = "172.16.231.130"
     api_host = "http://%s" % host_ip
     url = "%s/api/v1/schema/?format=json&namespace=%s" % (api_host, namespace)
     cookies = dict(request.COOKIES)
@@ -1046,7 +1046,7 @@ def get_schema_id(request, namespace):
 
 
 def get_directive(request, directive_id):
-    host_ip = "127.0.0.1"
+    host_ip = "172.16.231.130"
     headers = {'content-type': 'application/json'}
     api_host = "http://%s" % host_ip
     url = "%s/api/v1/directive/%s?format=json" % (api_host, directive_id)
@@ -1063,7 +1063,7 @@ def get_directive(request, directive_id):
 
 
 def get_directives(request):
-    host_ip = "127.0.0.1"
+    host_ip = "172.16.231.130"
     headers = {'content-type': 'application/json'}
     api_host = "http://%s" % host_ip
     url = "%s/api/v1/directive/?limit=0&format=json" % (api_host)
@@ -1081,7 +1081,7 @@ def get_directives(request):
 
 
 def get_directive_schemas(request, directive_id):
-    host_ip = "127.0.0.1"
+    host_ip = "172.16.231.130"
     headers = {'content-type': 'application/json'}
     api_host = "http://%s" % host_ip
     url = "%s/api/v1/directiveargset/?limit=0&directive=%s&format=json" % (api_host,
@@ -1102,7 +1102,7 @@ def get_directive_schemas(request, directive_id):
 
 
 def get_parameters(request, schema_id):
-    host_ip = "127.0.0.1"
+    host_ip = "172.16.231.130"
     headers = {'content-type': 'application/json'}
     api_host = "http://%s" % host_ip
     url = "%s/api/v1/parametername/?limit=0&schema=%s&format=json" % (api_host,
@@ -1137,7 +1137,7 @@ def get_directive_params(request, directive):
 
 def get_from_api(request, resource_uri):
     headers = {'content-type': 'application/json'}
-    host_ip = "127.0.0.1"
+    host_ip = "172.16.231.130"
     api_host = "http://%s" % host_ip
     url = "%s%s/?format=json" % (api_host, resource_uri)
     cookies = dict(request.COOKIES)
@@ -1185,7 +1185,7 @@ def add_form_fields(request, paramnameset):
 def submit_job(request, form, directive):
 
     #FIXME: consider using non-locahost URL for api_host
-    api_host = "http://127.0.0.1"
+    api_host = "http://172.16.231.130"
     url = "%s/api/v1/context/?format=json" % api_host
     logger.debug("request.user.username=%s" % request.user.username)
     logger.debug("request.user.username=%s" % request.user.password)
@@ -1270,7 +1270,7 @@ def get_contexts(request):
     limit = page_size
     logger.debug("offset=%s" % offset)
     logger.debug("limit=%s" % limit)
-    host_ip = "127.0.0.1"
+    host_ip = "172.16.231.130"
     headers = {'content-type': 'application/json'}
     api_host = "http://%s" % host_ip
     url = "%s/api/v1/contextmessage/?limit=%s&offset=%s&format=json" % (api_host, limit, offset)
@@ -1337,7 +1337,8 @@ def get_contexts(request):
                        context_instance=RequestContext(request))
 
 
-from django.http import HttpResponse, iri_to_uri
+from django.http import HttpResponse
+from django.utils.encoding import iri_to_uri
 
 
 class HttpResponseTemporaryRedirect(HttpResponse):
@@ -1400,7 +1401,7 @@ def submit_directive(request, directive_id):
         form, form_data = make_directive_form(directive_params=directive_params,
             username=request.user.username,
             directive=directive)
-    api_host = "http://127.0.0.1"
+    api_host = "http://172.16.231.130"
     url = "%s/coreapi/preset/?directive=%s" % (api_host, directive['name'])
     logger.debug("directive_name=%s" % directive['name'])
     cookies = dict(request.COOKIES)
