@@ -390,6 +390,7 @@ COMPUTATION_PLATFORM_SCHEMA_NAMESPACE = \
 #BROKER_TRANSPORT = 'django'
 BROKER_URL = 'redis://localhost:6379/0'
 CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+REDIS_HOST = "localhost"
 
 APIHOST = "http://127.0.0.1"
 

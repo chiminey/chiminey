@@ -22,6 +22,7 @@ import sys
 import linecache
 import logging
 from celery.task import task
+from django.conf import settings
 from celery.exceptions import SoftTimeLimitExceeded
 from pprint import pformat
 
@@ -287,7 +288,7 @@ def progress_context(context_id):
     # http://loose-bits.com/2010/10/distributed-task-locking-in-celery.html
     try:
         have_lock = False
-        my_lock = redis.Redis().lock(str(context_id), timeout=REDIS_TIMEOUT)
+        my_lock = redis.Redis(host=settings.REDIS_HOST, port=6379, db=0).lock(str(context_id), timeout=REDIS_TIMEOUT)
         try:
             have_lock = my_lock.acquire(blocking=False)
             if have_lock:
