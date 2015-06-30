@@ -350,7 +350,7 @@ VM_IMAGES = {
               'csrack': {'placement': None, 'vm_image': "ami-00000009", 'user_data': CSRACK_USERDATA}, # centos 7
               #'nectar': {'placement': None, 'vm_image': "ami-00001c06", 'user_data': ''},
               #'nectar': {'placement': None, 'vm_image': "ami-00001e2b", 'user_data': ''},
-              'nectar': {'placement': 'monash', 'vm_image': "ami-000022b0", 'user_data': ''}, # centos 7
+              'nectar': {'placement': 'monash-01', 'vm_image': "ami-000022b0", 'user_data': ''}, # centos 7
               'amazon': {'placement': '', 'vm_image': "ami-9352c1a9", 'user_data': ''}}
 
 
