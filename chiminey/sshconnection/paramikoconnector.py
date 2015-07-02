@@ -46,7 +46,7 @@ def open_connection(ip_address, settings):
     logger.debug("settings=%s" % settings) # open up the connection
     ssh_client = paramiko.SSHClient()
     logger.debug('ssh_client=%s' % ssh_client)
-    known_hosts_file = os.path.join("~", ".ssh", "known_hosts")
+    known_hosts_file = os.path.join("~chiminey", ".ssh", "known_hosts")
     ssh_client.load_system_host_keys(os.path.expanduser(known_hosts_file))
     ssh_client.set_missing_host_key_policy(paramiko.WarningPolicy())
     # use private key if exists

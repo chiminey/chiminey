@@ -86,7 +86,7 @@ class RemoteStorage(SFTPStorage):
             self._ssh.load_host_keys(self._known_host_file)
         else:
             # warn BUT DONT ADD host keys from current user.
-            self._ssh.load_host_keys(os.path.expanduser(os.path.join("~", ".ssh", "known_hosts")))
+            self._ssh.load_host_keys(os.path.expanduser(os.path.join("~chiminey", ".ssh", "known_hosts")))
 
         # and automatically add new host keys for hosts we haven't seen before.
         self._ssh.set_missing_host_key_policy(paramiko.WarningPolicy())
