@@ -22,7 +22,6 @@ from pprint import pformat
 import logging
 import logging.config
 
-from tastypie import models as tastymodels
 
 from django.db import models
 from django.contrib.auth.models import User
@@ -733,6 +732,9 @@ class PresetParameter(models.Model):
     class Meta:
         ordering = ("name",)
 
+def create_api_key_wrapper(sender, **kwargs):
+    from tastypie.models import create_api_key
+    create_api_key(sender, **kwargs)   
 
-models.signals.post_save.connect(tastymodels.create_api_key, sender=User)
+models.signals.post_save.connect(create_api_key_wrapper, sender=User)
 
