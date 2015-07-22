@@ -732,9 +732,9 @@ class PresetParameter(models.Model):
     class Meta:
         ordering = ("name",)
 
-def create_api_key_wrapper(sender, **kwargs):
-    from tastypie.models import create_api_key
-    create_api_key(sender, **kwargs)   
+#def create_api_key_wrapper(sender, **kwargs):
+#    from tastypie.models import create_api_key
+#    create_api_key(sender, **kwargs)   
 
-models.signals.post_save.connect(create_api_key_wrapper, sender=User)
+#models.signals.post_save.connect(create_api_key_wrapper, sender=User)
 
