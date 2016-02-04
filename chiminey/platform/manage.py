@@ -26,20 +26,14 @@ from django.db.models import ObjectDoesNotExist
 from django.db.utils import IntegrityError
 from django.db import transaction
 
-from chiminey import storage
 from chiminey.smartconnectorscheduler import models
-from chiminey.platform.validate import \
-    validate_mytardis_parameters, validate_remote_path
-from chiminey.platform.generatekeys import \
-    generate_unix_key, generate_cloud_key
-from chiminey.platform.configure import \
-    configure_nectar_platform, configure_unix_platform
+
 
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
 logger = logging.getLogger(__name__)
 
-def create_platform(platform_name, username,
+def create_platform(platform, platform_name, username,
                     schema_namespace, parameters):
     logger.debug('create platform')
     missing_params = _retrieve_missing_params(schema_namespace, parameters)
@@ -49,12 +43,12 @@ def create_platform(platform_name, username,
         return False, message
     parameters['platform_name'] = platform_name
     platform_type = parameters['platform_type']
-    _configure_platform(platform_type, username, parameters)
-    valid_params, message = _validate_parameters(
+    _configure_platform(platform, platform_type, username, parameters)
+    valid_params, message = _validate_parameters(platform,
         platform_type, parameters, passwd_auth=True)
     if not valid_params:
         return valid_params, message
-    key_generated, message = _generate_key(platform_type, parameters)
+    key_generated, message = _generate_key(platform, platform_type, parameters)
     if not key_generated:
         return key_generated, message
     remove_password = True
@@ -140,7 +134,7 @@ def retrieve_all_platforms(username, schema_namespace_prefix=''):
     return platforms
 
 
-def update_platform(platform_name, username,
+def update_platform(platform, platform_name, username,
                     updated_parameters):
     logger.debug(platform_name)
     logger.debug(updated_parameters)
@@ -151,8 +145,8 @@ def update_platform(platform_name, username,
     updated_platform_record.update(updated_parameters)
     platform_type = current_platform_record['platform_type']
     updated_platform_record['platform_type'] = platform_type
-    _configure_platform(platform_type, username, updated_platform_record)
-    valid_params, message = _validate_parameters(
+    _configure_platform(platform, platform_type, username, updated_platform_record)
+    valid_params, message = _validate_parameters(platform,
         platform_type, updated_platform_record, passwd_auth=True)
     if not valid_params:
         return valid_params, message
@@ -227,87 +221,99 @@ def _retrieve_missing_params(schema_namespace, parameters):
     return missing_params
 
 
-def _configure_platform(platform_type, username, parameters):
-    if platform_type in ['csrack', 'nectar', 'amazon']:
-        configure_nectar_platform(platform_type, username, parameters)
-    elif platform_type in ['unix', 'nci']:
-        configure_unix_platform(platform_type, username, parameters)
+def _configure_platform(platform, platform_type, username, parameters):
+
+    return platform.configure(platform_type, username, parameters)
+
+    # if platform_type in ['csrack', 'nectar', 'amazon']:
+    #     configure_nectar_platform(platform_type, username, parameters)
+    # elif platform_type in ['unix', 'nci']:
+    #     configure_unix_platform(platform_type, username, parameters)
 
 
-def _validate_parameters(platform_type, parameters, passwd_auth=False):
-    if platform_type == 'unix' or platform_type == 'nci':
-        path_list = [parameters['root_path'], parameters['home_path']]
-        return validate_remote_path(path_list, parameters, passwd_auth)
-    if platform_type == 'mytardis':
-        return validate_mytardis_parameters(parameters)
-    return True, 'All valid parameters'
+def _validate_parameters(platform, platform_type, parameters, passwd_auth=False):
+
+    return platform.validate(parameters, passwd_auth)
+
+    # if platform_type == 'unix' or platform_type == 'nci':
+    #     path_list = [parameters['root_path'], parameters['home_path']]
+    #     return validate_remote_path(path_list, parameters, passwd_auth)
+    # if platform_type == 'mytardis':
+    #     return validate_mytardis_parameters(parameters)
+    # return True, 'All valid parameters'
 
 
-def _generate_key(platform_type, parameters):
-    if platform_type in ['csrack', 'nectar', 'amazon']:
-        return generate_cloud_key(parameters)
-    elif platform_type in ['nci', 'unix']:
-        return generate_unix_key(parameters)
-    elif platform_type == 'mytardis':
-        return True, ''
-    else:
-        return False, 'Unknown platform type [%s]' % platform_type
+def _generate_key(platform, platform_type, parameters):
+
+    return platform.generate_key(parameters)
+
+    # if platform_type in ['csrack', 'nectar', 'amazon']:
+    #     return generate_cloud_key(parameters)
+    # elif platform_type in ['nci', 'unix']:
+    #     return generate_unix_key(parameters)
+    # elif platform_type == 'mytardis':
+    #     return True, ''
+    # else:
+    #     return False, 'Unknown platform type [%s]' % platform_type
 
 
-def get_platform_settings(platform_url, username):
-    platform_name = platform_url.split('/')[0]
-    if platform_name == "local":
-        return {"scheme": 'file', 'type': 'local', 'host': '127.0.0.1'}
-    record, schema_namespace = retrieve_platform(platform_name, username)
-    logger.debug("record=%s" % record)
-    logger.debug("schema_namespace=%s" % schema_namespace)
+def get_platform_settings(platform, platform_url, username):
 
-    _update_platform_settings(record)
-    record['bdp_username'] = username
-    return record
+    return platform.get_platform_settings(platform_url, username)
+
+#     platform_name = platform_url.split('/')[0]
+#     if platform_name == "local":
+#         return {"scheme": 'file', 'type': 'local', 'host': '127.0.0.1'}
+#     record, schema_namespace = retrieve_platform(platform_name, username)
+#     logger.debug("record=%s" % record)
+#     logger.debug("schema_namespace=%s" % schema_namespace)
+
+#     _update_platform_settings(record)
+#     record['bdp_username'] = username
+#     return record
 
 
-#fixme: in the schema definition, change private_key to private_key_name
-def _update_platform_settings(settings):
-    #platform_type = os.path.basename(schema_namespace)
-    try:
-        platform_type = settings['platform_type']
-    except KeyError:
-        logger.error("settings=%s" % settings)
-        raise
-    settings['type'] = platform_type
-    if platform_type in ['csrack', 'amazon']:
-        #settings['username'] = 'root' #fixme avoid hardcoding
-        settings['username'] = 'centos' #fixme avoid hardcoding
-        settings['private_key_name'] = settings['private_key']
-        settings['private_key'] = os.path.join(storage.get_bdp_root_path(),
-                                               settings['private_key_path'])
-        settings['root_path'] = '/home/centos'  # fixme avoid hardcoding
-        settings['scheme'] = 'ssh'
-    
-    elif platform_type in ['nectar']:
-        settings['username'] = 'ec2-user' #fixme avoid hardcoding
-        settings['private_key_name'] = settings['private_key']
-        settings['private_key'] = os.path.join(storage.get_bdp_root_path(),
-                                               settings['private_key_path'])
-        settings['root_path'] = '/home/ec2-user'  # fixme avoid hardcoding
-        settings['scheme'] = 'ssh'
+# #fixme: in the schema definition, change private_key to private_key_name
+# def _update_platform_settings(settings):
+#     #platform_type = os.path.basename(schema_namespace)
+#     try:
+#         platform_type = settings['platform_type']
+#     except KeyError:
+#         logger.error("settings=%s" % settings)
+#         raise
+#     settings['type'] = platform_type
+#     if platform_type in ['csrack', 'amazon']:
+#         #settings['username'] = 'root' #fixme avoid hardcoding
+#         settings['username'] = 'centos' #fixme avoid hardcoding
+#         settings['private_key_name'] = settings['private_key']
+#         settings['private_key'] = os.path.join(storage.get_bdp_root_path(),
+#                                                settings['private_key_path'])
+#         settings['root_path'] = '/home/centos'  # fixme avoid hardcoding
+#         settings['scheme'] = 'ssh'
 
-    elif platform_type == 'nci':
-        settings['private_key'] = os.path.join(storage.get_bdp_root_path(),
-                                               settings['private_key_path'])
-        settings['host'] = settings['ip_address']
-        settings['scheme'] = 'ssh'
+#     elif platform_type in ['nectar']:
+#         settings['username'] = 'ec2-user' #fixme avoid hardcoding
+#         settings['private_key_name'] = settings['private_key']
+#         settings['private_key'] = os.path.join(storage.get_bdp_root_path(),
+#                                                settings['private_key_path'])
+#         settings['root_path'] = '/home/ec2-user'  # fixme avoid hardcoding
+#         settings['scheme'] = 'ssh'
 
-    elif platform_type == 'unix':
-        settings['private_key'] = os.path.join(storage.get_bdp_root_path(),
-                                               settings['private_key_path'])
-        settings['host'] = settings['ip_address']
-        settings['scheme'] = 'ssh'
-    elif platform_type == 'mytardis':
-        settings['mytardis_host'] = settings['ip_address']
-        settings['mytardis_user'] = settings['username']
-        settings['mytardis_password'] = settings['password']
+#     elif platform_type == 'nci':
+#         settings['private_key'] = os.path.join(storage.get_bdp_root_path(),
+#                                                settings['private_key_path'])
+#         settings['host'] = settings['ip_address']
+#         settings['scheme'] = 'ssh'
+
+#     elif platform_type == 'unix':
+#         settings['private_key'] = os.path.join(storage.get_bdp_root_path(),
+#                                                settings['private_key_path'])
+#         settings['host'] = settings['ip_address']
+#         settings['scheme'] = 'ssh'
+#     elif platform_type == 'mytardis':
+#         settings['mytardis_host'] = settings['ip_address']
+#         settings['mytardis_user'] = settings['username']
+#         settings['mytardis_password'] = settings['password']
 
 
 def get_job_dir(output_storage_settings, offset):

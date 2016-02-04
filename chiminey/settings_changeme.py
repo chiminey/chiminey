@@ -394,6 +394,14 @@ REDIS_HOST = "localhost"
 
 APIHOST = "http://127.0.0.1"
 
+PLATFORM_CLASSES = (
+    'chiminey.platform.unix.UnixPlatform',
+    'chiminey.platform.cloud.CloudPlatform',
+    'chiminey.platform.jenkins.JenkinsPlatform'
+    )
+
+
+
 
 djcelery.setup_loader()
 

@@ -27,6 +27,8 @@ import json
 import django
 from pprint import pformat
 
+from django.conf import settings as django_settings
+
 # FIXME,TODO: replace basic authentication with basic+SSL,
 # or better digest or oauth
 from tastypie.authentication import (BasicAuthentication, ApiKeyAuthentication, MultiAuthentication)
@@ -38,6 +40,9 @@ from tastypie import http
 from tastypie.bundle import Bundle
 from tastypie.exceptions import ImmediateHttpResponse
 from tastypie.paginator import Paginator
+
+from django.core.exceptions import ImproperlyConfigured
+
 
 from django.db import transaction
 from django.contrib.auth.models import User
@@ -800,24 +805,50 @@ class PlatformParameterSetResource(ModelResource):
         return response
 
     def _create_platform(self, bundle):
-        logger.debug("creating platform")
+        logger.debug("creating platform %s" % bundle.data.keys())
         username = bundle.data['username']
         schema_namespace = bundle.data['schema']
         parameters = bundle.data['parameters']
         platform_name = bundle.data['platform_name']
-        created, message = create_platform(
-            platform_name, username, schema_namespace, parameters)
-        logger.debug('created=%s' % created)
-        return created, message
+        platform_type = bundle.data['parameters']['platform_type']
+        logger.debug("checking hooks")
+        for platform_hook in django_settings.PLATFORM_CLASSES:
+            try:
+                hook = jobs.safe_import(platform_hook, [], {})
+            except ImproperlyConfigured as  e:
+                logger.error("Cannot load platform hook %s" % e)
+                continue
+            logger.debug("hook=%s" % hook)
+            logger.debug("hook.get_platform_types=%s" % hook.get_platform_types())
+            logger.debug("platform_type=%s" % platform_type)
+            if platform_type in hook.get_platform_types():
+                created, message = create_platform(hook,
+                    platform_name, username, schema_namespace, parameters)
+                logger.debug('created=%s' % created)
+                return created, message
+        return False, "unknown platform"
 
     def _update_platform(self, bundle):
         username = bundle.data['username']
         updated_parameters = bundle.data['parameters']
         platform_name = bundle.data['platform_name']
-        updated, message = update_platform(platform_name,
-            username, updated_parameters)
-        logger.debug('updated=%s' % updated)
-        return updated, message
+        platform_type = bundle.data['parameters']['platform_type']
+        logger.debug("checking hooks")
+        for platform_hook in django_settings.PLATFORM_CLASSES:
+            try:
+                hook = jobs.safe_import(platform_hook, [], {})
+            except ImproperlyConfigured as  e:
+                logger.error("Cannot load platform hook %s" % e)
+                continue
+            logger.debug("hook=%s" % hook)
+            logger.debug("hook.get_platform_types=%s" % hook.get_platform_types())
+            logger.debug("platform_type=%s" % platform_type)
+            if platform_type in hook.get_platform_types():
+                updated, message = update_platform(hook,
+                    platform_name, username, updated_parameters)
+                logger.debug('updated=%s' % updated)
+                return updated, message
+        return False, "unknown platform"
 
     def _delete_platform(self, bundle):
         username = bundle.data['username']
