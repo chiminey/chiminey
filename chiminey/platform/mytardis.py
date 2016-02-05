@@ -1,12 +1,16 @@
 
-
+import os
+import logging
+from boto.exception import EC2ResponseError
 from django.core.files.base import ContentFile
+
 from chiminey import storage
 from chiminey.sshconnection import open_connection, AuthError
 from chiminey.compute import run_command_with_status
 from chiminey.cloudconnection import \
     create_ssh_security_group, create_key_pair
-from boto.exception import EC2ResponseError
+from chiminey.platform.validate import validate_mytardis_parameters
+
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +20,7 @@ class MyTardisPlatform():
     def get_platform_types(self):
         return ['mytardis']
 
-    def configure(self, username, parameters)
+    def configure(self, platform_type, username, parameters):
         #def configure_unix_platform(platform_type, username, parameters):
         key_name = 'bdp_%s' % parameters['platform_name']
         key_relative_path = os.path.join(
@@ -24,7 +28,10 @@ class MyTardisPlatform():
         parameters['private_key_path'] = key_relative_path
 
     def validate(self, parameters, passwd_auth=False):
-        return True, ''
+        return validate_mytardis_parameters(parameters)
+
+    def generate_key(self, parameters):
+        return "no key", ""
 
     def get_platform_settings(self, platform_url, username):
         platform_name = platform_url.split('/')[0]

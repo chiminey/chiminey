@@ -397,11 +397,11 @@ APIHOST = "http://127.0.0.1"
 PLATFORM_CLASSES = (
     'chiminey.platform.unix.UnixPlatform',
     'chiminey.platform.cloud.CloudPlatform',
-    'chiminey.platform.jenkins.JenkinsPlatform'
+    'chiminey.platform.jenkins.JenkinsPlatform',
+    'chiminey.platform.mytardis.MyTardisPlatform',
     )
 
 
 
 
 djcelery.setup_loader()
-

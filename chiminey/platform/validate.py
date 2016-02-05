@@ -45,7 +45,7 @@ def validate_mytardis_parameters(parameters):
         if status_code == 401:
             return False, "Unauthorised access to %s" % parameters['ip_address']
         return False, "MyTardis instance registration failed with %s error code" % response.status_code
-    except Exception, e:
+    except Exception:
         return False, 'Unable to connect to Mytardis instance [%s]' % parameters['ip_address']
 
 
