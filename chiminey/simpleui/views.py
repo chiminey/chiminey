@@ -52,6 +52,9 @@ from chiminey.simpleui.hrmc.hrmcsubmit import HRMCSubmitForm
 from chiminey.simpleui.makeform import MakeSubmitForm
 from chiminey.simpleui.hrmc.copy import CopyForm
 
+from pprint import pformat
+
+
 
 #TODO,FIXME: simpleui shouldn't refer to anything in smartconnectorscheduler
 #and should be using its own models and use the REST API for all information.
@@ -108,33 +111,31 @@ def bdp_account_settings(request):
 
 
 def computation_platform_settings(request):
-    namespace = RMIT_SCHEMA + "/platform/computation/cloud/ec2-based"
-    cloud_params = _get_platform_params(request, namespace)
-    cloudform, form_data = make_directive_form(
-        platform_params=cloud_params,
-        username=request.user.username)
-    namespace = RMIT_SCHEMA + "/platform/computation/cluster/pbs_based"
-    cluster_params = _get_platform_params(request, namespace)
-    cluster_form, form_data = make_directive_form(
-        platform_params=cluster_params,
-        username=request.user.username)
-    if request.method == "POST":
-        cloudform, form_data = make_directive_form(
-            request=request.POST,
-            platform_params=cloud_params,
+
+    new_form_data = {}
+    for field_name, ns_suffix in [('cluster_form', 'cloud/ec2-based'),
+                                    ('cloud_form', 'cluster/pbs_based'),
+                                    ('jenkins_form', 'testing/jenkins_based')
+                                    ]:
+        namespace = "%s/platform/computation/%s" % (RMIT_SCHEMA, ns_suffix)
+        params = _get_platform_params(request, namespace)
+
+        form, form_data= make_directive_form(
+            platform_params=params,
             username=request.user.username)
-        cluster_form, form_data = make_directive_form(
-            request=request.POST,
-            platform_params=cluster_params,
-            username=request.user.username)
-        if cluster_form.is_valid():
-            schema = RMIT_SCHEMA + '/platform/computation/cluster/pbs_based'
-            post_platform(schema, cluster_form.cleaned_data, request)
-            return HttpResponsePermanentRedirect(reverse('computation-platform-settings'))
-        if cloudform.is_valid():
-            schema = RMIT_SCHEMA + '/platform/computation/cloud/ec2-based'
-            post_platform(schema, cloudform.cleaned_data, request)
-            return HttpResponsePermanentRedirect(reverse('computation-platform-settings'))
+
+        new_form_data[field_name] = (form, form_data)
+
+        if request.method == 'POST':
+
+            form, form_data= make_directive_form(
+                request=request.POST,
+                platform_params=params,
+                username=request.user.username)
+            new_form_data[field_name] = (form, form_data)
+            if form.is_valid():
+                post_platform(namespace, form.cleaned_data, request)
+                return HttpResponsePermanentRedirect(reverse('computation-platform-settings'))
 
     #FIXME: consider using non-locahost URL for api_host
     url = "%s/api/v1/platformparameter/?format=json&limit=0&schema=http://rmit.edu.au/schemas/platform/computation" % api_host
@@ -154,13 +155,72 @@ def computation_platform_settings(request):
         GET_data = r.json()
         computation_platforms, all_headers = filter_computation_platforms(GET_data)
         logger.debug(computation_platforms)
-    logger.debug("cloud_form_get=%s" % cloudform)
-    logger.debug("cloud_data_get=%s" % form_data)
-    logger.debug("nci_form_get=%s" % cluster_form)
-    return render(request, 'accountsettings/computationplatform.html',
-                  {'cluster_form': cluster_form, 'cloud_form': cloudform,
-                    'computation_platforms': computation_platforms,
-                    'all_headers': all_headers})
+    logger.debug("new_form_data=%s" % pformat(new_form_data))
+    # logger.debug("cloud_form_get=%s" % cloudform)
+    # logger.debug("cloud_data_get=%s" % form_data)
+    # logger.debug("nci_form_get=%s" % cluster_form)
+    res = {'computation_platforms': computation_platforms,
+                    'all_headers': all_headers}
+    res.update(dict([(x,y[0]) for x,y in new_form_data.items()]))
+    logger.debug("res=%s" % pformat(res))
+    return render(request, 'accountsettings/computationplatform.html',res)
+
+
+    # namespace = RMIT_SCHEMA + "/platform/computation/cloud/ec2-based"
+    # cloud_params = _get_platform_params(request, namespace)
+    # cloudform, form_data = make_directive_form(
+    #     platform_params=cloud_params,
+    #     username=request.user.username)
+    # namespace = RMIT_SCHEMA + "/platform/computation/cluster/pbs_based"
+    # cluster_params = _get_platform_params(request, namespace)
+    # cluster_form, form_data = make_directive_form(
+    #     platform_params=cluster_params,
+    #     username=request.user.username)
+
+
+    # if request.method == "POST":
+    #     cloudform, form_data = make_directive_form(
+    #         request=request.POST,
+    #         platform_params=cloud_params,
+    #         username=request.user.username)
+    #     cluster_form, form_data = make_directive_form(
+    #         request=request.POST,
+    #         platform_params=cluster_params,
+    #         username=request.user.username)
+    #     if cluster_form.is_valid():
+    #         schema = RMIT_SCHEMA + '/platform/computation/cluster/pbs_based'
+    #         post_platform(schema, cluster_form.cleaned_data, request)
+    #         return HttpResponsePermanentRedirect(reverse('computation-platform-settings'))
+    #     if cloudform.is_valid():
+    #         schema = RMIT_SCHEMA + '/platform/computation/cloud/ec2-based'
+    #         post_platform(schema, cloudform.cleaned_data, request)
+    #         return HttpResponsePermanentRedirect(reverse('computation-platform-settings'))
+
+    # #FIXME: consider using non-locahost URL for api_host
+    # url = "%s/api/v1/platformparameter/?format=json&limit=0&schema=http://rmit.edu.au/schemas/platform/computation" % api_host
+    # cookies = dict(request.COOKIES)
+    # logger.debug("cookies=%s" % cookies)
+    # headers = {'content-type': 'application/json'}
+    # try:
+    #     r = requests.get(url, headers=headers, cookies=cookies)
+    # except HTTPError as e:
+    #     logger.debug('The server couldn\'t fulfill the request. %s' % e)
+    #     logger.debug('Error code: ', e.code)
+    # except URLError as e:
+    #     logger.debug('We failed to reach a server. %s' % e)
+    #     logger.debug('Reason: ', e.reason)
+    # else:
+    #     logger.debug('everything is fine')
+    #     GET_data = r.json()
+    #     computation_platforms, all_headers = filter_computation_platforms(GET_data)
+    #     logger.debug(computation_platforms)
+    # logger.debug("cloud_form_get=%s" % cloudform)
+    # logger.debug("cloud_data_get=%s" % form_data)
+    # logger.debug("nci_form_get=%s" % cluster_form)
+    # return render(request, 'accountsettings/computationplatform.html',
+    #               {'cluster_form': cluster_form, 'cloud_form': cloudform,
+    #                 'computation_platforms': computation_platforms,
+    #                 'all_headers': all_headers})
 
 
 def _get_platform_params(request, namespace):

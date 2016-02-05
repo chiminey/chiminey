@@ -207,6 +207,38 @@ def _get_chiminey_schemas():
                               'initial': '{}', 'ranking': 30, 'help_text': ''},
              }
             ],
+        u'http://rmit.edu.au/schemas/platform/computation/testing/jenkins_based':
+            [u'schema for jenkins computation platform instances',
+             {
+                 u'operation': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': '',
+                                'initial': 'update', 'ranking': 0, 'help_text': ''},
+                 u'filters': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': '',
+                              'initial': '{}', 'ranking': 3, 'help_text': ''},
+                 u'platform_type': {'type': models.ParameterName.STRLIST, 'subtype': '',
+                                    'description': 'Platform type', 'initial': '',
+                                    'choices': '[("jenkins", "Jenkins"), ]', 'ranking': 6,
+                                    'help_text': 'The identifier of the type of the computation platform'},
+                 u'platform_name': {'type': models.ParameterName.STRING, 'subtype': '',
+                                    'description': 'Platform name', 'initial': '', 'ranking': 10,
+                                    'help_text': 'The unique identifier of the platform name'},
+                 u'ip_address': {'type': models.ParameterName.STRING, 'subtype': '',
+                                 'description': 'IP address or Hostname', 'ranking': 15,
+                                 'help_text': 'Hostname or IP address of the computation platform. For cluster, it is the ip address or hostname of the head node.'},
+                 u'username': {'type': models.ParameterName.STRING, 'subtype': '', 'description': 'Username',
+                               'ranking': 20, 'help_text': 'Username of the account holder.'},
+                 u'password': {'type': models.ParameterName.STRING, 'subtype': 'password',
+                               'description': 'Password', 'ranking': 22,
+                               'help_text': 'Password of the account holder. Password is not stored in the Chiminey server. It is temporarily kept in memory to to establish a private/public key authentication from the Chiminey server to the cluster/unix platform.'},
+                 u'home_path': {'type': models.ParameterName.STRING, 'subtype': '', 'description': 'Home path',
+                                'ranking': 24,
+                                'help_text': 'Home directory. This is the location where .ssh directory resides. The home path is needed to store a Chiminey-specific public key on the cluster/unix server.'},
+                 u'root_path': {'type': models.ParameterName.STRING, 'subtype': '', 'description': 'Root path',
+                                'ranking': 33,
+                                'help_text': 'Used as the working directory for the computation. All temporary files are created under this directory.'},
+                 u'private_key_path': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': '',
+                                       'ranking': 41, 'help_text': ''},
+             }
+            ],
         u'http://rmit.edu.au/schemas/platform/computation':
             [u'schema for computation platform instances',
              {

@@ -17,14 +17,15 @@ $(document).ready(function () {
     $('#cluster_1_{{forloop.counter}}').tooltip();
     $('#cluster_2_{{forloop.counter}}').tooltip();
     $('#cluster_3_{{forloop.counter}}').tooltip();
-
     {% endfor %}
+    // {% for field in jenkins_form %}
+    // $('#jenkins_1_{{forloop.counter}}').tooltip();
+    // $('#jenkins_2_{{forloop.counter}}').tooltip();
+    // $('#jenkins_3_{{forloop.counter}}').tooltip();
+    // {% endfor %}
+
    });
 </script>
-
-
-
-
 
 
 
@@ -38,8 +39,10 @@ $(document).ready(function () {
             </div>
             <div class="modal-body">
                 <ul class="nav nav-tabs" id="myTab">
-                  <li class="active"><a href="#cloud" data-toggle="tab">Cloud</a></li>
+                  <li class="active">
+                    <a href="#cloud" data-toggle="tab">Cloud</a></li>
                   <li><a href="#cluster" data-toggle="tab">Cluster/Unix</a></li>
+                  <li><a href="#jenkins" data-toggle="tab">Jenkins</a></li>
                 </ul>
                 <div class="tab-content">
                     <div class="tab-pane active" id="cloud">
@@ -69,6 +72,8 @@ $(document).ready(function () {
                             <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                         </form>
                     </div>
+
+
                     <div class="tab-pane" id="cluster">
                         <form class="form-horizontal" action="{{ action }}" method="POST" id="cluster_form_create"> {% csrf_token %}
 
@@ -94,6 +99,34 @@ $(document).ready(function () {
                             <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                         </form>
                      </div>
+
+                    <div class="tab-pane" id="jenkins">
+                        <form class="form-horizontal" action="{{ action }}" method="POST" id="jenkins_form_create"> {% csrf_token %}
+
+                             {% for field in jenkins_form.visible_fields %}
+                                 <div class="control-group">
+                                 <label class="control-label">{{field.label}}</label>
+                                 <div class="controls">
+                                     {{field}}
+                                     {% if field.errors %}
+                                     <span class="help-inline">{{field.errors}}</span>
+                                     {% endif %}
+                                     {% if field.help_text %}
+                                     <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{field.help_text}}" id='jenkins_1_{{forloop.counter}}'><i  class="fa fa-question-circle"></i></a>
+                                     {% endif %}
+                                 </div>
+                             </div>
+                            {% endfor %}
+                            {% for hidden in jenkins_form.hidden_fields %}
+                                {{ hidden }}
+                            {% endfor %}
+
+                            <button type="submit" class="btn btn-primary" onclick="submitForm('create', 'jenkins_form_create');">Add</button>
+                            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                        </form>
+                     </div>
+
+
                 </div>
             </div>
         </div><!-- /.modal-content -->
@@ -155,6 +188,32 @@ $(document).ready(function () {
                     <button type="submit" class="btn btn-primary" onclick="submitForm('update', 'cluster_form_update');">Update</button>
                     <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                 </form>
+
+               <form class="form-horizontal" action="{{ action }}" method="POST" id="jenkins_form_update"> {% csrf_token %}
+
+                 {% for field in jenkins_form.visible_fields %}
+                     <div class="control-group">
+                     <label class="control-label">{{field.label}}</label>
+                     <div class="controls">
+                         {{field}}
+                         {% if field.errors %}
+                         <span class="help-inline">{{field.errors}}</span>
+                         {% endif %}
+                         {% if field.help_text %}
+                         <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{field.help_text}}" id='jenkins_2_{{forloop.counter}}'><i  class="fa fa-question-circle"></i></a>
+                         {% endif %}
+                     </div>
+                 </div>
+                {% endfor %}
+                {% for hidden in jenkins_form.hidden_fields %}
+                    {{ hidden }}
+                {% endfor %}
+
+                <button type="submit" class="btn btn-primary" onclick="submitForm('update', 'jenkins_form_update');">Update</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            </form>
+
+
             </div>
         </div><!-- /.modal-content -->
     </div><!-- /.modal-dialog -->
@@ -217,6 +276,33 @@ $(document).ready(function () {
                     <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
 
                 </form>
+
+                 <form class="form-horizontal" action="{{ action }}" method="POST" id="jenkins_form_delete"> {% csrf_token %}
+
+                     {% for field in jenkins_form.visible_fields %}
+                         <div class="control-group">
+                         <label class="control-label">{{field.label}}</label>
+                         <div class="controls">
+                             {{field}}
+                             {% if field.errors %}
+                             <span class="help-inline">{{field.errors}}</span>
+                             {% endif %}
+                             {% if field.help_text %}
+                             <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{field.help_text}}" id='jenkins_3_{{forloop.counter}}'><i  class="fa fa-question-circle"></i></a>
+                             {% endif %}
+                         </div>
+                     </div>
+                    {% endfor %}
+                    {% for hidden in jenkins_form.hidden_fields %}
+                        {{ hidden }}
+                    {% endfor %}
+
+                    <button type="submit" class="btn btn-primary" onclick="submitForm('delete', 'jenkins_form_delete');">Delete</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+
+                </form>
+
+
             </div>
         </div><!-- /.modal-content -->
     </div><!-- /.modal-dialog -->
