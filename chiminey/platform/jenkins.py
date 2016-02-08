@@ -4,7 +4,7 @@ import os
 import logging
 
 from chiminey import storage
-
+from chiminey.corestages import strategies
 from chiminey.platform.generatekeys import generate_unix_key
 from chiminey.platform.validate import validate_remote_path
 from chiminey.platform.manage import retrieve_platform
@@ -42,7 +42,7 @@ class JenkinsPlatform():
         record['bdp_username'] = username
         return record
 
-    def _update_platform_settings(self, settings):
+    def update_platform_settings(self, settings):
         try:
             platform_type = settings['platform_type']
         except KeyError:
@@ -53,3 +53,8 @@ class JenkinsPlatform():
                        settings['private_key_path'])
         settings['host'] = settings['ip_address']
         settings['scheme'] = 'ssh'
+
+
+    def get_strategy(self, platform_type):
+        # TODO: have an null strategy for platforms that don't have this attribute
+        return strategies.ClusterStrategy()

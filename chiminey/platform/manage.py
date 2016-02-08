@@ -21,11 +21,15 @@
 import os
 import logging
 
+from django.conf import settings as django_settings
 from django.contrib.auth.models import User
 from django.db.models import ObjectDoesNotExist
 from django.db.utils import IntegrityError
 from django.db import transaction
+from django.core.exceptions import ImproperlyConfigured
 
+
+from chiminey.smartconnectorscheduler import jobs
 from chiminey.smartconnectorscheduler import models
 
 
@@ -257,9 +261,38 @@ def _generate_key(platform, platform_type, parameters):
     #     return False, 'Unknown platform type [%s]' % platform_type
 
 
-def get_platform_settings(platform, platform_url, username):
+def get_platform_settings(platform_url, username):
 
-    return platform.get_platform_settings(platform_url, username)
+    platform_name = platform_url.split('/')[0]
+    if platform_name == "local":
+        return {"scheme": 'file', 'type': 'local', 'host': '127.0.0.1'}
+    platform_settings, schema_namespace = retrieve_platform(platform_name, username)
+    logger.debug("platform_settings=%s" % platform_settings)
+    logger.debug("schema_namespace=%s" % schema_namespace)
+
+    try:
+        platform_type = platform_settings['platform_type']
+    except KeyError:
+        logger.error("platform_settings=%s" % platform_settings)
+        raise
+    platform_settings['type'] = platform_type
+
+    for platform_hook in django_settings.PLATFORM_CLASSES:
+        try:
+            hook = jobs.safe_import(platform_hook, [], {})
+        except ImproperlyConfigured as  e:
+            logger.error("Cannot load platform hook %s" % e)
+            continue
+        logger.debug("hook=%s" % hook)
+        logger.debug("hook.get_platform_types=%s" % hook.get_platform_types())
+        logger.debug("platform_type=%s" % platform_type)
+        if platform_type in hook.get_platform_types():
+            hook.update_platform_settings(platform_settings)
+            break
+
+    platform_settings['bdp_username'] = username
+    return platform_settings
+#    return platform.get_platform_settings(platform_url, username)
 
 #     platform_name = platform_url.split('/')[0]
 #     if platform_name == "local":

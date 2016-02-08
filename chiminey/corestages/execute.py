@@ -42,8 +42,6 @@ from chiminey.compute import run_make
 
 from chiminey.runsettings import getval, setvals, getvals, update, SettingNotFoundException
 from chiminey.storage import get_url_with_credentials, list_dirs, get_make_path
-
-
 logger = logging.getLogger(__name__)
 
 

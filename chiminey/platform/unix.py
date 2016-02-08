@@ -4,7 +4,7 @@ import os
 import logging
 
 from chiminey import storage
-
+from chiminey.corestages import strategies
 from chiminey.platform.generatekeys import generate_unix_key
 from chiminey.platform.validate import validate_remote_path
 from chiminey.platform.manage import retrieve_platform
@@ -31,18 +31,18 @@ class UnixPlatform():
     def generate_key(self, parameters):
         return generate_unix_key(parameters)
 
-    def get_platform_settings(self, platform_url, username):
-        platform_name = platform_url.split('/')[0]
-        if platform_name == "local":
-            return {"scheme": 'file', 'type': 'local', 'host': '127.0.0.1'}
-        record, schema_namespace = retrieve_platform(platform_name, username)
-        logger.debug("record=%s" % record)
-        logger.debug("schema_namespace=%s" % schema_namespace)
-        self._update_platform_settings(record)
-        record['bdp_username'] = username
-        return record
+    # def get_platform_settings(self, platform_url, username):
+    #     platform_name = platform_url.split('/')[0]
+    #     if platform_name == "local":
+    #         return {"scheme": 'file', 'type': 'local', 'host': '127.0.0.1'}
+    #     record, schema_namespace = retrieve_platform(platform_name, username)
+    #     logger.debug("record=%s" % record)
+    #     logger.debug("schema_namespace=%s" % schema_namespace)
+    #     self._update_platform_settings(record)
+    #     record['bdp_username'] = username
+    #     return record
 
-    def _update_platform_settings(self, settings):
+    def update_platform_settings(self, settings):
         try:
             platform_type = settings['platform_type']
         except KeyError:
@@ -60,3 +60,9 @@ class UnixPlatform():
                            settings['private_key_path'])
             settings['host'] = settings['ip_address']
             settings['scheme'] = 'ssh'
+
+    def get_strategy(self, platform_type):
+        #if platform_type == 'nci':
+        return strategies.ClusterStrategy()
+        #else:
+        #    return None

@@ -62,20 +62,31 @@ class Configure(Stage):
         else:
             return not configure_done
 
-
-    def process(self, run_settings):
-
-        logger.debug('run_settings=%s' % run_settings)
-        self.output_platform_name = ''
-        self.output_platform_offset = ''
+    def setup_input(self, run_settings):
         self.input_platform_name = ''
         self.input_platform_offset = ''
-        self.compute_platform_name = ''
-        self.compute_platform_offset = ''
+        if self.input_exists(run_settings):
+            try:
+                 run_settings['http://rmit.edu.au/schemas/platform/storage/input']
+            except KeyError:
+                try:
+                    bdp_url = getval(run_settings, RMIT_SCHEMA + '/input/system/input_location')
+                except SettingNotFoundException:
+                    bdp_url = getval(run_settings, RMIT_SCHEMA + '/input/location/input_location')
+                self.input_platform_name, self.input_platform_offset = self.break_bdp_url(bdp_url)
+                run_settings[RMIT_SCHEMA + '/platform/storage/input'] = {}
+                run_settings[RMIT_SCHEMA + '/platform/storage/input'][
+                'platform_url'] = self.input_platform_name
+                run_settings[RMIT_SCHEMA + '/platform/storage/input']['offset'] = self.input_platform_offset
+
+    def setup_output(self, run_settings):
+        self.output_platform_name = ''
+        self.output_platform_offset = ''
+        self.output_loc_offset = ''
         if self.output_exists(run_settings):
             logger.debug('special=%s' % run_settings)
             try:
-                 run_settings['http://rmit.edu.au/schemas/platform/storage/output']
+                run_settings['http://rmit.edu.au/schemas/platform/storage/output']
             except KeyError:
                 logger.debug('bdp_url settings ...')
                 try:
@@ -94,20 +105,9 @@ class Configure(Stage):
                 'platform_url'] = self.output_platform_name
                 run_settings[RMIT_SCHEMA + '/platform/storage/output']['offset'] = self.output_platform_offset
 
-        if self.input_exists(run_settings):
-            try:
-                 run_settings['http://rmit.edu.au/schemas/platform/storage/input']
-            except KeyError:
-                try:
-                    bdp_url = getval(run_settings, RMIT_SCHEMA + '/input/system/input_location')
-                except SettingNotFoundException:
-                    bdp_url = getval(run_settings, RMIT_SCHEMA + '/input/location/input_location')
-                self.input_platform_name, self.input_platform_offset = self.break_bdp_url(bdp_url)
-                run_settings[RMIT_SCHEMA + '/platform/storage/input'] = {}
-                run_settings[RMIT_SCHEMA + '/platform/storage/input'][
-                'platform_url'] = self.input_platform_name
-                run_settings[RMIT_SCHEMA + '/platform/storage/input']['offset'] = self.input_platform_offset
-
+    def setup_computation(self, run_settings):
+        self.compute_platform_name = ''
+        self.compute_platform_offset = ''
         try:
              run_settings['http://rmit.edu.au/schemas/platform/computation']
         except KeyError:
@@ -122,6 +122,15 @@ class Configure(Stage):
             run_settings[RMIT_SCHEMA + '/platform/computation'] = {}
             run_settings[RMIT_SCHEMA + '/platform/computation']['platform_url'] = self.compute_platform_name
             run_settings[RMIT_SCHEMA + '/platform/computation']['offset'] = self.compute_platform_offset
+
+    def process(self, run_settings):
+
+        logger.debug('run_settings=%s' % run_settings)
+
+
+        self.setup_output(run_settings)
+        self.setup_input(run_settings)
+        self.setup_computation(run_settings)
 
         messages.info(run_settings, "0: configure")
 
@@ -176,6 +185,8 @@ class Configure(Stage):
         except SettingNotFoundException:
             pass
         '''
+
+
         self.output_loc_offset = self.get_results_dirname(run_settings)
         logger.debug('self.output_loc_offset=%s' % self.output_loc_offset)
         if self.input_exists(run_settings):
@@ -183,6 +194,8 @@ class Configure(Stage):
             self.copy_to_scratch_space(run_settings, local_settings)
         else:
             logger.debug('not copy to scratch')
+
+
         '''
         run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset'] = self.output_loc_offset
         offset = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset']
@@ -274,13 +287,7 @@ class Configure(Stage):
             logger.warn('Data curation is off')
         '''
 
-    def output(self, run_settings):
-        setval(run_settings,
-               '%s/stages/configure/configure_done' % RMIT_SCHEMA,
-               1)
-        setval(run_settings,
-               '%s/input/mytardis/experiment_id' % RMIT_SCHEMA,
-               str(self.experiment_id))
+    def writeout_output(self, run_settings):
         if self.output_exists(run_settings):
             if self.output_platform_name:
                 run_settings.setdefault(
@@ -291,6 +298,7 @@ class Configure(Stage):
             #else:
             run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset'] = self.output_loc_offset
 
+    def writeout_input(self, run_settings):
         if self.input_exists(run_settings):
             if self.input_platform_name:
                 run_settings.setdefault(
@@ -299,7 +307,8 @@ class Configure(Stage):
             if self.input_platform_offset:
                 run_settings[RMIT_SCHEMA + '/platform/storage/input']['offset'] = self.input_platform_offset
 
-        logger.debug('self.compute_platform_name=%s' % self.compute_platform_name)
+
+    def writeout_computation(self, run_settings):
         if self.compute_platform_name:
             run_settings.setdefault('http://rmit.edu.au/schemas/platform/computation',
                 {})[u'platform_url'] = self.compute_platform_name
@@ -307,6 +316,18 @@ class Configure(Stage):
         if self.compute_platform_offset:
             run_settings.setdefault('http://rmit.edu.au/schemas/platform/computation',
                 {})[u'offset'] = self.compute_platform_offset
+
+        logger.debug('self.compute_platform_name=%s' % self.compute_platform_name)
+
+
+    def output(self, run_settings):
+        setval(run_settings,
+               '%s/stages/configure/configure_done' % RMIT_SCHEMA,
+               1)
+        setval(run_settings,
+               '%s/input/mytardis/experiment_id' % RMIT_SCHEMA,
+               str(self.experiment_id))
+
 
         return run_settings
 

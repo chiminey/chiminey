@@ -26,6 +26,9 @@ from chiminey.smartconnectorscheduler.errors import PackageFailedError
 from chiminey.runsettings import getval, setvals, SettingNotFoundException
 from chiminey import messages
 from chiminey.corestages import strategies
+from django.conf import settings as django_settings
+from chiminey.smartconnectorscheduler import jobs
+from django.core.exceptions import ImproperlyConfigured
 
 
 logger = logging.getLogger(__name__)
@@ -72,10 +75,30 @@ class Bootstrap(Stage):
             logger.error(e)
             messages.error(run_settings, e)
             return
-        if platform_type in ['nectar', 'csrack', 'amazon']:
-            self.strategy = strategies.CloudStrategy()
-        elif platform_type in ['nci']:
-            self.strategy = strategies.ClusterStrategy()
+
+        # TODO: cache is as unlikely to change during execution
+        for platform_hook in django_settings.PLATFORM_CLASSES:
+            try:
+                hook = jobs.safe_import(platform_hook, [], {})
+            except ImproperlyConfigured as  e:
+                logger.error("Cannot load platform hook %s" % e)
+                continue
+            logger.debug("hook=%s" % hook)
+            logger.debug("hook.get_platform_types=%s" % hook.get_platform_types())
+            logger.debug("platform_type=%s" % platform_type)
+            if platform_type in hook.get_platform_types():
+                self.strategy = hook.get_strategy(platform_type)
+                logger.debug("self.strategy=%s" % self.strategy)
+                break
+
+
+        # if platform_type in ['nectar', 'csrack', 'amazon']:
+        #     self.strategy = strategies.CloudStrategy()
+        # elif platform_type in ['nci']:
+        #     self.strategy = strategies.ClusterStrategy()
+
+
+
         local_settings = {}
         try:
             self.strategy.set_bootstrap_settings(run_settings, local_settings)

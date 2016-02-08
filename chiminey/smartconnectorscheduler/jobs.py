@@ -267,7 +267,10 @@ def make_runcontext_for_directive(platform_name, directive_name,
             user_settings,
             directive.stage)
     except Exception, e:
+        import traceback
+        tc = traceback.format_exc()
         logger.error(e)
+        logger.error(tc)
         messages.error(run_settings, "0: internal error (%s stage):%s" % (directive.stage.name, e))
         raise InvalidInputError("0: internal error (%s stage):%s" % (directive.stage.name, e))
 

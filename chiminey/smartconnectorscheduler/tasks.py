@@ -25,6 +25,7 @@ from celery.task import task
 from django.conf import settings
 from celery.exceptions import SoftTimeLimitExceeded
 from pprint import pformat
+import traceback
 
 from django.db import transaction
 from django.db import DatabaseError
@@ -270,6 +271,9 @@ def _process_context(context_id):
                 # linecache.checkcache(filename)
                 # line = linecache.getline(filename, lineno, f.f_globals)
                 # file_info = 'EXCEPTION IN (%s LINE %s "%s"): %s' % (filename, lineno, line.strip(), exc_obj)
+                tc = traceback.format_exc()
+                logger.error(e)
+                logger.error(tc)
                 file_info = ""
                 logger.error("0: internal error (%s stage):%s %s" % (str(current_stage.name), e, file_info))
                 messages.error(run_settings, "0: internal error (%s stage):%s %s" % (str(current_stage.name), e, file_info))
