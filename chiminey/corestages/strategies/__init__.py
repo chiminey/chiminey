@@ -20,6 +20,7 @@
 
 from chiminey.corestages.strategies.strategy import Strategy
 from chiminey.corestages.strategies.cloudstrategy import CloudStrategy
+from chiminey.corestages.strategies.jenkinsstrategy import JenkinsStrategy
 from chiminey.corestages.strategies.clusterstrategy import ClusterStrategy
 from chiminey.corestages.strategies.synchronouswaitstrategy import SynchronousWaitStrategy
 from chiminey.corestages.strategies.asynchronouswaitstrategy import AsynchronousWaitStrategy

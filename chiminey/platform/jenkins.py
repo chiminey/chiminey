@@ -57,4 +57,4 @@ class JenkinsPlatform():
 
     def get_strategy(self, platform_type):
         # TODO: have an null strategy for platforms that don't have this attribute
-        return strategies.ClusterStrategy()
+        return strategies.JenkinsStrategy()

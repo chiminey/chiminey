@@ -191,14 +191,17 @@ class StageInline(admin.TabularInline):
 
 class StageAdmin(admin.ModelAdmin):
     model = models.Stage
-    list_display = ('id', 'name', 'description', 'parent', 'package')
+    list_display = ('id', 'name', 'description', 'parent_name', 'package')
     list_display_links = ('name',)
     # list_filter = ('ParentListFilter',)
     list_filter = ('parent',)
     ordering = ('id','parent', 'order')
-    #inlines = (StageInline,)
-    #def parent_name(self, obj):
-    #    return "#%s %s" % (obj.parent.id, obj.parent.name)
+    inlines = (StageInline,)
+    def parent_name(self, obj):
+        if obj.parent is None:
+            return ""
+        else:
+            return "#%s %s" % (obj.parent.id, obj.parent.name)
 
 
 class UserProfileParameterSetInline(admin.TabularInline):
