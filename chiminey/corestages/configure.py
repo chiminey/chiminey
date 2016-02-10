@@ -102,7 +102,7 @@ class Configure(Stage):
                 self.output_platform_name, self.output_platform_offset = self.break_bdp_url(bdp_url)
                 run_settings[RMIT_SCHEMA + '/platform/storage/output'] = {}
                 run_settings[RMIT_SCHEMA + '/platform/storage/output'][
-                'platform_url'] = self.output_platform_name
+                    'platform_url'] = self.output_platform_name
                 run_settings[RMIT_SCHEMA + '/platform/storage/output']['offset'] = self.output_platform_offset
 
     def setup_computation(self, run_settings):
@@ -123,28 +123,14 @@ class Configure(Stage):
             run_settings[RMIT_SCHEMA + '/platform/computation']['platform_url'] = self.compute_platform_name
             run_settings[RMIT_SCHEMA + '/platform/computation']['offset'] = self.compute_platform_offset
 
-    def process(self, run_settings):
-
-        logger.debug('run_settings=%s' % run_settings)
-
-
-        self.setup_output(run_settings)
-        self.setup_input(run_settings)
-        self.setup_computation(run_settings)
-
-        messages.info(run_settings, "0: configure")
+    def setup_scratchspace(self, run_settings):
 
         local_settings = getvals(run_settings, models.UserProfile.PROFILE_SCHEMA_NS)
-
         # local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
         logger.debug("settings=%s" % pformat(run_settings))
-
         local_settings['bdp_username'] = getval(run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA)
-
         # local_settings['bdp_username'] = run_settings[
         #     RMIT_SCHEMA + '/bdp_userprofile']['username']
-
-
         logger.debug('local_settings=%s' % local_settings)
 
         #input_location = getval(run_settings, "%s/input/system/input_location" % RMIT_SCHEMA)
@@ -152,9 +138,8 @@ class Configure(Stage):
         #     RMIT_SCHEMA + '/input/system']['input_location']
         #logger.debug("input_location=%s" % input_location)
 
-        bdp_username = local_settings['bdp_username']
-
-        output_storage_url = getval(run_settings, '%s/platform/storage/output/platform_url' % RMIT_SCHEMA)
+        #bdp_username = local_settings['bdp_username']
+        #output_storage_url = getval(run_settings, '%s/platform/storage/output/platform_url' % RMIT_SCHEMA)
         # output_storage_url = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['platform_url']
         #output_storage_settings = manage.get_platform_settings(output_storage_url, bdp_username)
 
@@ -174,18 +159,6 @@ class Configure(Stage):
         logger.debug("self.contextid=%s" % self.contextid)
         self.output_loc_offset = str(self.contextid)
 
-        '''
-        self.output_loc_offset = str(self.contextid)
-        logger.debug("suffix=%s" % self.output_loc_offset)
-        try:
-            #fixme, hrmc should be variable..so configure can be used in any connector
-            off = getval(run_settings, '%s/platform/storage/output/offset' % RMIT_SCHEMA)
-            self.output_loc_offset = os.path.join(off,
-               'hrmc' + self.output_loc_offset)
-        except SettingNotFoundException:
-            pass
-        '''
-
 
         self.output_loc_offset = self.get_results_dirname(run_settings)
         logger.debug('self.output_loc_offset=%s' % self.output_loc_offset)
@@ -194,6 +167,54 @@ class Configure(Stage):
             self.copy_to_scratch_space(run_settings, local_settings)
         else:
             logger.debug('not copy to scratch')
+
+    def process(self, run_settings):
+
+        logger.debug('run_settings=%s' % run_settings)
+
+
+        self.setup_output(run_settings)
+        self.setup_input(run_settings)
+        self.setup_computation(run_settings)
+
+        messages.info(run_settings, "0: configure")
+
+        local_settings = getvals(run_settings, models.UserProfile.PROFILE_SCHEMA_NS)
+        # local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
+        logger.debug("settings=%s" % pformat(run_settings))
+        local_settings['bdp_username'] = getval(run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA)
+        # local_settings['bdp_username'] = run_settings[
+        #     RMIT_SCHEMA + '/bdp_userprofile']['username']
+        logger.debug('local_settings=%s' % local_settings)
+
+        #input_location = getval(run_settings, "%s/input/system/input_location" % RMIT_SCHEMA)
+        # input_location = run_settings[
+        #     RMIT_SCHEMA + '/input/system']['input_location']
+        #logger.debug("input_location=%s" % input_location)
+
+        #bdp_username = local_settings['bdp_username']
+        #output_storage_url = getval(run_settings, '%s/platform/storage/output/platform_url' % RMIT_SCHEMA)
+        # output_storage_url = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['platform_url']
+        #output_storage_settings = manage.get_platform_settings(output_storage_url, bdp_username)
+
+
+        #input_storage_url = getval(run_settings, '%s/platform/storage/input/platform_url' % RMIT_SCHEMA)
+        #input_storage_settings = manage.get_platform_settings(
+        #    input_storage_url,
+        #    bdp_username)
+
+        #input_offset = getval(run_settings, '%s/platform/storage/input/offset' % RMIT_SCHEMA)
+        #input_prefix = '%s://%s@' % (input_storage_settings['scheme'],
+        #                            input_storage_settings['type'])
+        #map_initial_location = "%s/%s/initial" % (input_prefix, input_offset)
+        #logger.debug("map_initial_location=%s" % map_initial_location)
+
+        # self.contextid = getval(run_settings, '%s/system/contextid' % RMIT_SCHEMA)
+        # logger.debug("self.contextid=%s" % self.contextid)
+        # self.output_loc_offset = str(self.contextid)
+
+
+        self.setup_scratchspace(run_settings)
 
 
         '''
@@ -342,9 +363,8 @@ class Configure(Stage):
         iter_inputdir = os.path.join(self.job_dir, "input_0")
         logger.debug("iter_inputdir=%s" % iter_inputdir)
 
-        #input_storage_settings = self.get_platform_settings(run_settings, 'http://rmit.edu.au/schemas/platform/storage/input')
-        #input_location = run_settings[
-        #    RMIT_SCHEMA + '/input/system']['input_location']
+        input_storage_settings = self.get_platform_settings(run_settings, 'http://rmit.edu.au/schemas/platform/storage/input')
+        #input_location = run_settings[RMIT_SCHEMA + '/input/system']['input_location']
 
         try:
             input_location = getval(run_settings, RMIT_SCHEMA + '/input/system/input_location')
@@ -356,14 +376,14 @@ class Configure(Stage):
         #todo: the sweep will indicate the location of the scratch space in the run_settings
         #todo: add scheme (ssh) to inputlocation
 
-        source_url = get_url_with_credentials(local_settings, input_location)
+        #source_url = get_url_with_credentials(local_settings, input_location)
 
-        # input_offset = run_settings['http://rmit.edu.au/schemas/platform/storage/input']['offset']
-        # input_url = "%s://%s@%s/%s" % (input_storage_settings['scheme'],
-        #                                input_storage_settings['type'],
-        #                                input_storage_settings['host'], input_offset)
-        # source_url = get_url_with_credentials(
-        #     input_storage_settings, input_url, is_relative_path=False)
+        input_offset = run_settings['http://rmit.edu.au/schemas/platform/storage/input']['offset']
+        input_url = "%s://%s@%s/%s" % (input_storage_settings['scheme'],
+                                       input_storage_settings['type'],
+                                       input_storage_settings['host'], input_offset)
+        source_url = get_url_with_credentials(
+            input_storage_settings, input_url, is_relative_path=False)
 
         logger.debug("source_url=%s" % source_url)
 

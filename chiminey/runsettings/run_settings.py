@@ -70,6 +70,7 @@ def setval(context, key, value):
     try:
         context.setdefault(os.path.dirname(key),
                            {})[os.path.basename(key)] = value
+
     except KeyError:
         # Not clear that above an actually fail at all.
         pass

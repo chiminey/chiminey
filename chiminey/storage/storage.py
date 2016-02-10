@@ -25,6 +25,7 @@ import logging
 import time
 import getpass
 import paramiko
+from pprint import pformat
 from django.conf import settings
 
 from pprint import pformat
@@ -253,6 +254,7 @@ def list_dirs(url, list_files=False):
     logger.debug('Path %s ' % path)
     fsys = get_filesystem(url)
 
+    print "fsys.listdir(path)=%s" % pformat(fsys.listdir(path))
     if list_files:
         l = fsys.listdir(path)[1]
     else:

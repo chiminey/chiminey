@@ -33,18 +33,18 @@ class MyTardisPlatform():
     def generate_key(self, parameters):
         return "no key", ""
 
-    def get_platform_settings(self, platform_url, username):
-        platform_name = platform_url.split('/')[0]
-        if platform_name == "local":
-            return {"scheme": 'file', 'type': 'local', 'host': '127.0.0.1'}
-        record, schema_namespace = retrieve_platform(platform_name, username)
-        logger.debug("record=%s" % record)
-        logger.debug("schema_namespace=%s" % schema_namespace)
-        _update_platform_settings(record)
-        record['bdp_username'] = username
-        return record
+    # def get_platform_settings(self, platform_url, username):
+    #     platform_name = platform_url.split('/')[0]
+    #     if platform_name == "local":
+    #         return {"scheme": 'file', 'type': 'local', 'host': '127.0.0.1'}
+    #     record, schema_namespace = retrieve_platform(platform_name, username)
+    #     logger.debug("record=%s" % record)
+    #     logger.debug("schema_namespace=%s" % schema_namespace)
+    #     _update_platform_settings(record)
+    #     record['bdp_username'] = username
+    #     return record
 
-    def _update_platform_settings(self, settings):
+    def update_platform_settings(self, settings):
         try:
             platform_type = settings['platform_type']
         except KeyError:

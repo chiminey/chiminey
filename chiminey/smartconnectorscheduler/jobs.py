@@ -26,6 +26,7 @@ import json
 import collections
 from pprint import pformat
 from django.db import transaction
+import traceback
 
 from django.utils.importlib import import_module
 from django.core.exceptions import ImproperlyConfigured
@@ -267,7 +268,6 @@ def make_runcontext_for_directive(platform_name, directive_name,
             user_settings,
             directive.stage)
     except Exception, e:
-        import traceback
         tc = traceback.format_exc()
         logger.error(e)
         logger.error(tc)

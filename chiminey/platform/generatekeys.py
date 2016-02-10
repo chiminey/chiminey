@@ -35,37 +35,6 @@ from boto.exception import EC2ResponseError
 logger = logging.getLogger(__name__)
 
 
-def generate_cloud_key(parameters):
-    logger.debug('generating key')
-    key_generated = True
-    message = 'Key generated successfully'
-    bdp_root_path = storage.get_bdp_root_path()
-    key_name = parameters['private_key']
-    key_absolute_path = os.path.join(bdp_root_path, parameters['private_key_path'])
-    key_dir = os.path.dirname(key_absolute_path)
-    if not os.path.exists(key_dir):
-        os.makedirs(key_dir)
-    try:
-        platform_type = parameters['platform_type']
-        logger.debug('platform_type=%s' % platform_type)
-        parameters['key_dir'] = key_dir
-
-        if platform_type in ['csrack', 'nectar', 'amazon']:
-            create_key_pair(parameters)
-            create_ssh_security_group(parameters)
-        else:
-            return False, 'Unknown cloud platform'
-    except EC2ResponseError as e:
-        if 'Unauthorized' in e.error_code:
-            key_generated = False
-            message = 'Unauthorized access to %s' % platform_type
-        else:
-            key_generated = False
-            message = e.error_code
-    except Exception as e:
-        key_generated = False
-        message = e
-    return key_generated, message
 
 
 def generate_unix_key(parameters):
@@ -144,3 +113,35 @@ def generate_unix_key(parameters):
         message = e
     return key_generated, message
 
+
+def generate_cloud_key(parameters):
+    logger.debug('generating key')
+    key_generated = True
+    message = 'Key generated successfully'
+    bdp_root_path = storage.get_bdp_root_path()
+    key_name = parameters['private_key']
+    key_absolute_path = os.path.join(bdp_root_path, parameters['private_key_path'])
+    key_dir = os.path.dirname(key_absolute_path)
+    if not os.path.exists(key_dir):
+        os.makedirs(key_dir)
+    try:
+        platform_type = parameters['platform_type']
+        logger.debug('platform_type=%s' % platform_type)
+        parameters['key_dir'] = key_dir
+
+        if platform_type in ['csrack', 'nectar', 'amazon']:
+            create_key_pair(parameters)
+            create_ssh_security_group(parameters)
+        else:
+            return False, 'Unknown cloud platform'
+    except EC2ResponseError as e:
+        if 'Unauthorized' in e.error_code:
+            key_generated = False
+            message = 'Unauthorized access to %s' % platform_type
+        else:
+            key_generated = False
+            message = e.error_code
+    except Exception as e:
+        key_generated = False
+        message = e
+    return key_generated, message

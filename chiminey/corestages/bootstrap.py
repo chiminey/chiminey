@@ -45,6 +45,8 @@ class Bootstrap(Stage):
         logger.debug('Bootstrap stage initialised')
 
     def is_triggered(self, run_settings):
+
+
         try:
             self.created_nodes = ast.literal_eval(getval(
                 run_settings, '%s/stages/create/created_nodes' % RMIT_SCHEMA))
