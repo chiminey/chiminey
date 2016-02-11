@@ -377,7 +377,6 @@ def generate_rands(settings, start_range,  end_range, num_required, start_index)
     random_content = get_file(num_url)
     # FIXME: this loads the entire file, which could be very large.
     numbers = random_content.split('\n')
-
     random_counter = start_index
     # FIXME: better handled with separate function
     if end_range < start_range:
