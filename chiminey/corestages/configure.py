@@ -213,9 +213,7 @@ class Configure(Stage):
         # logger.debug("self.contextid=%s" % self.contextid)
         # self.output_loc_offset = str(self.contextid)
 
-
         self.setup_scratchspace(run_settings)
-
 
         '''
         run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset'] = self.output_loc_offset
@@ -415,4 +413,3 @@ class Configure(Stage):
 
     def curate_data(self, run_settings, location, experiment_id):
         return experiment_id
-

@@ -25,7 +25,7 @@ class CloudPlatform():
             parameters['vm_image_size'] = 'm1.small'
 
     def validate(self, parameters, passwd_auth=False):
-        return True, "All valid parameters"
+        return [True, True, "All valid parameters"]
 
     def generate_key(self, parameters):
         return generate_cloud_key(parameters)
@@ -68,6 +68,3 @@ class CloudPlatform():
 
     def get_strategy(self, platform_type):
         return strategies.CloudStrategy()
-
-
-

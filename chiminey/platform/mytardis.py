@@ -28,7 +28,7 @@ class MyTardisPlatform():
         parameters['private_key_path'] = key_relative_path
 
     def validate(self, parameters, passwd_auth=False):
-        return validate_mytardis_parameters(parameters)
+        return [False] + list(validate_mytardis_parameters(parameters))
 
     def generate_key(self, parameters):
         return "no key", ""
@@ -55,4 +55,3 @@ class MyTardisPlatform():
             settings['mytardis_host'] = settings['ip_address']
             settings['mytardis_user'] = settings['username']
             settings['mytardis_password'] = settings['password']
-

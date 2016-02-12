@@ -48,16 +48,13 @@ def create_platform(platform, platform_name, username,
     parameters['platform_name'] = platform_name
     platform_type = parameters['platform_type']
     _configure_platform(platform, platform_type, username, parameters)
-    valid_params, message = _validate_parameters(platform,
+    remove_password, valid_params, message = _validate_parameters(platform,
         platform_type, parameters, passwd_auth=True)
     if not valid_params:
         return valid_params, message
     key_generated, message = _generate_key(platform, platform_type, parameters)
     if not key_generated:
         return key_generated, message
-    remove_password = True
-    if 'mytardis' in platform_type:
-        remove_password = False #parameters['api_key'] fixme uncomment
     if 'password' in parameters.keys() and remove_password:
         parameters['password'] = ''
     created, message = _db_create_platform(platform_name, username,
@@ -150,16 +147,14 @@ def update_platform(platform, platform_name, username,
     platform_type = current_platform_record['platform_type']
     updated_platform_record['platform_type'] = platform_type
     _configure_platform(platform, platform_type, username, updated_platform_record)
-    valid_params, message = _validate_parameters(platform,
+    remove_password, valid_params, message = _validate_parameters(
+        platform,
         platform_type, updated_platform_record, passwd_auth=True)
     if not valid_params:
         return valid_params, message
-    key_generated, message = _generate_key(platform_type, updated_platform_record)
+    key_generated, message = _generate_key(platform, platform_type, updated_platform_record)
     if not key_generated:
         return key_generated, message
-    remove_password = True
-    if 'mytardis' in platform_type:
-        remove_password = False #parameters['api_key'] fixme uncomment
     if 'password' in updated_platform_record.keys() and remove_password:
         updated_platform_record['password'] = ''
     updated, message = _db_update_platform(platform_name, username, updated_platform_record)
@@ -358,4 +353,3 @@ def get_job_dir(output_storage_settings, offset):
 def get_scratch_platform():
     #return "file://local@127.0.0.1/"
     return "local/"
-

@@ -26,7 +26,7 @@ class UnixPlatform():
 
     def validate(self, parameters, passwd_auth=False):
         path_list = [parameters['root_path'], parameters['home_path']]
-        return validate_remote_path(path_list, parameters, passwd_auth)
+        return [True] + list(validate_remote_path(path_list, parameters, passwd_auth))
 
     def generate_key(self, parameters):
         return generate_unix_key(parameters)
