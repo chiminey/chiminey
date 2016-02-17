@@ -14,11 +14,11 @@ logger = logging.getLogger(__name__)
 
 class UnixPlatform():
 
+
     def get_platform_types(self):
         return ['unix', 'nci']
 
     def configure(self, platform_type, username, parameters):
-        #def configure_unix_platform(platform_type, username, parameters):
         key_name = 'bdp_%s' % parameters['platform_name']
         key_relative_path = os.path.join(
             '.ssh', username, platform_type, key_name)

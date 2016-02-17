@@ -123,7 +123,7 @@ class Configure(Stage):
             run_settings[RMIT_SCHEMA + '/platform/computation']['platform_url'] = self.compute_platform_name
             run_settings[RMIT_SCHEMA + '/platform/computation']['offset'] = self.compute_platform_offset
 
-    def setup_scratchspace(self, run_settings):
+    def setup_scratchspace(self, run_settings, offset="input_0"):
 
         local_settings = getvals(run_settings, models.UserProfile.PROFILE_SCHEMA_NS)
         # local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
@@ -164,7 +164,7 @@ class Configure(Stage):
         logger.debug('self.output_loc_offset=%s' % self.output_loc_offset)
         if self.input_exists(run_settings):
             logger.debug('copy to scratch')
-            self.copy_to_scratch_space(run_settings, local_settings)
+            self.copy_to_scratch_space(run_settings, local_settings, offset)
         else:
             logger.debug('not copy to scratch')
 
@@ -350,7 +350,7 @@ class Configure(Stage):
 
         return run_settings
 
-    def copy_to_scratch_space(self, run_settings, local_settings):
+    def copy_to_scratch_space(self, run_settings, local_settings, result_offset):
         bdp_username = run_settings['http://rmit.edu.au/schemas/bdp_userprofile']['username']
         output_storage_url = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['platform_url']
         output_storage_settings = manage.get_platform_settings(output_storage_url, bdp_username)
@@ -358,7 +358,7 @@ class Configure(Stage):
         run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset'] = self.output_loc_offset
         offset = run_settings['http://rmit.edu.au/schemas/platform/storage/output']['offset']
         self.job_dir = manage.get_job_dir(output_storage_settings, offset)
-        iter_inputdir = os.path.join(self.job_dir, "input_0")
+        iter_inputdir = os.path.join(self.job_dir, result_offset)
         logger.debug("iter_inputdir=%s" % iter_inputdir)
 
         input_storage_settings = self.get_platform_settings(run_settings, 'http://rmit.edu.au/schemas/platform/storage/input')
