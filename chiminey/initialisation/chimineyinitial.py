@@ -229,14 +229,14 @@ def _get_chiminey_schemas():
                  u'password': {'type': models.ParameterName.STRING, 'subtype': 'password',
                                'description': 'Password', 'ranking': 22,
                                'help_text': 'Password of the account holder. Password is not stored in the Chiminey server. It is temporarily kept in memory to to establish a private/public key authentication from the Chiminey server to the cluster/unix platform.'},
-                 u'home_path': {'type': models.ParameterName.STRING, 'subtype': '', 'description': 'Home path',
-                                'ranking': 24,
-                                'help_text': 'Home directory. This is the location where .ssh directory resides. The home path is needed to store a Chiminey-specific public key on the cluster/unix server.'},
-                 u'root_path': {'type': models.ParameterName.STRING, 'subtype': '', 'description': 'Root path',
-                                'ranking': 33,
-                                'help_text': 'Used as the working directory for the computation. All temporary files are created under this directory.'},
-                 u'private_key_path': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': '',
-                                       'ranking': 41, 'help_text': ''},
+                #  u'home_path': {'type': models.ParameterName.STRING, 'subtype': '', 'description': 'Home path',
+                #                 'ranking': 24,
+                #                 'help_text': 'Home directory. This is the location where .ssh directory resides. The home path is needed to store a Chiminey-specific public key on the cluster/unix server.'},
+                #  u'root_path': {'type': models.ParameterName.STRING, 'subtype': '', 'description': 'Root path',
+                #                 'ranking': 33,
+                #                 'help_text': 'Used as the working directory for the computation. All temporary files are created under this directory.'},
+                #  u'private_key_path': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': '',
+                #                        'ranking': 41, 'help_text': ''},
              }
             ],
         u'http://rmit.edu.au/schemas/platform/computation':
@@ -752,8 +752,3 @@ def _get_chiminey_schemas():
             ]
     }
     return schema_data
-
-
-
-
-

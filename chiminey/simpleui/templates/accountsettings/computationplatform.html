@@ -18,11 +18,11 @@ $(document).ready(function () {
     $('#cluster_2_{{forloop.counter}}').tooltip();
     $('#cluster_3_{{forloop.counter}}').tooltip();
     {% endfor %}
-    // {% for field in jenkins_form %}
-    // $('#jenkins_1_{{forloop.counter}}').tooltip();
-    // $('#jenkins_2_{{forloop.counter}}').tooltip();
-    // $('#jenkins_3_{{forloop.counter}}').tooltip();
-    // {% endfor %}
+    {% for field in jenkins_form %}
+    $('#jenkins_1_{{forloop.counter}}').tooltip();
+    $('#jenkins_2_{{forloop.counter}}').tooltip();
+    $('#jenkins_3_{{forloop.counter}}').tooltip();
+    {% endfor %}
 
    });
 </script>
@@ -35,7 +35,7 @@ $(document).ready(function () {
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                <h4 class="modal-title">Add Computation Platform</h4>
+                <h4 class="modal-title">Register Computation Resource</h4>
             </div>
             <div class="modal-body">
                 <ul class="nav nav-tabs" id="myTab">
@@ -139,7 +139,7 @@ $(document).ready(function () {
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                <h4 class="modal-title">Update Computation Platform</h4>
+                <h4 class="modal-title">Register Computation Resource</h4>
             </div>
             <div class="modal-body">
                 <form class="form-horizontal" action="{{ action }}" method="POST" id="cloud_form_update"> {% csrf_token %}
