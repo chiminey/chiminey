@@ -66,6 +66,7 @@ class RemoteStorage(SFTPStorage):
         if not version == "1.1.8":
             logger.warn("ConnectorStorage overrides version 1.1.8 of django_storages. found version %s" % version)
 
+        logger.debug("SFTPStorage settings=%s" % pformat(settings))
         super(RemoteStorage, self).__init__()
         if 'params' in settings:
             super(RemoteStorage, self).__dict__["_params"] = settings['params']
@@ -284,9 +285,11 @@ def get_filesystem(bdp_url):
         username = get_value('username', query_settings)
         password = get_value('password', query_settings)
         root_path = get_value('root_path', query_settings)
+        port = get_value('port', query_settings)
         logger.debug("root_path=%s" % root_path)
         paramiko_settings = {'username': username,
-            'password': password}
+                             'port': port,
+                             'password': password}
         if key_file:
             paramiko_settings['key_filename'] = key_file
         ssh_settings = {'params': paramiko_settings,
@@ -339,10 +342,14 @@ def list_all_files(source_url):
         key_file = get_value('key_file', query_settings)
         username = get_value('username', query_settings)
         password = get_value('password', query_settings)
+        port = get_value('port', query_settings)
+        if not port:
+            port = 22
         root_path = get_value('root_path', query_settings)
         logger.debug("root_path=%s" % root_path)
         paramiko_settings = {'username': username,
-            'password': password}
+                             'password': password,
+                             'port': port}
         if key_file:
             paramiko_settings['key_filename'] = key_file
         ssh_settings = {'params': paramiko_settings,
@@ -443,8 +450,12 @@ def copy_directories(source_url, destination_url):
         password = get_value('password', query_settings)
         root_path = get_value('root_path', query_settings)
         logger.debug("root_path=%s" % root_path)
+        port = get_value('port', query_settings)
+        if not port:
+            port = 22
         paramiko_settings = {'username': username,
-            'password': password}
+                             'port': port,
+                             'password': password}
         if key_file:
             paramiko_settings['key_filename'] = key_file
         ssh_settings = {'params': paramiko_settings,
@@ -604,10 +615,14 @@ def put_file(file_url, content):
         username = get_value('username', query_settings)
         password = get_value('password', query_settings)
         root_path = get_value('root_path', query_settings)
+        port = get_value('port', query_settings)
+        if not port:
+            port = 22
         logger.debug("key_file=%s" % key_file)
         logger.debug("root_path=%s" % root_path)
         paramiko_settings = {'username': username,
-            'password': password}
+                             'password': password,
+                             'port': port}
         if key_file:
             paramiko_settings['key_filename'] = key_file
         ssh_settings = {'params': paramiko_settings,
@@ -615,7 +630,7 @@ def put_file(file_url, content):
                         'root': str(root_path) + "/"}
         logger.debug("ssh_settings=%s" % ssh_settings)
         fs = RemoteStorage(settings=ssh_settings)
-         # FIXME: does this overwrite?
+        # FIXME: does this overwrite?
         fs.save(mypath, ContentFile(content))  # NB: ContentFile only takes bytes
         logger.debug("File to be written on %s" % location)
     elif scheme == "tardis":
@@ -657,9 +672,13 @@ def file_exists(bdp_file_url):
         username = get_value('username', query_settings)
         password = get_value('password', query_settings)
         root_path = get_value('root_path', query_settings)
+        port = get_value('port', query_settings)
+        if not port:
+            port = 22
         logger.debug("root_path=%s" % root_path)
         paramiko_settings = {'username': username,
-            'password': password}
+                             'password': password,
+                             'port': port}
         if key_file:
             paramiko_settings['key_filename'] = key_file
         ssh_settings = {'params': paramiko_settings,
@@ -736,9 +755,13 @@ def get_filep(file_bdp_url, sftp_reference=False):
         username = get_value('username', query_settings)
         password = get_value('password', query_settings)
         root_path = get_value('root_path', query_settings)
+        port = get_value('port', query_settings)
+        if not port:
+            port = 22
         logger.debug("root_path=%s" % root_path)
         paramiko_settings = {'username': username,
-            'password': password}
+                             'password': password,
+                             'port': port}
         if key_file:
             paramiko_settings['key_filename'] = key_file
 

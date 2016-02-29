@@ -45,7 +45,8 @@ def generate_unix_key(parameters):
         password = parameters['password']
 
     ssh_settings = {'username': parameters['username'],
-                'password': password}
+                    'port': parameters['port'],
+                    'password': password}
 
     storage_settings = {'params': ssh_settings,
                         'host': parameters['ip_address'],

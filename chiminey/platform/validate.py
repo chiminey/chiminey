@@ -66,13 +66,21 @@ def _remote_path_exists(remote_path, parameters, passwd_auth=False):
     password = ''
     if 'password' in parameters.keys():
         password = parameters['password']
+    if not parameters['port']:
+        parameters['port'] = 22
     paramiko_settings = {'username': parameters['username'],
-                         'password': password}
+                         'password': password,
+                         'port': parameters['port']}
     if (not passwd_auth) and 'private_key_path' in parameters:
         paramiko_settings['key_filename'] = os.path.join(
-            storage.get_bdp_root_path(), parameters['private_key_path'])
+            storage.get_bdp_root_path(),
+            parameters['private_key_path']
+            )
+    if not parameters['port']:
+        parameters['port'] = 22
     ssh_settings = {'params': paramiko_settings,
                     'host': parameters['ip_address'],
+                    'port': parameters['port'],
                     'root': "/"}
     exists = True
     message = 'Remote path [%s] exists' % remote_path

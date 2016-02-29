@@ -216,7 +216,8 @@ LOGGING = {
 
     'handlers': {
     'file': {
-    'class': 'logging.handlers.RotatingFileHandler',
+    'class': 'logging.handlers.FileHandler',
+    # 'class': 'logging.handlers.RotatingFileHandler',
     'filename': '/logs/chiminey.log',
     'formatter': 'timestamped',
             'maxBytes': 1024 * 1024 * 100,  # 100 mb
@@ -225,69 +226,69 @@ LOGGING = {
     },
     'loggers': {
 
-    'chiminey': {
-    'level': LOGGER_LEVEL,
-    'handlers': ['file'],
-    },
+    # 'chiminey': {
+    # 'level': LOGGER_LEVEL,
+    # #'handlers': ['file'],
+    # },
     'chiminey.smartconnectorscheduler': {
     'level': LOGGER_LEVEL,
-    'handlers': ['file'],
+    #'handlers': ['file'],
     },
     'chiminey.sshconnection': {
     'level': LOGGER_LEVEL,
-    'handlers': ['file'],
+    #'handlers': ['file'],
     },
     'chiminey.platform': {
     'level': LOGGER_LEVEL,
-    'handlers': ['file'],
+    #'handlers': ['file'],
     },
     'chiminey.cloudconnection': {
     'level': LOGGER_LEVEL,
-    'handlers': ['file'],
+    #'handlers': ['file'],
     },
     'chiminey.reliabilityframework': {
     'level': LOGGER_LEVEL,
-    'handlers': ['file'],
+    #'handlers': ['file'],
     },
     'chiminey.simpleui': {
     'level': LOGGER_LEVEL,
-    'handlers': ['file'],
+    #'handlers': ['file'],
     },
     'chiminey.mytardis': {
     'level': LOGGER_LEVEL,
-    'handlers': ['file'],
+    #'handlers': ['file'],
     },
     'chiminey.simpleui.wizard': {
     'level': LOGGER_LEVEL,
-    'handlers': ['file'],
+    #'handlers': ['file'],
     },
     'chiminey.storage': {
     'level': LOGGER_LEVEL,
-    'handlers': ['file'],
+    #'handlers': ['file'],
     },
     'chiminey.sshconnector': {
     'level': LOGGER_LEVEL,
-    'handlers': ['file'],
+    #'handlers': ['file'],
     },
     'chiminey.core': {
     'level': LOGGER_LEVEL,
-    'handlers': ['file'],
+    #'handlers': ['file'],
     },
-    'chiminey.smartconnectorscheduler.tasks': {
-    'level': LOGGER_LEVEL,
-    'handlers': ['file'],
-    },
+    # 'chiminey.smartconnectorscheduler.tasks': {
+    # 'level': LOGGER_LEVEL,
+    # #'handlers': ['file'],
+    # },
     'celery.task': {
     'level': 'ERROR',
-    'handlers': ['file'],
+    #'handlers': ['file'],
     },
     'django.db.backends': {
     'level': 'ERROR',
-    'handlers': ['file'],
+    #'handlers': ['file'],
     },
     'south': {
      'level': LOGGER_LEVEL,
-     'handlers': ['file'],
+     #'handlers': ['file'],
 
     },
     }

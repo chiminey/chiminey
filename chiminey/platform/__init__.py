@@ -18,5 +18,8 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from chiminey.platform.manage import create_platform, update_platform, delete_platform, \
-    get_platform_settings, get_job_dir
+from chiminey.platform.manage import (create_platform,
+                                      update_platform,
+                                      delete_platform,
+                                      get_platform_settings,
+                                      get_job_dir)

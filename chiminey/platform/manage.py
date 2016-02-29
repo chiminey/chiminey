@@ -158,7 +158,7 @@ def update_platform(platform, platform_name, username,
     if 'password' in updated_platform_record.keys() and remove_password:
         updated_platform_record['password'] = ''
     updated, message = _db_update_platform(platform_name, username, updated_platform_record)
-    #TODO: cleanup method
+    # TODO: cleanup method
     return updated, message
 
 

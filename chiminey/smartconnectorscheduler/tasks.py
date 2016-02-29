@@ -19,6 +19,7 @@
 # IN THE SOFTWARE.
 
 import sys
+import os
 import linecache
 import logging
 from celery.task import task
@@ -71,11 +72,11 @@ def delete(context_id):
                     id=run_context.id, deleted=False)
             except DatabaseError:
                 logger.info("progress context for %s is already deleted.  exiting"
-                    % context_id)
+                            % context_id)
                 return
             except models.Context.DoesNotExist:
                 logger.info("progress context for %s is already deleted.  exiting"
-                    % context_id)
+                            % context_id)
             else:
                 logger.info("deleting %s" % context_id)
             run_context.deleted = True
@@ -89,7 +90,7 @@ def run_contexts():
     # Collect all valid contexts and process all         getting new set. This
     # should ensure that difficult for one user to monopolise processor, though
     # still not effective against DoS attack of job submission requests...
-    logger.debug("run_contexts")
+    logger.debug("Waiting for work...")
     try:
         for context in models.Context.objects.filter(deleted=False):
             # logger.debug("checking context=%s" % context)
@@ -110,7 +111,7 @@ def context_message(context_id, mess):
                 messages = models.ContextMessage.objects.select_for_update().filter(context__id=context_id)
             except DatabaseError:
                 logger.info("context_message for %s is already running.  exiting"
-                    % context_id)
+                            % context_id)
                 return
             except Exception, e:
                 logger.error(e)
@@ -183,7 +184,7 @@ def _process_context(context_id):
                 nowait=True).get(id=context_id, deleted=False)
         except DatabaseError:
             logger.debug("progress context for %s is already running.  exiting"
-                % context_id)
+                         % context_id)
             return
         except models.Context.DoesNotExist, e:
             logger.debug("Context %s removed from other thread" % context_id)
@@ -202,8 +203,8 @@ def _process_context(context_id):
         if children:
             stageset = children
         else:
-            #siblings = models.Stage.objects.filter(parent=stage.parent)
-            #stageset = siblings
+            # siblings = models.Stage.objects.filter(parent=stage.parent)
+            # stageset = siblings
             stageset = [stage]
 
         logger.debug("stageset=%s", stageset)
@@ -216,7 +217,7 @@ def _process_context(context_id):
         # user_settings are r/w during execution, but original values
         # associated with UserProfile are unchanged as loaded once on
         # context creation.
-        #user_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
+        # user_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
         # PROFILE_SCHEMA is now deprecated, so
         user_settings = {}
 
@@ -226,8 +227,9 @@ def _process_context(context_id):
             logger.debug("checking stage %s for trigger" % current_stage.name)
             # get the actual stage object
             try:
-                stage = jobs.safe_import(current_stage.package, [],
-                {'user_settings': deepcopy(user_settings)})  # obviously need to cache this
+                stage = jobs.safe_import(
+                    current_stage.package, [],
+                    {'user_settings': deepcopy(user_settings)})  # obviously need to cache this
             except ImproperlyConfigured, e:
                 logger.error(e)
                 messages.error(run_settings, "0: internal error (%s stage):%s" % (str(current_stage.name), e))
@@ -243,7 +245,7 @@ def _process_context(context_id):
 
             # This is nasty
             task_run_settings = jobs.transfer(task_run_settings, stage_settings)
-            #task_run_settings.update(stage_settings)
+            # task_run_settings.update(stage_settings)
             logger.debug("task run_settings=%s" % task_run_settings)
 
             logger.debug("Stage '%s' testing for triggering" % current_stage.name)
@@ -296,17 +298,17 @@ def progress_context(context_id):
         try:
             have_lock = my_lock.acquire(blocking=False)
             if have_lock:
-                logger.debug("Got lock for %s" % context_id)
+                logger.debug("Thread %s got lock for %s" % (str(os.getpid()), context_id))
                 _process_context(context_id)
             else:
-                logger.debug("Did not acquire lock for %s" % context_id)
+                logger.debug("Thread %s did not acquire lock for %s" % (str(os.getpid()), context_id))
                 return
         finally:
             if have_lock:
-                logger.debug("releasing lock for %s" % context_id)
+                logger.debug("Thread %s releasing lock for %s " % (str(os.getpid()), context_id))
                 my_lock.release()
             else:
-                logger.debug("don't have lock for %s" % context_id)
+                logger.debug("Thread %s doesn't have lock for %s" % (str(os.getpid()), context_id))
 
     except SoftTimeLimitExceeded:
         raise
@@ -338,7 +340,7 @@ def progress_context_broken(context_id):
                     r_cont = run_contexts[0]
                 except DatabaseError:
                     logger.debug("progress context for %s is already running.  exiting"
-                        % context_id)
+                                 % context_id)
                     return
                 except models.Context.DoesNotExist, e:
                     logger.debug("Context %s removed from other thread" % context_id)
@@ -426,5 +428,3 @@ def progress_context_broken(context_id):
     except Exception, e:
         logger.debug('tasks.py=%s' % e)
         raise
-
-
