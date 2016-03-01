@@ -68,7 +68,6 @@ BROKER_TRANSPORT = 'django'
 # If running in a Windows environment this must be set to the same as your
 # system time zone.
 TIME_ZONE = None
-TIME_ZONE = "Australia/Melbourne"
 
 # Language code for this installation. All choices can be found here:
 # http://www.i18nguy.com/unicode/language-identifiers.html
@@ -123,6 +122,16 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.transaction.TransactionMiddleware'
     )
 
+SMART_CONNECTORS = {'randunix': {'init': 'chiminey.examples.randnumunix.initialise.RandInitial',
+'name': 'randunix',
+'description': 'my descrip...',
+'payload': ''},
+'hrmc': {'init': 'chiminey.examples.hrmc2.initialise.HRMCInitial',
+'name': 'hrmc',
+'description': 'hrmc',
+'payload': '/opt/chiminey/current/chiminey/examples/randnummytardis/payload_randnum'}
+}
+PAYLOAD_DESTINATION = '/var/chiminey/remotesys/my_payloads/'
 
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
@@ -216,8 +225,7 @@ LOGGING = {
 
     'handlers': {
     'file': {
-    'class': 'logging.handlers.FileHandler',
-    # 'class': 'logging.handlers.RotatingFileHandler',
+    'class': 'logging.handlers.RotatingFileHandler',
     'filename': '/logs/chiminey.log',
     'formatter': 'timestamped',
             'maxBytes': 1024 * 1024 * 100,  # 100 mb
@@ -226,69 +234,69 @@ LOGGING = {
     },
     'loggers': {
 
-    # 'chiminey': {
-    # 'level': LOGGER_LEVEL,
-    # #'handlers': ['file'],
-    # },
+    'chiminey': {
+    'level': LOGGER_LEVEL,
+    'handlers': ['file'],
+    },
     'chiminey.smartconnectorscheduler': {
     'level': LOGGER_LEVEL,
-    #'handlers': ['file'],
+    'handlers': ['file'],
     },
     'chiminey.sshconnection': {
     'level': LOGGER_LEVEL,
-    #'handlers': ['file'],
+    'handlers': ['file'],
     },
     'chiminey.platform': {
     'level': LOGGER_LEVEL,
-    #'handlers': ['file'],
+    'handlers': ['file'],
     },
     'chiminey.cloudconnection': {
     'level': LOGGER_LEVEL,
-    #'handlers': ['file'],
+    'handlers': ['file'],
     },
     'chiminey.reliabilityframework': {
     'level': LOGGER_LEVEL,
-    #'handlers': ['file'],
+    'handlers': ['file'],
     },
     'chiminey.simpleui': {
     'level': LOGGER_LEVEL,
-    #'handlers': ['file'],
+    'handlers': ['file'],
     },
     'chiminey.mytardis': {
     'level': LOGGER_LEVEL,
-    #'handlers': ['file'],
+    'handlers': ['file'],
     },
     'chiminey.simpleui.wizard': {
     'level': LOGGER_LEVEL,
-    #'handlers': ['file'],
+    'handlers': ['file'],
     },
     'chiminey.storage': {
     'level': LOGGER_LEVEL,
-    #'handlers': ['file'],
+    'handlers': ['file'],
     },
     'chiminey.sshconnector': {
     'level': LOGGER_LEVEL,
-    #'handlers': ['file'],
+    'handlers': ['file'],
     },
     'chiminey.core': {
     'level': LOGGER_LEVEL,
-    #'handlers': ['file'],
+    'handlers': ['file'],
     },
-    # 'chiminey.smartconnectorscheduler.tasks': {
-    # 'level': LOGGER_LEVEL,
-    # #'handlers': ['file'],
-    # },
+    'chiminey.smartconnectorscheduler.tasks': {
+    'level': LOGGER_LEVEL,
+    'handlers': ['file'],
+    },
     'celery.task': {
     'level': 'ERROR',
-    #'handlers': ['file'],
+    'handlers': ['file'],
     },
     'django.db.backends': {
     'level': 'ERROR',
-    #'handlers': ['file'],
+    'handlers': ['file'],
     },
     'south': {
      'level': LOGGER_LEVEL,
-     #'handlers': ['file'],
+     'handlers': ['file'],
 
     },
     }
@@ -396,14 +404,6 @@ REDIS_HOST = "localhost"
 
 APIHOST = "http://127.0.0.1"
 
-PLATFORM_CLASSES = (
-    'chiminey.platform.unix.UnixPlatform',
-    'chiminey.platform.cloud.CloudPlatform',
-    'chiminey.platform.jenkins.JenkinsPlatform',
-    'chiminey.platform.mytardis.MyTardisPlatform',
-    )
-
-
-
 
 djcelery.setup_loader()
+
