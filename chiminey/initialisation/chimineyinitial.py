@@ -145,7 +145,7 @@ def _get_chiminey_schemas():
                                        'ranking': 41, 'help_text': ''},
                  u'port': {'type': models.ParameterName.NUMERIC, 'subtype': '',
                            'description': 'SSH port', 'ranking': 55, 'initial': 22,
-                           'help_text': 'Port of the SSH server (usually 22'.')},
+                           'help_text': 'Port of the SSH server (usually 22).)'},
 
              }
             ],
@@ -181,7 +181,7 @@ def _get_chiminey_schemas():
                                        'ranking': 41, 'help_text': ''},
                  u'port': {'type': models.ParameterName.NUMERIC, 'subtype': '',
                                  'description': 'SSH port', 'ranking': 55, 'initial': 22,
-                                 'help_text': 'Port of the SSH server (usually 22'.')},
+                                 'help_text': 'Port of the SSH server (usually 22.)'},
 
              }
             ],

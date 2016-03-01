@@ -19,9 +19,9 @@ class JenkinsPlatform():
 
     def configure(self, platform_type, username, parameters):
         key_name = 'bdp_%s' % parameters['platform_name']
-        key_relative_path = os.path.join(
-            '.ssh', username, platform_type, key_name)
-        parameters['private_key_path'] = key_relative_path
+        # key_relative_path = os.path.join(
+        #     '.ssh', username, platform_type, key_name)
+        # parameters['private_key_path'] = key_relative_path
 
     def validate(self, parameters, passwd_auth=False):
         return [False, True, "All valid parameters"]
@@ -53,8 +53,9 @@ class JenkinsPlatform():
             logger.error("settings=%s" % settings)
             raise
         settings['type'] = platform_type
-        settings['private_key'] = os.path.join(storage.get_bdp_root_path(),
-                       settings['private_key_path'])
+        # settings['private_key'] = os.path.join(storage.get_bdp_root_path(),
+        #                settings['private_key_path'])
+        #
         settings['host'] = settings['ip_address']
         settings['scheme'] = 'ssh'
 
