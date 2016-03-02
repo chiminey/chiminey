@@ -124,7 +124,7 @@ MIDDLEWARE_CLASSES = (
 
 SMART_CONNECTORS = {'randunix': {'init': 'chiminey.examples.randnumunix.initialise.RandInitial',
 'name': 'randunix',
-'description': 'my descrip...',
+'description': 'RandUnix',
 'payload': ''},
 'hrmc': {'init': 'chiminey.examples.hrmc2.initialise.HRMCInitial',
 'name': 'hrmc',

@@ -388,6 +388,20 @@ class CoreInitial(object):
                 directive, description)
             self._attach_directive_args(sweep_directive)
 
+    def delete_directive(self, directive_name, sweep=False):
+        try:
+            models.Directive.objects.get(name=directive_name).delete()
+            models.DirectiveArgSet.objects.get(directive=directive_name).delete()
+        except Exception as e:
+                pass
+        if sweep:
+            sweep_directive_name = "sweep_%s" % directive_name.name
+            try:
+                models.Directive.objects.get(name=sweep_directive_name).delete()
+                models.DirectiveArgSet.objects.get(directive=sweep_directive_name).delete()
+            except Exception as e:
+                pass
+
 
     def define_sweep_directive(self, subdirective, description):
         sweep_stage = self._define_sweep_stage(subdirective)

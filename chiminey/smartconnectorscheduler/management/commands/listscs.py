@@ -23,11 +23,25 @@ __author__ = 'iman'
 
 from django.core.management.base import BaseCommand
 from django.conf import settings as django_settings
-
 from pprint import pformat
 
+
 class Command(BaseCommand):
+    def list_scs(self, all=False):
+        smart_connectors = django_settings.SMART_CONNECTORS
+        if not all:
+            print ("NAME:  DESCRIPTION")
+            for k, v in smart_connectors.items():
+                print ("%s:  %s" % (k,v['description']))
+            return
+        print(pformat(smart_connectors))
 
     def handle(self, *args, **options):
-        print(pformat(django_settings.SMART_CONNECTORS))
-
+        list_all = False
+        try:
+            if args[0] in 'all':
+                list_all = True
+        except IndexError:
+            pass
+        finally:
+             self.list_scs(all=list_all)

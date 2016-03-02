@@ -36,13 +36,13 @@ class Command(BaseCommand):
     args = ''
     help = 'Setup an initial task structure.'
     def setup(self, initialiser, name, description):
-        MESSAGE = "This will add %s to the catalogue of available smart connectors.  Are you sure [Yes/No]?" % name
+        MESSAGE = "This will delete %s smart connector.  Are you sure [Yes/No]?" % name
         confirm = raw_input(MESSAGE)
         if confirm != "Yes":
             print "action aborted by user"
             return
         directive = jobs.safe_import(initialiser, [], {})
-        directive.define_directive(name, description=description)
+        directive.delete_directive(name)
         print "done"
 
 
