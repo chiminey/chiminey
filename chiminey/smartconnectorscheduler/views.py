@@ -90,7 +90,7 @@ subtype_validation = {
     'nectar_platform': ('NeCTAR platform name',
                         serverside_validators.validate_platform,
                         None, None),
-    'storage_bdpurl': ('Storage platform name with optional offset path',
+    'storage_bdpurl': ('Storage resource name with optional offset path',
                         serverside_validators.validate_platform,
                         forms.TextInput, 255),
     'even': ('even number', serverside_validators.validate_even_number, None, None),

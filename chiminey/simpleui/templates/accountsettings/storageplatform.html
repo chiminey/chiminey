@@ -30,7 +30,7 @@ $('#mytardis_6_{{forloop.counter}}').tooltip();
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                <h4 class="modal-title">Add Storage Platform</h4>
+                <h4 class="modal-title">Add Storage Resource</h4>
             </div>
             <div class="modal-body">
                 <ul class="nav nav-tabs" id="myTab">
@@ -98,7 +98,7 @@ $('#mytardis_6_{{forloop.counter}}').tooltip();
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                <h4 class="modal-title">Update Storage Platform</h4>
+                <h4 class="modal-title">Update Storage Resource</h4>
             </div>
             <div class="modal-body">
                 <form class="form-horizontal" action="{{ action }}" method="POST" id="unix_form_update"> {% csrf_token %}
@@ -156,7 +156,7 @@ $('#mytardis_6_{{forloop.counter}}').tooltip();
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                <h4 class="modal-title">Delete Storage Platform</h4>
+                <h4 class="modal-title">Delete Storage Resource</h4>
             </div>
             <div class="modal-body">
                 <form class="form-horizontal" action="{{ action }}" method="POST" id="unix_form_delete"> {% csrf_token %}
@@ -209,7 +209,7 @@ $('#mytardis_6_{{forloop.counter}}').tooltip();
 
 
 <!--second column-->
-<p><a data-toggle="modal" href="#createModal" class="btn btn-primary"  onclick="formreset();">Add Storage Platform</a></p>
+<p><a data-toggle="modal" href="#createModal" class="btn btn-primary"  onclick="formreset();">Add Storage Resource</a></p>
 <div>
 {% for platform_type, platform_details in all_headers.items %}
      {% for header, schema in platform_details.items %}

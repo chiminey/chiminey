@@ -76,7 +76,7 @@ subtype_validation = {
     'string_not_empty': ('string_not_empty', validators.validate_string_not_empty, None, None),
     'whole': ('whole number', validators.validate_whole_number, None, None),
     'nectar_platform': ('NeCTAR platform name', validators.validate_platform_url, None, None),
-    'storage_bdpurl': ('Storage platform name with optional offset path', validators.validate_platform_url, forms.TextInput, 255),
+    'storage_bdpurl': ('Storage resource name with optional offset path', validators.validate_platform_url, forms.TextInput, 255),
     'even': ('even number', validators.validate_even_number, None, None),
     'bdpurl': ('BDP url', validators.validate_BDP_url, forms.TextInput, 255),
     'float': ('floading point number', validators.validate_float_number, None, None),

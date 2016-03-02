@@ -449,11 +449,11 @@ def _get_chiminey_schemas():
                  u'input_location': {'type': models.ParameterName.STRING, 'subtype': 'storage_bdpurl',
                                      'initial': 'file://127.0.0.1/myfiles/input', 'description': 'Input Location',
                                      'ranking': 1,
-                                     'help_text': 'Storage platform name with optional offset path: e.g., storage_home/myexperiment'},
+                                     'help_text': 'Storage resource name with optional offset path: e.g., storage_home/myexperiment'},
                  u'output_location': {'type': models.ParameterName.STRING, 'subtype': 'storage_bdpurl',
                                       'initial': 'file://local@127.0.0.1/sweep', 'description': 'Output Location',
                                       'ranking': 2,
-                                      'help_text': 'Storage platform name with optional offset path: e.g., storage_home/myexperiment'}
+                                      'help_text': 'Storage resource name with optional offset path: e.g., storage_home/myexperiment'}
              }
             ],
         u'http://rmit.edu.au/schemas/input/location':
@@ -462,11 +462,11 @@ def _get_chiminey_schemas():
                  u'input_location': {'type': models.ParameterName.STRING, 'subtype': 'storage_bdpurl',
                                      'initial': 'file://127.0.0.1/myfiles/input', 'description': 'Input Location',
                                      'ranking': 1,
-                                     'help_text': 'Storage platform name with optional offset path: e.g., storage_home/myexperiment'},
+                                     'help_text': 'Storage resource name with optional offset path: e.g., storage_home/myexperiment'},
                  u'output_location': {'type': models.ParameterName.STRING, 'subtype': 'storage_bdpurl',
                                       'initial': 'file://local@127.0.0.1/sweep', 'description': 'Output Location',
                                       'ranking': 2,
-                                      'help_text': 'Storage platform name with optional offset path: e.g., storage_home/myexperiment'}
+                                      'help_text': 'Storage resource name with optional offset path: e.g., storage_home/myexperiment'}
              }
             ],
         u'http://rmit.edu.au/schemas/input/location/input':
@@ -475,7 +475,7 @@ def _get_chiminey_schemas():
                  u'input_location': {'type': models.ParameterName.STRING, 'subtype': 'storage_bdpurl',
                                      'initial': 'file://127.0.0.1/myfiles/input', 'description': 'Input Location',
                                      'ranking': 1,
-                                     'help_text': 'Storage platform name with optional offset path: e.g., storage_home/myexperiment'},
+                                     'help_text': 'Storage resource name with optional offset path: e.g., storage_home/myexperiment'},
              }
             ],
         u'http://rmit.edu.au/schemas/input/location/output':
@@ -484,40 +484,40 @@ def _get_chiminey_schemas():
                  u'output_location': {'type': models.ParameterName.STRING, 'subtype': 'storage_bdpurl',
                                       'initial': 'file://local@127.0.0.1/sweep', 'description': 'Output Location',
                                       'ranking': 2,
-                                      'help_text': 'Storage platform name with optional offset path: e.g., storage_home/myexperiment'}
+                                      'help_text': 'Storage resource name with optional offset path: e.g., storage_home/myexperiment'}
              }
             ],
         u'http://rmit.edu.au/schemas/input/system/compplatform':
-            [u'Computation Platform',
+            [u'Compute Resource',
              {
                  u'computation_platform': {'type': models.ParameterName.STRLIST, 'subtype': 'platform',
-                                           'initial': '', 'description': 'Computation Platform Name', 'ranking': 0,
+                                           'initial': '', 'description': 'Compute Resource Name', 'ranking': 0,
                                            'help_text': 'The name of the computation platform to be used'},
              }
             ],
         u'http://rmit.edu.au/schemas/input/system/compplatform/cloud':
-            [u'Computation Platform',
+            [u'Compute Resource',
              {
                  u'computation_platform': {'type': models.ParameterName.STRLIST, 'subtype': 'platform',
-                                           'initial': '', 'description': 'Computation Platform Name', 'ranking': 0,
+                                           'initial': '', 'description': 'Compute Resource Name', 'ranking': 0,
                                            'help_text': 'The name of the computation platform to be used'},
              }
             ],
 
         u'http://rmit.edu.au/schemas/input/system/compplatform/jenkins':
-            [u'Computation Platform',
+            [u'Compute Resource',
              {
                  u'computation_platform': {'type': models.ParameterName.STRLIST, 'subtype': 'platform',
-                                           'initial': '', 'description': 'Computation Platform Name', 'ranking': 0,
+                                           'initial': '', 'description': 'Compute Resource Name', 'ranking': 0,
                                            'help_text': 'The name of the computation platform to be used'},
              }
             ],
 
  u'http://rmit.edu.au/schemas/input/system/compplatform/unix':
-            [u'Computation Platform',
+            [u'Compute Resource',
              {
                  u'computation_platform': {'type': models.ParameterName.STRLIST, 'subtype': 'platform',
-                                           'initial': '', 'description': 'Computation Platform Name', 'ranking': 0,
+                                           'initial': '', 'description': 'Compute Resource Name', 'ranking': 0,
                                            'help_text': 'The name of the computation platform to be used'},
              }
             ],
