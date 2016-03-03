@@ -46,10 +46,12 @@ def create_platform(platform, platform_name, username,
                   ' Paramteres %s are missing' % missing_params
         return False, message
     parameters['platform_name'] = platform_name
+    logger.debug('I am here %s' % parameters)
     platform_type = parameters['platform_type']
     _configure_platform(platform, platform_type, username, parameters)
     remove_password, valid_params, message = _validate_parameters(platform,
         platform_type, parameters, passwd_auth=True)
+    logger.debug('I am there')
     if not valid_params:
         return valid_params, message
     key_generated, message = _generate_key(platform, platform_type, parameters)

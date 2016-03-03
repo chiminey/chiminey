@@ -298,6 +298,7 @@ def _create_nectar_connection(settings):
         path="/services/Cloud")
     #logger.info("settings %s" % settings)
     logger.debug("Connecting to... %s" % region.name)
+    logger.debug("%s %s " % (settings['ec2_access_key'], settings['ec2_secret_key']))
     return connection
 
 

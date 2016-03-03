@@ -113,9 +113,9 @@ def bdp_account_settings(request):
 def computation_platform_settings(request):
 
     new_form_data = {}
-    for field_name, ns_suffix in [('cluster_form', 'cloud/ec2-based'),
-                                    ('cloud_form', 'cluster/pbs_based'),
-                                    ('jenkins_form', 'testing/jenkins_based')
+    for field_name, ns_suffix in [('cluster_form', 'cluster/pbs_based'),
+                                    ('cloud_form', 'cloud/ec2-based'),
+                                    ('jenkins_form','testing/jenkins_based')
                                     ]:
         namespace = "%s/platform/computation/%s" % (RMIT_SCHEMA, ns_suffix)
         params = _get_platform_params(request, namespace)
@@ -312,6 +312,7 @@ def post_platform(schema, form_data, request, type=None):
                        'parameters': form_data,
                        'schema': schema,
                        'platform_name': platform_name})
+    logger.debug("post info: url %s, data %s, headers %s" % (url, data, headers))
     r = requests.post(url,
         data=data,
         headers=headers,
