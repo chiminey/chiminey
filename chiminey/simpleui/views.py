@@ -63,6 +63,7 @@ from chiminey.smartconnectorscheduler.errors import deprecated
 
 logger = logging.getLogger(__name__)
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+POPPED_KEYS = ['ec2_secret_key', 'filters', 'private_key_path', 'operation', 'vm_image_size', 'name']
 
 from django.conf import settings
 api_host = settings.APIHOST
@@ -164,33 +165,31 @@ def computation_platform_settings(request):
     res.update(dict([(x,y[0]) for x,y in new_form_data.items()]))
     logger.debug("res=%s" % pformat(res))
     logger.debug('computation_platforms=%s' % res['computation_platforms'])
-    pop_keys = ['ec2_secret_key', 'filters', 'private_key_path', 'operation', 'vm_image_size', 'name']
-
-    hide_resource_fields(res['computation_platforms'], pop_keys)
-    hide_resource_header_fields(res['all_headers'], pop_keys)
+    hide_resource_fields(res['computation_platforms'], POPPED_KEYS)
+    hide_resource_header_fields(res['all_headers'], POPPED_KEYS)
 
     logger.debug("new res=%s" % pformat(res))
 
     return render(request, 'accountsettings/computationplatform.html',res)
 
 
-def hide_resource_fields(dictionary, pop_keys):
+def hide_resource_fields(dictionary, popped_keys):
     if isinstance(dictionary, dict):
        for a, b in dictionary.items():
            if isinstance(b, dict):
-                hide_resource_fields(b, pop_keys)
+                hide_resource_fields(b, popped_keys)
            else:
-               if a in pop_keys:
+               if a in popped_keys:
                     dictionary.pop(a)
 
-def hide_resource_header_fields(dictionary, pop_keys):
+def hide_resource_header_fields(dictionary, popped_keys):
     logger.debug('hide_resource_done=%s' % dictionary)
     for a, b in dictionary.items():
         new_dic = {}
         for k, v in b.items():
             if isinstance(k, tuple):
                 temp_list = list(k)
-                z= [x for x in temp_list if x not in pop_keys]
+                z= [x for x in temp_list if x not in popped_keys]
                 new_dic[tuple(z)] = v
             else:
                  new_dic[k] = v
@@ -285,6 +284,7 @@ def storage_platform_settings(request):
             username=request.user.username)
         if unix_form.is_valid():
             schema = RMIT_SCHEMA + '/platform/storage/unix'
+            unix_form.cleaned_data['platform_type'] = 'unix'
             post_platform(schema, unix_form.cleaned_data, request)
             return HttpResponsePermanentRedirect(reverse('storage-platform-settings'))
         mytardis_form, form_data = make_directive_form(
@@ -294,6 +294,7 @@ def storage_platform_settings(request):
         if mytardis_form.is_valid():
             logger.debug('valid mytardis')
             schema = RMIT_SCHEMA + '/platform/storage/mytardis'
+            mytardis_form.cleaned_data['platform_type'] = 'mytardis'
             post_platform(schema, mytardis_form.cleaned_data, request)
             return HttpResponsePermanentRedirect(reverse('storage-platform-settings'))
 
@@ -323,9 +324,8 @@ def storage_platform_settings(request):
         storage_platforms, all_headers = filter_computation_platforms(GET_data)
         logger.debug('storage=%s' % storage_platforms)
     logger.debug('invalid mytardis')
-    pop_keys = ['ec2_secret_key', 'filters', 'private_key_path', 'operation', 'vm_image_size', 'name']
-    hide_resource_fields(storage_platforms, pop_keys)
-    hide_resource_header_fields(all_headers, pop_keys)
+    hide_resource_fields(storage_platforms, POPPED_KEYS)
+    hide_resource_header_fields(all_headers, POPPED_KEYS)
     return render(request, 'accountsettings/storageplatform.html',
                   {'unix_form': unix_form,
                    'mytardis_form': mytardis_form,
