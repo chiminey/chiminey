@@ -164,9 +164,11 @@ def computation_platform_settings(request):
     res.update(dict([(x,y[0]) for x,y in new_form_data.items()]))
     logger.debug("res=%s" % pformat(res))
     logger.debug('computation_platforms=%s' % res['computation_platforms'])
-    pop_keys = ['ec2_secret_key', 'filters', 'private_key_path', 'operation', 'vm_image_size', 'platform_name']
+    pop_keys = ['ec2_secret_key', 'filters', 'private_key_path', 'operation', 'vm_image_size', 'name']
+
     hide_resource_fields(res['computation_platforms'], pop_keys)
     hide_resource_header_fields(res['all_headers'], pop_keys)
+
     logger.debug("new res=%s" % pformat(res))
 
     return render(request, 'accountsettings/computationplatform.html',res)
@@ -321,7 +323,7 @@ def storage_platform_settings(request):
         storage_platforms, all_headers = filter_computation_platforms(GET_data)
         logger.debug('storage=%s' % storage_platforms)
     logger.debug('invalid mytardis')
-    pop_keys = ['ec2_secret_key', 'filters', 'private_key_path', 'operation', 'vm_image_size', 'platform_name']
+    pop_keys = ['ec2_secret_key', 'filters', 'private_key_path', 'operation', 'vm_image_size', 'name']
     hide_resource_fields(storage_platforms, pop_keys)
     hide_resource_header_fields(all_headers, pop_keys)
     return render(request, 'accountsettings/storageplatform.html',
