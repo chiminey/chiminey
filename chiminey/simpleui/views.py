@@ -63,7 +63,7 @@ from chiminey.smartconnectorscheduler.errors import deprecated
 
 logger = logging.getLogger(__name__)
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
-POPPED_KEYS = ['ec2_secret_key', 'filters', 'private_key_path', 'operation', 'vm_image_size', 'name']
+POPPED_KEYS = ['filters', 'private_key_path', 'operation', 'vm_image_size', 'name']
 
 from django.conf import settings
 api_host = settings.APIHOST
@@ -181,6 +181,8 @@ def hide_resource_fields(dictionary, popped_keys):
            else:
                if a in popped_keys:
                     dictionary.pop(a)
+               elif 'ec2_secret_key' in a:
+                    dictionary[a] = '*****'
 
 def hide_resource_header_fields(dictionary, popped_keys):
     logger.debug('hide_resource_done=%s' % dictionary)
@@ -194,7 +196,6 @@ def hide_resource_header_fields(dictionary, popped_keys):
             else:
                  new_dic[k] = v
         dictionary[a] = new_dic
-    logger.debug('hide_resource_done=%s' % dictionary)
     return dictionary
 
 
