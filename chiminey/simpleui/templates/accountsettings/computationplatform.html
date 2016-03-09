@@ -68,7 +68,7 @@ $(document).ready(function () {
                            {% endfor %}
 
 
-                             <button type="submit" class="btn btn-primary" onclick="submitForm('create', 'cloud_form_create');">Add</button>
+                             <button type="submit" class="btn btn-primary" onclick="submitForm('create', 'cloud_form_create');">Register</button>
                             <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                         </form>
                     </div>
@@ -95,7 +95,7 @@ $(document).ready(function () {
                                 {{ hidden }}
                             {% endfor %}
 
-                            <button type="submit" class="btn btn-primary" onclick="submitForm('create', 'cluster_form_create');">Add</button>
+                            <button type="submit" class="btn btn-primary" onclick="submitForm('create', 'cluster_form_create');">Register</button>
                             <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                         </form>
                      </div>
@@ -121,7 +121,7 @@ $(document).ready(function () {
                                 {{ hidden }}
                             {% endfor %}
 
-                            <button type="submit" class="btn btn-primary" onclick="submitForm('create', 'jenkins_form_create');">Add</button>
+                            <button type="submit" class="btn btn-primary" onclick="submitForm('create', 'jenkins_form_create');">Register</button>
                             <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                         </form>
                      </div>
@@ -328,7 +328,7 @@ $(document).ready(function () {
             <thead>
                 <tr>
                     {% for h in header %}
-                        {% if h == 'name' %}
+                        {% if h == 'platform_name' %}
                         <th class="col-1" data-hide="">
                             <strong>{{ h }}</strong>
                         </th>
@@ -370,5 +370,3 @@ $(document).ready(function () {
 
 <!--end second column-->
 {% endblock %}
-k %}
-dblock %}
