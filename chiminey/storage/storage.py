@@ -92,7 +92,6 @@ class RemoteStorage(SFTPStorage):
 
         # and automatically add new host keys for hosts we haven't seen before.
         self._ssh.set_missing_host_key_policy(paramiko.WarningPolicy())
-
         try:
             self._ssh.connect(self._host, **self._params)
         except paramiko.AuthenticationException, e:
@@ -286,6 +285,8 @@ def get_filesystem(bdp_url):
         password = get_value('password', query_settings)
         root_path = get_value('root_path', query_settings)
         port = get_value('port', query_settings)
+        if not port:
+            port = 22
         logger.debug("root_path=%s" % root_path)
         paramiko_settings = {'username': username,
                              'port': port,

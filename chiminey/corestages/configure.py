@@ -340,6 +340,9 @@ class Configure(Stage):
 
 
     def output(self, run_settings):
+        self.writeout_output(run_settings)
+        self.writeout_input(run_settings)
+        self.writeout_computation(run_settings)
         setval(run_settings,
                '%s/stages/configure/configure_done' % RMIT_SCHEMA,
                1)

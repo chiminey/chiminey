@@ -130,7 +130,7 @@ SMART_CONNECTORS = {'randunix': {'init': 'chiminey.examples.randnumunix.initiali
                     'hrmc': {'init': 'chiminey.examples.hrmc2.initialise.HRMCInitial',
                              'name': 'hrmc',
                              'description': 'hrmc',
-                             'payload': '/opt/chiminey/current/chiminey/examples/randnummytardis/payload_randnum'}
+                             'payload': '/opt/chiminey/current/chiminey/examples/hrmc2/payload_hrm'}
                     }
 
 PAYLOAD_DESTINATION = '/var/chiminey/remotesys/my_payloads/'
@@ -419,3 +419,4 @@ PLATFORM_CLASSES = (
 
 
 djcelery.setup_loader()
+
