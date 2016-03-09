@@ -273,6 +273,8 @@ function updatePlatform(parameters, platform_type) {
     };
     current_platform_name =  $('form #id_platform_name').val();
     $('form #id_filters').val(current_platform_name);
+    $('form #id_ec2_secret_key').val('');
+    $('form #id_vm_image_size').val('m1.small');
 }
 
 //consider merging the ff method with updatePlatform
