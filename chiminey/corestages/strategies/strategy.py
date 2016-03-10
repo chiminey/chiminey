@@ -19,11 +19,18 @@
 # IN THE SOFTWARE.
 
 from chiminey import messages
-from chiminey.runsettings import update
+from chiminey.runsettings import update, SettingNotFoundException, getval
+
 
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
 class Strategy(object):
+    def get_iteration_id(self, run_settings):
+        try:
+            return int(getval(run_settings, '%s/system/id' % RMIT_SCHEMA))
+        except (SettingNotFoundException, ValueError):
+            return 0
+
     def set_create_settings(self, run_settings, local_settings):
         update(local_settings, run_settings,
                '%s/system/contextid' % RMIT_SCHEMA

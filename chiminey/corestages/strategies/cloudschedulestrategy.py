@@ -46,22 +46,24 @@ def set_schedule_settings(run_settings, local_settings):
     local_settings['bdp_username'] = getval(run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA)
 
 
-def schedule_task(schedule_class, run_settings, local_settings):
+def schedule_task(schedule_class, run_settings, local_settings, id):
     schedule_class.nodes = get_registered_vms(local_settings, node_type='bootstrapped_nodes')
     try:
         maximum_retry = getval(run_settings, '%s/input/reliability/maximum_retry' % RMIT_SCHEMA)
     except SettingNotFoundException:
         maximum_retry = 0
     local_settings['maximum_retry'] = maximum_retry
+    '''
     try:
         id = int(getval(run_settings, '%s/system/id' % RMIT_SCHEMA))
     except (SettingNotFoundException, ValueError):
         id = 0
+    '''
     if schedule_class.procs_2b_rescheduled:
-        messages.info(run_settings, '%d: rescheduling failed processes' % (id+1))
+        messages.info(run_settings, '%d: Rescheduling failed processes' % (id+1))
         start_reschedule(schedule_class, run_settings, local_settings)
     else:
-        messages.info(run_settings, '%d: scheduling processes' % (id+1))
+        messages.info(run_settings, '%d: Scheduling processes' % (id+1))
         start_schedule(schedule_class, run_settings, local_settings)
 
 

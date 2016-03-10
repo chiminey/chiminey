@@ -177,7 +177,7 @@ class Configure(Stage):
         self.setup_input(run_settings)
         self.setup_computation(run_settings)
 
-        messages.info(run_settings, "0: configure")
+        messages.info(run_settings, "0: Setting up computation")
 
         local_settings = getvals(run_settings, models.UserProfile.PROFILE_SCHEMA_NS)
         # local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]

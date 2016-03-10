@@ -123,7 +123,7 @@ def _start_bootstrap(instance, ip,  settings, source, destination):
             ssh.close()
 
 
-def complete_bootstrap(bootstrap_class, local_settings):
+def complete_bootstrap(bootstrap_class, local_settings, id):
     logger.debug("complete_bootstrap")
     try:
         nodes = get_registered_vms(local_settings)
@@ -187,8 +187,8 @@ def complete_bootstrap(bootstrap_class, local_settings):
                 logger.info("We have already "
                     + "bootstrapped node %s" % node_ip)
             messages.info_context(local_settings['contextid'],
-                                  "bootstrapping nodes (%s nodes done)"
-                % len(bootstrap_class.bootstrapped_nodes))
+                                  "%s: Bootstrapping VMs (%s VMs done)"
+                % (id, len(bootstrap_class.bootstrapped_nodes)))
         else:
             print "job still running on %s" % node_ip
 

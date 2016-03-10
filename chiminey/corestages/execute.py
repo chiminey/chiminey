@@ -158,7 +158,7 @@ class Execute(stage.Stage):
         except (SettingNotFoundException, ValueError):
             self.id = 0
             self.iter_inputdir = os.path.join(self.job_dir, "input_location")
-        messages.info(run_settings, "%s: execute" % (self.id + 1))
+        messages.info(run_settings, "%s: Executing" % (self.id + 1))
         logger.debug("id = %s" % self.id)
 
         try:

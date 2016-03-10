@@ -304,7 +304,7 @@ class Wait(Stage):
             failed_processes = [x for x in self.current_processes if x['status'] == 'failed']
             logger.debug('failed_processes=%s' % failed_processes)
             logger.debug('failed_processes=%d' % len(failed_processes))
-            messages.info(run_settings, "%d: waiting %d processes (%d completed, %d failed) " % (
+            messages.info(run_settings, "%d: Waiting %d processes (%d completed, %d failed) " % (
                 self.id + 1, len(self.current_processes),  len(self.finished_nodes),
                 len(failed_processes)))
 

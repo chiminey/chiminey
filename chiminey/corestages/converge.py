@@ -73,7 +73,7 @@ class Converge(Stage):
             id = int(getval(run_settings, '%s/system/id' % RMIT_SCHEMA))
         except (SettingNotFoundException, ValueError):
             id = 0
-        messages.info(run_settings, '%d: converging' % (id+1))
+        #messages.info(run_settings, '%d: converging' % (id+1))
 
         def retrieve_local_settings(run_settings, local_settings):
 

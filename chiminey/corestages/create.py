@@ -66,7 +66,7 @@ class Create(Stage):
         return False
 
     def process(self, run_settings):
-        messages.info(run_settings, "1: create")
+        #messages.info(run_settings, "1: create")
         comp_pltf_settings = self.get_platform_settings(
             run_settings, 'http://rmit.edu.au/schemas/platform/computation')
         logger.debug("comp_pltf_settings=%s" % comp_pltf_settings)
