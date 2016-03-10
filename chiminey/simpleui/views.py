@@ -86,7 +86,7 @@ subtype_validation = {
     'bool': ('On/Off', validators.validate_bool, None,  None),
     'platform': ('platform', validators.validate_platform_url, forms.Select(),  None),
     #'mytardis': ('MyTardis platform name', validators.validate_platform_url, forms.Select(),  None), #TODO MyTardis validation should occur only if curation is ON. Include this logic in the validation
-    'mytardis': ('MyTardis platform name', None, forms.Select(),  None),
+    'mytardis': ('MyTardis name', None, forms.Select(),  None),
     'choicefield': ('choicefield', None, forms.Select(),  None),
     'timedelta': ('time delta: try 00:10:00, or 10 mins', validators.validate_timedelta, None, None),
 

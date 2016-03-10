@@ -42,6 +42,10 @@ def validate_platform(value, username):
     return value
 
 
+def validate_mock_mytardis_platform(value, username):
+    return True
+
+
 def validate_sweep_map(value):
     # FIXME: more detailed validation required here
     sweep_map = value

@@ -102,8 +102,9 @@ subtype_validation = {
     'bool': ('On/Off', serverside_validators.validate_bool, None,  None),
     'platform': ('platform', serverside_validators.validate_platform,
                  None,  None),
-    'mytardis': ('platform', serverside_validators.validate_platform,
-                 None,  None),
+    'mytardis': ('platform', serverside_validators.validate_mock_mytardis_platform, None,  None),
+    #'mytardis': ('platform', serverside_validators.validate_platform,
+    #        None,  None),
     'choicefield': ('choicefield', functools.partial(
         serverside_validators.myvalidate_choice_field,
         choices=('MC', 'MCSA')), forms.Select(),  None),
