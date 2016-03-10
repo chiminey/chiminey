@@ -1,5 +1,7 @@
 import djcelery
 import sys
+import os
+
 from datetime import timedelta
 
 DEBUG = True
@@ -214,97 +216,116 @@ INSTALLED_APPS = (
 
 #print '\n'.join(INSTALLED_APPS)
 
-LOGGER_LEVEL = "DEBUG"
+LOGGER_LEVEL = os.environ.get('LOGGER_LEVEL', 'WARN')
 
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+
     'formatters': {
+
         'timestamped': {
             'format': ' [%(asctime)s: %(levelname)s/%(processName)s] %(message)s'
-           # 'format': '%(asctime)s-%(filename)s-%(lineno)s-%(levelname)s: %(message)s'
+            # 'format': '%(asctime)s-%(filename)s-%(lineno)s-%(levelname)s: %(message)s'
         },
+
     },
 
     'handlers': {
-    'file': {
-    'class': 'logging.handlers.FileHandler',
-    # 'class': 'logging.handlers.RotatingFileHandler',
-    'filename': '/logs/chiminey.log',
-    'formatter': 'timestamped',
-            'maxBytes': 1024 * 1024 * 100,  # 100 mb
-            'backupCount': 2
+
+        'default': {
+            'class':'logging.StreamHandler',
+            'formatter': 'timestamped'
             },
+
+        'file': {
+            'class': 'logging.FileHandler',
+            'filename': os.path.join("/logs", os.environ.get('CHIMINEY_LOG_FILE', 'chiminey.log')),
+            'formatter': 'timestamped',
+            # 'maxBytes': 1024 * 1024 * 100,  # 100 mb
+            # 'backupCount': 4
+            },
+
+        'rotatingfile': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join("/logs", os.environ.get('CHIMINEY_LOG_FILE', 'chiminey.log')),
+            'formatter': 'timestamped',
+                         'maxBytes': 1024 * 1024 * 100,  # 100 mb
+                         'backupCount': 4
+            },
+
+
     },
+
     'loggers': {
 
-    # 'chiminey': {
-    # 'level': LOGGER_LEVEL,
-    # #'handlers': ['file'],
-    # },
-    'chiminey.smartconnectorscheduler': {
-    'level': LOGGER_LEVEL,
-    #'handlers': ['file'],
-    },
-    'chiminey.sshconnection': {
-    'level': LOGGER_LEVEL,
-    #'handlers': ['file'],
-    },
-    'chiminey.platform': {
-    'level': LOGGER_LEVEL,
-    #'handlers': ['file'],
-    },
-    'chiminey.cloudconnection': {
-    'level': LOGGER_LEVEL,
-    #'handlers': ['file'],
-    },
-    'chiminey.reliabilityframework': {
-    'level': LOGGER_LEVEL,
-    #'handlers': ['file'],
-    },
-    'chiminey.simpleui': {
-    'level': LOGGER_LEVEL,
-    #'handlers': ['file'],
-    },
-    'chiminey.mytardis': {
-    'level': LOGGER_LEVEL,
-    #'handlers': ['file'],
-    },
-    'chiminey.simpleui.wizard': {
-    'level': LOGGER_LEVEL,
-    #'handlers': ['file'],
-    },
-    'chiminey.storage': {
-    'level': LOGGER_LEVEL,
-    #'handlers': ['file'],
-    },
-    'chiminey.sshconnector': {
-    'level': LOGGER_LEVEL,
-    #'handlers': ['file'],
-    },
-    'chiminey.core': {
-    'level': LOGGER_LEVEL,
-    #'handlers': ['file'],
-    },
-    # 'chiminey.smartconnectorscheduler.tasks': {
-    # 'level': LOGGER_LEVEL,
-    # #'handlers': ['file'],
-    # },
-    'celery.task': {
-    'level': 'ERROR',
-    #'handlers': ['file'],
-    },
-    'django.db.backends': {
-    'level': 'ERROR',
-    #'handlers': ['file'],
-    },
-    'south': {
-     'level': LOGGER_LEVEL,
-     #'handlers': ['file'],
+        'chiminey': {
+            'level': LOGGER_LEVEL,
+            'handlers': ['default'],
+        },
+        'chiminey.smartconnectorscheduler': {
+            'level': LOGGER_LEVEL,
+            'handlers': ['default'],
+        },
+        'chiminey.sshconnection': {
+            'level': LOGGER_LEVEL,
+            'handlers': ['default'],
+            },
+        'chiminey.platform': {
+            'level': LOGGER_LEVEL,
+            'handlers': ['default'],
+            },
+        'chiminey.cloudconnection': {
+            'level': LOGGER_LEVEL,
+            'handlers': ['default'],
+            },
+        'chiminey.reliabilityframework': {
+            'level': LOGGER_LEVEL,
+            'handlers': ['default'],
+            },
+        'chiminey.simpleui': {
+            'level': LOGGER_LEVEL,
+            'handlers': ['default'],
+            },
+        'chiminey.mytardis': {
+            'level': LOGGER_LEVEL,
+            'handlers': ['default'],
+            },
+        'chiminey.simpleui.wizard': {
+            'level': LOGGER_LEVEL,
+            'handlers': ['default'],
+            },
+        'chiminey.storage': {
+            'level': LOGGER_LEVEL,
+            'handlers': ['default'],
+            },
+        'chiminey.sshconnector': {
+            'level': LOGGER_LEVEL,
+            'handlers': ['default'],
+            },
+        'chiminey.core': {
+            'level': LOGGER_LEVEL,
+            'handlers': ['default'],
+            },
+        'chiminey.smartconnectorscheduler.tasks': {
+            'level': 'INFO',
+            'handlers': ['default'],
+            },
+        'celery.task': {
+            'level': 'ERROR',
+            'handlers': ['default'],
+            },
+        'django.db.backends': {
+            'level': 'ERROR',
+            'handlers': ['default'],
+            },
+        'south': {
+            'level': LOGGER_LEVEL,
+            'handlers': ['default'],
+            },
+    }
+}
 
-    },
-    }
-    }
 
 TASTYPIE_DEFAULT_FORMATS = ['json']
 
@@ -413,9 +434,9 @@ PLATFORM_CLASSES = (
     'chiminey.platform.cloud.CloudPlatform',
     'chiminey.platform.jenkins.JenkinsPlatform',
     'chiminey.platform.mytardis.MyTardisPlatform',
-    )
+     )
 
-
-
+from pprint import pformat
+print pformat(LOGGING)
 
 djcelery.setup_loader()
