@@ -131,7 +131,12 @@ SMART_CONNECTORS = {'randunix': {'init': 'chiminey.examples.randnumunix.initiali
                     'hrmc': {'init': 'chiminey.examples.hrmc2.initialise.HRMCInitial',
                              'name': 'hrmc',
                              'description': 'hrmc',
-                             'payload': '/opt/chiminey/current/chiminey/examples/hrmc2/payload_hrm'
+                             'payload': '/opt/chiminey/current/chiminey/examples/hrmc2/payload_hrmc'
+                             },
+                    'hrmclight': {'init': 'chiminey.examples.hrmclight.initialise.HRMCInitial',
+                             'name': 'hrmclight',
+                             'description': 'hrmc without psd',
+                             'payload': '/opt/chiminey/current/chiminey/examples/hrmclight/payload_hrmc'
                              },
                     'tutorial': {'init': 'chiminey.examples.tutorial.initialise.TutorialInitial',
                                  'name': 'tutorial',
@@ -140,7 +145,7 @@ SMART_CONNECTORS = {'randunix': {'init': 'chiminey.examples.randnumunix.initiali
                                 }
                     }
 
-PAYLOAD_DESTINATION = '/var/chiminey/remotesys/my_payloads/'
+PAYLOAD_DESTINATION = 'active_payloads'
 
 SCHEMA_ROOT = "http://rmit.edu.au/schemas"
 

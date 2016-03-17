@@ -50,11 +50,13 @@ class Command(BaseCommand):
             current_sm = django_settings.SMART_CONNECTORS[args[0]]
             print current_sm['init'], current_sm['name'], current_sm['description']
             if current_sm['payload']:
-                destination = os.path.join(django_settings.PAYLOAD_DESTINATION, os.path.basename(current_sm['payload']))
+                destination = os.path.join(django_settings.LOCAL_FILESYS_ROOT_PATH,
+                                           django_settings.PAYLOAD_DESTINATION,
+                                           'payload_%s' % current_sm['name'])
                 print destination
                 print django_settings.PAYLOAD_DESTINATION
-                copy_tree(current_sm['payload'],
-                         destination)
+                copy_tree('/opt/chiminey/current/chiminey/PAYLOAD_ROOT', destination)
+                copy_tree(current_sm['payload'], destination)
             self.setup(current_sm['init'], current_sm['name'], current_sm['description'])
             print "done"
 
