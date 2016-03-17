@@ -64,11 +64,11 @@ class HRMCInitial(CoreInitial):
             }
         return {'package': package, 'settings': settings}
 
-    def get_updated_transform_params(self):
-        return {'package': "chiminey.examples.hrmc2.hrmctransform.HRMCTransform"}
+    #def get_updated_transform_params(self):
+    #    return {'package': "chiminey.examples.hrmc2.hrmctransform.HRMCTransform"}
 
-    def get_updated_converge_params(self):
-        return {'package': "chiminey.examples.hrmc2.hrmcconverge.HRMCConverge"}
+    #def get_updated_converge_params(self):
+    #    return {'package': "chiminey.examples.hrmc2.hrmcconverge.HRMCConverge"}
 
     def get_ui_schema_namespace(self):
         RMIT_SCHEMA = "http://rmit.edu.au/schemas"
