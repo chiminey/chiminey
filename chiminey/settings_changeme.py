@@ -126,15 +126,29 @@ MIDDLEWARE_CLASSES = (
 SMART_CONNECTORS = {'randunix': {'init': 'chiminey.examples.randnumunix.initialise.RandInitial',
                                  'name': 'randunix',
                                  'description': 'my descrip...',
-                                 'payload': ''},
+                                 'payload': ''
+                                 },
                     'hrmc': {'init': 'chiminey.examples.hrmc2.initialise.HRMCInitial',
                              'name': 'hrmc',
                              'description': 'hrmc',
-                             'payload': '/opt/chiminey/current/chiminey/examples/hrmc2/payload_hrm'}
+                             'payload': '/opt/chiminey/current/chiminey/examples/hrmc2/payload_hrm'
+                             },
+                    'tutorial': {'init': 'chiminey.examples.tutorial.initialise.TutorialInitial',
+                                 'name': 'tutorial',
+                                 'description': 'tutorial smart connector',
+                                 'payload': ''
+                                }
                     }
 
 PAYLOAD_DESTINATION = '/var/chiminey/remotesys/my_payloads/'
 
+SCHEMA_ROOT = "http://rmit.edu.au/schemas"
+
+COMPUTE_RESOURCES = {'cloud': SCHEMA_ROOT + "/input/system/compplatform/cloud",
+                     'unix': SCHEMA_ROOT + "/input/system/compplatform/unix"
+                      }
+
+STORAGE_RESOURCES = {'unix': SCHEMA_ROOT + "/input/location/output"}
 
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
@@ -419,4 +433,3 @@ PLATFORM_CLASSES = (
 
 
 djcelery.setup_loader()
-

@@ -1,0 +1,1 @@
+#This is the default smart connector payload
