@@ -145,15 +145,19 @@ SMART_CONNECTORS = {'randunix': {'init': 'chiminey.examples.randnumunix.initiali
                                 }
                     }
 
+SCHEMA_PREFIX = "http://rmit.edu.au/schemas"
+
 PAYLOAD_DESTINATION = 'active_payloads'
 
-SCHEMA_ROOT = "http://rmit.edu.au/schemas"
 
-COMPUTE_RESOURCES = {'cloud': SCHEMA_ROOT + "/input/system/compplatform/cloud",
-                     'unix': SCHEMA_ROOT + "/input/system/compplatform/unix"
-                      }
-
-STORAGE_RESOURCES = {'unix': SCHEMA_ROOT + "/input/location/output"}
+INPUT_FIELDS =  {'cloud': SCHEMA_PREFIX + "/input/system/compplatform/cloud",
+                 'unix': SCHEMA_PREFIX + "/input/system/compplatform/unix",
+                 'reliability': SCHEMA_PREFIX + "/input/reliability",
+                 'location':  SCHEMA_PREFIX + "/input/location",
+                 'output_location': SCHEMA_PREFIX + "/input/location/output",
+                 'input_location':  SCHEMA_PREFIX + "/input/location/input",
+                 'hrmc':  SCHEMA_PREFIX + "/input/hrmc"
+                 }
 
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
@@ -414,7 +418,7 @@ CELERY_ROUTES = {
 },
 }
 
-SCHEMA_PREFIX = "http://rmit.edu.au/schemas"
+
 COMPUTATION_PLATFORM_SCHEMA_NAMESPACE = \
     {SCHEMA_PREFIX + '/input/system/compplatform/cloud': '/cloud/ec2-based',
      SCHEMA_PREFIX + '/input/system/compplatform/unix': '/cluster/pbs_based'

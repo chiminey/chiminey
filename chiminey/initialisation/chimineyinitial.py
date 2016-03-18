@@ -488,7 +488,7 @@ def _get_chiminey_schemas():
              }
             ],
         u'http://rmit.edu.au/schemas/input/system/compplatform':
-            [u'Compute Resource',
+            [u'Unix/Cluster Compute Resource',
              {
                  u'computation_platform': {'type': models.ParameterName.STRLIST, 'subtype': 'platform',
                                            'initial': '', 'description': 'Compute Resource Name', 'ranking': 0,
@@ -496,11 +496,16 @@ def _get_chiminey_schemas():
              }
             ],
         u'http://rmit.edu.au/schemas/input/system/compplatform/cloud':
-            [u'Compute Resource',
+            [u'Cloud Compute Resource',
              {
                  u'computation_platform': {'type': models.ParameterName.STRLIST, 'subtype': 'platform',
                                            'initial': '', 'description': 'Compute Resource Name', 'ranking': 0,
                                            'help_text': 'The name of the computation platform to be used'},
+                 u'number_vm_instances': {'type': models.ParameterName.NUMERIC, 'subtype': 'whole', 'initial': 4,
+                                          'description': 'Number of VM instances', 'ranking': 1, 'help_text': ''},
+                 u'minimum_number_vm_instances': {'type': models.ParameterName.NUMERIC, 'subtype': 'whole',
+                                                  'initial': 1, 'description': 'Minimum No. VMs', 'ranking': 2,
+                                                  'help_text': ''},
              }
             ],
 

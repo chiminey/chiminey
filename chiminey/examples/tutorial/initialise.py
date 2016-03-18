@@ -1,5 +1,5 @@
 from chiminey.initialisation import CoreInitial
-from chiminey.settings import COMPUTE_RESOURCES, STORAGE_RESOURCES
+from chiminey.settings import INPUT_FIELDS
 
 class TutorialInitial(CoreInitial):
 
@@ -8,5 +8,5 @@ class TutorialInitial(CoreInitial):
 
 
     def get_ui_schema_namespace(self):
-        ui_construct = [COMPUTE_RESOURCES['unix'], STORAGE_RESOURCES['unix']]
+        ui_construct = [INPUT_FIELDS['unix'], INPUT_FIELDS['output_location']]
         return ui_construct

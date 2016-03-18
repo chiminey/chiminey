@@ -21,6 +21,8 @@
 import logging
 from chiminey.smartconnectorscheduler import models
 from chiminey.initialisation import CoreInitial
+from django.conf import settings as django_settings
+
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +32,6 @@ class HRMCInitial(CoreInitial):
         return {'package': "chiminey.examples.hrmc2.hrmcparent.HRMCParent"}
 
     def get_updated_configure_params(self):
-        package = "chiminey.examples.hrmc2.hrmcconfigure.HRMCConfigure"
         settings = \
             {
             u'http://rmit.edu.au/schemas/system':
@@ -38,14 +39,14 @@ class HRMCInitial(CoreInitial):
                     u'random_numbers': 'file://127.0.0.1/randomnums.txt'
                 },
         }
-        return {'package': package, 'settings': settings}
+        return { 'settings': settings}
 
     def get_updated_bootstrap_params(self):
         settings = \
             {
                 u'http://rmit.edu.au/schemas/stages/setup':
                     {
-                        u'payload_source': 'active_payloads/payload_hrmclight',
+                        u'payload_source': '%s/payload_hrmclight' % (django_settings.PAYLOAD_DESTINATION),
                         u'payload_destination': 'celery_payload_2',
                         u'payload_name': 'process_payload',
                         u'filename_for_PIDs': 'PIDs_collections',
@@ -64,28 +65,25 @@ class HRMCInitial(CoreInitial):
             }
         return {'package': package, 'settings': settings}
 
-    #def get_updated_transform_params(self):
-    #    return {'package': "chiminey.examples.hrmc2.hrmctransform.HRMCTransform"}
-
-    #def get_updated_converge_params(self):
-    #    return {'package': "chiminey.examples.hrmc2.hrmcconverge.HRMCConverge"}
 
     def get_ui_schema_namespace(self):
-        RMIT_SCHEMA = "http://rmit.edu.au/schemas"
         schemas = [
-                RMIT_SCHEMA + "/input/system/compplatform/cloud",
-                RMIT_SCHEMA + "/input/system/cloud",
-                RMIT_SCHEMA + "/input/reliability",
-                RMIT_SCHEMA + "/input/system",
-                RMIT_SCHEMA + "/input/hrmc",
-                RMIT_SCHEMA + "/input/mytardis",
+                django_settings.INPUT_FIELDS['cloud'],
+                #RMIT_SCHEMA + "/input/system/cloud",
+                #RMIT_SCHEMA + "/input/reliability",
+                django_settings.INPUT_FIELDS['location'],
+                django_settings.INPUT_FIELDS['hrmc'],
+                django_settings.INPUT_FIELDS['reliability'],
+                #RMIT_SCHEMA + "/input/system",
+
+                #RMIT_SCHEMA + "/input/hrmc",
                 ]
         return schemas
 
     def get_domain_specific_schemas(self):
         schema_data = {
-            u'http://rmit.edu.au/schemas/input/hrmc':
-            [u'HRMC Smart Connector',
+            u'%s/input/hrmc' % django_settings.SCHEMA_PREFIX:
+            [u'HRMCLight Smart Connector',
              {
                  u'iseed': {'type': models.ParameterName.NUMERIC, 'subtype': 'natural',
                             'description': 'Random Number Seed', 'ranking': 0, 'initial': 42,
