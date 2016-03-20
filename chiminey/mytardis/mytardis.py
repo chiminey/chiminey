@@ -403,8 +403,11 @@ def create_dataset(settings,
                 source_scheme, os.path.join(source_location, fname), args)
             logger.debug('source_file_url=%s' % source_file_url)
 
+            # TODO: add retrying to this operation.
             source_file = storage.get_filep(source_file_url, sftp_reference=False)
-            logger.debug('source_file=%s' % source_file._name)
+
+
+            #logger.debug('source_file=%s' % source_file._name)
 
             # we have load contents locally at least once.
             f_contents = source_file.read()
@@ -755,6 +758,3 @@ def _post_datafile(dest_url, content):
     # logger.debug("r.js=%s" % r.json)
     # logger.debug("r.te=%s" % r.text)
     # logger.debug("r.he=%s" % r.headers)
-
-
-
