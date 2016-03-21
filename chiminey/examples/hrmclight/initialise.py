@@ -51,6 +51,7 @@ class HRMCInitial(CoreInitial):
                 ]
         return schemas
 
+#TODO backward compatability issue
     def get_domain_specific_schemas(self):
         #schema_data = #{
             #u'%s/input/hrmclight' % django_settings.SCHEMA_PREFIX:

@@ -138,24 +138,32 @@ class CoreInitial(object):
         configure_stage.update_settings(default_params['settings'])
         return configure_stage
 
+    def get_default_setting(self, namespace):
+        setting = {}
+        schema = models.Schema.objects.get(namespace=namespace)
+        params = models.ParameterName.objects.filter(schema=schema)
+        for i in params:
+            if i.initial:
+                setting[i.name] = i.initial
+        return setting
+
+
     def _get_default_bootstrap_params(self):
         package = "chiminey.corestages.bootstrap.Bootstrap"
         name = "bootstrap"
         description = "This is the bootstrap stage"
-        settings = \
-            {
-                u'http://rmit.edu.au/schemas/stages/setup':
-                    {
-                        u'payload_source': '%s/payload_%s' % (
-                            django_settings.PAYLOAD_DESTINATION, self.directive_name),
-                    },
-            }
+        default_setting = self.get_default_setting(
+                'http://rmit.edu.au/schemas/stages/setup')
+        default_setting[u'payload_source'] = '%s/payload_%s' % (
+                            django_settings.PAYLOAD_DESTINATION, self.directive_name)
+        updated_settings = {u'http://rmit.edu.au/schemas/stages/setup': default_setting}
         params = {'package': package, 'name': name,
-                  'description': description, 'settings': settings}
+                  'description': description, 'settings': updated_settings}
         return params
 
     def get_updated_bootstrap_params(self):
         return {}
+
 
     def _define_bootstrap_stage(self):
         default_params = self._get_default_bootstrap_params()
@@ -203,8 +211,11 @@ class CoreInitial(object):
         package = "chiminey.corestages.execute.Execute"
         name = 'execute'
         description = "This is the execute stage"
+        default_setting = self.get_default_setting(
+                'http://rmit.edu.au/schemas/stages/run')
+        updated_settings = {u'http://rmit.edu.au/schemas/stages/run': default_setting}
         params = {'package': package, 'name': name,
-                  'description': description, 'settings': {}}
+                  'description': description, 'settings': updated_settings}
         return params
 
     def get_updated_execute_params(self):
