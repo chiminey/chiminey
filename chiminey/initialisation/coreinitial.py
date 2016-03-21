@@ -362,16 +362,10 @@ class CoreInitial(object):
         self.directive_name = directive_name
         if not description:
             description = '%s Smart Connector' % self.directive_name
-        register_schemas(self.get_domain_specific_schemas())
-        '''
-        input_schema_namespace = ''
-        if not self.get_domain_specific_schemas():
-            input_schema_namespace = self.get_domain_specific_schemas().keys()[0]
-        '''
+        register_schemas(self._get_domain_specific_schemas())
         parent_stage = self.assemble_stages()
         directive, _ = models.Directive.objects.get_or_create(
             name=self.directive_name,
-            #input_schema_namespace=input_schema_namespace,
             defaults={'stage': parent_stage,
                       'description': description,
                       'hidden': sweep,}
@@ -426,6 +420,15 @@ class CoreInitial(object):
     @abc.abstractmethod
     def get_ui_schema_namespace(self):
         return ''
+
+
+    def _get_domain_specific_schemas(self):
+        schema = self.get_domain_specific_schemas()
+        if schema:
+            namespace = u'%s/input/%s' % (django_settings.SCHEMA_PREFIX,
+                                         self.directive_name)
+            schema = {namespace: schema}
+        return schema
 
     def get_domain_specific_schemas(self):
         return ''

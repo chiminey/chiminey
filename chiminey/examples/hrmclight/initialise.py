@@ -52,9 +52,9 @@ class HRMCInitial(CoreInitial):
         return schemas
 
     def get_domain_specific_schemas(self):
-        schema_data = {
-            u'%s/input/hrmclight' % django_settings.SCHEMA_PREFIX:
-            [u'HRMCLight Smart Connector',
+        #schema_data = #{
+            #u'%s/input/hrmclight' % django_settings.SCHEMA_PREFIX:
+        schema_data =  [u'HRMCLight Smart Connector',
              {
                  u'iseed': {'type': models.ParameterName.NUMERIC, 'subtype': 'natural',
                             'description': 'Random Number Seed', 'ranking': 0, 'initial': 42,
@@ -82,8 +82,8 @@ class HRMCInitial(CoreInitial):
                                     'description': 'Maximum no. iterations', 'ranking': 72, 'initial': 10,
                                     'help_text': 'Computation ends when either convergence or maximum iteration reached'},
              }
-            ],
-        }
+            ]
+        #}
         return schema_data
 
     def get_updated_sweep_params(self, subdirective):
