@@ -25,14 +25,13 @@ from itertools import product
 from chiminey.runsettings import getval, SettingNotFoundException
 from chiminey.storage import get_url_with_credentials, list_dirs
 from chiminey.corestages.stage import Stage
+from django.conf import settings as django_settings
 
 
 logger = logging.getLogger(__name__)
 
 
 class Parent(Stage):
-
-    SCHEMA_PREFIX = "http://rmit.edu.au/schemas"
     """
         A list of corestages
     """
@@ -109,7 +108,7 @@ class Parent(Stage):
         job_dir = kwargs['job_dir']
 
         try:
-            id = getval(run_settings, '%s/system/id' % self.SCHEMA_PREFIX)
+            id = getval(run_settings, '%s/system/id' % django_settings.SCHEMA_PREFIX)
         except SettingNotFoundException as e:
             logger.error(e)
             id = 0

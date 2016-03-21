@@ -44,7 +44,9 @@ from contextlib import contextmanager
 logger = logging.getLogger(__name__)
 
 
-RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+from django.conf import settings as django_settings
+
+RMIT_SCHEMA = django_settings.SCHEMA_PREFIX
 FIRST_ITERATION_DIR = "input_0"
 SUBDIRECTIVE_DIR = "run%(run_counter)s"
 

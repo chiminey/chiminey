@@ -33,8 +33,9 @@ from chiminey import messages
 
 logger = logging.getLogger(__name__)
 
-RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+from django.conf import settings as django_settings
 
+RMIT_SCHEMA = django_settings.SCHEMA_PREFIX
 
 # DOMAIN_INPUT_FILES = ['input_bo.dat', 'input_gr.dat', 'input_sq.dat']
 

@@ -39,9 +39,12 @@ from chiminey import storage
 from chiminey import messages
 from chiminey.sshconnection import open_connection
 from chiminey.compute import run_make
+from django.conf import settings as django_settings
 
 from chiminey.runsettings import getval, setvals, getvals, update, SettingNotFoundException
 from chiminey.storage import get_url_with_credentials, list_dirs, get_make_path
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -50,7 +53,7 @@ class Execute(stage.Stage):
     Start application on nodes and return status
     """
 
-    SCHEMA_PREFIX = "http://rmit.edu.au/schemas"
+    SCHEMA_PREFIX = django_settings.SCHEMA_PREFIX
     VALUES_FNAME = "values"
 
     def __init__(self, user_settings=None):

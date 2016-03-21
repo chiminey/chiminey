@@ -29,11 +29,12 @@ from chiminey.corestages import strategies
 from django.conf import settings as django_settings
 from chiminey.smartconnectorscheduler import jobs
 from django.core.exceptions import ImproperlyConfigured
+from django.conf import settings as django_settings
 
+RMIT_SCHEMA = django_settings.SCHEMA_PREFIX
 
 logger = logging.getLogger(__name__)
 
-RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
 
 class Bootstrap(Stage):

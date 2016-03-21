@@ -33,7 +33,7 @@ from chiminey.smartconnectorscheduler import jobs
 from chiminey.smartconnectorscheduler import models
 
 
-RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+RMIT_SCHEMA = django_settings.SCHEMA_PREFIX
 
 logger = logging.getLogger(__name__)
 

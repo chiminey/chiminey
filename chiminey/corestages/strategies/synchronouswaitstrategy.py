@@ -20,9 +20,11 @@
 
 import logging
 from chiminey.corestages.strategies.strategy import Strategy
+from django.conf import settings as django_settings
+
 
 logger = logging.getLogger(__name__)
-RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+RMIT_SCHEMA = django_settings.SCHEMA_PREFIX
 
 class SynchronousWaitStrategy(Strategy):
     def is_job_finished(self, wait_class, ip_address, process_id, retry_left, settings, relative_path_suffix):

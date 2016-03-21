@@ -20,9 +20,10 @@
 
 from chiminey import messages
 from chiminey.runsettings import update, SettingNotFoundException, getval
+from django.conf import settings as django_settings
 
 
-RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+RMIT_SCHEMA = django_settings.SCHEMA_PREFIX
 
 class Strategy(object):
     def get_iteration_id(self, run_settings):

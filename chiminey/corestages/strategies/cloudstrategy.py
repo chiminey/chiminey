@@ -27,9 +27,11 @@ from chiminey import messages
 from chiminey.runsettings import SettingNotFoundException, getval, update
 from chiminey.corestages.strategies import cloudschedulestrategy as schedule
 from chiminey.corestages.strategies import cloudbootstrapstrategy as bootstrap
+from django.conf import settings as django_settings
+
 
 logger = logging.getLogger(__name__)
-RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+RMIT_SCHEMA = django_settings.SCHEMA_PREFIX
 
 
 class CloudStrategy(Strategy):

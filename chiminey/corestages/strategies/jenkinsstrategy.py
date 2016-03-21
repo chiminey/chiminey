@@ -20,8 +20,10 @@
 
 from chiminey import messages
 from chiminey.runsettings import update
+from django.conf import settings as django_settings
 
-RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+
+RMIT_SCHEMA = django_settings.SCHEMA_PREFIX
 
 class JenkinsStrategy(object):
     def set_create_settings(self, run_settings, local_settings):

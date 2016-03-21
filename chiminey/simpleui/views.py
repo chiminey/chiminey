@@ -62,11 +62,13 @@ from chiminey.smartconnectorscheduler import models
 from chiminey.smartconnectorscheduler.errors import deprecated
 
 logger = logging.getLogger(__name__)
-RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+from django.conf import settings as django_settings
+
+RMIT_SCHEMA = django_settings.SCHEMA_PREFIX
+
 POPPED_KEYS = ['filters', 'private_key_path', 'operation', 'vm_image_size', 'name']
 
-from django.conf import settings
-api_host = settings.APIHOST
+api_host = django_settings.APIHOST
 
 
 subtype_validation = {
@@ -906,9 +908,8 @@ def make_dynamic_field(parameter, **kwargs):
                     #logger.debug("computation platform is %s" % directive_name)
                     namespace = kwargs['namespace']
                     schema = RMIT_SCHEMA + '/platform/computation'
-                    from django.conf import settings
                     try:
-                        schema += settings.COMPUTATION_PLATFORM_SCHEMA_NAMESPACE[namespace]
+                        schema += django_settings.COMPUTATION_PLATFORM_SCHEMA_NAMESPACE[namespace]
                     except KeyError:
                         logger.warn("unknown computation platform")
 

@@ -29,7 +29,9 @@ from chiminey.smartconnectorscheduler.models import ParameterName, Schema
 
 from chiminey.simpleui.views import get_subtype_as_choices
 
-RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+from django.conf import settings as django_settings
+
+RMIT_SCHEMA = django_settings.SCHEMA_PREFIX
 
 
 def unix_find(pathin):

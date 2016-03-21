@@ -25,8 +25,7 @@ from chiminey.initialisation.chimineyinitial import register_schemas
 from django.conf import settings as django_settings
 
 
-RMIT_SCHEMA = "http://rmit.edu.au/schemas"
-SWEEP_SCHEMA = RMIT_SCHEMA + "/input/sweep"
+SWEEP_SCHEMA = django_settings.SCHEMA_PREFIX + "/input/sweep"
 logger = logging.getLogger(__name__)
 
 
@@ -76,7 +75,7 @@ class CoreInitial(object):
         package = "chiminey.corestages.create.Create"
         name = "create"
         description = "This is the create stage"
-        settings = {u'http://rmit.edu.au/schemas/stages/create':
+        settings = {u'%s/create' % django_settings.SCHEMA_PREFIX:
                 {
                     u'vm_size': "m1.small",
                     u'vm_image': "ami-0000000d",
@@ -112,7 +111,7 @@ class CoreInitial(object):
         package = "chiminey.corestages.configure.Configure"
         name = "configure"
         description = "This is the configure stage"
-        settings = {u'http://rmit.edu.au/schemas/system':
+        settings = {u'%s/system' % django_settings.SCHEMA_PREFIX:
                     {
                     u'random_numbers': 'file://127.0.0.1/randomnums.txt'
                     },
@@ -153,10 +152,11 @@ class CoreInitial(object):
         name = "bootstrap"
         description = "This is the bootstrap stage"
         default_setting = self.get_default_setting(
-                'http://rmit.edu.au/schemas/stages/setup')
+                '%s/stages/setup' % django_settings.SCHEMA_PREFIX)
         default_setting[u'payload_source'] = '%s/payload_%s' % (
                             django_settings.PAYLOAD_DESTINATION, self.directive_name)
-        updated_settings = {u'http://rmit.edu.au/schemas/stages/setup': default_setting}
+        updated_settings = {u'%s/stages/setup' % django_settings.SCHEMA_PREFIX:
+                                default_setting}
         params = {'package': package, 'name': name,
                   'description': description, 'settings': updated_settings}
         return params
@@ -212,8 +212,9 @@ class CoreInitial(object):
         name = 'execute'
         description = "This is the execute stage"
         default_setting = self.get_default_setting(
-                'http://rmit.edu.au/schemas/stages/run')
-        updated_settings = {u'http://rmit.edu.au/schemas/stages/run': default_setting}
+                '%s/stages/run' % django_settings.SCHEMA_PREFIX)
+        updated_settings = {u'%s/stages/run' % django_settings.SCHEMA_PREFIX:
+                                default_setting}
         params = {'package': package, 'name': name,
                   'description': description, 'settings': updated_settings}
         return params
@@ -345,7 +346,7 @@ class CoreInitial(object):
         description = "This is the sweep stage of %s smart connector" % subdirective.name
         settings = \
             {
-            u'http://rmit.edu.au/schemas/stages/sweep':
+            u'%s/stages/sweep' % django_settings.SCHEMA_PREFIX:
             {
                 u'directive': subdirective.name
             }

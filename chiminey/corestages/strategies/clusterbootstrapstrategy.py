@@ -29,10 +29,11 @@ from chiminey.storage import get_url_with_credentials, copy_directories, get_mak
 from chiminey.sshconnection import open_connection
 from chiminey.compute import run_command_with_status, run_make
 from chiminey.cloudconnection import NoRegisteredVMError
+from django.conf import settings as django_settings
 
 
 logger = logging.getLogger(__name__)
-RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+RMIT_SCHEMA = django_settings.SCHEMA_PREFIX
 
 
 def set_bootstrap_settings(run_settings, local_settings):

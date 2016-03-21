@@ -27,9 +27,11 @@ from chiminey.storage import get_url_with_credentials, get_make_path, put_file
 from chiminey.sshconnection import open_connection
 from chiminey.compute import run_command_with_status
 from chiminey import messages
+from django.conf import settings as django_settings
+
 
 logger = logging.getLogger(__name__)
-RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+RMIT_SCHEMA = django_settings.SCHEMA_PREFIX
 
 
 def set_schedule_settings(run_settings, local_settings):
