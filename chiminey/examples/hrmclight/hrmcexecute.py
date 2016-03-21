@@ -31,7 +31,9 @@ logger = logging.getLogger(__name__)
 
 
 class HRMCExecute(Execute):
+       pass
 
+'''
     def set_domain_settings(self, run_settings, local_settings):
         update(local_settings, run_settings,
                '%s/input/hrmc/iseed' % self.SCHEMA_PREFIX,
@@ -43,3 +45,4 @@ class HRMCExecute(Execute):
                '%s/input/hrmc/threshold' % self.SCHEMA_PREFIX,
                '%s/input/hrmc/pottype' % self.SCHEMA_PREFIX,
                '%s/system/max_seed_int' % self.SCHEMA_PREFIX,)
+'''

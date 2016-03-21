@@ -22,6 +22,8 @@ import logging
 import abc
 from chiminey.smartconnectorscheduler import models
 from chiminey.initialisation.chimineyinitial import register_schemas
+from django.conf import settings as django_settings
+
 
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 SWEEP_SCHEMA = RMIT_SCHEMA + "/input/sweep"
@@ -144,7 +146,8 @@ class CoreInitial(object):
             {
                 u'http://rmit.edu.au/schemas/stages/setup':
                     {
-                        u'payload_source': '',
+                        u'payload_source': '%s/payload_%s' % (
+                            django_settings.PAYLOAD_DESTINATION, self.directive_name),
                     },
             }
         params = {'package': package, 'name': name,
@@ -165,16 +168,6 @@ class CoreInitial(object):
             parent=self._define_parent_stage(),
             package=bootstrap_package,
             order=20)
-        fixed_settings = \
-            {
-                u'http://rmit.edu.au/schemas/stages/setup':
-                    {
-                        u'payload_destination': 'chiminey_payload',
-                        u'payload_name': 'process_payload',
-                        u'filename_for_PIDs': 'PIDs_collections',
-                    },
-            }
-        bootstrap_stage.update_settings(fixed_settings)
         bootstrap_stage.update_settings(default_params['settings'])
 
         return bootstrap_stage
@@ -210,13 +203,8 @@ class CoreInitial(object):
         package = "chiminey.corestages.execute.Execute"
         name = 'execute'
         description = "This is the execute stage"
-        settings = {u'http://rmit.edu.au/schemas/stages/run':
-                    {
-                        u'process_output_dirname': 'chiminey',
-                    },
-                   }
         params = {'package': package, 'name': name,
-                  'description': description, 'settings': settings}
+                  'description': description, 'settings': {}}
         return params
 
     def get_updated_execute_params(self):
@@ -375,12 +363,18 @@ class CoreInitial(object):
         if not description:
             description = '%s Smart Connector' % self.directive_name
         register_schemas(self.get_domain_specific_schemas())
+        '''
+        input_schema_namespace = ''
+        if not self.get_domain_specific_schemas():
+            input_schema_namespace = self.get_domain_specific_schemas().keys()[0]
+        '''
         parent_stage = self.assemble_stages()
         directive, _ = models.Directive.objects.get_or_create(
             name=self.directive_name,
+            #input_schema_namespace=input_schema_namespace,
             defaults={'stage': parent_stage,
                       'description': description,
-                      'hidden': sweep}
+                      'hidden': sweep,}
         )
         self._attach_directive_args(directive)
         if sweep:

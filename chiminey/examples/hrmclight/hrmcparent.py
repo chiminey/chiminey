@@ -66,10 +66,10 @@ class HRMCParent(Parent):
                 rand_index = 42
                 logger.debug(e)
         update(local_settings, run_settings,
-            '%s/input/hrmc/fanout_per_kept_result' % self.SCHEMA_PREFIX,
-            '%s/input/hrmc/optimisation_scheme' % self.SCHEMA_PREFIX,
-            '%s/input/hrmc/threshold' % self.SCHEMA_PREFIX,
-            '%s/input/hrmc/pottype' % self.SCHEMA_PREFIX,
+            '%s/input/hrmclight/fanout_per_kept_result' % self.SCHEMA_PREFIX,
+            '%s/input/hrmclight/optimisation_scheme' % self.SCHEMA_PREFIX,
+            '%s/input/hrmclight/threshold' % self.SCHEMA_PREFIX,
+            '%s/input/hrmclight/pottype' % self.SCHEMA_PREFIX,
             '%s/system/max_seed_int' % self.SCHEMA_PREFIX,
             '%s/system/random_numbers' % self.SCHEMA_PREFIX,
             '%s/system/id' % self.SCHEMA_PREFIX)

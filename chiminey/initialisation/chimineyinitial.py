@@ -356,6 +356,8 @@ def _get_chiminey_schemas():
                                      'description': 'Directive name', 'ranking': 12, 'help_text': ''},
                  u'sweep_name': {'type': models.ParameterName.STRING, 'subtype': '',
                                  'description': 'Directive name', 'ranking': 12, 'help_text': ''},
+                 #u'input_schema_namespace': {'type': models.ParameterName.STRING, 'subtype': '',
+                 #                'description': 'Directive Input Schema Namespace', 'ranking': 12, 'help_text': ''},
 
              }
             ],
@@ -605,15 +607,18 @@ def _get_chiminey_schemas():
             [u'the create stage of the smartconnector1',
              {
                  u'filename_for_PIDs': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
-                                        'ranking': 5, 'help_text': ''},
+                                        'ranking': 5, 'help_text': '',
+                                        'initial': 'PIDs_collections'},
                  u'setup_finished': {'type': models.ParameterName.NUMERIC, 'subtype': '', 'description': '',
                                      'ranking': 4, 'help_text': ''},
                  u'payload_name': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
                                    'ranking': 3, 'help_text': ''},
                  u'payload_source': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
-                                     'ranking': 2, 'help_text': ''},
+                                     'ranking': 2, 'help_text': '',
+                                     'initial': 'process_payload'},
                  u'payload_destination': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
-                                          'ranking': 1, 'help_text': ''},
+                                          'ranking': 1, 'help_text': '',
+                                          'initial': 'chiminey_payload_copy'},
              }
             ],
         u'http://rmit.edu.au/schemas/stages/deploy':
@@ -673,7 +678,8 @@ def _get_chiminey_schemas():
                  u'runs_left': {'type': models.ParameterName.NUMERIC, 'subtype': '', 'description': '',
                                 'ranking': 8, 'help_text': ''},
                  u'process_output_dirname': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
-                                             'ranking': 7, 'help_text': ''},
+                                             'ranking': 7, 'help_text': '',
+                                             'initial': 'chiminey_output'},
                  u'error_nodes': {'type': models.ParameterName.NUMERIC, 'subtype': '', 'description': '',
                                   'ranking': 4, 'help_text': ''},
                  u'initial_numbfile': {'type': models.ParameterName.NUMERIC, 'subtype': '', 'description': '',

@@ -27,6 +27,7 @@ from chiminey.smartconnectorscheduler.errors import deprecated
 from chiminey.platform.manage import retrieve_platform
 from chiminey.platform import get_platform_settings
 from chiminey.runsettings import getval, SettingNotFoundException
+from django.conf import settings as django_settings
 
 RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
@@ -74,6 +75,9 @@ class Stage(object):
         platform_url = run_settings[namespace_prefix]['platform_url']
         return get_platform_settings(platform_url, bdp_username)
 
+
+    def get_input_schema_namespace(self, directive_name):
+        return '%s/input/%s' % (django_settings.SCHEMA_PREFIX, directive_name)
 
     def set_stage_settings(self, run_settings, local_settings):
         pass

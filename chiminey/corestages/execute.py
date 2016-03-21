@@ -610,4 +610,24 @@ class Execute(stage.Stage):
         return self.experiment_id
 
     def set_domain_settings(self, run_settings, local_settings):
-        pass
+        schema = models.Schema.objects.get(namespace=self.get_input_schema_namespace())
+        params = models.ParameterName.objects.filter(schema=schema)
+        if params:
+            namespace = schema.namespace
+            domain_params = [os.path.join(namespace, i.name) for i in params]
+            update(local_settings, run_settings, domain_params)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

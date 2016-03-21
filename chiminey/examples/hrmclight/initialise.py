@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 class HRMCInitial(CoreInitial):
     def get_updated_parent_params(self):
-        return {'package': "chiminey.examples.hrmc2.hrmcparent.HRMCParent"}
+        return {'package': "chiminey.examples.hrmclight.hrmcparent.HRMCParent"}
 
     def get_updated_configure_params(self):
         settings = \
@@ -41,18 +41,20 @@ class HRMCInitial(CoreInitial):
         }
         return { 'settings': settings}
 
+    '''
     def get_updated_bootstrap_params(self):
         settings = \
             {
                 u'http://rmit.edu.au/schemas/stages/setup':
                     {
                         u'payload_source': '%s/payload_hrmclight' % (django_settings.PAYLOAD_DESTINATION),
-                        u'payload_destination': 'celery_payload_2',
-                        u'payload_name': 'process_payload',
-                        u'filename_for_PIDs': 'PIDs_collections',
+                        #u'payload_destination': 'celery_payload_2',
+                        #u'payload_name': 'process_payload',
+                        #u'filename_for_PIDs': 'PIDs_collections',
                     },
             }
         return {'settings': settings}
+
 
     def get_updated_execute_params(self):
         package = "chiminey.examples.hrmc2.hrmcexecute.HRMCExecute"
@@ -64,6 +66,7 @@ class HRMCInitial(CoreInitial):
                 },
             }
         return {'package': package, 'settings': settings}
+    '''
 
 
     def get_ui_schema_namespace(self):
@@ -72,7 +75,7 @@ class HRMCInitial(CoreInitial):
                 #RMIT_SCHEMA + "/input/system/cloud",
                 #RMIT_SCHEMA + "/input/reliability",
                 django_settings.INPUT_FIELDS['location'],
-                django_settings.INPUT_FIELDS['hrmc'],
+                django_settings.INPUT_FIELDS['hrmclight'],
                 django_settings.INPUT_FIELDS['reliability'],
                 #RMIT_SCHEMA + "/input/system",
 
@@ -82,7 +85,7 @@ class HRMCInitial(CoreInitial):
 
     def get_domain_specific_schemas(self):
         schema_data = {
-            u'%s/input/hrmc' % django_settings.SCHEMA_PREFIX:
+            u'%s/input/hrmclight' % django_settings.SCHEMA_PREFIX:
             [u'HRMCLight Smart Connector',
              {
                  u'iseed': {'type': models.ParameterName.NUMERIC, 'subtype': 'natural',
