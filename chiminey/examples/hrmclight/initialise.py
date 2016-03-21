@@ -41,45 +41,13 @@ class HRMCInitial(CoreInitial):
         }
         return { 'settings': settings}
 
-    '''
-    def get_updated_bootstrap_params(self):
-        settings = \
-            {
-                u'http://rmit.edu.au/schemas/stages/setup':
-                    {
-                        u'payload_source': '%s/payload_hrmclight' % (django_settings.PAYLOAD_DESTINATION),
-                        #u'payload_destination': 'celery_payload_2',
-                        #u'payload_name': 'process_payload',
-                        #u'filename_for_PIDs': 'PIDs_collections',
-                    },
-            }
-        return {'settings': settings}
-
-
-    def get_updated_execute_params(self):
-        package = "chiminey.examples.hrmc2.hrmcexecute.HRMCExecute"
-        settings = \
-            {
-            u'http://rmit.edu.au/schemas/stages/run':
-                {
-                    u'process_output_dirname': 'HRMC2',
-                },
-            }
-        return {'package': package, 'settings': settings}
-    '''
-
 
     def get_ui_schema_namespace(self):
         schemas = [
                 django_settings.INPUT_FIELDS['cloud'],
-                #RMIT_SCHEMA + "/input/system/cloud",
-                #RMIT_SCHEMA + "/input/reliability",
                 django_settings.INPUT_FIELDS['location'],
                 django_settings.INPUT_FIELDS['hrmclight'],
                 django_settings.INPUT_FIELDS['reliability'],
-                #RMIT_SCHEMA + "/input/system",
-
-                #RMIT_SCHEMA + "/input/hrmc",
                 ]
         return schemas
 
