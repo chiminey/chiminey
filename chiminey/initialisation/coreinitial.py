@@ -75,7 +75,7 @@ class CoreInitial(object):
         package = "chiminey.corestages.create.Create"
         name = "create"
         description = "This is the create stage"
-        settings = {u'%s/create' % django_settings.SCHEMA_PREFIX:
+        settings = {u'%s/stages/create' % django_settings.SCHEMA_PREFIX:
                 {
                     u'vm_size': "m1.small",
                     u'vm_image': "ami-0000000d",
