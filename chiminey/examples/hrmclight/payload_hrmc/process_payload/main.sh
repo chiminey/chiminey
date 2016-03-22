@@ -1,5 +1,5 @@
 #!/bin/sh
 
-HRMC_PACKAGE="HRMC2"
+PROC_DESTINATION=$1
 
-cd $HRMC_PACKAGE ; ./HRMC >& output
+cd $PROC_DESTINATION ;  ./HRMC >& output
