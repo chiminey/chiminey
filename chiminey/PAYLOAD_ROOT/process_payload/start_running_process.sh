@@ -1,2 +1,2 @@
 
-sh main.sh  &  echo "$!" > "run.pid"
+sh main.sh $1 &  echo "$!" > "run.pid"
