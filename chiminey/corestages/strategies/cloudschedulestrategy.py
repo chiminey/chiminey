@@ -43,6 +43,7 @@ def set_schedule_settings(run_settings, local_settings):
             '%s/stages/setup/payload_name' % RMIT_SCHEMA,
             '%s/stages/bootstrap/bootstrapped_nodes' % RMIT_SCHEMA,
             '%s/stages/setup/payload_source' % RMIT_SCHEMA,
+            '%s/stages/setup/process_output_dirname' % RMIT_SCHEMA,
              )
     local_settings['bdp_username'] = getval(run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA)
 

@@ -299,7 +299,7 @@ class Execute(stage.Stage):
         try:
             ssh = open_connection(ip_address=ip_address, settings=settings)
             command, errs = run_make(
-                ssh, makefile_path, 'start_running_process')
+                ssh, makefile_path, 'start_running_process PROC_DESTINATION=%s' % settings['process_output_dirname'])
             logger.debug('execute_command=%s' % command
                          )
         finally:
@@ -595,7 +595,7 @@ class Execute(stage.Stage):
         update(local_settings, run_settings,
                '%s/stages/setup/payload_destination' % self.SCHEMA_PREFIX,
                '%s/stages/setup/filename_for_PIDs' % self.SCHEMA_PREFIX,
-               '%s/stages/run/process_output_dirname' % self.SCHEMA_PREFIX,
+               '%s/stages/setup/process_output_dirname' % self.SCHEMA_PREFIX,
                '%s/system/contextid' % self.SCHEMA_PREFIX,
                '%s/system/random_numbers' % self.SCHEMA_PREFIX,
                '%s/system/id' % self.SCHEMA_PREFIX

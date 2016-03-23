@@ -383,7 +383,7 @@ def retrieve_local_settings(run_settings, local_settings):
     stage.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/system/platform')
     stage.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/stages/run/process_output_dirname')
+        'http://rmit.edu.au/schemas/stages/setup/process_output_dirname')
     stage.copy_settings(local_settings, run_settings,
         '%s/system/contextid' % RMIT_SCHEMA)
     local_settings['bdp_username'] = run_settings[

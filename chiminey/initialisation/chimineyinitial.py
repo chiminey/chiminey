@@ -620,6 +620,9 @@ def _get_chiminey_schemas():
                  u'payload_destination': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
                                           'ranking': 1, 'help_text': '',
                                           'initial': 'chiminey_payload_copy'},
+                 u'process_output_dirname': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                                             'ranking': 6, 'help_text': '',
+                                             'initial': 'chiminey_output'},
              }
             ],
         u'%s/stages/deploy' % django_settings.SCHEMA_PREFIX:
@@ -678,9 +681,7 @@ def _get_chiminey_schemas():
              {
                  u'runs_left': {'type': models.ParameterName.NUMERIC, 'subtype': '', 'description': '',
                                 'ranking': 8, 'help_text': ''},
-                 u'process_output_dirname': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
-                                             'ranking': 7, 'help_text': '',
-                                             'initial': 'chiminey_output'},
+
                  u'error_nodes': {'type': models.ParameterName.NUMERIC, 'subtype': '', 'description': '',
                                   'ranking': 4, 'help_text': ''},
                  u'initial_numbfile': {'type': models.ParameterName.NUMERIC, 'subtype': '', 'description': '',
