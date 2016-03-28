@@ -156,7 +156,7 @@ $('#mytardis_6_{{forloop.counter}}').tooltip();
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                <h4 class="modal-title">Delete Storage Resource</h4>
+                <h4 class="modal-title">Remove Storage Resource</h4>
             </div>
             <div class="modal-body">
                 <form class="form-horizontal" action="{{ action }}" method="POST" id="unix_form_delete"> {% csrf_token %}
@@ -177,7 +177,7 @@ $('#mytardis_6_{{forloop.counter}}').tooltip();
                     {% for hidden in unix_form.hidden_fields %}
                         {{ hidden }}
                     {% endfor %}
-                    <button type="submit" class="btn btn-primary" onclick="submitForm('delete', 'unix_form_delete');">Delete</button>
+                    <button type="submit" class="btn btn-primary" onclick="submitForm('delete', 'unix_form_delete');">Remove</button>
                     <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                 </form>
                 <form class="form-horizontal" action="{{ action }}" method="POST" id="mytardis_form_delete"> {% csrf_token %}
@@ -199,7 +199,7 @@ $('#mytardis_6_{{forloop.counter}}').tooltip();
                         {{ hidden }}
                     {% endfor %}
 
-                    <button type="submit" class="btn btn-primary" onclick="submitForm('delete', 'mytardis_form_delete');">Delete</button>
+                    <button type="submit" class="btn btn-primary" onclick="submitForm('delete', 'mytardis_form_delete');">Remove</button>
                     <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                 </form>
             </div>
@@ -255,7 +255,7 @@ $('#mytardis_6_{{forloop.counter}}').tooltip();
                        onclick="updatePlatform('{{ paramset.items|escapejs }}', '{{ platform_type|slugify }}');">
                                 Update </a>
                   <button data-toggle="modal" href="#deleteModal" class="btn"
-                          onclick="deletePlatform('{{ paramset.items|escapejs }}', '{{ platform_type|slugify }}');">Delete</button>
+                          onclick="deletePlatform('{{ paramset.items|escapejs }}', '{{ platform_type|slugify }}');">Remove</button>
                 </td>
                 </tr>
                 {% endfor %}

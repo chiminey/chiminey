@@ -226,7 +226,7 @@ $(document).ready(function () {
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                <h4 class="modal-title">Delete Compute Resource</h4>
+                <h4 class="modal-title">Remove Compute Resource</h4>
             </div>
             <div class="modal-body">
                 <form class="form-horizontal" action="{{ action }}" method="POST" id="cloud_form_delete"> {% csrf_token %}
@@ -249,7 +249,7 @@ $(document).ready(function () {
                         {{ hidden }}
                     {% endfor %}
 
-                    <button type="submit" class="btn btn-primary" onclick="submitForm('delete', 'cloud_form_delete');">Delete</button>
+                    <button type="submit" class="btn btn-primary" onclick="submitForm('delete', 'cloud_form_delete');">Remove</button>
                     <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                 </form>
                 <form class="form-horizontal" action="{{ action }}" method="POST" id="cluster_form_delete"> {% csrf_token %}
@@ -272,7 +272,7 @@ $(document).ready(function () {
                         {{ hidden }}
                     {% endfor %}
 
-                    <button type="submit" class="btn btn-primary" onclick="submitForm('delete', 'cluster_form_delete');">Delete</button>
+                    <button type="submit" class="btn btn-primary" onclick="submitForm('delete', 'cluster_form_delete');">Remove</button>
                     <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
 
                 </form>
@@ -297,7 +297,7 @@ $(document).ready(function () {
                         {{ hidden }}
                     {% endfor %}
 
-                    <button type="submit" class="btn btn-primary" onclick="submitForm('delete', 'jenkins_form_delete');">Delete</button>
+                    <button type="submit" class="btn btn-primary" onclick="submitForm('delete', 'jenkins_form_delete');">Remove</button>
                     <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
 
                 </form>
@@ -354,7 +354,7 @@ $(document).ready(function () {
                        onclick="updatePlatform('{{ paramset.items|escapejs }}', '{{ platform_type|slugify }}');">
                                 Update </a>
                   <button data-toggle="modal" href="#deleteModal" class="btn"
-                          onclick="deletePlatform('{{ paramset.items|escapejs }}', '{{ platform_type|slugify }}');">Delete</button>
+                          onclick="deletePlatform('{{ paramset.items|escapejs }}', '{{ platform_type|slugify }}');">Remove</button>
                 </td>
 
 
