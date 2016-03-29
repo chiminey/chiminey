@@ -436,6 +436,7 @@ PLATFORM_CLASSES = (
     'chiminey.platform.cloud.CloudPlatform',
     'chiminey.platform.jenkins.JenkinsPlatform',
     'chiminey.platform.mytardis.MyTardisPlatform',
+    'chiminey.platform.hadoop.HadoopPlatform',
     )
 
 

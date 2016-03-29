@@ -187,6 +187,39 @@ def _get_chiminey_schemas():
 
              }
             ],
+        u'%s/platform/computation/bigdata/hadoop' % django_settings.SCHEMA_PREFIX:
+            [u'schema for Big data compute resources',
+             {
+                 u'operation': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': '',
+                                'initial': 'update', 'ranking': 0, 'help_text': ''},
+                 u'filters': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': '',
+                              'initial': '{}', 'ranking': 3, 'help_text': ''},
+                 u'platform_type': {'type': models.ParameterName.STRLIST, 'subtype': '',
+                                    'description': 'Resource type', 'initial': '',
+                                    'choices': '[("hadoop", "Hadoop"), ]', 'ranking': 6,
+                                    'help_text': 'The identifier of the type of the computation platform'},
+                 u'platform_name': {'type': models.ParameterName.STRING, 'subtype': '',
+                                    'description': 'Resource name', 'initial': '', 'ranking': 10,
+                                    'help_text': 'The unique identifier of the platform name'},
+                 u'ip_address': {'type': models.ParameterName.STRING, 'subtype': '',
+                                 'description': 'IP address or Hostname', 'ranking': 15,
+                                 'help_text': 'Hostname or IP address of the computation platform.'},
+                 u'username': {'type': models.ParameterName.STRING, 'subtype': '', 'description': 'Username',
+                               'ranking': 20, 'help_text': 'Username of the account holder.'},
+                 u'password': {'type': models.ParameterName.STRING, 'subtype': 'password',
+                               'description': 'Password', 'ranking': 22,
+                               'help_text': 'Password of the account holder. Password is not stored in the Chiminey server. It is temporarily kept in memory to to establish a private/public key authentication from the Chiminey server to the cluster/unix platform.'},
+                 u'hadoop_home_path': {'type': models.ParameterName.STRING, 'subtype': '', 'description': 'Hadoop home path',
+                                'ranking': 24,
+                                'help_text': 'Home directory. This is the location where .ssh directory resides. The home path is needed to store a Chiminey-specific public key on the cluster/unix server.'},
+                 u'private_key_path': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': '',
+                                       'ranking': 41, 'help_text': ''},
+                 u'port': {'type': models.ParameterName.NUMERIC, 'subtype': 'hidden',
+                           'description': 'SSH port', 'ranking': 55, 'initial': 22,
+                           'help_text': 'Port of the SSH server (usually 22).)'},
+
+             }
+            ],
         u'%s/platform/computation/cloud/ec2-based' % django_settings.SCHEMA_PREFIX:
             [u'schema for EC2-based cloud computing platform instances',
              {
@@ -519,6 +552,15 @@ def _get_chiminey_schemas():
                  u'computation_platform': {'type': models.ParameterName.STRLIST, 'subtype': 'platform',
                                            'initial': '', 'description': 'Compute Resource Name', 'ranking': 0,
                                            'help_text': 'The name of the computation platform to be used'},
+             }
+            ],
+
+         u'%s/input/system/compplatform/hadoop' % django_settings.SCHEMA_PREFIX:
+            [u'Hadoop Cluster Resource',
+             {
+                 u'computation_platform': {'type': models.ParameterName.STRLIST, 'subtype': 'platform',
+                                           'initial': '', 'description': 'Compute Resource Name', 'ranking': 0,
+                                           'help_text': 'The name of the hadoop cluster to be used'},
              }
             ],
 

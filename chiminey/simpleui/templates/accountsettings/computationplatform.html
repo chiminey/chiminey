@@ -18,6 +18,11 @@ $(document).ready(function () {
     $('#cluster_2_{{forloop.counter}}').tooltip();
     $('#cluster_3_{{forloop.counter}}').tooltip();
     {% endfor %}
+    {% for field in hadoop_form %}
+    $('#hadoop_1_{{forloop.counter}}').tooltip();
+    $('#hadoop_2_{{forloop.counter}}').tooltip();
+    $('#hadoop_3_{{forloop.counter}}').tooltip();
+    {% endfor %}
     {% for field in jenkins_form %}
     $('#jenkins_1_{{forloop.counter}}').tooltip();
     $('#jenkins_2_{{forloop.counter}}').tooltip();
@@ -42,6 +47,7 @@ $(document).ready(function () {
                   <li class="active">
                     <a href="#cloud" data-toggle="tab">Cloud</a></li>
                   <li><a href="#cluster" data-toggle="tab">Cluster/Unix</a></li>
+                    <li><a href="#hadoop" data-toggle="tab">Big Data</a></li>
                   <li><a href="#jenkins" data-toggle="tab">Jenkins</a></li>
                 </ul>
                 <div class="tab-content">
@@ -96,6 +102,32 @@ $(document).ready(function () {
                             {% endfor %}
 
                             <button type="submit" class="btn btn-primary" onclick="submitForm('create', 'cluster_form_create');">Register</button>
+                            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                        </form>
+                     </div>
+
+                    <div class="tab-pane" id="hadoop">
+                        <form class="form-horizontal" action="{{ action }}" method="POST" id="hadoop_form_create"> {% csrf_token %}
+
+                             {% for field in hadoop_form.visible_fields %}
+                                 <div class="control-group">
+                                 <label class="control-label">{{field.label}}</label>
+                                 <div class="controls">
+                                     {{field}}
+                                     {% if field.errors %}
+                                     <span class="help-inline">{{field.errors}}</span>
+                                     {% endif %}
+                                     {% if field.help_text %}
+                                     <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{field.help_text}}" id='hadoop_1_{{forloop.counter}}'><i  class="fa fa-question-circle"></i></a>
+                                     {% endif %}
+                                 </div>
+                             </div>
+                            {% endfor %}
+                            {% for hidden in hadoop_form.hidden_fields %}
+                                {{ hidden }}
+                            {% endfor %}
+
+                            <button type="submit" class="btn btn-primary" onclick="submitForm('create', 'hadoop_form_create');">Register</button>
                             <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                         </form>
                      </div>
@@ -189,6 +221,30 @@ $(document).ready(function () {
                     <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                 </form>
 
+                 <form class="form-horizontal" action="{{ action }}" method="POST" id="hadoop_form_update"> {% csrf_token %}
+
+                 {% for field in hadoop_form.visible_fields %}
+                     <div class="control-group">
+                     <label class="control-label">{{field.label}}</label>
+                     <div class="controls">
+                         {{field}}
+                         {% if field.errors %}
+                         <span class="help-inline">{{field.errors}}</span>
+                         {% endif %}
+                         {% if field.help_text %}
+                         <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{field.help_text}}" id='hadoop_2_{{forloop.counter}}'><i  class="fa fa-question-circle"></i></a>
+                         {% endif %}
+                     </div>
+                 </div>
+                {% endfor %}
+                {% for hidden in hadoop_form.hidden_fields %}
+                    {{ hidden }}
+                {% endfor %}
+
+                <button type="submit" class="btn btn-primary" onclick="submitForm('update', 'hadoop_form_update');">Update</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            </form>
+
                <form class="form-horizontal" action="{{ action }}" method="POST" id="jenkins_form_update"> {% csrf_token %}
 
                  {% for field in jenkins_form.visible_fields %}
@@ -212,6 +268,7 @@ $(document).ready(function () {
                 <button type="submit" class="btn btn-primary" onclick="submitForm('update', 'jenkins_form_update');">Update</button>
                 <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
             </form>
+
 
 
             </div>
@@ -277,6 +334,31 @@ $(document).ready(function () {
 
                 </form>
 
+                <form class="form-horizontal" action="{{ action }}" method="POST" id="hadoop_form_delete"> {% csrf_token %}
+
+                     {% for field in hadoop_form.visible_fields %}
+                         <div class="control-group">
+                         <label class="control-label">{{field.label}}</label>
+                         <div class="controls">
+                             {{field}}
+                             {% if field.errors %}
+                             <span class="help-inline">{{field.errors}}</span>
+                             {% endif %}
+                             {% if field.help_text %}
+                             <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{field.help_text}}" id='hadoop_3_{{forloop.counter}}'><i  class="fa fa-question-circle"></i></a>
+                             {% endif %}
+                         </div>
+                     </div>
+                    {% endfor %}
+                    {% for hidden in hadoop_form.hidden_fields %}
+                        {{ hidden }}
+                    {% endfor %}
+
+                    <button type="submit" class="btn btn-primary" onclick="submitForm('delete', 'hadoop_form_delete');">Remove</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+
+                </form>
+
                  <form class="form-horizontal" action="{{ action }}" method="POST" id="jenkins_form_delete"> {% csrf_token %}
 
                      {% for field in jenkins_form.visible_fields %}
@@ -318,7 +400,9 @@ $(document).ready(function () {
          {% if platform_type == 'nci' %}
             <h2>Cluster/Unix</h2>
          {% elif platform_type == 'nectar' or platform_type == 'csrack' or  platform_type == 'amazon' %}
-            <h2>NeCTAR/CSRack/Amazon EC2</h2>
+            <h2>Cloud - NeCTAR/CSRack/Amazon EC2</h2>
+         {% elif platform_type == 'hadoop' %}
+            <h2>Big Data - Hadoop</h2>
          {% else %}
             <h2>{{ platform_type }}</h2>
 
