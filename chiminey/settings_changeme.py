@@ -146,7 +146,7 @@ SMART_CONNECTORS = {'randunix': {'init': 'chiminey.examples.randnumunix.initiali
                     'wordcount': {'init': 'chiminey.examples.wordcount.initialise.WordCountInitial',
                                  'name': 'wordcount',
                                  'description': 'Counting words via Hadoop',
-                                 'payload': ''
+                                 'payload': '/opt/chiminey/current/chiminey/examples/wordcount/payload_wordcount'
                                 }
                     }
 
