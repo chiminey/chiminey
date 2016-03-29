@@ -119,7 +119,8 @@ def computation_platform_settings(request):
     new_form_data = {}
     for field_name, ns_suffix in [('cluster_form', 'cluster/pbs_based'),
                                     ('cloud_form', 'cloud/ec2-based'),
-                                    ('jenkins_form','testing/jenkins_based'), ('hadoop_form', 'bigdata/hadoop'),
+                                    ('jenkins_form','testing/jenkins_based'),
+                                    ('hadoop_form', 'bigdata/hadoop'),
                                     ]:
         namespace = "%s/platform/computation/%s" % (RMIT_SCHEMA, ns_suffix)
         params = _get_platform_params(request, namespace)

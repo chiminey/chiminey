@@ -142,6 +142,11 @@ SMART_CONNECTORS = {'randunix': {'init': 'chiminey.examples.randnumunix.initiali
                                  'name': 'tutorial',
                                  'description': 'tutorial smart connector',
                                  'payload': ''
+                                },
+                    'wordcount': {'init': 'chiminey.examples.wordcount.initialise.WordCountInitial',
+                                 'name': 'wordcount',
+                                 'description': 'Counting words via Hadoop',
+                                 'payload': ''
                                 }
                     }
 
@@ -151,6 +156,7 @@ PAYLOAD_DESTINATION = 'active_payloads'
 
 
 INPUT_FIELDS =  {'cloud': SCHEMA_PREFIX + "/input/system/compplatform/cloud",
+                 'hadoop': SCHEMA_PREFIX + "/input/system/compplatform/hadoop",
                  'unix': SCHEMA_PREFIX + "/input/system/compplatform/unix",
                  'reliability': SCHEMA_PREFIX + "/input/reliability",
                  'location':  SCHEMA_PREFIX + "/input/location",
@@ -421,7 +427,8 @@ CELERY_ROUTES = {
 
 COMPUTATION_PLATFORM_SCHEMA_NAMESPACE = \
     {SCHEMA_PREFIX + '/input/system/compplatform/cloud': '/cloud/ec2-based',
-     SCHEMA_PREFIX + '/input/system/compplatform/unix': '/cluster/pbs_based'
+     SCHEMA_PREFIX + '/input/system/compplatform/unix': '/cluster/pbs_based',
+     SCHEMA_PREFIX + '/input/system/compplatform/hadoop': '/bigdata/hadoop'
     }
 
 #BROKER_TRANSPORT = 'django'
