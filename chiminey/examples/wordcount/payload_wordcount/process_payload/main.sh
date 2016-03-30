@@ -14,7 +14,7 @@ cd $PROC_DESTINATION
 $HADOOP_HOME/bin/hdfs dfs -mkdir -p   $INPUT_DIR
 $HADOOP_HOME/bin/hdfs dfs -put $HADOOP_INPUT/*   $INPUT_DIR
 
-$HADOOP_HOME/bin/hadoop jar ../hadoop-mapreduce-examples-2.7.2.jar grep  $INPUT_DIR  $OUTPUT_DIR  'dfs[a-z.]+'
+$HADOOP_HOME/bin/hadoop jar ../hadoop-mapreduce-examples-2.7.2.jar grep  $INPUT_DIR  $OUTPUT_DIR  $6
 
 $HADOOP_HOME/bin/hdfs dfs -get $OUTPUT_DIR .
 

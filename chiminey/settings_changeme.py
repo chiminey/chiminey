@@ -146,7 +146,8 @@ SMART_CONNECTORS = {'randunix': {'init': 'chiminey.examples.randnumunix.initiali
                     'wordcount': {'init': 'chiminey.examples.wordcount.initialise.WordCountInitial',
                                  'name': 'wordcount',
                                  'description': 'Counting words via Hadoop',
-                                 'payload': '/opt/chiminey/current/chiminey/examples/wordcount/payload_wordcount'
+                                 'payload': '/opt/chiminey/current/chiminey/examples/wordcount/payload_wordcount',
+                                 'args':('word_pattern',)
                                 }
                     }
 
@@ -162,7 +163,8 @@ INPUT_FIELDS =  {'cloud': SCHEMA_PREFIX + "/input/system/compplatform/cloud",
                  'location':  SCHEMA_PREFIX + "/input/location",
                  'output_location': SCHEMA_PREFIX + "/input/location/output",
                  'input_location':  SCHEMA_PREFIX + "/input/location/input",
-                 'hrmclight':  SCHEMA_PREFIX + "/input/hrmclight"
+                 'hrmclight':  SCHEMA_PREFIX + "/input/hrmclight",
+                 'wordcount':  SCHEMA_PREFIX + "/input/wordcount",
                  }
 
 TEMPLATE_DIRS = (

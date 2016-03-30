@@ -302,8 +302,9 @@ class Execute(stage.Stage):
             try:
                 hadoop = run_settings['%s/input/system/compplatform/hadoop' % self.SCHEMA_PREFIX]
                 sudo = False
-                options = 'PROC_DESTINATION=%s INPUT_DIR=input_%s_%s OUTPUT_DIR=output_%s_%s HADOOP_INPUT=HADOOP_INPUT HADOOP_HOME=%s'  % (
-                    settings['process_output_dirname'], self.contextid, process_id, self.contextid, process_id, settings['hadoop_home_path'])
+                options = "%s input_%s_%s output_%s_%s HADOOP_INPUT %s %s"  % (
+                    settings['process_output_dirname'], self.contextid, process_id, self.contextid,
+                    process_id, settings['hadoop_home_path'], self.get_optional_args(run_settings))
                 command, errs = run_make(
                 ssh, makefile_path,
                 'start_running_process  %s'  % options,#, self.contextid, process_id),
@@ -313,7 +314,7 @@ class Execute(stage.Stage):
                 sudo = True
                 command, errs = run_make(
                 ssh, makefile_path,
-                'start_running_process PROC_DESTINATION=%s'  % settings['process_output_dirname'], sudo= sudo)
+                'start_running_process %s'  % settings['process_output_dirname'], sudo= sudo)
 
 
             logger.debug('execute_command=%s' % command
@@ -642,21 +643,37 @@ class Execute(stage.Stage):
         return self.experiment_id
 
     def set_domain_settings(self, run_settings, local_settings):
-        schema = models.Schema.objects.filter(namespace=self.get_input_schema_namespace(
-            run_settings['%s/directive_profile' % self.SCHEMA_PREFIX]['directive_name']))
-        if schema:
-            params = models.ParameterName.objects.filter(schema=schema)
-            if params:
-                namespace = schema.namespace
-                domain_params = [os.path.join(namespace, i.name) for i in params]
-                update(local_settings, run_settings, *domain_params)
+         try:
+             schema = models.Schema.objects.get(namespace=self.get_input_schema_namespace(
+                run_settings['%s/directive_profile' % self.SCHEMA_PREFIX]['directive_name']))
+             if schema:
+                params = models.ParameterName.objects.filter(schema=schema)
+                if params:
+                    namespace = schema.namespace
+                    domain_params = [os.path.join(namespace, i.name) for i in params]
+                    update(local_settings, run_settings, *domain_params)
+         except models.Schema.DoesNotExist:
+             pass
 
 
-
-
-
-
-
+    def get_optional_args(self, run_settings):
+        from os.path import basename
+        namespace = self.get_input_schema_namespace(
+            run_settings['%s/directive_profile' % self.SCHEMA_PREFIX]['directive_name'])
+        try:
+            args_keys = django_settings.SMART_CONNECTORS[basename(namespace)]['args']
+        except KeyError:
+            args_keys = []
+        args = ''
+        for i in args_keys:
+            try:
+                args = '%s %s' % (args, run_settings[namespace][i])
+                logger.debug('args=%s' % args)
+            except KeyError:
+                logger.debug('Failed to find key %s' % i)
+                pass
+        logger.debug('optional_args_keys=%s' % args)
+        return args
 
 
 
