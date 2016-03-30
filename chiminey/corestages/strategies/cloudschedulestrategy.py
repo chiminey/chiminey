@@ -238,8 +238,9 @@ def start_round_robin_schedule(nodes, processes, schedule_index, settings, relat
         makefile_path = get_make_path(destination)
         logger.debug('makefile_path=%s' % makefile_path)
         command = "cd %s; make %s" % (makefile_path,
-            'start_schedule PAYLOAD_NAME=%s IDS=%s PROC_DESTINATION=%s' % (
-            settings['payload_name'], settings['filename_for_PIDs'], settings['process_output_dirname']))
+            'start_schedule %s %s %s' % (settings['payload_name'],
+                                         settings['filename_for_PIDs'],
+                                         settings['process_output_dirname']))
         command_out = ''
         errs = ''
         logger.debug("starting command for %s" % ip_address)
@@ -304,8 +305,9 @@ def start_round_robin_reschedule(nodes, procs_2b_rescheduled,
         logger.debug('makefile_path=%s' % makefile_path)
 
         command = "cd %s; make %s" % (makefile_path,
-            'start_schedule PAYLOAD_NAME=%s IDS=%s PROC_DESTINATION=%s' % (
-            settings['payload_name'], settings['filename_for_PIDs'], settings['process_output_dirname']))
+            'start_schedule %s %s %s' % (
+            settings['payload_name'], settings['filename_for_PIDs'],
+            settings['process_output_dirname']))
         command_out = ''
         errs = ''
         logger.debug("starting command for %s" % ip_address)

@@ -162,7 +162,8 @@ INPUT_FIELDS =  {'cloud': SCHEMA_PREFIX + "/input/system/compplatform/cloud",
                  'location':  SCHEMA_PREFIX + "/input/location",
                  'output_location': SCHEMA_PREFIX + "/input/location/output",
                  'input_location':  SCHEMA_PREFIX + "/input/location/input",
-                 'hrmclight':  SCHEMA_PREFIX + "/input/hrmclight"
+                 'hrmclight':  SCHEMA_PREFIX + "/input/hrmclight",
+                 'wordcount':  SCHEMA_PREFIX + "/input/wordcount",
                  }
 
 TEMPLATE_DIRS = (

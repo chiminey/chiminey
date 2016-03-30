@@ -299,21 +299,23 @@ class Execute(stage.Stage):
         try:
             ssh = open_connection(ip_address=ip_address, settings=settings)
             logger.debug(settings['process_output_dirname'])
+            proc_destination = settings['process_output_dirname']
             try:
                 hadoop = run_settings['%s/input/system/compplatform/hadoop' % self.SCHEMA_PREFIX]
                 sudo = False
-                options = 'PROC_DESTINATION=%s INPUT_DIR=input_%s_%s OUTPUT_DIR=output_%s_%s HADOOP_INPUT=HADOOP_INPUT HADOOP_HOME=%s'  % (
-                    settings['process_output_dirname'], self.contextid, process_id, self.contextid, process_id, settings['hadoop_home_path'])
-                command, errs = run_make(
-                ssh, makefile_path,
-                'start_running_process  %s'  % options,#, self.contextid, process_id),
-            sudo= sudo
-            )
+                input_dir = 'input_%s_%s' % (self.contextid, process_id)
+                output_dir = 'output_%s_%s' % (self.contextid, process_id)
+                hadoop_inp = 'HADOOP_INPUT'
+                hadoop_home_path = settings['hadoop_home_path']
+                options = '%s %s %s %s %s' % (proc_destination, input_dir,
+                                              output_dir, hadoop_inp, hadoop_home_path )
+                command, errs = run_make(ssh, makefile_path,
+                                         'start_running_process  %s' % options, sudo= sudo)
             except KeyError:
                 sudo = True
                 command, errs = run_make(
                 ssh, makefile_path,
-                'start_running_process PROC_DESTINATION=%s'  % settings['process_output_dirname'], sudo= sudo)
+                'start_running_process %s' % proc_destination , sudo= sudo)
 
 
             logger.debug('execute_command=%s' % command
@@ -642,15 +644,16 @@ class Execute(stage.Stage):
         return self.experiment_id
 
     def set_domain_settings(self, run_settings, local_settings):
-        schema = models.Schema.objects.filter(namespace=self.get_input_schema_namespace(
-            run_settings['%s/directive_profile' % self.SCHEMA_PREFIX]['directive_name']))
-        if schema:
+        try:
+            schema = models.Schema.objects.get(namespace=self.get_input_schema_namespace(
+                run_settings['%s/directive_profile' % self.SCHEMA_PREFIX]['directive_name']))
             params = models.ParameterName.objects.filter(schema=schema)
             if params:
                 namespace = schema.namespace
                 domain_params = [os.path.join(namespace, i.name) for i in params]
                 update(local_settings, run_settings, *domain_params)
-
+        except models.Schema.DoesNotExist:
+            pass
 
 
 

@@ -1,6 +1,6 @@
-PAYLOAD_NAME='process_payload'
-IDS='proc_ids'
-PROC_DESTINATION='chimineywd'
+RUN_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+$(eval $(RUN_ARGS):;@:)
+
 
 start_bootstrap:
 	@echo bootstrap starting
@@ -10,7 +10,7 @@ bootstrap_done:
 	@sh ./bootstrap_done.sh
 
 start_schedule:
-	@sh ./start_schedule.sh $(PAYLOAD_NAME) $(IDS) $(PROC_DESTINATION)
+	@sh ./start_schedule.sh $(RUN_ARGS)
 
 schedule_done:
 	@sh ./schedule_done.sh $(IDS)

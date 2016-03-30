@@ -32,5 +32,20 @@ class WordCountInitial(CoreInitial):
         schemas = [
                 django_settings.INPUT_FIELDS['hadoop'],
                 django_settings.INPUT_FIELDS['location'],
+                django_settings.INPUT_FIELDS['wordcount'],
                 ]
         return schemas
+
+
+    def get_domain_specific_schemas(self):
+        #schema_data = #{
+            #u'%s/input/hrmclight' % django_settings.SCHEMA_PREFIX:
+        schema_data =  [u'Word Count Smart Connector',
+             {
+                 u'word_pattern': {'type': models.ParameterName.STRING, 'subtype': 'string',
+                            'description': 'Word Pattern', 'ranking': 0, 'initial': '[a-z|A-Z][a-z|A-Z]*', #TODO regular expression validator/subtype?
+                            'help_text': 'Regular expession of filtered words'},
+             }
+            ]
+        #}
+        return schema_data
