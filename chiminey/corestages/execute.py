@@ -302,8 +302,8 @@ class Execute(stage.Stage):
             try:
                 hadoop = run_settings['%s/input/system/compplatform/hadoop' % self.SCHEMA_PREFIX]
                 sudo = False
-                options = 'PROC_DESTINATION=%s INPUT_DIR=input_%s_%s OUTPUT_DIR=output_%s_%s'  % (
-                    settings['process_output_dirname'], self.contextid, process_id, self.contextid, process_id)
+                options = 'PROC_DESTINATION=%s INPUT_DIR=input_%s_%s OUTPUT_DIR=output_%s_%s HADOOP_INPUT=HADOOP_INPUT HADOOP_HOME=%s'  % (
+                    settings['process_output_dirname'], self.contextid, process_id, self.contextid, process_id, settings['hadoop_home_path'])
                 command, errs = run_make(
                 ssh, makefile_path,
                 'start_running_process  %s'  % options,#, self.contextid, process_id),
@@ -580,6 +580,9 @@ class Execute(stage.Stage):
                         + "@" + os.path.join(relative_path_suffix,
                                              proc['id'],
                                              local_settings['process_output_dirname'])
+                    if computation_platform_settings['type'] == 'hadoop':
+                        dest_file_location = os.path.join(dest_file_location, 'HADOOP_INPUT')
+
                     logger.debug("dest_file_location =%s" % dest_file_location)
                     resched_file_location = "%s%s" % (output_prefix, os.path.join(
                         self.job_dir, "input_backup", proc['id']))
@@ -626,8 +629,9 @@ class Execute(stage.Stage):
         if '%s/input/system/compplatform/hadoop' % self.SCHEMA_PREFIX in run_settings.keys():
             from chiminey.platform import get_platform_settings
             platform_url = run_settings['%s/platform/computation' % self.SCHEMA_PREFIX]['platform_url']
-            local_settings['root_path'] = '/home/%s' % (get_platform_settings(
-            platform_url, local_settings['bdp_username'])['username'])
+            pltf_settings = get_platform_settings(platform_url, local_settings['bdp_username'])
+            local_settings['root_path'] = '/home/%s' % pltf_settings['username']
+            local_settings['hadoop_home_path'] = pltf_settings['hadoop_home_path']
             logger.debug('root_path=%s' % local_settings['root_path'])
         else:
             logger.debug('root_path not found')
