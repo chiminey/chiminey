@@ -1,7 +1,9 @@
 PROC_DESTINATION='chimineywd'
+INPUT_DIR='input'
+OUTPUT_DIR='output'
 
 start_process_schedule:
-	@sh ./start_process_schedule.sh $(PROC_DESTINATION)
+	@sh ./start_process_schedule.sh $(PROC_DESTINATION) $(INPUT_DIR) $(OUTPUT_DIR)
 
 process_schedule_done:
 	@sh ./process_schedule_done.sh

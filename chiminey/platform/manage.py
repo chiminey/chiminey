@@ -288,6 +288,9 @@ def get_platform_settings(platform_url, username):
             break
 
     platform_settings['bdp_username'] = username
+    #TODO move to HadoopPlatform
+    if platform_settings['type'] == 'hadoop':
+        platform_settings['root_path'] = '/home/%s' % platform_settings['username']
     return platform_settings
 #    return platform.get_platform_settings(platform_url, username)
 

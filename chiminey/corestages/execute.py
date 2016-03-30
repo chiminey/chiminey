@@ -298,8 +298,24 @@ class Execute(stage.Stage):
         makefile_path = get_make_path(destination)
         try:
             ssh = open_connection(ip_address=ip_address, settings=settings)
-            command, errs = run_make(
-                ssh, makefile_path, 'start_running_process PROC_DESTINATION=%s' % settings['process_output_dirname'])
+            logger.debug(settings['process_output_dirname'])
+            try:
+                hadoop = run_settings['%s/input/system/compplatform/hadoop' % self.SCHEMA_PREFIX]
+                sudo = False
+                options = 'PROC_DESTINATION=%s INPUT_DIR=input_%s_%s OUTPUT_DIR=output_%s_%s'  % (
+                    settings['process_output_dirname'], self.contextid, process_id, self.contextid, process_id)
+                command, errs = run_make(
+                ssh, makefile_path,
+                'start_running_process  %s'  % options,#, self.contextid, process_id),
+            sudo= sudo
+            )
+            except KeyError:
+                sudo = True
+                command, errs = run_make(
+                ssh, makefile_path,
+                'start_running_process PROC_DESTINATION=%s'  % settings['process_output_dirname'], sudo= sudo)
+
+
             logger.debug('execute_command=%s' % command
                          )
         finally:
@@ -607,19 +623,29 @@ class Execute(stage.Stage):
             local_settings['curate_data'] = 0
         local_settings['bdp_username'] = getval(run_settings,
                                                 '%s/bdp_userprofile/username' % self.SCHEMA_PREFIX)
+        if '%s/input/system/compplatform/hadoop' % self.SCHEMA_PREFIX in run_settings.keys():
+            from chiminey.platform import get_platform_settings
+            platform_url = run_settings['%s/platform/computation' % self.SCHEMA_PREFIX]['platform_url']
+            local_settings['root_path'] = '/home/%s' % (get_platform_settings(
+            platform_url, local_settings['bdp_username'])['username'])
+            logger.debug('root_path=%s' % local_settings['root_path'])
+        else:
+            logger.debug('root_path not found')
+
 
     def curate_data(self, experiment_id, local_settings, output_storage_settings,
                     mytardis_settings, source_files_url):
         return self.experiment_id
 
     def set_domain_settings(self, run_settings, local_settings):
-        schema = models.Schema.objects.get(namespace=self.get_input_schema_namespace(
+        schema = models.Schema.objects.filter(namespace=self.get_input_schema_namespace(
             run_settings['%s/directive_profile' % self.SCHEMA_PREFIX]['directive_name']))
-        params = models.ParameterName.objects.filter(schema=schema)
-        if params:
-            namespace = schema.namespace
-            domain_params = [os.path.join(namespace, i.name) for i in params]
-            update(local_settings, run_settings, *domain_params)
+        if schema:
+            params = models.ParameterName.objects.filter(schema=schema)
+            if params:
+                namespace = schema.namespace
+                domain_params = [os.path.join(namespace, i.name) for i in params]
+                update(local_settings, run_settings, *domain_params)
 
 
 
