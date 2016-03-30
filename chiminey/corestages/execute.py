@@ -300,22 +300,26 @@ class Execute(stage.Stage):
             ssh = open_connection(ip_address=ip_address, settings=settings)
             logger.debug(settings['process_output_dirname'])
             proc_destination = settings['process_output_dirname']
+            logger.debug('hadoop_compplatform_schema=%s' % (run_settings['%s/input/system/compplatform/hadoop' % self.SCHEMA_PREFIX]))
             try:
-                hadoop = run_settings['%s/input/system/compplatform/hadoop' % self.SCHEMA_PREFIX]
+                run_settings['%s/input/system/compplatform/hadoop' % self.SCHEMA_PREFIX]
                 sudo = False
                 input_dir = 'input_%s_%s' % (self.contextid, process_id)
                 output_dir = 'output_%s_%s' % (self.contextid, process_id)
                 hadoop_inp = 'HADOOP_INPUT'
                 hadoop_home_path = settings['hadoop_home_path']
-                options = '%s %s %s %s %s' % (proc_destination, input_dir,
-                                              output_dir, hadoop_inp, hadoop_home_path )
+                optional_args_keys = self.get_optional_args(run_settings)
+                options = '%s %s %s %s %s %s' % (proc_destination, input_dir,
+                                              output_dir, hadoop_inp, hadoop_home_path,
+                                              optional_args_keys)
+                logger.debug('options=%s' % options)
                 command, errs = run_make(ssh, makefile_path,
-                                         'start_running_process  %s' % options, sudo= sudo)
-            except KeyError:
+                                         'start_running_process  %s' % options, sudo=sudo)
+            except KeyError, e:
+                logger.error(e)
                 sudo = True
-                command, errs = run_make(
-                ssh, makefile_path,
-                'start_running_process %s' % proc_destination , sudo= sudo)
+                command, errs = run_make(ssh, makefile_path,
+                'start_running_process %s' % proc_destination , sudo=sudo)
 
 
             logger.debug('execute_command=%s' % command
@@ -655,6 +659,21 @@ class Execute(stage.Stage):
         except models.Schema.DoesNotExist:
             pass
 
+    def get_optional_args(self, run_settings):
+        from os.path import basename
+        args = ''
+        namespace = self.get_input_schema_namespace(
+            run_settings['%s/directive_profile' % self.SCHEMA_PREFIX]['directive_name'])
+        args_keys = django_settings.SMART_CONNECTORS[basename(namespace)]['args']
+        for i in args_keys:
+            try:
+                args = '%s %s' % (args, run_settings[namespace][i])
+                logger.debug('args=%s' % args)
+            except KeyError:
+                logger.debug('Failed to find key %s' % i)
+                pass
+        logger.debug('optional_args_keys=%s' % args)
+        return args
 
 
 

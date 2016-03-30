@@ -43,8 +43,9 @@ class WordCountInitial(CoreInitial):
         schema_data =  [u'Word Count Smart Connector',
              {
                  u'word_pattern': {'type': models.ParameterName.STRING, 'subtype': 'string',
-                            'description': 'Word Pattern', 'ranking': 0, 'initial': '[a-z|A-Z][a-z|A-Z]*', #TODO regular expression validator/subtype?
-                            'help_text': 'Regular expession of filtered words'},
+                            'description': 'Word Pattern', 'ranking': 0,
+                            'initial': "'[a-z.]+'", #TODO regular expression validator/subtype?
+                            'help_text': 'Regular expession of filtered words surrounded by single quotes,'},
              }
             ]
         #}
