@@ -133,10 +133,10 @@ SMART_CONNECTORS = {'randunix': {'init': 'chiminey.examples.randnumunix.initiali
                              'description': 'hrmc',
                              'payload': '/opt/chiminey/current/chiminey/examples/hrmc2/payload_hrmc'
                              },
-                    'hrmclight': {'init': 'chiminey.examples.hrmclight.initialise.HRMCInitial',
-                             'name': 'hrmclight',
-                             'description': 'hrmc without psd',
-                             'payload': '/opt/chiminey/current/chiminey/examples/hrmclight/payload_hrmc'
+                    'hrmclite': {'init': 'chiminey.examples.hrmclite.initialise.HRMCInitial',
+                             'name': 'hrmclite',
+                             'description': 'Hybrid Reverse Monte Carlo without PSD',
+                             'payload': '/opt/chiminey/current/chiminey/examples/hrmclite/payload_hrmc'
                              },
                     'tutorial': {'init': 'chiminey.examples.tutorial.initialise.TutorialInitial',
                                  'name': 'tutorial',
@@ -163,7 +163,7 @@ INPUT_FIELDS =  {'cloud': SCHEMA_PREFIX + "/input/system/compplatform/cloud",
                  'location':  SCHEMA_PREFIX + "/input/location",
                  'output_location': SCHEMA_PREFIX + "/input/location/output",
                  'input_location':  SCHEMA_PREFIX + "/input/location/input",
-                 'hrmclight':  SCHEMA_PREFIX + "/input/hrmclight",
+                 'hrmclite':  SCHEMA_PREFIX + "/input/hrmclite",
                  'wordcount':  SCHEMA_PREFIX + "/input/wordcount",
                  }
 
