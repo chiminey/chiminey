@@ -40,26 +40,60 @@ $('#mytardis_6_{{forloop.counter}}').tooltip();
                 <div class="tab-content">
                     <div class="tab-pane active" id="unix">
                         <form class="form-horizontal" action="{{ action }}" method="POST" id="unix_form_create"> {% csrf_token %}
+                                {% for data, field in unix_form_data %}
+                                 {% if field.is_hidden == False and data.4 != "advanced" %}
+                                        <div class="control-group" >
+                                        <label class="control-label">{{field.label}}</label>
+                                        <div class="controls">
+                                            {{ field }}
+                                            {% if field.errors %}
+                                            <span class="help-inline">{{field.errors}}</span>
+                                            {% endif %}
+                                            {% if field.help_text %}
+                                            <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{field.type}}" id='unix_4_{{forloop.counter}}'><i  class="fa fa-question-circle"></i></a>
+                                            {% endif %}
+                                        </div>
+                                </div>
 
-                             {% for field in unix_form.visible_fields %}
-                                 <div class="control-group">
-                                 <label class="control-label">{{field.label}}</label>
-                                 <div class="controls">
-                                     {{field}}
-                                     {% if field.errors %}
-                                     <span class="help-inline">{{field.errors}}</span>
-                                     {% endif %}
-                                     {% if field.help_text %}
-                                     <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{field.help_text}}" id='unix_4_{{forloop.counter}}'><i  class="fa fa-question-circle"></i></a>
-                                     {% endif %}
-                                 </div>
-                             </div>
+                              {% endif %}
                             {% endfor %}
+                             <button type="button" class="btn btn-default" onclick="toggleVisibility('advanced_fields');">Advanced m</button>
+                            <div  id="advanced_fields" hidden="true">
+                                {% for data, field in unix_form_data %}
+                                 {% if field.is_hidden == False and data.4 == "advanced" %}
+                                        <div class="control-group" >
+                                        <label class="control-label">{{field.label}}</label>
+                                        <div class="controls">
+                                            {{ field }}
+                                            {% if field.errors %}
+                                            <span class="help-inline">{{field.errors}}</span>
+                                            {% endif %}
+                                            {% if field.help_text %}
+                                            <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{field.type}}" id='unix_4_{{forloop.counter}}'><i  class="fa fa-question-circle"></i></a>
+                                            {% endif %}
+                                        </div>
+                                </div>
+
+                              {% endif %}
+                            {% endfor %}
+                            </div>
+
+
+
+
                             {% for hidden in unix_form.hidden_fields %}
                                 {{ hidden }}
+
                             {% endfor %}
+
+
+
+
+
                             <button type="submit" class="btn btn-primary" onclick="submitForm('create', 'unix_form_create');">Register</button>
                             <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+
+
                         </form>
                     </div>
                      <div class="tab-pane" id="mytardis">

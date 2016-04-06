@@ -273,17 +273,17 @@ def _get_platform_params(request, namespace):
 def storage_platform_settings(request):
     namespace = RMIT_SCHEMA + "/platform/storage/mytardis"
     mytardis_params = _get_platform_params(request, namespace)
-    mytardis_form, form_data = make_directive_form(
+    mytardis_form, mytardis_form_data = make_directive_form(
         platform_params=mytardis_params,
         username=request.user.username)
     namespace = RMIT_SCHEMA + "/platform/storage/unix"
     unix_params = _get_platform_params(request, namespace)
-    unix_form, form_data = make_directive_form(
+    unix_form, unix_form_data = make_directive_form(
         platform_params=unix_params,
             username=request.user.username)
     if request.method == "POST":
         #unix_form = SSHStoragePlatformForm(request.POST)
-        unix_form, form_data = make_directive_form(
+        unix_form, unix_form_data = make_directive_form(
             request=request.POST,
             platform_params=unix_params,
             username=request.user.username)
@@ -292,7 +292,7 @@ def storage_platform_settings(request):
             unix_form.cleaned_data['platform_type'] = 'unix'
             post_platform(schema, unix_form.cleaned_data, request)
             return HttpResponsePermanentRedirect(reverse('storage-platform-settings'))
-        mytardis_form, form_data = make_directive_form(
+        mytardis_form, mytardis_form_data = make_directive_form(
             request=request.POST,
             platform_params=mytardis_params,
             username=request.user.username)
@@ -333,7 +333,10 @@ def storage_platform_settings(request):
     hide_resource_header_fields(all_headers, POPPED_KEYS)
     return render(request, 'accountsettings/storageplatform.html',
                   {'unix_form': unix_form,
+                  # 'unix_form_data': dict([(y[0],x) for x,y in unix_form_data]),
+                   'unix_form_data': unix_form_data,
                    'mytardis_form': mytardis_form,
+                   'mytardis_form_data': mytardis_form_data,
                    'all_headers': all_headers})
 
 
@@ -862,13 +865,15 @@ def make_dynamic_field(parameter, **kwargs):
     field_params = {
         'required': False,
         'label': parameter['description'],
-        'help_text': help_text
+        'help_text': help_text,
+
     }
     if 'platform' in kwargs.keys():
         field_params = {
         'required': True,
         'label': parameter['description'],
-        'help_text': help_text
+        'help_text': help_text,
+
     }
 
     if parameter['subtype'] in ['bdpurl', 'jsondict']:
@@ -985,13 +990,19 @@ def make_dynamic_field(parameter, **kwargs):
                 field_params['initial'] = ''
 
         if parameter['subtype'] == 'hidden':
-            field_params['widget'] = forms.HiddenInput(attrs={'required': 'false'})
+            field_params['widget'] = forms.HiddenInput()
             field_params['required'] = False
         elif 'platform' in kwargs.keys():
-            field_params['widget'] = forms.TextInput(attrs={'required': 'true'})
-            field_params['required'] = True
-            if parameter['subtype'] == 'password':
+            if parameter['hidecondition'] == 'advanced':
+                field_params['widget'] = forms.TextInput()
+                field_params['required'] = False
+            elif parameter['subtype'] == 'password':
                 field_params['widget'] = forms.PasswordInput(attrs={'required': 'true'})
+                field_params['required'] = True
+            else:
+                field_params['widget'] = forms.TextInput(attrs={'required': 'true'})
+                field_params['required'] = True
+
         field = forms.CharField(**field_params)
 
     if 'subtype' in parameter and parameter['subtype']:
@@ -1070,6 +1081,7 @@ def make_directive_form(**kwargs):
     pset_form.clean_rules = types.MethodType(check_clean_rules, pset_form)
     pset_form_data = zip(form_data, pset_form)
     logger.debug("pset_form_data = %s" % pformat(pset_form_data))
+    logger.debug("custom-pset_form = %s" % pformat(pset_form))
     return (pset_form, pset_form_data)
 
 

@@ -148,7 +148,13 @@ SMART_CONNECTORS = {'randunix': {'init': 'chiminey.examples.randnumunix.initiali
                                  'description': 'Counting words via Hadoop',
                                  'payload': '/opt/chiminey/current/chiminey/examples/wordcount/payload_wordcount',
                                  'args':('word_pattern',)
-                                }
+                                },
+"randnum": {
+           "name": "randnum",
+           "init": "chiminey.randnum.initialise.RandNumInitial",
+           "description": "Randnum generator, with timestamp",
+           "payload": "/opt/chiminey/current/payload_randnum"
+            },
                     }
 
 SCHEMA_PREFIX = "http://rmit.edu.au/schemas"
