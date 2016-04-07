@@ -7,7 +7,7 @@ $(document).ready(function () {
     {% for platform_type, platform_details in all_headers.items %}
     $('.footable_{{platform_type}}').footable();
     {% endfor %}
-        <!--
+
         {% for formtype in formtypes.keys %}
         {% for resource, details in resources.items %}
              {% for data, field in  details.data  %}
@@ -15,7 +15,7 @@ $(document).ready(function () {
                {% endfor %}
             {% endfor %}
             {% endfor %}
-                 -->
+
    });
 
 </script>
