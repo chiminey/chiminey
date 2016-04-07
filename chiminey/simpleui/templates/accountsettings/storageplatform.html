@@ -7,28 +7,20 @@ $(document).ready(function () {
     {% for platform_type, platform_details in all_headers.items %}
     $('.footable_{{platform_type}}').footable();
     {% endfor %}
-
-<!--{% for field in unix_form %}
-$('#unix_4_{{forloop.counter}}').tooltip();
-$('#unix_5_{{forloop.counter}}').tooltip();
-$('#unix_6_{{forloop.counter}}').tooltip();
-{% endfor %}
-{% for field in mytardis_form %}
-$('#mytardis_4_{{forloop.counter}}').tooltip();
-$('#mytardis_5_{{forloop.counter}}').tooltip();
-$('#mytardis_6_{{forloop.counter}}').tooltip();
-{% endfor %} -->
-
+        {% for formtype in formtypes.keys %}
+        {% for resource, details in resources.items %}
+             {% for data, field in  details.data  %}
+                    $('#{{resource}}_{{formtype}}_{{data.0}}').tooltip();
+               {% endfor %}
+            {% endfor %}
+            {% endfor %}
    });
 
 </script>
 
-{% block iman %}
-{% endblock %}
+
 
 {% for formtype, name in formtypes.items %}
-
-
 <!--create modal -->
 <div class="modal hide fade" id="{{formtype}}Modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -61,7 +53,7 @@ $('#mytardis_6_{{forloop.counter}}').tooltip();
                                      <span class="help-inline">{{field.errors}}</span>
                                      {% endif %}
                                      {% if field.help_text %}
-                                     <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{field.help_text}}" ><i  class="fa fa-question-circle"></i></a>
+                                     <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{field.help_text}}" id="{{resource}}_{{formtype}}_{{data.0}}"><i  class="fa fa-question-circle"></i></a>
                                      {% endif %}
                                  </div>
                              </div>
@@ -86,7 +78,7 @@ $('#mytardis_6_{{forloop.counter}}').tooltip();
                                      <span class="help-inline">{{field.errors}}</span>
                                      {% endif %}
                                      {% if field.help_text %}
-                                     <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{field.help_text}}" ><i  class="fa fa-question-circle"></i></a>
+                                     <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{field.help_text}}" id="{{resource}}_{{formtype}}_{{data.0}}"><i  class="fa fa-question-circle"></i></a>
                                      {% endif %}
                                  </div>
                              </div>
