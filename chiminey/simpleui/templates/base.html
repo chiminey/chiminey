@@ -262,7 +262,7 @@ function submitForm(description, form_id) {
 
 function updatePlatform(parameters, platform_type) {
     $('form[id*="_form_update"]').hide();
-    formreset()
+    formreset();
     if (platform_type == 'csrack' || platform_type == 'nectar' || platform_type == 'amazon'){
         platform_type = 'cloud'
     }
@@ -290,7 +290,8 @@ function updatePlatform(parameters, platform_type) {
 //consider merging the ff method with updatePlatform
 function deletePlatform(parameters, platform_type) {
     $('form[id*="_form_delete"]').hide();
-    fieldReadonly()
+    formreset();
+    fieldReadonly();
     if (platform_type == 'csrack' || platform_type == 'nectar' || platform_type == 'amazon'){
         platform_type = 'cloud'
     }
@@ -329,6 +330,8 @@ function formreset(){
     $("form input[id][type='password']").val("");
     $("form select[id]").removeAttr("disabled");
     $("form select[id]").val($("form select[id] option:first").val());
+    $("#advanced_fields*").hide()
+    $('form div[id^="advanced_fields"]').hide();
 
  }
 

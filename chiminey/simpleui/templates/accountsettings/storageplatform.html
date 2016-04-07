@@ -28,7 +28,7 @@ $('#mytardis_6_{{forloop.counter}}').tooltip();
 
 {% for formtype, name in formtypes.items %}
 
-<
+
 <!--create modal -->
 <div class="modal hide fade" id="{{formtype}}Modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -38,7 +38,7 @@ $('#mytardis_6_{{forloop.counter}}').tooltip();
                 <h4 class="modal-title">{{name|title}} Storage Resource</h4>
             </div>
             <div class="modal-body">
-                {% if formtype == 'register' %}
+                {% if formtype == 'create' %}
                 <ul class="nav nav-tabs" id="myTab">
                     {% for resource, details in resources.items %}
                   <li class="{% if resource == 'unix' %} active {% endif %}"><a href="#{{resource}}" data-toggle="tab">{{resource|title}}</a></li>
