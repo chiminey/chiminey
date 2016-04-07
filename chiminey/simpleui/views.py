@@ -117,10 +117,15 @@ def bdp_account_settings(request):
 def computation_platform_settings(request):
 
     new_form_data = {}
-    for field_name, ns_suffix in [('cluster_form', 'cluster/pbs_based'),
-                                    ('cloud_form', 'cloud/ec2-based'),
-                                    ('jenkins_form','testing/jenkins_based'),
-                                    ('hadoop_form', 'bigdata/hadoop'),
+    resources = {}
+    for k, v in new_form_data.items():
+        resources[k] = {k: {'form': v[0], 'data': v[1], 'advanced_ops': 'false'}}
+
+
+    for field_name, ns_suffix, group, group_name, ops in [('cluster_form', 'cluster/pbs_based', 'cluster', "Cluster/Unix", 'true' ),
+                                    ('cloud_form', 'cloud/ec2-based', 'cloud', 'Cloud', 'false'),
+                                    ('jenkins_form','testing/jenkins_based', 'jenkins', 'Jenkins', 'false' ),
+                                    ('bigdata_form', 'bigdata/hadoop', 'bigdata', 'Big Data', 'true'),
                                     ]:
         namespace = "%s/platform/computation/%s" % (RMIT_SCHEMA, ns_suffix)
         params = _get_platform_params(request, namespace)
@@ -130,6 +135,7 @@ def computation_platform_settings(request):
             username=request.user.username)
 
         new_form_data[field_name] = (form, form_data)
+        resources[group] = {'form': form, 'data': form_data, 'advanced_ops': ops, 'group_name': group_name}
 
         if request.method == 'POST':
 
@@ -174,7 +180,18 @@ def computation_platform_settings(request):
 
     logger.debug("new res=%s" % pformat(res))
 
-    return render(request, 'accountsettings/computationplatform.html',res)
+    #return render(request, 'accountsettings/computationplatform.html',res)
+
+    # new_form_data[field_name] = (form, form_data)
+
+
+    return render(request, 'accountsettings/resources.html',
+                  {'all_headers': all_headers,
+                   'resources': resources,
+                   'formtypes': {'create':'Register', 'update': 'Update', 'delete': 'Remove'},
+                    'resourcetype': 'compute'
+                   })
+
 
 
 def hide_resource_fields(dictionary, popped_keys):
@@ -331,17 +348,18 @@ def storage_platform_settings(request):
     logger.debug('invalid mytardis')
     hide_resource_fields(storage_platforms, POPPED_KEYS)
     hide_resource_header_fields(all_headers, POPPED_KEYS)
-    return render(request, 'accountsettings/storageresources.html',
+    return render(request, 'accountsettings/resources.html',
                   {'unix_form': unix_form,
                   # 'unix_form_data': dict([(y[0],x) for x,y in unix_form_data]),
                    'unix_form_data': unix_form_data,
                    'mytardis_form': mytardis_form,
                    'mytardis_form_data': mytardis_form_data,
                    'all_headers': all_headers,
-                   'resources': {'unix': {'data': unix_form_data, 'advanced_ops':'true', 'form': unix_form},
-                                 'mytardis': {'data': mytardis_form_data, 'advanced_ops': 'false', 'form': mytardis_form}
+                   'resources': {'unix': {'data': unix_form_data, 'advanced_ops':'true', 'form': unix_form, 'group_name': 'Unix'},
+                                 'mytardis': {'data': mytardis_form_data, 'advanced_ops': 'false', 'form': mytardis_form, 'group_name': 'MyTardis'}
                                   },
-                   'formtypes': {'create':'Register', 'update': 'Update', 'delete': 'Remove'}
+                   'formtypes': {'create':'Register', 'update': 'Update', 'delete': 'Remove'},
+                   'resourcetype': 'storage'
                    })
 
 
