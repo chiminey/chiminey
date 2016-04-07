@@ -340,8 +340,8 @@ def storage_platform_settings(request):
                    'all_headers': all_headers,
                    'resources': {'unix': {'data': unix_form_data, 'advanced_ops':'true', 'form': unix_form},
                                  'mytardis': {'data': mytardis_form_data, 'advanced_ops': 'false', 'form': mytardis_form}
-                                  }
-                   #'resources': {'unix': unix_form_data, 'mytardis': mytardis_form_data}
+                                  },
+                   'formtypes': {'create':'Register', 'update': 'Update', 'delete': 'Remove'}
                    })
 
 
