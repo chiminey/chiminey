@@ -145,8 +145,8 @@ def _get_chiminey_schemas():
                                 'help_text': 'The base directory for the storage platform. All files and directories are stored relative to this position. If a storage platform plat1 has root path /home/foo, then location plat1/x/z.dat is stored at /home/foo/x/z.dat '},
                  u'private_key_path': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': '',
                                        'ranking': 41, 'help_text': ''},
-                 u'port': {'type': models.ParameterName.NUMERIC, 'subtype': '',
-                           'description': 'SSH port', 'ranking': 55, 'initial': 22,
+                 u'port': {'type': models.ParameterName.STRING, 'subtype': '',
+                           'description': 'SSH port', 'ranking': 55, 'initial': '22',
                            'help_text': 'Port of the SSH server (usually 22).)'},
 
              }
@@ -181,8 +181,8 @@ def _get_chiminey_schemas():
                                 'help_text': 'Used as the working directory for the computation. All temporary files are created under this directory.'},
                  u'private_key_path': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': '',
                                        'ranking': 41, 'help_text': ''},
-                 u'port': {'type': models.ParameterName.NUMERIC, 'subtype': '',
-                                 'description': 'SSH port', 'ranking': 55, 'initial': 22,
+                 u'port': {'type': models.ParameterName.STRING, 'subtype': '',
+                                 'description': 'SSH port', 'ranking': 55, 'initial': '22',
                                  'help_text': 'Port of the SSH server (usually 22.)'},
 
              }
@@ -214,8 +214,8 @@ def _get_chiminey_schemas():
                                 'help_text': 'Home directory. This is the location where .ssh directory resides. The home path is needed to store a Chiminey-specific public key on the cluster/unix server.'},
                  u'private_key_path': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': '',
                                        'ranking': 41, 'help_text': ''},
-                 u'port': {'type': models.ParameterName.NUMERIC, 'subtype': 'hidden',
-                           'description': 'SSH port', 'ranking': 55, 'initial': 22,
+                 u'port': {'type': models.ParameterName.STRING, 'subtype': 'hidden',
+                           'description': 'SSH port', 'ranking': 55, 'initial': '22',
                            'help_text': 'Port of the SSH server (usually 22).)'},
 
              }

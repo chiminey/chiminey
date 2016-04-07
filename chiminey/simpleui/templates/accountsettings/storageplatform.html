@@ -38,9 +38,12 @@ $('#mytardis_6_{{forloop.counter}}').tooltip();
                   <li><a href="#mytardis" data-toggle="tab">MyTardis</a></li>
                 </ul>
                 <div class="tab-content">
-                    <div class="tab-pane active" id="unix">
-                        <form class="form-horizontal" action="{{ action }}" method="POST" id="unix_form_create"> {% csrf_token %}
-                                {% for data, field in unix_form_data %}
+                    {% for resource, details in resources.items %}
+
+{{resource}}
+                    <div class="tab-pane" id="{{resource}}">
+                        <!--form class="form-horizontal" action="{{ action }}" method="POST" id="{{resource}}_form_create"> {% csrf_token %}
+                                {% for data, field in details.0  %}
                                  {% if field.is_hidden == False and data.4 != "advanced" %}
                                         <div class="control-group" >
                                         <label class="control-label">{{field.label}}</label>
@@ -50,16 +53,21 @@ $('#mytardis_6_{{forloop.counter}}').tooltip();
                                             <span class="help-inline">{{field.errors}}</span>
                                             {% endif %}
                                             {% if field.help_text %}
-                                            <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{field.type}}" id='unix_4_{{forloop.counter}}'><i  class="fa fa-question-circle"></i></a>
+                                            <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{field.type}}" id='{{resource}}_4_{{forloop.counter}}'><i  class="fa fa-question-circle"></i></a>
                                             {% endif %}
                                         </div>
                                 </div>
 
                               {% endif %}
                             {% endfor %}
-                             <button type="button" class="btn btn-default" onclick="toggleVisibility('advanced_fields');">Advanced m</button>
-                            <div  id="advanced_fields" hidden="true">
-                                {% for data, field in unix_form_data %}
+                            <p>
+                            {% if details.1 == 'true' %}
+                            <div class="control-group" >
+                             <button type="button" class="btn btn-link pull-right" onclick="toggleVisibility('advanced_fields_{{resource}}');" >Advanced options...</button>
+                                </div>
+
+                            <div  id="advanced_fields_{{resource}}" hidden="true">
+                                {% for data, field in details.0 %}
                                  {% if field.is_hidden == False and data.4 == "advanced" %}
                                         <div class="control-group" >
                                         <label class="control-label">{{field.label}}</label>
@@ -69,7 +77,7 @@ $('#mytardis_6_{{forloop.counter}}').tooltip();
                                             <span class="help-inline">{{field.errors}}</span>
                                             {% endif %}
                                             {% if field.help_text %}
-                                            <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{field.type}}" id='unix_4_{{forloop.counter}}'><i  class="fa fa-question-circle"></i></a>
+                                            <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{field.type}}" id='{{resource}}_4_{{forloop.counter}}'><i  class="fa fa-question-circle"></i></a>
                                             {% endif %}
                                         </div>
                                 </div>
@@ -77,26 +85,25 @@ $('#mytardis_6_{{forloop.counter}}').tooltip();
                               {% endif %}
                             {% endfor %}
                             </div>
-
+                            {%endif}
+                            </p>
 
 
 
                             {% for hidden in unix_form.hidden_fields %}
                                 {{ hidden }}
-
                             {% endfor %}
 
-
-
-
-
-                            <button type="submit" class="btn btn-primary" onclick="submitForm('create', 'unix_form_create');">Register</button>
+                            <button type="submit" class="btn btn-primary" onclick="submitForm('create', '{{resource}}_form_create');">Register</button>
                             <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
 
 
-                        </form>
+                        </form-->
                     </div>
-                     <div class="tab-pane" id="mytardis">
+
+
+                    {%endfor%}
+                    <!--div class="tab-pane" id="mytardis">
                         <form class="form-horizontal" action="{{ action }}" method="POST" id="mytardis_form_create"> {% csrf_token %}
 
                              {% for field in mytardis_form.visible_fields %}
@@ -119,7 +126,7 @@ $('#mytardis_6_{{forloop.counter}}').tooltip();
                             <button type="submit" class="btn btn-primary" onclick="submitForm('create', 'mytardis_form_create');">Register</button>
                             <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                         </form>
-                    </div>
+                    </div-->
                 </div>
             </div>
         </div><!-- /.modal-content -->
@@ -243,7 +250,7 @@ $('#mytardis_6_{{forloop.counter}}').tooltip();
 
 
 <!--second column-->
-<p><a data-toggle="modal" href="#createModal" class="btn btn-primary"  onclick="formreset();">Register Storage Resource</a></p>
+<p><a data-toggle="modal" href="#createModal" class="btn btn-primary"  onclick="formreset(); $('#advanced_fields').hide();">Register Storage Resource</a></p>
 <div>
 {% for platform_type, platform_details in all_headers.items %}
      {% for header, schema in platform_details.items %}

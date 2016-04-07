@@ -331,13 +331,18 @@ def storage_platform_settings(request):
     logger.debug('invalid mytardis')
     hide_resource_fields(storage_platforms, POPPED_KEYS)
     hide_resource_header_fields(all_headers, POPPED_KEYS)
-    return render(request, 'accountsettings/storageplatform.html',
+    return render(request, 'accountsettings/storageresources.html',
                   {'unix_form': unix_form,
                   # 'unix_form_data': dict([(y[0],x) for x,y in unix_form_data]),
                    'unix_form_data': unix_form_data,
                    'mytardis_form': mytardis_form,
                    'mytardis_form_data': mytardis_form_data,
-                   'all_headers': all_headers})
+                   'all_headers': all_headers,
+                   'resources': {'unix': {'data': unix_form_data, 'advanced_ops':'true', 'form': unix_form},
+                                 'mytardis': {'data': mytardis_form_data, 'advanced_ops': 'false', 'form': mytardis_form}
+                                  }
+                   #'resources': {'unix': unix_form_data, 'mytardis': mytardis_form_data}
+                   })
 
 
 def post_platform(schema, form_data, request, type=None):
