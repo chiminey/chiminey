@@ -46,12 +46,13 @@ def create_platform(platform, platform_name, username,
                   ' Paramteres %s are missing' % missing_params
         return False, message
     parameters['platform_name'] = platform_name
-    logger.debug('I am here %s' % parameters)
+    logger.debug('parameters=%s' % parameters)
     platform_type = parameters['platform_type']
+    parameters['class'] = _get_resource_class(schema_namespace)
+    logger.debug('parameters_with_class=%s' % parameters)
     _configure_platform(platform, platform_type, username, parameters)
     remove_password, valid_params, message = _validate_parameters(platform,
         platform_type, parameters, passwd_auth=True)
-    logger.debug('I am there')
     if not valid_params:
         return valid_params, message
     key_generated, message = _generate_key(platform, platform_type, parameters)
@@ -358,3 +359,9 @@ def get_job_dir(output_storage_settings, offset):
 def get_scratch_platform():
     #return "file://local@127.0.0.1/"
     return "local/"
+
+def _get_resource_class(schema_namespace):
+    if '/computation/' in schema_namespace:
+        return 'compute'
+    if '/storage/' in schema_namespace:
+        return 'storage'
