@@ -19,6 +19,16 @@ class HadoopPlatform(UnixPlatform):
     def get_platform_types(self):
         return ['hadoop']
 
+    def configure(self, platform_type, username, parameters):
+        key_name = 'bdp_%s' % parameters['platform_name']
+        key_relative_path = os.path.join(
+            '.ssh', username, platform_type, key_name)
+        parameters['private_key_path'] = key_relative_path
+        try:
+            parameters['port'] = int(parameters['port'])
+        except ValueError:
+            parameters['port'] = 22
+
     def validate(self, parameters, passwd_auth=False):
         path_list = [parameters['hadoop_home_path']]
         return [True] + list(validate_remote_path(path_list, parameters, passwd_auth))
