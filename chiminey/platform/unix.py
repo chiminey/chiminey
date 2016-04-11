@@ -65,9 +65,10 @@ class UnixPlatform():
         if not root_path:
             root_path = self.get_or_create_homepath(parameters)
 
-        if parameters['class'] == 'compute':
+        if parameters['class'] == 'compute' \
+                and os.path.basename(root_path) != '.chimineywd':
             root_path = '%s/.chimineywd' % root_path
-            run_command('mkdir -p %s' % root_path, parameters['ip_address'], parameters)
+        run_command('mkdir -p %s' % root_path, parameters['ip_address'], parameters)
         logger.debug('root_path=%s' % parameters['root_path'])
         return root_path
 

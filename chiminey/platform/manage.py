@@ -149,6 +149,7 @@ def update_platform(platform, platform_name, username,
     updated_platform_record.update(updated_parameters)
     platform_type = current_platform_record['platform_type']
     updated_platform_record['platform_type'] = platform_type
+    updated_platform_record['class'] = _get_resource_class(schema_namespace)
     _configure_platform(platform, platform_type, username, updated_platform_record)
     remove_password, valid_params, message = _validate_parameters(
         platform,
