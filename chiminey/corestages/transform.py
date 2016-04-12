@@ -33,8 +33,9 @@ from chiminey import messages
 
 logger = logging.getLogger(__name__)
 
-RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+from django.conf import settings as django_settings
 
+RMIT_SCHEMA = django_settings.SCHEMA_PREFIX
 
 # DOMAIN_INPUT_FILES = ['input_bo.dat', 'input_gr.dat', 'input_sq.dat']
 
@@ -117,7 +118,7 @@ class Transform(Stage):
             id = int(getval(run_settings, '%s/system/id' % RMIT_SCHEMA))
         except (SettingNotFoundException, ValueError):
             id = 0
-        messages.info(run_settings, '%d: transforming' % (id+1))
+        #messages.info(run_settings, '%d: transforming' % (id+1))
 
         # self.contextid = getval(run_settings, '%s/system/contextid' % RMIT_SCHEMA)
         bdp_username = getval(run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA)
@@ -410,4 +411,3 @@ class Transform(Stage):
 
     def process_outputs(self, run_settings, base_dir, output_url, output_storage_settings, offset):
         return
-

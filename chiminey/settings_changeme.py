@@ -128,15 +128,52 @@ MIDDLEWARE_CLASSES = (
 SMART_CONNECTORS = {'randunix': {'init': 'chiminey.examples.randnumunix.initialise.RandInitial',
                                  'name': 'randunix',
                                  'description': 'my descrip...',
-                                 'payload': ''},
+                                 'payload': ''
+                                 },
                     'hrmc': {'init': 'chiminey.examples.hrmc2.initialise.HRMCInitial',
                              'name': 'hrmc',
                              'description': 'hrmc',
-                             'payload': '/opt/chiminey/current/chiminey/examples/randnummytardis/payload_randnum'}
+                             'payload': '/opt/chiminey/current/chiminey/examples/hrmc2/payload_hrmc'
+                             },
+                    'hrmclite': {'init': 'chiminey.examples.hrmclite.initialise.HRMCInitial',
+                             'name': 'hrmclite',
+                             'description': 'Hybrid Reverse Monte Carlo without PSD',
+                             'payload': '/opt/chiminey/current/chiminey/examples/hrmclite/payload_hrmc'
+                             },
+                    'tutorial': {'init': 'chiminey.examples.tutorial.initialise.TutorialInitial',
+                                 'name': 'tutorial',
+                                 'description': 'tutorial smart connector',
+                                 'payload': ''
+                                },
+                    'wordcount': {'init': 'chiminey.examples.wordcount.initialise.WordCountInitial',
+                                 'name': 'wordcount',
+                                 'description': 'Counting words via Hadoop',
+                                 'payload': '/opt/chiminey/current/chiminey/examples/wordcount/payload_wordcount',
+                                 'args':('word_pattern',)
+                                },
+"randnum": {
+           "name": "randnum",
+           "init": "chiminey.randnum.initialise.RandNumInitial",
+           "description": "Randnum generator, with timestamp",
+           "payload": "/opt/chiminey/current/payload_randnum"
+            },
                     }
 
-PAYLOAD_DESTINATION = '/var/chiminey/remotesys/my_payloads/'
+SCHEMA_PREFIX = "http://rmit.edu.au/schemas"
 
+PAYLOAD_DESTINATION = 'active_payloads'
+
+
+INPUT_FIELDS =  {'cloud': SCHEMA_PREFIX + "/input/system/compplatform/cloud",
+                 'hadoop': SCHEMA_PREFIX + "/input/system/compplatform/hadoop",
+                 'unix': SCHEMA_PREFIX + "/input/system/compplatform/unix",
+                 'reliability': SCHEMA_PREFIX + "/input/reliability",
+                 'location':  SCHEMA_PREFIX + "/input/location",
+                 'output_location': SCHEMA_PREFIX + "/input/location/output",
+                 'input_location':  SCHEMA_PREFIX + "/input/location/input",
+                 'hrmclite':  SCHEMA_PREFIX + "/input/hrmclite",
+                 'wordcount':  SCHEMA_PREFIX + "/input/wordcount",
+                 }
 
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
@@ -416,11 +453,17 @@ CELERY_ROUTES = {
 },
 }
 
-SCHEMA_PREFIX = "http://rmit.edu.au/schemas"
-COMPUTATION_PLATFORM_SCHEMA_NAMESPACE = \
-    {SCHEMA_PREFIX + '/input/system/compplatform/cloud': '/cloud/ec2-based',
-     SCHEMA_PREFIX + '/input/system/compplatform/unix': '/cluster/pbs_based'
+
+RESOURCE_SCHEMA_NAMESPACE = \
+    {SCHEMA_PREFIX + '/input/system/compplatform/cloud': '/platform/computation/cloud/ec2-based',
+     SCHEMA_PREFIX + '/input/system/compplatform/unix': '/platform/computation/cluster/pbs_based',
+     SCHEMA_PREFIX + '/input/system/compplatform/hadoop': '/platform/computation/bigdata/hadoop',
+     SCHEMA_PREFIX + '/input/location': '/platform/storage/unix',
+     SCHEMA_PREFIX + '/input/location/input': '/platform/storage/unix',
+     SCHEMA_PREFIX + '/input/location/output': '/platform/storage/unix'
     }
+
+
 
 #BROKER_TRANSPORT = 'django'
 BROKER_URL = 'redis://localhost:6379/0'
@@ -434,6 +477,7 @@ PLATFORM_CLASSES = (
     'chiminey.platform.cloud.CloudPlatform',
     'chiminey.platform.jenkins.JenkinsPlatform',
     'chiminey.platform.mytardis.MyTardisPlatform',
+    'chiminey.platform.hadoop.HadoopPlatform',
      )
 
 from pprint import pformat

@@ -24,9 +24,9 @@ import os
 from pprint import pformat
 
 from chiminey.runsettings import getval, SettingNotFoundException
+from django.conf import settings as django_settings
 
-
-RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+RMIT_SCHEMA = django_settings.SCHEMA_PREFIX
 
 logger = logging.getLogger(__name__)
 

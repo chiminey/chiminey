@@ -29,11 +29,12 @@ from chiminey.corestages import strategies
 from django.conf import settings as django_settings
 from chiminey.smartconnectorscheduler import jobs
 from django.core.exceptions import ImproperlyConfigured
+from django.conf import settings as django_settings
 
+RMIT_SCHEMA = django_settings.SCHEMA_PREFIX
 
 logger = logging.getLogger(__name__)
 
-RMIT_SCHEMA = "http://rmit.edu.au/schemas"
 
 
 class Bootstrap(Stage):
@@ -68,7 +69,7 @@ class Bootstrap(Stage):
         return False
 
     def process(self, run_settings):
-        messages.info(run_settings, "0: bootstrapping nodes")
+        #messages.info(run_settings, "0: bootstrapping nodes")
         comp_pltf_settings = self.get_platform_settings(
             run_settings, 'http://rmit.edu.au/schemas/platform/computation')
         try:
@@ -142,12 +143,3 @@ class Bootstrap(Stage):
             setvals(run_settings, {
                 '%s/stages/bootstrap/bootstrap_done' % RMIT_SCHEMA: 1})
         return run_settings
-
-
-
-
-
-
-
-
-

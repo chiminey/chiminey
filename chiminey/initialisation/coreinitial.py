@@ -22,9 +22,10 @@ import logging
 import abc
 from chiminey.smartconnectorscheduler import models
 from chiminey.initialisation.chimineyinitial import register_schemas
+from django.conf import settings as django_settings
 
-RMIT_SCHEMA = "http://rmit.edu.au/schemas"
-SWEEP_SCHEMA = RMIT_SCHEMA + "/input/sweep"
+
+SWEEP_SCHEMA = django_settings.SCHEMA_PREFIX + "/input/sweep"
 logger = logging.getLogger(__name__)
 
 
@@ -74,7 +75,7 @@ class CoreInitial(object):
         package = "chiminey.corestages.create.Create"
         name = "create"
         description = "This is the create stage"
-        settings = {u'http://rmit.edu.au/schemas/stages/create':
+        settings = {u'%s/stages/create' % django_settings.SCHEMA_PREFIX:
                 {
                     u'vm_size': "m1.small",
                     u'vm_image': "ami-0000000d",
@@ -110,7 +111,7 @@ class CoreInitial(object):
         package = "chiminey.corestages.configure.Configure"
         name = "configure"
         description = "This is the configure stage"
-        settings = {u'http://rmit.edu.au/schemas/system':
+        settings = {u'%s/system' % django_settings.SCHEMA_PREFIX:
                     {
                     u'random_numbers': 'file://127.0.0.1/randomnums.txt'
                     },
@@ -136,23 +137,33 @@ class CoreInitial(object):
         configure_stage.update_settings(default_params['settings'])
         return configure_stage
 
+    def get_default_setting(self, namespace):
+        setting = {}
+        schema = models.Schema.objects.get(namespace=namespace)
+        params = models.ParameterName.objects.filter(schema=schema)
+        for i in params:
+            if i.initial:
+                setting[i.name] = i.initial
+        return setting
+
+
     def _get_default_bootstrap_params(self):
         package = "chiminey.corestages.bootstrap.Bootstrap"
         name = "bootstrap"
         description = "This is the bootstrap stage"
-        settings = \
-            {
-                u'http://rmit.edu.au/schemas/stages/setup':
-                    {
-                        u'payload_source': '',
-                    },
-            }
+        default_setting = self.get_default_setting(
+                '%s/stages/setup' % django_settings.SCHEMA_PREFIX)
+        default_setting[u'payload_source'] = '%s/payload_%s' % (
+                            django_settings.PAYLOAD_DESTINATION, self.directive_name)
+        updated_settings = {u'%s/stages/setup' % django_settings.SCHEMA_PREFIX:
+                                default_setting}
         params = {'package': package, 'name': name,
-                  'description': description, 'settings': settings}
+                  'description': description, 'settings': updated_settings}
         return params
 
     def get_updated_bootstrap_params(self):
         return {}
+
 
     def _define_bootstrap_stage(self):
         default_params = self._get_default_bootstrap_params()
@@ -165,16 +176,6 @@ class CoreInitial(object):
             parent=self._define_parent_stage(),
             package=bootstrap_package,
             order=20)
-        fixed_settings = \
-            {
-                u'http://rmit.edu.au/schemas/stages/setup':
-                    {
-                        u'payload_destination': 'chiminey_payload',
-                        u'payload_name': 'process_payload',
-                        u'filename_for_PIDs': 'PIDs_collections',
-                    },
-            }
-        bootstrap_stage.update_settings(fixed_settings)
         bootstrap_stage.update_settings(default_params['settings'])
 
         return bootstrap_stage
@@ -210,13 +211,12 @@ class CoreInitial(object):
         package = "chiminey.corestages.execute.Execute"
         name = 'execute'
         description = "This is the execute stage"
-        settings = {u'http://rmit.edu.au/schemas/stages/run':
-                    {
-                        u'process_output_dirname': 'chiminey',
-                    },
-                   }
+        default_setting = self.get_default_setting(
+                '%s/stages/run' % django_settings.SCHEMA_PREFIX)
+        updated_settings = {u'%s/stages/run' % django_settings.SCHEMA_PREFIX:
+                                default_setting}
         params = {'package': package, 'name': name,
-                  'description': description, 'settings': settings}
+                  'description': description, 'settings': updated_settings}
         return params
 
     def get_updated_execute_params(self):
@@ -346,7 +346,7 @@ class CoreInitial(object):
         description = "This is the sweep stage of %s smart connector" % subdirective.name
         settings = \
             {
-            u'http://rmit.edu.au/schemas/stages/sweep':
+            u'%s/stages/sweep' % django_settings.SCHEMA_PREFIX:
             {
                 u'directive': subdirective.name
             }
@@ -374,13 +374,13 @@ class CoreInitial(object):
         self.directive_name = directive_name
         if not description:
             description = '%s Smart Connector' % self.directive_name
-        register_schemas(self.get_domain_specific_schemas())
+        register_schemas(self._get_domain_specific_schemas())
         parent_stage = self.assemble_stages()
         directive, _ = models.Directive.objects.get_or_create(
             name=self.directive_name,
             defaults={'stage': parent_stage,
                       'description': description,
-                      'hidden': sweep}
+                      'hidden': sweep,}
         )
         self._attach_directive_args(directive)
         if sweep:
@@ -432,6 +432,15 @@ class CoreInitial(object):
     @abc.abstractmethod
     def get_ui_schema_namespace(self):
         return ''
+
+
+    def _get_domain_specific_schemas(self):
+        schema = self.get_domain_specific_schemas()
+        if schema:
+            namespace = u'%s/input/%s' % (django_settings.SCHEMA_PREFIX,
+                                         self.directive_name)
+            schema = {namespace: schema}
+        return schema
 
     def get_domain_specific_schemas(self):
         return ''

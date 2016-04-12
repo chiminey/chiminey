@@ -27,8 +27,9 @@ from chiminey.smartconnectorscheduler.errors import deprecated
 from chiminey.platform.manage import retrieve_platform
 from chiminey.platform import get_platform_settings
 from chiminey.runsettings import getval, SettingNotFoundException
+from django.conf import settings as django_settings
 
-RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+RMIT_SCHEMA = django_settings.SCHEMA_PREFIX
 
 
 logger = logging.getLogger(__name__)
@@ -74,6 +75,11 @@ class Stage(object):
         platform_url = run_settings[namespace_prefix]['platform_url']
         return get_platform_settings(platform_url, bdp_username)
 
+    def get_input_schema_namespace(self, directive_name):
+        basename = directive_name
+        if 'sweep_' in basename[0:6]:
+            basename = directive_name[6:]
+        return '%s/input/%s' % (django_settings.SCHEMA_PREFIX, basename)
 
     def set_stage_settings(self, run_settings, local_settings):
         pass
@@ -165,7 +171,7 @@ class Stage(object):
         output_path = os.path.join(
             computation_platform['root_path'],
             self.get_relative_output_path(local_settings), str(process_id),
-            getval(run_settings, 'http://rmit.edu.au/schemas/stages/run/process_output_dirname'))
+            getval(run_settings, 'http://rmit.edu.au/schemas/stages/setup/process_output_dirname'))
         return output_path
 
     def get_relative_output_path(self, local_settings):

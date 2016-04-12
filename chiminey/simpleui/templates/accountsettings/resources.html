@@ -1,0 +1,174 @@
+{% extends "accountsettings/base_accountsettings.html" %}
+{% block account-settings-content %}
+
+
+<script type="text/javascript">
+$(document).ready(function () {
+    {% for platform_type, platform_details in all_headers.items %}
+    $('.footable_{{platform_type}}').footable();
+    {% endfor %}
+
+        {% for formtype in formtypes.keys %}
+        {% for resource, details in resources.items %}
+             {% for data, field in  details.data  %}
+                    $('#{{resource}}_{{formtype}}_{{data.0}}').tooltip();
+               {% endfor %}
+            {% endfor %}
+            {% endfor %}
+
+   });
+
+</script>
+
+
+
+{% for formtype, name in formtypes.items %}
+<!--create modal -->
+<div class="modal hide fade" id="{{formtype}}Modal_{{resourcetype}}" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title">{{name|title}} {{resourcetype|title}} Resource</h4>
+            </div>
+            <div class="modal-body">
+                {% if formtype == 'create' %}
+                <ul class="nav nav-tabs" id="myTab">
+                    {% for resource, details in resources.items %}
+                  <li class="{% if resource == 'unix' or resource == 'cloud' %} active {% endif %}"><a href="#{{resource}}_{{resourcetype}}" data-toggle="tab">{{resource|title}}</a></li>
+
+                    {% endfor %}
+                </ul>
+                {% endif %}
+                <div class="tab-content">
+
+                    {% for resource, details in resources.items %}
+                     <div class="tab-pane {% if resource == 'unix' or resource == 'cloud' or formtype == 'update' or formtype == 'delete' %} active {% endif %} " id="{{resource}}_{{resourcetype}}">
+                       <form class="form-horizontal" action="{{ action }}" method="POST" id="{{resource}}_form_{{formtype}}"> {% csrf_token %}
+                             {% for data, field in  details.data  %}
+                              {% if field.is_hidden == False and data.4 != "advanced" %}
+                                 <div class="control-group">
+                                 <label class="control-label">{{field.label}}</label>
+                                 <div class="controls">
+                                     {{field}}
+                                     {% if field.errors %}
+                                     <span class="help-inline">{{field.errors}}</span>
+                                     {% endif %}
+                                     {% if field.help_text %}
+                                     <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{field.help_text}}" id="{{resource}}_{{formtype}}_{{data.0}}"><i  class="fa fa-question-circle"></i></a>
+                                     {% endif %}
+                                 </div>
+                             </div>
+                           {% endif %}
+                            {% endfor %}
+
+                           {% if details.advanced_ops == 'true' %}
+                            <div class="control-group" >
+                             <button type="button" class="btn btn-link pull-right" onclick="toggleVisibility('advanced_fields_{{resource}}_{{formtype}}');" >Advanced options...</button>
+                           </div>
+                           {% endif %}
+
+
+                           <div  id="advanced_fields_{{resource}}_{{formtype}}" hidden="true">
+                           {% for data, field in  details.data  %}
+                              {% if field.is_hidden == False and data.4 == "advanced" %}
+                                 <div class="control-group">
+                                 <label class="control-label">{{field.label}}</label>
+                                 <div class="controls">
+                                     {{field}}
+                                     {% if field.errors %}
+                                     <span class="help-inline">{{field.errors}}</span>
+                                     {% endif %}
+                                     {% if field.help_text %}
+                                     <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{field.help_text}}" id="{{resource}}_{{formtype}}_{{data.0}}"><i  class="fa fa-question-circle"></i></a>
+                                     {% endif %}
+                                 </div>
+                             </div>
+                           {% endif %}
+                            {% endfor %}
+                           </div>
+
+                            {% for hidden in details.form.hidden_fields %}
+                                {{ hidden }}
+                            {% endfor %}
+
+                            <button type="submit" class="btn btn-primary" onclick="submitForm('{{formtype}}', '{{resource}}_form_{{formtype}}');">{{name|title}}</button>
+                            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                        </form>
+
+                    </div>
+                {% endfor %}
+
+                </div>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- end create modal -->
+
+
+
+
+{% endfor %}
+
+
+
+<!--second column-->
+<p><a data-toggle="modal" href="#createModal_{{resourcetype}}" class="btn btn-primary"  onclick="formreset();">Register {{resourcetype|title}} Resource</a></p>
+
+<div>
+{% for platform_type, platform_details in all_headers.items %}
+     {% for header, schema in platform_details.items %}
+
+
+ {% if platform_type == 'nci' %}
+            <h2>Cluster/Unix</h2>
+         {% elif platform_type == 'nectar' or platform_type == 'csrack' or  platform_type == 'amazon' %}
+            <h2>Cloud - NeCTAR/CSRack/Amazon EC2</h2>
+         {% elif platform_type == 'hadoop' %}
+            <h2>Big Data - Hadoop</h2>
+         {% else %}
+            <h2>{{ platform_type|title }}</h2>
+
+         {% endif %}
+
+         <table class="footable_{{platform_type}} table table-hover table-striped table-bordered platform_table">
+            <thead>
+                <tr>
+                    {% for h in header %}
+                       {% if h == 'platform_name' %}
+                        <th class="col-1" data-hide="">
+                            <strong>{{ h }}</strong>
+                        </th>
+                        {% elif h != 'password' and h != 'ec2_secret_key' %}
+                        <th col="col-1" data-hide="phone, tablet">
+                            <strong>{{ h }}</strong>
+                        </th>
+                        {% endif %}
+                    {% endfor %}
+                    <th class="col-3"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for paramset_key, paramset in schema.items %}
+                <tr>
+                    {% for param_key, param in paramset.items %}
+                        {% if param_key != 'password' and h != 'ec2_secret_key'  %}
+                            <td>  {{ param }}</td>
+                        {% endif %}
+                    {% endfor %}
+                <td class="btn-group">
+                    <a data-toggle="modal" href="#updateModal_{{resourcetype}}" class="btn btn-primary"
+                       onclick="updatePlatform('{{ paramset.items|escapejs }}', '{{ platform_type|slugify }}');">
+                                Update </a>
+                  <button data-toggle="modal" href="#deleteModal_{{resourcetype}}" class="btn"
+                          onclick="deletePlatform('{{ paramset.items|escapejs }}', '{{ platform_type|slugify }}');">Remove</button>
+                </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+         </table>
+    {% endfor %}
+{% endfor %}
+</div>
+<!--end second column-->
+{% endblock %}

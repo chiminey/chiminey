@@ -33,7 +33,7 @@ from chiminey.smartconnectorscheduler import jobs
 from chiminey.smartconnectorscheduler import models
 
 
-RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+RMIT_SCHEMA = django_settings.SCHEMA_PREFIX
 
 logger = logging.getLogger(__name__)
 
@@ -46,12 +46,13 @@ def create_platform(platform, platform_name, username,
                   ' Paramteres %s are missing' % missing_params
         return False, message
     parameters['platform_name'] = platform_name
-    logger.debug('I am here %s' % parameters)
+    logger.debug('parameters=%s' % parameters)
     platform_type = parameters['platform_type']
+    parameters['class'] = _get_resource_class(schema_namespace)
+    logger.debug('parameters_with_class=%s' % parameters)
     _configure_platform(platform, platform_type, username, parameters)
     remove_password, valid_params, message = _validate_parameters(platform,
         platform_type, parameters, passwd_auth=True)
-    logger.debug('I am there')
     if not valid_params:
         return valid_params, message
     key_generated, message = _generate_key(platform, platform_type, parameters)
@@ -148,6 +149,7 @@ def update_platform(platform, platform_name, username,
     updated_platform_record.update(updated_parameters)
     platform_type = current_platform_record['platform_type']
     updated_platform_record['platform_type'] = platform_type
+    updated_platform_record['class'] = _get_resource_class(schema_namespace)
     _configure_platform(platform, platform_type, username, updated_platform_record)
     remove_password, valid_params, message = _validate_parameters(
         platform,
@@ -288,6 +290,9 @@ def get_platform_settings(platform_url, username):
             break
 
     platform_settings['bdp_username'] = username
+    #TODO move to HadoopPlatform
+    if platform_settings['type'] == 'hadoop':
+        platform_settings['root_path'] = '/home/%s' % platform_settings['username']
     return platform_settings
 #    return platform.get_platform_settings(platform_url, username)
 
@@ -355,3 +360,9 @@ def get_job_dir(output_storage_settings, offset):
 def get_scratch_platform():
     #return "file://local@127.0.0.1/"
     return "local/"
+
+def _get_resource_class(schema_namespace):
+    if '/computation/' in schema_namespace:
+        return 'compute'
+    if '/storage/' in schema_namespace:
+        return 'storage'

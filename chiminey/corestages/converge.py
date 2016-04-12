@@ -36,8 +36,9 @@ from chiminey.runsettings import getval, delkey, setvals, setval, getvals, updat
 logger = logging.getLogger(__name__)
 
 
-RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+from django.conf import settings as django_settings
 
+RMIT_SCHEMA = django_settings.SCHEMA_PREFIX
 
 # TODO: key task here is to seperate the domain specific  parts from the
 # general parts of this stage and move to different class/module
@@ -73,7 +74,7 @@ class Converge(Stage):
             id = int(getval(run_settings, '%s/system/id' % RMIT_SCHEMA))
         except (SettingNotFoundException, ValueError):
             id = 0
-        messages.info(run_settings, '%d: converging' % (id+1))
+        #messages.info(run_settings, '%d: converging' % (id+1))
 
         def retrieve_local_settings(run_settings, local_settings):
 

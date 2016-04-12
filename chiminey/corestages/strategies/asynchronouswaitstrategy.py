@@ -25,10 +25,11 @@ from chiminey.storage import get_url_with_credentials
 from chiminey.storage import get_make_path
 from chiminey.compute import run_make
 from chiminey.corestages.strategies.strategy import Strategy
+from django.conf import settings as django_settings
 
 
 logger = logging.getLogger(__name__)
-RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+RMIT_SCHEMA = django_settings.SCHEMA_PREFIX
 
 
 class AsynchronousWaitStrategy(Strategy):

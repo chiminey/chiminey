@@ -39,9 +39,12 @@ from chiminey import storage
 from chiminey import messages
 from chiminey.sshconnection import open_connection
 from chiminey.compute import run_make
+from django.conf import settings as django_settings
 
 from chiminey.runsettings import getval, setvals, getvals, update, SettingNotFoundException
 from chiminey.storage import get_url_with_credentials, list_dirs, get_make_path
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -50,7 +53,7 @@ class Execute(stage.Stage):
     Start application on nodes and return status
     """
 
-    SCHEMA_PREFIX = "http://rmit.edu.au/schemas"
+    SCHEMA_PREFIX = django_settings.SCHEMA_PREFIX
     VALUES_FNAME = "values"
 
     def __init__(self, user_settings=None):
@@ -158,7 +161,7 @@ class Execute(stage.Stage):
         except (SettingNotFoundException, ValueError):
             self.id = 0
             self.iter_inputdir = os.path.join(self.job_dir, "input_location")
-        messages.info(run_settings, "%s: execute" % (self.id + 1))
+        messages.info(run_settings, "%s: Executing" % (self.id + 1))
         logger.debug("id = %s" % self.id)
 
         try:
@@ -295,8 +298,25 @@ class Execute(stage.Stage):
         makefile_path = get_make_path(destination)
         try:
             ssh = open_connection(ip_address=ip_address, settings=settings)
-            command, errs = run_make(
-                ssh, makefile_path, 'start_running_process')
+            logger.debug(settings['process_output_dirname'])
+            try:
+                hadoop = run_settings['%s/input/system/compplatform/hadoop' % self.SCHEMA_PREFIX]
+                sudo = False
+                options = "%s input_%s_%s output_%s_%s HADOOP_INPUT %s %s"  % (
+                    settings['process_output_dirname'], self.contextid, process_id, self.contextid,
+                    process_id, settings['hadoop_home_path'], self.get_optional_args(run_settings))
+                command, errs = run_make(
+                ssh, makefile_path,
+                'start_running_process  %s'  % options,#, self.contextid, process_id),
+            sudo= sudo
+            )
+            except KeyError:
+                sudo = True
+                command, errs = run_make(
+                ssh, makefile_path,
+                'start_running_process %s'  % settings['process_output_dirname'], sudo= sudo)
+
+
             logger.debug('execute_command=%s' % command
                          )
         finally:
@@ -561,6 +581,9 @@ class Execute(stage.Stage):
                         + "@" + os.path.join(relative_path_suffix,
                                              proc['id'],
                                              local_settings['process_output_dirname'])
+                    if computation_platform_settings['type'] == 'hadoop':
+                        dest_file_location = os.path.join(dest_file_location, 'HADOOP_INPUT')
+
                     logger.debug("dest_file_location =%s" % dest_file_location)
                     resched_file_location = "%s%s" % (output_prefix, os.path.join(
                         self.job_dir, "input_backup", proc['id']))
@@ -592,7 +615,7 @@ class Execute(stage.Stage):
         update(local_settings, run_settings,
                '%s/stages/setup/payload_destination' % self.SCHEMA_PREFIX,
                '%s/stages/setup/filename_for_PIDs' % self.SCHEMA_PREFIX,
-               '%s/stages/run/process_output_dirname' % self.SCHEMA_PREFIX,
+               '%s/stages/setup/process_output_dirname' % self.SCHEMA_PREFIX,
                '%s/system/contextid' % self.SCHEMA_PREFIX,
                '%s/system/random_numbers' % self.SCHEMA_PREFIX,
                '%s/system/id' % self.SCHEMA_PREFIX
@@ -604,10 +627,58 @@ class Execute(stage.Stage):
             local_settings['curate_data'] = 0
         local_settings['bdp_username'] = getval(run_settings,
                                                 '%s/bdp_userprofile/username' % self.SCHEMA_PREFIX)
+        if '%s/input/system/compplatform/hadoop' % self.SCHEMA_PREFIX in run_settings.keys():
+            from chiminey.platform import get_platform_settings
+            platform_url = run_settings['%s/platform/computation' % self.SCHEMA_PREFIX]['platform_url']
+            pltf_settings = get_platform_settings(platform_url, local_settings['bdp_username'])
+            local_settings['root_path'] = '/home/%s' % pltf_settings['username']
+            local_settings['hadoop_home_path'] = pltf_settings['hadoop_home_path']
+            logger.debug('root_path=%s' % local_settings['root_path'])
+        else:
+            logger.debug('root_path not found')
+
 
     def curate_data(self, experiment_id, local_settings, output_storage_settings,
                     mytardis_settings, source_files_url):
         return self.experiment_id
 
     def set_domain_settings(self, run_settings, local_settings):
-        pass
+         try:
+             schema = models.Schema.objects.get(namespace=self.get_input_schema_namespace(
+                run_settings['%s/directive_profile' % self.SCHEMA_PREFIX]['directive_name']))
+             if schema:
+                params = models.ParameterName.objects.filter(schema=schema)
+                if params:
+                    namespace = schema.namespace
+                    domain_params = [os.path.join(namespace, i.name) for i in params]
+                    update(local_settings, run_settings, *domain_params)
+         except models.Schema.DoesNotExist:
+             pass
+
+
+    def get_optional_args(self, run_settings):
+        from os.path import basename
+        namespace = self.get_input_schema_namespace(
+            run_settings['%s/directive_profile' % self.SCHEMA_PREFIX]['directive_name'])
+        try:
+            args_keys = django_settings.SMART_CONNECTORS[basename(namespace)]['args']
+        except KeyError:
+            args_keys = []
+        args = ''
+        for i in args_keys:
+            try:
+                args = '%s %s' % (args, run_settings[namespace][i])
+                logger.debug('args=%s' % args)
+            except KeyError:
+                logger.debug('Failed to find key %s' % i)
+                pass
+        logger.debug('optional_args_keys=%s' % args)
+        return args
+
+
+
+
+
+
+
+

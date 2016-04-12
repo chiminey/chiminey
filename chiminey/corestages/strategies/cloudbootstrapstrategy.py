@@ -28,10 +28,11 @@ from chiminey.corestages.errors \
 from chiminey.storage import get_url_with_credentials, copy_directories, get_make_path
 from chiminey.sshconnection import open_connection
 from chiminey.compute import run_command_with_status, run_make
+from django.conf import settings as django_settings
 
 
 logger = logging.getLogger(__name__)
-RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+RMIT_SCHEMA = django_settings.SCHEMA_PREFIX
 
 
 def set_bootstrap_settings(run_settings, local_settings):
@@ -123,7 +124,7 @@ def _start_bootstrap(instance, ip,  settings, source, destination):
             ssh.close()
 
 
-def complete_bootstrap(bootstrap_class, local_settings):
+def complete_bootstrap(bootstrap_class, local_settings, id):
     logger.debug("complete_bootstrap")
     try:
         nodes = get_registered_vms(local_settings)
@@ -187,8 +188,8 @@ def complete_bootstrap(bootstrap_class, local_settings):
                 logger.info("We have already "
                     + "bootstrapped node %s" % node_ip)
             messages.info_context(local_settings['contextid'],
-                                  "bootstrapping nodes (%s nodes done)"
-                % len(bootstrap_class.bootstrapped_nodes))
+                                  "%s: Bootstrapping VMs (%s VMs done)"
+                % (id, len(bootstrap_class.bootstrapped_nodes)))
         else:
             print "job still running on %s" % node_ip
 

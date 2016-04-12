@@ -76,7 +76,7 @@ def run_command_with_status(ssh_client, command, current_dir=None, requiretty=Fa
     return (res, errs)
 
 
-def run_make(ssh_client, makefile_path, target):
+def run_make(ssh_client, makefile_path, target, sudo=True):
     """
     Provides an abstraction layer over the remote execution of a makefile
     command at the given target.
@@ -94,6 +94,9 @@ def run_make(ssh_client, makefile_path, target):
 
     #command = "cd %s; make -f Makefile %s" % (makefile_path, target)
     command = "cd %s; sudo make -f Makefile %s" % (makefile_path, target)
+    if not sudo:
+        command = "cd %s; make -f Makefile %s" % (makefile_path, target)
+
     command_out = ''
     errs = ''
     try:

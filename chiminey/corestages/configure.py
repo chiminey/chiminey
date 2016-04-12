@@ -39,8 +39,9 @@ from chiminey.storage import get_url_with_credentials
 logger = logging.getLogger(__name__)
 
 
-RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+from django.conf import settings as django_settings
 
+RMIT_SCHEMA = django_settings.SCHEMA_PREFIX
 
 class Configure(Stage):
     """
@@ -177,7 +178,7 @@ class Configure(Stage):
         self.setup_input(run_settings)
         self.setup_computation(run_settings)
 
-        messages.info(run_settings, "0: configure")
+        messages.info(run_settings, "0: Setting up computation")
 
         local_settings = getvals(run_settings, models.UserProfile.PROFILE_SCHEMA_NS)
         # local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
@@ -340,6 +341,9 @@ class Configure(Stage):
 
 
     def output(self, run_settings):
+        self.writeout_output(run_settings)
+        self.writeout_input(run_settings)
+        self.writeout_computation(run_settings)
         setval(run_settings,
                '%s/stages/configure/configure_done' % RMIT_SCHEMA,
                1)

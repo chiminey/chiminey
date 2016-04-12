@@ -35,8 +35,9 @@ from chiminey.runsettings import getval, setvals, setval, getvals, SettingNotFou
 from chiminey.storage import get_url_with_credentials
 
 logger = logging.getLogger(__name__)
-RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+from django.conf import settings as django_settings
 
+RMIT_SCHEMA = django_settings.SCHEMA_PREFIX
 
 class Wait(Stage):
     """
@@ -304,7 +305,7 @@ class Wait(Stage):
             failed_processes = [x for x in self.current_processes if x['status'] == 'failed']
             logger.debug('failed_processes=%s' % failed_processes)
             logger.debug('failed_processes=%d' % len(failed_processes))
-            messages.info(run_settings, "%d: waiting %d processes (%d completed, %d failed) " % (
+            messages.info(run_settings, "%d: Waiting %d processes (%d completed, %d failed) " % (
                 self.id + 1, len(self.current_processes),  len(self.finished_nodes),
                 len(failed_processes)))
 
@@ -382,7 +383,7 @@ def retrieve_local_settings(run_settings, local_settings):
     stage.copy_settings(local_settings, run_settings,
         'http://rmit.edu.au/schemas/system/platform')
     stage.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/stages/run/process_output_dirname')
+        'http://rmit.edu.au/schemas/stages/setup/process_output_dirname')
     stage.copy_settings(local_settings, run_settings,
         '%s/system/contextid' % RMIT_SCHEMA)
     local_settings['bdp_username'] = run_settings[

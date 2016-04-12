@@ -31,8 +31,9 @@ from django.core.exceptions import ImproperlyConfigured
 
 
 logger = logging.getLogger(__name__)
-RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+from django.conf import settings as django_settings
 
+RMIT_SCHEMA = django_settings.SCHEMA_PREFIX
 
 class Schedule(Stage):
     """

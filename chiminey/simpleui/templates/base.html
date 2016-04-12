@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf8">
 
-<title>Chiminey: The Cloud and Cluster Computing Platform </title>
+<title>Chiminey: Connecting Scientists to HPC, Cloud and Big Data</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css" rel="stylesheet">
 <style type="text/css">body{padding-top:10px;padding-bottom:40px}</style>
@@ -18,6 +18,12 @@
 <style>
     .modal-backdrop {background-color: #DCDCDC;}
     .body {margin-left: 0}
+    .modal-body{position:relative;overflow-y:auto;max-height:600px;padding:15px;}
+
+    .btn-link{border-color:transparent;cursor:pointer;color:#005580;-webkit-border-radius:0;-moz-border-radius:0;border-radius:0;text-decoration:underline;}
+    .btn-link:hover,.btn-link:focus{color:#FF4500;text-decoration:underline;background-color:transparent;outline: none}
+    .btn-link[disabled]:hover,.btn-link[disabled]:focus{color:#FF4500;text-decoration:none;}
+
 </style>
 
 <script>
@@ -184,6 +190,10 @@ function resetPreset(form_id, preset_name){
     });
 }
 
+function advanced(){
+    alert("hi");
+}
+
 
 function deactivate_DEL_UPD_buttons(){
      $('form #id_delete_preset_button').attr("disabled", "disabled");
@@ -252,7 +262,7 @@ function submitForm(description, form_id) {
 
 function updatePlatform(parameters, platform_type) {
     $('form[id*="_form_update"]').hide();
-    formreset()
+    formreset();
     if (platform_type == 'csrack' || platform_type == 'nectar' || platform_type == 'amazon'){
         platform_type = 'cloud'
     }
@@ -280,7 +290,8 @@ function updatePlatform(parameters, platform_type) {
 //consider merging the ff method with updatePlatform
 function deletePlatform(parameters, platform_type) {
     $('form[id*="_form_delete"]').hide();
-    fieldReadonly()
+    formreset();
+    fieldReadonly();
     if (platform_type == 'csrack' || platform_type == 'nectar' || platform_type == 'amazon'){
         platform_type = 'cloud'
     }
@@ -319,9 +330,19 @@ function formreset(){
     $("form input[id][type='password']").val("");
     $("form select[id]").removeAttr("disabled");
     $("form select[id]").val($("form select[id] option:first").val());
+    $("#advanced_fields*").hide()
+    $('form div[id^="advanced_fields"]').hide();
 
  }
 
+
+function toggleVisibility(id){
+    if ($("#" + id).is(":visible")) {
+        $("#" + id).hide();
+    }
+    else
+       $("#" + id).show();
+}
 
 
 </script>
@@ -390,7 +411,7 @@ function formreset(){
         <footer>
             <div class="container">
             <div class="row-fluid">
-            <div class=""><img src="http://nectar.org.au/sites/default/files/logo-small.png">
+            <div class=""><small><img src="http://nci.org.au/wp-content/uploads/Logos/NeCTAR-logo-stretched-view.jpg"  height="82" width="82"></small>
                 <small><p>The Bioscience Data Platform acknowledges funding from the <a href="http://www.nectar.org.au">NeCTAR project</a>.</p></small></div>
             </div>
         </div>

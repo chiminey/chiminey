@@ -30,6 +30,8 @@ from django.core.management.base import BaseCommand
 from django.conf import settings
 from django.template.defaultfilters import slugify
 from chiminey.smartconnectorscheduler import models
+from django.conf import settings as django_settings
+
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +91,7 @@ def register_schemas(schema_data):
 
 def _get_chiminey_schemas():
     schema_data = {
-        u'http://rmit.edu.au/schemas/platform/storage/mytardis':
+        u'%s/platform/storage/mytardis' % django_settings.SCHEMA_PREFIX:
             [u'schema for Unix storage platform instances',
              {
                  #u'name': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':6, 'help_text':''},
@@ -98,10 +100,10 @@ def _get_chiminey_schemas():
                  u'filters': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': '',
                               'initial': '', 'ranking': 3, 'help_text': ''},
                  u'platform_type': {'type': models.ParameterName.STRING, 'subtype': 'hidden',
-                                    'description': 'Platform type', 'initial': 'mytardis', 'ranking': 6,
+                                    'description': 'Resource type', 'initial': 'mytardis', 'ranking': 6,
                                     'help_text': ''},
                  u'platform_name': {'type': models.ParameterName.STRING, 'subtype': '',
-                                    'description': 'Platform name', 'initial': '', 'ranking': 10,
+                                    'description': 'Resource name', 'initial': '', 'ranking': 10,
                                     'help_text': 'The unique identifier of the MyTardis instance'},
                  u'ip_address': {'type': models.ParameterName.STRING, 'subtype': '',
                                  'description': 'IP address or Hostname', 'ranking': 15,
@@ -114,7 +116,7 @@ def _get_chiminey_schemas():
                  #u'api_key': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'API key', 'ranking':42, 'help_text':''},
              }
             ],
-        u'http://rmit.edu.au/schemas/platform/storage/unix':
+        u'%s/platform/storage/unix' % django_settings.SCHEMA_PREFIX:
             [u'schema for Unix storage platform instances',
              {
                  u'operation': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': '',
@@ -122,10 +124,10 @@ def _get_chiminey_schemas():
                  u'filters': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': '',
                               'initial': '', 'ranking': 3, 'help_text': ''},
                  u'platform_type': {'type': models.ParameterName.STRING, 'subtype': 'hidden',
-                                    'description': 'Platform type', 'initial': 'unix', 'ranking': 6,
+                                    'description': 'Resource type', 'initial': 'unix', 'ranking': 6,
                                     'help_text': ''},
                  u'platform_name': {'type': models.ParameterName.STRING, 'subtype': '',
-                                    'description': 'Platform name', 'initial': '', 'ranking': 10,
+                                    'description': 'Resource name', 'initial': '', 'ranking': 10,
                                     'help_text': 'The unique identifier of the platform'},
                  u'ip_address': {'type': models.ParameterName.STRING, 'subtype': '',
                                  'description': 'IP address or Hostname', 'ranking': 15,
@@ -137,19 +139,22 @@ def _get_chiminey_schemas():
                                'help_text': 'Password of the account holder. Password is not stored in the Chiminey server. It is temporarily kept in memory to to establish a private/public key authentication from the Chiminey server to the storage platform.'},
                  u'home_path': {'type': models.ParameterName.STRING, 'subtype': '', 'description': 'Home path',
                                 'ranking': 24,
+                                'hidecondition':'advanced',
                                 'help_text': 'Home directory. This is the location where .ssh directory resides. The home path is needed to store a Chiminey-specific public key on the storage platform.'},
                  u'root_path': {'type': models.ParameterName.STRING, 'subtype': '', 'description': 'Root path',
                                 'ranking': 33,
+                                'hidecondition':'advanced',
                                 'help_text': 'The base directory for the storage platform. All files and directories are stored relative to this position. If a storage platform plat1 has root path /home/foo, then location plat1/x/z.dat is stored at /home/foo/x/z.dat '},
                  u'private_key_path': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': '',
                                        'ranking': 41, 'help_text': ''},
-                 u'port': {'type': models.ParameterName.NUMERIC, 'subtype': '',
-                           'description': 'SSH port', 'ranking': 55, 'initial': 22,
-                           'help_text': 'Port of the SSH server (usually 22).)'},
+                 u'port': {'type': models.ParameterName.STRING, 'subtype': '',
+                           'description': 'SSH port', 'ranking': 55, 'initial': '22',
+                           'help_text': 'Port of the SSH server (usually 22).)',
+                           'hidecondition':'advanced'},
 
              }
             ],
-        u'http://rmit.edu.au/schemas/platform/computation/cluster/pbs_based':
+        u'%s/platform/computation/cluster/pbs_based' % django_settings.SCHEMA_PREFIX:
             [u'schema for Cluster-based or Unix-based computation platform instances',
              {
                  u'operation': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': '',
@@ -157,11 +162,11 @@ def _get_chiminey_schemas():
                  u'filters': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': '',
                               'initial': '{}', 'ranking': 3, 'help_text': ''},
                  u'platform_type': {'type': models.ParameterName.STRLIST, 'subtype': '',
-                                    'description': 'Platform type', 'initial': '',
+                                    'description': 'Resource type', 'initial': '',
                                     'choices': '[("nci", "Cluster/Unix"), ]', 'ranking': 6,
                                     'help_text': 'The identifier of the type of the computation platform'},
                  u'platform_name': {'type': models.ParameterName.STRING, 'subtype': '',
-                                    'description': 'Platform name', 'initial': '', 'ranking': 10,
+                                    'description': 'Resource name', 'initial': '', 'ranking': 10,
                                     'help_text': 'The unique identifier of the platform name'},
                  u'ip_address': {'type': models.ParameterName.STRING, 'subtype': '',
                                  'description': 'IP address or Hostname', 'ranking': 15,
@@ -173,27 +178,64 @@ def _get_chiminey_schemas():
                                'help_text': 'Password of the account holder. Password is not stored in the Chiminey server. It is temporarily kept in memory to to establish a private/public key authentication from the Chiminey server to the cluster/unix platform.'},
                  u'home_path': {'type': models.ParameterName.STRING, 'subtype': '', 'description': 'Home path',
                                 'ranking': 24,
-                                'help_text': 'Home directory. This is the location where .ssh directory resides. The home path is needed to store a Chiminey-specific public key on the cluster/unix server.'},
+                                'help_text': 'Home directory. This is the location where .ssh directory resides. The home path is needed to store a Chiminey-specific public key on the cluster/unix server.',
+                                'hidecondition':'advanced'},
                  u'root_path': {'type': models.ParameterName.STRING, 'subtype': '', 'description': 'Root path',
                                 'ranking': 33,
-                                'help_text': 'Used as the working directory for the computation. All temporary files are created under this directory.'},
+                                'help_text': 'Used as the working directory for the computation. All temporary files are created under this directory.',
+                                'hidecondition':'advanced'},
                  u'private_key_path': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': '',
                                        'ranking': 41, 'help_text': ''},
-                 u'port': {'type': models.ParameterName.NUMERIC, 'subtype': '',
-                                 'description': 'SSH port', 'ranking': 55, 'initial': 22,
-                                 'help_text': 'Port of the SSH server (usually 22.)'},
+                 u'port': {'type': models.ParameterName.STRING, 'subtype': '',
+                                 'description': 'SSH port', 'ranking': 55, 'initial': '22',
+                                 'help_text': 'Port of the SSH server (usually 22.)',
+                                 'hidecondition':'advanced'},
 
              }
             ],
-        u'http://rmit.edu.au/schemas/platform/computation/cloud/ec2-based':
+        u'%s/platform/computation/bigdata/hadoop' % django_settings.SCHEMA_PREFIX:
+            [u'schema for Big data compute resources',
+             {
+                 u'operation': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': '',
+                                'initial': 'update', 'ranking': 0, 'help_text': ''},
+                 u'filters': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': '',
+                              'initial': '{}', 'ranking': 3, 'help_text': ''},
+                 u'platform_type': {'type': models.ParameterName.STRLIST, 'subtype': '',
+                                    'description': 'Resource type', 'initial': '',
+                                    'choices': '[("hadoop", "Hadoop"), ]', 'ranking': 6,
+                                    'help_text': 'The identifier of the type of the computation platform'},
+                 u'platform_name': {'type': models.ParameterName.STRING, 'subtype': '',
+                                    'description': 'Resource name', 'initial': '', 'ranking': 10,
+                                    'help_text': 'The unique identifier of the platform name'},
+                 u'ip_address': {'type': models.ParameterName.STRING, 'subtype': '',
+                                 'description': 'IP address or Hostname', 'ranking': 15,
+                                 'help_text': 'Hostname or IP address of the computation platform.'},
+                 u'username': {'type': models.ParameterName.STRING, 'subtype': '', 'description': 'Username',
+                               'ranking': 20, 'help_text': 'Username of the account holder.'},
+                 u'password': {'type': models.ParameterName.STRING, 'subtype': 'password',
+                               'description': 'Password', 'ranking': 22,
+                               'help_text': 'Password of the account holder. Password is not stored in the Chiminey server. It is temporarily kept in memory to to establish a private/public key authentication from the Chiminey server to the cluster/unix platform.'},
+                 u'hadoop_home_path': {'type': models.ParameterName.STRING, 'subtype': '', 'description': 'Hadoop home path',
+                                'ranking': 24,
+                                'help_text': 'Home directory. This is the location where .ssh directory resides. The home path is needed to store a Chiminey-specific public key on the cluster/unix server.'},
+                 u'private_key_path': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': '',
+                                       'ranking': 41, 'help_text': ''},
+                 u'port': {'type': models.ParameterName.STRING, 'subtype': '',
+                           'description': 'SSH port', 'ranking': 55, 'initial': '22',
+                           'help_text': 'Port of the SSH server (usually 22).)',
+                           'hidecondition':'advanced'},
+
+             }
+            ],
+        u'%s/platform/computation/cloud/ec2-based' % django_settings.SCHEMA_PREFIX:
             [u'schema for EC2-based cloud computing platform instances',
              {
                  u'platform_type': {'type': models.ParameterName.STRLIST, 'subtype': '',
-                                    'description': 'Platform Type', 'initial': '',
+                                    'description': 'Resource type', 'initial': '',
                                     'choices': '[("nectar", "NeCTAR"), ("csrack", "CSRack"), ("amazon", "Amazon EC2")]',
                                     'ranking': 0, 'help_text': 'The identifier for the IaaS provider'},
                  u'platform_name': {'type': models.ParameterName.STRING, 'subtype': '',
-                                    'description': 'Platform Name', 'initial': '', 'ranking': 1, 'help_text': ''},
+                                    'description': 'Resource name', 'initial': '', 'ranking': 1, 'help_text': ''},
                  u'ec2_access_key': {'type': models.ParameterName.STRING, 'subtype': '',
                                      'description': 'EC2 Access Key', 'initial': '', 'ranking': 3,
                                      'help_text': 'The EC2 access key'},
@@ -206,7 +248,7 @@ def _get_chiminey_schemas():
                                   'ranking': 7, 'help_text': ''},
                  u'private_key_path': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': '',
                                        'initial': '', 'ranking': 15, 'help_text': ''},
-                 u'vm_image_size': {'type': models.ParameterName.STRING, 'subtype': '',
+                 u'vm_image_size': {'type': models.ParameterName.STRING, 'subtype': 'hidden',
                                     'description': 'VM Image Size', 'initial': 'm1.small', 'ranking': 20,
                                     'help_text': 'The size of the virtual machine, e.g., m1.small for NeCTAR, t1.micro for EC2'},
                  u'operation': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': '',
@@ -215,7 +257,7 @@ def _get_chiminey_schemas():
                               'initial': '{}', 'ranking': 30, 'help_text': ''},
              }
             ],
-        u'http://rmit.edu.au/schemas/platform/computation/testing/jenkins_based':
+        u'%s/platform/computation/testing/jenkins_based' % django_settings.SCHEMA_PREFIX:
             [u'schema for jenkins computation platform instances',
              {
                  u'operation': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': '',
@@ -223,11 +265,11 @@ def _get_chiminey_schemas():
                  u'filters': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': '',
                               'initial': '{}', 'ranking': 3, 'help_text': ''},
                  u'platform_type': {'type': models.ParameterName.STRLIST, 'subtype': '',
-                                    'description': 'Platform type', 'initial': '',
+                                    'description': 'Resource type', 'initial': '',
                                     'choices': '[("jenkins", "Jenkins"), ]', 'ranking': 6,
                                     'help_text': 'The identifier of the type of the computation platform'},
                  u'platform_name': {'type': models.ParameterName.STRING, 'subtype': '',
-                                    'description': 'Platform name', 'initial': '', 'ranking': 10,
+                                    'description': 'Resource name', 'initial': '', 'ranking': 10,
                                     'help_text': 'The unique identifier of the platform name'},
                  u'ip_address': {'type': models.ParameterName.STRING, 'subtype': '',
                                  'description': 'IP address or Hostname', 'ranking': 15,
@@ -247,7 +289,7 @@ def _get_chiminey_schemas():
                 #                        'ranking': 41, 'help_text': ''},
              }
             ],
-        u'http://rmit.edu.au/schemas/platform/computation':
+        u'%s/platform/computation' % django_settings.SCHEMA_PREFIX:
             [u'schema for computation platform instances',
              {
                  u'offset': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '', 'ranking': 3,
@@ -258,7 +300,7 @@ def _get_chiminey_schemas():
                                 'help_text': ''},
              }
             ],
-        u'http://rmit.edu.au/schemas/platform/storage/output':
+        u'%s/platform/storage/output' % django_settings.SCHEMA_PREFIX:
             [u'schema for storage platform (output) instances',
              {
                  u'offset': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '', 'ranking': 3,
@@ -269,7 +311,7 @@ def _get_chiminey_schemas():
                                 'help_text': ''},
              }
             ],
-        u'http://rmit.edu.au/schemas/platform/storage/input':
+        u'%s/platform/storage/input' % django_settings.SCHEMA_PREFIX:
             [u'schema for storage platform (input) instances',
              {
                  u'offset': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '', 'ranking': 3,
@@ -280,7 +322,7 @@ def _get_chiminey_schemas():
                                 'help_text': ''},
              }
             ],
-        u'http://rmit.edu.au/schemas/smartconnector1/create':
+        u'%s/smartconnector1/create' % django_settings.SCHEMA_PREFIX:
             [u'the smartconnector1 create stage config',
              {
                  u'iseed': {'type': models.ParameterName.NUMERIC, 'subtype': '', 'description': '', 'ranking': 4,
@@ -298,7 +340,7 @@ def _get_chiminey_schemas():
         # However, current ContextParameterSets are unamed in the
         # URI so we can't identify which one to use.
         # TODO: testing schemas are probably deprecated
-        u'http://rmit.edu.au/schemas/stages/null/testing':
+        u'%s/stages/null/testing' % django_settings.SCHEMA_PREFIX:
             [u'the null stage internal testing',
              {
                  u'output': {'type': models.ParameterName.NUMERIC, 'subtype': '', 'description': '', 'ranking': 2,
@@ -307,7 +349,7 @@ def _get_chiminey_schemas():
                             'help_text': ''},
              }
             ],
-        u'http://rmit.edu.au/schemas/stages/parallel/testing':
+        u'%s/stages/parallel/testing' % django_settings.SCHEMA_PREFIX:
             [u'the parallel stage internal testing',
              {
                  u'output': {'type': models.ParameterName.NUMERIC, 'subtype': '', 'description': '', 'ranking': 2,
@@ -323,7 +365,7 @@ def _get_chiminey_schemas():
                               'help_text': ''},
              }
             ],
-        u'http://rmit.edu.au/schemas/system':
+        u'%s/system' % django_settings.SCHEMA_PREFIX:
             [u'Internal System',
              {
                  u'platform': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '', 'ranking': 2,
@@ -342,20 +384,22 @@ def _get_chiminey_schemas():
                                    'ranking': 1, 'help_text': ''},
              }
             ],
-        u'http://rmit.edu.au/schemas/bdp_userprofile':
+        u'%s/bdp_userprofile' % django_settings.SCHEMA_PREFIX:
             ["UBDP user profile",
              {
                  u'username': {'type': models.ParameterName.STRING, 'subtype': '',
                                'description': 'BDP username', 'ranking': 12, 'help_text': ''},
              }
             ],
-        u'http://rmit.edu.au/schemas/directive_profile':
+        u'%s/directive_profile' % django_settings.SCHEMA_PREFIX:
             ["Directive profile",
              {
                  u'directive_name': {'type': models.ParameterName.STRING, 'subtype': '',
                                      'description': 'Directive name', 'ranking': 12, 'help_text': ''},
                  u'sweep_name': {'type': models.ParameterName.STRING, 'subtype': '',
                                  'description': 'Directive name', 'ranking': 12, 'help_text': ''},
+                 #u'input_schema_namespace': {'type': models.ParameterName.STRING, 'subtype': '',
+                 #                'description': 'Directive Input Schema Namespace', 'ranking': 12, 'help_text': ''},
 
              }
             ],
@@ -392,21 +436,21 @@ def _get_chiminey_schemas():
                                         'description': 'hostname for tardis', 'ranking': 0, 'help_text': ''},
              }
             ],
-        u'http://rmit.edu.au/schemas/stages/copy/testing':
+        u'%s/stages/copy/testing' % django_settings.SCHEMA_PREFIX:
             [u'the copy stage internal testing',
              {
                  u'output': {'type': models.ParameterName.NUMERIC, 'subtype': '', 'description': '', 'ranking': 1,
                              'help_text': ''},
              }
             ],
-        u'http://rmit.edu.au/schemas/stages/program/testing':
+        u'%s/stages/program/testing' % django_settings.SCHEMA_PREFIX:
             [u'the program stage internal testing',
              {
                  u'output': {'type': models.ParameterName.NUMERIC, 'subtype': '', 'description': '', 'ranking': 1,
                              'help_text': ''},
              }
             ],
-        u'http://rmit.edu.au/schemas/program/config':
+        u'%s/program/config' % django_settings.SCHEMA_PREFIX:
             [u'the program command internal config',
              {
                  u'program': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '', 'ranking': 3,
@@ -417,21 +461,21 @@ def _get_chiminey_schemas():
                                       'ranking': 1, 'help_text': ''},
              }
             ],
-        u'http://rmit.edu.au/schemas/greeting/salutation':
+        u'%s/greeting/salutation' % django_settings.SCHEMA_PREFIX:
             [u'salute',
              {
                  u'salutation': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
                                  'ranking': 1, 'help_text': ''},
              }
             ],
-        u'http://rmit.edu.au/schemas/reliability':
+        u'%s/reliability' % django_settings.SCHEMA_PREFIX:
             [u'the schema for reliability framework',
              {
                  u'cleanup_nodes': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
                                     'ranking': 1, 'help_text': ''},
              }
             ],
-        u'http://rmit.edu.au/schemas/input/reliability':
+        u'%s/input/reliability' % django_settings.SCHEMA_PREFIX:
             [u'Reliability',
              {
                  u'maximum_retry': {'type': models.ParameterName.NUMERIC, 'subtype': 'natural', 'initial': 2,
@@ -443,7 +487,7 @@ def _get_chiminey_schemas():
                                                   'help_text': 'Select to reschedule any failed processes'},
              }
             ],
-        u'http://rmit.edu.au/schemas/input/system':
+        u'%s/input/system' % django_settings.SCHEMA_PREFIX:
             [u'Locations',
              {
                  u'input_location': {'type': models.ParameterName.STRING, 'subtype': 'storage_bdpurl',
@@ -453,41 +497,76 @@ def _get_chiminey_schemas():
                  u'output_location': {'type': models.ParameterName.STRING, 'subtype': 'storage_bdpurl',
                                       'initial': 'file://local@127.0.0.1/sweep', 'description': 'Output Location',
                                       'ranking': 2,
-                                      'help_text': 'Storage resource name with optional offset path: e.g., storage_home/myexperiment'}
+                                      'help_text': 'Storage resource name with optional offset path: e.g., storage_home/myexperiment'},
+
              }
             ],
-        u'http://rmit.edu.au/schemas/input/location':
+        u'%s/input/location' % django_settings.SCHEMA_PREFIX:
             [u'Locations',
              {
-                 u'input_location': {'type': models.ParameterName.STRING, 'subtype': 'storage_bdpurl',
-                                     'initial': 'file://127.0.0.1/myfiles/input', 'description': 'Input Location',
+                 u'input_storage': {'type': models.ParameterName.STRLIST, 'subtype': 'platform',
+                                           'initial': '', 'description': 'Input storage location', 'ranking': 0,
+                                           'help_text': 'The name of the storage platform to be used'},
+                 u'input_location': {'type': models.ParameterName.STRING, 'subtype': 'input_relative_path',
+                                     'initial': '', 'description': 'Relative path',
                                      'ranking': 1,
                                      'help_text': 'Storage resource name with optional offset path: e.g., storage_home/myexperiment'},
-                 u'output_location': {'type': models.ParameterName.STRING, 'subtype': 'storage_bdpurl',
-                                      'initial': 'file://local@127.0.0.1/sweep', 'description': 'Output Location',
-                                      'ranking': 2,
-                                      'help_text': 'Storage resource name with optional offset path: e.g., storage_home/myexperiment'}
+                 u'output_storage': {'type': models.ParameterName.STRLIST, 'subtype': 'platform',
+                                           'initial': '', 'description': 'Output storage location', 'ranking': 2,
+                                           'help_text': 'The name of the storage platform to be used'},
+                 u'output_location': {'type': models.ParameterName.STRING, 'subtype': 'output_relative_path',
+                                      'initial': '', 'description': 'Relative path',
+                                      'ranking': 3,
+                                      'help_text': 'Storage resource name with optional offset path: e.g., storage_home/myexperiment'},
              }
             ],
-        u'http://rmit.edu.au/schemas/input/location/input':
-            [u'Locations',
+        u'%s/input/location/input' % django_settings.SCHEMA_PREFIX:
+            [u'Input Location',
              {
-                 u'input_location': {'type': models.ParameterName.STRING, 'subtype': 'storage_bdpurl',
-                                     'initial': 'file://127.0.0.1/myfiles/input', 'description': 'Input Location',
+                 u'input_storage': {'type': models.ParameterName.STRLIST, 'subtype': 'platform',
+                                           'initial': '', 'description': 'Input storage location', 'ranking': 0,
+                                           'help_text': 'The name of the storage platform to be used'},
+                 u'input_location': {'type': models.ParameterName.STRING, 'subtype': 'input_relative_path',
+                                     'initial': '', 'description': 'Relative path',
                                      'ranking': 1,
                                      'help_text': 'Storage resource name with optional offset path: e.g., storage_home/myexperiment'},
              }
             ],
-        u'http://rmit.edu.au/schemas/input/location/output':
-            [u'Locations',
+        u'%s/input/location/output' % django_settings.SCHEMA_PREFIX:
+            [u'Output Location',
              {
-                 u'output_location': {'type': models.ParameterName.STRING, 'subtype': 'storage_bdpurl',
-                                      'initial': 'file://local@127.0.0.1/sweep', 'description': 'Output Location',
-                                      'ranking': 2,
-                                      'help_text': 'Storage resource name with optional offset path: e.g., storage_home/myexperiment'}
+                 u'output_storage': {'type': models.ParameterName.STRLIST, 'subtype': 'platform',
+                                           'initial': '', 'description': 'Output storage location', 'ranking': 0,
+                                           'help_text': 'The name of the storage platform to be used'},
+                 u'output_location': {'type': models.ParameterName.STRING, 'subtype': 'output_relative_path',
+                                      'initial': '', 'description': 'Relative path',
+                                      'ranking': 1,
+                                      'help_text': 'Storage resource name with optional offset path: e.g., storage_home/myexperiment'},
              }
             ],
-        u'http://rmit.edu.au/schemas/input/system/compplatform':
+        u'%s/input/system/compplatform' % django_settings.SCHEMA_PREFIX:
+            [u'Unix/Cluster Compute Resource',
+             {
+                 u'computation_platform': {'type': models.ParameterName.STRLIST, 'subtype': 'platform',
+                                           'initial': '', 'description': 'Compute Resource Name', 'ranking': 0,
+                                           'help_text': 'The name of the computation platform to be used'},
+             }
+            ],
+        u'%s/input/system/compplatform/cloud' % django_settings.SCHEMA_PREFIX:
+            [u'Cloud Compute Resource',
+             {
+                 u'computation_platform': {'type': models.ParameterName.STRLIST, 'subtype': 'platform',
+                                           'initial': '', 'description': 'Compute Resource Name', 'ranking': 0,
+                                           'help_text': 'The name of the computation platform to be used'},
+                 u'number_vm_instances': {'type': models.ParameterName.NUMERIC, 'subtype': 'whole', 'initial': 4,
+                                          'description': 'Number of VM instances', 'ranking': 1, 'help_text': ''},
+                 u'minimum_number_vm_instances': {'type': models.ParameterName.NUMERIC, 'subtype': 'whole',
+                                                  'initial': 1, 'description': 'Minimum No. VMs', 'ranking': 2,
+                                                  'help_text': ''},
+             }
+            ],
+
+        u'%s/input/system/compplatform/jenkins' % django_settings.SCHEMA_PREFIX:
             [u'Compute Resource',
              {
                  u'computation_platform': {'type': models.ParameterName.STRLIST, 'subtype': 'platform',
@@ -495,7 +574,17 @@ def _get_chiminey_schemas():
                                            'help_text': 'The name of the computation platform to be used'},
              }
             ],
-        u'http://rmit.edu.au/schemas/input/system/compplatform/cloud':
+
+         u'%s/input/system/compplatform/hadoop' % django_settings.SCHEMA_PREFIX:
+            [u'Hadoop Cluster Resource',
+             {
+                 u'computation_platform': {'type': models.ParameterName.STRLIST, 'subtype': 'platform',
+                                           'initial': '', 'description': 'Compute Resource Name', 'ranking': 0,
+                                           'help_text': 'The name of the hadoop cluster to be used'},
+             }
+            ],
+
+ u'%s/input/system/compplatform/unix' % django_settings.SCHEMA_PREFIX:
             [u'Compute Resource',
              {
                  u'computation_platform': {'type': models.ParameterName.STRLIST, 'subtype': 'platform',
@@ -504,28 +593,10 @@ def _get_chiminey_schemas():
              }
             ],
 
-        u'http://rmit.edu.au/schemas/input/system/compplatform/jenkins':
-            [u'Compute Resource',
-             {
-                 u'computation_platform': {'type': models.ParameterName.STRLIST, 'subtype': 'platform',
-                                           'initial': '', 'description': 'Compute Resource Name', 'ranking': 0,
-                                           'help_text': 'The name of the computation platform to be used'},
-             }
-            ],
-
- u'http://rmit.edu.au/schemas/input/system/compplatform/unix':
-            [u'Compute Resource',
-             {
-                 u'computation_platform': {'type': models.ParameterName.STRLIST, 'subtype': 'platform',
-                                           'initial': '', 'description': 'Compute Resource Name', 'ranking': 0,
-                                           'help_text': 'The name of the computation platform to be used'},
-             }
-            ],
 
 
 
-
-        u'http://rmit.edu.au/schemas/input/system/cloud':
+        u'%s/input/system/cloud' % django_settings.SCHEMA_PREFIX:
             [u'Cloud Resources',
              {
                  u'number_vm_instances': {'type': models.ParameterName.NUMERIC, 'subtype': 'whole', 'initial': 4,
@@ -535,7 +606,7 @@ def _get_chiminey_schemas():
                                                   'help_text': ''},
              }
             ],
-        u'http://rmit.edu.au/schemas/input/mytardis':
+        u'%s/input/mytardis' % django_settings.SCHEMA_PREFIX:
             [u'MyTardis',
              {
                  u'curate_data': {'type': models.ParameterName.NUMERIC, 'subtype': 'bool', 'ranking': 2,
@@ -549,7 +620,7 @@ def _get_chiminey_schemas():
                                     'help_text': 'Use 0 for new experiment'},
              }
             ],
-        u'http://rmit.edu.au/schemas/input/sweep':
+        u'%s/input/sweep' % django_settings.SCHEMA_PREFIX:
             [u'Parameter Sweep',
              {
                  u'sweep_map': {'type': models.ParameterName.STRING, 'subtype': 'jsondict', 'initial': '{}',
@@ -558,14 +629,14 @@ def _get_chiminey_schemas():
              }
             ],
 
-        u'http://rmit.edu.au/schemas/stages/configure':
+        u'%s/stages/configure' % django_settings.SCHEMA_PREFIX:
             [u'the configure state of a smart connector',
              {
                  u'configure_done': {'type': models.ParameterName.NUMERIC, 'subtype': '', 'description': '',
                                      'ranking': 1, 'help_text': ''},
              }
             ],
-        u'http://rmit.edu.au/schemas/stages/create':
+        u'%s/stages/create' % django_settings.SCHEMA_PREFIX:
             [u'the create state of the smartconnector1',
              {
                  u'create_done': {'type': models.ParameterName.NUMERIC, 'subtype': '', 'ranking': 12,
@@ -596,22 +667,27 @@ def _get_chiminey_schemas():
                                     'ranking': 1, 'help_text': ''}
              }
             ],
-        u'http://rmit.edu.au/schemas/stages/setup':
+        u'%s/stages/setup' % django_settings.SCHEMA_PREFIX:
             [u'the create stage of the smartconnector1',
              {
                  u'filename_for_PIDs': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
-                                        'ranking': 5, 'help_text': ''},
+                                        'ranking': 5, 'help_text': '',
+                                        'initial': 'PIDs_collections'},
                  u'setup_finished': {'type': models.ParameterName.NUMERIC, 'subtype': '', 'description': '',
                                      'ranking': 4, 'help_text': ''},
                  u'payload_name': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
-                                   'ranking': 3, 'help_text': ''},
+                                   'ranking': 3, 'help_text': '', 'initial': 'process_payload'},
                  u'payload_source': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
                                      'ranking': 2, 'help_text': ''},
                  u'payload_destination': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
-                                          'ranking': 1, 'help_text': ''},
+                                          'ranking': 1, 'help_text': '',
+                                          'initial': 'chiminey_payload_copy'},
+                 u'process_output_dirname': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                                             'ranking': 6, 'help_text': '',
+                                             'initial': 'chiminey_output'},
              }
             ],
-        u'http://rmit.edu.au/schemas/stages/deploy':
+        u'%s/stages/deploy' % django_settings.SCHEMA_PREFIX:
             [u'the deploy stage of the smartconnector1',
              {
                  u'started': {'type': models.ParameterName.NUMERIC, 'subtype': '', 'description': '', 'ranking': 2,
@@ -620,7 +696,7 @@ def _get_chiminey_schemas():
                                      'ranking': 1, 'help_text': ''}
              }
             ],
-        u'http://rmit.edu.au/schemas/stages/bootstrap':
+        u'%s/stages/bootstrap' % django_settings.SCHEMA_PREFIX:
             [u'the bootstrap stage of the smartconnector1',
              {
                  u'started': {'type': models.ParameterName.NUMERIC, 'subtype': '', 'description': '', 'ranking': 3,
@@ -631,7 +707,7 @@ def _get_chiminey_schemas():
                                      'ranking': 1, 'help_text': ''}
              }
             ],
-        u'http://rmit.edu.au/schemas/stages/schedule':
+        u'%s/stages/schedule' % django_settings.SCHEMA_PREFIX:
             [u'the schedule stage of the smartconnector1',
              {
                  u'rescheduled_nodes': {'type': models.ParameterName.STRING, 'subtype': '', 'ranking': 11},
@@ -655,20 +731,19 @@ def _get_chiminey_schemas():
                                          'ranking': 1, 'help_text': ''}
              }
             ],
-        u'http://rmit.edu.au/schemas/stages/execute':
+        u'%s/stages/execute' % django_settings.SCHEMA_PREFIX:
             [u'the execute stage of the smartconnector1',
              {
                  u'executed_procs': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
                                      'ranking': 1, 'help_text': ''}
              }
             ],
-        u'http://rmit.edu.au/schemas/stages/run':
+        u'%s/stages/run' % django_settings.SCHEMA_PREFIX:
             [u'the create stage of the smartconnector1',
              {
                  u'runs_left': {'type': models.ParameterName.NUMERIC, 'subtype': '', 'description': '',
                                 'ranking': 8, 'help_text': ''},
-                 u'process_output_dirname': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
-                                             'ranking': 7, 'help_text': ''},
+
                  u'error_nodes': {'type': models.ParameterName.NUMERIC, 'subtype': '', 'description': '',
                                   'ranking': 4, 'help_text': ''},
                  u'initial_numbfile': {'type': models.ParameterName.NUMERIC, 'subtype': '', 'description': '',
@@ -681,14 +756,14 @@ def _get_chiminey_schemas():
                               'help_text': ''}
              }
             ],
-        u'http://rmit.edu.au/schemas/stages/transform':
+        u'%s/stages/transform' % django_settings.SCHEMA_PREFIX:
             [u'the transform stage of the smartconnector1',
              {
                  u'transformed': {'type': models.ParameterName.NUMERIC, 'subtype': '', 'description': '',
                                   'ranking': 1, 'help_text': ''},
              }
             ],
-        u'http://rmit.edu.au/schemas/stages/converge':
+        u'%s/stages/converge' % django_settings.SCHEMA_PREFIX:
             [u'the converge stage of the smartconnector1',
              {
                  u'converged': {'type': models.ParameterName.NUMERIC, 'subtype': '', 'description': '',
@@ -698,7 +773,7 @@ def _get_chiminey_schemas():
              }
             ],
 
-        u'http://rmit.edu.au/schemas/stages/teardown':
+        u'%s/stages/teardown' % django_settings.SCHEMA_PREFIX:
             [u'the teardown stage of the smartconnector1',
              {
                  u'run_finished': {'type': models.ParameterName.NUMERIC, 'subtype': '', 'description': '',
@@ -706,14 +781,14 @@ def _get_chiminey_schemas():
              }
             ],
 
-        u'http://rmit.edu.au/schemas/stages/destroy':
+        u'%s/stages/destroy' % django_settings.SCHEMA_PREFIX:
             [u'the destroy stage of the smartconnector1',
              {
                  u'run_finished': {'type': models.ParameterName.NUMERIC, 'subtype': '', 'description': '',
                                    'ranking': 1, 'help_text': ''},
              }
             ],
-        u'http://rmit.edu.au/schemas/stages/sweep':
+        u'%s/stages/sweep' % django_settings.SCHEMA_PREFIX:
             [u'the sweep stage',
              {
                  u'directive': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '', 'ranking': 4,
@@ -724,7 +799,7 @@ def _get_chiminey_schemas():
                                  'ranking': 2, 'help_text': ''},
              }
             ],
-        u'http://rmit.edu.au/schemas/remotemake/config':
+        u'%s/remotemake/config' % django_settings.SCHEMA_PREFIX:
             [u'',
              {
                  u'payload_destination': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
@@ -733,21 +808,21 @@ def _get_chiminey_schemas():
                                      'ranking': 3, 'help_text': ''}
              }
             ],
-        u'http://rmit.edu.au/schemas/stages/upload_makefile':
-            [u'the smartconnectorscheduler input files',
+        u'%s/stages/upload_makefile':
+            [u'the smartconnectorsche % django_settings.SCHEMA_PREFIXduler input files',
              {
                  u'done': {'type': models.ParameterName.NUMERIC, 'subtype': '', 'description': '', 'ranking': 1,
                            'help_text': ''}
              }
             ],
-        u'http://rmit.edu.au/schemas/stages/wait':
+        u'%s/stages/wait' % django_settings.SCHEMA_PREFIX:
             [u'wait stage parameters',
              {
                  u'synchronous': {'type': models.ParameterName.NUMERIC, 'subtype': '', 'description': '',
                                   'ranking': 1, 'help_text': ''}
              }
             ],
-        u'http://rmit.edu.au/schemas/stages/make':
+        u'%s/stages/make' % django_settings.SCHEMA_PREFIX:
             [u'',
              {
                  u'running': {'type': models.ParameterName.NUMERIC, 'subtype': '', 'description': '', 'ranking': 1,

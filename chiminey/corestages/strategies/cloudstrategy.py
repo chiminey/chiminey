@@ -27,9 +27,11 @@ from chiminey import messages
 from chiminey.runsettings import SettingNotFoundException, getval, update
 from chiminey.corestages.strategies import cloudschedulestrategy as schedule
 from chiminey.corestages.strategies import cloudbootstrapstrategy as bootstrap
+from django.conf import settings as django_settings
+
 
 logger = logging.getLogger(__name__)
-RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+RMIT_SCHEMA = django_settings.SCHEMA_PREFIX
 
 
 class CloudStrategy(Strategy):
@@ -50,6 +52,8 @@ class CloudStrategy(Strategy):
             local_settings['max_count'] = 1
 
     def create_resource(self, local_settings):
+        iteration_id = self.get_iteration_id(local_settings)
+        messages.info(local_settings, "%s: Creating VMs" % iteration_id)
         created_nodes = []
         group_id, vms_detail_list = create_vms(local_settings)
         logger.debug("group_id=%s vms_detail_list=%s" % (group_id, vms_detail_list))
@@ -63,7 +67,7 @@ class CloudStrategy(Strategy):
                     vm.ip_address = vm.private_ip_address
             created_nodes = [[x.id, x.ip_address, unicode(x.region), 'running'] for x in vms_detail_list]
             messages.info_context(int(local_settings['contextid']),
-                                 "1: create (%s nodes created)" % len(vms_detail_list))
+                                 "%s: Creating VMs (%s created)" % (iteration_id, len(vms_detail_list)))
         except InsufficientVMError as e:
             group_id = 'UNKNOWN'
             messages.error_context(int(local_settings['contextid']),
@@ -91,6 +95,7 @@ class CloudStrategy(Strategy):
             pass
 
         if payload_source:
+            messages.info(settings, "%s: Bootstrapping VMs" % self.get_iteration_id(settings))
             bootstrap.start_multi_bootstrap_task(settings, relative_path_suffix)
 
     def complete_bootstrap(self, bootstrap_class, local_settings):
@@ -100,14 +105,14 @@ class CloudStrategy(Strategy):
             pass
 
         if payload_source:
-            bootstrap.complete_bootstrap(bootstrap_class, local_settings)
+            bootstrap.complete_bootstrap(bootstrap_class, local_settings, self.get_iteration_id(local_settings))
 
     def set_schedule_settings(self, run_settings, local_settings):
         super(CloudStrategy, self).set_schedule_settings(run_settings, local_settings)
         schedule.set_schedule_settings(run_settings, local_settings)
 
     def start_schedule_task(self, schedule_class, run_settings, local_settings):
-        schedule.schedule_task(schedule_class, run_settings, local_settings)
+        schedule.schedule_task(schedule_class, run_settings, local_settings, self.get_iteration_id(run_settings))
 
     def complete_schedule(self, schedule_class, local_settings):
         schedule.complete_schedule(schedule_class, local_settings)
@@ -121,6 +126,7 @@ class CloudStrategy(Strategy):
         local_settings['bdp_username'] = getval(run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA)
 
     def destroy_resource(self, destroy_class, run_settings, local_settings):
+        messages.info(run_settings, "%s: Deleting VMs" % self.get_iteration_id(run_settings))
         node_type = ['created_nodes']
         destroy_vms(local_settings, node_types=node_type, registered_vms=[])
         logger.debug('-all vms terminated')
@@ -133,18 +139,3 @@ class CloudStrategy(Strategy):
         for node in destroy_class.bootstrapped_nodes:
             if node[3] == 'running':
                 node[3] = 'terminated'
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

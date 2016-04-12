@@ -23,9 +23,11 @@ from chiminey.corestages.strategies.strategy import Strategy
 from chiminey import messages
 from chiminey.corestages.strategies import clusterbootstrapstrategy as bootstrap
 from chiminey.corestages.strategies import clusterschedulestrategy as schedule
+from django.conf import settings as django_settings
+
 
 logger = logging.getLogger(__name__)
-RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+RMIT_SCHEMA = django_settings.SCHEMA_PREFIX
 
 
 class ClusterStrategy(Strategy):

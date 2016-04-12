@@ -34,8 +34,9 @@ from django.core.exceptions import ImproperlyConfigured
 
 logger = logging.getLogger(__name__)
 
-RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+from django.conf import settings as django_settings
 
+RMIT_SCHEMA = django_settings.SCHEMA_PREFIX
 
 class Destroy(stage.Stage):
 
@@ -82,7 +83,7 @@ class Destroy(stage.Stage):
             self.bootstrapped_nodes = []
 
 
-        messages.info(run_settings, "%d: destroy" % self.id)
+        #messages.info(run_settings, "%d: destroy" % self.id)
         comp_pltf_settings = self.get_platform_settings(
             run_settings, 'http://rmit.edu.au/schemas/platform/computation')
         try:
@@ -136,5 +137,5 @@ class Destroy(stage.Stage):
         setvals(run_settings, {
             '%s/stages/bootstrap/bootstrapped_nodes' % RMIT_SCHEMA: self.bootstrapped_nodes
                })
-        messages.success(run_settings, "%d: finished" % self.id)
+        messages.success(run_settings, "%d: Completed" % self.id)
         return run_settings

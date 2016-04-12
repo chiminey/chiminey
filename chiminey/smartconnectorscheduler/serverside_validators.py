@@ -42,6 +42,10 @@ def validate_platform(value, username):
     return value
 
 
+def validate_mock_mytardis_platform(value, username):
+    return True
+
+
 def validate_sweep_map(value):
     # FIXME: more detailed validation required here
     sweep_map = value
@@ -197,6 +201,28 @@ def validate_natural_number(value):
     if v < 0:
         raise ValidationError(msg)
     return value
+
+
+def validate_input_relative_path(value):
+    val = value.strip()
+    if not val:
+        raise ValidationError('Empty relative path for the input location')
+    if val == '.' or val == './':
+        raise ValidationError('Current directory "." is invalid relative path for the input location')
+    if '..' in val:
+        raise ValidationError('Illegal characters ".." in relative path for the input location')
+    if val.startswith('/'):
+        raise ValidationError('Relative path for the input location starts with "/"')
+    return val
+
+
+def validate_output_relative_path(value):
+    val = value.strip()
+    if '..' in val:
+        raise ValidationError('Illegal characters ".." in relative path for the output location')
+    if val.startswith('/'):
+        raise ValidationError('Relative path for the output location starts with "/"')
+    return val
 
 
 def validate_whole_number(value):

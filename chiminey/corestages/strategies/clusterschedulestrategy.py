@@ -27,9 +27,11 @@ from chiminey.storage import get_url_with_credentials, get_make_path, put_file
 from chiminey.sshconnection import open_connection
 from chiminey.compute import run_command_with_status
 from chiminey import messages
+from django.conf import settings as django_settings
+
 
 logger = logging.getLogger(__name__)
-RMIT_SCHEMA = "http://rmit.edu.au/schemas"
+RMIT_SCHEMA = django_settings.SCHEMA_PREFIX
 
 
 def set_schedule_settings(run_settings, local_settings):
@@ -40,6 +42,7 @@ def set_schedule_settings(run_settings, local_settings):
             '%s/stages/setup/payload_name' % RMIT_SCHEMA,
             '%s/stages/bootstrap/bootstrapped_nodes' % RMIT_SCHEMA,
             '%s/stages/setup/payload_source' % RMIT_SCHEMA,
+            '%s/stages/setup/process_output_dirname' % RMIT_SCHEMA,
              )
     local_settings['bdp_username'] = getval(
         run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA)
@@ -220,9 +223,11 @@ def start_round_robin_schedule(nodes, processes, schedule_index, settings, relat
         logger.debug('schedule destination=%s' % destination)
         makefile_path = get_make_path(destination)
         logger.debug('makefile_path=%s' % makefile_path)
+
         command = "cd %s; make %s" % (makefile_path,
-            'start_schedule PAYLOAD_NAME=%s IDS=%s' % (
-            settings['payload_name'], settings['filename_for_PIDs']))
+            'start_schedule %s %s %s' % (
+            settings['payload_name'], settings['filename_for_PIDs'], settings['process_output_dirname']))
+
         command_out = ''
         errs = ''
         logger.debug("starting command for %s" % ip_address)
@@ -284,9 +289,11 @@ def start_round_robin_reschedule(nodes, procs_2b_rescheduled,
         logger.debug('schedule destination=%s' % destination)
         makefile_path = get_make_path(destination)
         logger.debug('makefile_path=%s' % makefile_path)
+
         command = "cd %s; make %s" % (makefile_path,
-            'start_schedule PAYLOAD_NAME=%s IDS=%s' % (
-            settings['payload_name'], settings['filename_for_PIDs']))
+            'start_schedule %s %s %s' % (
+            settings['payload_name'], settings['filename_for_PIDs'], settings['process_output_dirname']))
+
         command_out = ''
         errs = ''
         logger.debug("starting command for %s" % ip_address)
