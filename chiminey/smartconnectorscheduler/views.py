@@ -95,6 +95,8 @@ subtype_validation = {
                         forms.TextInput, 255),
     'even': ('even number', serverside_validators.validate_even_number, None, None),
     'bdpurl': ('BDP url', serverside_validators.validate_BDP_url, forms.TextInput, 255),
+    'output_relative_path': ('Output relative path', serverside_validators.validate_output_relative_path, forms.TextInput, 255),
+    'input_relative_path': ('Input relative path', serverside_validators.validate_input_relative_path, forms.TextInput, 255),
     'float': ('floading point number', serverside_validators.validate_float_number,
               None, None),
     'jsondict': ('JSON Dictionary', serverside_validators.validate_jsondict,

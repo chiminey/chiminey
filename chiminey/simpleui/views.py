@@ -80,6 +80,8 @@ subtype_validation = {
     'whole': ('whole number', validators.validate_whole_number, None, None),
     'nectar_platform': ('NeCTAR platform name', validators.validate_platform_url, None, None),
     'storage_bdpurl': ('Storage resource name with optional offset path', validators.validate_platform_url, forms.TextInput, 255),
+    'output_relative_path': ('Storage resource name with optional offset path', validators.validate_output_relative_path, forms.TextInput, 255),
+    'input_relative_path': ('Storage resource name with optional offset path', validators.validate_input_relative_path, forms.TextInput, 255),
     'even': ('even number', validators.validate_even_number, None, None),
     'bdpurl': ('BDP url', validators.validate_BDP_url, forms.TextInput, 255),
     'float': ('floading point number', validators.validate_float_number, None, None),
@@ -936,9 +938,10 @@ def make_dynamic_field(parameter, **kwargs):
                     #directive_name = kwargs['directive']['name']
                     #logger.debug("computation platform is %s" % directive_name)
                     namespace = kwargs['namespace']
-                    schema = RMIT_SCHEMA + '/platform/computation'
+                    schema = RMIT_SCHEMA
                     try:
-                        schema += django_settings.COMPUTATION_PLATFORM_SCHEMA_NAMESPACE[namespace]
+                        schema += django_settings.RESOURCE_SCHEMA_NAMESPACE[namespace]
+                        logger.debug('myschema=%s' % schema)
                     except KeyError:
                         logger.warn("unknown computation platform")
 
@@ -965,9 +968,19 @@ def make_dynamic_field(parameter, **kwargs):
                         field_params['initial'] = ''
                     logger.debug("initial=%s" % field_params['initial'])
                     # TODO: retrieve_platform_paramset should be an API call
-                    platform_name_choices = [(x['platform_name'], x['platform_name'])
-                        for x in manage.retrieve_all_platforms(
+                    #platform_name_choices = [(x['platform_name'], x['platform_name'])
+                    #    for x in manage.retrieve_all_platforms(
+                    #        kwargs['username'], schema_namespace_prefix=schema)]
+                    #
+                    import os
+                    platforms = [x for x in manage.retrieve_all_platforms(
                             kwargs['username'], schema_namespace_prefix=schema)]
+                    if '/input/location' in namespace:
+                        platform_name_choices = [(x['platform_name'], '%s%s' % (x['platform_name'], x['root_path']))
+                                                 for x in platforms]
+                    else:
+                        platform_name_choices = [(x['platform_name'], x['platform_name'])
+                                                 for x in platforms]
                     logger.debug("platform_name_choices=%s" % platform_name_choices)
                     field_params['choices'] = platform_name_choices
 
@@ -1003,6 +1016,7 @@ def make_dynamic_field(parameter, **kwargs):
                 field_params['initial'] = platforms[0]['name']
             else:
                 field_params['initial'] = ''
+        '''
         elif parameter['subtype'] == 'storage_bdpurl':
             schema = RMIT_SCHEMA + '/platform/storage/unix'
             platforms = manage.retrieve_all_platforms(kwargs['username'],
@@ -1011,7 +1025,7 @@ def make_dynamic_field(parameter, **kwargs):
                 field_params['initial'] = platforms[0]['platform_name']
             else:
                 field_params['initial'] = ''
-
+        '''
         if parameter['subtype'] == 'hidden':
             field_params['widget'] = forms.HiddenInput()
             field_params['required'] = False
@@ -1311,11 +1325,51 @@ def submit_job(request, form, directive):
     cookies = dict(request.COOKIES)
     logger.debug("cookies=%s" % cookies)
     headers = {'content-type': 'application/json'}
-    logger.debug("form.cleaned_data=%s" % pformat(form.cleaned_data))
+    logger.debug("all_form.cleaned_data=%s" % pformat(form.cleaned_data))
     form.cleaned_data[RMIT_SCHEMA + '/bdp_userprofile/username'] = request.user.username
-    data = json.dumps(dict(form.cleaned_data.items()
-        + [('smart_connector', directive)]))
-    logger.debug("data=%s" % data)
+    data = dict(form.cleaned_data.items()
+        + [('smart_connector', directive)])
+
+    logger.debug('mydata=%s' % data)
+    import traceback
+    import os
+    try:
+        input_storage =  [(k, v) for k, v in data.items() if 'input_storage' in k]
+        input_location = [(k, v) for k, v in data.items() if 'input_location' in k]
+        logger.debug('tuples input storage=%s location=%s' % (input_storage, input_location))
+        if input_storage and input_location:
+            input_storage = input_storage[0]
+            input_location = input_location[0]
+            logger.debug('AFTER tuples input storage=%s location=%s' % (input_storage, input_location))
+            storage_name = input_storage[1].split('/')[0]
+            relative_path = input_location[1]
+            data[input_location[0]] = os.path.join(storage_name, relative_path)
+            logger.debug('input=%s' % data[input_location[0]])
+    except Exception, e:
+        logger.error('input=%s' % e )
+        traceback.print_exc(e)
+        raise
+
+    try:
+        output_location = [(k, v) for k, v in data.items() if 'output_location' in k]
+        output_storage =  [(k, v) for k, v in data.items() if 'output_storage' in k]
+        if output_storage and output_location:
+            output_storage = output_storage[0]
+            output_location = output_location[0]
+            storage_name = output_storage[1].split('/')[0]
+            relative_path = output_location[1]
+            if relative_path == '.' or relative_path == './' or not relative_path.strip():
+                data[output_location[0]] = storage_name
+            else:
+                data[output_location[0]] = os.path.join(storage_name, relative_path)
+            logger.debug('output=%s' % data[output_location[0]] )
+    except Exception, e:
+        logger.error('output=%s' % e)
+        traceback.print_exc(e)
+        raise
+
+    data = json.dumps(data)
+    logger.debug("submitteddata=%s" % data)
     r = requests.post(url,
         data=data,
         headers=headers,

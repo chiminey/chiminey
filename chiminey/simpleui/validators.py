@@ -253,6 +253,27 @@ def validate_platform_url(value):
     return value
 
 
+def validate_input_relative_path(value):
+    val = value.strip()
+    if not val:
+        raise ValidationError('Empty relative path for the input location')
+    if val == '.' or val == './':
+        raise ValidationError('Current directory "." is invalid relative path for the input location')
+    if '..' in val:
+        raise ValidationError('Illegal characters ".." in relative path for the input location')
+    if val.startswith('/'):
+        raise ValidationError('Relative path for the input location starts with "/"')
+    return val
+
+
+def validate_output_relative_path(value):
+    val = value.strip()
+    if '..' in val:
+        raise ValidationError('Illegal characters ".." in relative path for the output location')
+    if val.startswith('/'):
+        raise ValidationError('Relative path for the output location starts with "/"')
+    return val
+
 def validate_BDP_url(value):
     logger.debug("checking bdpurl %s" % value)
     if not len(str(value)):

@@ -497,38 +497,51 @@ def _get_chiminey_schemas():
                  u'output_location': {'type': models.ParameterName.STRING, 'subtype': 'storage_bdpurl',
                                       'initial': 'file://local@127.0.0.1/sweep', 'description': 'Output Location',
                                       'ranking': 2,
-                                      'help_text': 'Storage resource name with optional offset path: e.g., storage_home/myexperiment'}
+                                      'help_text': 'Storage resource name with optional offset path: e.g., storage_home/myexperiment'},
+
              }
             ],
         u'%s/input/location' % django_settings.SCHEMA_PREFIX:
             [u'Locations',
              {
-                 u'input_location': {'type': models.ParameterName.STRING, 'subtype': 'storage_bdpurl',
-                                     'initial': 'file://127.0.0.1/myfiles/input', 'description': 'Input Location',
+                 u'input_storage': {'type': models.ParameterName.STRLIST, 'subtype': 'platform',
+                                           'initial': '', 'description': 'Input storage location', 'ranking': 0,
+                                           'help_text': 'The name of the storage platform to be used'},
+                 u'input_location': {'type': models.ParameterName.STRING, 'subtype': 'input_relative_path',
+                                     'initial': '', 'description': 'Relative path',
                                      'ranking': 1,
                                      'help_text': 'Storage resource name with optional offset path: e.g., storage_home/myexperiment'},
-                 u'output_location': {'type': models.ParameterName.STRING, 'subtype': 'storage_bdpurl',
-                                      'initial': 'file://local@127.0.0.1/sweep', 'description': 'Output Location',
-                                      'ranking': 2,
-                                      'help_text': 'Storage resource name with optional offset path: e.g., storage_home/myexperiment'}
+                 u'output_storage': {'type': models.ParameterName.STRLIST, 'subtype': 'platform',
+                                           'initial': '', 'description': 'Output storage location', 'ranking': 2,
+                                           'help_text': 'The name of the storage platform to be used'},
+                 u'output_location': {'type': models.ParameterName.STRING, 'subtype': 'output_relative_path',
+                                      'initial': '', 'description': 'Relative path',
+                                      'ranking': 3,
+                                      'help_text': 'Storage resource name with optional offset path: e.g., storage_home/myexperiment'},
              }
             ],
         u'%s/input/location/input' % django_settings.SCHEMA_PREFIX:
-            [u'Locations',
+            [u'Input Location',
              {
-                 u'input_location': {'type': models.ParameterName.STRING, 'subtype': 'storage_bdpurl',
-                                     'initial': 'file://127.0.0.1/myfiles/input', 'description': 'Input Location',
+                 u'input_storage': {'type': models.ParameterName.STRLIST, 'subtype': 'platform',
+                                           'initial': '', 'description': 'Input storage location', 'ranking': 0,
+                                           'help_text': 'The name of the storage platform to be used'},
+                 u'input_location': {'type': models.ParameterName.STRING, 'subtype': 'input_relative_path',
+                                     'initial': '', 'description': 'Relative path',
                                      'ranking': 1,
                                      'help_text': 'Storage resource name with optional offset path: e.g., storage_home/myexperiment'},
              }
             ],
         u'%s/input/location/output' % django_settings.SCHEMA_PREFIX:
-            [u'Locations',
+            [u'Output Location',
              {
-                 u'output_location': {'type': models.ParameterName.STRING, 'subtype': 'storage_bdpurl',
-                                      'initial': 'file://local@127.0.0.1/sweep', 'description': 'Output Location',
-                                      'ranking': 2,
-                                      'help_text': 'Storage resource name with optional offset path: e.g., storage_home/myexperiment'}
+                 u'output_storage': {'type': models.ParameterName.STRLIST, 'subtype': 'platform',
+                                           'initial': '', 'description': 'Output storage location', 'ranking': 0,
+                                           'help_text': 'The name of the storage platform to be used'},
+                 u'output_location': {'type': models.ParameterName.STRING, 'subtype': 'output_relative_path',
+                                      'initial': '', 'description': 'Relative path',
+                                      'ranking': 1,
+                                      'help_text': 'Storage resource name with optional offset path: e.g., storage_home/myexperiment'},
              }
             ],
         u'%s/input/system/compplatform' % django_settings.SCHEMA_PREFIX:

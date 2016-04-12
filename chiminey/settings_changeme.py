@@ -433,11 +433,16 @@ CELERY_ROUTES = {
 }
 
 
-COMPUTATION_PLATFORM_SCHEMA_NAMESPACE = \
-    {SCHEMA_PREFIX + '/input/system/compplatform/cloud': '/cloud/ec2-based',
-     SCHEMA_PREFIX + '/input/system/compplatform/unix': '/cluster/pbs_based',
-     SCHEMA_PREFIX + '/input/system/compplatform/hadoop': '/bigdata/hadoop'
+RESOURCE_SCHEMA_NAMESPACE = \
+    {SCHEMA_PREFIX + '/input/system/compplatform/cloud': '/platform/computation/cloud/ec2-based',
+     SCHEMA_PREFIX + '/input/system/compplatform/unix': '/platform/computation/cluster/pbs_based',
+     SCHEMA_PREFIX + '/input/system/compplatform/hadoop': '/platform/computation/bigdata/hadoop',
+     SCHEMA_PREFIX + '/input/location': '/platform/storage/unix',
+     SCHEMA_PREFIX + '/input/location/input': '/platform/storage/unix',
+     SCHEMA_PREFIX + '/input/location/output': '/platform/storage/unix'
     }
+
+
 
 #BROKER_TRANSPORT = 'django'
 BROKER_URL = 'redis://localhost:6379/0'
