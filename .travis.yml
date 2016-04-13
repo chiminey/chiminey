@@ -14,6 +14,7 @@ script:
       - sudo apt-get -o Dpkg::Options::="--force-confnew" install -y  docker-engine
       - git clone https://github.com/chiminey/docker-chiminey.git
       - cd docker-chiminey
+      - cat .travis.input.txt  | ./makecert
       - ./makecert
       - docker-compose up -d
       - docker-compose ps
