@@ -11,7 +11,7 @@ before_install:
       - sudo mv docker-compose /usr/local/bin
 
 script:
-      - sudo apt-get -y install docker-engine
+      - sudo apt-get -o Dpkg::Options::="--force-confnew" install -y  docker-engine
       - git clone https://github.com/chiminey/docker-chiminey.git
       - cd docker-chiminey
       - docker-compose up -d
