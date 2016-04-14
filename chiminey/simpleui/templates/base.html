@@ -336,12 +336,17 @@ function formreset(){
  }
 
 
-function toggleVisibility(id){
+function toggleVisibility(id, opts_id){
     if ($("#" + id).is(":visible")) {
         $("#" + id).hide();
+        $("#hide_" + opts_id).hide();
+        $("#show_" + opts_id).show();
     }
-    else
-       $("#" + id).show();
+    else {
+        $("#" + id).show();
+        $("#hide_" + opts_id).show();
+        $("#show_" + opts_id).hide();
+    }
 }
 
 

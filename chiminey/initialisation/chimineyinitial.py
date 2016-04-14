@@ -202,7 +202,7 @@ def _get_chiminey_schemas():
                               'initial': '{}', 'ranking': 3, 'help_text': ''},
                  u'platform_type': {'type': models.ParameterName.STRLIST, 'subtype': '',
                                     'description': 'Resource type', 'initial': '',
-                                    'choices': '[("hadoop", "Hadoop"), ]', 'ranking': 6,
+                                    'choices': '[("hadoop", "Hadoop MapReduce"), ]', 'ranking': 6,
                                     'help_text': 'The identifier of the type of the computation platform'},
                  u'platform_name': {'type': models.ParameterName.STRING, 'subtype': '',
                                     'description': 'Resource name', 'initial': '', 'ranking': 10,

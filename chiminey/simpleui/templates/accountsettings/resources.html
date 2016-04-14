@@ -35,7 +35,21 @@ $(document).ready(function () {
                 {% if formtype == 'create' %}
                 <ul class="nav nav-tabs" id="myTab">
                     {% for resource, details in resources.items %}
-                  <li class="{% if resource == 'unix' or resource == 'cloud' %} active {% endif %}"><a href="#{{resource}}_{{resourcetype}}" data-toggle="tab">{{resource|title}}</a></li>
+                     {% if resource == 'bigdata'  %}
+                  <li class="{% if resource == 'unix' or resource == 'cloud' %} active {% endif %}"><a href="#{{resource}}_{{resourcetype}}" data-toggle="tab">
+
+                      Analytics
+                      </a>
+                  </li>
+                      {% elif resource == 'jenkins' %}
+                       <li class="{% if resource == 'unix' or resource == 'cloud' %} active {% endif %}"><a href="#{{resource}}_{{resourcetype}}" data-toggle="tab"> Continuous Integration  </a>
+                  </li>
+                      {% else %}
+                       <li class="{% if resource == 'unix' or resource == 'cloud' %} active {% endif %}"><a href="#{{resource}}_{{resourcetype}}" data-toggle="tab"> {{resource|title}}
+
+                  </a>
+                  </li>
+                     {%endif%}
 
                     {% endfor %}
                 </ul>
@@ -63,13 +77,14 @@ $(document).ready(function () {
                             {% endfor %}
 
                            {% if details.advanced_ops == 'true' %}
-                            <div class="control-group" >
-                             <button type="button" class="btn btn-link pull-right" onclick="toggleVisibility('advanced_fields_{{resource}}_{{formtype}}');" >Advanced options...</button>
+                            <div class="control-group" id="show_advanced_fields_{{resource}}_{{formtype}}" >
+                             <button type="button" class="btn btn-link pull-left" onclick="toggleVisibility('advanced_fields_{{resource}}_{{formtype}}', 'advanced_fields_{{resource}}_{{formtype}}');" >Show advanced options...</button>
                            </div>
                            {% endif %}
 
 
                            <div  id="advanced_fields_{{resource}}_{{formtype}}" hidden="true">
+                               <hr/>
                            {% for data, field in  details.data  %}
                               {% if field.is_hidden == False and data.4 == "advanced" %}
                                  <div class="control-group">
@@ -87,6 +102,13 @@ $(document).ready(function () {
                            {% endif %}
                             {% endfor %}
                            </div>
+
+
+                            <div class="control-group" id="hide_advanced_fields_{{resource}}_{{formtype}}" hidden="true">
+
+                             <button type="button" class="btn btn-link pull-left" onclick="toggleVisibility('advanced_fields_{{resource}}_{{formtype}}', 'advanced_fields_{{resource}}_{{formtype}}');" >Hide advanced options...</button>
+                           </div>
+
 
                             {% for hidden in details.form.hidden_fields %}
                                 {{ hidden }}
