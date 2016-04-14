@@ -32,28 +32,16 @@ $(document).ready(function () {
                 <h4 class="modal-title">{{name|title}} {{resourcetype|title}} Resource</h4>
             </div>
             <div class="modal-body">
-                {% if formtype == 'create' %}
+               {% if formtype == 'create' %}
                 <ul class="nav nav-tabs" id="myTab">
                     {% for resource, details in resources.items %}
-                     {% if resource == 'bigdata'  %}
-                  <li class="{% if resource == 'unix' or resource == 'cloud' %} active {% endif %}"><a href="#{{resource}}_{{resourcetype}}" data-toggle="tab">
-
-                      Analytics
-                      </a>
-                  </li>
-                      {% elif resource == 'jenkins' %}
-                       <li class="{% if resource == 'unix' or resource == 'cloud' %} active {% endif %}"><a href="#{{resource}}_{{resourcetype}}" data-toggle="tab"> Continuous Integration  </a>
-                  </li>
-                      {% else %}
-                       <li class="{% if resource == 'unix' or resource == 'cloud' %} active {% endif %}"><a href="#{{resource}}_{{resourcetype}}" data-toggle="tab"> {{resource|title}}
-
-                  </a>
-                  </li>
-                     {%endif%}
-
-                    {% endfor %}
+                     <li class="{% if resource == 'unix' or resource == 'cloud' %} active {% endif %}"><a href="#{{resource}}_{{resourcetype}}" data-toggle="tab"> {{details.group_name}}</a></li>
+                     {% endfor %}
                 </ul>
                 {% endif %}
+
+
+
                 <div class="tab-content">
 
                     {% for resource, details in resources.items %}
@@ -143,11 +131,14 @@ $(document).ready(function () {
 
 
  {% if platform_type == 'nci' %}
-            <h2>Cluster/Unix</h2>
+            <h2>HPC - Cluster or Standalone Server</h2>
          {% elif platform_type == 'nectar' or platform_type == 'csrack' or  platform_type == 'amazon' %}
             <h2>Cloud - NeCTAR/CSRack/Amazon EC2</h2>
          {% elif platform_type == 'hadoop' %}
-            <h2>Big Data - Hadoop</h2>
+            <h2>Analytics - Hadoop MapReduce</h2>
+    {% elif platform_type == 'unix' %}
+            <h2>Remote File System</h2>
+
          {% else %}
             <h2>{{ platform_type|title }}</h2>
 
@@ -157,15 +148,30 @@ $(document).ready(function () {
             <thead>
                 <tr>
                     {% for h in header %}
-                       {% if h == 'platform_name' %}
+
+                    {% if h == 'platform_type' %}
+                                {% if platform_type == 'nectar' or platform_type == 'csrack' or  platform_type == 'amazon' %}
+                    <th class="col-1" data-hide="">
+                                     <strong> resource type </strong>
+                                {% endif %}
+
+
+                       {% elif h == 'platform_name' %}
                         <th class="col-1" data-hide="">
-                            <strong>{{ h }}</strong>
+
+                            <strong> resource name </strong>
+
+
+
+
                         </th>
                         {% elif h != 'password' and h != 'ec2_secret_key' %}
                         <th col="col-1" data-hide="phone, tablet">
                             <strong>{{ h }}</strong>
                         </th>
+
                         {% endif %}
+
                     {% endfor %}
                     <th class="col-3"></th>
                 </tr>
@@ -174,8 +180,14 @@ $(document).ready(function () {
                 {% for paramset_key, paramset in schema.items %}
                 <tr>
                     {% for param_key, param in paramset.items %}
-                        {% if param_key != 'password' and h != 'ec2_secret_key'  %}
-                            <td>  {{ param }}</td>
+                        {% if param_key != 'password' and param_key != 'ec2_secret_key'  %}
+                            {% if param_key == 'platform_type' %}
+                                {% if platform_type == 'nectar' or platform_type == 'csrack' or  platform_type == 'amazon' %}
+                                    <td>  {{ param }}</td>
+                                {% endif %}
+                             {% else %}
+                                <td>  {{ param }}</td>
+                            {% endif %}
                         {% endif %}
                     {% endfor %}
                 <td class="btn-group">

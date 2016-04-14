@@ -163,7 +163,7 @@ def _get_chiminey_schemas():
                               'initial': '{}', 'ranking': 3, 'help_text': ''},
                  u'platform_type': {'type': models.ParameterName.STRLIST, 'subtype': '',
                                     'description': 'Resource type', 'initial': '',
-                                    'choices': '[("nci", "Cluster/Unix"), ]', 'ranking': 6,
+                                    'choices': '[("nci", "Cluster or Standalone Server"), ]', 'ranking': 6,
                                     'help_text': 'The identifier of the type of the computation platform'},
                  u'platform_name': {'type': models.ParameterName.STRING, 'subtype': '',
                                     'description': 'Resource name', 'initial': '', 'ranking': 10,

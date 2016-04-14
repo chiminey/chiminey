@@ -32,6 +32,8 @@ class WordCountInitial(CoreInitial):
         schemas = [
                 django_settings.INPUT_FIELDS['hadoop'],
                 django_settings.INPUT_FIELDS['location'],
+            django_settings.INPUT_FIELDS['wordcount']
+
                 ]
         return schemas
 

@@ -124,10 +124,10 @@ def computation_platform_settings(request):
         resources[k] = {k: {'form': v[0], 'data': v[1], 'advanced_ops': 'false'}}
 
 
-    for field_name, ns_suffix, group, group_name, ops in [('cluster_form', 'cluster/pbs_based', 'cluster', "Cluster/Unix", 'true' ),
+    for field_name, ns_suffix, group, group_name, ops in [('cluster_form', 'cluster/pbs_based', 'cluster', "HPC", 'true' ),
                                     ('cloud_form', 'cloud/ec2-based', 'cloud', 'Cloud', 'false'),
-                                    ('jenkins_form','testing/jenkins_based', 'jenkins', 'Jenkins', 'false' ),
-                                    ('bigdata_form', 'bigdata/hadoop', 'bigdata', 'Big Data', 'true'),
+                                    ('jenkins_form','testing/jenkins_based', 'jenkins', 'Continuous Integration', 'false' ),
+                                    ('bigdata_form', 'bigdata/hadoop', 'bigdata', 'Analytics', 'true'),
                                     ]:
         namespace = "%s/platform/computation/%s" % (RMIT_SCHEMA, ns_suffix)
         params = _get_platform_params(request, namespace)
@@ -357,7 +357,7 @@ def storage_platform_settings(request):
                    'mytardis_form': mytardis_form,
                    'mytardis_form_data': mytardis_form_data,
                    'all_headers': all_headers,
-                   'resources': {'unix': {'data': unix_form_data, 'advanced_ops':'true', 'form': unix_form, 'group_name': 'Unix'},
+                   'resources': {'unix': {'data': unix_form_data, 'advanced_ops':'true', 'form': unix_form, 'group_name': 'Remote File System'},
                                  'mytardis': {'data': mytardis_form_data, 'advanced_ops': 'false', 'form': mytardis_form, 'group_name': 'MyTardis'}
                                   },
                    'formtypes': {'create':'Register', 'update': 'Update', 'delete': 'Remove'},
@@ -976,7 +976,7 @@ def make_dynamic_field(parameter, **kwargs):
                     platforms = [x for x in manage.retrieve_all_platforms(
                             kwargs['username'], schema_namespace_prefix=schema)]
                     if '/input/location' in namespace:
-                        platform_name_choices = [(x['platform_name'], '%s%s' % (x['platform_name'], x['root_path']))
+                        platform_name_choices = [(x['platform_name'], '%s:%s' % (x['platform_name'], x['root_path']))
                                                  for x in platforms]
                     else:
                         platform_name_choices = [(x['platform_name'], x['platform_name'])
@@ -1341,7 +1341,7 @@ def submit_job(request, form, directive):
             input_storage = input_storage[0]
             input_location = input_location[0]
             logger.debug('AFTER tuples input storage=%s location=%s' % (input_storage, input_location))
-            storage_name = input_storage[1].split('/')[0]
+            storage_name = input_storage[1].split(':')[0]
             relative_path = input_location[1]
             data[input_location[0]] = os.path.join(storage_name, relative_path)
             logger.debug('input=%s' % data[input_location[0]])
@@ -1356,7 +1356,7 @@ def submit_job(request, form, directive):
         if output_storage and output_location:
             output_storage = output_storage[0]
             output_location = output_location[0]
-            storage_name = output_storage[1].split('/')[0]
+            storage_name = output_storage[1].split(':')[0]
             relative_path = output_location[1]
             if relative_path == '.' or relative_path == './' or not relative_path.strip():
                 data[output_location[0]] = storage_name
