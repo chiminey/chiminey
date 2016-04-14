@@ -125,26 +125,12 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.transaction.TransactionMiddleware'
     )
 
-SMART_CONNECTORS = {'randunix': {'init': 'chiminey.examples.randnumunix.initialise.RandInitial',
-                                 'name': 'randunix',
-                                 'description': 'my descrip...',
-                                 'payload': ''
-                                 },
-                    'hrmc': {'init': 'chiminey.examples.hrmc2.initialise.HRMCInitial',
-                             'name': 'hrmc',
-                             'description': 'hrmc',
-                             'payload': '/opt/chiminey/current/chiminey/examples/hrmc2/payload_hrmc'
-                             },
+SMART_CONNECTORS = {
                     'hrmclite': {'init': 'chiminey.examples.hrmclite.initialise.HRMCInitial',
                              'name': 'hrmclite',
                              'description': 'Hybrid Reverse Monte Carlo without PSD',
                              'payload': '/opt/chiminey/current/chiminey/examples/hrmclite/payload_hrmc'
                              },
-                    'tutorial': {'init': 'chiminey.examples.tutorial.initialise.TutorialInitial',
-                                 'name': 'tutorial',
-                                 'description': 'tutorial smart connector',
-                                 'payload': ''
-                                },
                     'wordcount': {'init': 'chiminey.examples.wordcount.initialise.WordCountInitial',
                                  'name': 'wordcount',
                                  'description': 'Counting words via Hadoop',
@@ -153,9 +139,9 @@ SMART_CONNECTORS = {'randunix': {'init': 'chiminey.examples.randnumunix.initiali
                                 },
 "randnum": {
            "name": "randnum",
-           "init": "chiminey.randnum.initialise.RandNumInitial",
+           "init": "chiminey.examples.randnum.initialise.RandNumInitial",
            "description": "Randnum generator, with timestamp",
-           "payload": "/opt/chiminey/current/payload_randnum"
+           "payload": "/opt/chiminey/current/chiminey/examples/randnum/payload_randnum"
             },
                     }
 
