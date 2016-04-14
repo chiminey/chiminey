@@ -4,7 +4,7 @@ import os
 
 from datetime import timedelta
 
-DEBUG = True
+DEBUG = False
 
 from os import path
 
@@ -480,7 +480,5 @@ PLATFORM_CLASSES = (
     'chiminey.platform.hadoop.HadoopPlatform',
      )
 
-from pprint import pformat
-print pformat(LOGGING)
 
 djcelery.setup_loader()
