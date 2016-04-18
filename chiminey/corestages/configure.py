@@ -73,7 +73,10 @@ class Configure(Stage):
                 try:
                     bdp_url = getval(run_settings, RMIT_SCHEMA + '/input/system/input_location')
                 except SettingNotFoundException:
-                    bdp_url = getval(run_settings, RMIT_SCHEMA + '/input/location/input_location')
+		    try:
+                   	 bdp_url = getval(run_settings, RMIT_SCHEMA + '/input/location/input_location')
+		    except SettingNotFoundException:
+			 bdp_url = getval(run_settings, RMIT_SCHEMA + '/input/location/input/input_location')
                 self.input_platform_name, self.input_platform_offset = self.break_bdp_url(bdp_url)
                 run_settings[RMIT_SCHEMA + '/platform/storage/input'] = {}
                 run_settings[RMIT_SCHEMA + '/platform/storage/input'][
@@ -371,8 +374,10 @@ class Configure(Stage):
         try:
             input_location = getval(run_settings, RMIT_SCHEMA + '/input/system/input_location')
         except SettingNotFoundException:
-            input_location = getval(run_settings, RMIT_SCHEMA + '/input/location/input_location')
-
+            try:
+		input_location = getval(run_settings, RMIT_SCHEMA + '/input/location/input_location')
+	    except: 
+		input_location = getval(run_settings, RMIT_SCHEMA + '/input/location/input/input_location')
         logger.debug("input_location=%s" % input_location)
         #todo: input location will evenatually be replaced by the scratch space that was used by the sweep
         #todo: the sweep will indicate the location of the scratch space in the run_settings

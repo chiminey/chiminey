@@ -31,7 +31,8 @@ class WordCountInitial(CoreInitial):
     def get_ui_schema_namespace(self):
         schemas = [
                 django_settings.INPUT_FIELDS['hadoop'],
-                django_settings.INPUT_FIELDS['location'],
+                django_settings.INPUT_FIELDS['input_location'],
+		django_settings.INPUT_FIELDS['output_location'],
             django_settings.INPUT_FIELDS['wordcount']
 
                 ]

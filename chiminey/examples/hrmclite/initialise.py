@@ -45,7 +45,8 @@ class HRMCInitial(CoreInitial):
     def get_ui_schema_namespace(self):
         schemas = [
                 django_settings.INPUT_FIELDS['cloud'],
-                django_settings.INPUT_FIELDS['location'],
+                django_settings.INPUT_FIELDS['input_location'],
+                django_settings.INPUT_FIELDS['output_location'],
                 django_settings.INPUT_FIELDS['hrmclite'],
                 django_settings.INPUT_FIELDS['reliability'],
                 ]

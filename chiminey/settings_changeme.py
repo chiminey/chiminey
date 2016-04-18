@@ -4,7 +4,7 @@ import os
 
 from datetime import timedelta
 
-DEBUG = False
+DEBUG = True
 
 from os import path
 
