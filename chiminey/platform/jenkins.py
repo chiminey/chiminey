@@ -2,6 +2,8 @@
 
 import os
 import logging
+import requests
+
 
 from chiminey import storage
 from chiminey.corestages import strategies
@@ -24,7 +26,21 @@ class JenkinsPlatform():
         # parameters['private_key_path'] = key_relative_path
 
     def validate(self, parameters, passwd_auth=False):
-        return [False, True, "All valid parameters"]
+
+        JOB_LOG_URL = "http://%s:8080/api/json"
+
+        username = parameters['username']
+        password = parameters['password']
+
+        url = JOB_LOG_URL  % parameters['ip_address']
+        logger.info("url=%s" % url)
+        response = requests.get(url, auth=(username, password), verify=False)
+        logger.info("response code=%s" % response.status_code)
+
+        if response.status_code != 200:
+            return [True, False, 'Cannot register this jenkins instance']
+
+        return [True, True, "Valid Jenkins instance found"]
         #
         # path_list = [parameters['root_path'], parameters['home_path']]
         # val = validate_remote_path(path_list, parameters, passwd_auth)
