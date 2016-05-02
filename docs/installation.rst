@@ -19,7 +19,7 @@ Docker 1.7+ is needed. Follow the links below to install docker on your machine.
 
 
 
-.. _mac_windows_req
+.. _mac_windows_req:
 
 Mac OS X and Windows
 ~~~~~~~~~~~~~~~~~~~~
@@ -47,7 +47,7 @@ Create a virtual machine that runs docker:
 
 
 
-.. _linux_req
+.. _linux_req:
 
 Linux
 ~~~~~~
