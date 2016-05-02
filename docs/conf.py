@@ -25,10 +25,10 @@ sys.path.insert(0, os.path.abspath('..'))
 # sys.path.append(os.path.abspath('../eggs/Django-1.4.5-py2.7.egg'))
 # sys.path.append(os.path.abspath('../eggs/psycopg2-2.5.2-py2.7.egg'))
 
-from chiminey import settings_changeme as settings
+#from chiminey import settings_changeme as settings
 
-from django.core.management import setup_environ
-setup_environ(settings)
+#from django.core.management import setup_environ
+#setup_environ(settings)
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
