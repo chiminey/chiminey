@@ -25,8 +25,8 @@ setup(
         #'django-form-utils',
         #'django-haystack',
         #'django-bootstrap-form',
-        #'celery==3.1.16',
-        #'django-celery==3.1.16',
+        'celery==3.1.16',
+        'django-celery==3.1.16',
         #'django-kombu==0.9.4',
         #'django-mptt',
         #'django-storages',
@@ -38,11 +38,11 @@ setup(
         #'boto==2.5.2',
         #'moto==0.2.21',
         #'django-tastypie==0.9.15',
-        #'django-celery-with-redis==3.0',
+        'django-celery-with-redis==3.0',
         ],
     dependency_links=[
         #'https://github.com/dahlia/wand/tarball/warning-bugfix#egg=Wand-0.1.10',
-        #'https://github.com/UQ-CMM-Mirage/django-celery/tarball/2.5#egg=django-celery-2.5.5',
+        'https://github.com/UQ-CMM-Mirage/django-celery/tarball/2.5#egg=django-celery-2.5.5',
         #'https://github.com/defunkt/pystache/tarball/v0.5.2#egg=pystache-0.5.2'
     ],
 )
