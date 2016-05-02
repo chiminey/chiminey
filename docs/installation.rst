@@ -17,14 +17,12 @@ Docker 1.7+ is needed. Follow the links below to install docker on your machine.
 
 -  :ref:`linux_req`
 
-
-
 .. _mac_windows_req:
 
 Mac OS X and Windows
 ~~~~~~~~~~~~~~~~~~~~
 
-Create a virtual machine that runs docker:
+Here, we create a virtual machine that runs docker.
 
 1. Download Docker Toolbox from https://www.docker.com/toolbox.
 
@@ -32,9 +30,9 @@ Create a virtual machine that runs docker:
 
 3. Follow the on-screen prompts to install the Docker toolbox. You may be prompted for password just before the installation begins. You need to enter your password to continue.
 
-4. When the installation is completed, press *Close* to exit.
+4. When the installation is completed, press ``Close`` to exit.
 
-5. Verify that `docker-engine` and `docker-compose` are installed correctly.
+5. Verify that ``docker-engine`` and ``docker-compose`` are installed correctly.
 
   - Open Docker Quickstart Terminal from your application folder. The resulting output looks like the following:
 
@@ -45,12 +43,50 @@ Create a virtual machine that runs docker:
 
       Figure.  Docker Virtual Machine on Mac OS X or Windows
 
+  - Run docker engine.
 
+      docker run hello-world
+
+
+*Expected output*. You will see a message similar to the one below.
+       Unable to find image ’hello-world:latest’ locally
+       latest: Pulling from library/hello-world
+       03f4658f8b78: Pull complete
+       a3ed95caeb02: Pull complete
+       Digest: sha256:8be990ef2aeb16dbcb92...
+       Status: Downloaded newer image for hello-world:latest
+       Hello from Docker.
+       This message shows that your installation appears to be
+           working correctly.
+       ...
+
+  - Run docker-compose
+
+      docker-compose --version
+
+*Expected output*. If your OS is not an older Mac
+
+    docker-compose version x.x.x, build xxxxxxx
+￼
+*Expected output*. If your OS is an older Mac.
+
+    Illegal instruction: 4
+
+This error can be fixed by upgrading docker-compose.
+
+    pip install --upgrade docker-compose
+    
 
 .. _linux_req:
 
 Linux
 ~~~~~~
+
+Docker, specifically ``docker-engine`` and ``docker-compose``, needs to be installed directly on your linux-based OS. Refer to the Docker online documentaion to install the two packages:
+
+1. `Docker-engine<https://docs.docker.com/engine/installation/>`_
+
+2. `Docker-compose<https://docs.docker.com/compose/install/>`_
 
 
 Instructions
