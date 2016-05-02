@@ -85,70 +85,61 @@ Docker, specifically ``docker-engine`` and ``docker-compose``, needs to be insta
 Installation Instructions
 ------------
 
-1. Open
+1. For Mac OS X and Windows users, open `Docker Quickstart Terminal`. For linux-based OS users, login to your machine and open a terminal.
 
-If you have MaC On the created VM::
+2. Check if ``git`` is installed. Type ``git`` on your terminal.
 
-    sudo -s
-    rpm  -Uvh http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
-    yum -y install ruby ruby-devel ruby-rdoc ruby-shadow gcc gcc-c++ automake autoconf make curl dmidecode
-    cd /tmp
-    curl -O http://production.cf.rubygems.org/rubygems/rubygems-1.8.10.tgz
-    tar zxf rubygems-1.8.10.tgz
-    cd rubygems-1.8.10
+   `Expected output`. If git is installed::
+     usage: git [--version] [--help] [-C <path>] ..
+                [--exec-path[=<path>]] [--html-path] [...
+                [-p|--paginate|--no-pager] [--no- ...
+                [--git-dir=<path>] [--work-tree=<path>]...
+                <command> [<args>]
+                ...
 
-    # install ruby 1.9.3 as centos 6.5 has only 1.8 which is no good for chef
-    # http://tecadmin.net/install-ruby-1-9-3-or-multiple-ruby-verson-on-centos-6-3-using-rvm/
-    yum update
-    yum install gcc-c++ patch readline readline-devel zlib zlib-devel
-    yum install libyaml-devel libffi-devel openssl-devel make
-    yum install bzip2 autoconf automake libtool bison iconv-devel
-    yum remove libyaml-0.1.6
-    cd /tmp
-    curl -L get.rvm.io | bash -s stable
-    source /etc/profile.d/rvm.sh
-    rvm install 1.9.3
+   `Expected output`. If git is not installed bash::
 
-    #install chef
-    ruby setup.rb --no-format-executable
-    gem install chef --no-ri --no-rdoc -v 11.10.4
+    git: command not found
+
+    Download and install ``git`` from http://git-scm.com/download
 
 
-Get the chef script for the Chiminey app::
+3. Clone the ``docker-chiminey`` source code from http://github.com.au::
 
-    yum -y install git
-    mkdir -p /var/chef-solo
-    cd /var/chef-solo
-    git clone https://github.com/chiminey/chiminey-chef.git
-    cd chiminey-chef
-    if [[ $http_proxy != "" ]]; then echo http_proxy '"'$http_proxy'"' >> solo/solo.rb;  fi
+     git clone https://github.com/chiminey/docker-chiminey.git
 
-Create a user for the Chiminey app::
 
-    useradd bdphpc --create-home
+4. Change your working directory::
 
-Configure the user environment::
+     cd docker-chiminey
 
-    su - bdphpc -c "ssh-keygen"   #return for all prompts
-    su - bdphpc -c "mkdir ~/.python-eggs"
-    su - bdphpc -c "touch /home/bdphpc/.ssh/known_hosts"
+5. Setup a self-signed certificate. You will be prompted to enter country
+code, state, city, and etc::
 
-Install the Chiminey app::
+    sh makecert
 
-    chef-solo -c solo/solo.rb -j solo/node.json -ldebug
+6. Deploy the Chiminey platform::
 
-Check testcases::
+    docker-compose up -d
 
-    su bdphpc
-    cd /opt/chiminey/current/
-    bin/django test .
 
-Setup Chiminey app::
+8. Verify Chiminey was deployed successfully.
 
-    cd chiminey
-    ../bin/django createsuperuser   # should only be used for admin tasks
-    ../bin/django initial           # gets the database ready
-    ../bin/django createuser        # a user who runs smart connectors
+  8.1 Retrieve IP address of your machine
+      i. For Mac and Windows users, type ``env | grep DOCKER_HOST``. The expected output is ``OCKER_HOST=tcp://IP:port``, e.g. ``DOCKER_HOST=tcp://192.168.99.100:2376``. Thus your IP address is 192.168.99.100
+
+      ii. For linux users, use ``ifconfig`` to retirve your machine's IP
+
+  8.2 Open a browser and visit the Chiminey portal at IP, in our example, http://192.168.99.100.
+
+    `Expected output`. After a while, the Chiminey portal will be shown.
+    .. figure:: img/installation/chimineyportal.png
+        :align: center
+        :alt:  Chiminey Portal
+        :figclass: align-center
+
+        Figure.  Chiminey Portal
+
 
 
 .. seealso::
