@@ -85,11 +85,12 @@ Docker, specifically ``docker-engine`` and ``docker-compose``, needs to be insta
 Chiminey Installation
 ------------
 
-1. For Mac OS X and Windows users, open `Docker Quickstart Terminal`. For linux-based OS users, login to your machine and open a terminal.
+i. For Mac OS X and Windows users, open `Docker Quickstart Terminal`. For linux-based OS users, login to your machine and open a terminal.
 
-2. Check if ``git`` is installed. Type ``git`` on your terminal.
+i. Check if ``git`` is installed. Type ``git`` on your terminal.
 
    + If git is installed, the following message will be shown::
+
        usage: git [--version] [--help] [-C <path>] ..
                   [--exec-path[=<path>]] [--html-path] [...
                   [-p|--paginate|--no-pager] [--no- ...
@@ -100,34 +101,35 @@ Chiminey Installation
    + If git is not installed, you will see ``git: command not found``. Download and install ``git`` from http://git-scm.com/download
 
 
-3. Clone the ``docker-chiminey`` source code from http://github.com.au::
+i. Clone the ``docker-chiminey`` source code from http://github.com.au::
 
      git clone https://github.com/chiminey/docker-chiminey.git
 
 
-4. Change your working directory::
+i. Change your working directory::
 
      cd docker-chiminey
 
-5. Setup a self-signed certificate. You will be prompted to enter country
-code, state, city, and etc::
+
+i. Setup a self-signed certificate. You will be prompted to enter country code, state, city, and etc::
 
     sh makecert
 
-6. Deploy the Chiminey platform::
+i. Deploy the Chiminey platform::
 
     docker-compose up -d
 
 
-8. Verify Chiminey was deployed successfully.
+i. Verify Chiminey was deployed successfully.
 
   8.1 Retrieve IP address of your machine
+
       + For Mac and Windows users, type ``env | grep DOCKER_HOST``. The expected output has a format ``DOCKER_HOST=tcp://IP:port``, for example. ``DOCKER_HOST=tcp://192.168.99.100:2376``. Thus, your IP address is 192.168.99.100.
 
       + For linux users, the command ``ifconfig`` prints your our machine's IP address.
 
   8.2 Open a browser and visit the Chiminey portal at IP, in our example, http://192.168.99.100. After a while, the Chiminey portal will be shown.
-  
+
     .. figure:: img/installation/chimineyportal.png
         :align: center
         :alt:  Chiminey Portal
