@@ -4,7 +4,7 @@ Chiminey Installation Guide
 ===========================
 
 
-This document describes how to install a Chiminey platform via [Docker](https://www.docker.com), which is an automatic software deployment tool.
+This document describes how to install a Chiminey platform via `Docker <https://www.docker.com>`_, which is an automatic software deployment tool.
 # on a virtual machine.
 #, situated in NeCTAR cloud, Vagrant or some other cloud solution.
 
@@ -43,7 +43,7 @@ Here, we create a virtual machine that runs docker.
 
       Figure.  Docker Virtual Machine on Mac OS X or Windows
 
-  - Run docker engine.
+  - Run docker engine::
 
       docker run hello-world
 
@@ -60,22 +60,22 @@ Here, we create a virtual machine that runs docker.
            working correctly.
        ...
 
-  - Run docker-compose
+  - Run docker-compose::
 
       docker-compose --version
 
-*Expected output*. If your OS is not an older Mac
+*Expected output*. If your OS is not an older Mac::
 
     docker-compose version x.x.x, build xxxxxxx
 ￼
-*Expected output*. If your OS is an older Mac.
+*Expected output*. If your OS is an older Mac::
 
     Illegal instruction: 4
 
-This error can be fixed by upgrading docker-compose.
+This error can be fixed by upgrading docker-compose::
 
     pip install --upgrade docker-compose
-    
+
 
 .. _linux_req:
 
@@ -84,9 +84,9 @@ Linux
 
 Docker, specifically ``docker-engine`` and ``docker-compose``, needs to be installed directly on your linux-based OS. Refer to the Docker online documentaion to install the two packages:
 
-1. `Docker-engine<https://docs.docker.com/engine/installation/>`_
+1. `Docker-engine <https://docs.docker.com/engine/installation/>`_
 
-2. `Docker-compose<https://docs.docker.com/compose/install/>`_
+2. `Docker-compose <https://docs.docker.com/compose/install/>`_
 
 
 Instructions
