@@ -4,20 +4,36 @@ Chiminey Installation Guide
 ===========================
 
 
-This document describes how to install the chiminey system on a single VM, situated
-in NeCTAR cloud, Vagrant or some other cloud solution.
+This document describes how to install a Chiminey platform via [Docker](https://www.docker.com), which is an automatic software deployment tool.
+# on a virtual machine.
+#, situated in NeCTAR cloud, Vagrant or some other cloud solution.
 
 Requirements
 ------------
 
-At least one VM on a IaaS cloud provider
+Mac OS X and Windows
+~~~~~~~~~~~~~~~~~~~~
+Create a virtual machine that runs docker:
 
-(Tested on NeCTAR Centos 6.5 x86x64 Image and size m1.small, with 443/80/22 ports open)
+1. Download Docker Toolbox from https://www.docker.com/toolbox.
 
-Information on the NeCTAR cloud:
-http://support.rc.nectar.org.au/docs/getting-started
+2. When the download is complete, open the installation dialog box by double-clicking the downloaded file.
 
-Information on AWS: https://aws.amazon.com/
+3. Follow the on-screen prompts to install the Docker toolbox. You may be prompted for password just before the installation begins. You need to enter your password to continue.
+￼
+4. When the installation is completed, press *Close* to exit.
+
+5. Verify that `docker-engine` and `docker-compose` are installed correctly.
+
+  - Open Docker Quickstart Terminal from your application folder. The resulting output looks like the following:
+
+  .. figure:: img/installation/dockerengine.png
+      :align: center
+      :alt:   Docker Terminal on Mac OS X or Windows
+      :figclass: align-center
+
+      Figure.  Docker Virtual Machine on Mac OS X or Windows 
+
 
 
 Instructions
@@ -94,5 +110,3 @@ Setup Chiminey app::
 
         https://docs.djangoproject.com/en/1.4/intro/install/
            Django Quick Install Guide
-
-
