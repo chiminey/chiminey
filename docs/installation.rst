@@ -48,7 +48,7 @@ Here, we create a virtual machine that runs docker.
       docker run hello-world
 
 
-    + `Expected output`. You will see a message similar to the one below.:
+    + `Expected output`. You will see a message similar to the one below::
 
        Unable to find image ’hello-world:latest’ locally
        latest: Pulling from library/hello-world
@@ -65,18 +65,9 @@ Here, we create a virtual machine that runs docker.
 
       docker-compose --version
 
-    + *Expected output*.
-       a. If your OS is not an older Mac:
-
-            docker-compose version x.x.x, build xxxxxxx
-￼
-       b. If your OS is an older Mac:
-
-            Illegal instruction: 4
-
-    This error can be fixed by upgrading docker-compose:
-
-            pip install --upgrade docker-compose
+    + `Expected output`.
+       a. If your OS is not an older Mac: ``docker-compose version x.x.x, build xxxxxxx``
+       b. If your OS is an older Mac: ``Illegal instruction: 4``. This error can be fixed by upgrading docker-compose: ``pip install --upgrade docker-compose``.
 
 
 .. _linux_req:
