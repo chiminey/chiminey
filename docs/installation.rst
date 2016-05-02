@@ -11,8 +11,19 @@ This document describes how to install a Chiminey platform via [Docker](https://
 Requirements
 ------------
 
+Docker 1.7+ is needed. Follow the links below to install docker on your machine.
+
+-  :ref:`mac_windows_req`
+
+-  :ref:`linux_req`
+
+
+
+.. _mac_windows_req
+
 Mac OS X and Windows
 ~~~~~~~~~~~~~~~~~~~~
+
 Create a virtual machine that runs docker:
 
 1. Download Docker Toolbox from https://www.docker.com/toolbox.
@@ -20,7 +31,7 @@ Create a virtual machine that runs docker:
 2. When the download is complete, open the installation dialog box by double-clicking the downloaded file.
 
 3. Follow the on-screen prompts to install the Docker toolbox. You may be prompted for password just before the installation begins. You need to enter your password to continue.
-￼
+
 4. When the installation is completed, press *Close* to exit.
 
 5. Verify that `docker-engine` and `docker-compose` are installed correctly.
@@ -32,8 +43,14 @@ Create a virtual machine that runs docker:
       :alt:   Docker Terminal on Mac OS X or Windows
       :figclass: align-center
 
-      Figure.  Docker Virtual Machine on Mac OS X or Windows 
+      Figure.  Docker Virtual Machine on Mac OS X or Windows
 
+
+
+.. _linux_req
+
+Linux
+~~~~~~
 
 
 Instructions
