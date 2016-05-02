@@ -85,9 +85,9 @@ Docker, specifically ``docker-engine`` and ``docker-compose``, needs to be insta
 Chiminey Installation
 ------------
 
-i. For Mac OS X and Windows users, open `Docker Quickstart Terminal`. For linux-based OS users, login to your machine and open a terminal.
+1. For Mac OS X and Windows users, open `Docker Quickstart Terminal`. For linux-based OS users, login to your machine and open a terminal.
 
-i. Check if ``git`` is installed. Type ``git`` on your terminal.
+2. Check if ``git`` is installed. Type ``git`` on your terminal.
 
    + If git is installed, the following message will be shown::
 
@@ -101,34 +101,34 @@ i. Check if ``git`` is installed. Type ``git`` on your terminal.
    + If git is not installed, you will see ``git: command not found``. Download and install ``git`` from http://git-scm.com/download
 
 
-i. Clone the ``docker-chiminey`` source code from http://github.com.au::
+3. Clone the ``docker-chiminey`` source code from http://github.com.au::
 
      git clone https://github.com/chiminey/docker-chiminey.git
 
 
-i. Change your working directory::
+4. Change your working directory::
 
      cd docker-chiminey
 
 
-i. Setup a self-signed certificate. You will be prompted to enter country code, state, city, and etc::
+5. Setup a self-signed certificate. You will be prompted to enter country code, state, city, and etc::
 
     sh makecert
 
-i. Deploy the Chiminey platform::
+6. Deploy the Chiminey platform::
 
     docker-compose up -d
 
 
-i. Verify Chiminey was deployed successfully.
+7. Verify Chiminey was deployed successfully.
 
-  8.1 Retrieve IP address of your machine
+  - Retrieve IP address of your machine
 
       + For Mac and Windows users, type ``env | grep DOCKER_HOST``. The expected output has a format ``DOCKER_HOST=tcp://IP:port``, for example. ``DOCKER_HOST=tcp://192.168.99.100:2376``. Thus, your IP address is 192.168.99.100.
 
       + For linux users, the command ``ifconfig`` prints your our machine's IP address.
 
-  8.2 Open a browser and visit the Chiminey portal at IP, in our example, http://192.168.99.100. After a while, the Chiminey portal will be shown.
+  - Open a browser and visit the Chiminey portal at IP, in our example, http://192.168.99.100. After a while, the Chiminey portal will be shown.
 
     .. figure:: img/installation/chimineyportal.png
         :align: center
