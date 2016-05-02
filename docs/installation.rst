@@ -5,8 +5,7 @@ Chiminey Installation Guide
 
 
 This document describes how to install a Chiminey platform via `Docker <https://www.docker.com>`_, which is an automatic software deployment tool.
-# on a virtual machine.
-#, situated in NeCTAR cloud, Vagrant or some other cloud solution.
+
 
 Requirements
 ------------
@@ -48,7 +47,7 @@ Here, we create a virtual machine that runs docker.
       docker run hello-world
 
 
-    + `Expected output`. You will see a message similar to the one below::
+    + You will see a message similar to the one below::
 
        Unable to find image ’hello-world:latest’ locally
        latest: Pulling from library/hello-world
@@ -65,9 +64,10 @@ Here, we create a virtual machine that runs docker.
 
       docker-compose --version
 
-    + `Expected output`.
-       a. If your OS is not an older Mac: ``docker-compose version x.x.x, build xxxxxxx``
-       b. If your OS is an older Mac: ``Illegal instruction: 4``. This error can be fixed by upgrading docker-compose: ``pip install --upgrade docker-compose``.
+    + The output will be ``docker-compose version x.x.x, build xxxxxxx``
+    + For users with an older Mac, you will get ``Illegal instruction: 4``. This error can be fixed by upgrading docker-compose::
+
+        pip install --upgrade docker-compose
 
 
 .. _linux_req:
@@ -75,33 +75,29 @@ Here, we create a virtual machine that runs docker.
 Linux
 ~~~~~~
 
-Docker, specifically ``docker-engine`` and ``docker-compose``, needs to be installed directly on your linux-based OS. Refer to the Docker online documentaion to install the two packages:
+Docker, specifically ``docker-engine`` and ``docker-compose``, needs to be installed directly on your linux-based OS. Refer to the Docker online documentation to install the two packages:
 
-1. `Docker-engine <https://docs.docker.com/engine/installation/>`_
+1. Install `docker-engine <https://docs.docker.com/engine/installation/>`_
 
-2. `Docker-compose <https://docs.docker.com/compose/install/>`_
+2. Install `docker-compose <https://docs.docker.com/compose/install/>`_
 
 
-Installation Instructions
+Chiminey Installation
 ------------
 
 1. For Mac OS X and Windows users, open `Docker Quickstart Terminal`. For linux-based OS users, login to your machine and open a terminal.
 
 2. Check if ``git`` is installed. Type ``git`` on your terminal.
 
-   `Expected output`. If git is installed::
-     usage: git [--version] [--help] [-C <path>] ..
-                [--exec-path[=<path>]] [--html-path] [...
-                [-p|--paginate|--no-pager] [--no- ...
-                [--git-dir=<path>] [--work-tree=<path>]...
-                <command> [<args>]
-                ...
+   + If git is installed, the following message will be shown::
+       usage: git [--version] [--help] [-C <path>] ..
+                  [--exec-path[=<path>]] [--html-path] [...
+                  [-p|--paginate|--no-pager] [--no- ...
+                  [--git-dir=<path>] [--work-tree=<path>]...
+                  <command> [<args>]
+                  ...
 
-   `Expected output`. If git is not installed bash::
-
-    git: command not found
-
-    Download and install ``git`` from http://git-scm.com/download
+   + If git is not installed, you will see ``git: command not found``. Download and install ``git`` from http://git-scm.com/download
 
 
 3. Clone the ``docker-chiminey`` source code from http://github.com.au::
@@ -126,13 +122,12 @@ code, state, city, and etc::
 8. Verify Chiminey was deployed successfully.
 
   8.1 Retrieve IP address of your machine
-      i. For Mac and Windows users, type ``env | grep DOCKER_HOST``. The expected output is ``OCKER_HOST=tcp://IP:port``, e.g. ``DOCKER_HOST=tcp://192.168.99.100:2376``. Thus your IP address is 192.168.99.100
+      + For Mac and Windows users, type ``env | grep DOCKER_HOST``. The expected output has a format ``DOCKER_HOST=tcp://IP:port``, for example. ``DOCKER_HOST=tcp://192.168.99.100:2376``. Thus, your IP address is 192.168.99.100.
 
-      ii. For linux users, use ``ifconfig`` to retirve your machine's IP
+      + For linux users, the command ``ifconfig`` prints your our machine's IP address.
 
-  8.2 Open a browser and visit the Chiminey portal at IP, in our example, http://192.168.99.100.
-
-    `Expected output`. After a while, the Chiminey portal will be shown.
+  8.2 Open a browser and visit the Chiminey portal at IP, in our example, http://192.168.99.100. After a while, the Chiminey portal will be shown.
+  
     .. figure:: img/installation/chimineyportal.png
         :align: center
         :alt:  Chiminey Portal
