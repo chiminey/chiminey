@@ -36,9 +36,8 @@ The end-user can save the set of parameters values of a job as a preset. Each pr
 2. Compute Resource
 ~~~~~~~~~~~~
 
- This section includes the parameters that are needed to utilise the compute resource associated with the given smart connector. For instance, hadoop compute resources need only the name of the registered hadoop cluster (see :ref:`analytics_resource`),
- while the cloud compute resource needs the resource name as well as the total VMs that can be used for the computation. Note that the names of all registered compute resources are automatically populated to
- a dropdown menu on the submission form.
+This section includes the parameters that are needed to utilise the compute resource associated with the given smart connector. For instance, hadoop compute resources need only the name of the registered hadoop cluster (see :ref:`analytics_resource`),
+ while the cloud compute resource needs the resource name as well as the total VMs that can be used for the computation. Note that the names of all registered compute resources are automatically populated to a dropdown menu on the submission form.
 
 
 .. _locations_ui:
@@ -46,10 +45,10 @@ The end-user can save the set of parameters values of a job as a preset. Each pr
 3. Locations
 ~~~~~~~~~~~~
 
- These parameters are used to specify either input or output directories on a registered storage resource. Each location consists of two parameters: a storage location and a relative path. ``Storage location``
-  is a drop-down menu that lists the name of all registered storages and, their corresponding root path. A `root path` is an absolute path to the directory on the storage resource onto which all
- input and output files will be saved. ``Relative path`` is the name of a subdirectory of the root path that contains input and/or output files. In the case of input locations, Chiminey retrieves the input files that
- are needed to run the smart connector job from this subdirectory. In the case of output location, Chiminey will save the output of the smart connector job to the subdirectory.
+These parameters are used to specify either input or output directories on a registered storage resource. Each location consists of two parameters: a storage location and a relative path. ``Storage location``
+is a drop-down menu that lists the name of all registered storages and, their corresponding root path. A `root path` is an absolute path to the directory on the storage resource onto which all
+input and output files will be saved. ``Relative path`` is the name of a subdirectory of the root path that contains input and/or output files. In the case of input locations, Chiminey retrieves the input files that
+are needed to run the smart connector job from this subdirectory. In the case of output location, Chiminey will save the output of the smart connector job to the subdirectory.
 
 .. _optional_sections_ui:
 
@@ -61,7 +60,7 @@ Some job submission forms include one or more of the following sections:
 Reliability
 ********
 
-Fault tolerance support is provided to each smart connector job. How- ever, the enduser can limit the degree of such support using the reliability parameters: reschedule failed processes and maximum retries.
+ Fault tolerance support is provided to each smart connector job. How- ever, the enduser can limit the degree of such support using the reliability parameters: reschedule failed processes and maximum retries.
 
 Sweep
 *****
@@ -94,20 +93,15 @@ Follow the steps below
 #. Click ``Create Job`` from the menu bar
 #. Select the smart connector from the list of smart connectors
 #. Enter the values for the parameters of the selected smart connector.
-   Parameters of any smart connector  are categorised into sections. Each smart connector has at least three sections: `presets`, `compute resource` and `locations`.
-   Optional sections include `reliability`, `sweep`, `data curation resource` and `domain-specific parameters`.
-   See
-   fall into either of the following types: *Computation platform, Cloud resource, Location, Reliability, MyTardis, Parameter Sweep*
-   and  *Domain-specific*. See :ref:`form_field_types` for detailed discussion about these parameter types.
 #. Click ``Submit Job`` button, then ``OK``
 
+..
+  .. figure:: img/enduser_manual/submit.png
+      :align: center
+      :alt:   Submitting a job
+      :figclass: align-center
 
-.. figure:: img/enduser_manual/submit.png
-    :align: center
-    :alt:   Submitting a job
-    :figclass: align-center
-
-    Figure.  Submitting a job
+      Figure.  Submitting a job
 
 
 .. _monitor_job:
@@ -115,13 +109,8 @@ Follow the steps below
 Job Monitoring
 --------------
 
-
-Once a job is submitted, the end-user can monitor the status of the job.
-
-#. Submit a job (see :ref:`submit_job`)
-#. Click ``Jobs``. A job status summary of all jobs will be displayed. The most recently submitted job is displayed at the top.
-#. Click ``Info`` button next to each job to view a detailed status report.
-#. A job is completed when the ``Iteration:Current`` column of ``Jobs`` page displays  ``x: finished``, where ``x`` is the last iteration number.
+Once a job is submitted, the end-user can monitor the status of the job by clicking ``Jobs tab``. A job status summary of all jobs will be displayed.
+The most recently submitted job is displayed at the top. Click ``Info`` button next to each job to view a detailed status report.
 
 
 .. figure:: img/enduser_manual/monitor.png
@@ -138,16 +127,9 @@ Once a job is submitted, the end-user can monitor the status of the job.
 Job Termination
 ---------------
 
-
-The end-user can terminate already submitted jobs.
-
-#. Submit a job (see :ref:`submit_job`)
-#. Click ``Jobs`` to view all submitted jobs.
-#. Check the box at the end of the status summary of each job that you wish terminate.
-#. Click ``Terminate selected jobs`` button. The termination of the
-   selected jobs will be scheduled. Depending on the current
-   activity of each job, terminating one job may take longer than
-   the other.
+The `Jobs` page also allows to terminate submitted jobs. To terminate a job, check the box at the end of the status summary of the job,
+click ``Terminate selected jobs`` button at the end of the page. The termination of the selected jobs will be scheduled.
+Depending on the current activity of each job, terminating one job may take longer than the other.
 
 
 
