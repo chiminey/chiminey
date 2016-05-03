@@ -82,7 +82,7 @@ Docker, specifically ``docker-engine`` and ``docker-compose``, needs to be insta
 2. Install `docker-compose <https://docs.docker.com/compose/install/>`_
 
 
-Chiminey Installation
+Installation
 ------------
 
 1. For Mac OS X and Windows users, open `Docker Quickstart Terminal`. For linux-based OS users, login to your machine and open a terminal.
@@ -141,7 +141,7 @@ Chiminey Installation
 Configuration
 ------------
 
-Here, we will configure the Chiminey deployment by creating the superuser, initialising the database, and signing up a regular user.
+Here, we will configure the Chiminey deployment by creating a superuser, initialising the database, and signing up a regular user.
 
 
 1. For Mac OS X and Windows users, open `Docker Quickstart Terminal`. For linux-based OS users, login to your machine and open a terminal.
@@ -150,7 +150,7 @@ Here, we will configure the Chiminey deployment by creating the superuser, initi
 
     cd docker-chiminey
 
-3. Create the superuser::
+3. Create a superuser::
 
     ./createsuper
 
@@ -169,7 +169,30 @@ Here, we will configure the Chiminey deployment by creating the superuser, initi
   - Login with your regular username and password. After successful login, you will be redirected to a webpage that displays a list of jobs. Since no jobs are run yet, the list is empty.
 
 
+Smart Connectors Activation
+------------
 
+When a Chiminey platform is deployed,  each `smart connector <smartconnector>`, which  is the core concept within Chiminey that enables endusers to perform complex computations on distributed computing facilities with minimal effort, needs to be explicitly activated.
+
+1. For Mac OS X and Windows users, open `Docker Quickstart Terminal`. For linux-based OS users, login to your machine and open a terminal.
+
+2. Change to ``docker-chiminey`` directory::
+
+    cd docker-chiminey
+
+3. List all available smart connectors::
+
+    ./listsc
+
+    NAME:       DESCRIPTION
+    hrmclite:   Hybrid Reverse Monte Carlo without PSD
+    randnum:    Randnum generator, with timestamp
+    wordcount:  Counting words via Hadoop
+
+
+4. Activate a smart connector. The syntax to activate a smart connector is `./activatesc smart-connector-name`. Thus, activate `randnum` smart connector as follows::
+
+    ./activatesc randnum
 
 
 .. seealso::
