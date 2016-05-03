@@ -34,10 +34,10 @@ The end-user can save the set of parameters values of a job as a preset. Each pr
 .. _compute_resource_ui:
 
 2. Compute Resource
-~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~
 
-This section includes the parameters that are needed to utilise the compute resource associated with the given smart connector. For instance, hadoop compute resources need only the name of the registered hadoop cluster (see :ref:`analytics_resource`),
- while the cloud compute resource needs the resource name as well as the total VMs that can be used for the computation. Note that the names of all registered compute resources are automatically populated to a dropdown menu on the submission form.
+
+This section includes the parameters that are needed to utilise the compute resource associated with the given smart connector. For instance, hadoop compute resources need only the name of the registered hadoop cluster (see :ref:`analytics_resource`), while the cloud compute resource needs the resource name as well as the total VMs that can be used for the computation. Note that the names of all registered compute resources are automatically populated to a dropdown menu on the submission form.
 
 
 .. _locations_ui:
