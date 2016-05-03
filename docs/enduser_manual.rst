@@ -13,5 +13,3 @@ In this documentation, following topics are covered:
         Configuring computation and storage platforms  <platformsettings>
         Managing smart connector jobs <jobmanagement>
         Managing presets <presetmanagement>
-
-

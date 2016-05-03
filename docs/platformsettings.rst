@@ -21,28 +21,28 @@ section, following topics are covered:
 .. _register_computation_resource:
 
 Registering Compute Resource
---------------------------------
+----------------------------
 
 
-Various computing infrastructure and tools can be registered as compute resources. These resources are broadly categorised under  `cloud <cloud_resource>`, high performance computing (HPC), analytics   and continuous integration resources.
- which include but not limited to, abaThe chiminey platform that The types of computation resources can be registered within the Chiminey
-UI are :ref:`cloud_resource` and :ref:`cluster_unix_platform`.
+Various computing infrastructure and tools can be registered as compute resources. These resources are broadly categorised under    :ref:`cloud <cloud_resource>`, :ref:`high performance computing (HPC) <hpc_resources>`,
+:ref:`analytics <analytics_resource>`,  and continuous integration resources.
+
 
 .. _cloud_resource:
 
 Cloud Compute Resource
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-#.  Navigate to the Chiminey server homepage.
+#.  Navigate to the Chiminey portal.
 #.  Log in with your credentials.
 #.  Click ``Settings``.
 #.  Click ``Compute Resource`` from the ``Settings`` menu.
 #.  Click ``Register Compute Resource``
 #.  Click the ``Cloud`` tab.
 #.  Select the resource type from the drop down menu. You may have  access to more than one type of cloud service, e.g., NeCTAR and Amazon.
-#.  Enter a unique platform name. This name should be something you could remember.
+#.  Enter a unique resource name.
 #.  Enter credentials such as EC2 access key and EC2 secret key
-#.  Click ``Register``. The newly added cloud-based compute resource will be displayed under `Cloud - NeCTAR/CSRack/Amazon EC2`.
+#.  Click ``Register``. The newly registered  cloud-based compute resource will be displayed under `Cloud - NeCTAR/CSRack/Amazon EC2`.
 
 
 .. figure:: img/enduser_manual/cloud_register.png
@@ -53,32 +53,56 @@ Cloud Compute Resource
     Figure. Registering a cloud-based compute resource
 
 
-.. _cluster_unix_platform:
+.. _hpc_resource:
 
-Cluster/Unix  Computation Platform
+HPC Compute Resource
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-#.  Navigate to the Chiminey server homepage
-#.  Log in with credentials
-#.  Click ``Settings``
-#.  Click ``Computation Platform`` from the ``Settings`` menu
-#.  Click ``Add Computation Platform``
-#.  Click the ``Cluster/Unix`` tab.
-#.  Enter a unique platform name. This name should be something you could remember.
-#.  Enter IP address or hostname of the cluster head node or any Unix server
-#.  Enter credentials, i.e. username and password. Password is not stored in the Chiminey server. It is temporarily kept in memory Chiminey server to the computation platform.
-#. Enter homepath. This is the location where .ssh directory resides. The home path is needed to store a public key on the cluster head node or the unix server.
-#. Enter rootpath. The root path is used as the working directory during execution.
-#. Click ``Add``
-#. The newly added computation platform will be displayed under ``Cluster/Unix`` list.
+#.  Navigate to the Chiminey portal.
+#.  Log in with your credentials.
+#.  Click ``Settings``.
+#.  Click ``Compute Resource`` from the ``Settings`` menu.
+#.  Click ``Register Compute Resource``
+#.  Click the ``HPC`` tab.
+#.  Enter a unique resource name.
+#.  Enter IP address or hostname of the HPC cluster head node or the standalone server.
+#.  Enter credentials, i.e. username and password. Password is not stored in the Chiminey platform. It is temporarily kept in memory to establish a private/public key authentication from the Chiminey platform to the resource.
+#.  Click ``Register``.  The newly registered resource will be displayed under `HPC - Cluster or Standalone Server` list.
 
 
-.. figure:: img/enduser_manual/add_comp_pltf.png
+.. figure:: img/enduser_manual/hpc_register.png
     :align: center
-    :alt: Adding cluster/unix-based computation platform
+    :alt: Registering a HPC compute resource
     :figclass: align-center
 
-    Figure. Adding cluster/unix-based computation platform
+    Figure. Registering a HPC compute resource
+
+
+.. _analytics_resource:
+
+HPC Compute Resource
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+#.  Navigate to the Chiminey portal.
+#.  Log in with your credentials.
+#.  Click ``Settings``.
+#.  Click ``Compute Resource`` from the ``Settings`` menu.
+#.  Click ``Register Compute Resource``
+#.  Click the ``Analytics`` tab.
+#.  Select ``Hadoop MapReduce`` as the resource type from the drop down menu.
+#.  Enter a unique resource name.
+#.  Enter IP address or hostname of the Hadoop MapReduce resource.
+#.  Enter username and password. Password is not stored in the Chiminey platform. It is temporarily kept in memory to establish a private/publi key authentication from the Chiminey platform to the resource.
+#.  Click ``Register``.  The newly registered resource will be displayed under `Analytics - Hadoop MapReduce` list.
+
+
+.. figure:: img/enduser_manual/analytics_register.png
+    :align: center
+    :alt: Registering an analytics compute resource (Hadoop MapReduce)
+    :figclass: align-center
+
+    Figure. Registering an analytics compute resource (Hadoop MapReduce)
+
 
 
 .. _register_storage_platform:

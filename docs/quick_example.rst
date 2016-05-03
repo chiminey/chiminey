@@ -24,7 +24,7 @@ Requirements
 #. Registration of a computation platform, which is where the core
    functionality of a smart connector is executed within the Chiminey
    UI. For this example, the platform could be any unix server,
-   including the Chiminey server itself (see registering :ref:`Cluster/Unix  Computation Platform <cluster_unix_platform>`).
+   including the Chiminey server itself (see registering :ref:`Cluster/Unix  Computation Platform <hpc_resource>`).
 #. Registration of a storage platform, which is the destination of the
    smart connector output within the Chiminey UI. As for the computation
    platform above, the platform could be any unix server, again
