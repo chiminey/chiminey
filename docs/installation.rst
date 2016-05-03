@@ -130,19 +130,13 @@ Chiminey Installation
 
   - Open a browser and visit the Chiminey portal at IP, in our example, http://192.168.99.100. After a while, the Chiminey portal will be shown.
 
-    .. figure:: img/installation/dockerengine.png
+    .. figure:: img/installation/chimineyportal.png
         :align: center
         :alt:  Chiminey Portal
         :figclass: align-center
 
         Figure.  Chiminey Portal
 
-        .. figure:: img/installation/chimineyportal.png
-            :align: center
-            :alt:   Docker Terminal on Mac OS X or Windows
-            :figclass: align-center
-
-            Figure.  Docker Virtual Machine on Mac OS X or Windows
 
 .. seealso::
 
