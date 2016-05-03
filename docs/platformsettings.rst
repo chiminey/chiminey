@@ -1,56 +1,56 @@
 
 .. _configure_platform_settings:
 
-Platform Settings Configuration
+Resource  Management
 ===============================
 
 
-A Chiminey server supports two types of platforms: computation and
-storage. A computation platform is where the core functionality of a
-smart connector is executed while a storage platform is the destination
-of the smart connector output. Prior to submitting a job, end-users need
-to register at least one computation and one storage platforms. In this
+A Chiminey platform  supports access to computation and
+storage resources. A computation resource is where the core functionality of a
+smart connector is executed while a storage resource is used to retrieve input files and store output files.
+ Prior to submitting a job, end-users need
+to register at least one computation and one storage resources. In this
 section, following topics are covered:
 
--  :ref:`register_computation_platform`
+-  :ref:`register_computation_resource`
 -  :ref:`register_storage_platform`
 -  :ref:`update_platform`
 -  :ref:`delete_platform`
 
 
-.. _register_computation_platform:
+.. _register_computation_resource:
 
-Registering Computation Platform
+Registering Compute Resource
 --------------------------------
 
 
-Two types of computation platforms can be registered within the Chiminey
-UI. The types are :ref:`cloud_comp_pltf` and :ref:`cluster_unix_platform`.
+Various computing infrastructure and tools can be registered as compute resources. These resources are broadly categorised under  `cloud <cloud_resource>`, high performance computing (HPC), analytics   and continuous integration resources.
+ which include but not limited to, abaThe chiminey platform that The types of computation resources can be registered within the Chiminey
+UI are :ref:`cloud_resource` and :ref:`cluster_unix_platform`.
 
-.. _cloud_platform:
+.. _cloud_resource:
 
-Cloud Computation Platform
+Cloud Compute Resource
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-#.  Navigate to the Chiminey server homepage
-#.  Log in with credentials
-#.  Click ``Settings``
-#.  Click ``Computation Platform`` from the ``Settings`` menu
-#.  Click ``Add Computation Platform``
+#.  Navigate to the Chiminey server homepage.
+#.  Log in with your credentials.
+#.  Click ``Settings``.
+#.  Click ``Compute Resource`` from the ``Settings`` menu.
+#.  Click ``Register Compute Resource``
 #.  Click the ``Cloud`` tab.
-#.  Select the platform type from the drop down menu. You may have  access to more than one type of cloud service, e.g., NeCTAR and Amazon.
+#.  Select the resource type from the drop down menu. You may have  access to more than one type of cloud service, e.g., NeCTAR and Amazon.
 #.  Enter a unique platform name. This name should be something you could remember.
 #.  Enter credentials such as EC2 access key and EC2 secret key
-#. You can optionally enter the VM image size
-#. Click ``Add``. The newly added cloud-based computation platform will be displayed.
+#.  Click ``Register``. The newly added cloud-based compute resource will be displayed under `Cloud - NeCTAR/CSRack/Amazon EC2`.
 
 
-.. figure:: img/enduser_manual/add_cloud_pltf.png
+.. figure:: img/enduser_manual/cloud_register.png
     :align: center
-    :alt: Adding cloud-based computation platform
+    :alt: Registering a cloud-based compute resource
     :figclass: align-center
 
-    Figure. Adding cloud-based computation platform
+    Figure. Registering a cloud-based compute resource
 
 
 .. _cluster_unix_platform:
@@ -183,4 +183,3 @@ Deleting Computation/Storage Platform
     :figclass: align-center
 
     Figure.  Deleting a platform
-
