@@ -1,5 +1,5 @@
 
-.. _configure_platform_settings:
+.. _configure_resource_settings:
 
 Resource  Management
 ===============================
@@ -13,9 +13,9 @@ to register at least one computation and one storage resources. In this
 section, following topics are covered:
 
 -  :ref:`register_computation_resource`
--  :ref:`register_storage_platform`
+-  :ref:`register_storage_resource`
 -  :ref:`update_resource`
--  :ref:`delete_platform`
+-  :ref:`remove_resource`
 
 
 .. _register_computation_resource:
@@ -105,7 +105,7 @@ Analytics Compute Resource
 
 
 
-.. _register_storage_platform:
+.. _register_storage_resource:
 
 Registering Storage Resources
 ----------------------------
@@ -148,18 +148,18 @@ MyTardis Storage Resource
 #.  Click ``Storage Resource`` from the ``Settings`` menu
 #.  Click ``Register Storage Resource``
 #.  Click the ``MyTardis`` tab.
-#.  Enter a unique platform name.
+#.  Enter a unique resource name.
 #.  Enter IP address or hostname of the MyTardis instance.
 #.  Enter credentials, i.e. username and password. Username and password are stored on the Chiminey platform.
-#. Click ``Register``. The newly added storage platform will be displayed under `MyTardis` list.
+#. Click ``Register``. The newly registered storage resource will be displayed under `MyTardis` list.
 
 
 .. figure:: img/enduser_manual/mytardis_register.png
     :align: center
-    :alt:  Adding MyTardis-based storage platform
+    :alt:  Registering MyTardis, a data curation service
     :figclass: align-center
 
-    Figure.  Adding MyTardis-based storage platform
+    Figure.  Registering MyTardis, a data curation service.
 
 
 
@@ -186,12 +186,12 @@ Updating Resources
       Figure.  Updating a platform
 
 
-.. _delete_platform:
+.. _remove_resource:
 
 Removing Resources
 -------------------
 
-In order to remove a registered resource, follow all the steps from <update_resource> but click `Delete` instead of `Update`. The resource will be removed from the resources’ list.
+In order to remove a registered resource, follow all the steps from :ref:`update_resource` but click `Remove` instead of `Update`. The resource will be removed from the resources’ list.
 
 ..
   .. figure:: img/enduser_manual/delete_platform.png
