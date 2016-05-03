@@ -3,22 +3,57 @@
 Job Management
 ==============
 
-The end-user  submits, monitors and terminates jobs via the Chiminey UI.
+The end-user  :ref:`submits <submit_job>`, :ref:`monitors <monitor_job>`, and :ref:`terminates <terminate_job>` jobs via the Chiminey portal. Before going into details about job management, we first discuss the :ref:`Chiminey UI <chiminey_ui>` for submitting jobs.
+
+
+.. _chiminey_ui:
+
+The Job Submission UI
+--------------
+
+The aim of the following discussion is to understand the job submission UI, and therefore be able to run any smart connector job without difficulty.
+The job submission UI is accessed by clicking Create Job tab. Figure 3 shows the job submission UI of wordcount SC.
+The Chiminey job submission UI is composed of a list of activated SCs, and the submission form of the selected SC.
+The submission form is divided into various sections. In general, each submission form has at least the following three sections:
+
+#. Presets
+~~~~~~~~~~~~
+
+The end-user can save the set of parameters values of a job as a preset. Each preset must have a unique name. Using the unique preset name, the end-user can retrieve, update and delete saved presets.
+
+#. Compute resource:
+~~~~~~~~~~~~
+
+ This section includes the parameters that are needed to utilise the compute resource associated with the given SC. Hadoop compute resources need only the name of the registered hadoop cluster (see Exercise 9), while the cloud compute resource needs the resource name as well as the total VMs that can be used for the computation. Note that the names of all registered compute resources are automati- cally populated to a dropdown menu on the submission form.
+• Locations: These parameters are used to specify either input or out- put directories on a registered storage resource. Each location consists of two parameters: a storage location and a relative path. Storage
+17
+location is a drop-down menu that lists the name of all registered storages and, their corresponding root path. A root path is an absolute path to the directory on the storage resource onto which all input and output files will be saved. Relative path is the name of a subdirectory of the root path that contains input and/or output files. In the case of input locations, Chiminey retrieves the input files that are needed to run the smart connector job from this subdirectory. In the case of output location, Chiminey will save the output of the SC job to the subdirectory.
+
+
+Some job submission forms include one or more of the following sections:
+• Reliability: Fault tolerance support is provided to each SC job. How- ever, the enduser can limit the degree of such support using the reliabil- ity parameters: reschedule failed processes and maximum retries.
+• Sweep: Sweep allows end-users to run multiple jobs simultaneously from a single submission. The sweep allows end-users to provide ranges of input values for parameters, and the resulting set of jobs produced span all possible values within that parameter space. These ranges of parameters are defined at job submission time, rather than being hard-coded in the definition of the smart connector. The common use- cases for this feature are to generate multiple results across one or more variation ranges for later comparison, and to quickly perform experi- mental or ad-hoc variations on existing connectors. Endusers specify the parameter(s) and their possible values via the sweep parameter.
+• Data curation resource: This section provides the parameters that are needed to curate the output of a SC job. The section includes a drop- down menu that is populated with the name registered data curation services like MyTardis.
+• Domain-specific parameters: These parameters are needed to guide the execution of the domain-specific payload of a given SC. wordcount SC has Word Pattern while hrmclite has pottype, error threshold, and others.
+
+
 
 .. _submit_job:
-
 Job Submission
 --------------
 
 
 Follow the steps below
 
-#. Navigate to the Chiminey server homepage
-#. Log in with credentials
+#. Navigate to the Chiminey portal
+#. Log in with your credentials
 #. Click ``Create Job`` from the menu bar
 #. Select the smart connector from the list of smart connectors
 #. Enter the values for the parameters of the selected smart connector.
-   Parameters of any smart connector fall into either of the following types: *Computation platform, Cloud resource, Location, Reliability, MyTardis, Parameter Sweep*
+   Parameters of any smart connector  are categorised into sections. Each smart connector has at least three sections: `presets`, `compute resource` and `locations`.
+   Optional sections include `reliability`, `sweep`, `data curation resource` and `domain-specific parameters`.
+   See
+   fall into either of the following types: *Computation platform, Cloud resource, Location, Reliability, MyTardis, Parameter Sweep*
    and  *Domain-specific*. See :ref:`form_field_types` for detailed discussion about these parameter types.
 #. Click ``Submit Job`` button, then ``OK``
 
@@ -78,4 +113,3 @@ The end-user can terminate already submitted jobs.
     :figclass: align-center
 
     Figure.  Terminating a job
-
