@@ -172,7 +172,7 @@ Here, we will configure the Chiminey deployment by creating a superuser, initial
 Smart Connectors Activation
 ------------
 
-When a Chiminey platform is deployed,  each `smart connector <smartconnector>`, which  is the core concept within Chiminey that enables endusers to perform complex computations on distributed computing facilities with minimal effort, needs to be explicitly activated.
+When a Chiminey platform is deployed,  each `smart connector <smart_connector_desc>`, which  is the core concept within Chiminey that enables endusers to perform complex computations on distributed computing facilities with minimal effort, needs to be explicitly activated.
 
 1. For Mac OS X and Windows users, open `Docker Quickstart Terminal`. For linux-based OS users, login to your machine and open a terminal.
 
@@ -193,6 +193,16 @@ When a Chiminey platform is deployed,  each `smart connector <smartconnector>`, 
 4. Activate a smart connector. The syntax to activate a smart connector is `./activatesc smart-connector-name`. Thus, activate `randnum` smart connector as follows::
 
     ./activatesc randnum
+
+5. Verify the smart connector is successfully activated.
+
+  - Open a browser and visit the Chiminey portal.
+
+  - Login with your regular username and password.
+
+  - Click Create Job.  `randnum` will appear under the Smart Connectors list.
+
+  
 
 
 .. seealso::
