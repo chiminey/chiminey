@@ -28,7 +28,7 @@ Requirements
 #. Registration of a storage platform, which is the destination of the
    smart connector output within the Chiminey UI. As with other storage
    platforms, the platform could be any unix server, again
-   including the Chiminey server itself (see registering :ref:`Unix Storage Platform <unix_storage_platform>`).
+   including the Chiminey server itself (see registering :ref:`Unix Storage Platform <remote_storage>`).
 
 
 
