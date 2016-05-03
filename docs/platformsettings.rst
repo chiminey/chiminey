@@ -20,7 +20,7 @@ section, following topics are covered:
 
 .. _register_computation_resource:
 
-Registering Compute Resource
+Registering Compute Resources
 ----------------------------
 
 
@@ -30,7 +30,7 @@ Various computing infrastructure and tools can be registered as compute resource
 
 .. _cloud_resource:
 
-Cloud Compute Resources
+Cloud Compute Resource
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 #.  Navigate to the Chiminey portal.
@@ -178,7 +178,6 @@ Updating Resources
 #. Make the changes, and when finished click ``Update``
 
 ..
-
   .. figure:: img/enduser_manual/update_platform.png
       :align: center
       :alt:  Updating a platform
@@ -192,7 +191,7 @@ Updating Resources
 Removing Resources
 -------------------
 
-In order to remove a registered resource, follow all the steps from :ref:`<update_resource>` but click `Delete` instead of `Update`. The resource will be removed from the resources’ list.
+In order to remove a registered resource, follow all the steps from <update_resource> but click `Delete` instead of `Update`. The resource will be removed from the resources’ list.
 
 ..
   .. figure:: img/enduser_manual/delete_platform.png
