@@ -138,6 +138,40 @@ Chiminey Installation
         Figure.  Chiminey Portal
 
 
+Configuration
+------------
+
+Here, we will configure the Chiminey deployment by creating the superuser, initialising the database, and signing up a regular user.
+
+
+1. For Mac OS X and Windows users, open `Docker Quickstart Terminal`. For linux-based OS users, login to your machine and open a terminal.
+
+2. Change to ``docker-chiminey`` directory::
+
+    cd docker-chiminey
+
+3. Create the superuser::
+
+    ./createsuper
+
+4. Initialise the database::
+
+    ./init
+
+5. Create a regular user::
+
+    ./createuser
+
+6. Verify the Chiminey platform is configured correctly.
+
+  - Open a browser and visit the Chiminey portal.
+
+  - Login with your regular username and password. After successful login, you will be redirected to a webpage that displays a list of jobs. Since no jobs are run yet, the list is empty.
+
+
+
+
+
 .. seealso::
 
         https://www.djangoproject.com/
