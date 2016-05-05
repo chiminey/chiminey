@@ -1,5 +1,5 @@
 
-. toctree::
+.. toctree::
         :titlesonly:
 
         :ref:`smart_connector_desc`
