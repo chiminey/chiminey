@@ -1,3 +1,11 @@
+
+. toctree::
+        :titlesonly:
+
+        :ref:`smart_connector_desc`
+        Creating Smart Connectors <sc_create>
+
+
 .. _smart_connector_desc:
 
 Smart Connector: the core concept within Chiminey
@@ -66,12 +74,3 @@ Following are the predefined stages that make up a smart connector (the predefin
 
     - **destroy:**
         Terminates previously created virtual machines.
-
-
-"""""""""
-
-
-.. toctree::
-        :titlesonly:
-
-        Creating Smart Connectors <sc_create>
