@@ -51,4 +51,4 @@ Not all smart connector jobs require new packages to be installed, process-level
     │    |--- main.sh
 
 
-**NB:** Sample payloads are provided under each example smart connectors  at the `Chiminey Github Repository <https://github.com/chiminey/chiminey/tree/master/chiminey/examples>`_.
+**NB:** Sample payloads are available under each example smart connector,  at the `Chiminey Github Repository <https://github.com/chiminey/chiminey/tree/master/chiminey/examples>`_.
