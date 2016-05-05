@@ -8,10 +8,6 @@ perform complex computations on distributed computing facilities with minimal ef
 It  uses the abstractions provided by Chiminey to define  transparent automation and error handling of
 complex  computations on the cloud and traditional HPC infrastructure.
 
-.. toctree::
-    :hidden:
-
-    sc_create
 
 
 
@@ -70,3 +66,9 @@ Following are the predefined stages that make up a smart connector (the predefin
 
     - **destroy:**
         Terminates previously created virtual machines.
+
+
+.. toctree::
+  :hidden:
+
+  sc_create
