@@ -2,7 +2,7 @@
 Developer Manual
 ================
 
-.. toctree::
+.. toctree:: 
 
 
    smartconnector
@@ -10,4 +10,3 @@ Developer Manual
    payload
    chimineyui
    examples
-

@@ -13,29 +13,29 @@ complex  computations on the cloud and traditional HPC infrastructure.
 Stage
 """""
 
-A **stage** is a unit of computation within Chiminey. Therefore, a smart connector
-is composed stages,
-each stage  with  a unique functionality. The Chiminey server expects each stage to have  the following elements:
+A **stage** is a unit of computation within Chiminey. Each stage hast at least the following elements:
+
     - **validation:**
         Before the execution of a smart connector starts, the Chiminey server checks whether the constraints of all stages of the smart connector are met. This is done by invoking  ``input_valid(self, ...)`` method of each stage of the smart connector.
 
     - **pre-condition:**
-        The Chiminey server uses  pre-conditions to determine the stage that should be  executed next.  The Chiminey server invokes the  method ``is_triggerred(self, ...)`` in order to check whether the  pre-condition  of a particulat stage is met.
+        The Chiminey platform uses  pre-conditions to determine the stage that should be  executed next.  The Chiminey platform invokes the  method ``is_triggerred(self, ...)`` in order to check whether the  pre-condition  of a particular stage is met.
 
     - **action:**
-        This is the main functionality of a stage. Such functionality includes creating virtual machines, waiting for computations to complete, and the like. Once the Chiminey server determines the next stage to execute, the server executes the stage via  the ``process(self, ...)`` method.
+        This is the main functionality of a stage. Such functionality includes creating virtual machines, waiting for computations to complete, and the like. Once the Chiminey platform determines the next stage to execute, the server executes the stage via  the ``process(self, ...)`` method.
 
     - **post-condition:**
         This is where the  new state of the smart connector job is written to a persistent storage upon the successful completion of  a stage execution. During the execution of a stage, the state of a smart connector job changes. This change is saved via the ``output(self, ...)`` method.
 
 
 
-Creating a smart connector
-""""""""""""""""""""""""""
+The relationship between smart connectors and stages
+""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-Any smart connector is composed of at least the following predefined stages:
-*parent, configure, create, bootstrap, schedule, execute, wait, transform, converge* and *destroy*
-(predefined stages are located at ``chiminey/corestages``).
+A smart connector is composed of stages,
+each stage  with  a unique functionality.
+Following are the predefined stages that make up a smart connector (the predefined stages are located at ``chiminey/corestages``):
+
     - **parent:**
         Provides a handle to which all stages are within a smart connector are attached when a smart connector is registered within Chiminey.  Contains methods that are needed by two or more stages.
 
@@ -66,16 +66,6 @@ Any smart connector is composed of at least the following predefined stages:
     - **destroy:**
         Terminates previously created virtual machines.
 
+.. toctree::
 
-When a new smart connector is created, one or more of the predefined  stages are  updated,
-and/or new stages are added. All in all, creating a smart connector involves
-
-    - customising existing and/or adding new stages as needed,
-
-    -  defining the smart connector based on these stages, and
-
-    -  registering the smart connector within Chiminey.
-
-:ref:`Various examples <examples>` are given to show how a smart connector is created. These examples also explain
-how  features, such as  data curation and parameter sweep,
-can be included within a smart connector definition.
+    sc_create
