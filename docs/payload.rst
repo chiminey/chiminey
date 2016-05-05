@@ -5,9 +5,9 @@ Payload
 ~~~~~~~
 
 A **payload** is a set of system and optionally domain-specific files that are needed for the correct
-execution of a smart connector. The **system files** are composed of Makefiles and bash scripts
-while the **domain-specific files** are developer provided executables.
-The system files enable the Chiminey server to
+execution of a smart connector. The *system files* are composed of bash scripts
+while the *domain-specific files* are developer provided executables.
+The system files enable the Chiminey platform to
 setup the execution environment, execute domain-specific programs, and monitor the progress
 of setup and execution.
 
@@ -22,26 +22,21 @@ Below is the structure of a payload.
 ::
 
     payload_name/
-        |--- bootstrap.sh
-        |--- process_payload
-        │   |--- main.sh
-        │   |--- schedule.sh
-        │   |--- domain-specific executable
+    |--- bootstrap.sh
+    |--- process_payload
+    │   |--- main.sh
+    │   |--- schedule.sh
+    │   |--- domain-specific executable
 
 
 
-..
-A payload contains two types of files: *domain-specific* and *system*. All domain-specific files are provided by the developer while
-the system files are included in the Chiminey package. The system files are composed of Makefiles and bash scripts.
-The content of some of the system files needs to be changed to satisfy the requirements of a specific smart connector.
 
 
 The names of the files and the directories under ``payload_name``, except the domain specific ones, cannot be changed.
 
   - ``bootstrap.sh`` includes instructions to install packages, which are needed by the smart connector job, on the compute resource.
 
-  - ``schedule.sh`` is needed to add process-specific configurations. Some smart connectors spawn multiple processes to complete  a single job. If each process needs to be configured differently, the instruction on how to configure each process
-  should be recorded in schedule.sh.
+  - ``schedule.sh`` is needed to add process-specific configurations. Some smart connectors spawn multiple processes to complete  a single job. If each process needs to be configured differently, the instruction on how to configure each process should be recorded in schedule.sh.
 
   - ``main.sh`` runs the core functionality of the smart connector, and writes the output to a file.
 
@@ -52,8 +47,8 @@ Not all smart connector jobs require new packages to be installed, process-level
 ::
 
     payload_name/
-        |--- process_payload
-        │   |--- main.sh
+    |--- process_payload
+    │   |--- main.sh
 
 
-**NB:** Sample payloads are provided under each example smart connectors  at the :ref:`Chiminey Github Repository<https://github.com/chiminey/chiminey/tree/master/chiminey/examples>`.
+**NB:** Sample payloads are provided under each example smart connectors  at the :ref:`Chiminey Github Repository <https://github.com/chiminey/chiminey/tree/master/chiminey/examples>`.
