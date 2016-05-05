@@ -44,10 +44,9 @@ The contents of ``OUTPUT_DIR`` will be transferred to the output location at the
 Attaching resources and non-functional properties
 """""""""""""""""""""""""""""""""""""""""""""""""""
 Resources and non-functional properties are attached to a smart connector by overriding ``get_ui_schema_namespace`` method of ``chiminey.initialisation.coreinitial.CoreInitial`` class.
-New domain-specific variables can be introduced via ``get_domain_specific_schemas`` method. The list
-of available resources and non-functional properties is given by ``INPUT_FIELDS`` parameter in ``chiminey/settings_changeme.py``
+New domain-specific variables can be introduced via ``get_domain_specific_schemas`` method.  In this example, we will need to attached a unix compute resource for the computation, and
+a storage resource for the output location. However, we will not add a non-functional property.
 
-In this example, we will need to attached a unix compute resource for the computation, and a storage resource for the output location. However, we will not add a non-functional property.
 Under chiminey/, we create a python package `randnum`, and add ``initialise.py`` with the following content::
 
     from chiminey.initialisation import CoreInitial from django.conf import settings
@@ -59,7 +58,8 @@ Under chiminey/, we create a python package `randnum`, and add ``initialise.py``
     ] return schemas
     # ---EOF ---
 
-
+The list
+    of available resources and non-functional properties is given by ``INPUT_FIELDS`` parameter in ``chiminey/settings_changeme.py``
 
 
 
