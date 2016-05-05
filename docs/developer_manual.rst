@@ -2,7 +2,7 @@
 Developer Manual
 ================
 
-.. toctree:: 
+.. toctree::
 
 
    smartconnector
