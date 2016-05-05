@@ -67,5 +67,6 @@ Following are the predefined stages that make up a smart connector (the predefin
         Terminates previously created virtual machines.
 
 .. toctree::
-
+    :hidden:
+    
     sc_create
