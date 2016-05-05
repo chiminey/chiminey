@@ -5,7 +5,8 @@ Developer Manual
 .. toctree::
 
 
-   smartconnector
+   Smart Connectors <smartconnector>
+   sc_create
    parametersweep
    payload
    chimineyui

@@ -1,11 +1,4 @@
 
-.. toctree::
-        :titlesonly:
-
-        :ref:`smart_connector_desc`
-        Creating Smart Connectors <sc_create>
-
-
 .. _smart_connector_desc:
 
 Smart Connector: the core concept within Chiminey
