@@ -6,6 +6,11 @@ Developer Manual
 
 
    smartconnector
+   .. toctree::
+     :hidden:
+
+     sc_create
+     
    parametersweep
    payload
    chimineyui
