@@ -24,9 +24,9 @@ Below is the structure of a payload.
     payload_name/
     |--- bootstrap.sh
     |--- process_payload
-    │   |--- main.sh
-    │   |--- schedule.sh
-    │   |--- domain-specific executable
+    │    |--- main.sh
+    │    |--- schedule.sh
+    │    |--- domain-specific executable
 
 
 
@@ -48,7 +48,7 @@ Not all smart connector jobs require new packages to be installed, process-level
 
     payload_name/
     |--- process_payload
-    │   |--- main.sh
+    │    |--- main.sh
 
 
-**NB:** Sample payloads are provided under each example smart connectors  at the :ref:`Chiminey Github Repository <https://github.com/chiminey/chiminey/tree/master/chiminey/examples>`.
+**NB:** Sample payloads are provided under each example smart connectors  at the `Chiminey Github Repository <https://github.com/chiminey/chiminey/tree/master/chiminey/examples>`_.
