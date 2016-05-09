@@ -21,43 +21,35 @@ The input fields, except the domain-specific ones, are provided via ``INPUT_FIEL
 The following table shows the list of input field types and their description.
 
 
-
-
-
-+----------------------------+--------------------------------------+
-|      Input Field Type      |            Description               |
-+============================+======================================+
-|``unix``                    | | Dropdown menu containing the       |
-|                            | | registered HPC compute resources   |
-|                            | |                                    |
-+----------------------------+--------------------------------------+
-|``cloud``                   | | Dropdown menu of registered cloud  |
-|                            | | resources, number of VMs to be used|
-|                            | | for the job                        |
-+----------------------------+--------------------------------------+
-|``hadoop``                  | | Dropdown menu of registered hadoop |
-|                            | | clusters                           |
-+----------------------------+--------------------------------------+
-|``output_location``         | | Dropdown menu of registered storage|
-|                            | | resources (i.e. remote file system)|
-|                            | | with root path, and a text field   |
-|                            | | for specifying subdirectories under|
-|                            | | the root path.                     |
-+----------------------------+--------------------------------------+
-|``input_location``          | | Same as output location.           |
-+----------------------------+--------------------------------------+
-|``location``                | | Input and output location          |
-+----------------------------+--------------------------------------+
-|``reliability``             | | Set of fields to control the degree|
-|                            | | of the provided fault tolerance    |
-|                            | | support                            |
-+----------------------------+--------------------------------------+
-|``hrmclite``                | | Domain-specific input fields needed|
-|                            | | to run HRMCLite jobs               |
-+----------------------------+--------------------------------------+
-|``wordcount``               | | Domain-specific input fields needed|
-|                            | | to run wordcount jobs              |
-+----------------------------+--------------------------------------+
+      +----------------------------+-------------------------------------------------+
+      |      Input Field Type      |            Description                          |
+      +============================+=================================================+
+      |``unix``                    | | Dropdown menu containing the registered       |
+      |                            | | HPC compute resources                         |
+      +----------------------------+-------------------------------------------------+
+      |``cloud``                   | | Dropdown menu of registered cloud resources,  |
+      |                            | | number of VMs to be used for the job          |
+      +----------------------------+-------------------------------------------------+
+      |``hadoop``                  | | Dropdown menu of registered hadoop clusters   |
+      +----------------------------+-------------------------------------------------+
+      |``output_location``         | | Dropdown menu of registered storage resources |
+      |                            | | (i.e. remote file system) with root path,     |
+      |                            | | and a text field for specifying directories   |
+      |                            | | under the root path.                          |
+      +----------------------------+-------------------------------------------------+
+      |``input_location``          | | Same as output location.                      |
+      +----------------------------+-------------------------------------------------+
+      |``location``                | | Input and output location                     |
+      +----------------------------+-------------------------------------------------+
+      |``reliability``             | | Set of fields to control the degree of the    |
+      |                            | | provided fault tolerance  support             |
+      +----------------------------+-------------------------------------------------+
+      |``hrmclite``                | | Domain-specific input fields needed           |
+      |                            | | to run :ref:`HRMCLite <hrmclite>` jobs        |
+      +----------------------------+-------------------------------------------------+
+      |``wordcount``               | | Domain-specific input fields needed to run    |
+      |                            | | :ref:`wordcount <word>` jobs                  |
+      +----------------------------+-------------------------------------------------+
 
 
 
