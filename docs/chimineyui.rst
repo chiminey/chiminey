@@ -4,10 +4,10 @@
 Chiminey User Interface
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-The Chiminey server  automatically generates a job submission web page for each smart connector.
+The Chiminey platform  automatically generates a job submission web page for each smart connector.
 However, this web page contains only a drop down menu of :ref:`presets <manage_presets>`. The web page
 will also
-contain a `parameter sweep <https://github.com/chiminey/chiminey/wiki/Types-of-Input-Form-Fields#sweep>`__
+contain a :ref:`parameter sweep <parametersweep>`
 input field for smart connectors with a sweep feature.
 Since these two input fields are not sufficient to submit a job,
 the developer should specify the input fields that are needed to submit
@@ -15,13 +15,12 @@ a particular smart connector job.
 This is done during the :ref:`definition of the smart connector <constrtuct_smart_conn_ui>`.
 
 
-There are various `input field types <https://github.com/chiminey/chiminey/wiki/Types-of-Input-Form-Fields>`_ like
-computation platform, location and domain-specific variables.
-Some of the fields are already included within the Chiminey platform. But others, especially the domain-specific
-ones, will be defined by the developer.
-The following table shows the list of input field types and their corresponding schema namespaces included within the Chiminey platform.
+Within the Chiminey platform, there are various :ref:`input field types <chiminey_ui>`, organised in groups like
+compute resource varibales, location variables and domain-specific variables.
+The input fields, except the domain-specific ones, are provided via ``INPUT_FIELDS`` parameter in ``chiminey/settings_changeme.py``.
+The following table shows the list of input field types and their description.
 
-**NB**: The default value of ``SCHEMA_PREFIX`` is ``"http://rmit.edu.au/schemas"``
+
 
 
 +-----------------------------------------------------+------------------------------------------------+
@@ -217,6 +216,3 @@ Below is an example of a new input field type definition: which contains a natur
 
 
     1. :ref:`Quick Example: The Random Number Smart Connector for Non-Cloud Execution <quick_example>`
-
-
-

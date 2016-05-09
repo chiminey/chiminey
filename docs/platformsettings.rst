@@ -8,9 +8,7 @@ Resource  Management
 A Chiminey platform  supports access to computation and
 storage resources. A computation resource is where the core functionality of a
 smart connector is executed while a storage resource is used to retrieve input files and store output files.
- Prior to submitting a job, end-users need
-to register at least one computation and one storage resources. In this
-section, following topics are covered:
+Prior to submitting a job, end-users need to register at least one computation and one storage resources. In this section, following topics are covered:
 
 -  :ref:`register_computation_resource`
 -  :ref:`register_storage_resource`

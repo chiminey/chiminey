@@ -80,7 +80,7 @@ Creating a smart connector involves completing three tasks:
   #. :ref:`registering <sc_registration>` the new smart connector with the Chiminey platform.
 
 
-Each tasks are discussed below by  creating an example smart connector. This  smart connector  generates a random number with a timestamp,  and then writes the output to a file.
+Each of the three tasks is discussed below by  creating an example smart connector. This  smart connector  generates a random number with a timestamp,  and then writes the output to a file.
 
 
 **NB**: Login to the Chiminey docker container.
