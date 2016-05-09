@@ -61,30 +61,27 @@ Constructing Smart Connector Input Fields
 """""""""""""""""""""""""""""""""""""""""
 
 Here, we see how to include the input fields that are needed for submitting a smart connector job.
-The required job submission input fields must be specified when a :ref:`smart connector is defined <smart_connector_desc>`.
-This is done via ``get_ui_schema_namespace(self)`` of the ``CoreInitial`` class.
+When a :ref:`smart connector is created < create_sc>`, one of the tasks is specifying  attaching resources and non-functional properties via  input field types.
+This task is done by overriding  ``get_ui_schema_namespace(self)`` of the ``CoreInitial`` class.
 The ``CoreInitial`` class is available at ``chiminey/initialisation/coreinitial``.
 
 Suppose the new smart connector is cloud-based and writes its output to a unix server.
-Therefore, the job submission page of this smart connector must include two input fields to enter
-a cloud-based computation platform  and a unix-based output location. This is done by overwriting
-``get_ui_schema_namespace(self)`` to include the following:
-
-    - ``SCHEMA_PREFIX+"/input/system/compplatform/cloud"``
-
-    - ``SCHEMA_PREFIX+"/input/location/output"``.
-
-Here is the full content of ``get_ui_schema_namespace(self)``:
+Therefore, the job submission page of this smart connector must include two input field types that
+enables end-users  to provide  a)
+a cloud-based compute resource  and b) an output location. Suppose ``CloudSCInitial`` extends the ``CoreInitial`` class:
 
 ::
 
-    def get_ui_schema_namespace(self):
-        SCHEMA_PREFIX = "http://rmit.edu.au/schemas"
-        schema_namespaces = [
-                SCHEMA_PREFIX + "/input/system/compplatform/cloud",
-                SCHEMA_PREFIX + "/input/location/output",
-                ]
-        return schema_namespaces
+      from chiminey.initialisation import CoreInitial from django.conf import settings
+      class CloudSCInitial(CoreInitial):
+      def get_ui_schema_namespace(self):
+          schemas = [
+                  settings.INPUT_FIELDS['cloud'],
+                  settings.INPUT_FIELDS['output_location'],
+      ] return schemas
+
+      # ---EOF ---
+
 
 
 .. _domain_specific_input_fields:

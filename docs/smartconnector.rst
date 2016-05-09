@@ -70,6 +70,8 @@ Following are the predefined stages that make up a smart connector (the predefin
 
 
 
+.. _create_sc:
+
 Creating a smart connector
 """""""""""""""""""""""""""
 
