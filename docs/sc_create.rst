@@ -13,7 +13,14 @@ Creating a smart connector involves completing three tasks:
 
 Each tasks are discussed below by  creating an example smart connector. This  smart connector  generates a random number with a timestamp,  and then writes the output to a file.
 
-.. include:: <loginterm.rst>
+
+**NB**: Login to the Chiminey docker container.
+
+    - For Mac OS X and Windows users, open `Docker Quickstart Terminal`. For linux-based OS users, login to your machine and open a terminal.
+
+    - Login to the chiminey docker container::
+
+        $ ./chimineyterm
 
 
 
@@ -52,7 +59,9 @@ Resources and non-functional properties are attached to a smart connector by ove
 New domain-specific variables can be introduced via ``get_domain_specific_schemas`` method.  In this example, we will need to attached a unix compute resource for the computation, and
 a storage resource for the output location. However, we will not add a non-functional property.
 
-Under chiminey/, we create a python package `randnum`, and add ``initialise.py`` with the following content::
+Under chiminey/, we create a python package `randnum`, and add ``initialise.py`` with the following content
+
+::
 
     from chiminey.initialisation import CoreInitial from django.conf import settings
     class RandNumInitial(CoreInitial):
@@ -70,10 +79,10 @@ Under chiminey/, we create a python package `randnum`, and add ``initialise.py``
 Registration
 """"""""""""
 
-The final step is registering the smart connector  with the Chiminey platform. The details of this smart connector
- will be added to the dictionary ``SMART CONNECTORS`` in ``chiminey/settings changeme.py``.
-  The details include a unique name (with no spaces), a python path to ``RandNumInitial`` class,
-   the description of the smart connector, and the absolute path to the payload::
+The final step is registering the smart connector  with the Chiminey platform. The details of this smart connector will be added to the dictionary ``SMART CONNECTORS`` in ``chiminey/settings changeme.py``.
+The details include a unique name (with no spaces), a python path to ``RandNumInitial`` class, the description of the smart connector, and the absolute path to the payload.
+
+::
 
       "randnum": {
                  "name": "randnum",
@@ -81,6 +90,7 @@ The final step is registering the smart connector  with the Chiminey platform. T
                  "description": "Randnum generator, with timestamp",
                  "payload": "/opt/chiminey/current/payload_randnum"
       },
+      
 
 Finally, restart the Chiminey platform and then activate ``randnum`` smart connector. You need to exit the docker container and execute the following::
 
