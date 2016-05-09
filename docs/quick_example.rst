@@ -18,10 +18,10 @@ to a provided output location.  The unix machine must have ssh service  enabled.
 Requirements
 ------------
 
-#. :ref:`Install and configure <installation_guide>` the Chiminey platform.
+#. :ref:`Install and configure <installation_guide>` a  Chiminey platform.
 #. Register an :ref:`HPC compute resource <hpc_resource>`. For this example, the HPC resource could be any unix server where ssh service is enabled,
    including the Chiminey deployment itself.
-#. Register a storage resource, specifically a :ref:`remote file system <remote_storage>`. Similar to the compute resource, the Chiminey deployment can be used a storage resource. 
+#. Register a storage resource, specifically a :ref:`remote file system <remote_storage>`. Similar to the compute resource, the Chiminey deployment can be used a storage resource.
 
 
 Creating the Unix Random Number Smart Connector

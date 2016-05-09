@@ -20,6 +20,7 @@ Each tasks are discussed below by  creating an example smart connector. This  sm
 
     - Login to the chiminey docker container::
 
+        $ cd docker-chiminey
         $ ./chimineyterm
 
 
@@ -90,7 +91,7 @@ The details include a unique name (with no spaces), a python path to ``RandNumIn
                  "description": "Randnum generator, with timestamp",
                  "payload": "/opt/chiminey/current/payload_randnum"
       },
-      
+
 
 Finally, restart the Chiminey platform and then activate ``randnum`` smart connector. You need to exit the docker container and execute the following::
 
