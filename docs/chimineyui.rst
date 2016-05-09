@@ -45,10 +45,10 @@ The following table shows the list of input field types and their description.
       |                            | | provided fault tolerance  support             |
       +----------------------------+-------------------------------------------------+
       |``hrmclite``                | | Domain-specific input fields needed           |
-      |                            | | to run :ref:`HRMCLite <hrmclite>` jobs        |
+      |                            | | to run :ref:`HRMCLite <hrmclite_sc>` jobs     |
       +----------------------------+-------------------------------------------------+
       |``wordcount``               | | Domain-specific input fields needed to run    |
-      |                            | | :ref:`wordcount <word>` jobs                  |
+      |                            | | :ref:`wordcount <wordcount_sc>` jobs          |
       +----------------------------+-------------------------------------------------+
 
 
@@ -72,7 +72,8 @@ a cloud-based compute resource  and b) an output location. Suppose ``CloudSCInit
 
 ::
 
-      from chiminey.initialisation import CoreInitial from django.conf import settings
+      from chiminey.initialisation import CoreInitial
+      from django.conf import settings
       class CloudSCInitial(CoreInitial):
       def get_ui_schema_namespace(self):
           schemas = [
@@ -89,65 +90,108 @@ a cloud-based compute resource  and b) an output location. Suppose ``CloudSCInit
 Including domain-specific input fields
 ''''''''''''''''''''''''''''''''''''''
 
-Input field types that are included within the Chiminey platform are generic, and therefore domain-specific input
-fields must be defined when needed. New input field types are defined in  ``get_domain_specific_schemas(self)``
-of the  ``CoreInitial`` class. The definition includes
+Input field types that are included within the Chiminey platform are generic and are included within the platform. However
+ domain-specific input fields must be defined when needed. A domain-specific input field type is provided by overriding  ``get_domain_specific_schemas(self)``
+ of the  ``CoreInitial`` class. This method will return a  list  of two elements:
 
-    - **schema namespace** like ``SCHEMA_PREFIX+"/input/domain_specific"``
+ #.  The description of the input field type e.g. `HRMCLite Smart Connector`
 
-    - **descrption** of the type like *Domain-specific input field type*
-
-    - list of **input fields**: Each input field has
+ #.  A dictionary whose keys are the names of domain-specific input fields, their values are dictionaries  with the following keys:
 
         - **type**:  There are three types of input fields: *numeric* (models.ParameterName.NUMERIC), *string* (models.ParameterName.STRING), *list of strings* (models.ParameterName.STRLIST). *numeric* and *string* inputs have a text field while a *list of strings* has a drop-down menu. Enduser inputs are validated against the type of the input field.
 
-        - **subtype**: Subtypes are used for additional validations: *numeric* fields can validated for containing  whole and natural numbers.
+        - **subtype**: Subtypes are used for additional validations: *numeric* fields can be validated for containing  whole and natural numbers.
 
         - **description**: The label of the input field.
 
         - **choices**: If the type is *list of strings*, the values of the dropdown menu is provided via *choices*.
 
-        - **ranking**: Ranking sets the ordering of input fields when the fields are displays.
+        - **ranking**: Ranking sets the ordering of input fields when the fields are displayed.
 
         - **initial**: The default value of the field.
 
         - **help_text**: The text displayed when a mouse hovers over the question mark next to the field.
 
 
-Below is an example of a new input field type definition: which contains a natural number, a string and a list of strings.
+
+Below are two examples of domain-specific input field types: :ref:`wordcount <wordcount_sc>` and  :ref:`HRMCLite <hrmclite_sc>` smart connector.
+
+- WordCount smart connector input field type
 
 ::
 
+      def get_domain_specific_schemas(self):
+              schema_data =  [u'Word Count Smart Connector',
+                   {
+                       u'word_pattern': {'type': models.ParameterName.STRING,
+                                        'subtype': 'string',
+                                        'description': 'Word Pattern',
+                                        'ranking': 0,
+                                        'initial': "'[a-z.]+'",
+                                        'help_text': 'Regular expression of filtered words'},
+                   }
+                  ]
+              return schema_data
 
-    def get_domain_specific_schemas(self):
-        schema_data = {
-            u'%s/input/domain_specific' % SCHEMA_PREFIX:
-            [u'Domain-specific input field type',
-             {
-                 u'number_input':   {'type': models.ParameterName.NUMERIC,
-                                     'subtype': 'natural',
-                                     'description': 'Enter Number',
-                                     'ranking': 0,
-                                     'initial': 42,
-                                     'help_text': 'The number needed for this computation',
-                                     },
-                u'string_input': {'type': models.ParameterName.STRING,
-                                    'subtype': '',
-                                    'description': 'Enter string',
-                                    'ranking': 1,
-                                    'initial': 'job scheme',
-                                    'help_text': 'The scheme needed for this computaiton'},
-                u'list_input': {'type': models.ParameterName.STRLIST,
-                                    'choices': '[("option1", "Option 1"), ("option2", "Option 2")]',
-                                    'subtype': '',
-                                    'description': 'Choose your option',
-                                    'ranking': 2,
-                                    'initial' : '',
-                                    'help_text': 'The list of options for the computation'},
-             }
-            ],
-        }
-        return schema_data
+
+- HRMCLite smart connector input field type
+
+::
+
+        def get_domain_specific_schemas(self):
+            schema_data =  [u'HRMCLite Smart Connector',
+                 {
+                     u'iseed': {'type': models.ParameterName.NUMERIC,
+                                'subtype': 'natural',
+                                'description': 'Random Number Seed',
+                                'ranking': 0,
+                                'initial': 42,
+                                'help_text': 'Initial seed for random numbers'},
+                     u'pottype': {'type': models.ParameterName.NUMERIC,
+                                  'subtype': 'natural',
+                                  'description': 'Pottype',
+                                  'ranking': 10,
+                                  'help_text': '',
+                                  'initial': 1},
+                     u'error_threshold': {'type': models.ParameterName.STRING,
+                                          'subtype': 'float',
+                                          'description': 'Error Threshold',
+                                          'ranking': 23,
+                                          'initial': '0.03',
+                                          'help_text': 'Delta for iteration convergence'},
+                     u'optimisation_scheme': {'type': models.ParameterName.STRLIST,
+                                              'subtype': 'choicefield',
+                                              'description': 'No. varying parameters',
+                                              'ranking': 45,
+                                              'choices': '[("MC","Monte Carlo"), ("MCSA", "Monte Carlo with Simulated Annealing")]',
+                                              'initial': 'MC', 'help_text': '',
+                                              'hidefield': 'http://rmit.edu.au/schemas/input/hrmc/fanout_per_kept_result',
+                                              'hidecondition': '== "MCSA"'},
+                     u'fanout_per_kept_result': {'type': models.ParameterName.NUMERIC,
+                                                'subtype': 'natural',
+                                                 'description': 'No. fanout kept per result',
+                                                 'initial': 1,
+                                                 'ranking': 52,
+                                                 'help_text': ''},
+                     u'threshold': {'type': models.ParameterName.STRING,
+                                    'subtype': 'string',
+                                    'description': 'No. results kept per iteration',
+                                    'ranking': 60,
+                                    'initial': '[1]',
+                                    'help_text': 'Number of outputs to keep between iterations. eg. [2] would keep the top 2 results.'},
+                     u'max_iteration': {'type': models.ParameterName.NUMERIC,
+                                        'subtype': 'whole',
+                                        'description': 'Maximum no. iterations',
+                                        'ranking': 72,
+                                        'initial': 10,
+                                        'help_text': 'Computation ends when either convergence or maximum iteration reached'},
+                 }
+                ]
+
+            return schema_data
+
+
+
 
 
 

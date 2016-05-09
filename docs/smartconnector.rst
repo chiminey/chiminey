@@ -136,7 +136,8 @@ Under chiminey/, we create a python package `randnum`, and add ``initialise.py``
 
 ::
 
-    from chiminey.initialisation import CoreInitial from django.conf import settings
+    from chiminey.initialisation import CoreInitial
+    from django.conf import settings
     class RandNumInitial(CoreInitial):
     def get_ui_schema_namespace(self):
             schemas = [
