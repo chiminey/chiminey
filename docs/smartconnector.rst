@@ -143,7 +143,7 @@ Under chiminey/, we create a python package `randnum`, and add ``initialise.py``
     ] return schemas
     # ---EOF ---
 
-
+**NB**: The list of available resources and non-functional properties is given by ``INPUT_FIELDS`` parameter in ``chiminey/settings_changeme.py``
 
 .. _sc_registration:
 
@@ -163,14 +163,14 @@ The details include a unique name (with no spaces), a python path to ``RandNumIn
       },
 
 
-Finally, restart the Chiminey platform and then activate ``randnum`` smart connector. You need to exit the docker container and execute the following::
+Finally, restart the Chiminey platform and then activate ``randnum`` smart connector. You need to exit the docker container in order to restart::
 
+  $ exit
   $ sh restart
   $ ./activatesc randnum
 
 
-The list
-    of available resources and non-functional properties is given by ``INPUT_FIELDS`` parameter in ``chiminey/settings_changeme.py``
+
 
 
 
