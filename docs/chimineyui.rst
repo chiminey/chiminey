@@ -16,39 +16,40 @@ This is done during the :ref:`definition of the smart connector <constrtuct_smar
 
 
 Within the Chiminey platform, there are various :ref:`input field types <chiminey_ui>`, organised in groups like
-compute resource varibales, location variables and domain-specific variables.
+compute resource variables, location variables and domain-specific variables.
 The input fields, except the domain-specific ones, are provided via ``INPUT_FIELDS`` parameter in ``chiminey/settings_changeme.py``.
 The following table shows the list of input field types and their description.
 
 
 
 
+
 +-----------------------------------------------------+------------------------------------------------+
-|                    Schema Namespace                 |            Input Field Type                    |
+|                    Input Field Groups                 |            Input Field Type                    |
 +=====================================================+================================================+
-|``SCHEMA_PREFIX+"/input/system/compplatform"``       | | A dropdown menu containing **all**           |
+|``cloud``       | | A dropdown menu containing **all**           |
 |                                                     | | registered computation platform names        |
 +-----------------------------------------------------+------------------------------------------------+
-|``SCHEMA_PREFIX+"/input/system/compplatform/unix"``  | | A dropdown menu containing only **unix**     |
+|``hadoop``  | | A dropdown menu containing only **unix**     |
 |                                                     | | and  **cluster** computation platform names  |
 +-----------------------------------------------------+------------------------------------------------+
-|``SCHEMA_PREFIX+"/input/system/compplatform/cloud"`` | | A dropdown menu containing only **cloud**    |
+|``unix`` | | A dropdown menu containing only **cloud**    |
 |                                                     | | computation platform names                   |
 +-----------------------------------------------------+------------------------------------------------+
-|``SCHEMA_PREFIX+"/input/system/cloud"``              | | Two textfields for entering the maximum      |
+|``reliability``              | | Two textfields for entering the maximum      |
 |                                                     | | and minimum number of virtual machines       |
 |                                                     | | needed for the job                           |
 +-----------------------------------------------------+------------------------------------------------+
-|``SCHEMA_PREFIX+"/input/location"``                  | | Two textfields for entering input and output |
+|``output_location``                  | | Two textfields for entering input and output |
 |                                                     | | locations (unix storage platform names)      |
 +-----------------------------------------------------+------------------------------------------------+
-|``SCHEMA_PREFIX+"/input/location/output"``           | | A textfield for entering an output location  |
+|``input_location``           | | A textfield for entering an output location  |
 |                                                     | | (a unix storage platform name)               |
 +-----------------------------------------------------+------------------------------------------------+
-|``SCHEMA_PREFIX+"/input/location/input"``            | | A textfield for entering an input location   |
+|``hrmclite``            | | A textfield for entering an input location   |
 |                                                     | | (a unix storage platform name)               |
 +-----------------------------------------------------+------------------------------------------------+
-|``SCHEMA_PREFIX+"/input/reliability"``               | | A set of fields to control the degree of the |
+|``wordcount``               | | A set of fields to control the degree of the |
 |                                                     | | provided fault tolerance support             |
 +-----------------------------------------------------+------------------------------------------------+
 |``SCHEMA_PREFIX+"/input/mytardis"``                  | | A dropdown menu containing all registered    |
