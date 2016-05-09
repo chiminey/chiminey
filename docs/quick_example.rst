@@ -6,9 +6,8 @@ Quick Example: The Unix Random Number Smart Connector
 =====================================================
 
 In this example, we create a basic smart connector that generates two
-random numbers on a unix machine (or the Chiminey server machine,
-for simplicity), saves the numbers to a file, and then transfers the file
-to a provided output location. This smart connector will be known as the
+random numbers on a  unix machine, saves the numbers to a file, and then transfers the file
+to a provided output location.  The unix machine must have ssh service  enabled. This smart connector will be known as the
 *Unix Random Number Smart Connector*.
 
 - The **purpose** of this example is to create a basic smart connector that executes programs on a unix server. We also add an :ref:`external parameter sweep <external_parameter_sweep>` to this connector.
@@ -19,16 +18,10 @@ to a provided output location. This smart connector will be known as the
 Requirements
 ------------
 
-#. Installation and configuration of the Chiminey server on a virtual machine,
-   according to the :ref:`Installation Guide <installation_guide>`.
-#. Registration of a computation platform, which is where the core
-   functionality of a smart connector is executed within the Chiminey
-   UI. For this example, the platform could be any unix server,
-   including the Chiminey server itself (see registering :ref:`Cluster/Unix  Computation Platform <hpc_resource>`).
-#. Registration of a storage platform, which is the destination of the
-   smart connector output within the Chiminey UI. As for the computation
-   platform above, the platform could be any unix server, again
-   including the Chiminey server itself (see registering :ref:`Unix Storage Platform <remote_storage>`).
+#. :ref:`Install and configure <installation_guide>` the Chiminey platform.
+#. Register an :ref:`HPC compute resource <hpc_resource>`. For this example, the HPC resource could be any unix server where ssh service is enabled,
+   including the Chiminey deployment itself.
+#. Register a storage resource, specifically a :ref:`remote file system <remote_storage>`. Similar to the compute resource, the Chiminey deployment can be used a storage resource. 
 
 
 Creating the Unix Random Number Smart Connector

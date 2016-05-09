@@ -44,7 +44,7 @@ Here, we create a virtual machine that runs docker.
 
   - Run docker engine::
 
-      docker run hello-world
+      $ docker run hello-world
 
 
     + You will see a message similar to the one below::
@@ -62,12 +62,12 @@ Here, we create a virtual machine that runs docker.
 
   - Run docker-compose::
 
-      docker-compose --version
+      $ docker-compose --version
 
     + The output will be ``docker-compose version x.x.x, build xxxxxxx``
     + For users with an older Mac, you will get ``Illegal instruction: 4``. This error can be fixed by upgrading docker-compose::
 
-        pip install --upgrade docker-compose
+        $ pip install --upgrade docker-compose
 
 
 .. _linux_req:
@@ -103,21 +103,21 @@ Installation
 
 3. Clone the ``docker-chiminey`` source code from http://github.com.au::
 
-     git clone https://github.com/chiminey/docker-chiminey.git
+     $ git clone https://github.com/chiminey/docker-chiminey.git
 
 
 4. Change your working directory::
 
-     cd docker-chiminey
+     $ cd docker-chiminey
 
 
 5. Setup a self-signed certificate. You will be prompted to enter country code, state, city, and etc::
 
-    sh makecert
+    $ sh makecert
 
 6. Deploy the Chiminey platform::
 
-    docker-compose up -d
+    $ docker-compose up -d
 
 
 7. Verify Chiminey was deployed successfully.
@@ -148,19 +148,19 @@ Here, we will configure the Chiminey deployment by creating a superuser, initial
 
 2. Change to ``docker-chiminey`` directory::
 
-    cd docker-chiminey
+    $ cd docker-chiminey
 
 3. Create a superuser::
 
-    ./createsuper
+    $ ./createsuper
 
 4. Initialise the database::
 
-    ./init
+    $ ./init
 
 5. Create a regular user::
 
-    ./createuser
+    $ ./createuser
 
 6. Verify the Chiminey platform is configured correctly.
 
@@ -178,11 +178,11 @@ When a Chiminey platform is deployed,  each `smart connector <smart_connector_de
 
 2. Change to ``docker-chiminey`` directory::
 
-    cd docker-chiminey
+    $ cd docker-chiminey
 
 3. List all available smart connectors::
 
-    ./listsc
+    $ ./listsc
 
     NAME:       DESCRIPTION
     hrmclite:   Hybrid Reverse Monte Carlo without PSD
@@ -192,7 +192,7 @@ When a Chiminey platform is deployed,  each `smart connector <smart_connector_de
 
 4. Activate a smart connector. The syntax to activate a smart connector is `./activatesc smart-connector-name`. Thus, activate `randnum` smart connector as follows::
 
-    ./activatesc randnum
+    $ ./activatesc randnum
 
 5. Verify the smart connector is successfully activated.
 
@@ -202,7 +202,7 @@ When a Chiminey platform is deployed,  each `smart connector <smart_connector_de
 
   - Click Create Job.  `randnum` will appear under the Smart Connectors list.
 
-  
+
 
 
 .. seealso::

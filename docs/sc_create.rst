@@ -6,15 +6,18 @@ Creating a smart connector
 
 Creating a smart connector involves completing three tasks:
 
-  #. providing the core functionality of the smart connector,
-  #. attaching resources and optional non-functional properties, and
-  #. registering the new smart connector with the Chiminey platform.
+  #. providing :ref:`the core functionality <sc_core_fcn>`` of the smart connector,
+  #. attaching :ref:`resources and optional non-functional properties <sc_attach_resources>``, and
+  #. :ref:`registering <sc_registration>` the new smart connector with the Chiminey platform.
 
 
-Let's create a new smart connector that generates a random number with a timestamp,  and then writes the output to a file.
+Each tasks are discussed below by  creating an example smart connector. This  smart connector  generates a random number with a timestamp,  and then writes the output to a file.
+
+.. include:: <loginterm.rst>
 
 
 
+.. _sc_core_fcn:
 
 The Core Function
 """"""""""""""""
@@ -41,6 +44,8 @@ Notice ``OUTPUT_DIR``. This is the path to the output directory, and thus Chimin
 The contents of ``OUTPUT_DIR`` will be transferred to the output location at the end of each computation.
 
 
+.. _sc_attach_resources:
+
 Attaching resources and non-functional properties
 """""""""""""""""""""""""""""""""""""""""""""""""""
 Resources and non-functional properties are attached to a smart connector by overriding ``get_ui_schema_namespace`` method of ``chiminey.initialisation.coreinitial.CoreInitial`` class.
@@ -57,6 +62,31 @@ Under chiminey/, we create a python package `randnum`, and add ``initialise.py``
                     settings.INPUT_FIELDS[’output_location’],
     ] return schemas
     # ---EOF ---
+
+
+
+.. _sc_registration:
+
+Registration
+"""""""""""""""
+
+The final step is registering the smart connector  with the Chiminey platform. The details of this smart connector
+ will be added to the dictionary ``SMART CONNECTORS`` in ``chiminey/settings changeme.py``.
+  The details include a unique name (with no spaces), a python path to ``RandNumInitial`` class,
+   the description of the smart connector, and the absolute path to the payload.
+
+"randnum": {
+           "name": "randnum",
+           "init": "chiminey.randnum.initialise.RandNumInitial",
+           "description": "Randnum generator, with timestamp",
+           "payload": "/opt/chiminey/current/payload_randnum"
+},
+
+Finally, restart the Chiminey platform and then activate ``randnum`` smart connector. You need to exit the docker container and execute the following::
+
+  $ sh restart
+  $ ./activatesc randnum
+
 
 The list
     of available resources and non-functional properties is given by ``INPUT_FIELDS`` parameter in ``chiminey/settings_changeme.py``
