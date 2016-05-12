@@ -7,18 +7,18 @@ Chiminey
    :target: https://travis-ci.org/chiminey/chiminey
 
 
-The Cloud and Cluster Computing Platform.
+Connecting Scientists to HPC, Cloud and Big Data.
 
 Introduction
 ============
 
 The Chiminey system is a cloud-based computing platform that enables scientists to perform complex computation on cloud-based and traditional high performance computing (HPC) facilities, and  to handle failure during the execution of their application. 
-This system gives special importance to resource access and management abstraction. Scientists are not expected to have a technical understanding of cloud-computing, HPC, or  fault tolerance in order to leverage the benefits provided by the Chiminey
-system. 
+This system gives special importance to resource access and management abstraction. Scientists are not expected to have a technical understanding of cloud-computing, HPC, or, big data  fault tolerance in order to leverage the benefits provided by the Chiminey
+platform. 
 
 Chiminey provides
 
-* Definition, execution and monitoring of high-performance and cloud computing applications.
+* Definition, execution and monitoring of high-performance, big data, and cloud computing applications.
 
 * A user interface that focusses  both on the  domain-specific parts of a task for scientists and  a framework that allows IT research engineers 
 to build computation tasks. 
@@ -41,7 +41,7 @@ The Bioscience Data Platform
 
 Chiminey is a key product of the `Bioscience Data Platform: Tardis in the Cloud project <http://bioscience-data-platform.tumblr.com/>`_, which is a prject beween Monash University and RMIT University, Victoria Australia funded by NeCTAR.  This project fosuses on bringing existing computational systems together in a way that allows scientists to seemslessly work with data from capture through to publication.
 
-See Y for more details
+.. S ee Y for more details
 
 
 Documentation
@@ -50,9 +50,9 @@ Documentation
 
 A Getting Started tutorial is available at `http://chiminey.readthedocs.org/ <http://chiminey.readthedocs.org/>`_, which walks through installation and running simple and then more complicated examples.
 
-.. An installation manual is available at XXX.
+ .. An installation manual is available at https://github.com/chiminey/docker-chiminey.
 
-.. The user manual is available at XXX.
+ .. The user manual is available at [readthedocs] (http://chiminey.readthedocs.org/en/latest/enduser_manual.html) .
 
 
 
