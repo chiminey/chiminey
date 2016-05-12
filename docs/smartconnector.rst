@@ -173,8 +173,14 @@ Finally, restart the Chiminey platform and then activate ``randnum`` smart conne
   $ ./activatesc randnum
 
 
+Food for Thought
+~~~~~~~~~~~~~
+In the example above, we created  a  smart connector that generates  a random number on a unix-based machines. Even though the random number generator a simple
+smart connector, the tasks that are involved in creating  smart connectors for complex programs is similar.
+ If your program can be executed on a cloud, HPC cluster, hadoop cluster, then this program
+can be packaged as a smart connector. The huge benefit of using the Chiminey platform to run your program is you don't need to worry about how to
+manage the execution of your program on any of the provided compute resources.
+You can run your program on different types of compute resources with minimal effort. For instance,  to generate random on a cloud-based virtual machine, we need
+to change only one word in ``get_ui_schema_namespace method``. Replace ``unix`` by ``cloud``. Then, restart Chiminey, and activate your cloud-based random number generator.
 
-
-
-
-:ref:`Various examples <examples>` are given to show how a smart connector is created.
+:ref:`Various examples <examples>` are given; these examples show to create various types of smart connectors: cloud-based, hadoop- based, sweeps, reliability, data curation resources.
