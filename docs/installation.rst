@@ -4,87 +4,205 @@ Chiminey Installation Guide
 ===========================
 
 
-This document describes how to install the chiminey system on a single VM, situated
-in NeCTAR cloud, Vagrant or some other cloud solution.
+This document describes how to install a Chiminey platform via `Docker <https://www.docker.com>`_, which is an automatic software deployment tool.
+
 
 Requirements
 ------------
 
-At least one VM on a IaaS cloud provider
+Docker 1.7+ is needed. Follow the links below to install docker on your machine.
 
-(Tested on NeCTAR Centos 6.5 x86x64 Image and size m1.small, with 443/80/22 ports open)
+-  :ref:`mac_windows_req`
 
-Information on the NeCTAR cloud:
-http://support.rc.nectar.org.au/docs/getting-started
+-  :ref:`linux_req`
 
-Information on AWS: https://aws.amazon.com/
+.. _mac_windows_req:
+
+Mac OS X and Windows
+~~~~~~~~~~~~~~~~~~~~
+
+Here, we create a virtual machine that runs docker.
+
+1. Download Docker Toolbox from https://www.docker.com/toolbox.
+
+2. When the download is complete, open the installation dialog box by double-clicking the downloaded file.
+
+3. Follow the on-screen prompts to install the Docker toolbox. You may be prompted for password just before the installation begins. You need to enter your password to continue.
+
+4. When the installation is completed, press ``Close`` to exit.
+
+5. Verify that ``docker-engine`` and ``docker-compose`` are installed correctly.
+
+  - Open Docker Quickstart Terminal from your application folder. The resulting output looks like the following:
+
+  .. figure:: img/installation/dockerengine.png
+      :align: center
+      :alt:   Docker Terminal on Mac OS X or Windows
+      :figclass: align-center
+
+      Figure.  Docker Virtual Machine on Mac OS X or Windows
+
+  - Run docker engine::
+
+      $ docker run hello-world
 
 
-Instructions
+    + You will see a message similar to the one below::
+
+       Unable to find image ’hello-world:latest’ locally
+       latest: Pulling from library/hello-world
+       03f4658f8b78: Pull complete
+       a3ed95caeb02: Pull complete
+       Digest: sha256:8be990ef2aeb16dbcb92...
+       Status: Downloaded newer image for hello-world:latest
+       Hello from Docker.
+       This message shows that your installation appears to be
+           working correctly.
+       ...
+
+  - Run docker-compose::
+
+      $ docker-compose --version
+
+    + The output will be ``docker-compose version x.x.x, build xxxxxxx``
+    + For users with an older Mac, you will get ``Illegal instruction: 4``. This error can be fixed by upgrading docker-compose::
+
+        $ pip install --upgrade docker-compose
+
+
+.. _linux_req:
+
+Linux
+~~~~~~
+
+Docker, specifically ``docker-engine`` and ``docker-compose``, needs to be installed directly on your linux-based OS. Refer to the Docker online documentation to install the two packages:
+
+1. Install `docker-engine <https://docs.docker.com/engine/installation/>`_
+
+2. Install `docker-compose <https://docs.docker.com/compose/install/>`_
+
+
+Installation
 ------------
 
-On the created VM::
+1. For Mac OS X and Windows users, open `Docker Quickstart Terminal`. For linux-based OS users, login to your machine and open a terminal.
 
-    sudo -s
-    rpm  -Uvh http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
-    yum -y install ruby ruby-devel ruby-rdoc ruby-shadow gcc gcc-c++ automake autoconf make curl dmidecode
-    cd /tmp
-    curl -O http://production.cf.rubygems.org/rubygems/rubygems-1.8.10.tgz
-    tar zxf rubygems-1.8.10.tgz
-    cd rubygems-1.8.10
+2. Check if ``git`` is installed. Type ``git`` on your terminal.
 
-    # install ruby 1.9.3 as centos 6.5 has only 1.8 which is no good for chef
-    # http://tecadmin.net/install-ruby-1-9-3-or-multiple-ruby-verson-on-centos-6-3-using-rvm/
-    yum update
-    yum install gcc-c++ patch readline readline-devel zlib zlib-devel
-    yum install libyaml-devel libffi-devel openssl-devel make
-    yum install bzip2 autoconf automake libtool bison iconv-devel
-    yum remove libyaml-0.1.6
-    cd /tmp
-    curl -L get.rvm.io | bash -s stable
-    source /etc/profile.d/rvm.sh
-    rvm install 1.9.3
+   + If git is installed, the following message will be shown::
 
-    #install chef
-    ruby setup.rb --no-format-executable
-    gem install chef --no-ri --no-rdoc -v 11.10.4
+       usage: git [--version] [--help] [-C <path>] ..
+                  [--exec-path[=<path>]] [--html-path] [...
+                  [-p|--paginate|--no-pager] [--no- ...
+                  [--git-dir=<path>] [--work-tree=<path>]...
+                  <command> [<args>]
+                  ...
+
+   + If git is not installed, you will see ``git: command not found``. Download and install ``git`` from http://git-scm.com/download
 
 
-Get the chef script for the Chiminey app::
+3. Clone the ``docker-chiminey`` source code from http://github.com.au::
 
-    yum -y install git
-    mkdir -p /var/chef-solo
-    cd /var/chef-solo
-    git clone https://github.com/chiminey/chiminey-chef.git
-    cd chiminey-chef
-    if [[ $http_proxy != "" ]]; then echo http_proxy '"'$http_proxy'"' >> solo/solo.rb;  fi
+     $ git clone https://github.com/chiminey/docker-chiminey.git
 
-Create a user for the Chiminey app::
 
-    useradd bdphpc --create-home
+4. Change your working directory::
 
-Configure the user environment::
+     $ cd docker-chiminey
 
-    su - bdphpc -c "ssh-keygen"   #return for all prompts
-    su - bdphpc -c "mkdir ~/.python-eggs"
-    su - bdphpc -c "touch /home/bdphpc/.ssh/known_hosts"
 
-Install the Chiminey app::
+5. Setup a self-signed certificate. You will be prompted to enter country code, state, city, and etc::
 
-    chef-solo -c solo/solo.rb -j solo/node.json -ldebug
+    $ sh makecert
 
-Check testcases::
+6. Deploy the Chiminey platform::
 
-    su bdphpc
-    cd /opt/chiminey/current/
-    bin/django test .
+    $ docker-compose up -d
 
-Setup Chiminey app::
 
-    cd chiminey
-    ../bin/django createsuperuser   # should only be used for admin tasks
-    ../bin/django initial           # gets the database ready
-    ../bin/django createuser        # a user who runs smart connectors
+7. Verify Chiminey was deployed successfully.
+
+  - Retrieve the IP address of your machine
+
+      + For Mac and Windows users, type ``env | grep DOCKER_HOST``. The expected output has a format ``DOCKER_HOST=tcp://IP:port``, for example. ``DOCKER_HOST=tcp://192.168.99.100:2376``. Thus, your IP address is 192.168.99.100.
+
+      + For linux users, the command ``ifconfig`` prints your our machine's IP address.
+
+  - Open a browser and visit the Chiminey portal at IP, in our example, http://192.168.99.100. After a while, the Chiminey portal will be shown.
+
+    .. figure:: img/installation/chimineyportal.png
+        :align: center
+        :alt:  Chiminey Portal
+        :figclass: align-center
+
+        Figure.  Chiminey Portal
+
+
+Configuration
+------------
+
+Here, we will configure the Chiminey deployment by creating a superuser, initialising the database, and signing up a regular user.
+
+
+1. For Mac OS X and Windows users, open `Docker Quickstart Terminal`. For linux-based OS users, login to your machine and open a terminal.
+
+2. Change to ``docker-chiminey`` directory::
+
+    $ cd docker-chiminey
+
+3. Create a superuser::
+
+    $ ./createsuper
+
+4. Initialise the database::
+
+    $ ./init
+
+5. Create a regular user::
+
+    $ ./createuser
+
+6. Verify the Chiminey platform is configured correctly.
+
+  - Open a browser and visit the Chiminey portal.
+
+  - Login with your regular username and password. After successful login, you will be redirected to a webpage that displays a list of jobs. Since no jobs are run yet, the list is empty.
+
+
+Smart Connectors Activation
+------------
+
+When a Chiminey platform is deployed,  each `smart connector <smart_connector_desc>`, which  is the core concept within Chiminey that enables endusers to perform complex computations on distributed computing facilities with minimal effort, needs to be explicitly activated.
+
+1. For Mac OS X and Windows users, open `Docker Quickstart Terminal`. For linux-based OS users, login to your machine and open a terminal.
+
+2. Change to ``docker-chiminey`` directory::
+
+    $ cd docker-chiminey
+
+3. List all available smart connectors::
+
+    $ ./listsc
+
+    NAME:       DESCRIPTION
+    hrmclite:   Hybrid Reverse Monte Carlo without PSD
+    randnum:    Randnum generator, with timestamp
+    wordcount:  Counting words via Hadoop
+
+
+4. Activate a smart connector. The syntax to activate a smart connector is `./activatesc smart-connector-name`. Thus, activate `randnum` smart connector as follows::
+
+    $ ./activatesc randnum
+
+5. Verify the smart connector is successfully activated.
+
+  - Open a browser and visit the Chiminey portal.
+
+  - Login with your regular username and password.
+
+  - Click Create Job.  `randnum` will appear under the Smart Connectors list.
+
+
 
 
 .. seealso::
@@ -94,5 +212,3 @@ Setup Chiminey app::
 
         https://docs.djangoproject.com/en/1.4/intro/install/
            Django Quick Install Guide
-
-

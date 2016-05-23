@@ -9,9 +9,7 @@ In this documentation, following topics are covered:
 .. toctree::
         :titlesonly:
 
-        chimineyaccess
-        Configuring computation and storage platforms  <platformsettings>
-        Managing smart connector jobs <jobmanagement>
-        Managing presets <presetmanagement>
-
-
+        Chiminey Account <chimineyaccess>
+        Resources  <platformsettings>
+        Smart connector jobs <jobmanagement>
+        Presets <presetmanagement>

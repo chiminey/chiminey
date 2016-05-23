@@ -7,7 +7,7 @@ Sweep <#sweep>`__ \* `Domain-specific <#domain_specific>`__
 
  ###Computation platform The names of previously registered computation
 platforms (see `Registering Computation
-Platforms </chiminey/chiminey/wiki/Enduser-Manual#wiki-register_computation_platform>`__)
+Platforms </chiminey/chiminey/wiki/Enduser-Manual#wiki-register_computation_resource>`__)
 are populated into a drop down menu, labeled as *Computation Platform
 Name*. The enduser selects the platform name that represent the
 computation platform for the current job.

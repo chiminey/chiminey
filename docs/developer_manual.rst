@@ -3,11 +3,8 @@ Developer Manual
 ================
 
 .. toctree::
-
-
-   smartconnector
+   Smart Connectors <smartconnector>
    parametersweep
    payload
    chimineyui
    examples
-

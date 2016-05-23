@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load staticfiles %}
 {% load widget_tweaks %}
 {% block content %}
 
@@ -29,7 +30,21 @@
 <div id="id_current_directive" class="span10" style="padding-left:20px; border-left: 2px solid #ccc;">
 <h1> {{directive.name}}</h1>
 <p class="lead"> {{directive.description}}</p>
+<div> 
+{% if directive.name == "hrmclite" %}
+ <p class="text-success"> 
+Sample HRMCLite input files are available  <a href="{% static "simpleui/inputs/input_hrmc.zip"%}">
+here </a>. Copy these files to your registered storage location. </p>
 
+{% elif directive.name == "wordcount" %}
+
+ <p class="text-success">
+Sample WordCount input files are available  <a href="{% static "simpleui/inputs/input_hadoop.zip"%}">
+here </a>. Copy these files to your registered storage location. </p>
+
+
+{%endif%}
+</div>
 
 <div class="row-fluid">
 <form class="form-horizontal" name="myform" id="myform-id" action="" method="POST"> {% csrf_token %}
@@ -98,7 +113,6 @@
           {% endif %}
       {% endfor %}
       </fieldset>
-
       <div class="row-actions">
             <button type="button" class="btn offset3" title="Reset" onclick="resetPreset('myform-id', '')">Reset</button>
           <button type="submit"  class="submit  btn btn-primary">Submit Job </button>

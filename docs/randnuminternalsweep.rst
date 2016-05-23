@@ -26,11 +26,11 @@ Requirements
 
 #. Registration of a cloud computation platform, which is where the core
    functionality of a smart connector is executed within the Chiminey
-   UI (see registering :ref:`Cloud Computation Platform <cloud_platform>`).
+   UI (see registering :ref:`Cloud Computation Platform <cloud_resource>`).
 #. Registration of a storage platform, which is the destination of the
    smart connector output within the Chiminey UI. As with other storage
    platforms, the platform could be any unix server, again
-   including the Chiminey server itself (see registering :ref:`Unix Storage Platform <unix_storage_platform>`).
+   including the Chiminey server itself (see registering :ref:`Unix Storage Platform <remote_storage>`).
 
 
 Creating the Internal Sweep Random Number Smart Connector
@@ -310,14 +310,3 @@ Since this smart connector has two internal tasks, there will be two sets of out
 #. Login to your storage platform
 #. Change directory to the root path of your storage platform
 #. The output is located under *smart_connector_uniquenameJOBID*, e.g. randnum_internal_sweep226
-
-
-
-
-
-
-
-
-
-
-
