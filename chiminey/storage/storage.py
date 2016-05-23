@@ -289,8 +289,9 @@ def get_filesystem(bdp_url):
             port = 22
         logger.debug("root_path=%s" % root_path)
         paramiko_settings = {'username': username,
-                             'port': port,
-                             'password': password}
+                             'port': int(port),
+                             'password': password,
+                             'port': int(port)}
         if key_file:
             paramiko_settings['key_filename'] = key_file
         ssh_settings = {'params': paramiko_settings,
@@ -350,7 +351,7 @@ def list_all_files(source_url):
         logger.debug("root_path=%s" % root_path)
         paramiko_settings = {'username': username,
                              'password': password,
-                             'port': port}
+                             'port': int(port)}
         if key_file:
             paramiko_settings['key_filename'] = key_file
         ssh_settings = {'params': paramiko_settings,
@@ -455,7 +456,7 @@ def copy_directories(source_url, destination_url):
         if not port:
             port = 22
         paramiko_settings = {'username': username,
-                             'port': port,
+                             'port': int(port),
                              'password': password}
         if key_file:
             paramiko_settings['key_filename'] = key_file
@@ -623,17 +624,21 @@ def put_file(file_url, content):
         logger.debug("root_path=%s" % root_path)
         paramiko_settings = {'username': username,
                              'password': password,
-                             'port': port}
+                             'port': int(port)}
         if key_file:
             paramiko_settings['key_filename'] = key_file
         ssh_settings = {'params': paramiko_settings,
                         'host': location,
                         'root': str(root_path) + "/"}
         logger.debug("ssh_settings=%s" % ssh_settings)
-        fs = RemoteStorage(settings=ssh_settings)
-        # FIXME: does this overwrite?
-        fs.save(mypath, ContentFile(content))  # NB: ContentFile only takes bytes
+        try:
+            fs = RemoteStorage(settings=ssh_settings)
+            fs.save(mypath, ContentFile(content))  # NB: ContentFile only takes bytes
+        except Exception:
+            import traceback
+            traceback.print_exc()
         logger.debug("File to be written on %s" % location)
+        # FIXME: does this overwrite?
     elif scheme == "tardis":
         # TODO: do a POST of a new datafile into existing exp and dataset
         # parse file_url to extract tardis host, exp_id and dataset_id
@@ -679,7 +684,7 @@ def file_exists(bdp_file_url):
         logger.debug("root_path=%s" % root_path)
         paramiko_settings = {'username': username,
                              'password': password,
-                             'port': port}
+                             'port': int(port)}
         if key_file:
             paramiko_settings['key_filename'] = key_file
         ssh_settings = {'params': paramiko_settings,
@@ -762,7 +767,7 @@ def get_filep(file_bdp_url, sftp_reference=False):
         logger.debug("root_path=%s" % root_path)
         paramiko_settings = {'username': username,
                              'password': password,
-                             'port': port}
+                             'port': int(port)}
         if key_file:
             paramiko_settings['key_filename'] = key_file
 
@@ -852,6 +857,7 @@ def get_url_with_credentials(settings, url_or_relative_path,
         # username = settings['nectar_username']
         # password = settings['nectar_password']
         url_settings['root_path'] = settings['root_path']
+        url_settings['port'] = int(settings['port'])
 
         args = '&'.join(["%s=%s" % (k, v) for k, v in sorted(url_settings.items())])
         scheme = 'ssh'

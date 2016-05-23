@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 PROC_DESTINATION=$1
 #HRMC_PACKAGE=$1

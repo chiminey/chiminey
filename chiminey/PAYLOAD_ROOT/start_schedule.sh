@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 PAYLOAD_NAME=$1
 IDS=$2
