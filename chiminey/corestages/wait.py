@@ -183,6 +183,34 @@ class Wait(Stage):
         # to speed up this transfer
         storage.copy_directories(source_files_url, dest_files_url)
 
+
+        #copying values file
+        values_file_path = os.path.join(relative_path_suffix,
+                                  str(process_id),
+                                  local_settings['smart_connector_input'],
+                                  'values'
+                                  )
+        values_files_location = "%s://%s@%s" % (computation_platform_settings['scheme'],
+                                                computation_platform_settings['type'],
+                                                 os.path.join(ip, values_file_path))
+        logger.debug("values_files_location=%s" % values_files_location)
+        values_source_url = get_url_with_credentials(
+        computation_platform_settings, values_files_location,
+        is_relative_path=False)
+
+        logger.debug("values_source_url=%s" % values_source_url)
+
+        values_dest_url = get_url_with_credentials(
+            output_storage_settings,
+            output_prefix + os.path.join(
+                self.job_dir, self.output_dir, process_id, 'values'),
+            is_relative_path=False)
+        logger.debug("values_dest_url=%s" % values_dest_url)
+        content = storage.get_file(values_source_url)
+        logger.debug('content=%s' % content)
+        storage.put_file(values_dest_url, content)
+
+
     def process(self, run_settings):
         """
             Check all registered nodes to find whether
@@ -386,6 +414,8 @@ def retrieve_local_settings(run_settings, local_settings):
         'http://rmit.edu.au/schemas/stages/setup/process_output_dirname')
     stage.copy_settings(local_settings, run_settings,
         '%s/system/contextid' % RMIT_SCHEMA)
+    stage.copy_settings(local_settings, run_settings,
+    '%s/stages/setup/smart_connector_input' % RMIT_SCHEMA)
     local_settings['bdp_username'] = run_settings[
         RMIT_SCHEMA + '/bdp_userprofile']['username']
 

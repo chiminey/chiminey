@@ -685,6 +685,9 @@ def _get_chiminey_schemas():
                  u'process_output_dirname': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
                                              'ranking': 6, 'help_text': '',
                                              'initial': 'chiminey_output'},
+                u'smart_connector_input': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                'ranking': 6, 'help_text': '', 'initial': 'smart_connector_input'},
+
              }
             ],
         u'%s/stages/deploy' % django_settings.SCHEMA_PREFIX:

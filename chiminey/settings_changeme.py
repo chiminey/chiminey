@@ -126,6 +126,11 @@ MIDDLEWARE_CLASSES = (
     )
 
 SMART_CONNECTORS = {
+'hrmc': {'init': 'chiminey.examples.hrmc.initialise.HRMCInitial',
+         'name': 'hrmc',
+         'description': 'Hybrid Reverse Monte Carlo',
+         'payload': '/opt/chiminey/current/chiminey/examples/hrmc/payload_hrmc'
+         },
                     'hrmclite': {'init': 'chiminey.examples.hrmclite.initialise.HRMCInitial',
                              'name': 'hrmclite',
                              'description': 'Hybrid Reverse Monte Carlo without PSD',
@@ -158,6 +163,7 @@ INPUT_FIELDS =  {'cloud': SCHEMA_PREFIX + "/input/system/compplatform/cloud",
                  'output_location': SCHEMA_PREFIX + "/input/location/output",
                  'input_location':  SCHEMA_PREFIX + "/input/location/input",
                  'hrmclite':  SCHEMA_PREFIX + "/input/hrmclite",
+                 'hrmc':  SCHEMA_PREFIX + "/input/hrmc",
                  'wordcount':  SCHEMA_PREFIX + "/input/wordcount",
                  }
 

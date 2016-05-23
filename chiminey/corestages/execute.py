@@ -234,7 +234,7 @@ class Execute(stage.Stage):
             #    proc['id'], local_settings['process_output_dirname'])
             dest_files_location = computation_platform_settings['type'] + "@"\
                 + os.path.join(relative_path_suffix,
-                               proc['id'], local_settings['process_output_dirname'])
+                               proc['id'], local_settings['smart_connector_input'])
             logger.debug('dest_files_location=%s' % dest_files_location)
 
             dest_files_url = get_url_with_credentials(
@@ -314,7 +314,8 @@ class Execute(stage.Stage):
                 sudo = True
                 command, errs = run_make(
                 ssh, makefile_path,
-                'start_running_process %s'  % settings['process_output_dirname'], sudo= sudo)
+                'start_running_process %s %s'  % (settings['smart_connector_input'],
+                settings['process_output_dirname']), sudo= sudo)
 
 
             logger.debug('execute_command=%s' % command
@@ -580,7 +581,7 @@ class Execute(stage.Stage):
                     dest_file_location = computation_platform_settings['type']\
                         + "@" + os.path.join(relative_path_suffix,
                                              proc['id'],
-                                             local_settings['process_output_dirname'])
+                                             local_settings['smart_connector_input'])
                     if computation_platform_settings['type'] == 'hadoop':
                         dest_file_location = os.path.join(dest_file_location, 'HADOOP_INPUT')
 
@@ -598,7 +599,7 @@ class Execute(stage.Stage):
             values_dest_location = computation_platform_settings['type']\
                 + "@" + os.path.join(relative_path_suffix,
                                      proc['id'],
-                                     local_settings['process_output_dirname'],
+                                     local_settings['smart_connector_input'],
                                      self.VALUES_FNAME)
             logger.debug("values_dest_location =%s" % values_dest_location)
 
@@ -616,9 +617,11 @@ class Execute(stage.Stage):
                '%s/stages/setup/payload_destination' % self.SCHEMA_PREFIX,
                '%s/stages/setup/filename_for_PIDs' % self.SCHEMA_PREFIX,
                '%s/stages/setup/process_output_dirname' % self.SCHEMA_PREFIX,
+               '%s/stages/setup/smart_connector_input' % self.SCHEMA_PREFIX,
                '%s/system/contextid' % self.SCHEMA_PREFIX,
                '%s/system/random_numbers' % self.SCHEMA_PREFIX,
                '%s/system/id' % self.SCHEMA_PREFIX
+
                )
         try:
             local_settings['curate_data'] = getval(run_settings,
@@ -674,11 +677,3 @@ class Execute(stage.Stage):
                 pass
         logger.debug('optional_args_keys=%s' % args)
         return args
-
-
-
-
-
-
-
-

@@ -1,3 +1,3 @@
 #!/bin/sh
 
-sh setup.sh $@ & echo "$!" > "setup.pid"
+sh schedule.sh $@ & echo "$!" > "setup.pid"

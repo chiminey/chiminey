@@ -1,5 +1,7 @@
 #!/bin/sh
 
-PROC_DESTINATION=$1
+INPUT_DIR=$1
+OUTPUT_DIR=$2
 
-cd $PROC_DESTINATION ;  ./HRMC >& output
+
+cp HRMC $INPUT_DIR/HRMC; cd $INPUT_DIR; ./HRMC >& ../$OUTPUT_DIR/output
