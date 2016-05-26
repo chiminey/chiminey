@@ -12,6 +12,7 @@ cp input_gr.dat ../$OUTPUT_DIR/input_gr.dat
 cp input_sq.dat ../$OUTPUT_DIR/input_sq.dat
 cp xyz_final.xyz  ../$OUTPUT_DIR/xyz_final.xyz
 cp HRMC.inp_template ../$OUTPUT_DIR/HRMC.inp_template
+cp  data_errors.dat   ../$OUTPUT_DIR/data_errors.dat
 
 cp -f xyz_final.xyz ../PSDCode/xyz_final.xyz
 cd ../PSDCode; ./PSD >&  ../$OUTPUT_DIR/psd_output

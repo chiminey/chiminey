@@ -1,4 +1,3 @@
-
 import os, re, sys
 import ast
 import json
@@ -629,7 +628,8 @@ class MyTardisPlatform():
                         crit = None
                     # FIXME: can crit be zero?
                     if crit:
-                        hrmcdset_val = {"hrmcdset/it": self.id, "hrmcdset/crit": crit}
+                        system_id = int(getval(run_settings, '%s/system/id' % self.SCHEMA_PREFIX)) #TODO Mytardis
+                        hrmcdset_val = {"hrmcdset/it": system_id, "hrmcdset/crit": crit}
                     else:
                         hrmcdset_val = {}
 
