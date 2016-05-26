@@ -301,16 +301,20 @@ def storage_platform_settings(request):
         platform_params=unix_params,
             username=request.user.username)
     if request.method == "POST":
+
+        logger.debug('storage mytardis post')
+        logger.debug(request.__dict__)
+
         #unix_form = SSHStoragePlatformForm(request.POST)
         unix_form, unix_form_data = make_directive_form(
             request=request.POST,
             platform_params=unix_params,
             username=request.user.username)
-        if unix_form.is_valid():
-            schema = RMIT_SCHEMA + '/platform/storage/unix'
-            unix_form.cleaned_data['platform_type'] = 'unix'
-            post_platform(schema, unix_form.cleaned_data, request)
-            return HttpResponsePermanentRedirect(reverse('storage-platform-settings'))
+        #if unix_form.is_valid():
+        #    schema = RMIT_SCHEMA + '/platform/storage/unix'
+        #    unix_form.cleaned_data['platform_type'] = 'unix'
+        #    post_platform(schema, unix_form.cleaned_data, request)
+        #    return HttpResponsePermanentRedirect(reverse('storage-platform-settings'))
         mytardis_form, mytardis_form_data = make_directive_form(
             request=request.POST,
             platform_params=mytardis_params,
@@ -934,7 +938,7 @@ def make_dynamic_field(parameter, **kwargs):
                 # passed in, as some directives will only work with particular computation/*
                 # categories.  Assume only nectar comp platforms ever allowed here.
 
-                if parameter['subtype'] == "platform" and 'directive' in kwargs.keys():
+                if (parameter['subtype'] == "platform" or parameter['subtype'] == 'mytardis' ) and 'directive' in kwargs.keys():
                     #directive_name = kwargs['directive']['name']
                     #logger.debug("computation platform is %s" % directive_name)
                     namespace = kwargs['namespace']
@@ -956,8 +960,8 @@ def make_dynamic_field(parameter, **kwargs):
                     else:
                         logger.warn("unknown computation platform")
                     '''
-                elif parameter['subtype'] == 'mytardis':
-                    schema = RMIT_SCHEMA + '/platform/storage/mytardis'
+                #elif parameter['subtype'] == 'mytardis':
+                #    schema = RMIT_SCHEMA + '/platform/storage/mytardis'
 
                 if 'username' in kwargs:
                     platforms = manage.retrieve_all_platforms(kwargs['username'],

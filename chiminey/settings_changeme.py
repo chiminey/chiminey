@@ -165,6 +165,7 @@ INPUT_FIELDS =  {'cloud': SCHEMA_PREFIX + "/input/system/compplatform/cloud",
                  'hrmclite':  SCHEMA_PREFIX + "/input/hrmclite",
                  'hrmc':  SCHEMA_PREFIX + "/input/hrmc",
                  'wordcount':  SCHEMA_PREFIX + "/input/wordcount",
+                 'mytardis':  SCHEMA_PREFIX + "/input/mytardis"
                  }
 
 TEMPLATE_DIRS = (
@@ -452,7 +453,8 @@ RESOURCE_SCHEMA_NAMESPACE = \
      SCHEMA_PREFIX + '/input/system/compplatform/hadoop': '/platform/computation/bigdata/hadoop',
      SCHEMA_PREFIX + '/input/location': '/platform/storage/unix',
      SCHEMA_PREFIX + '/input/location/input': '/platform/storage/unix',
-     SCHEMA_PREFIX + '/input/location/output': '/platform/storage/unix'
+     SCHEMA_PREFIX + '/input/location/output': '/platform/storage/unix',
+     SCHEMA_PREFIX + '/input/mytardis': '/platform/storage/mytardis',
     }
 
 

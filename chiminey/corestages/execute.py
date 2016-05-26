@@ -29,10 +29,10 @@ from itertools import product
 
 from django.template import Context, Template
 from django.template import TemplateSyntaxError
-
+from chiminey.smartconnectorscheduler import jobs
 from chiminey.platform import manage
 from chiminey.corestages import stage
-
+from django.core.exceptions import ImproperlyConfigured
 from chiminey.smartconnectorscheduler.errors import PackageFailedError, BadInputException
 from chiminey.smartconnectorscheduler import models
 from chiminey import storage
@@ -449,11 +449,17 @@ class Execute(stage.Stage):
         logger.debug('input_url_with_credentials=%s' %
                      input_url_with_credentials)
         if local_settings['curate_data']:
-            self.experiment_id = self.curate_data(self.experiment_id,
-                                                  local_settings,
-                                                  output_storage_settings,
-                                                  mytardis_settings,
-                                                  input_url_with_credentials)
+
+            try:
+                mytardis_platform = jobs.safe_import('chiminey.platform.mytardis.MyTardisPlatform', [], {})
+                self.experiment_id = mytardis_platform.curate_input_data(self.experiment_id,
+                                                      local_settings,
+                                                      output_storage_settings,
+                                                      mytardis_settings,
+                                                      input_url_with_credentials)
+            except ImproperlyConfigured as  e:
+                logger.error("Cannot load mytardis platform hook %s" % e)
+
         else:
             logger.warn('Data curation is off')
 
@@ -641,9 +647,9 @@ class Execute(stage.Stage):
             logger.debug('root_path not found')
 
 
-    def curate_data(self, experiment_id, local_settings, output_storage_settings,
-                    mytardis_settings, source_files_url):
-        return self.experiment_id
+    #def curate_data(self, experiment_id, local_settings, output_storage_settings,
+    #                mytardis_settings, source_files_url):
+    #    return self.experiment_id
 
     def set_domain_settings(self, run_settings, local_settings):
          try:

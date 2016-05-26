@@ -54,6 +54,7 @@ class HRMCInitial(CoreInitial):
                 django_settings.INPUT_FIELDS['output_location'],
                 django_settings.INPUT_FIELDS['hrmc'],
                 django_settings.INPUT_FIELDS['reliability'],
+                django_settings.INPUT_FIELDS['mytardis'],
                 ]
         return schemas
 

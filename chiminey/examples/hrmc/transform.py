@@ -239,6 +239,7 @@ class HRMCTransform(Transform):
             all_settings, output_prefix + os.path.join(new_input_dir, 'audit.txt'), is_relative_path=False)
         logger.debug('audit_url=%s' % audit_url)
         storage.put_file(audit_url, self.audit)
+        return self.outputs
 
     def compute_psd_criterion(self, all_settings, node_path):
         import math

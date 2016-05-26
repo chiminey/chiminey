@@ -24,6 +24,7 @@ import logging
 from pprint import pformat
 from chiminey.platform import manage
 from chiminey.corestages import stage
+from chiminey.platform import *
 
 from chiminey.corestages.stage import Stage, UI
 from chiminey.smartconnectorscheduler import models
@@ -34,7 +35,8 @@ from chiminey import storage
 
 from chiminey.runsettings import getval, getvals, setval, update, SettingNotFoundException
 from chiminey.storage import get_url_with_credentials
-
+from django.core.exceptions import ImproperlyConfigured
+from chiminey.smartconnectorscheduler import jobs
 
 logger = logging.getLogger(__name__)
 
@@ -255,8 +257,15 @@ class Configure(Stage):
         except SettingNotFoundException:
             curate_data = False
         if curate_data:
-            self.experiment_id = self.curate_data(run_settings,
-                output_location, self.experiment_id)
+            try:
+                mytardis_platform = jobs.safe_import('chiminey.platform.mytardis.MyTardisPlatform', [], {})
+
+                self.experiment_id = mytardis_platform.curate_configured_data(run_settings,
+                    output_location, self.experiment_id)
+            except ImproperlyConfigured as  e:
+                logger.error("Cannot load mytardis platform hook %s" % e)
+
+
 
         '''
 
@@ -376,7 +385,7 @@ class Configure(Stage):
         except SettingNotFoundException:
             try:
 		input_location = getval(run_settings, RMIT_SCHEMA + '/input/location/input_location')
-	    except: 
+	    except:
 		input_location = getval(run_settings, RMIT_SCHEMA + '/input/location/input/input_location')
         logger.debug("input_location=%s" % input_location)
         #todo: input location will evenatually be replaced by the scratch space that was used by the sweep
@@ -420,5 +429,5 @@ class Configure(Stage):
             pass
         return output_loc_offset
 
-    def curate_data(self, run_settings, location, experiment_id):
-        return experiment_id
+    #def curate_data(self, run_settings, location, experiment_id):
+    #    return experiment_id

@@ -31,8 +31,8 @@ from chiminey import storage
 from chiminey.platform import manage
 from chiminey import messages
 from chiminey.runsettings import getval, delkey, setvals, setval, getvals, update, SettingNotFoundException
-
-
+from django.core.exceptions import ImproperlyConfigured
+from chiminey.smartconnectorscheduler import jobs
 logger = logging.getLogger(__name__)
 
 
@@ -183,9 +183,15 @@ class Converge(Stage):
                 logger.debug("source_url=%s" % source_url)
                 logger.debug("dest_url=%s" % dest_url)
                 logger.debug("job_dir=%s" % job_dir)
-                self.experiment_id = self.curate_dataset(run_settings, self.experiment_id,
-                                                         job_dir, dest_url,
-                                                         all_settings)
+
+
+
+                try:
+                    mytardis_platform = jobs.safe_import('chiminey.platform.mytardis.MyTardisPlatform', [], {})
+                    self.experiment_id = mytardis_platform.curate_converged_dataset(run_settings, self.experiment_id,job_dir, dest_url, all_settings)
+                except ImproperlyConfigured as  e:
+                    logger.error("Cannot load mytardis platform hook %s" % e)
+
             else:
                 logger.warn('Data curation is off')
 
@@ -386,9 +392,9 @@ class Converge(Stage):
 
         return (True, '')
 
-    def curate_dataset(self, run_settings, experiment_id, base_dir,
-                       output_url, all_settings):
+    #def curate_dataset(self, run_settings, experiment_id, base_dir,
+    #                   output_url, all_settings):
 
-        logger.debug("default curate_dataset")
+    #    logger.debug("default curate_dataset")
 
-        return experiment_id
+    #    return experiment_id

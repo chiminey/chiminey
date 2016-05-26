@@ -25,11 +25,12 @@ import logging
 
 from chiminey.storage import get_url_with_credentials
 from chiminey.corestages.stage import Stage
-
+from chiminey.smartconnectorscheduler import jobs
 from chiminey.platform import manage
 from chiminey import storage
 from chiminey.runsettings import getval, setvals, SettingNotFoundException
 from chiminey import messages
+from django.core.exceptions import ImproperlyConfigured
 
 logger = logging.getLogger(__name__)
 
@@ -161,7 +162,7 @@ class Transform(Stage):
         # node_output_dirs, _ = fsys.listdir(mypath)
         # logger.debug("node_output_dirs=%s" % node_output_dirs)
 
-        self.process_outputs(run_settings, self.job_dir, output_url, output_storage_settings, offset)
+        outputs = self.process_outputs(run_settings, self.job_dir, output_url, output_storage_settings, offset)
 
 
         # logger.debug("output_url=%s" % output_url)
@@ -292,9 +293,15 @@ class Transform(Stage):
             all_settings = dict(mytardis_settings)
             all_settings.update(output_storage_settings)
             all_settings['contextid'] = getval(run_settings, '%s/system/contextid' % RMIT_SCHEMA)
-            self.experiment_id = self.curate_dataset(run_settings, self.experiment_id,
-                                                     self.job_dir, output_url,
-                                                     all_settings)
+
+
+
+            try:
+                mytardis_platform = jobs.safe_import('chiminey.platform.mytardis.MyTardisPlatform', [], {})
+                logger.debug('self_outpus=%s' % outputs)
+                self.experiment_id = mytardis_platform.curate_transformed_dataset(run_settings, self.experiment_id, self.job_dir, output_url, all_settings, outputs=outputs)
+            except ImproperlyConfigured as  e:
+                logger.error("Cannot load mytardis platform hook %s" % e)
 
         else:
             logger.warn('Data curation is off')
@@ -406,8 +413,8 @@ class Transform(Stage):
 
     #     return criterion
 
-    def curate_dataset(self, run_settings, experiment_id, base_dir, all_settings):
-        return 0
+    #def curate_dataset(self, run_settings, experiment_id, base_dir, all_settings):
+    #    return 0
 
     def process_outputs(self, run_settings, base_dir, output_url, output_storage_settings, offset):
         return

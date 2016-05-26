@@ -530,6 +530,7 @@ def validate_input(data, directive_name):
         for param in models.ParameterName.objects.filter(schema=das.schema):
             logger.debug("checking param=%s" % param.name)
             value = data[os.path.join(das.schema.namespace, param.name)]
+            logger.debug(value)
             # # FIXME: if a input field is blank, then may have been disabled.
             # # Therefore, we pass in initial default value, with assumption
             # # that it will be ignored anyway.  This might not be the best
@@ -548,9 +549,10 @@ def validate_input(data, directive_name):
             logger.debug(current_subtype)
             if current_subtype in ['storage_bdpurl',
                                   'nectar_platform',
-                                  'platform',
-                                  'mytardis']:
+                                  'platform']: #'mytardis' ]:
                 value = validator(value, username)
+            elif current_subtype == 'mytardis': #TODO include validation
+                value = value
             else:
                 value = validator(value)
             data[os.path.join(das.schema.namespace, param.name)] = value
