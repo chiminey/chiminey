@@ -188,7 +188,7 @@ class Converge(Stage):
 
                 try:
                     mytardis_platform = jobs.safe_import('chiminey.platform.mytardis.MyTardisPlatform', [], {})
-                    self.experiment_id = mytardis_platform.curate_converged_dataset(run_settings, self.experiment_id,job_dir, dest_url, all_settings)
+                    self.experiment_id = mytardis_platform.create_dataset_for_final_output(run_settings, self.experiment_id,job_dir, dest_url, all_settings)
                 except ImproperlyConfigured as  e:
                     logger.error("Cannot load mytardis platform hook %s" % e)
 

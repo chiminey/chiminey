@@ -260,7 +260,7 @@ class Configure(Stage):
             try:
                 mytardis_platform = jobs.safe_import('chiminey.platform.mytardis.MyTardisPlatform', [], {})
 
-                self.experiment_id = mytardis_platform.curate_configured_data(run_settings,
+                self.experiment_id = mytardis_platform.create_experiment(run_settings,
                     output_location, self.experiment_id)
             except ImproperlyConfigured as  e:
                 logger.error("Cannot load mytardis platform hook %s" % e)

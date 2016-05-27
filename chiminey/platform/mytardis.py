@@ -78,7 +78,7 @@ class MyTardisPlatform():
             settings['mytardis_password'] = settings['password']
 
 
-    def curate_configured_data(self, run_settings, location, experiment_id):
+    def create_experiment(self, run_settings, location, experiment_id, experiment_paramset=[]):
         bdp_username = run_settings['http://rmit.edu.au/schemas/bdp_userprofile']['username']
 
         curate_data = run_settings['http://rmit.edu.au/schemas/input/mytardis']['curate_data']
@@ -99,22 +99,24 @@ class MyTardisPlatform():
                 settings=mytardis_settings,
                 exp_id=experiment_id,
                 expname=ename,
-                experiment_paramset=[ #TODO: MYTARDIS
-                    #mytardis.create_paramset("hrmcexp", []),
+                experiment_paramset=experiment_paramset
+                #[ #TODO: MYTARDIS
+                    #mytardis.create_paramset("hrmcexp", [])
                     #mytardis.create_graph_paramset("expgraph",
                     #    name="hrmcexp",
                     #    graph_info={"axes":["iteration", "criterion"], "legends":["criterion"], "precision":[0, 2]},
                     #    value_dict={},
                     #    value_keys=[["hrmcdset/it", "hrmcdset/crit"]])
-            ])
+            #]
+            )
 
         else:
             logger.warn('Data curation is off')
         return experiment_id
 
 
-    def curate_input_data(self, experiment_id, local_settings, output_storage_settings,
-                    mytardis_settings, source_files_url):
+    def create_dataset_for_input(self, experiment_id, local_settings, output_storage_settings,
+                    mytardis_settings, source_files_url, experiment_paramset=[], dataset_paramset=[]):
         output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
                                     output_storage_settings['type'])
         output_host = output_storage_settings['host']
@@ -172,14 +174,12 @@ class MyTardisPlatform():
             exp_id=experiment_id,
             exp_name=_get_exp_name_for_input,
             dataset_name=_get_dataset_name_for_input,
-            experiment_paramset=[],
-            dataset_paramset=[#TODO: MYTARDIS
-                #create_paramset('hrmcdataset/input', [])
-                ])
+            experiment_paramset=experiment_paramset,
+            dataset_paramset=dataset_paramset)
         return experiment_id
 
-    def curate_transformed_dataset(self, run_settings, experiment_id, base_dir, output_url,
-        all_settings, outputs=[]):
+    def create_dataset_for_output(self, run_settings, experiment_id, base_dir, output_url,
+        all_settings, outputs=[], dataset_paramset=[], datafile_paramset=[],dfile_extract_func=None):
         logger.debug('self_outpus_curate=%s' % outputs)
         iteration = int(getval(run_settings, '%s/system/id' % self.SCHEMA_PREFIX))
         iter_output_dir = os.path.join(os.path.join(base_dir, "output_%s" % iteration))
@@ -333,7 +333,11 @@ class MyTardisPlatform():
                     source_url=source_dir_url,
                     exp_id=experiment_id,
                     exp_name=get_exp_name_for_output,
-                    dataset_name=get_dataset_name_for_output)
+                    dataset_name=get_dataset_name_for_output,
+                    dataset_paramset=dataset_paramset,
+                    datafile_paramset=datafile_paramset,
+                    dfile_extract_func=dfile_extract_func
+                    )
                 #TODO Mytardis
                 '''
                 experiment_id = mytardis.create_dataset(
@@ -388,7 +392,7 @@ class MyTardisPlatform():
         return experiment_id
 
 
-    def curate_converged_dataset(self, run_settings, experiment_id, base_dir, output_url, all_settings):
+    def create_dataset_for_final_output(self, run_settings, experiment_id, base_dir, output_url, all_settings,  experiment_paramset=[], dataset_paramset=[], datafile_paramset=[], dfile_extract_func=None):
         logger.debug("curate_dataset")
         iter_output_dir = os.path.join(os.path.join(base_dir, "output"))
         logger.debug("iter_output_dir=%s" % iter_output_dir)
@@ -775,7 +779,10 @@ class MyTardisPlatform():
                         exp_name=get_exp_name_for_output,
                         dataset_name=get_dataset_name_for_output,
                         exp_id=experiment_id,
-                        experiment_paramset=graph_paramset)
+                        experiment_paramset=experiment_paramset,
+                        dataset_paramset=dataset_paramset,
+                        datafile_paramset=datafile_paramset,
+                        dfile_extract_func=dfile_extract_func)
                     graph_paramset = []
             else:
                 logger.warn("no mytardis host specified")
