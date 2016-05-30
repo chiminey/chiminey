@@ -780,11 +780,10 @@ def _post_datafile(dest_url, content):
     # logger.debug("r.te=%s" % r.text)
     # logger.debug("r.he=%s" % r.headers)
 
-import os
-from chiminey import storage
+
 def get_dataset_name_for_output(settings, url, path):
     logger.debug("path=%s" % path)
-    EXP_DATASET_NAME_SPLIT = 2
+
     host = settings['host']
     prefix = 'ssh://%s@%s' % (settings['type'], host)
     VALUES_FNAME = "values" #TODO: Mytardis, move to settings
@@ -821,3 +820,14 @@ def get_dataset_name_for_output(settings, url, path):
         values_map['run_counter'])
     logger.debug("dataset_name=%s" % dataset_name)
     return dataset_name
+
+
+def get_exp_name_for_intermediate_output(settings, url, path):
+    # return str(os.sep.join(path.split(os.sep)[:-EXP_DATASET_NAME_SPLIT]))
+    return str(os.sep.join(path.split(os.sep)[-4:-2]))
+
+def get_exp_name_for_output(settings, url, path):
+    return str(os.sep.join(path.split(os.sep)[:-EXP_DATASET_NAME_SPLIT]))
+
+def _get_exp_name_for_input(settings, url, path):
+    return str(os.sep.join(path.split(os.sep)[:-EXP_DATASET_NAME_SPLIT]))
