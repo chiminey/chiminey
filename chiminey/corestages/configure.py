@@ -259,7 +259,6 @@ class Configure(Stage):
         if curate_data:
             try:
                 mytardis_platform = jobs.safe_import('chiminey.platform.mytardis.MyTardisPlatform', [], {})
-
                 self.experiment_id = mytardis_platform.create_experiment(run_settings,
                     output_location, self.experiment_id)
             except ImproperlyConfigured as  e:

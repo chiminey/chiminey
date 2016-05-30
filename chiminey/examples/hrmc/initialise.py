@@ -36,7 +36,8 @@ class HRMCInitial(CoreInitial):
             {
             u'http://rmit.edu.au/schemas/system':
                 {
-                    u'random_numbers': 'file://127.0.0.1/randomnums.txt'
+                    u'random_numbers': 'file://127.0.0.1/randomnums.txt',
+                    u'metadata_builder': 'chiminey.examples.hrmc.metadatabuilder.HRMCMetadataBuilder',
                 },
         }
         return { 'settings': settings}

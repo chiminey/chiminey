@@ -299,7 +299,7 @@ class Transform(Stage):
             try:
                 mytardis_platform = jobs.safe_import('chiminey.platform.mytardis.MyTardisPlatform', [], {})
                 logger.debug('self_outpus=%s' % outputs)
-                self.experiment_id = mytardis_platform.create_dataset_for_output(run_settings, self.experiment_id, self.job_dir, output_url, all_settings, outputs=outputs)
+                self.experiment_id = mytardis_platform.create_dataset_for_intermediate_output(run_settings, self.experiment_id, self.job_dir, output_url, all_settings, outputs=outputs)
             except ImproperlyConfigured as  e:
                 logger.error("Cannot load mytardis platform hook %s" % e)
 

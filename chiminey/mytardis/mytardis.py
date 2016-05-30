@@ -38,6 +38,27 @@ SCHEMA_PREFIX = "http://rmit.edu.au/schemas"
 
 EXP_DATASET_NAME_SPLIT = 2
 
+'''
+def check_and_handle_schema_absence(current_request, data, url ,headers, paramset_keys=[]):
+    try:
+        current_request.headers['location']
+    except KeyError, e:
+        if 'Schema matching query does not exist' in current_request.text:
+            logger.debug('Schema matching query does not exist \n Uploading data to MyTardis without metadata')
+            for i in paramset_keys:
+                try:
+                    data.pop(i, None)
+                except KeyError, e:
+                    pass
+            return requests.post(url,
+            data=data,
+            headers=headers,
+            auth=(tardis_user, tardis_pass))
+        else:
+            raise
+    return current_request
+'''
+
 # def _get_mytardis_data(tardis_url, field_name):
 #     headers = {'content-type': 'application/json'}
 #     cookies = {}  # only pulling public info so don't need auth
@@ -758,3 +779,45 @@ def _post_datafile(dest_url, content):
     # logger.debug("r.js=%s" % r.json)
     # logger.debug("r.te=%s" % r.text)
     # logger.debug("r.he=%s" % r.headers)
+
+import os
+from chiminey import storage
+def get_dataset_name_for_output(settings, url, path):
+    logger.debug("path=%s" % path)
+    EXP_DATASET_NAME_SPLIT = 2
+    host = settings['host']
+    prefix = 'ssh://%s@%s' % (settings['type'], host)
+    VALUES_FNAME = "values" #TODO: Mytardis, move to settings
+    source_url = storage.get_url_with_credentials(
+        settings, os.path.join(prefix, path, VALUES_FNAME),
+        is_relative_path=False)
+    logger.debug("source_url=%s" % source_url)
+    try:
+        content = storage.get_file(source_url)
+    except IOError, e:
+        logger.warn("cannot read file %s" % e)
+        return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
+
+    logger.debug("content=%s" % content)
+    try:
+        values_map = dict(json.loads(str(content)))
+    except Exception, e:
+        logger.error("cannot load values_map %s: from %s.  Error=%s" % (content, source_url, e))
+        return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
+
+    try:
+        iteration = str(path.split(os.sep)[-2:-1][0])
+    except Exception, e:
+        logger.error(e)
+        iteration = ""
+
+    if "_" in iteration:
+        iteration = iteration.split("_")[1]
+    else:
+        iteration = "final"
+
+    dataset_name = "%s_%s_%s" % (iteration,
+        values_map['generator_counter'],
+        values_map['run_counter'])
+    logger.debug("dataset_name=%s" % dataset_name)
+    return dataset_name

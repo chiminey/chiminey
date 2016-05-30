@@ -16,20 +16,17 @@ from chiminey.cloudconnection import \
     create_ssh_security_group, create_key_pair
 from chiminey.platform.validate import validate_mytardis_parameters
 from chiminey.mytardis import mytardis
+from chiminey.smartconnectorscheduler import jobs
 
 from chiminey.mytardis.mytardis import create_paramset
 from chiminey.storage import get_url_with_credentials
 from chiminey.runsettings import getval, SettingNotFoundException
 from chiminey.smartconnectorscheduler.errors import BadInputException
 from django.conf import settings as django_settings
+from django.core.exceptions import ImproperlyConfigured
 
 
 RMIT_SCHEMA = django_settings.SCHEMA_PREFIX
-DATA_ERRORS_FILE = "data_errors.dat"
-STEP_COLUMN_NUM = 0
-ERRGR_COLUMN_NUM = 28
-
-
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +34,15 @@ logger = logging.getLogger(__name__)
 class MyTardisPlatform():
     VALUES_FNAME = "values"
     SCHEMA_PREFIX = django_settings.SCHEMA_PREFIX
+    METADATA_BUILDER = None
+
+    def load_metadata_builder(self, run_settings):
+        if not self.METADATA_BUILDER:
+            try:
+                self.METADATA_BUILDER = jobs.safe_import(run_settings['%s/system' %  django_settings.SCHEMA_PREFIX]['metadata_builder'], [], {})
+            except ImproperlyConfigured as  e:
+                logger.warn("Cannot load metadata builder class %s \n" % e)
+
 
     def get_platform_types(self):
         return ['mytardis']
@@ -78,12 +84,12 @@ class MyTardisPlatform():
             settings['mytardis_password'] = settings['password']
 
 
-    def create_experiment(self, run_settings, location, experiment_id, experiment_paramset=[]):
-        bdp_username = run_settings['http://rmit.edu.au/schemas/bdp_userprofile']['username']
+    def create_experiment(self, run_settings, location, experiment_id):
+        bdp_username = run_settings['%s/bdp_userprofile' % django_settings.SCHEMA_PREFIX]['username']
 
-        curate_data = run_settings['http://rmit.edu.au/schemas/input/mytardis']['curate_data']
+        curate_data = run_settings['%s/input/mytardis' % django_settings.SCHEMA_PREFIX]['curate_data']
         if curate_data:
-            mytardis_url = run_settings['http://rmit.edu.au/schemas/input/mytardis']['mytardis_platform']
+            mytardis_url = run_settings['%s/input/mytardis' % django_settings.SCHEMA_PREFIX]['mytardis_platform']
             mytardis_settings = manage.get_platform_settings(mytardis_url, bdp_username)
             logger.debug(mytardis_settings)
 
@@ -95,28 +101,24 @@ class MyTardisPlatform():
             logger.debug("location=%s" % location)
             ename = _get_exp_name_for_input(location)
             logger.debug("ename=%s" % ename)
+
+            experiment_paramset = []
+            self.load_metadata_builder(run_settings)
+            if self.METADATA_BUILDER:
+                experiment_paramset=self.METADATA_BUILDER.build_experiment_metadata(run_settings=run_settings)
+
             experiment_id = mytardis.create_experiment(
                 settings=mytardis_settings,
                 exp_id=experiment_id,
                 expname=ename,
-                experiment_paramset=experiment_paramset
-                #[ #TODO: MYTARDIS
-                    #mytardis.create_paramset("hrmcexp", [])
-                    #mytardis.create_graph_paramset("expgraph",
-                    #    name="hrmcexp",
-                    #    graph_info={"axes":["iteration", "criterion"], "legends":["criterion"], "precision":[0, 2]},
-                    #    value_dict={},
-                    #    value_keys=[["hrmcdset/it", "hrmcdset/crit"]])
-            #]
-            )
-
+                experiment_paramset=experiment_paramset)
         else:
             logger.warn('Data curation is off')
         return experiment_id
 
 
-    def create_dataset_for_input(self, experiment_id, local_settings, output_storage_settings,
-                    mytardis_settings, source_files_url, experiment_paramset=[], dataset_paramset=[]):
+    def create_dataset_for_input(self, experiment_id, run_settings, local_settings, output_storage_settings,
+                    mytardis_settings, source_files_url):
         output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
                                     output_storage_settings['type'])
         output_host = output_storage_settings['host']
@@ -167,6 +169,14 @@ class MyTardisPlatform():
             logger.debug("dataset_name=%s" % dataset_name)
             return dataset_name
 
+
+        experiment_paramset=[]
+        dataset_paramset=[]
+        self.load_metadata_builder(run_settings)
+        if self.METADATA_BUILDER:
+            (experiment_paramset, dataset_paramset) = self.METADATA_BUILDER.build_metadata_for_input(
+            source_files_url=source_files_url, run_settings=run_settings)
+
         local_settings.update(mytardis_settings)
         experiment_id = mytardis.create_dataset(
             settings=local_settings,
@@ -178,8 +188,8 @@ class MyTardisPlatform():
             dataset_paramset=dataset_paramset)
         return experiment_id
 
-    def create_dataset_for_output(self, run_settings, experiment_id, base_dir, output_url,
-        all_settings, outputs=[], dataset_paramset=[], datafile_paramset=[],dfile_extract_func=None):
+    def create_dataset_for_intermediate_output(self, run_settings, experiment_id, base_dir, output_url,
+        all_settings, outputs=[]):
         logger.debug('self_outpus_curate=%s' % outputs)
         iteration = int(getval(run_settings, '%s/system/id' % self.SCHEMA_PREFIX))
         iter_output_dir = os.path.join(os.path.join(base_dir, "output_%s" % iteration))
@@ -194,88 +204,34 @@ class MyTardisPlatform():
         logger.debug("node_output_dirnames=%s" % node_output_dirnames)
 
         if all_settings['mytardis_host']:
-            for i, node_output_dirname in enumerate(node_output_dirnames):
-                node_path = os.path.join(iter_output_dir, node_output_dirname)
-                # find criterion
-                crit = None  # is there an infinity criterion
-                for ni in outputs:
-                    if ni.dirname == node_output_dirname:
-                        crit = ni.criterion
-                        break
-                else:
-                    logger.debug("criterion not found")
-                    continue
-                logger.debug("crit=%s" % crit)
+            output_dirs = []
+            for m, dir_name in enumerate(node_output_dirnames):
+                output_dirs.append(os.path.join(iter_output_dir, dir_name))
 
-                # graph_params = []
+            for i, output_dir in enumerate(output_dirs):
+                #node_path = os.path.join(iter_output_dir, node_output_dirname)
 
-                def extract_psd_func(fp):
-                    res = []
-                    xs = []
-                    ys = []
-                    for i, line in enumerate(fp):
-                        columns = line.split()
-                        xs.append(float(columns[0]))
-                        ys.append(float(columns[1]))
-                    res = {"hrmcdfile/r1": xs, "hrmcdfile/g1": ys}
-                    return res
-
-                def extract_psdexp_func(fp):
-                    res = []
-                    xs = []
-                    ys = []
-                    for i, line in enumerate(fp):
-                        columns = line.split()
-                        xs.append(float(columns[0]))
-                        ys.append(float(columns[1]))
-                    res = {"hrmcdfile/r2": xs, "hrmcdfile/g2": ys}
-                    return res
-
-                def extract_grfinal_func(fp):
-                    res = []
-                    xs = []
-                    ys = []
-                    for i, line in enumerate(fp):
-                        columns = line.split()
-                        xs.append(float(columns[0]))
-                        ys.append(float(columns[1]))
-                    #FIXME: len(xs) == len(ys) for this to work.
-                    #TODO: hack to handle when xs and ys are too
-                    # large to fit in Parameter with db_index.
-                    # solved by function call at destination
-                    cut_xs = [xs[i] for i, x in enumerate(xs)
-                        if (i % (len(xs) / 20) == 0)]
-                    cut_ys = [ys[i] for i, x in enumerate(ys)
-                        if (i % (len(ys) / 20) == 0)]
-
-                    res = {"hrmcdfile/r3": cut_xs, "hrmcdfile/g3": cut_ys}
-                    return res
-
-                def extract_inputgr_func(fp):
-                    res = []
-                    xs = []
-                    ys = []
-                    for i, line in enumerate(fp):
-                        columns = line.split()
-                        xs.append(float(columns[0]))
-                        ys.append(float(columns[1]))
-                    #FIXME: len(xs) == len(ys) for this to work.
-                    #TODO: hack to handle when xs and ys are too
-                    # large to fit in Parameter with db_index.
-                    # solved by function call at destination
-                    cut_xs = [xs[i] for i, x in enumerate(xs)
-                        if (i % (len(xs) / 20) == 0)]
-                    cut_ys = [ys[i] for i, x in enumerate(ys)
-                        if (i % (len(ys) / 20) == 0)]
-
-                    res = {"hrmcdfile/r4": cut_xs, "hrmcdfile/g4": cut_ys}
-                    return res
 
                 #TODO: hrmcexp graph should be tagged to input directories (not output directories)
                 #because we want the result after pruning.
                 #todo: replace self.boto_setttings with mytardis_settings
 
                 EXP_DATASET_NAME_SPLIT = 2
+
+
+
+                dataset_paramset = []
+                datafile_paramset = []
+                dfile_extract_func = {}
+                self.load_metadata_builder(run_settings)
+                if self.METADATA_BUILDER:
+                    (continue_loop, dataset_paramset, datafile_paramset, dfile_extract_func) = \
+                    self.METADATA_BUILDER.build_metadata_for_intermediate_output(\
+                    output_dir, outputs, run_settings=run_settings, storage_settings=all_settings,\
+                    output_dirs=output_dirs)
+
+                    if continue_loop:
+                        continue
 
                 def get_exp_name_for_output(settings, url, path):
                     # return str(os.sep.join(path.split(os.sep)[:-EXP_DATASET_NAME_SPLIT]))
@@ -321,13 +277,16 @@ class MyTardisPlatform():
                     logger.debug("dataset_name=%s" % dataset_name)
                     return dataset_name
 
+
+
                 source_dir_url = get_url_with_credentials(
                     all_settings,
-                    node_path,
+                    output_dir,
                     is_relative_path=False)
                 logger.debug("source_dir_url=%s" % source_dir_url)
                 logger.debug('all_settings_here=%s' % all_settings)
                 system_id = int(getval(run_settings, '%s/system/id' % self.SCHEMA_PREFIX)) #TODO Mytardis
+
                 experiment_id = mytardis.create_dataset(
                     settings=all_settings,
                     source_url=source_dir_url,
@@ -338,61 +297,13 @@ class MyTardisPlatform():
                     datafile_paramset=datafile_paramset,
                     dfile_extract_func=dfile_extract_func
                     )
-                #TODO Mytardis
-                '''
-                experiment_id = mytardis.create_dataset(
-                    settings=all_settings,
-                    source_url=source_dir_url,
-                    exp_id=experiment_id,
-                    exp_name=get_exp_name_for_output,
-                    dataset_name=get_dataset_name_for_output,
-                    dataset_paramset=[
-                        mytardis.create_paramset("hrmcdataset/output", []),
-                        mytardis.create_graph_paramset("dsetgraph",
-                            name="hrmcdset",
-                            graph_info={"axes":["r (Angstroms)", "PSD"],
-                                "legends":["psd", "PSD_exp"], "type":"line"},
-                            value_dict={"hrmcdset/it": system_id,
-                                 "hrmcdset/crit": crit},
-                            value_keys=[["hrmcdfile/r1", "hrmcdfile/g1"],
-                                ["hrmcdfile/r2", "hrmcdfile/g2"]]
-                            ),
-                        mytardis.create_graph_paramset("dsetgraph",
-                            name="hrmcdset2",
-                            graph_info={"axes":["r (Angstroms)", "g(r)"],
-                                "legends":["data_grfinal", "input_gr"],
-                                "type":"line"},
-                            value_dict={},
-                            value_keys=[["hrmcdfile/r3", "hrmcdfile/g3"],
-                                ["hrmcdfile/r4", "hrmcdfile/g4"]]
-                            ),
-                        ],
-                   datafile_paramset=[
-                        mytardis.create_graph_paramset("dfilegraph",
-                            name="hrmcdfile",
-                            graph_info={},
-                            value_dict={},
-                            value_keys=[])
-                        ],
-                   # TODO: move extract function into paramset structure
-                   dfile_extract_func={ #TODO Mytardis
-                        'psd.dat': extract_psd_func,
-                        'PSD_exp.dat': extract_psdexp_func,
-                        'data_grfinal.dat': extract_grfinal_func,
-                        'input_gr.dat': extract_inputgr_func
-
-                        }
-
-                   )
-                '''
-
         else:
             logger.warn("no mytardis host specified")
             return 0
         return experiment_id
 
 
-    def create_dataset_for_final_output(self, run_settings, experiment_id, base_dir, output_url, all_settings,  experiment_paramset=[], dataset_paramset=[], datafile_paramset=[], dfile_extract_func=None):
+    def create_dataset_for_final_output(self, run_settings, experiment_id, base_dir, output_url, all_settings):
         logger.debug("curate_dataset")
         iter_output_dir = os.path.join(os.path.join(base_dir, "output"))
         logger.debug("iter_output_dir=%s" % iter_output_dir)
@@ -411,105 +322,6 @@ class MyTardisPlatform():
         curate_data = (getval(run_settings, '%s/input/mytardis/curate_data' % self.SCHEMA_PREFIX))
         if curate_data:
             if all_settings['mytardis_host']:
-
-#         if mytardis_settings['mytardis_host']:
-
-#             EXP_DATASET_NAME_SPLIT = 2
-
-#             def get_exp_name_for_output(settings, url, path):
-#                 return str(os.sep.join(path.split(os.sep)[:-EXP_DATASET_NAME_SPLIT]))
-
-#             def get_dataset_name_for_output(settings, url, path):
-#                 logger.debug("path=%s" % path)
-
-#                 host = settings['host']
-#                 prefix = 'ssh://%s@%s' % (settings['type'], host)
-
-#                 source_url = smartconnectorscheduler.get_url_with_credentials(
-#                     settings, os.path.join(prefix, path, "HRMC.inp_values"),
-#                     is_relative_path=False)
-#                 logger.debug("source_url=%s" % source_url)
-#                 try:
-#                     content = storage.get_file(source_url)
-#                 except IOError, e:
-#                     logger.warn("cannot read file %s" % e)
-#                     return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
-
-#                 logger.debug("content=%s" % content)
-#                 try:
-#                     values_map = dict(json.loads(str(content)))
-#                 except Exception, e:
-#                     logger.error("cannot load values_map %s: from %s.  Error=%s" % (content, source_url, e))
-#                     return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
-
-#                 try:
-#                     iteration = str(path.split(os.sep)[-2:-1][0])
-#                 except Exception, e:
-#                     logger.error(e)
-#                     iteration = ""
-
-#                 if "_" in iteration:
-#                     iteration = iteration.split("_")[1]
-#                 else:
-#                     iteration = "final"
-
-#                 dataset_name = "%s_%s_%s" % (iteration,
-#                     values_map['generator_counter'],
-#                     values_map['run_counter'])
-#                 logger.debug("dataset_name=%s" % dataset_name)
-#                 return dataset_name
-
-#             re_dbl_fort = re.compile(r'(\d*\.\d+)[dD]([-+]?\d+)')
-
-#             logger.debug("new_output_dir=%s" % new_output_dir)
-#             exp_value_keys = []
-#             legends = []
-#             for m, node_dir in enumerate(node_dirs):
-#                 exp_value_keys.append(["hrmcdset%s/step" % m, "hrmcdset%s/err" % m])
-
-#                 source_url = smartconnectorscheduler.get_url_with_credentials(output_storage_settings,
-#                     output_prefix + os.path.join(new_output_dir, node_dir), is_relative_path=False)
-
-#                 (source_scheme, source_location, source_path, source_location,
-#                     query_settings) = storage.parse_bdpurl(source_url)
-#                 logger.debug("source_url=%s" % source_url)
-#                 legends.append(
-#                     get_dataset_name_for_output(
-#                         output_storage_settings, "", source_path))
-
-#             logger.debug("exp_value_keys=%s" % exp_value_keys)
-#             logger.debug("legends=%s" % legends)
-
-#             graph_paramset = [mytardis.create_graph_paramset("expgraph",
-#                 name="hrmcexp2",
-#                 graph_info={"axes": ["step", "ERRGr*wf"], "precision": [0, 2], "legends": legends},
-#                 value_dict={},
-#                 value_keys=exp_value_keys)]
-
-#             for m, node_dir in enumerate(node_dirs):
-
-#                 dataerrors_url = smartconnectorscheduler.get_url_with_credentials(output_storage_settings,
-#                     output_prefix + os.path.join(new_output_dir, node_dir, DATA_ERRORS_FILE), is_relative_path=False)
-#                 dataerrors_content = storage.get_file(dataerrors_url)
-#                 xs = []
-#                 ys = []
-#                 for i, line in enumerate(dataerrors_content.splitlines()):
-#                     if i == 0:
-#                         continue
-#                     columns = line.split()
-#                     try:
-#                         hrmc_step = int(columns[STEP_COLUMN_NUM])
-#                     except ValueError:
-#                         logger.warn("could not parse hrmc_step value on line %s" % i)
-#                         continue
-#                     # handle  format double precision float format
-#                     val = columns[ERRGR_COLUMN_NUM]
-#                     val = re_dbl_fort.sub(r'\1E\2', val)
-#                     logger.debug("val=%s" % val)
-
-
-
-
 
                 EXP_DATASET_NAME_SPLIT = 2
 
@@ -558,221 +370,30 @@ class MyTardisPlatform():
 
                 re_dbl_fort = re.compile(r'(\d*\.\d+)[dD]([-+]?\d+)')
 
-                exp_value_keys = []
-                legends = []
-                for m, node_dir in enumerate(node_output_dirnames):
-                    node_path = os.path.join(iter_output_dir, node_dir)
 
-                    exp_value_keys.append(["hrmcdset%s/step" % m, "hrmcdset%s/err" % m])
+                output_dirs = []
+                for m, dir_name in enumerate(node_output_dirnames):
+                    output_dirs.append(os.path.join(iter_output_dir, dir_name))
 
-                    source_url = get_url_with_credentials(all_settings,
-                                                   node_path, is_relative_path=False)
+                for m, output_dir in enumerate(output_dirs):
+                    #node_path = os.path.join(iter_output_dir, node_dir)
+                    logger.debug("output_dir=%s" % output_dir)
 
-                    (source_scheme, source_location, source_path, source_location,
-                        query_settings) = storage.parse_bdpurl(source_url)
-                    logger.debug("source_url=%s" % source_url)
-                    legends.append(
-                        get_dataset_name_for_output(
-                            all_settings, "", source_path))
+                    dataset_paramset = []
+                    datafile_paramset = []
+                    dfile_extract_func = {}
+                    self.load_metadata_builder(run_settings)
+                    if self.METADATA_BUILDER:
+                        (experiment_paramset, dataset_paramset, datafile_paramset, dfile_extract_func) = \
+                        self.METADATA_BUILDER.build_metadata_for_final_output(output_dir, \
+                        run_settings=run_settings, storage_settings=all_settings,\
+                        output_dirs=output_dirs)
 
-                logger.debug("exp_value_keys=%s" % exp_value_keys)
-                logger.debug("legends=%s" % legends)
-
-                graph_paramset = [mytardis.create_graph_paramset("expgraph",
-                    name="hrmcexp2",
-                    graph_info={"axes": ["step", "ERRGr*wf"], "precision": [0, 2], "legends": legends},
-                    value_dict={},
-                    value_keys=exp_value_keys)]
-
-                for m, node_dir in enumerate(node_output_dirnames):
-                    node_path = os.path.join(iter_output_dir, node_dir)
-                    logger.debug("node_path=%s" % node_path)
-
-                    #FIXME: this calculation should be done as in extract_psd_func
-                    # pulling directly from data_errors rather than passing in
-                    # through nested function.
-                    dataerrors_url = get_url_with_credentials(all_settings,
-                        os.path.join(node_path, DATA_ERRORS_FILE),
-                        is_relative_path=False)
-                    logger.debug("dataerrors_url=%s" % dataerrors_url)
-                    dataerrors_content = storage.get_file(dataerrors_url)
-                    xs = []
-                    ys = []
-                    for i, line in enumerate(dataerrors_content.splitlines()):
-                        if i == 0:
-                            continue
-                        columns = line.split()
-                        try:
-                            hrmc_step = int(columns[STEP_COLUMN_NUM])
-                        except ValueError:
-                            logger.warn("could not parse hrmc_step value on line %s" % i)
-                            continue
-                        # handle  format double precision float format
-                        val = columns[ERRGR_COLUMN_NUM]
-                        val = re_dbl_fort.sub(r'\1E\2', val)
-                        logger.debug("val=%s" % val)
-                        try:
-                            hrmc_errgr = float(val)
-                        except ValueError:
-                            logger.warn("could not parse hrmc_errgr value on line %s" % i)
-                            continue
-                        xs.append(hrmc_step)
-                        ys.append(hrmc_errgr)
-
-                    logger.debug("xs=%s" % xs)
-                    logger.debug("ys=%s" % ys)
-
-                    crit_url = get_url_with_credentials(all_settings,
-                        os.path.join(node_path, "criterion.txt"), is_relative_path=False)
-                    try:
-                        crit = storage.get_file(crit_url)
-                    except ValueError:
-                        crit = None
-                    except IOError:
-                        crit = None
-                    # FIXME: can crit be zero?
-                    if crit:
-                        system_id = int(getval(run_settings, '%s/system/id' % self.SCHEMA_PREFIX)) #TODO Mytardis
-                        hrmcdset_val = {"hrmcdset/it": system_id, "hrmcdset/crit": crit}
-                    else:
-                        hrmcdset_val = {}
-
+                    #TODO keep source_url
                     source_url = get_url_with_credentials(
-                        all_settings, node_path, is_relative_path=False)
+                        all_settings, output_dir, is_relative_path=False)
                     logger.debug("source_url=%s" % source_url)
 
-                    # TODO: move into utiltiy function for reuse
-                    def extract_psd_func(fp):
-                        res = []
-                        xs = []
-                        ys = []
-                        for i, line in enumerate(dataerrors_content.splitlines()):
-                            if i == 0:
-                                continue
-                            columns = line.split()
-
-                            val = columns[STEP_COLUMN_NUM]
-                            val = re_dbl_fort.sub(r'\1E\2', val)
-                            logger.debug("val=%s" % val)
-                            try:
-                                x = float(val)
-                            except ValueError:
-                                logger.warn("could not parse value on line %s" % i)
-                                continue
-
-                            val = columns[ERRGR_COLUMN_NUM]
-                            val = re_dbl_fort.sub(r'\1E\2', val)
-                            logger.debug("val=%s" % val)
-                            try:
-                                y = float(val)
-                            except ValueError:
-                                logger.warn("could not parse value on line %s" % i)
-                                continue
-
-                            xs.append(x)
-                            ys.append(y)
-                        res = {"hrmcdfile/r1": xs, "hrmcdfile/g1": ys}
-                        return res
-
-                    def extract_psdexp_func(fp):
-                        res = []
-                        xs = []
-                        ys = []
-                        for i, line in enumerate(fp):
-                            columns = line.split()
-                            xs.append(float(columns[0]))
-                            ys.append(float(columns[1]))
-                        res = {"hrmcdfile/r2": xs, "hrmcdfile/g2": ys}
-                        return res
-
-                    def extract_grfinal_func(fp):
-                        res = []
-                        xs = []
-                        ys = []
-                        for i, line in enumerate(fp):
-                            columns = line.split()
-                            xs.append(float(columns[0]))
-                            ys.append(float(columns[1]))
-                        #FIXME: len(xs) == len(ys) for this to work.
-                        #TODO: hack to handle when xs and ys are too
-                        # large to fit in Parameter with db_index.
-                        # solved by function call at destination
-                        cut_xs = [xs[i] for i, x in enumerate(xs)
-                            if (i % (len(xs) / 20) == 0)]
-                        cut_ys = [ys[i] for i, x in enumerate(ys)
-                            if (i % (len(ys) / 20) == 0)]
-
-                        res = {"hrmcdfile/r3": cut_xs, "hrmcdfile/g3": cut_ys}
-                        return res
-
-                    def extract_inputgr_func(fp):
-                        res = []
-                        xs = []
-                        ys = []
-                        for i, line in enumerate(fp):
-                            columns = line.split()
-                            xs.append(float(columns[0]))
-                            ys.append(float(columns[1]))
-                        #FIXME: len(xs) == len(ys) for this to work.
-                        #TODO: hack to handle when xs and ys are too
-                        # large to fit in Parameter with db_index.
-                        # solved by function call at destination
-                        cut_xs = [xs[i] for i, x in enumerate(xs)
-                            if (i % (len(xs) / 20) == 0)]
-                        cut_ys = [ys[i] for i, x in enumerate(ys)
-                            if (i % (len(ys) / 20) == 0)]
-
-                        res = {"hrmcdfile/r4": cut_xs, "hrmcdfile/g4": cut_ys}
-                        return res
-                    #todo: replace self.boto_setttings with mytardis_settings
-                    #TODO Mytardis
-                    '''
-                    experiment_id = mytardis.create_dataset(
-                        settings=all_settings,
-                        source_url=source_url,
-                        exp_name=get_exp_name_for_output,
-                        dataset_name=get_dataset_name_for_output,
-                        exp_id=experiment_id,
-                        experiment_paramset=graph_paramset,
-                        dataset_paramset=[
-                            mytardis.create_paramset('hrmcdataset/output', []),
-                            mytardis.create_graph_paramset('dsetgraph',
-                                name="hrmcdset",
-                                graph_info={"axes":["r (Angstroms)", "PSD"],
-                                    "legends":["psd", "PSD_exp"],  "type":"line"},
-                                value_dict=hrmcdset_val,
-                                value_keys=[["hrmcdfile/r1", "hrmcdfile/g1"],
-                                    ["hrmcdfile/r2", "hrmcdfile/g2"]]),
-                            mytardis.create_graph_paramset('dsetgraph',
-                                name='hrmcdset2',
-                                graph_info={"axes":["r (Angstroms)", "g(r)"],
-                                    "legends":["data_grfinal", "input_gr"],
-                                    "type":"line"},
-                                value_dict={},
-                                value_keys=[["hrmcdfile/r3", "hrmcdfile/g3"],
-                                    ["hrmcdfile/r4", "hrmcdfile/g4"]]),
-                            mytardis.create_graph_paramset('dsetgraph',
-                                name='hrmcdset%s' % m,
-                                graph_info={},
-                                value_dict={"hrmcdset%s/step" % m: xs,
-                                    "hrmcdset%s/err" % m: ys},
-                                value_keys=[]),
-                            ],
-                        datafile_paramset=[
-                            mytardis.create_graph_paramset('dfilegraph',
-                                name="hrmcdfile",
-                                graph_info={},
-                                value_dict={},
-                                value_keys=[])
-                            ],
-                        dfile_extract_func={
-                            'psd.dat': extract_psd_func,
-                             'PSD_exp.dat': extract_psdexp_func,
-                             'data_grfinal.dat': extract_grfinal_func,
-                             'input_gr.dat': extract_inputgr_func}
-
-                        )
-                    '''
                     experiment_id = mytardis.create_dataset(
                         settings=all_settings,
                         source_url=source_url,

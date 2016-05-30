@@ -382,6 +382,7 @@ def _get_chiminey_schemas():
                          'help_text': ''},
                  u'max_seed_int': {'type': models.ParameterName.NUMERIC, 'subtype': 'natural', 'description': '',
                                    'ranking': 1, 'help_text': ''},
+                 u'metadata_builder': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '', 'initial': 'chiminey.mytardis.metadata.MetadataBuilder', 'ranking': 1, 'help_text': ''},
              }
             ],
         u'%s/bdp_userprofile' % django_settings.SCHEMA_PREFIX:
@@ -620,6 +621,9 @@ def _get_chiminey_schemas():
                                     'help_text': 'Use 0 for new experiment'},
              }
             ],
+
+
+
         u'%s/input/sweep' % django_settings.SCHEMA_PREFIX:
             [u'Parameter Sweep',
              {

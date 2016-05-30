@@ -453,7 +453,7 @@ class Execute(stage.Stage):
             try:
                 mytardis_platform = jobs.safe_import('chiminey.platform.mytardis.MyTardisPlatform', [], {})
                 self.experiment_id = mytardis_platform.create_dataset_for_input(self.experiment_id,
-                                                      local_settings,
+                                                      run_settings, local_settings,
                                                       output_storage_settings,
                                                       mytardis_settings,
                                                       input_url_with_credentials)
