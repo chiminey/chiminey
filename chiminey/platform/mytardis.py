@@ -131,7 +131,7 @@ class MyTardisPlatform():
                                     output_storage_settings['type'])
         output_host = output_storage_settings['host']
 
-        def _get_dataset_name_for_input(settings, url, path):            
+        def _get_dataset_name_for_input(settings, url, path):
             VALUES_FNAME = "values" #TODO: Mytardis, move to settings
             logger.debug("path=%s" % path)
             source_url = storage.get_url_with_credentials(
@@ -285,7 +285,7 @@ class MyTardisPlatform():
                         settings=all_settings,
                         source_url=source_url,
                         exp_name=mytardis.get_exp_name_for_output,
-                        dataset_name=mytarids.get_dataset_name_for_output,
+                        dataset_name=mytardis.get_dataset_name_for_output,
                         exp_id=experiment_id,
                         experiment_paramset=experiment_paramset,
                         dataset_paramset=dataset_paramset,
