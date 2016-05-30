@@ -4,13 +4,13 @@ $(eval $(RUN_ARGS):;@:)
 
 start_bootstrap:
 	@echo bootstrap starting
-	@sh ./start_bootstrap.sh >& bootstrap.output &
+	@bash ./start_bootstrap.sh >& bootstrap.output &
 
 bootstrap_done:
-	@sh ./bootstrap_done.sh
+	@bash ./bootstrap_done.sh
 
 start_schedule:
-	@sh ./start_schedule.sh $(RUN_ARGS)
+	@bash ./start_schedule.sh $(RUN_ARGS)
 
 schedule_done:
-	@sh ./schedule_done.sh $(IDS)
+	@bash ./schedule_done.sh $(IDS)

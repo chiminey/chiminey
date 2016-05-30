@@ -57,7 +57,7 @@ def open_connection(ip_address, settings):
                 private_key_file = settings['private_key']
                 mykey = paramiko.RSAKey.from_private_key_file(private_key_file)
                 ssh_client.connect(ip_address, username=settings['username'],
-                                   timeout=60.0, pkey=mykey)
+                                   timeout=60.0, port=int(settings['port']), pkey=mykey)
                 logger.debug('private_keyfile_=%s' % private_key_file)
             else:
                 raise IOError('Cannot read private key')
@@ -66,7 +66,7 @@ def open_connection(ip_address, settings):
                                 settings['username']))
             logger.debug(ssh_client)
             ssh_client.connect(ip_address, username=settings['username'],
-                               password=settings['password'], timeout=60.0)
+                               password=settings['password'], port=int(settings['port']), timeout=60.0)
         else:
             raise KeyError
     except paramiko.AuthenticationException, e:

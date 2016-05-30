@@ -1,1 +1,1 @@
-sh main.sh $@ &  echo "$!" > "run.pid"
+bash main.sh $@ &  echo "$!" > "run.pid"
