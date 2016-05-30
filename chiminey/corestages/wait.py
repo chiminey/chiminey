@@ -188,7 +188,7 @@ class Wait(Stage):
         values_file_path = os.path.join(relative_path_suffix,
                                   str(process_id),
                                   local_settings['smart_connector_input'],
-                                  'values'
+                                  django_settings.VALUES_FNAME
                                   )
         values_files_location = "%s://%s@%s" % (computation_platform_settings['scheme'],
                                                 computation_platform_settings['type'],
@@ -203,7 +203,7 @@ class Wait(Stage):
         values_dest_url = get_url_with_credentials(
             output_storage_settings,
             output_prefix + os.path.join(
-                self.job_dir, self.output_dir, process_id, 'values'),
+                self.job_dir, self.output_dir, process_id, django_settings.VALUES_FNAME),
             is_relative_path=False)
         logger.debug("values_dest_url=%s" % values_dest_url)
         content = storage.get_file(values_source_url)

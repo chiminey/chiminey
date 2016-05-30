@@ -48,7 +48,7 @@ ERRGR_COLUMN_NUM = 28
 class HRMCConverge(Converge):
 
     SCHEMA_PREFIX = django_settings.SCHEMA_PREFIX
-    VALUES_FNAME = "values"
+    VALUES_FNAME = django_settings.VALUES_FNAME
 
     def input_valid(self, settings_to_test):
         """ Return a tuple, where the first element is True settings_to_test

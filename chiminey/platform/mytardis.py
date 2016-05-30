@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 
 class MyTardisPlatform():
-    VALUES_FNAME = "values"
+    VALUES_FNAME = django_settings.VALUES_FNAME
     SCHEMA_PREFIX = django_settings.SCHEMA_PREFIX
     METADATA_BUILDER = None
 
@@ -132,11 +132,10 @@ class MyTardisPlatform():
         output_host = output_storage_settings['host']
 
         def _get_dataset_name_for_input(settings, url, path):
-            VALUES_FNAME = "values" #TODO: Mytardis, move to settings
             logger.debug("path=%s" % path)
             source_url = storage.get_url_with_credentials(
                 output_storage_settings,
-                output_prefix + os.path.join(output_host, path, VALUES_FNAME),
+                output_prefix + os.path.join(output_host, path, self.VALUES_FNAME),
                 is_relative_path=False)
             logger.debug("source_url=%s" % source_url)
             try:

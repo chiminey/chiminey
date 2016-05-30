@@ -28,6 +28,7 @@ import json
 import requests
 import StringIO
 from requests.auth import HTTPBasicAuth
+from django.conf import settings as django_settings
 
 from chiminey import storage
 
@@ -37,6 +38,8 @@ SCHEMA_PREFIX = "http://rmit.edu.au/schemas"
 
 
 EXP_DATASET_NAME_SPLIT = 2
+
+VALUES_FNAME = django_settings.VALUES_FNAME
 
 '''
 def check_and_handle_schema_absence(current_request, data, url ,headers, paramset_keys=[]):
@@ -786,7 +789,6 @@ def get_dataset_name_for_output(settings, url, path):
 
     host = settings['host']
     prefix = 'ssh://%s@%s' % (settings['type'], host)
-    VALUES_FNAME = "values" #TODO: Mytardis, move to settings
     source_url = storage.get_url_with_credentials(
         settings, os.path.join(prefix, path, VALUES_FNAME),
         is_relative_path=False)

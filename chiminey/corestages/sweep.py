@@ -51,7 +51,7 @@ FIRST_ITERATION_DIR = "input_0"
 SUBDIRECTIVE_DIR = "run%(run_counter)s"
 
 VALUES_MAP_TEMPLATE_FILE = '%(template_name)s_values'
-VALUES_MAP_FILE = "values"
+VALUES_MAP_FILE = django_settings.VALUES_FNAME #"values"
 
 
 @contextmanager

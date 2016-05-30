@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 class HRMCTransform(Transform):
 
     SCHEMA_PREFIX = django_settings.SCHEMA_PREFIX
-    VALUES_FNAME = "values"
+    VALUES_FNAME = django_settings.VALUES_FNAME
     DOMAIN_INPUT_FILES = ['input_bo.dat', 'input_gr.dat', 'input_sq.dat']
 
     def input_valid(self, settings_to_test):
@@ -197,7 +197,7 @@ class HRMCTransform(Transform):
                 logger.debug('put successfully')
 
             logger.debug('put file successfully')
-            pattern = "values"
+            pattern = self.VALUES_FNAME
             output_offset = os.path.join(os.path.join(offset, "output_%s" % id, Node_info.dirname))
             input_offset = os.path.join(os.path.join(offset, "input_%s" % (id + 1), Node_info.dirname))
             copy_files_with_pattern(iter_out_fsys,

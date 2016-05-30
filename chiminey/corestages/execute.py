@@ -54,7 +54,7 @@ class Execute(stage.Stage):
     """
 
     SCHEMA_PREFIX = django_settings.SCHEMA_PREFIX
-    VALUES_FNAME = "values"
+    VALUES_FNAME = django_settings.VALUES_FNAME
 
     def __init__(self, user_settings=None):
         self.numbfile = 0

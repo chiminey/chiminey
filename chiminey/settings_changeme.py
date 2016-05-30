@@ -124,6 +124,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.transaction.TransactionMiddleware'
     )
+VALUES_FNAME = 'values'
 
 SMART_CONNECTORS = {
 'hrmc': {'init': 'chiminey.examples.hrmc.initialise.HRMCInitial',
