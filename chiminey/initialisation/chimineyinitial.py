@@ -255,6 +255,10 @@ def _get_chiminey_schemas():
                                 'initial': 'update', 'ranking': 24, 'help_text': ''},
                  u'filters': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': '',
                               'initial': '{}', 'ranking': 30, 'help_text': ''},
+                 u'port': {'type': models.ParameterName.STRING, 'subtype': '',
+                                        'description': 'SSH port', 'ranking': 55, 'initial': '22',
+                                        'help_text': 'Port of the SSH server (usually 22).)',
+                                        'hidecondition':'advanced'},
              }
             ],
         u'%s/platform/computation/testing/jenkins_based' % django_settings.SCHEMA_PREFIX:

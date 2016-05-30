@@ -117,15 +117,12 @@ def bdp_account_settings(request):
 
 
 def computation_platform_settings(request):
-
     new_form_data = {}
     resources = {}
     for k, v in new_form_data.items():
         resources[k] = {k: {'form': v[0], 'data': v[1], 'advanced_ops': 'false'}}
-
-
     for field_name, ns_suffix, group, group_name, ops in [('cluster_form', 'cluster/pbs_based', 'cluster', "HPC", 'true' ),
-                                    ('cloud_form', 'cloud/ec2-based', 'cloud', 'Cloud', 'false'),
+                                    ('cloud_form', 'cloud/ec2-based', 'cloud', 'Cloud', 'true'),
                                     ('jenkins_form','testing/jenkins_based', 'jenkins', 'Continuous Integration', 'false' ),
                                     ('bigdata_form', 'bigdata/hadoop', 'bigdata', 'Analytics', 'true'),
                                     ]:
