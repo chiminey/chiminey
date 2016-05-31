@@ -73,11 +73,13 @@ class Stage(object):
         platform_url = run_settings[namespace_prefix]['platform_url']
         return get_platform_settings(platform_url, bdp_username)
 
-    def get_input_schema_namespace(self, directive_name):
-        basename = directive_name
-        if 'sweep_' in basename[0:6]:
-            basename = directive_name[6:]
-        return '%s/input/%s' % (django_settings.SCHEMA_PREFIX, basename)
+    def get_input_schema_namespace(self, run_settings):
+        directive_name = run_settings['%s/directive_profile' % django_settings.SCHEMA_PREFIX]['directive_name']
+        #if 'sweep_' in basename[0:6]:
+        #    basename = directive_name[6:]
+        input_schema = '%s/input/%s' % (django_settings.SCHEMA_PREFIX, directive_name)
+        logger.debug('input_schema=%s' % input_schema)
+        return input_schema
 
     def set_stage_settings(self, run_settings, local_settings):
         pass

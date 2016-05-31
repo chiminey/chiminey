@@ -35,14 +35,14 @@ class Command(BaseCommand):
     """
     args = ''
     help = 'Setup an initial task structure.'
-    def setup(self, initialiser, name, description):
+    def setup(self, initialiser, name, description, sweep=False):
         MESSAGE = "This will add %s to the catalogue of available smart connectors.  Are you sure [Yes/No]?" % name
         confirm = raw_input(MESSAGE)
         if confirm != "Yes":
             print "action aborted by user"
             return
         directive = jobs.safe_import(initialiser, [], {})
-        directive.define_directive(name, description=description)
+        directive.define_directive(name, description=description, sweep=sweep)
         print "done"
 
 
@@ -57,7 +57,8 @@ class Command(BaseCommand):
                 print django_settings.PAYLOAD_DESTINATION
                 copy_tree('/opt/chiminey/current/chiminey/PAYLOAD_ROOT', destination)
                 copy_tree(current_sm['payload'], destination)
-            self.setup(current_sm['init'], current_sm['name'], current_sm['description'])
+            try:
+                self.setup(current_sm['init'], current_sm['name'], current_sm['description'], sweep=current_sm['sweep'])
+            except KeyError, e:
+                self.setup(current_sm['init'], current_sm['name'], current_sm['description'])
             print "done"
-
-

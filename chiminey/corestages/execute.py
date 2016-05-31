@@ -640,13 +640,13 @@ class Execute(stage.Stage):
 
     def set_domain_settings(self, run_settings, local_settings):
          try:
-             schema = models.Schema.objects.get(namespace=self.get_input_schema_namespace(
-                run_settings['%s/directive_profile' % django_settings.SCHEMA_PREFIX]['directive_name']))
+             schema = models.Schema.objects.get(namespace=self.get_input_schema_namespace(run_settings))
              if schema:
                 params = models.ParameterName.objects.filter(schema=schema)
                 if params:
                     namespace = schema.namespace
                     domain_params = [os.path.join(namespace, i.name) for i in params]
+                    logger.debug('*domain_params=%s, local_settings=%s, run_settings=%s' % (domain_params, local_settings, run_settings))
                     update(local_settings, run_settings, *domain_params)
          except models.Schema.DoesNotExist:
              pass

@@ -130,7 +130,8 @@ SMART_CONNECTORS = {
 'hrmc': {'init': 'chiminey.examples.hrmc.initialise.HRMCInitial',
          'name': 'hrmc',
          'description': 'Hybrid Reverse Monte Carlo',
-         'payload': '/opt/chiminey/current/chiminey/examples/hrmc/payload_hrmc'
+         'payload': '/opt/chiminey/current/chiminey/examples/hrmc/payload_hrmc',
+         'sweep': True
          },
                     'hrmclite': {'init': 'chiminey.examples.hrmclite.initialise.HRMCInitial',
                              'name': 'hrmclite',
@@ -182,7 +183,6 @@ TEMPLATE_DIRS = (
 )
 
 TEMPLATE_CONTEXT_PROCESSORS = ("django.contrib.auth.context_processors.auth",
-"django.core.context_processors.debug",
 "django.core.context_processors.i18n",
 "django.core.context_processors.media",
 "django.core.context_processors.static",
