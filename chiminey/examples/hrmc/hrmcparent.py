@@ -28,7 +28,7 @@ from chiminey.smartconnectorscheduler.errors import BadSpecificationError
 from chiminey.smartconnectorscheduler import jobs
 from chiminey.runsettings import update, getval, getvals, SettingNotFoundException
 from chiminey.storage import get_url_with_credentials, list_all_files, get_basename, list_dirs
-
+from django.conf import settings as django_settings
 
 logger = logging.getLogger(__name__)
 
@@ -37,9 +37,6 @@ class HRMCParent(Parent):
     """
         A list of corestages
     """
-
-    SCHEMA_PREFIX = "http://rmit.edu.au/schemas"
-
     def __init__(self, user_settings=None):
         logger.debug("HRMCParallelStage")
         pass
@@ -58,29 +55,27 @@ class HRMCParent(Parent):
         logger.debug('run_settings=%s' % run_settings)
         #fixme remove rand index
         try:
-            rand_index = int(getval(run_settings, '%s/stages/run/rand_index' % self.SCHEMA_PREFIX))
+            rand_index = int(getval(run_settings, '%s/stages/run/rand_index' % django_settings.SCHEMA_PREFIX))
         except SettingNotFoundException:
             try:
-                rand_index = int(getval(run_settings, '%s/input/hrmc/iseed' % self.SCHEMA_PREFIX))
+                rand_index = int(getval(run_settings, '%s/input/hrmc/iseed' % django_settings.SCHEMA_PREFIX))
             except SettingNotFoundException, e:
                 rand_index = 42
                 logger.debug(e)
         update(local_settings, run_settings,
-            '%s/input/hrmc/fanout_per_kept_result' % self.SCHEMA_PREFIX,
-            '%s/input/hrmc/optimisation_scheme' % self.SCHEMA_PREFIX,
-            '%s/input/hrmc/threshold' % self.SCHEMA_PREFIX,
-            '%s/input/hrmc/pottype' % self.SCHEMA_PREFIX,
-            '%s/system/max_seed_int' % self.SCHEMA_PREFIX,
-            '%s/system/random_numbers' % self.SCHEMA_PREFIX,
-            '%s/system/id' % self.SCHEMA_PREFIX)
+            '%s/input/hrmc/fanout_per_kept_result' % django_settings.SCHEMA_PREFIX,
+            '%s/input/hrmc/optimisation_scheme' % django_settings.SCHEMA_PREFIX,
+            '%s/input/hrmc/threshold' % django_settings.SCHEMA_PREFIX,
+            '%s/input/hrmc/pottype' % django_settings.SCHEMA_PREFIX,
+            '%s/system/max_seed_int' % django_settings.SCHEMA_PREFIX,
+            '%s/system/random_numbers' % django_settings.SCHEMA_PREFIX,
+            '%s/system/id' % django_settings.SCHEMA_PREFIX)
 
 
 
         logger.debug("local_settings=%s" % local_settings)
         try:
             id = local_settings['id']
-            #id = smartconnectorscheduler.get_existing_key(run_settings,
-            #    'http://rmit.edu.au/schemas/system/misc/id')
         except KeyError, e:
             logger.error(e)
             id = 0

@@ -34,7 +34,6 @@ logger = logging.getLogger(__name__)
 
 from django.conf import settings as django_settings
 
-RMIT_SCHEMA = django_settings.SCHEMA_PREFIX
 
 class Create(Stage):
     def __init__(self, user_settings=None):
@@ -48,19 +47,19 @@ class Create(Stage):
         """
         try:
             configure_done = int(getval(run_settings,
-                '%s/stages/configure/configure_done' % RMIT_SCHEMA))
+                '%s/stages/configure/configure_done' % django_settings.SCHEMA_PREFIX))
         except (SettingNotFoundException, ValueError):
             return False
         try:
             create_done = int(getval(run_settings,
-                '%s/stages/create/create_done' % RMIT_SCHEMA))
+                '%s/stages/create/create_done' % django_settings.SCHEMA_PREFIX))
             if create_done:
                return False
         except (SettingNotFoundException, ValueError):
             pass
         try:
             self.created_nodes = ast.literal_eval(getval(
-                run_settings, '%s/stages/create/created_nodes' % RMIT_SCHEMA))
+                run_settings, '%s/stages/create/created_nodes' % django_settings.SCHEMA_PREFIX))
         except (SettingNotFoundException, ValueError):
             self.created_nodes = []
             return True
@@ -69,7 +68,7 @@ class Create(Stage):
     def process(self, run_settings):
         #messages.info(run_settings, "1: create")
         comp_pltf_settings = self.get_platform_settings(
-            run_settings, 'http://rmit.edu.au/schemas/platform/computation')
+            run_settings, '%s/platform/computation' % django_settings.SCHEMA_PREFIX)
         logger.debug("comp_pltf_settings=%s" % comp_pltf_settings)
         try:
             platform_type = comp_pltf_settings['platform_type']
@@ -116,10 +115,10 @@ class Create(Stage):
         """
         logger.debug('output')
         setval(run_settings,
-                       "%s/stages/create/created_nodes" % RMIT_SCHEMA,
+                       "%s/stages/create/created_nodes" % django_settings.SCHEMA_PREFIX,
                        self.created_nodes)
         setval(run_settings,
-                       "%s/stages/create/create_done" % RMIT_SCHEMA,
+                       "%s/stages/create/create_done" % django_settings.SCHEMA_PREFIX,
                        1)
         logger.debug("Updated run settings %s" % run_settings)
         return run_settings

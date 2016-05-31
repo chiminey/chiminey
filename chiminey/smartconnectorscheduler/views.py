@@ -42,7 +42,7 @@ from tastypie.exceptions import ImmediateHttpResponse
 from tastypie.paginator import Paginator
 
 from django.core.exceptions import ImproperlyConfigured
-
+from django.conf import settings as django_settings
 
 from django.db import transaction
 from django.contrib.auth.models import User
@@ -267,9 +267,9 @@ class UserProfileParameterResource(ModelResource):
 
 
 class ContextResource(ModelResource):
-    hrmc_schema = "http://rmit.edu.au/schemas/input/hrmc/"
-    system_schema = "http://rmit.edu.au/schemas/input/system"
-    sweep_schema = 'http://rmit.edu.au/schemas/input/sweep/'
+    hrmc_schema = "%s/input/hrmc/" % django_settings.SCHEMA_PREFIX
+    system_schema = "%s/input/system" % django_settings.SCHEMA_PREFIX
+    sweep_schema = '%s/input/sweep/' % django_settings.SCHEMA_PREFIX
 
     owner = fields.ForeignKey(UserProfileResource,
         attribute='owner')
@@ -338,7 +338,7 @@ class ContextResource(ModelResource):
             directive_obj = models.Directive.objects.get(name=smartconnector)
             stage = directive_obj.stage
             logger.debug('stage=%s' % stage)
-            sch = models.Schema.objects.get(namespace="http://rmit.edu.au/schemas/stages/sweep")
+            sch = models.Schema.objects.get(namespace="%s/stages/sweep" % django_settings.SCHEMA_PREFIX)
             logger.debug('sch=%s' % sch)
             subdirective = stage.get_stage_setting(sch, "directive")
             logger.debug('subdirective=%s' %subdirective)
@@ -420,7 +420,7 @@ class ContextResource(ModelResource):
         try:
             directive_args.append(
              ['',
-                 ['http://rmit.edu.au/schemas/hrmc',
+                 ['%s/hrmc' % django_settings.SCHEMA_PREFIX,
                      ('number_vm_instances',
                          bundle.data[self.hrmc_schema + 'number_vm_instances']),
                      ('minimum_number_vm_instances',
@@ -455,7 +455,7 @@ class ContextResource(ModelResource):
             os.path.join(self.system_schema, 'output_location')])
 
         system_settings = {
-            u'http://rmit.edu.au/schemas/system/misc': system_dict}
+            u'%s/system/misc' % django_settings.SCHEMA_PREFIX: system_dict}
 
         logger.debug("directive_name=%s" % directive_name)
         logger.debug("directive_args=%s" % directive_args)
@@ -477,21 +477,21 @@ class ContextResource(ModelResource):
             raise
         directive_args.append(
             ['',
-                ['http://rmit.edu.au/schemas/input/sweep',
+                ['%s/input/sweep' % django_settings.SCHEMA_PREFIX,
                     ('sweep_map', bundle.data[self.sweep_schema + 'sweep_map']),
                 ],
-                ['http://rmit.edu.au/schemas/system',
+                ['%s/system' % django_settings.SCHEMA_PREFIX,
                     (u'random_numbers', 'file://127.0.0.1/randomnums.txt'),
                     ('system', 'settings'),
                     ('max_seed_int', 1000),
                 ],
-                ['http://rmit.edu.au/schemas/input/system',
+                ['%s/input/system' % django_settings.SCHEMA_PREFIX,
                     ('input_location', bundle.data[
-                        'http://rmit.edu.au/schemas/input/system/input_location']),
+                        '%s/input/system/input_location' % django_settings.SCHEMA_PREFIX]),
                     ('output_location', bundle.data[
-                        'http://rmit.edu.au/schemas/input/system/output_location'])
+                        '%s/input/system/output_location' % django_settings.SCHEMA_PREFIX])
                 ],
-                ['http://rmit.edu.au/schemas/input/mytardis',
+                ['%s/input/mytardis' % django_settings.SCHEMA_PREFIX,
                     #('experiment_id', bundle.data[self.hrmc_schema + 'experiment_id']),
                     ('experiment_id', 0),
                 ],
@@ -513,7 +513,7 @@ class ContextResource(ModelResource):
         logger.debug("directive_args=%s" % pformat(directive_args))
         # make the system settings, available to initial stage and merged with run_settings
         system_dict = {u'system': u'settings'}
-        system_settings = {u'http://rmit.edu.au/schemas/system/misc': system_dict}
+        system_settings = {u'%s/system/misc' % django_settings.SCHEMA_PREFIX: system_dict}
         logger.debug("directive_name=%s" % directive_name)
         logger.debug("directive_args=%s" % directive_args)
         return (platform, directive_name, directive_args, system_settings)
@@ -521,7 +521,7 @@ class ContextResource(ModelResource):
 
 def validate_input(data, directive_name):
     logger.debug(data)
-    username = data['http://rmit.edu.au/schemas/bdp_userprofile/username']
+    username = data['%s/bdp_userprofile/username' % django_settings.SCHEMA_PREFIX]
     logger.debug(username)
 
     directive = models.Directive.objects.get(name=directive_name)
@@ -607,25 +607,21 @@ def _post_to_sweep(bundle, directive, subdirective):
         d_arg.append(directive_arg)
 
     d_arg.append(
-    ['http://rmit.edu.au/schemas/system',
+    ['%s/system' % django_settings.SCHEMA_PREFIX,
         # (u'random_numbers', 'file://127.0.0.1/randomnums.txt'),
         ('system', 'settings'),
         ('max_seed_int', 1000),
     ])
-    # d_arg.append(
-    # ['http://rmit.edu.au/schemas/stages/sweep',
-    #     ('directive', subdirective)
-    # ])
     d_arg.append(
-    ['http://rmit.edu.au/schemas/bdp_userprofile',
+    ['%s/bdp_userprofile' % django_settings.SCHEMA_PREFIX,
         (u'username',
          str(bundle.data[
-            'http://rmit.edu.au/schemas/bdp_userprofile/username'])),
+            '%s/bdp_userprofile/username' % django_settings.SCHEMA_PREFIX])),
     ])
     if not subdirective:
         subdirective = directive
     d_arg.append(
-    ['http://rmit.edu.au/schemas/directive_profile',
+    ['%s/directive_profile' % django_settings.SCHEMA_PREFIX,
         (u'directive_name', subdirective),
         (u'sweep_name', directive),
     ])
@@ -665,19 +661,19 @@ def _post_to_directive(bundle, directive):
         d_arg.append(directive_arg)
 
     d_arg.append(
-    ['http://rmit.edu.au/schemas/system',
+    ['%s/system' % django_settings.SCHEMA_PREFIX,
         (u'random_numbers', 'file://127.0.0.1/randomnums.txt'),
         ('system', 'settings'),
         ('max_seed_int', 1000),
     ])
     d_arg.append(
-    ['http://rmit.edu.au/schemas/bdp_userprofile',
+    ['%s/bdp_userprofile' % django_settings.SCHEMA_PREFIX,
         (u'username',
          str(bundle.data[
-            'http://rmit.edu.au/schemas/bdp_userprofile/username'])),
+            '%s/bdp_userprofile/username' % django_settings.SCHEMA_PREFIX])),
     ])
     d_arg.append(
-    ['http://rmit.edu.au/schemas/directive_profile',
+    ['%s/directive_profile' % django_settings.SCHEMA_PREFIX,
         (u'directive_name', directive),
     ])
     directive_args = [''] + d_arg

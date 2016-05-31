@@ -95,7 +95,7 @@ class CloudStrategy(Strategy):
             pass
 
         if payload_source:
-            messages.info(settings, "%s: Bootstrapping VMs" % self.get_iteration_id(settings))
+            messages.info(settings, "%s: Bootstrapping VMs started" % self.get_iteration_id(settings))
             bootstrap.start_multi_bootstrap_task(settings, relative_path_suffix)
 
     def complete_bootstrap(self, bootstrap_class, local_settings):
@@ -105,6 +105,7 @@ class CloudStrategy(Strategy):
             pass
 
         if payload_source:
+            messages.info(local_settings, "%s: Bootstrapping in progress" % self.get_iteration_id(local_settings))
             bootstrap.complete_bootstrap(bootstrap_class, local_settings, self.get_iteration_id(local_settings))
 
     def set_schedule_settings(self, run_settings, local_settings):

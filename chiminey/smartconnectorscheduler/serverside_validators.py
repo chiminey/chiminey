@@ -24,7 +24,7 @@
 import json
 import logging
 from django.core.validators import ValidationError
-
+from django.conf import settings as django_settings
 from chiminey.platform.manage import retrieve_platform
 
 from chiminey.smartconnectorscheduler.timeparse import timeparse
@@ -312,9 +312,9 @@ def validate_jsondict(value):
 
 
 def check_addition(cleaned_data):
-    arg1 = cleaned_data.get("http://rmit.edu.au/schemas/input2/arg1", 0)
-    arg2 = cleaned_data.get("http://rmit.edu.au/schemas/input2/arg1", 0)
-    arg3 = cleaned_data.get("http://rmit.edu.au/schemas/input2/arg3", 0)
+    arg1 = cleaned_data.get("%s/input2/arg1" % django_settings.SCHEMA_PREFIX, 0)
+    arg2 = cleaned_data.get("%s/input2/arg1" % django_settings.SCHEMA_PREFIX, 0)
+    arg3 = cleaned_data.get("%s/input2/arg3" % django_settings.SCHEMA_PREFIX, 0)
     logger.debug("arg1=%s" % arg1)
     logger.debug("arg2=%s" % arg2)
     logger.debug("arg3=%s" % arg3)

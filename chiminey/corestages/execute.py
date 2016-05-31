@@ -53,7 +53,6 @@ class Execute(stage.Stage):
     Start application on nodes and return status
     """
 
-    SCHEMA_PREFIX = django_settings.SCHEMA_PREFIX
     VALUES_FNAME = django_settings.VALUES_FNAME
 
     def __init__(self, user_settings=None):
@@ -67,14 +66,9 @@ class Execute(stage.Stage):
         """
         try:
             schedule_completed = int(getval(
-                run_settings, '%s/stages/schedule/schedule_completed' % self.SCHEMA_PREFIX))
-            # schedule_completed = int(smartconnectorscheduler.get_existing_key(run_settings,
-            #     'http://rmit.edu.au/schemas/stages/schedule/schedule_completed'))
-
+                run_settings, '%s/stages/schedule/schedule_completed' % django_settings.SCHEMA_PREFIX))
             self.all_processes = ast.literal_eval(
-                getval(run_settings, '%s/stages/schedule/all_processes' % self.SCHEMA_PREFIX))
-            # self.all_processes = ast.literal_eval(smartconnectorscheduler.get_existing_key(run_settings,
-            #     'http://rmit.edu.au/schemas/stages/schedule/all_processes'))
+                getval(run_settings, '%s/stages/schedule/all_processes' % django_settings.SCHEMA_PREFIX))
 
         except SettingNotFoundException, e:
             return False
@@ -85,8 +79,7 @@ class Execute(stage.Stage):
             return False
         try:
             scheduled_procs_str = getval(
-                run_settings, '%s/stages/schedule/current_processes' % self.SCHEMA_PREFIX)
-            # scheduled_procs_str = run_settings['http://rmit.edu.au/schemas/stages/schedule'][u'current_processes']
+                run_settings, '%s/stages/schedule/current_processes' % django_settings.SCHEMA_PREFIX)
         except SettingNotFoundException:
             return False
         try:
@@ -98,14 +91,12 @@ class Execute(stage.Stage):
             return False
         try:
             self.reschedule_failed_procs = getval(
-                run_settings, '%s/input/reliability/reschedule_failed_processes' % self.SCHEMA_PREFIX)
+                run_settings, '%s/input/reliability/reschedule_failed_processes' % django_settings.SCHEMA_PREFIX)
         except SettingNotFoundException:
             self.reschedule_failed_procs = 0  # FIXME: check this is correct
         try:
             exec_procs_str = getval(
-                run_settings, '%s/stages/execute/executed_procs' % self.SCHEMA_PREFIX)
-            # exec_procs_str = smartconnectorscheduler.get_existing_key(run_settings,
-            #     'http://rmit.edu.au/schemas/stages/execute/executed_procs')
+                run_settings, '%s/stages/execute/executed_procs' % django_settings.SCHEMA_PREFIX)
             self.exec_procs = ast.literal_eval(exec_procs_str)
             logger.debug('executed procs=%d, scheduled procs = %d'
                          % (len(self.exec_procs), len(self.schedule_procs)))
@@ -124,11 +115,11 @@ class Execute(stage.Stage):
     def process(self, run_settings):
         try:
             self.rand_index = int(
-                getval(run_settings, '%s/stages/run/rand_index' % self.SCHEMA_PREFIX))
+                getval(run_settings, '%s/stages/run/rand_index' % django_settings.SCHEMA_PREFIX))
         except SettingNotFoundException:
             try:
                 self.rand_index = int(
-                    getval(run_settings, '%s/input/hrmc/iseed' % self.SCHEMA_PREFIX))
+                    getval(run_settings, '%s/input/hrmc/iseed' % django_settings.SCHEMA_PREFIX))
             except SettingNotFoundException, e:
                 self.rand_index = 42
                 logger.debug(e)
@@ -139,23 +130,23 @@ class Execute(stage.Stage):
         self.set_execute_settings(run_settings, local_settings)
 
         self.contextid = getval(
-            run_settings, '%s/system/contextid' % self.SCHEMA_PREFIX)
+            run_settings, '%s/system/contextid' % django_settings.SCHEMA_PREFIX)
         # NB: Don't catch SettingNotFoundException because we can't recover
-        # run_settings['http://rmit.edu.au/schemas/system'][u'contextid']
+        # run_settings['%s/system' % django_settings.SCHEMA_PREFIX][u'contextid']
         logger.debug('contextid=%s' % self.contextid)
         output_storage_url = getval(
-            run_settings, '%s/platform/storage/output/platform_url' % self.SCHEMA_PREFIX)
+            run_settings, '%s/platform/storage/output/platform_url' % django_settings.SCHEMA_PREFIX)
         output_storage_settings = manage.get_platform_settings(
             output_storage_url, local_settings['bdp_username'])
         offset = getval(
-            run_settings, '%s/platform/storage/output/offset' % self.SCHEMA_PREFIX)
+            run_settings, '%s/platform/storage/output/offset' % django_settings.SCHEMA_PREFIX)
         self.job_dir = manage.get_job_dir(output_storage_settings, offset)
         # TODO: we assume initial input is in "%s/input_0" % self.job_dir
         # in configure stage we could copy initial data in 'input_location'
         # into this location
         try:
             self.id = int(getval(run_settings, '%s/system/id' %
-                                 self.SCHEMA_PREFIX))
+                                 django_settings.SCHEMA_PREFIX))
             self.iter_inputdir = os.path.join(
                 self.job_dir, "input_%s" % self.id)
         except (SettingNotFoundException, ValueError):
@@ -166,15 +157,13 @@ class Execute(stage.Stage):
 
         try:
             self.initial_numbfile = int(
-                getval(run_settings, '%s/stages/run/initial_numbfile' % self.SCHEMA_PREFIX))
+                getval(run_settings, '%s/stages/run/initial_numbfile' % django_settings.SCHEMA_PREFIX))
         except (SettingNotFoundException, ValueError):
             logger.warn("setting initial_numbfile for first iteration")
             self.initial_numbfile = 1
         try:
             self.experiment_id = int(
-                getval(run_settings, '%s/input/mytardis/experiment_id' % self.SCHEMA_PREFIX))
-            # self.experiment_id = int(smartconnectorscheduler.get_existing_key(run_settings,
-            #     'http://rmit.edu.au/schemas/input/mytardis/experiment_id'))
+                getval(run_settings, '%s/input/mytardis/experiment_id' % django_settings.SCHEMA_PREFIX))
         except SettingNotFoundException:
             self.experiment_id = 0
         except ValueError:
@@ -183,18 +172,16 @@ class Execute(stage.Stage):
         logger.debug("process run_settings=%s" % pformat(run_settings))
 
         computation_platform_url = getval(
-            run_settings, '%s/platform/computation/platform_url' % self.SCHEMA_PREFIX)
+            run_settings, '%s/platform/computation/platform_url' % django_settings.SCHEMA_PREFIX)
         comp_pltf_settings = manage.get_platform_settings(
             computation_platform_url, local_settings['bdp_username'])
         if local_settings['curate_data']:
             mytardis_url = getval(
-                run_settings, '%s/input/mytardis/mytardis_platform' % self.SCHEMA_PREFIX)
+                run_settings, '%s/input/mytardis/mytardis_platform' % django_settings.SCHEMA_PREFIX)
             mytardis_settings = manage.get_platform_settings(
                 mytardis_url, local_settings['bdp_username'])
         else:
             mytardis_settings = {}
-
-        #generic_output_schema = 'http://rmit.edu.au/schemas/platform/storage/output'
 
         failed_processes = [
             x for x in self.schedule_procs if x['status'] == 'failed']
@@ -249,9 +236,9 @@ class Execute(stage.Stage):
         """
 
         setvals(run_settings, {
-                '%s/stages/execute/executed_procs' % self.SCHEMA_PREFIX: str(self.exec_procs),
-                '%s/stages/schedule/current_processes' % self.SCHEMA_PREFIX: str(self.schedule_procs),
-                '%s/stages/schedule/all_processes' % self.SCHEMA_PREFIX: str(self.all_processes)
+                '%s/stages/execute/executed_procs' % django_settings.SCHEMA_PREFIX: str(self.exec_procs),
+                '%s/stages/schedule/current_processes' % django_settings.SCHEMA_PREFIX: str(self.schedule_procs),
+                '%s/stages/schedule/all_processes' % django_settings.SCHEMA_PREFIX: str(self.all_processes)
                 })
 
         #completed_processes = [x for x in self.exec_procs if x['status'] == 'completed']
@@ -261,14 +248,14 @@ class Execute(stage.Stage):
             x for x in self.schedule_procs if x['status'] == 'running']
         logger.debug('completed_processes=%d' % len(completed_processes))
         setvals(run_settings, {
-                '%s/stages/run/runs_left' % self.SCHEMA_PREFIX:
+                '%s/stages/run/runs_left' % django_settings.SCHEMA_PREFIX:
                     len(running_processes),
 
                     # len(self.exec_procs) - len(completed_processes),
-                '%s/stages/run/initial_numbfile' % self.SCHEMA_PREFIX: self.initial_numbfile,
+                '%s/stages/run/initial_numbfile' % django_settings.SCHEMA_PREFIX: self.initial_numbfile,
                 # fixme remove rand_index
-                '%s/stages/run/rand_index' % self.SCHEMA_PREFIX: self.rand_index,
-                '%s/input/mytardis/experiment_id' % self.SCHEMA_PREFIX: str(self.experiment_id)
+                '%s/stages/run/rand_index' % django_settings.SCHEMA_PREFIX: self.rand_index,
+                '%s/input/mytardis/experiment_id' % django_settings.SCHEMA_PREFIX: str(self.experiment_id)
                 })
         return run_settings
 
@@ -300,7 +287,7 @@ class Execute(stage.Stage):
             ssh = open_connection(ip_address=ip_address, settings=settings)
             logger.debug(settings['process_output_dirname'])
             try:
-                hadoop = run_settings['%s/input/system/compplatform/hadoop' % self.SCHEMA_PREFIX]
+                hadoop = run_settings['%s/input/system/compplatform/hadoop' % django_settings.SCHEMA_PREFIX]
                 sudo = False
                 options = "%s input_%s_%s output_%s_%s HADOOP_INPUT %s %s"  % (
                     settings['process_output_dirname'], self.contextid, process_id, self.contextid,
@@ -620,25 +607,25 @@ class Execute(stage.Stage):
     def set_execute_settings(self, run_settings, local_settings):
         self.set_domain_settings(run_settings, local_settings)
         update(local_settings, run_settings,
-               '%s/stages/setup/payload_destination' % self.SCHEMA_PREFIX,
-               '%s/stages/setup/filename_for_PIDs' % self.SCHEMA_PREFIX,
-               '%s/stages/setup/process_output_dirname' % self.SCHEMA_PREFIX,
-               '%s/stages/setup/smart_connector_input' % self.SCHEMA_PREFIX,
-               '%s/system/contextid' % self.SCHEMA_PREFIX,
-               '%s/system/random_numbers' % self.SCHEMA_PREFIX,
-               '%s/system/id' % self.SCHEMA_PREFIX
+               '%s/stages/setup/payload_destination' % django_settings.SCHEMA_PREFIX,
+               '%s/stages/setup/filename_for_PIDs' % django_settings.SCHEMA_PREFIX,
+               '%s/stages/setup/process_output_dirname' % django_settings.SCHEMA_PREFIX,
+               '%s/stages/setup/smart_connector_input' % django_settings.SCHEMA_PREFIX,
+               '%s/system/contextid' % django_settings.SCHEMA_PREFIX,
+               '%s/system/random_numbers' % django_settings.SCHEMA_PREFIX,
+               '%s/system/id' % django_settings.SCHEMA_PREFIX
 
                )
         try:
             local_settings['curate_data'] = getval(run_settings,
-                                                   '%s/input/mytardis/curate_data' % self.SCHEMA_PREFIX)
+                                                   '%s/input/mytardis/curate_data' % django_settings.SCHEMA_PREFIX)
         except SettingNotFoundException:
             local_settings['curate_data'] = 0
         local_settings['bdp_username'] = getval(run_settings,
-                                                '%s/bdp_userprofile/username' % self.SCHEMA_PREFIX)
-        if '%s/input/system/compplatform/hadoop' % self.SCHEMA_PREFIX in run_settings.keys():
+                                                '%s/bdp_userprofile/username' % django_settings.SCHEMA_PREFIX)
+        if '%s/input/system/compplatform/hadoop' % django_settings.SCHEMA_PREFIX in run_settings.keys():
             from chiminey.platform import get_platform_settings
-            platform_url = run_settings['%s/platform/computation' % self.SCHEMA_PREFIX]['platform_url']
+            platform_url = run_settings['%s/platform/computation' % django_settings.SCHEMA_PREFIX]['platform_url']
             pltf_settings = get_platform_settings(platform_url, local_settings['bdp_username'])
             local_settings['root_path'] = '/home/%s' % pltf_settings['username']
             local_settings['hadoop_home_path'] = pltf_settings['hadoop_home_path']
@@ -654,7 +641,7 @@ class Execute(stage.Stage):
     def set_domain_settings(self, run_settings, local_settings):
          try:
              schema = models.Schema.objects.get(namespace=self.get_input_schema_namespace(
-                run_settings['%s/directive_profile' % self.SCHEMA_PREFIX]['directive_name']))
+                run_settings['%s/directive_profile' % django_settings.SCHEMA_PREFIX]['directive_name']))
              if schema:
                 params = models.ParameterName.objects.filter(schema=schema)
                 if params:
@@ -668,7 +655,7 @@ class Execute(stage.Stage):
     def get_optional_args(self, run_settings):
         from os.path import basename
         namespace = self.get_input_schema_namespace(
-            run_settings['%s/directive_profile' % self.SCHEMA_PREFIX]['directive_name'])
+            run_settings['%s/directive_profile' % django_settings.SCHEMA_PREFIX]['directive_name'])
         try:
             args_keys = django_settings.SMART_CONNECTORS[basename(namespace)]['args']
         except KeyError:

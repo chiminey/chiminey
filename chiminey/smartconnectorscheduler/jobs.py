@@ -39,6 +39,8 @@ from chiminey.smartconnectorscheduler import models
 from chiminey.storage import get_url_with_credentials, get_file
 
 from chiminey import messages
+from django.conf import settings as django_settings
+
 
 logger = logging.getLogger(__name__)
 
@@ -277,8 +279,8 @@ def make_runcontext_for_directive(platform_name, directive_name,
     if not settings_valid:
         raise InvalidInputError(problem)
 
-    run_settings[u'http://rmit.edu.au/schemas/system'][u'platform'] = platform_name
-    run_settings[u'http://rmit.edu.au/schemas/system'][u'contextid'] = 0
+    run_settings[u'%s/system' % django_settings.SCHEMA_PREFIX][u'platform'] = platform_name
+    run_settings[u'%s/system' % django_settings.SCHEMA_PREFIX][u'contextid'] = 0
 
     run_context = _make_new_run_context(directive.stage,
         profile, directive, parent, run_settings)
@@ -286,7 +288,7 @@ def make_runcontext_for_directive(platform_name, directive_name,
     run_context.current_stage = directive.stage
     run_context.save()
 
-    run_settings[u'http://rmit.edu.au/schemas/system'][u'contextid'] = run_context.id
+    run_settings[u'%s/system' % django_settings.SCHEMA_PREFIX][u'contextid'] = run_context.id
 
     # Add User settings to context, so we get set values when context executed
     # and local changes can be made to values in that context.
@@ -323,8 +325,8 @@ def _make_run_settings_for_command(command_args, run_settings):
     Create run_settings for the command to execute with
     """
     logger.debug("_make_run_settings_for_command")
-    if u'http://rmit.edu.au/schemas/system/misc' in run_settings:
-        misc = run_settings[u'http://rmit.edu.au/schemas/system/misc']
+    if u'%s/system/misc' % django_settings.SCHEMA_PREFIX in run_settings:
+        misc = run_settings[u'%s/system/misc' % django_settings.SCHEMA_PREFIX]
     else:
         misc = {}
 
@@ -341,7 +343,6 @@ def _make_run_settings_for_command(command_args, run_settings):
         #     file_args['file%s' % arg_num] = v
         #     arg_num += 1
 
-    #run_settings[u'http://rmit.edu.au/schemas/%s/files' % command.directive.name] = file_args
     run_settings.update(config_args)
 
     logger.debug("run_settings =  %s" % run_settings)

@@ -36,7 +36,6 @@ logger = logging.getLogger(__name__)
 
 from django.conf import settings as django_settings
 
-RMIT_SCHEMA = django_settings.SCHEMA_PREFIX
 
 class Destroy(stage.Stage):
 
@@ -45,7 +44,7 @@ class Destroy(stage.Stage):
 
     def is_triggered(self, run_settings):
         try:
-            converged = int(getval(run_settings, '%s/stages/converge/converged' % RMIT_SCHEMA))
+            converged = int(getval(run_settings, '%s/stages/converge/converged' % django_settings.SCHEMA_PREFIX))
             logger.debug("converged=%s" % converged)
         except (ValueError, SettingNotFoundException) as e:
             return False
@@ -53,7 +52,7 @@ class Destroy(stage.Stage):
             try:
                 run_finished = int(getval(run_settings,
                                    '%s/stages/destroy/run_finished'
-                                        % RMIT_SCHEMA))
+                                        % django_settings.SCHEMA_PREFIX))
             except (ValueError, SettingNotFoundException) as e:
                 return True
             return not run_finished
@@ -61,31 +60,31 @@ class Destroy(stage.Stage):
 
     def process(self, run_settings):
         try:
-            self.id = int(getval(run_settings, '%s/system/id' % RMIT_SCHEMA))
+            self.id = int(getval(run_settings, '%s/system/id' % django_settings.SCHEMA_PREFIX))
         except (SettingNotFoundException, ValueError):
             self.id = 0
         try:
             self.created_nodes = ast.literal_eval(getval(
-                run_settings, '%s/stages/create/created_nodes' % RMIT_SCHEMA))
+                run_settings, '%s/stages/create/created_nodes' % django_settings.SCHEMA_PREFIX))
         except (SettingNotFoundException, ValueError):
             self.created_nodes = []
 
         try:
             self.scheduled_nodes = ast.literal_eval(getval(
-                run_settings, '%s/stages/schedule/scheduled_nodes' % RMIT_SCHEMA))
+                run_settings, '%s/stages/schedule/scheduled_nodes' % django_settings.SCHEMA_PREFIX))
         except (SettingNotFoundException, ValueError):
             self.scheduled_nodes = []
 
         try:
             self.bootstrapped_nodes = ast.literal_eval(getval(
-                run_settings, '%s/stages/bootstrap/bootstrapped_nodes' % RMIT_SCHEMA))
+                run_settings, '%s/stages/bootstrap/bootstrapped_nodes' % django_settings.SCHEMA_PREFIX))
         except (SettingNotFoundException, ValueError):
             self.bootstrapped_nodes = []
 
 
         #messages.info(run_settings, "%d: destroy" % self.id)
         comp_pltf_settings = self.get_platform_settings(
-            run_settings, 'http://rmit.edu.au/schemas/platform/computation')
+            run_settings, '%s/platform/computation' % django_settings.SCHEMA_PREFIX)
         try:
             platform_type = comp_pltf_settings['platform_type']
         except KeyError, e:
@@ -126,16 +125,16 @@ class Destroy(stage.Stage):
 
     def output(self, run_settings):
         setvals(run_settings, {
-            '%s/stages/destroy/run_finished' % RMIT_SCHEMA: 1
+            '%s/stages/destroy/run_finished' % django_settings.SCHEMA_PREFIX: 1
                })
         setvals(run_settings, {
-            '%s/stages/create/created_nodes' % RMIT_SCHEMA: self.created_nodes
+            '%s/stages/create/created_nodes' % django_settings.SCHEMA_PREFIX: self.created_nodes
                })
         setvals(run_settings, {
-            '%s/stages/schedule/scheduled_nodes' % RMIT_SCHEMA: self.scheduled_nodes
+            '%s/stages/schedule/scheduled_nodes' % django_settings.SCHEMA_PREFIX: self.scheduled_nodes
                })
         setvals(run_settings, {
-            '%s/stages/bootstrap/bootstrapped_nodes' % RMIT_SCHEMA: self.bootstrapped_nodes
+            '%s/stages/bootstrap/bootstrapped_nodes' % django_settings.SCHEMA_PREFIX: self.bootstrapped_nodes
                })
         messages.success(run_settings, "%d: Completed" % self.id)
         return run_settings

@@ -34,8 +34,6 @@ from chiminey import storage
 
 logger = logging.getLogger(__name__)
 
-SCHEMA_PREFIX = "http://rmit.edu.au/schemas"
-
 
 EXP_DATASET_NAME_SPLIT = 2
 
@@ -125,7 +123,7 @@ def create_graph_paramset(schema_ns, name, graph_info, value_dict, value_keys):
     """
 
     res = {}
-    res['schema'] = "%s/%s" % (SCHEMA_PREFIX, schema_ns)
+    res['schema'] = "%s/%s" % (django_settings.SCHEMA_PREFIX, schema_ns)
     #paramset = []
 
     def _make_param(x, y):
@@ -164,7 +162,7 @@ def create_paramset(schema_ns, parameters):
 
     """
     res = {}
-    res['schema'] = '%s/%s' % (SCHEMA_PREFIX, schema_ns)
+    res['schema'] = '%s/%s' % (django_settings.SCHEMA_PREFIX, schema_ns)
     res['parameters'] = parameters
     return res
 
@@ -377,17 +375,6 @@ def create_dataset(settings,
     logger.debug("saving dataset in experiment at %s" % new_exp_id)
     url = "%s/api/v1/dataset/?format=json" % tardis_host_url
     headers = {'content-type': 'application/json'}
-
-    # # FIXME: schema should be a parameter
-    # schemas = [{
-    #            "schema": "http://rmit.edu.au/schemas/hrmcdataset",
-    #            "parameters": []
-    #           }]
-    # if dataset_schema:
-    #    schemas.append({
-    #        "schema": dataset_schema,
-    #        "parameters": []
-    #        })
 
     schemas = dataset_paramset
 
@@ -639,7 +626,7 @@ def _get_or_create_experiment(query_settings, exp_name):
         url = "%s/api/v1/experiment/?format=json" % tardis_host_url
         headers = {'content-type': 'application/json'}
         schemas = [{
-                    "schema": "http://rmit.edu.au/schemas/hrmcexp",
+                    "schema": "%s/hrmcexp" % django_settings.SCHEMA_PREFIX,
                     "parameters": []
                    }]
         data = json.dumps({
@@ -688,7 +675,7 @@ def _get_or_create_dataset(settings, dataset_name, exp_id, dataset_schema=None):
         headers = {'content-type': 'application/json'}
         # FIXME: schema should be a parameter
         schemas = [{
-                    "schema": "http://rmit.edu.au/schemas/hrmcdataset",
+                    "schema": "%s/hrmcdataset" % django_settings.SCHEMA_PREFIX,
                     "parameters": []
                    }]
         if dataset_schema:

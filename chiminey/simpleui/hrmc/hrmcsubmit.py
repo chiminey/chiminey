@@ -45,17 +45,3 @@ class HRMCSubmitForm(forms.Form):
         self.fields["max_iteration"].validators.append(validators.validate_max_iteration)
         self.fields["error_threshold"].validators.append(validators.validate_error_threshold)
         self.fields["experiment_id"].validators.append(validators.validate_experiment_id)
-
-
-
-
-    # ['http://rmit.edu.au/schemas/hrmc',
-    #     ('number_vm_instances', 2), (u'iseed', 42),
-    #     # TODO: in configure stage could copy this information from somewhere to this required location
-    #     ('input_location',  'file://127.0.0.1/hrmcrun/input_0'),
-    #     ('optimisation_scheme', 1),
-    #     ('threshold', "[1]"),
-    #     ('error_threshold', "0.03"),
-    #     ('max_iteration', 20)
-
-

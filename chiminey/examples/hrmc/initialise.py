@@ -34,7 +34,7 @@ class HRMCInitial(CoreInitial):
     def get_updated_configure_params(self):
         settings = \
             {
-            u'http://rmit.edu.au/schemas/system':
+            u'%s/system' % django_settings.SCHEMA_PREFIX:
                 {
                     u'random_numbers': 'file://127.0.0.1/randomnums.txt',
                     u'metadata_builder': 'chiminey.examples.hrmc.metadatabuilder.HRMCMetadataBuilder',
@@ -78,7 +78,7 @@ class HRMCInitial(CoreInitial):
                                           'description': 'No. varying parameters', 'ranking': 45,
                                           'choices': '[("MC","Monte Carlo"), ("MCSA", "Monte Carlo with Simulated Annealing")]',
                                           'initial': 'MC', 'help_text': '',
-                                          'hidefield': 'http://rmit.edu.au/schemas/input/hrmc/fanout_per_kept_result',
+                                          'hidefield': 'django_settings.SCHEMA_PREFIX/input/hrmc/fanout_per_kept_result' % django_settings.SCHEMA_PREFIX,
                                           'hidecondition': '== "MCSA"'},
                  u'fanout_per_kept_result': {'type': models.ParameterName.NUMERIC, 'subtype': 'natural',
                                              'description': 'No. fanout kept per result', 'initial': 1,
@@ -98,14 +98,14 @@ class HRMCInitial(CoreInitial):
     def get_updated_sweep_params(self, subdirective):
         package = "chiminey.corestages.sweep.HRMCSweep"
         settings = {
-            u'http://rmit.edu.au/schemas/stages/sweep':
+            u'django_settings.SCHEMA_PREFIX/stages/sweep' % django_settings.SCHEMA_PREFIX:
             {
                 u'template_name': 'HRMC.inp',
                 u'directive': subdirective.name
 
             },
             # FIXME: move random_numbers into system schema
-            u'http://rmit.edu.au/schemas/system':
+            u'django_settings.SCHEMA_PREFIX/system' % django_settings.SCHEMA_PREFIX:
             {
                 u'random_numbers': 'file://127.0.0.1/randomnums.txt'
             },
