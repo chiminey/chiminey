@@ -61,7 +61,7 @@ Constructing Smart Connector Input Fields
 """""""""""""""""""""""""""""""""""""""""
 
 Here, we see how to include the input fields that are needed for submitting a smart connector job.
-When a :ref:`smart connector is created <create_sc>`, one of the tasks is specifying  attaching resources and non-functional properties via  input field types.
+:ref:`When a smart connector is created <create_sc>`, one of the tasks is   attaching resources and non-functional properties via  input field types.
 This task is done by overriding  ``get_ui_schema_namespace(self)`` of the ``CoreInitial`` class.
 The ``CoreInitial`` class is available at ``chiminey/initialisation/coreinitial``.
 
