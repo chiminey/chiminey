@@ -44,8 +44,15 @@ The following table shows the list of input field types and their description.
       |``reliability``             | | Set of fields to control the degree of the    |
       |                            | | provided fault tolerance  support             |
       +----------------------------+-------------------------------------------------+
+      |``mytardis``                | | Set of fields to enable end users curate the  |
+      |                            | | input and output of their smart connector job |
+      |                            | | on `MyTardis <http://mytardis.org>`_          |
+      +----------------------------+-------------------------------------------------+
       |``hrmclite``                | | Domain-specific input fields needed           |
       |                            | | to run :ref:`HRMCLite <hrmclite_sc>` jobs     |
+      +----------------------------+-------------------------------------------------+
+      |``hrmc``                    | | Domain-specific input fields needed           |
+      |                            | | to run :ref:`HRMC <hrmc_sc>` jobs             |
       +----------------------------+-------------------------------------------------+
       |``wordcount``               | | Domain-specific input fields needed to run    |
       |                            | | :ref:`wordcount <wordcount_sc>` jobs          |

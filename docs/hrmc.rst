@@ -1,4 +1,7 @@
 
+
+.. _hrmc_sc:
+
 The Hybrid Reverse Monte Carlo (HRMC) Smart Connector
 ========================================
 
