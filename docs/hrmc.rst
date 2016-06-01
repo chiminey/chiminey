@@ -10,9 +10,7 @@ The Hybrid Reverse Monte Carlo (HRMC) Smart Connector
   note:: This documentation is under construction
 
 
-.. note:: This example is significantly more complicated than the previous examples. Therefore we describe here the
-unique features of this connector and invite the reader to read the source code for this connector in detail.
-It combines a number of features from the previous examples and uses the same overall architecture.
+.. note:: This example is significantly more complicated than the previous examples. Therefore we describe here the unique features of this connector and invite the reader to read the source code for this connector in detail. It combines a number of features from the previous examples and uses the same overall architecture.
 
 
 
