@@ -29,8 +29,6 @@ from chiminey.platform import get_platform_settings
 from chiminey.runsettings import getval, SettingNotFoundException
 from django.conf import settings as django_settings
 
-RMIT_SCHEMA = django_settings.SCHEMA_PREFIX
-
 
 logger = logging.getLogger(__name__)
 
@@ -71,15 +69,17 @@ class Stage(object):
         pass
 
     def get_platform_settings(self, run_settings, namespace_prefix):
-        bdp_username = run_settings['http://rmit.edu.au/schemas/bdp_userprofile']['username']
+        bdp_username = run_settings['%s/bdp_userprofile' % django_settings.SCHEMA_PREFIX]['username']
         platform_url = run_settings[namespace_prefix]['platform_url']
         return get_platform_settings(platform_url, bdp_username)
 
-    def get_input_schema_namespace(self, directive_name):
-        basename = directive_name
-        if 'sweep_' in basename[0:6]:
-            basename = directive_name[6:]
-        return '%s/input/%s' % (django_settings.SCHEMA_PREFIX, basename)
+    def get_input_schema_namespace(self, run_settings):
+        directive_name = run_settings['%s/directive_profile' % django_settings.SCHEMA_PREFIX]['directive_name']
+        #if 'sweep_' in basename[0:6]:
+        #    basename = directive_name[6:]
+        input_schema = '%s/input/%s' % (django_settings.SCHEMA_PREFIX, directive_name)
+        logger.debug('input_schema=%s' % input_schema)
+        return input_schema
 
     def set_stage_settings(self, run_settings, local_settings):
         pass
@@ -89,36 +89,46 @@ class Stage(object):
 
     def input_exists(self, run_settings):
         try:
-            getval(run_settings, 'http://rmit.edu.au/schemas/input/location/input_location')
-            return 'http://rmit.edu.au/schemas/input/location/input_location'
+            getval(run_settings, '%s/input/location/input_location' % django_settings.SCHEMA_PREFIX)
+            return '%s/input/location/input_location' % django_settings.SCHEMA_PREFIX
         except SettingNotFoundException:
             pass
         try:
-            getval(run_settings, 'http://rmit.edu.au/schemas/input/system/input_location')
-            return 'http://rmit.edu.au/schemas/input/system/input_location'
+            getval(run_settings, '%s/input/system/input_location' % django_settings.SCHEMA_PREFIX)
+            return '%s/input/system/input_location' % django_settings.SCHEMA_PREFIX
         except SettingNotFoundException:
             pass
         try:
-            getval(run_settings, 'http://rmit.edu.au/schemas/input/location/input/input_location')
-            return 'http://rmit.edu.au/schemas/input/location/input/input_location'
+            getval(run_settings, '%s/input/location/input/input_location' % django_settings.SCHEMA_PREFIX)
+            return '%s/input/location/input/input_location' % django_settings.SCHEMA_PREFIX
+        except SettingNotFoundException:
+            pass
+        try:
+            getval(run_settings, '%s/input/location/input' % django_settings.SCHEMA_PREFIX)
+            return '%s/input/location/input' % django_settings.SCHEMA_PREFIX
         except SettingNotFoundException:
             pass
         return ""
-
+        
     def output_exists(self, run_settings):
         try:
-            getval(run_settings, 'http://rmit.edu.au/schemas/input/location/output_location')
-            return 'http://rmit.edu.au/schemas/input/location/output_location'
+            getval(run_settings, '%s/input/location/output_location' % django_settings.SCHEMA_PREFIX)
+            return '%s/input/location/output_location' % django_settings.SCHEMA_PREFIX
         except SettingNotFoundException:
             pass
         try:
-            getval(run_settings, 'http://rmit.edu.au/schemas/input/system/output_location')
-            return 'http://rmit.edu.au/schemas/input/system/output_location'
+            getval(run_settings, '%s/input/system/output_location' % django_settings.SCHEMA_PREFIX)
+            return '%s/input/system/output_location' % django_settings.SCHEMA_PREFIX
         except SettingNotFoundException:
             pass
         try:
-            getval(run_settings, 'http://rmit.edu.au/schemas/input/location/output/output_location')
-            return 'http://rmit.edu.au/schemas/input/location/output/output_location'
+            getval(run_settings, '%s/input/location/output/output_location' % django_settings.SCHEMA_PREFIX)
+            return '%s/input/location/output/output_location' % django_settings.SCHEMA_PREFIX
+        except SettingNotFoundException:
+            pass
+        try:
+            getval(run_settings, '%s/input/location/output' % django_settings.SCHEMA_PREFIX)
+            return '%s/input/location/output' % django_settings.SCHEMA_PREFIX
         except SettingNotFoundException:
             pass
         return ""
@@ -126,7 +136,7 @@ class Stage(object):
     def import_parent_stage(self, run_settings):
         from chiminey.smartconnectorscheduler import jobs
         from django.core.exceptions import ImproperlyConfigured
-        directive_name = getval(run_settings, "http://rmit.edu.au/schemas/directive_profile/directive_name")
+        directive_name = getval(run_settings, "%s/directive_profile/directive_name" % django_settings.SCHEMA_PREFIX)
         directive = models.Directive.objects.get(name=directive_name)
         logger.debug('directive_name=%s' % directive_name)
         parent_stage = directive.stage
@@ -167,11 +177,11 @@ class Stage(object):
 
     def get_process_output_path(self, run_settings, process_id, local_settings):
         computation_platform = self.get_platform_settings(
-            run_settings, 'http://rmit.edu.au/schemas/platform/computation')
+            run_settings, '%s/platform/computation' % django_settings.SCHEMA_PREFIX)
         output_path = os.path.join(
             computation_platform['root_path'],
             self.get_relative_output_path(local_settings), str(process_id),
-            getval(run_settings, 'http://rmit.edu.au/schemas/stages/setup/process_output_dirname'))
+            getval(run_settings, '%s/stages/setup/process_output_dirname' % django_settings.SCHEMA_PREFIX))
         return output_path
 
     def get_relative_output_path(self, local_settings):

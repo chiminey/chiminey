@@ -64,7 +64,6 @@ from chiminey.smartconnectorscheduler.errors import deprecated
 logger = logging.getLogger(__name__)
 from django.conf import settings as django_settings
 
-RMIT_SCHEMA = django_settings.SCHEMA_PREFIX
 
 POPPED_KEYS = ['filters', 'private_key_path', 'operation', 'vm_image_size', 'name']
 
@@ -117,19 +116,16 @@ def bdp_account_settings(request):
 
 
 def computation_platform_settings(request):
-
     new_form_data = {}
     resources = {}
     for k, v in new_form_data.items():
         resources[k] = {k: {'form': v[0], 'data': v[1], 'advanced_ops': 'false'}}
-
-
     for field_name, ns_suffix, group, group_name, ops in [('cluster_form', 'cluster/pbs_based', 'cluster', "HPC", 'true' ),
-                                    ('cloud_form', 'cloud/ec2-based', 'cloud', 'Cloud', 'false'),
+                                    ('cloud_form', 'cloud/ec2-based', 'cloud', 'Cloud', 'true'),
                                     ('jenkins_form','testing/jenkins_based', 'jenkins', 'Continuous Integration', 'false' ),
                                     ('bigdata_form', 'bigdata/hadoop', 'bigdata', 'Analytics', 'true'),
                                     ]:
-        namespace = "%s/platform/computation/%s" % (RMIT_SCHEMA, ns_suffix)
+        namespace = "%s/platform/computation/%s" % (django_settings.SCHEMA_PREFIX, ns_suffix)
         params = _get_platform_params(request, namespace)
 
         form, form_data= make_directive_form(
@@ -151,7 +147,7 @@ def computation_platform_settings(request):
                 return HttpResponsePermanentRedirect(reverse('computation-platform-settings'))
 
     #FIXME: consider using non-locahost URL for api_host
-    url = "%s/api/v1/platformparameter/?format=json&limit=0&schema=http://rmit.edu.au/schemas/platform/computation" % api_host
+    url = "%s/api/v1/platformparameter/?format=json&limit=0&schema=%s/platform/computation" % (api_host, django_settings.SCHEMA_PREFIX)
     cookies = dict(request.COOKIES)
     logger.debug("cookies=%s" % cookies)
     headers = {'content-type': 'application/json'}
@@ -222,61 +218,6 @@ def hide_resource_header_fields(dictionary, popped_keys):
     return dictionary
 
 
-    # namespace = RMIT_SCHEMA + "/platform/computation/cloud/ec2-based"
-    # cloud_params = _get_platform_params(request, namespace)
-    # cloudform, form_data = make_directive_form(
-    #     platform_params=cloud_params,
-    #     username=request.user.username)
-    # namespace = RMIT_SCHEMA + "/platform/computation/cluster/pbs_based"
-    # cluster_params = _get_platform_params(request, namespace)
-    # cluster_form, form_data = make_directive_form(
-    #     platform_params=cluster_params,
-    #     username=request.user.username)
-
-
-    # if request.method == "POST":
-    #     cloudform, form_data = make_directive_form(
-    #         request=request.POST,
-    #         platform_params=cloud_params,
-    #         username=request.user.username)
-    #     cluster_form, form_data = make_directive_form(
-    #         request=request.POST,
-    #         platform_params=cluster_params,
-    #         username=request.user.username)
-    #     if cluster_form.is_valid():
-    #         schema = RMIT_SCHEMA + '/platform/computation/cluster/pbs_based'
-    #         post_platform(schema, cluster_form.cleaned_data, request)
-    #         return HttpResponsePermanentRedirect(reverse('computation-platform-settings'))
-    #     if cloudform.is_valid():
-    #         schema = RMIT_SCHEMA + '/platform/computation/cloud/ec2-based'
-    #         post_platform(schema, cloudform.cleaned_data, request)
-    #         return HttpResponsePermanentRedirect(reverse('computation-platform-settings'))
-
-    # #FIXME: consider using non-locahost URL for api_host
-    # url = "%s/api/v1/platformparameter/?format=json&limit=0&schema=http://rmit.edu.au/schemas/platform/computation" % api_host
-    # cookies = dict(request.COOKIES)
-    # logger.debug("cookies=%s" % cookies)
-    # headers = {'content-type': 'application/json'}
-    # try:
-    #     r = requests.get(url, headers=headers, cookies=cookies)
-    # except HTTPError as e:
-    #     logger.debug('The server couldn\'t fulfill the request. %s' % e)
-    #     logger.debug('Error code: ', e.code)
-    # except URLError as e:
-    #     logger.debug('We failed to reach a server. %s' % e)
-    #     logger.debug('Reason: ', e.reason)
-    # else:
-    #     logger.debug('everything is fine')
-    #     GET_data = r.json()
-    #     computation_platforms, all_headers = filter_computation_platforms(GET_data)
-    #     logger.debug(computation_platforms)
-    # logger.debug("cloud_form_get=%s" % cloudform)
-    # logger.debug("cloud_data_get=%s" % form_data)
-    # logger.debug("nci_form_get=%s" % cluster_form)
-    # return render(request, 'accountsettings/computationplatform.html',
-    #               {'cluster_form': cluster_form, 'cloud_form': cloudform,
-    #                 'computation_platforms': computation_platforms,
-    #                 'all_headers': all_headers})
 
 
 def _get_platform_params(request, namespace):
@@ -290,34 +231,38 @@ def _get_platform_params(request, namespace):
 
 
 def storage_platform_settings(request):
-    namespace = RMIT_SCHEMA + "/platform/storage/mytardis"
+    namespace = django_settings.SCHEMA_PREFIX + "/platform/storage/mytardis"
     mytardis_params = _get_platform_params(request, namespace)
     mytardis_form, mytardis_form_data = make_directive_form(
         platform_params=mytardis_params,
         username=request.user.username)
-    namespace = RMIT_SCHEMA + "/platform/storage/unix"
+    namespace = django_settings.SCHEMA_PREFIX + "/platform/storage/unix"
     unix_params = _get_platform_params(request, namespace)
     unix_form, unix_form_data = make_directive_form(
         platform_params=unix_params,
             username=request.user.username)
     if request.method == "POST":
+
+        logger.debug('storage mytardis post')
+        logger.debug(request.__dict__)
+
         #unix_form = SSHStoragePlatformForm(request.POST)
         unix_form, unix_form_data = make_directive_form(
             request=request.POST,
             platform_params=unix_params,
             username=request.user.username)
-        if unix_form.is_valid():
-            schema = RMIT_SCHEMA + '/platform/storage/unix'
-            unix_form.cleaned_data['platform_type'] = 'unix'
-            post_platform(schema, unix_form.cleaned_data, request)
-            return HttpResponsePermanentRedirect(reverse('storage-platform-settings'))
+        #if unix_form.is_valid():
+        #    schema = django_settings.SCHEMA_PREFIX + '/platform/storage/unix'
+        #    unix_form.cleaned_data['platform_type'] = 'unix'
+        #    post_platform(schema, unix_form.cleaned_data, request)
+        #    return HttpResponsePermanentRedirect(reverse('storage-platform-settings'))
         mytardis_form, mytardis_form_data = make_directive_form(
             request=request.POST,
             platform_params=mytardis_params,
             username=request.user.username)
         if mytardis_form.is_valid():
             logger.debug('valid mytardis')
-            schema = RMIT_SCHEMA + '/platform/storage/mytardis'
+            schema = django_settings.SCHEMA_PREFIX + '/platform/storage/mytardis'
             mytardis_form.cleaned_data['platform_type'] = 'mytardis'
             post_platform(schema, mytardis_form.cleaned_data, request)
             return HttpResponsePermanentRedirect(reverse('storage-platform-settings'))
@@ -325,7 +270,7 @@ def storage_platform_settings(request):
     #FIXME: consider using non-locahost URL for api_host
     url = "%s/api/v1/platformparameter/" \
         "?format=json&limit=0&schema=" \
-        "http://rmit.edu.au/schemas/platform/storage" % api_host
+        "%s/platform/storage" % (api_host, django_settings.SCHEMA_PREFIX)
     cookies = dict(request.COOKIES)
     logger.debug("cookies=%s" % cookies)
     headers = {'content-type': 'application/json'}
@@ -581,7 +526,7 @@ class ContextView(DetailView):
     def get_context_data(self, **kwargs):
         context = super(ContextView, self).get_context_data(**kwargs)
 
-        INPUT_SCHEMA_PREFIX = RMIT_SCHEMA + "/input"
+        INPUT_SCHEMA_PREFIX = django_settings.SCHEMA_PREFIX + "/input"
         context_ps = models.ContextParameterSet.objects.filter(context=self.object)
         cpset = list(itertools.chain(
                context_ps.filter(
@@ -623,8 +568,8 @@ class HRMCSubmitFormView(FormView):
     template_name = 'hrmc.html'
     form_class = HRMCSubmitForm
     success_url = '/jobs'
-    hrmc_schema = RMIT_SCHEMA + "/hrmc/"
-    system_schema = RMIT_SCHEMA + "/system/misc/"
+    hrmc_schema = django_settings.SCHEMA_PREFIX + "/hrmc/"
+    system_schema = django_settings.SCHEMA_PREFIX + "/system/misc/"
 
     initial = {'number_vm_instances': 1,
         'minimum_number_vm_instances': 1,
@@ -686,43 +631,6 @@ class HRMCSubmitFormView(FormView):
         return super(HRMCSubmitFormView, self).form_valid(form)
 
 
-# @deprecated
-# class SweepSubmitFormView(FormView):
-#     template_name = 'sweep.html'
-#     form_class = SweepSubmitForm
-#     success_url = '/jobs'
-#     initial = {'number_vm_instances': 0,
-#                'minimum_number_vm_instances': 0,
-#         'iseed': 42,
-#         'maximum_retry': 1,
-#         'reschedule_failed_processes': 1,
-#         #'input_location': 'file://127.0.0.1/myfiles/input',
-#         'optimisation_scheme': "MCSA",
-#         'threshold': "[1]",
-#         'error_threshold': "0.03",
-#         'max_iteration': 2,
-#         'fanout_per_kept_result': 2,
-#         'pottype': 1,
-#         'sweep_map': '{}',  # "var1": [3, 7], "var2": [1, 2]}',
-#         'run_map': '{}',
-#         'experiment_id': 0
-#         #'output_location': 'file://local@127.0.0.1/sweep'
-#         }
-
-#     # This method is called when valid form data has been POSTed.
-#     # It should return an HttpResponse.
-#     def form_valid(self, form):
-#         schemas = {
-#         'hrmc_schema': RMIT_SCHEMA + "/hrmc/",
-#         'system_schema': "http://rmit.edu.au/q/misc/",
-#         'run_schema': RMIT_SCHEMA + "/stages/run/",
-#         'sweep_schema': RMIT_SCHEMA + "/stages/sweep/",
-#         'mytardis_schema': RMIT_SCHEMA + '/input/mytardis'
-#         }
-#         submit_sweep_job(self.request, form, schemas)
-#         return super(SweepSubmitFormView, self).form_valid(form)
-
-
 @deprecated
 def submit_sweep_job(request, form, schemas):
 
@@ -755,7 +663,7 @@ def submit_sweep_job(request, form, schemas):
                 #'run_map': form.cleaned_data['run_map'],
                 schemas['run_schema'] + 'run_map': "{}",
                 schemas['system_schema'] + 'output_location': form.cleaned_data['output_location'],
-                RMIT_SCHEMA + '/bdp_userprofile/username': request.user.username})
+                django_settings.SCHEMA_PREFIX + '/bdp_userprofile/username': request.user.username})
 
     logger.debug("data=%s" % data)
     r = requests.post(url,
@@ -779,7 +687,7 @@ class MakeSubmitFormView(FormView):
     template_name = 'make.html'
     form_class = MakeSubmitForm
     success_url = '/jobs'
-    system_schema = RMIT_SCHEMA + "/system/misc/"
+    system_schema = django_settings.SCHEMA_PREFIX + "/system/misc/"
 
     initial = {
         'input_location': 'file://local@172.16.231.130/myfiles/vasppayload',
@@ -802,8 +710,8 @@ class MakeSubmitFormView(FormView):
         logger.debug("cookies=%s" % cookies)
         headers = {'content-type': 'application/json'}
 
-        remotemake_schema = RMIT_SCHEMA + "/remotemake/"
-        make_schema = RMIT_SCHEMA + "/stages/make/"
+        remotemake_schema = django_settings.SCHEMA_PREFIX + "/remotemake/"
+        make_schema = django_settings.SCHEMA_PREFIX + "/stages/make/"
         data = json.dumps({'smart_connector': 'remotemake',
                     remotemake_schema + 'input_location':  form.cleaned_data['input_location'],
                     remotemake_schema + 'experiment_id': form.cleaned_data['experiment_id'],
@@ -934,11 +842,11 @@ def make_dynamic_field(parameter, **kwargs):
                 # passed in, as some directives will only work with particular computation/*
                 # categories.  Assume only nectar comp platforms ever allowed here.
 
-                if parameter['subtype'] == "platform" and 'directive' in kwargs.keys():
+                if (parameter['subtype'] == "platform" or parameter['subtype'] == 'mytardis' ) and 'directive' in kwargs.keys():
                     #directive_name = kwargs['directive']['name']
                     #logger.debug("computation platform is %s" % directive_name)
                     namespace = kwargs['namespace']
-                    schema = RMIT_SCHEMA
+                    schema = django_settings.SCHEMA_PREFIX
                     try:
                         schema += django_settings.RESOURCE_SCHEMA_NAMESPACE[namespace]
                         logger.debug('myschema=%s' % schema)
@@ -947,17 +855,17 @@ def make_dynamic_field(parameter, **kwargs):
 
                     '''
 
-                    if namespace == RMIT_SCHEMA + '/input/system/compplatform/cloud':
+                    if namespace == django_settings.SCHEMA_PREFIX + '/input/system/compplatform/cloud':
                         schema += 'cloud/ec2-based'
-                    elif namespace == RMIT_SCHEMA + '/input/system/compplatform/unix':
+                    elif namespace == django_settings.SCHEMA_PREFIX + '/input/system/compplatform/unix':
                         schema += 'cluster/pbs_based'
-                    elif namespace == RMIT_SCHEMA + '/input/system/compplatform':
+                    elif namespace == django_settings.SCHEMA_PREFIX + '/input/system/compplatform':
                         schema += ''
                     else:
                         logger.warn("unknown computation platform")
                     '''
-                elif parameter['subtype'] == 'mytardis':
-                    schema = RMIT_SCHEMA + '/platform/storage/mytardis'
+                #elif parameter['subtype'] == 'mytardis':
+                #    schema = django_settings.SCHEMA_PREFIX + '/platform/storage/mytardis'
 
                 if 'username' in kwargs:
                     platforms = manage.retrieve_all_platforms(kwargs['username'],
@@ -1001,7 +909,7 @@ def make_dynamic_field(parameter, **kwargs):
         logger.debug("subtype=%s" % parameter['subtype'])
         field_params['initial'] = str(parameter['initial'])
         if parameter['subtype'] == 'nectar_platform':
-            schema = RMIT_SCHEMA + '/platform/computation/nectar'
+            schema = django_settings.SCHEMA_PREFIX + '/platform/computation/nectar'
             platforms = manage.retrieve_all_platforms(kwargs['username'],
                      schema_namespace_prefix=schema)
             if platforms:
@@ -1009,7 +917,7 @@ def make_dynamic_field(parameter, **kwargs):
             else:
                 field_params['initial'] = ''
         elif parameter['subtype'] == 'mytardis':
-            schema = RMIT_SCHEMA + '/platform/storage/mytardis'
+            schema = django_settings.SCHEMA_PREFIX + '/platform/storage/mytardis'
             platforms = manage.retrieve_all_platforms(kwargs['username'],
                      schema_namespace_prefix=schema)
             if platforms:
@@ -1018,7 +926,7 @@ def make_dynamic_field(parameter, **kwargs):
                 field_params['initial'] = ''
         '''
         elif parameter['subtype'] == 'storage_bdpurl':
-            schema = RMIT_SCHEMA + '/platform/storage/unix'
+            schema = django_settings.SCHEMA_PREFIX + '/platform/storage/unix'
             platforms = manage.retrieve_all_platforms(kwargs['username'],
                      schema_namespace_prefix=schema)
             if platforms:
@@ -1100,7 +1008,6 @@ def make_directive_form(**kwargs):
                 logger.debug("field=%s" % fields[field_key].validators)
 
     logger.debug("fields = %s" % fields)
-    #http://www.b-list.org/weblog/2008/nov/09/dynamic-forms/
     ParamSetForm = type('ParamSetForm', (forms.BaseForm,),
                          {'base_fields': fields})
     #TODO: handle the initial values
@@ -1130,7 +1037,7 @@ def make_directive_form(**kwargs):
 #         'hidden': False,
 #         'id': 1,
 #         'name': 'input1',
-#         'namespace': RMIT_SCHEMA + '/input1',
+#         'namespace': django_settings.SCHEMA_PREFIX + '/input1',
 #         'parameters': [
 #             {'pk': 1, 'name': 'arg1', 'help_text':'help for arg1', 'type': 1, 'initial': 1, 'subtype': 'natural'},
 #             {'pk': 2, 'name': 'arg2', 'help_text':'help for arg2', 'type': 2, 'initial': 'a', 'subtype': 'string'},
@@ -1142,7 +1049,7 @@ def make_directive_form(**kwargs):
 #         'hidden': False,
 #         'id': 2,
 #         'name': 'input2',
-#         'namespace': RMIT_SCHEMA + '/input2',
+#         'namespace': django_settings.SCHEMA_PREFIX + '/input2',
 #         'parameters': [
 #             {'pk': 1, 'name': 'arg1', 'help_text':'help for arg1', 'type': 1, 'initial': 1, 'subtype': 'even'},
 #           {'pk': 2, 'name': 'arg2', 'help_text':'help for arg2', 'type': 1, 'initial': 2},
@@ -1326,7 +1233,7 @@ def submit_job(request, form, directive):
     logger.debug("cookies=%s" % cookies)
     headers = {'content-type': 'application/json'}
     logger.debug("all_form.cleaned_data=%s" % pformat(form.cleaned_data))
-    form.cleaned_data[RMIT_SCHEMA + '/bdp_userprofile/username'] = request.user.username
+    form.cleaned_data[django_settings.SCHEMA_PREFIX + '/bdp_userprofile/username'] = request.user.username
     data = dict(form.cleaned_data.items()
         + [('smart_connector', directive)])
 

@@ -43,29 +43,6 @@ class Parent(Stage):
         return u"ParallelStage"
 
     def is_triggered(self, run_settings):
-        '''
-        logger.debug("Parallel Stage Triggered")
-        logger.debug("run_settings=%s" % run_settings)
-
-        if self._exists(run_settings, u'http://rmit.edu.au/schemas/stages/parallel/testing',
-            u'output'):
-            self.val = run_settings[u'http://rmit.edu.au/schemas/stages/parallel/testing'][u'output']
-        else:
-            self.val = 0
-
-        if self._exists(run_settings, u'http://rmit.edu.au/schemas/stages/parallel/testing',
-            u'index'):
-            self.parallel_index = run_settings[u'http://rmit.edu.au/schemas/stages/parallel/testing'][u'index']
-        else:
-            try:
-                self.parallel_index = run_settings[u'http://rmit.edu.au/schemas/smartconnector1/create'][u'parallel_number']
-            except KeyError:
-                logger.error("run_settings=%s" % run_settings)
-                raise
-
-        if self.parallel_index:
-            return True
-        '''
         return False
 
     def process(self, run_settings):
@@ -75,14 +52,14 @@ class Parent(Stage):
     def output(self, run_settings):
         logger.debug("Parallel Stage Output")
 
-        if not self._exists(run_settings, u'http://rmit.edu.au/schemas/stages/parallel/testing'):
-            run_settings[u'http://rmit.edu.au/schemas/stages/parallel/testing'] = {}
+        if not self._exists(run_settings, u'%s/stages/parallel/testing' % django_settings.SCHEMA_PREFIX):
+            run_settings[u'%s/stages/parallel/testing' % django_settings.SCHEMA_PREFIX] = {}
 
         self.val += 1
-        run_settings[u'http://rmit.edu.au/schemas/stages/parallel/testing'][u'output'] = self.val
+        run_settings[u'%s/stages/parallel/testing' % django_settings.SCHEMA_PREFIX][u'output'] = self.val
 
         self.parallel_index -= 1
-        run_settings[u'http://rmit.edu.au/schemas/stages/parallel/testing'][u'index'] = self.parallel_index
+        run_settings[u'%s/stages/parallel/testing' % django_settings.SCHEMA_PREFIX][u'index'] = self.parallel_index
         return run_settings
 
     def get_internal_sweep_map(self, settings, **kwargs):

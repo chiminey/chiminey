@@ -255,6 +255,10 @@ def _get_chiminey_schemas():
                                 'initial': 'update', 'ranking': 24, 'help_text': ''},
                  u'filters': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': '',
                               'initial': '{}', 'ranking': 30, 'help_text': ''},
+                 u'port': {'type': models.ParameterName.STRING, 'subtype': '',
+                                        'description': 'SSH port', 'ranking': 55, 'initial': '22',
+                                        'help_text': 'Port of the SSH server (usually 22).)',
+                                        'hidecondition':'advanced'},
              }
             ],
         u'%s/platform/computation/testing/jenkins_based' % django_settings.SCHEMA_PREFIX:
@@ -382,6 +386,7 @@ def _get_chiminey_schemas():
                          'help_text': ''},
                  u'max_seed_int': {'type': models.ParameterName.NUMERIC, 'subtype': 'natural', 'description': '',
                                    'ranking': 1, 'help_text': ''},
+                 u'metadata_builder': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '', 'initial': 'chiminey.mytardis.metadata.MetadataBuilder', 'ranking': 1, 'help_text': ''},
              }
             ],
         u'%s/bdp_userprofile' % django_settings.SCHEMA_PREFIX:
@@ -620,6 +625,9 @@ def _get_chiminey_schemas():
                                     'help_text': 'Use 0 for new experiment'},
              }
             ],
+
+
+
         u'%s/input/sweep' % django_settings.SCHEMA_PREFIX:
             [u'Parameter Sweep',
              {
@@ -685,6 +693,9 @@ def _get_chiminey_schemas():
                  u'process_output_dirname': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
                                              'ranking': 6, 'help_text': '',
                                              'initial': 'chiminey_output'},
+                u'smart_connector_input': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                'ranking': 6, 'help_text': '', 'initial': 'smart_connector_input'},
+
              }
             ],
         u'%s/stages/deploy' % django_settings.SCHEMA_PREFIX:

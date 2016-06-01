@@ -33,7 +33,6 @@ from django.core.exceptions import ImproperlyConfigured
 logger = logging.getLogger(__name__)
 from django.conf import settings as django_settings
 
-RMIT_SCHEMA = django_settings.SCHEMA_PREFIX
 
 class Schedule(Stage):
     """
@@ -48,7 +47,7 @@ class Schedule(Stage):
     def is_triggered(self, run_settings):
         try:
             self.created_nodes = ast.literal_eval(getval(run_settings,
-                                 '%s/stages/create/created_nodes' % RMIT_SCHEMA))
+                                 '%s/stages/create/created_nodes' % django_settings.SCHEMA_PREFIX))
             running_created_nodes = [x for x in self.created_nodes if str(x[3]) == 'running']
             logger.debug('running_created_nodes=%s' % running_created_nodes)
             if len(running_created_nodes) == 0:
@@ -58,7 +57,7 @@ class Schedule(Stage):
             return False
         try:
             bootstrap_done = int(getval(run_settings,
-                                 '%s/stages/bootstrap/bootstrap_done' % RMIT_SCHEMA))
+                                 '%s/stages/bootstrap/bootstrap_done' % django_settings.SCHEMA_PREFIX))
             if not bootstrap_done:
                 return False
         except (SettingNotFoundException, ValueError) as e:
@@ -66,14 +65,13 @@ class Schedule(Stage):
             return False
         try:
             self.bootstrapped_nodes = ast.literal_eval(getval(
-                run_settings, '%s/stages/bootstrap/bootstrapped_nodes' % RMIT_SCHEMA))
+                run_settings, '%s/stages/bootstrap/bootstrapped_nodes' % django_settings.SCHEMA_PREFIX))
             if len(self.bootstrapped_nodes) == 0:
                 return False
         except (SettingNotFoundException, ValueError) as e:
             return False
         try:
-            reschedule_str = getval(run_settings, '%s/stages/schedule/procs_2b_rescheduled' % RMIT_SCHEMA)
-            # reschedule_str = run_settings['http://rmit.edu.au/schemas/stages/schedule'][u'procs_2b_rescheduled']
+            reschedule_str = getval(run_settings, '%s/stages/schedule/procs_2b_rescheduled' % django_settings.SCHEMA_PREFIX)
             self.procs_2b_rescheduled = ast.literal_eval(reschedule_str)
         except SettingNotFoundException, e:
             # FIXME: when is procs_2b_rescheduled set?
@@ -83,8 +81,7 @@ class Schedule(Stage):
         if self.procs_2b_rescheduled:
             #self.trigger_reschedule(run_settings)
             try:
-                self.total_rescheduled_procs = getval(run_settings, '%s/stages/schedule/total_rescheduled_procs' % RMIT_SCHEMA)
-                # self.total_rescheduled_procs = run_settings['http://rmit.edu.au/schemas/stages/schedule'][u'total_rescheduled_procs']
+                self.total_rescheduled_procs = getval(run_settings, '%s/stages/schedule/total_rescheduled_procs' % django_settings.SCHEMA_PREFIX)
             except SettingNotFoundException, e:
                 self.total_rescheduled_procs = 0
             self.total_procs_2b_rescheduled = len(self.procs_2b_rescheduled)
@@ -92,14 +89,12 @@ class Schedule(Stage):
                 return False
         else:
             try:
-                self.total_scheduled_procs = getval(run_settings, '%s/stages/schedule/total_scheduled_procs' % RMIT_SCHEMA)
-                # self.total_scheduled_procs = run_settings['http://rmit.edu.au/schemas/stages/schedule'][u'total_scheduled_procs']
+                self.total_scheduled_procs = getval(run_settings, '%s/stages/schedule/total_scheduled_procs' % django_settings.SCHEMA_PREFIX)
             except SettingNotFoundException:
                 self.total_scheduled_procs = 0
 
             try:
-                total_procs = int(getval(run_settings, '%s/stages/schedule/total_processes' % RMIT_SCHEMA))
-                # total_procs = int(run_settings['http://rmit.edu.au/schemas/stages/schedule'][u'total_processes'])
+                total_procs = int(getval(run_settings, '%s/stages/schedule/total_processes' % django_settings.SCHEMA_PREFIX))
                 if total_procs:
                     if total_procs == self.total_scheduled_procs:
                         return False
@@ -109,26 +104,15 @@ class Schedule(Stage):
                 logger.error(e)
 
         try:
-            scheduled_str = getval(run_settings, '%s/stages/schedule/scheduled_nodes' % RMIT_SCHEMA)
-
-            # scheduled_str = smartconnectorscheduler.get_existing_key(
-            #     run_settings,
-            #     'http://rmit.edu.au/schemas/stages/schedule/scheduled_nodes')
-
+            scheduled_str = getval(run_settings, '%s/stages/schedule/scheduled_nodes' % django_settings.SCHEMA_PREFIX)
             self.scheduled_nodes = ast.literal_eval(scheduled_str)
-            #current_processes_str = run_settings['http://rmit.edu.au/schemas/stages/schedule'][u'current_processes']
-            #self.current_processes = ast.literal_eval(current_processes_str)
         except SettingNotFoundException, e:
             self.scheduled_nodes = []
         except ValueError, e:
             logger.error(e)
             self.scheduled_nodes = []
-
         try:
-            rescheduled_str = getval(run_settings, '%s/stages/schedule/rescheduled_nodes' % RMIT_SCHEMA)
-            # rescheduled_str = smartconnectorscheduler.get_existing_key(
-            #     run_settings,
-            #     'http://rmit.edu.au/schemas/stages/schedule/rescheduled_nodes')
+            rescheduled_str = getval(run_settings, '%s/stages/schedule/rescheduled_nodes' % django_settings.SCHEMA_PREFIX)
             self.rescheduled_nodes = ast.literal_eval(rescheduled_str)
         except SettingNotFoundException, e:
             self.rescheduled_nodes = []
@@ -137,12 +121,7 @@ class Schedule(Stage):
             self.rescheduled_nodes = []
 
         try:
-            current_processes_str = getval(run_settings, '%s/stages/schedule/current_processes' % RMIT_SCHEMA)
-            # current_processes_str = smartconnectorscheduler.get_existing_key(
-            #     run_settings,
-            #     'http://rmit.edu.au/schemas/stages/schedule/current_processes')
-            #self.scheduled_nodes = ast.literal_eval(scheduled_str)
-            #current_processes_str = run_settings['http://rmit.edu.au/schemas/stages/schedule'][u'current_processes']
+            current_processes_str = getval(run_settings, '%s/stages/schedule/current_processes' % django_settings.SCHEMA_PREFIX)
             self.current_processes = ast.literal_eval(current_processes_str)
         except SettingNotFoundException, e:
             self.current_processes = []
@@ -151,9 +130,7 @@ class Schedule(Stage):
             self.current_processes = []
 
         try:
-            all_processes_str = getval(run_settings, '%s/stages/schedule/all_processes' % RMIT_SCHEMA)
-            # all_processes_str = smartconnectorscheduler.get_existing_key(run_settings,
-            # 'http://rmit.edu.au/schemas/stages/schedule/all_processes')
+            all_processes_str = getval(run_settings, '%s/stages/schedule/all_processes' % django_settings.SCHEMA_PREFIX)
             self.all_processes = ast.literal_eval(all_processes_str)
         except SettingNotFoundException:
             self.all_processes = []
@@ -166,14 +143,12 @@ class Schedule(Stage):
     def trigger_schedule(self, run_settings):
 
         try:
-            self.total_scheduled_procs = getval(run_settings, '%s/stages/schedule/total_scheduled_procs' % RMIT_SCHEMA)
-            # self.total_scheduled_procs = run_settings['http://rmit.edu.au/schemas/stages/schedule'][u'total_scheduled_procs']
+            self.total_scheduled_procs = getval(run_settings, '%s/stages/schedule/total_scheduled_procs' % django_settings.SCHEMA_PREFIX)
         except SettingNotFoundException:
             self.total_scheduled_procs = 0
 
         try:
-            total_procs = int(getval(run_settings, '%s/stages/schedule/total_processes' % RMIT_SCHEMA))
-            # total_procs = int(run_settings['http://rmit.edu.au/schemas/stages/schedule'][u'total_processes'])
+            total_procs = int(getval(run_settings, '%s/stages/schedule/total_processes' % django_settings.SCHEMA_PREFIX))
             if total_procs:
                 if total_procs == self.total_scheduled_procs:
                     return False
@@ -183,8 +158,7 @@ class Schedule(Stage):
     def trigger_reschedule(self, run_settings):
 
         try:
-            self.total_rescheduled_procs = getval(run_settings, '%s/stages/schedule/total_rescheduled_procs' % RMIT_SCHEMA)
-            # self.total_rescheduled_procs = run_settings['http://rmit.edu.au/schemas/stages/schedule'][u'total_rescheduled_procs']
+            self.total_rescheduled_procs = getval(run_settings, '%s/stages/schedule/total_rescheduled_procs' % django_settings.SCHEMA_PREFIX)
         except SettingNotFoundException:
             self.total_rescheduled_procs = 0
         self.total_procs_2b_rescheduled = len(self.procs_2b_rescheduled)
@@ -194,7 +168,7 @@ class Schedule(Stage):
     def process(self, run_settings):
         logger.debug("schedule processing")
         comp_pltf_settings = self.get_platform_settings(
-            run_settings, 'http://rmit.edu.au/schemas/platform/computation')
+            run_settings, '%s/platform/computation' % django_settings.SCHEMA_PREFIX)
         try:
             platform_type = comp_pltf_settings['platform_type']
         except KeyError, e:
@@ -216,11 +190,6 @@ class Schedule(Stage):
                 self.strategy = hook.get_strategy(platform_type)
                 logger.debug("self.strategy=%s" % self.strategy)
                 break
-
-        # if platform_type in ['nectar', 'csrack', 'amazon']:
-        #     self.strategy = strategies.CloudStrategy()
-        # elif platform_type in ['nci']:
-        #     self.strategy = strategies.ClusterStrategy()
         local_settings = {}
         try:
             self.strategy.set_schedule_settings(run_settings, local_settings)
@@ -230,7 +199,7 @@ class Schedule(Stage):
             messages.error(run_settings, e)
             return
         try:
-            self.started = int(getval(run_settings, '%s/stages/schedule/schedule_started' % RMIT_SCHEMA))
+            self.started = int(getval(run_settings, '%s/stages/schedule/schedule_started' % django_settings.SCHEMA_PREFIX))
         except SettingNotFoundException:
             self.started = 0
         except ValueError, e:
@@ -241,7 +210,7 @@ class Schedule(Stage):
         if not self.started:
             logger.debug("initial run")
             try:
-                self.schedule_index = int(getval(run_settings, '%s/stages/schedule/schedule_index' % RMIT_SCHEMA))
+                self.schedule_index = int(getval(run_settings, '%s/stages/schedule/schedule_index' % django_settings.SCHEMA_PREFIX))
             except SettingNotFoundException:
                 self.schedule_index = 0
             except ValueError, e:
@@ -255,41 +224,41 @@ class Schedule(Stage):
     def output(self, run_settings):
 
         setvals(run_settings, {
-                '%s/stages/schedule/scheduled_nodes' % RMIT_SCHEMA: str(self.scheduled_nodes),
-                '%s/stages/schedule/rescheduled_nodes' % RMIT_SCHEMA: str(self.rescheduled_nodes),
-                '%s/stages/schedule/all_processes' % RMIT_SCHEMA: str(self.all_processes),
-                '%s/stages/schedule/current_processes' % RMIT_SCHEMA: str(self.current_processes)
+                '%s/stages/schedule/scheduled_nodes' % django_settings.SCHEMA_PREFIX: str(self.scheduled_nodes),
+                '%s/stages/schedule/rescheduled_nodes' % django_settings.SCHEMA_PREFIX: str(self.rescheduled_nodes),
+                '%s/stages/schedule/all_processes' % django_settings.SCHEMA_PREFIX: str(self.all_processes),
+                '%s/stages/schedule/current_processes' % django_settings.SCHEMA_PREFIX: str(self.current_processes)
                 })
         if not self.started:
 
             setvals(run_settings, {
-                    '%s/stages/schedule/schedule_started' % RMIT_SCHEMA: 1,
-                    '%s/stages/schedule/procs_2b_rescheduled' % RMIT_SCHEMA: self.procs_2b_rescheduled
+                    '%s/stages/schedule/schedule_started' % django_settings.SCHEMA_PREFIX: 1,
+                    '%s/stages/schedule/procs_2b_rescheduled' % django_settings.SCHEMA_PREFIX: self.procs_2b_rescheduled
                     })
             if not self.procs_2b_rescheduled:
 
                 setvals(run_settings, {
-                        '%s/stages/schedule/total_processes' % RMIT_SCHEMA: str(self.total_processes),
-                        '%s/stages/schedule/schedule_index' % RMIT_SCHEMA: self.schedule_index
+                        '%s/stages/schedule/total_processes' % django_settings.SCHEMA_PREFIX: str(self.total_processes),
+                        '%s/stages/schedule/schedule_index' % django_settings.SCHEMA_PREFIX: self.schedule_index
                         })
         else:
             if self.procs_2b_rescheduled:
                 setval(run_settings,
-                        '%s/stages/schedule/total_rescheduled_procs' % RMIT_SCHEMA,
+                        '%s/stages/schedule/total_rescheduled_procs' % django_settings.SCHEMA_PREFIX,
                         self.total_rescheduled_procs)
                 if self.total_rescheduled_procs == len(self.procs_2b_rescheduled):
                     setvals(run_settings, {
-                        '%s/stages/schedule/schedule_completed' % RMIT_SCHEMA: 1,
-                        '%s/stages/schedule/procs_2b_rescheduled' % RMIT_SCHEMA: [],
-                        '%s/stages/schedule/total_rescheduled_procs' % RMIT_SCHEMA: 0,
-                        '%s/stages/schedule/rescheduled_nodes' % RMIT_SCHEMA: [],
+                        '%s/stages/schedule/schedule_completed' % django_settings.SCHEMA_PREFIX: 1,
+                        '%s/stages/schedule/procs_2b_rescheduled' % django_settings.SCHEMA_PREFIX: [],
+                        '%s/stages/schedule/total_rescheduled_procs' % django_settings.SCHEMA_PREFIX: 0,
+                        '%s/stages/schedule/rescheduled_nodes' % django_settings.SCHEMA_PREFIX: [],
                         })
             else:
                 setval(run_settings,
-                       '%s/stages/schedule/total_scheduled_procs' % RMIT_SCHEMA,
+                       '%s/stages/schedule/total_scheduled_procs' % django_settings.SCHEMA_PREFIX,
                        self.total_scheduled_procs)
                 if self.total_scheduled_procs == len(self.current_processes):
                     setval(run_settings,
-                           '%s/stages/schedule/schedule_completed' % RMIT_SCHEMA,
+                           '%s/stages/schedule/schedule_completed' % django_settings.SCHEMA_PREFIX,
                            1)
         return run_settings

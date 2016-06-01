@@ -23,6 +23,10 @@ class CloudPlatform():
         parameters['security_group'] = 'bdp_ssh_group'
         if not parameters['vm_image_size']:
             parameters['vm_image_size'] = 'm1.small'
+        try:
+            parameters['port'] = int(parameters['port'])
+        except ValueError:
+            parameters['port'] = 22
 
     def validate(self, parameters, passwd_auth=False):
         return [True, True, "All valid parameters"]

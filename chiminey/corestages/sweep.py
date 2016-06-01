@@ -46,12 +46,11 @@ logger = logging.getLogger(__name__)
 
 from django.conf import settings as django_settings
 
-RMIT_SCHEMA = django_settings.SCHEMA_PREFIX
 FIRST_ITERATION_DIR = "input_0"
 SUBDIRECTIVE_DIR = "run%(run_counter)s"
 
 VALUES_MAP_TEMPLATE_FILE = '%(template_name)s_values'
-VALUES_MAP_FILE = "values"
+VALUES_MAP_FILE = django_settings.VALUES_FNAME #"values"
 
 
 @contextmanager
@@ -71,7 +70,7 @@ class Sweep(Stage):
     def input_valid(self, settings_to_test):
         #fixme: move to hrmc
         with ignored(SettingNotFoundException, ValueError):
-            iseed = int(getval(settings_to_test, '%s/input/hrmc/iseed' % RMIT_SCHEMA))
+            iseed = int(getval(settings_to_test, '%s/input/hrmc/iseed' % django_settings.SCHEMA_PREFIX))
             NUMBER_SEEDS = 10000 #fixme: should be length of no lines on random_number file
             if not iseed in range(0, NUMBER_SEEDS):
                 return (False, 'Random Number Seed should be in range (0, %d)' % (NUMBER_SEEDS -1))
@@ -83,7 +82,7 @@ class Sweep(Stage):
 
         try:
             configure_done = int(getval(run_settings,
-                '%s/stages/sweep/sweep_done' % RMIT_SCHEMA))
+                '%s/stages/sweep/sweep_done' % django_settings.SCHEMA_PREFIX))
         except (ValueError, SettingNotFoundException):
             return True
 
@@ -91,7 +90,7 @@ class Sweep(Stage):
 
     def _get_sweep_name(self, run_settings):
         try:
-            return getval(run_settings, '%s/directive_profile/sweep_name' % RMIT_SCHEMA)
+            return getval(run_settings, '%s/directive_profile/sweep_name' % django_settings.SCHEMA_PREFIX)
         except SettingNotFoundException:
             return 'unknown_sweep'
 
@@ -105,22 +104,22 @@ class Sweep(Stage):
             local_settings = deepcopy(getvals(run_settings, models.UserProfile.PROFILE_SCHEMA_NS))
 
             update(local_settings, run_settings,
-                    RMIT_SCHEMA + '/system/platform',
-                    # RMIT_SCHEMA + '/input/mytardis/experiment_id',
-                    # RMIT_SCHEMA + '/system/random_numbers',
+                    django_settings.SCHEMA_PREFIX + '/system/platform',
+                    # django_settings.SCHEMA_PREFIX + '/input/mytardis/experiment_id',
+                    # django_settings.SCHEMA_PREFIX + '/system/random_numbers',
                    )
             local_settings['bdp_username'] = getval(
-                run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA)
+                run_settings, '%s/bdp_userprofile/username' % django_settings.SCHEMA_PREFIX)
             return local_settings
 
         local_settings = make_local_settings(run_settings)
         logger.debug('local_settings=%s' % local_settings)
 
         compplatform = [k for k, v in run_settings.iteritems()
-                        if k.startswith('%s/input/system/compplatform' % RMIT_SCHEMA)]
+                        if k.startswith('%s/input/system/compplatform' % django_settings.SCHEMA_PREFIX)]
 
         setval(run_settings,
-               '%s/platform/computation/platform_url' % RMIT_SCHEMA,
+               '%s/platform/computation/platform_url' % django_settings.SCHEMA_PREFIX,
                getval(run_settings,
                       '%s/computation_platform'
                           % compplatform[0]))
@@ -135,7 +134,7 @@ class Sweep(Stage):
             logger.debug('offset=%s' % offset)
             return name, offset
 
-        contextid = int(getval(run_settings, '%s/system/contextid' % RMIT_SCHEMA))
+        contextid = int(getval(run_settings, '%s/system/contextid' % django_settings.SCHEMA_PREFIX))
         logger.debug("contextid=%s" % contextid)
 
         sweep_name = self._get_sweep_name(run_settings)
@@ -148,9 +147,9 @@ class Sweep(Stage):
             output_storage_name, output_storage_offset = \
                 _parse_output_location(run_settings, location)
             setval(run_settings,
-                   '%s/platform/storage/output/platform_url' % RMIT_SCHEMA,
+                   '%s/platform/storage/output/platform_url' % django_settings.SCHEMA_PREFIX,
                    output_storage_name)
-            setval(run_settings, '%s/platform/storage/output/offset' % RMIT_SCHEMA,
+            setval(run_settings, '%s/platform/storage/output/offset' % django_settings.SCHEMA_PREFIX,
                    os.path.join(output_storage_offset, '%s%s' % (sweep_name, contextid)))
 
         def _parse_input_location(run_settings, location):
@@ -163,15 +162,16 @@ class Sweep(Stage):
             return (name, offset)
 
         input_loc = self.input_exists(run_settings)
+        logger.debug('special_input_loc=%s' % input_loc)
         if input_loc:
             location = getval(run_settings, input_loc)
             input_storage_name, input_storage_offset = \
                 _parse_input_location(run_settings, location)
-            setval(run_settings, '%s/platform/storage/input/platform_url' % RMIT_SCHEMA,
+            setval(run_settings, '%s/platform/storage/input/platform_url' % django_settings.SCHEMA_PREFIX,
                    input_storage_name)
             # store offsets
             setval(run_settings,
-                   '%s/platform/storage/input/offset' % RMIT_SCHEMA,
+                   '%s/platform/storage/input/offset' % django_settings.SCHEMA_PREFIX,
                    input_storage_offset)
 
         # TODO: replace with scratch space computation platform space
@@ -183,26 +183,27 @@ class Sweep(Stage):
 
         if output_loc:
             try:
-                self.experiment_id = int(getval(run_settings, '%s/input/mytardis/experiment_id' % RMIT_SCHEMA))
+                self.experiment_id = int(getval(run_settings, '%s/input/mytardis/experiment_id' % django_settings.SCHEMA_PREFIX))
             except KeyError, ValueError:
                 self.experiment_id = 0
             try:
-                curate_data = getval(run_settings, '%s/input/mytardis/curate_data' % RMIT_SCHEMA)
+                curate_data = getval(run_settings, '%s/input/mytardis/curate_data' % django_settings.SCHEMA_PREFIX)
             except SettingNotFoundException:
                 curate_data = False
+            curate_data = False #TODO remove
             if curate_data:
                 logger.debug('location=%s' %location)
                 location = "%s%s" %(sweep_name, contextid)
                 self.experiment_id = self.curate_data(run_settings, location, self.experiment_id)
             setval(run_settings,
-                   '%s/input/mytardis/experiment_id' % RMIT_SCHEMA,
+                   '%s/input/mytardis/experiment_id' % django_settings.SCHEMA_PREFIX,
                    str(self.experiment_id))
 
         # generate all variations
-        map_text = getval(run_settings, '%s/input/sweep/sweep_map' % RMIT_SCHEMA)
+        map_text = getval(run_settings, '%s/input/sweep/sweep_map' % django_settings.SCHEMA_PREFIX)
         if not map_text:
             map_text = {}
-        # map_text = run_settings[RMIT_SCHEMA + '/input/sweep']['sweep_map']
+        # map_text = run_settings[django_settings.SCHEMA_PREFIX + '/input/sweep']['sweep_map']
         sweep_map = json.loads(map_text)
         logger.debug("sweep_map=%s" % pformat(sweep_map))
         runs = _expand_variations(maps=[sweep_map], values={})
@@ -216,7 +217,7 @@ class Sweep(Stage):
         rands = []
 
         try:
-            self.rand_index = getval(run_settings, '%s/input/hrmc/iseed' % RMIT_SCHEMA)
+            self.rand_index = getval(run_settings, '%s/input/hrmc/iseed' % django_settings.SCHEMA_PREFIX)
             logger.debug("rand_index=%s" % self.rand_index)
         except SettingNotFoundException:
             pass
@@ -229,7 +230,7 @@ class Sweep(Stage):
             # big file up.
 
             try:
-                num_url = getval(run_settings, "%s/system/random_numbers" % RMIT_SCHEMA)
+                num_url = getval(run_settings, "%s/system/random_numbers" % django_settings.SCHEMA_PREFIX)
                 logger.debug('num_url=%s' % num_url)
             except SettingNotFoundException:
                 pass
@@ -253,7 +254,7 @@ class Sweep(Stage):
         if input_loc:
 
             input_storage_settings = self.get_platform_settings(
-                run_settings, 'http://rmit.edu.au/schemas/platform/storage/input')
+                run_settings, '%s/platform/storage/input' % django_settings.SCHEMA_PREFIX)
             try:
                 input_prefix = '%s://%s@' % (input_storage_settings['scheme'],
                                         input_storage_settings['type'])
@@ -285,7 +286,7 @@ class Sweep(Stage):
         # FIXME: could have name collisions between form inputs and
         # starting values.
         for ns in run_settings:
-            if ns.startswith(RMIT_SCHEMA + "/input"):
+            if ns.startswith(django_settings.SCHEMA_PREFIX + "/input"):
                 #starting_map.update(dict([(k,v) for k,v in getvals(run_settings, ns).iteritems()]))
                 # for k, v in run_settings[ns].items():
                 for k, v in getvals(run_settings, ns).iteritems():
@@ -337,7 +338,7 @@ class Sweep(Stage):
             # try:
             #     template_name = getval(run_settings,
             #                            '%s/stages/sweep/template_name'
-            #                                 % RMIT_SCHEMA)
+            #                                 % django_settings.SCHEMA_PREFIX)
             # except SettingNotFoundException:
             #     pass
             # else:
@@ -390,7 +391,8 @@ class Sweep(Stage):
             # Set random numbers for subdirective
             logger.debug("run_settings=%s" % pformat(run_settings))
             if rands:
-                setval(run_settings, '%s/input/hrmc/iseed' % RMIT_SCHEMA, rands[i])
+                setval(run_settings, '%s/input/hrmc/iseed' % django_settings.SCHEMA_PREFIX, rands[i])
+
 
             if input_loc:
                 # Set revised input_location for subdirective
@@ -403,15 +405,21 @@ class Sweep(Stage):
             # Redirect input
             run_input_storage_name, run_input_storage_offset = \
                 _parse_input_location(run_settings,
-                    "local/sweep%s/run%s/input_0" % (contextid, run_counter))
-            # setval(run_settings,
-            #        '%s/platform/storage/input/platform_url' % RMIT_SCHEMA,
-            #        run_input_storage_name)
-            # setval(run_settings,
-            #        '%s/platform/storage/input/offset' % RMIT_SCHEMA,
-            #        run_input_storage_offset)
+                    "local/%s%s/run%s/input_0" % (sweep_name, contextid, run_counter))
 
-            logger.debug("run_settings=%s" % pformat(run_settings))
+            #run_input_storage_offset = os.path.join('%s%s' % (sweep_name, contextid), run_input_storage_offset)
+
+            logger.debug('run_input_storage_name=%s' % run_input_storage_name)
+            logger.debug('run_input_storage_offset=%s' % run_input_storage_offset)
+
+            setval(run_settings,
+                    '%s/platform/storage/input/platform_url' % django_settings.SCHEMA_PREFIX,
+                    run_input_storage_name)
+            setval(run_settings,
+                    '%s/platform/storage/input/offset' % django_settings.SCHEMA_PREFIX,
+                    run_input_storage_offset)
+
+            logger.debug("updated_run_settings=%s" % pformat(run_settings))
             try:
                 _submit_subdirective("nectar", run_settings, user, current_context)
             except Exception, e:
@@ -421,13 +429,13 @@ class Sweep(Stage):
     def output(self, run_settings):
         logger.debug("sweep output")
 
-        setval(run_settings, '%s/stages/sweep/sweep_done' % RMIT_SCHEMA, 1)
+        setval(run_settings, '%s/stages/sweep/sweep_done' % django_settings.SCHEMA_PREFIX, 1)
         logger.debug('interesting run_settings=%s' % run_settings)
 
         with ignored(SettingNotFoundException):
-            if getvals(run_settings, '%s/input/mytardis' % RMIT_SCHEMA):
+            if getvals(run_settings, '%s/input/mytardis' % django_settings.SCHEMA_PREFIX):
                 setval(run_settings,
-                       '%s/input/mytardis/experiment_id' % RMIT_SCHEMA,
+                       '%s/input/mytardis/experiment_id' % django_settings.SCHEMA_PREFIX,
                        str(self.experiment_id))
 
         if not self.error_detected:
@@ -440,7 +448,7 @@ class Sweep(Stage):
         #TODO: By default, this class should NOT CREATE an experiment
 
         # try:
-        #     experiment_id = int(getval(run_settings, '%s/input/mytardis/experiment_id' % RMIT_SCHEMA))
+        #     experiment_id = int(getval(run_settings, '%s/input/mytardis/experiment_id' % django_settings.SCHEMA_PREFIX))
         # except SettingNotFoundException:
         #     experiment_id = 0
         # except ValueError:
@@ -458,7 +466,7 @@ class Sweep(Stage):
 
 def _submit_subdirective(platform, run_settings, user, parentcontext):
     try:
-        subdirective_name = getval(run_settings, '%s/stages/sweep/directive' % RMIT_SCHEMA)
+        subdirective_name = getval(run_settings, '%s/stages/sweep/directive' % django_settings.SCHEMA_PREFIX)
     except SettingNotFoundException:
         logger.warn("cannot find subdirective_name name")
         raise
@@ -525,12 +533,12 @@ class HRMCSweep(Sweep):
 
     #     # mytardis
     #     try:
-    #         subdirective = getval(run_settings, '%s/stages/sweep/directive' % RMIT_SCHEMA)
+    #         subdirective = getval(run_settings, '%s/stages/sweep/directive' % django_settings.SCHEMA_PREFIX)
     #     except SettingNotFoundException:
     #         logger.warn("cannot find subdirective name")
     #         subdirective = ''
     #     try:
-    #         experiment_id = int(getvala(run_settings, '%s/input/mytardis/experiment_id' % RMIT_SCHEMA))
+    #         experiment_id = int(getvala(run_settings, '%s/input/mytardis/experiment_id' % django_settings.SCHEMA_PREFIX))
     #     except SettingNotFoundException:
     #         experiment_id = 0
     #     except ValueError:
@@ -552,10 +560,10 @@ def post_mytardis_exp(run_settings,
         output_location,
         experiment_paramset=[]):
     # TODO: move into mytardis package?
-    bdp_username = getval(run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA)
+    bdp_username = getval(run_settings, '%s/bdp_userprofile/username' % django_settings.SCHEMA_PREFIX)
 
     try:
-        mytardis_url = getval(run_settings, '%s/input/mytardis/mytardis_platform' % RMIT_SCHEMA)
+        mytardis_url = getval(run_settings, '%s/input/mytardis/mytardis_platform' % django_settings.SCHEMA_PREFIX)
     except SettingNotFoundException:
         logger.error("mytardis_platform not set")
         return 0
@@ -564,7 +572,7 @@ def post_mytardis_exp(run_settings,
         mytardis_url,
         bdp_username)
     logger.debug(mytardis_settings)
-    curate_data = getval(run_settings, '%s/input/mytardis/curate_data' % RMIT_SCHEMA)
+    curate_data = getval(run_settings, '%s/input/mytardis/curate_data' % django_settings.SCHEMA_PREFIX)
     if curate_data:
         if mytardis_settings['mytardis_host']:
             def _get_exp_name_for_input(path):

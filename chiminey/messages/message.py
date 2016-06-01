@@ -40,13 +40,7 @@ def addMessage(run_settings, level, msg):
         logger.error(pformat(run_settings))
         return
 
-    # try:
-    #     context_id = get_existing_key(run_settings,
-    #         "http://rmit.edu.au/schemas/system/contextid")
-    # except KeyError:
-    #     logger.error("unable to load contextid from run_settings")
-    #     logger.error(pformat(run_settings))
-    #     return
+
     logger.debug("context_id=%s" % context_id)
     if not context_id:
         logger.error("invalid context_id")
@@ -64,21 +58,6 @@ def addMessage(run_settings, level, msg):
     tasks.context_message.delay(context_id, mess)
 
 def addMessage_context(context_id, level, msg):
-    '''
-    try:
-        context_id = getval(run_settings, '%s/system/contextid' % RMIT_SCHEMA)
-    except SettingNotFoundException:
-        logger.error("unable to load contextid from run_settings")
-        logger.error(pformat(run_settings))
-        return
-    '''
-    # try:
-    #     context_id = get_existing_key(run_settings,
-    #         "http://rmit.edu.au/schemas/system/contextid")
-    # except KeyError:
-    #     logger.error("unable to load contextid from run_settings")
-    #     logger.error(pformat(run_settings))
-    #     return
     logger.debug("context_id=%s" % context_id)
     if not context_id:
         logger.error("invalid context_id")
@@ -118,7 +97,7 @@ def error_context(context_id, msg):
 
 def debug(run_settings, msg):
     """
-    Send a msg at the required priority level, as per the django logging module.  
+    Send a msg at the required priority level, as per the django logging module.
 
     :param run_settings: the run_settings used for configuring logging
     :param msg: the message to send
@@ -128,7 +107,7 @@ def debug(run_settings, msg):
 
 def info(run_settings, msg):
     """
-    Send a msg at the required priority level, as per the django logging module.  
+    Send a msg at the required priority level, as per the django logging module.
 
     :param run_settings: the run_settings used for configuring logging
     :param msg: the message to send
@@ -138,7 +117,7 @@ def info(run_settings, msg):
 
 def success(run_settings, msg):
     """
-    Send a msg at the required priority level, as per the django logging module.  
+    Send a msg at the required priority level, as per the django logging module.
 
     :param run_settings: the run_settings used for configuring logging
     :param msg: the message to send
@@ -149,7 +128,7 @@ def success(run_settings, msg):
 
 def warn(run_settings, msg):
     """
-    Send a msg at the required priority level, as per the django logging module.  
+    Send a msg at the required priority level, as per the django logging module.
 
     :param run_settings: the run_settings used for configuring logging
     :param msg: the message to send
@@ -159,7 +138,7 @@ def warn(run_settings, msg):
 
 def error(run_settings, msg):
     """
-    Send a msg at the required priority level, as per the django logging module.  
+    Send a msg at the required priority level, as per the django logging module.
 
     :param run_settings: the run_settings used for configuring logging
     :param msg: the message to send

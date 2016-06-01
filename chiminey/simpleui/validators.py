@@ -1,6 +1,7 @@
 import json
 import logging
 from django.core.validators import ValidationError
+from django.conf import settings as django_settings
 from chiminey.simpleui.timeparse import timeparse
 from datetime import timedelta
 
@@ -149,16 +150,6 @@ def validate_error_threshold(value):
 
     return error_threshold
 
-
-    # ['http://rmit.edu.au/schemas/hrmc',
-    #     ('number_vm_instances', in [0,1],
-    #     # TODO: in configure stage could copy this information from somewhere to this required location
-    #     ('input_location',  'file://127.0.0.1/hrmcrun/input_0'),
-    #     ('optimisation_scheme', 1),
-    #     ('threshold', "[1]"),
-    #     ('error_threshold', "0.03"),
-    #     ('max_iteration', 20)
-
 def validate_experiment_id(value):
     experiment_id = value
 
@@ -304,9 +295,9 @@ def validate_jsondict(value):
 
 
 def check_addition(cleaned_data):
-    arg1 = cleaned_data.get("http://rmit.edu.au/schemas/input2/arg1", 0)
-    arg2 = cleaned_data.get("http://rmit.edu.au/schemas/input2/arg1", 0)
-    arg3 = cleaned_data.get("http://rmit.edu.au/schemas/input2/arg3", 0)
+    arg1 = cleaned_data.get("%s/input2/arg1" % django_settings.SCHEMA_PREFIX , 0)
+    arg2 = cleaned_data.get("%s/input2/arg1" % django_settings.SCHEMA_PREFIX, 0)
+    arg3 = cleaned_data.get("%s/input2/arg3" % django_settings.SCHEMA_PREFIX, 0)
     logger.debug("arg1=%s" % arg1)
     logger.debug("arg2=%s" % arg2)
     logger.debug("arg3=%s" % arg3)

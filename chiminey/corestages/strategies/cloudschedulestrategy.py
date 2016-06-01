@@ -32,32 +32,33 @@ from django.conf import settings as django_settings
 
 
 logger = logging.getLogger(__name__)
-RMIT_SCHEMA = django_settings.SCHEMA_PREFIX
+django_settings.SCHEMA_PREFIX = django_settings.SCHEMA_PREFIX
 
 
 def set_schedule_settings(run_settings, local_settings):
     update(local_settings, run_settings,
-           '%s/system/contextid' % RMIT_SCHEMA,
-            '%s/stages/setup/payload_destination' % RMIT_SCHEMA,
-            '%s/stages/setup/filename_for_PIDs' % RMIT_SCHEMA,
-            '%s/stages/setup/payload_name' % RMIT_SCHEMA,
-            '%s/stages/bootstrap/bootstrapped_nodes' % RMIT_SCHEMA,
-            '%s/stages/setup/payload_source' % RMIT_SCHEMA,
-            '%s/stages/setup/process_output_dirname' % RMIT_SCHEMA,
+           '%s/system/contextid' % django_settings.SCHEMA_PREFIX,
+            '%s/stages/setup/payload_destination' % django_settings.SCHEMA_PREFIX,
+            '%s/stages/setup/filename_for_PIDs' % django_settings.SCHEMA_PREFIX,
+            '%s/stages/setup/payload_name' % django_settings.SCHEMA_PREFIX,
+            '%s/stages/bootstrap/bootstrapped_nodes' % django_settings.SCHEMA_PREFIX,
+            '%s/stages/setup/payload_source' % django_settings.SCHEMA_PREFIX,
+            '%s/stages/setup/process_output_dirname' % django_settings.SCHEMA_PREFIX,
+            '%s/stages/setup/smart_connector_input' % django_settings.SCHEMA_PREFIX,
              )
-    local_settings['bdp_username'] = getval(run_settings, '%s/bdp_userprofile/username' % RMIT_SCHEMA)
+    local_settings['bdp_username'] = getval(run_settings, '%s/bdp_userprofile/username' % django_settings.SCHEMA_PREFIX)
 
 
 def schedule_task(schedule_class, run_settings, local_settings, id):
     schedule_class.nodes = get_registered_vms(local_settings, node_type='bootstrapped_nodes')
     try:
-        maximum_retry = getval(run_settings, '%s/input/reliability/maximum_retry' % RMIT_SCHEMA)
+        maximum_retry = getval(run_settings, '%s/input/reliability/maximum_retry' % django_settings.SCHEMA_PREFIX)
     except SettingNotFoundException:
         maximum_retry = 0
     local_settings['maximum_retry'] = maximum_retry
     '''
     try:
-        id = int(getval(run_settings, '%s/system/id' % RMIT_SCHEMA))
+        id = int(getval(run_settings, '%s/system/id' % django_settings.SCHEMA_PREFIX))
     except (SettingNotFoundException, ValueError):
         id = 0
     '''
@@ -163,8 +164,8 @@ def start_schedule(schedule_class, run_settings, local_settings):
         run_map = map
     logger.debug('map=%s' % run_map)
     output_storage_settings = schedule_class.get_platform_settings(
-            run_settings, 'http://rmit.edu.au/schemas/platform/storage/output')
-    offset = getval(run_settings, '%s/platform/storage/output/offset' % RMIT_SCHEMA)
+            run_settings, '%s/platform/storage/output' % django_settings.SCHEMA_PREFIX)
+    offset = getval(run_settings, '%s/platform/storage/output/offset' % django_settings.SCHEMA_PREFIX)
     job_dir = get_job_dir(output_storage_settings, offset)
     schedule_class.total_processes = parent_stage.get_total_procs_per_iteration(
         [run_map], run_settings=run_settings,
@@ -185,7 +186,7 @@ def start_schedule(schedule_class, run_settings, local_settings):
 
 def start_reschedule(schedule_class, run_settings, local_settings):
     output_storage_settings = schedule_class.get_platform_settings(
-            run_settings, 'http://rmit.edu.au/schemas/platform/storage/output')
+            run_settings, '%s/platform/storage/output' % django_settings.SCHEMA_PREFIX)
     relative_path_suffix = schedule_class.get_relative_output_path(local_settings)
     _, schedule_class.current_processes = \
     start_round_robin_reschedule(schedule_class.nodes, schedule_class.procs_2b_rescheduled,
@@ -238,10 +239,11 @@ def start_round_robin_schedule(nodes, processes, schedule_index, settings, relat
         makefile_path = get_make_path(destination)
         logger.debug('makefile_path=%s' % makefile_path)
         command = "cd %s; make %s" % (makefile_path,
-            'start_schedule %s %s %s' % (settings['payload_name'],
+            'start_schedule %s %s %s %s' % (settings['payload_name'],
                                          settings['filename_for_PIDs'],
-                                         settings['process_output_dirname']))
-        
+                                         settings['process_output_dirname'],
+                                         settings['smart_connector_input']))
+
         command_out = ''
         errs = ''
         logger.debug("starting command for %s" % ip_address)
@@ -308,7 +310,8 @@ def start_round_robin_reschedule(nodes, procs_2b_rescheduled,
         command = "cd %s; make %s" % (makefile_path,
             'start_schedule %s %s %s' % (settings['payload_name'],
                                          settings['filename_for_PIDs'],
-                                         settings['process_output_dirname']))
+                                         settings['process_output_dirname'],
+                                         settings['smart_connector_input']))
         command_out = ''
         errs = ''
         logger.debug("starting command for %s" % ip_address)

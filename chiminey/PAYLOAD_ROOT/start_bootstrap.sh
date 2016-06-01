@@ -1,2 +1,2 @@
 
-sh bootstrap.sh  &  echo "$!" > "bootstrap.pid"
+bash bootstrap.sh  &  echo "$!" > "bootstrap.pid"

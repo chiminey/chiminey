@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 
-PROC_DESTINATION=$1
-#HRMC_PACKAGE=$1
+INPUT_DIR=$1
+OUTPUT_DIR=$2
 
-cd $PROC_DESTINATION
+

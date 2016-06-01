@@ -28,7 +28,7 @@ from chiminey.smartconnectorscheduler.errors import BadSpecificationError
 from chiminey.smartconnectorscheduler import jobs
 from chiminey.runsettings import update, getval, getvals, SettingNotFoundException
 from chiminey.storage import get_url_with_credentials, list_all_files, get_basename, list_dirs
-from chiminey.conf import settings as django_settings
+from django.conf import settings as django_settings
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,6 @@ class HRMCParent(Parent):
     """
         A list of corestages
     """
-
     def __init__(self, user_settings=None):
         logger.debug("HRMCParallelStage")
         pass
@@ -64,13 +63,15 @@ class HRMCParent(Parent):
                 rand_index = 42
                 logger.debug(e)
         update(local_settings, run_settings,
-            '%s/input/hrmclite/fanout_per_kept_result' % django_settings.SCHEMA_PREFIX,
-            '%s/input/hrmclite/optimisation_scheme' % django_settings.SCHEMA_PREFIX,
-            '%s/input/hrmclite/threshold' % django_settings.SCHEMA_PREFIX,
-            '%s/input/hrmclite/pottype' % django_settings.SCHEMA_PREFIX,
+            '%s/input/hrmc/fanout_per_kept_result' % django_settings.SCHEMA_PREFIX,
+            '%s/input/hrmc/optimisation_scheme' % django_settings.SCHEMA_PREFIX,
+            '%s/input/hrmc/threshold' % django_settings.SCHEMA_PREFIX,
+            '%s/input/hrmc/pottype' % django_settings.SCHEMA_PREFIX,
             '%s/system/max_seed_int' % django_settings.SCHEMA_PREFIX,
             '%s/system/random_numbers' % django_settings.SCHEMA_PREFIX,
             '%s/system/id' % django_settings.SCHEMA_PREFIX)
+
+
 
         logger.debug("local_settings=%s" % local_settings)
         try:

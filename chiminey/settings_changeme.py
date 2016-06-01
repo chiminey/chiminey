@@ -124,8 +124,15 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.transaction.TransactionMiddleware'
     )
+VALUES_FNAME = 'values'
 
 SMART_CONNECTORS = {
+'hrmc': {'init': 'chiminey.examples.hrmc.initialise.HRMCInitial',
+         'name': 'hrmc',
+         'description': 'Hybrid Reverse Monte Carlo',
+         'payload': '/opt/chiminey/current/chiminey/examples/hrmc/payload_hrmc',
+         'sweep': True
+         },
                     'hrmclite': {'init': 'chiminey.examples.hrmclite.initialise.HRMCInitial',
                              'name': 'hrmclite',
                              'description': 'Hybrid Reverse Monte Carlo without PSD',
@@ -158,7 +165,9 @@ INPUT_FIELDS =  {'cloud': SCHEMA_PREFIX + "/input/system/compplatform/cloud",
                  'output_location': SCHEMA_PREFIX + "/input/location/output",
                  'input_location':  SCHEMA_PREFIX + "/input/location/input",
                  'hrmclite':  SCHEMA_PREFIX + "/input/hrmclite",
+                 'hrmc':  SCHEMA_PREFIX + "/input/hrmc",
                  'wordcount':  SCHEMA_PREFIX + "/input/wordcount",
+                 'mytardis':  SCHEMA_PREFIX + "/input/mytardis"
                  }
 
 TEMPLATE_DIRS = (
@@ -174,7 +183,6 @@ TEMPLATE_DIRS = (
 )
 
 TEMPLATE_CONTEXT_PROCESSORS = ("django.contrib.auth.context_processors.auth",
-"django.core.context_processors.debug",
 "django.core.context_processors.i18n",
 "django.core.context_processors.media",
 "django.core.context_processors.static",
@@ -446,7 +454,8 @@ RESOURCE_SCHEMA_NAMESPACE = \
      SCHEMA_PREFIX + '/input/system/compplatform/hadoop': '/platform/computation/bigdata/hadoop',
      SCHEMA_PREFIX + '/input/location': '/platform/storage/unix',
      SCHEMA_PREFIX + '/input/location/input': '/platform/storage/unix',
-     SCHEMA_PREFIX + '/input/location/output': '/platform/storage/unix'
+     SCHEMA_PREFIX + '/input/location/output': '/platform/storage/unix',
+     SCHEMA_PREFIX + '/input/mytardis': '/platform/storage/mytardis',
     }
 
 

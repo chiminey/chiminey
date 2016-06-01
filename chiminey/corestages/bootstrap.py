@@ -31,7 +31,6 @@ from chiminey.smartconnectorscheduler import jobs
 from django.core.exceptions import ImproperlyConfigured
 from django.conf import settings as django_settings
 
-RMIT_SCHEMA = django_settings.SCHEMA_PREFIX
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +49,7 @@ class Bootstrap(Stage):
 
         try:
             self.created_nodes = ast.literal_eval(getval(
-                run_settings, '%s/stages/create/created_nodes' % RMIT_SCHEMA))
+                run_settings, '%s/stages/create/created_nodes' % django_settings.SCHEMA_PREFIX))
             running_created_nodes = [x for x in self.created_nodes if str(x[3]) == 'running']
             logger.debug('running_created_nodes=%s' % running_created_nodes)
             if len(running_created_nodes) == 0:
@@ -59,7 +58,7 @@ class Bootstrap(Stage):
             return False
         try:
             self.bootstrapped_nodes = ast.literal_eval(getval(
-                run_settings, '%s/stages/bootstrap/bootstrapped_nodes' % RMIT_SCHEMA))
+                run_settings, '%s/stages/bootstrap/bootstrapped_nodes' % django_settings.SCHEMA_PREFIX))
             logger.debug('bootstrapped nodes=%d, running created nodes = %d'
                          % (len(self.bootstrapped_nodes), len(running_created_nodes)))
             return len(self.bootstrapped_nodes) < len(running_created_nodes)
@@ -71,7 +70,7 @@ class Bootstrap(Stage):
     def process(self, run_settings):
         #messages.info(run_settings, "0: bootstrapping nodes")
         comp_pltf_settings = self.get_platform_settings(
-            run_settings, 'http://rmit.edu.au/schemas/platform/computation')
+            run_settings, '%s/platform/computation' % django_settings.SCHEMA_PREFIX)
         try:
             platform_type = comp_pltf_settings['platform_type']
         except KeyError, e:
@@ -112,7 +111,7 @@ class Bootstrap(Stage):
             return
         try:
             self.started = int(getval(
-                run_settings, '%s/stages/bootstrap/started' % RMIT_SCHEMA))
+                run_settings, '%s/stages/bootstrap/started' % django_settings.SCHEMA_PREFIX))
         except SettingNotFoundException:
             self.started = 0
         except ValueError, e:
@@ -131,15 +130,15 @@ class Bootstrap(Stage):
 
     def output(self, run_settings):
         setvals(run_settings, {
-                '%s/stages/bootstrap/started' % RMIT_SCHEMA: self.started,
-                '%s/stages/bootstrap/bootstrapped_nodes' % RMIT_SCHEMA: str(self.bootstrapped_nodes),
-                '%s/system/id' % RMIT_SCHEMA: 0,
-                '%s/stages/create/created_nodes' % RMIT_SCHEMA: self.created_nodes
+                '%s/stages/bootstrap/started' % django_settings.SCHEMA_PREFIX: self.started,
+                '%s/stages/bootstrap/bootstrapped_nodes' % django_settings.SCHEMA_PREFIX: str(self.bootstrapped_nodes),
+                '%s/system/id' % django_settings.SCHEMA_PREFIX: 0,
+                '%s/stages/create/created_nodes' % django_settings.SCHEMA_PREFIX: self.created_nodes
                 })
         #todo: move id to hrmc parent subclass parent?? may be not needed
         running_created_nodes = [x for x in self.created_nodes if x[3] == 'running']
         logger.debug('running created_nodes=%s' % running_created_nodes)
         if self.bootstrapped_nodes and len(self.bootstrapped_nodes) == len(running_created_nodes):
             setvals(run_settings, {
-                '%s/stages/bootstrap/bootstrap_done' % RMIT_SCHEMA: 1})
+                '%s/stages/bootstrap/bootstrap_done' % django_settings.SCHEMA_PREFIX: 1})
         return run_settings

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 IDS=$1
 completed=0
@@ -9,8 +9,8 @@ while read line
 do
     cd $line
     procs=`expr $procs + 1 `
-    msg=`make process_schedule_done IDS=$IDS`
-    if [[ "$msg" ==  *"Process Setup Completed"* ]];
+    msg=`make -s process_schedule_done IDS=$IDS`
+    if [ "$msg" =  "Process Setup Completed" ];
     then
             completed=`expr $completed + 1 `
             completed_procs=`echo  $completed_procs " $line,"`
@@ -18,7 +18,7 @@ do
     cd ..
 done < $IDS
 
-if [ $completed == $procs ];
+if [ "$completed" == "$procs" ];
 then
         echo "All processes are scheduled"
 else

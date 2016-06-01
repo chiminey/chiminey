@@ -27,6 +27,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core.exceptions import MultipleObjectsReturned
 from django.core.urlresolvers import reverse
+from django.conf import settings as django_settings
 
 from chiminey.smartconnectorscheduler.errors import InvalidInputError
 
@@ -37,7 +38,7 @@ class UserProfile(models.Model):
     user = models.ForeignKey(User, unique=True, help_text="Information about the user")
     company = models.CharField(max_length=255, blank=True, help_text="Company of the user")
     nickname = models.CharField(max_length=255, blank=True, help_text="User's nickname")
-    PROFILE_SCHEMA_NS = "http://rmit.edu.au/schemas/userprofile1"
+    PROFILE_SCHEMA_NS = "%s/userprofile1" % django_settings.SCHEMA_PREFIX
 
     def __unicode__(self):
         return self.user.username
@@ -289,8 +290,8 @@ class Stage(models.Model):
         Given a stage, determine the next stage to execute, by consulting transition map
         """
 
-        if u'http://rmit.edu.au/schemas/system/misc' in context:
-            misc = context[u'http://rmit.edu.au/schemas/system/misc']
+        if u'%s/system/misc' % django_settings.SCHEMA_PREFIX in context:
+            misc = context[u'%s/system/misc' % django_settings.SCHEMA_PREFIX]
         else:
             misc = {}
 
@@ -495,7 +496,7 @@ class Context(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     parent = models.ForeignKey('self', null=True, blank=True)
 
-    CONTEXT_SCHEMA_NS = "http://rmit.edu.au/schemas/context1"
+    CONTEXT_SCHEMA_NS = "%s/context1" % django_settings.SCHEMA_PREFIX
 
     def get_absolute_url(self):
         return reverse('contextview', kwargs={'pk': self.id})
@@ -734,7 +735,6 @@ class PresetParameter(models.Model):
 
 #def create_api_key_wrapper(sender, **kwargs):
 #    from tastypie.models import create_api_key
-#    create_api_key(sender, **kwargs)   
+#    create_api_key(sender, **kwargs)
 
 #models.signals.post_save.connect(create_api_key_wrapper, sender=User)
-

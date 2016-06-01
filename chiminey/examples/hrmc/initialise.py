@@ -29,34 +29,41 @@ logger = logging.getLogger(__name__)
 
 class HRMCInitial(CoreInitial):
     def get_updated_parent_params(self):
-        return {'package': "chiminey.examples.hrmclite.hrmcparent.HRMCParent"}
+        return {'package': "chiminey.examples.hrmc.hrmcparent.HRMCParent"}
 
     def get_updated_configure_params(self):
         settings = \
             {
             u'%s/system' % django_settings.SCHEMA_PREFIX:
                 {
-                    u'random_numbers': 'file://127.0.0.1/randomnums.txt'
+                    u'random_numbers': 'file://127.0.0.1/randomnums.txt',
+                    u'metadata_builder': 'chiminey.examples.hrmc.metadatabuilder.HRMCMetadataBuilder',
                 },
         }
         return { 'settings': settings}
 
+    def get_updated_transform_params(self):
+        return {'package': "chiminey.examples.hrmc.transform.HRMCTransform"}
+
+    def get_updated_converge_params(self):
+        return {'package': "chiminey.examples.hrmc.converge.HRMCConverge"}
 
     def get_ui_schema_namespace(self):
         schemas = [
                 django_settings.INPUT_FIELDS['cloud'],
                 django_settings.INPUT_FIELDS['input_location'],
                 django_settings.INPUT_FIELDS['output_location'],
-                django_settings.INPUT_FIELDS['hrmclite'],
+                django_settings.INPUT_FIELDS['hrmc'],
                 django_settings.INPUT_FIELDS['reliability'],
+                django_settings.INPUT_FIELDS['mytardis'],
                 ]
         return schemas
 
 #TODO backward compatability issue
     def get_domain_specific_schemas(self):
         #schema_data = #{
-            #u'%s/input/hrmclite' % django_settings.SCHEMA_PREFIX:
-        schema_data =  [u'HRMCLite Smart Connector',
+            #u'%s/input/hrmc' % django_settings.SCHEMA_PREFIX:
+        schema_data =  [u'HRMC Smart Connector',
              {
                  u'iseed': {'type': models.ParameterName.NUMERIC, 'subtype': 'natural',
                             'description': 'Random Number Seed', 'ranking': 0, 'initial': 42,

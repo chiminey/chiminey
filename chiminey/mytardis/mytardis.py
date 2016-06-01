@@ -28,15 +28,37 @@ import json
 import requests
 import StringIO
 from requests.auth import HTTPBasicAuth
+from django.conf import settings as django_settings
 
 from chiminey import storage
 
 logger = logging.getLogger(__name__)
 
-SCHEMA_PREFIX = "http://rmit.edu.au/schemas"
-
 
 EXP_DATASET_NAME_SPLIT = 2
+
+VALUES_FNAME = django_settings.VALUES_FNAME
+
+'''
+def check_and_handle_schema_absence(current_request, data, url ,headers, paramset_keys=[]):
+    try:
+        current_request.headers['location']
+    except KeyError, e:
+        if 'Schema matching query does not exist' in current_request.text:
+            logger.debug('Schema matching query does not exist \n Uploading data to MyTardis without metadata')
+            for i in paramset_keys:
+                try:
+                    data.pop(i, None)
+                except KeyError, e:
+                    pass
+            return requests.post(url,
+            data=data,
+            headers=headers,
+            auth=(tardis_user, tardis_pass))
+        else:
+            raise
+    return current_request
+'''
 
 # def _get_mytardis_data(tardis_url, field_name):
 #     headers = {'content-type': 'application/json'}
@@ -101,7 +123,7 @@ def create_graph_paramset(schema_ns, name, graph_info, value_dict, value_keys):
     """
 
     res = {}
-    res['schema'] = "%s/%s" % (SCHEMA_PREFIX, schema_ns)
+    res['schema'] = "%s/%s" % (django_settings.SCHEMA_PREFIX, schema_ns)
     #paramset = []
 
     def _make_param(x, y):
@@ -140,7 +162,7 @@ def create_paramset(schema_ns, parameters):
 
     """
     res = {}
-    res['schema'] = '%s/%s' % (SCHEMA_PREFIX, schema_ns)
+    res['schema'] = '%s/%s' % (django_settings.SCHEMA_PREFIX, schema_ns)
     res['parameters'] = parameters
     return res
 
@@ -353,17 +375,6 @@ def create_dataset(settings,
     logger.debug("saving dataset in experiment at %s" % new_exp_id)
     url = "%s/api/v1/dataset/?format=json" % tardis_host_url
     headers = {'content-type': 'application/json'}
-
-    # # FIXME: schema should be a parameter
-    # schemas = [{
-    #            "schema": "http://rmit.edu.au/schemas/hrmcdataset",
-    #            "parameters": []
-    #           }]
-    # if dataset_schema:
-    #    schemas.append({
-    #        "schema": dataset_schema,
-    #        "parameters": []
-    #        })
 
     schemas = dataset_paramset
 
@@ -615,7 +626,7 @@ def _get_or_create_experiment(query_settings, exp_name):
         url = "%s/api/v1/experiment/?format=json" % tardis_host_url
         headers = {'content-type': 'application/json'}
         schemas = [{
-                    "schema": "http://rmit.edu.au/schemas/hrmcexp",
+                    "schema": "%s/hrmcexp" % django_settings.SCHEMA_PREFIX,
                     "parameters": []
                    }]
         data = json.dumps({
@@ -664,7 +675,7 @@ def _get_or_create_dataset(settings, dataset_name, exp_id, dataset_schema=None):
         headers = {'content-type': 'application/json'}
         # FIXME: schema should be a parameter
         schemas = [{
-                    "schema": "http://rmit.edu.au/schemas/hrmcdataset",
+                    "schema": "%s/hrmcdataset" % django_settings.SCHEMA_PREFIX,
                     "parameters": []
                    }]
         if dataset_schema:
@@ -758,3 +769,54 @@ def _post_datafile(dest_url, content):
     # logger.debug("r.js=%s" % r.json)
     # logger.debug("r.te=%s" % r.text)
     # logger.debug("r.he=%s" % r.headers)
+
+
+def get_dataset_name_for_output(settings, url, path):
+    logger.debug("path=%s" % path)
+
+    host = settings['host']
+    prefix = 'ssh://%s@%s' % (settings['type'], host)
+    source_url = storage.get_url_with_credentials(
+        settings, os.path.join(prefix, path, VALUES_FNAME),
+        is_relative_path=False)
+    logger.debug("source_url=%s" % source_url)
+    try:
+        content = storage.get_file(source_url)
+    except IOError, e:
+        logger.warn("cannot read file %s" % e)
+        return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
+
+    logger.debug("content=%s" % content)
+    try:
+        values_map = dict(json.loads(str(content)))
+    except Exception, e:
+        logger.error("cannot load values_map %s: from %s.  Error=%s" % (content, source_url, e))
+        return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))
+
+    try:
+        iteration = str(path.split(os.sep)[-2:-1][0])
+    except Exception, e:
+        logger.error(e)
+        iteration = ""
+
+    if "_" in iteration:
+        iteration = iteration.split("_")[1]
+    else:
+        iteration = "final"
+
+    dataset_name = "%s_%s_%s" % (iteration,
+        values_map['generator_counter'],
+        values_map['run_counter'])
+    logger.debug("dataset_name=%s" % dataset_name)
+    return dataset_name
+
+
+def get_exp_name_for_intermediate_output(settings, url, path):
+    # return str(os.sep.join(path.split(os.sep)[:-EXP_DATASET_NAME_SPLIT]))
+    return str(os.sep.join(path.split(os.sep)[-4:-2]))
+
+def get_exp_name_for_output(settings, url, path):
+    return str(os.sep.join(path.split(os.sep)[:-EXP_DATASET_NAME_SPLIT]))
+
+def _get_exp_name_for_input(settings, url, path):
+    return str(os.sep.join(path.split(os.sep)[:-EXP_DATASET_NAME_SPLIT]))

@@ -107,6 +107,8 @@ $(document).on('click','.delete', function(e) {
 <td>
   {% if not job.1 %}
   <strong>RUNNING</strong>
+  {% else %}
+  <strong>Stopped</strong>
   {% endif %}
 
 </td>
@@ -163,4 +165,3 @@ $(document).on('click','.delete', function(e) {
 </div>
 </div>
 {% endblock %}
-

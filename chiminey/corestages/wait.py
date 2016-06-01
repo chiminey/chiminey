@@ -37,7 +37,6 @@ from chiminey.storage import get_url_with_credentials
 logger = logging.getLogger(__name__)
 from django.conf import settings as django_settings
 
-RMIT_SCHEMA = django_settings.SCHEMA_PREFIX
 
 class Wait(Stage):
     """
@@ -57,7 +56,7 @@ class Wait(Stage):
         self.failure_detector = FailureDetection()
         #self.cleanup_nodes = self.ftmanager.get_cleanup_nodes(run_settings, smartconnectorscheduler)
         try:
-            failed_str = getval(run_settings, '%s/stages/create/failed_nodes' % RMIT_SCHEMA)
+            failed_str = getval(run_settings, '%s/stages/create/failed_nodes' % django_settings.SCHEMA_PREFIX)
             self.failed_nodes = ast.literal_eval(failed_str)
         except SettingNotFoundException, e:
             logger.debug(e)
@@ -68,7 +67,7 @@ class Wait(Stage):
 
         #todo: remove executed try ... except
         try:
-            executed_procs_str = getval(run_settings, '%s/stages/execute/executed_procs' % RMIT_SCHEMA)
+            executed_procs_str = getval(run_settings, '%s/stages/execute/executed_procs' % django_settings.SCHEMA_PREFIX)
             self.executed_procs = ast.literal_eval(executed_procs_str)
         except SettingNotFoundException, e:
             logger.debug(e)
@@ -78,17 +77,17 @@ class Wait(Stage):
             return False
 
         try:
-            self.all_processes = ast.literal_eval(getval(run_settings, '%s/stages/schedule/all_processes' % RMIT_SCHEMA))
+            self.all_processes = ast.literal_eval(getval(run_settings, '%s/stages/schedule/all_processes' % django_settings.SCHEMA_PREFIX))
         except (SettingNotFoundException, ValueError):
             self.all_processes = []
 
         try:
-            self.current_processes = ast.literal_eval(getval(run_settings, '%s/stages/schedule/current_processes' % RMIT_SCHEMA))
+            self.current_processes = ast.literal_eval(getval(run_settings, '%s/stages/schedule/current_processes' % django_settings.SCHEMA_PREFIX))
         except (SettingNotFoundException, ValueError):
             self.current_processes = []
 
         try:
-            self.exec_procs = ast.literal_eval(getval(run_settings, '%s/stages/schedule/executed_procs' % RMIT_SCHEMA))
+            self.exec_procs = ast.literal_eval(getval(run_settings, '%s/stages/schedule/executed_procs' % django_settings.SCHEMA_PREFIX))
         except (SettingNotFoundException, ValueError):
             self.exec_procs = []
 
@@ -103,7 +102,7 @@ class Wait(Stage):
             logger.debug('No ready: executed_not_running=%s' % executed_not_running)
 
         try:
-            reschedule_str = getval(run_settings, '%s/stages/schedule/procs_2b_rescheduled' % RMIT_SCHEMA)
+            reschedule_str = getval(run_settings, '%s/stages/schedule/procs_2b_rescheduled' % django_settings.SCHEMA_PREFIX)
             self.procs_2b_rescheduled = ast.literal_eval(reschedule_str)
             if self.procs_2b_rescheduled:
                 return False
@@ -112,8 +111,8 @@ class Wait(Stage):
             self.procs_2b_rescheduled = []
 
         try:
-            self.reschedule_failed_procs = getval(run_settings, '%s/input/reliability/reschedule_failed_processes' % RMIT_SCHEMA)
-            created_str = getval(run_settings, '%s/stages/create/created_nodes' % RMIT_SCHEMA)
+            self.reschedule_failed_procs = getval(run_settings, '%s/input/reliability/reschedule_failed_processes' % django_settings.SCHEMA_PREFIX)
+            created_str = getval(run_settings, '%s/stages/create/created_nodes' % django_settings.SCHEMA_PREFIX)
             self.created_nodes = ast.literal_eval(created_str)
         except SettingNotFoundException:
             self.reschedule_failed_procs = 0
@@ -127,8 +126,8 @@ class Wait(Stage):
 
 
         try:
-            #runs_left = getval(run_settings, '%s/stages/run/runs_left' % RMIT_SCHEMA)
-            return getval(run_settings, '%s/stages/run/runs_left' % RMIT_SCHEMA)
+            #runs_left = getval(run_settings, '%s/stages/run/runs_left' % django_settings.SCHEMA_PREFIX)
+            return getval(run_settings, '%s/stages/run/runs_left' % django_settings.SCHEMA_PREFIX)
         except SettingNotFoundException:
             pass
         logger.debug("wait not triggered")
@@ -183,6 +182,34 @@ class Wait(Stage):
         # to speed up this transfer
         storage.copy_directories(source_files_url, dest_files_url)
 
+
+        #copying values file
+        values_file_path = os.path.join(relative_path_suffix,
+                                  str(process_id),
+                                  local_settings['smart_connector_input'],
+                                  django_settings.VALUES_FNAME
+                                  )
+        values_files_location = "%s://%s@%s" % (computation_platform_settings['scheme'],
+                                                computation_platform_settings['type'],
+                                                 os.path.join(ip, values_file_path))
+        logger.debug("values_files_location=%s" % values_files_location)
+        values_source_url = get_url_with_credentials(
+        computation_platform_settings, values_files_location,
+        is_relative_path=False)
+
+        logger.debug("values_source_url=%s" % values_source_url)
+
+        values_dest_url = get_url_with_credentials(
+            output_storage_settings,
+            output_prefix + os.path.join(
+                self.job_dir, self.output_dir, process_id, django_settings.VALUES_FNAME),
+            is_relative_path=False)
+        logger.debug("values_dest_url=%s" % values_dest_url)
+        content = storage.get_file(values_source_url)
+        logger.debug('content=%s' % content)
+        storage.put_file(values_dest_url, content)
+
+
     def process(self, run_settings):
         """
             Check all registered nodes to find whether
@@ -194,27 +221,22 @@ class Wait(Stage):
         retrieve_local_settings(run_settings, local_settings)
         logger.debug("local_settings=%s" % local_settings)
 
-        self.contextid = getval(run_settings, '%s/system/contextid' % RMIT_SCHEMA)
-        output_storage_url = getval(run_settings, '%s/platform/storage/output/platform_url' % RMIT_SCHEMA)
+        self.contextid = getval(run_settings, '%s/system/contextid' % django_settings.SCHEMA_PREFIX)
+        output_storage_url = getval(run_settings, '%s/platform/storage/output/platform_url' % django_settings.SCHEMA_PREFIX)
         output_storage_settings = get_platform_settings(output_storage_url, local_settings['bdp_username'])
         # FIXME: Need to be consistent with how we handle settings here.  Prob combine all into
         # single local_settings for simplicity.
         output_storage_settings['bdp_username'] = local_settings['bdp_username']
-        offset = getval(run_settings, '%s/platform/storage/output/offset' % RMIT_SCHEMA)
+        offset = getval(run_settings, '%s/platform/storage/output/offset' % django_settings.SCHEMA_PREFIX)
         self.job_dir = get_job_dir(output_storage_settings, offset)
 
         try:
-            self.finished_nodes = getval(run_settings, '%s/stages/run/finished_nodes' % RMIT_SCHEMA)
-            # self.finished_nodes = smartconnectorscheduler.get_existing_key(run_settings,
-            #     'http://rmit.edu.au/schemas/stages/run/finished_nodes')
+            self.finished_nodes = getval(run_settings, '%s/stages/run/finished_nodes' % django_settings.SCHEMA_PREFIX)
         except SettingNotFoundException:
             self.finished_nodes = '[]'
 
         try:
-            self.id = int(getval(run_settings, '%s/system/id' % RMIT_SCHEMA))
-            # self.id = int(smartconnectorscheduler.get_existing_key(run_settings,
-            #     'http://rmit.edu.au/schemas/system/id'))
-
+            self.id = int(getval(run_settings, '%s/system/id' % django_settings.SCHEMA_PREFIX))
             self.output_dir = "output_%s" % self.id
         except (SettingNotFoundException, ValueError):
             self.id = 0
@@ -231,14 +253,14 @@ class Wait(Stage):
         logger.debug('self.finished_nodes=%s' % self.finished_nodes)
         self.finished_nodes = ast.literal_eval(self.finished_nodes)
 
-        computation_platform_url = getval(run_settings, '%s/platform/computation/platform_url' % RMIT_SCHEMA)
+        computation_platform_url = getval(run_settings, '%s/platform/computation/platform_url' % django_settings.SCHEMA_PREFIX)
         comp_pltf_settings = get_platform_settings(computation_platform_url, local_settings['bdp_username'])
         local_settings.update(comp_pltf_settings)
         comp_pltf_settings['bdp_username'] = local_settings['bdp_username']
 
         wait_strategy = strategies.SynchronousWaitStrategy()
         try:
-            payload_source = getval(run_settings, '%s/stages/setup/payload_source' % RMIT_SCHEMA)
+            payload_source = getval(run_settings, '%s/stages/setup/payload_source' % django_settings.SCHEMA_PREFIX)
             if payload_source:
                 wait_strategy = strategies.AsynchronousWaitStrategy()
         except SettingNotFoundException:
@@ -330,14 +352,14 @@ class Wait(Stage):
         #FIXME: nodes_working can be negative
 
         # FIXME: possible race condition?
-        # if not self._exists(run_settings, 'http://rmit.edu.au/schemas/stages/run'):
-        #     run_settings['http://rmit.edu.au/schemas/stages/run'] = {}
-        # #run_settings['http://rmit.edu.au/schemas/stages/run']['runs_left'] = nodes_working
-        #run_settings['http://rmit.edu.au/schemas/stages/run']['error_nodes'] = nodes_working
+        # if not self._exists(run_settings, '%s/stages/run' % django_settings.SCHEMA_PREFIX):
+        #     run_settings['%s/stages/run' % django_settings.SCHEMA_PREFIX] = {}
+        # #run_settings['%s/stages/run' % django_settings.SCHEMA_PREFIX]['runs_left'] = nodes_working
+        #run_settings['%s/stages/run' % django_settings.SCHEMA_PREFIX]['error_nodes'] = nodes_working
 
         setvals(run_settings, {
-                '%s/stages/run/runs_left' % RMIT_SCHEMA: nodes_working,
-                '%s/stages/run/error_nodes' % RMIT_SCHEMA: nodes_working,
+                '%s/stages/run/runs_left' % django_settings.SCHEMA_PREFIX: nodes_working,
+                '%s/stages/run/error_nodes' % django_settings.SCHEMA_PREFIX: nodes_working,
                 })
 
 
@@ -345,20 +367,18 @@ class Wait(Stage):
         if not nodes_working:
             self.finished_nodes = []
             #messages.success(run_settings, '%d: All processes in current iteration completed' % (self.id + 1))
-        #run_settings['http://rmit.edu.au/schemas/stages/run']['finished_nodes'] = str(self.finished_nodes)
 
         setvals(run_settings, {
-                '%s/stages/run/finished_nodes' % RMIT_SCHEMA: str(self.finished_nodes),
-                '%s/stages/schedule/all_processes' % RMIT_SCHEMA: str(self.all_processes),
-                '%s/stages/schedule/current_processes' % RMIT_SCHEMA: str(self.current_processes),
-                '%s/stages/execute/executed_procs' % RMIT_SCHEMA: str(self.executed_procs)
+                '%s/stages/run/finished_nodes' % django_settings.SCHEMA_PREFIX: str(self.finished_nodes),
+                '%s/stages/schedule/all_processes' % django_settings.SCHEMA_PREFIX: str(self.all_processes),
+                '%s/stages/schedule/current_processes' % django_settings.SCHEMA_PREFIX: str(self.current_processes),
+                '%s/stages/execute/executed_procs' % django_settings.SCHEMA_PREFIX: str(self.executed_procs)
                 })
 
 
         if self.failed_nodes:
-            setval(run_settings, '%s/stages/create/failed_nodes' % RMIT_SCHEMA, self.failed_nodes)
+            setval(run_settings, '%s/stages/create/failed_nodes' % django_settings.SCHEMA_PREFIX, self.failed_nodes)
             # run_settings.setdefault(
-            # 'http://rmit.edu.au/schemas/stages/create', {})[u'failed_nodes'] = self.failed_nodes
 
         completed_procs = [x for x in self.executed_procs if x['status'] == 'completed']
         # messages.info(run_settings, "%s: waiting (%s of %s processes done)"
@@ -366,27 +386,23 @@ class Wait(Stage):
 
         if self.procs_2b_rescheduled:
             setvals(run_settings, {
-                    '%s/stages/schedule/scheduled_started' % RMIT_SCHEMA: 0,
-                    '%s/stages/schedule/procs_2b_rescheduled' % RMIT_SCHEMA: self.procs_2b_rescheduled
+                    '%s/stages/schedule/scheduled_started' % django_settings.SCHEMA_PREFIX: 0,
+                    '%s/stages/schedule/procs_2b_rescheduled' % django_settings.SCHEMA_PREFIX: self.procs_2b_rescheduled
                     })
-            # run_settings.setdefault(
-            #     'http://rmit.edu.au/schemas/stages/schedule',
-            #     {})[u'schedule_started'] = 0
-            # run_settings.setdefault(
-            #         'http://rmit.edu.au/schemas/stages/schedule',
-            #         {})[u'procs_2b_rescheduled'] = self.procs_2b_rescheduled
         return run_settings
 
 def retrieve_local_settings(run_settings, local_settings):
     stage.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/stages/setup/payload_destination')
+        '%s/stages/setup/payload_destination' % django_settings.SCHEMA_PREFIX)
     stage.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/system/platform')
+        '%s/system/platform' % django_settings.SCHEMA_PREFIX)
     stage.copy_settings(local_settings, run_settings,
-        'http://rmit.edu.au/schemas/stages/setup/process_output_dirname')
+        '%s/stages/setup/process_output_dirname' % django_settings.SCHEMA_PREFIX)
     stage.copy_settings(local_settings, run_settings,
-        '%s/system/contextid' % RMIT_SCHEMA)
+        '%s/system/contextid' % django_settings.SCHEMA_PREFIX)
+    stage.copy_settings(local_settings, run_settings,
+    '%s/stages/setup/smart_connector_input' % django_settings.SCHEMA_PREFIX)
     local_settings['bdp_username'] = run_settings[
-        RMIT_SCHEMA + '/bdp_userprofile']['username']
+        django_settings.SCHEMA_PREFIX + '/bdp_userprofile']['username']
 
     logger.debug('retrieve completed')
