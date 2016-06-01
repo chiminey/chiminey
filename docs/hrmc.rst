@@ -15,10 +15,10 @@ The Hybrid Reverse Monte Carlo (HRMC) Smart Connector
 
 
 The Hybrid Reverse Monte Carlo Smart Connector, hereafter HRMC SC, is designed to run :ref:`the implementation of
-an HRMC simulation by  George Opletal <hrmc-source-code>`. The HRMC SC runs HRMC simulations  a cloud compute resource.
+an HRMC simulation by  George Opletal <hrmc-source-code>`. The HRMC SC runs HRMC simulations on a cloud compute resource.
 It reads inputs from a remote file system, and then writes output to a remote file system *and* a data curation service, i.e. MyTardis.
-The HRMC SC user interface allows end-users to control the degree of the provided fault tolerance support. Furthermore, this smart connector includes
-a sweep functionality to allow end-users to execute multiple HRMC jobs simultaneously from a single submission.
+The HRMC SC enables  end-users to control the degree of the provided fault tolerance support. Furthermore, this smart connector includes
+a sweep functionality to enable end-users to simultaneously execute multiple HRMC jobs from a single submission.
 
 
 
