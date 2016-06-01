@@ -103,8 +103,13 @@ class Stage(object):
             return '%s/input/location/input/input_location' % django_settings.SCHEMA_PREFIX
         except SettingNotFoundException:
             pass
+        try:
+            getval(run_settings, '%s/input/location/input' % django_settings.SCHEMA_PREFIX)
+            return '%s/input/location/input' % django_settings.SCHEMA_PREFIX
+        except SettingNotFoundException:
+            pass
         return ""
-
+        
     def output_exists(self, run_settings):
         try:
             getval(run_settings, '%s/input/location/output_location' % django_settings.SCHEMA_PREFIX)
@@ -119,6 +124,11 @@ class Stage(object):
         try:
             getval(run_settings, '%s/input/location/output/output_location' % django_settings.SCHEMA_PREFIX)
             return '%s/input/location/output/output_location' % django_settings.SCHEMA_PREFIX
+        except SettingNotFoundException:
+            pass
+        try:
+            getval(run_settings, '%s/input/location/output' % django_settings.SCHEMA_PREFIX)
+            return '%s/input/location/output' % django_settings.SCHEMA_PREFIX
         except SettingNotFoundException:
             pass
         return ""

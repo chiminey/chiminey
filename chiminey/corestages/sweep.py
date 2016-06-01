@@ -162,6 +162,7 @@ class Sweep(Stage):
             return (name, offset)
 
         input_loc = self.input_exists(run_settings)
+        logger.debug('special_input_loc=%s' % input_loc)
         if input_loc:
             location = getval(run_settings, input_loc)
             input_storage_name, input_storage_offset = \
@@ -189,6 +190,7 @@ class Sweep(Stage):
                 curate_data = getval(run_settings, '%s/input/mytardis/curate_data' % django_settings.SCHEMA_PREFIX)
             except SettingNotFoundException:
                 curate_data = False
+            curate_data = False #TODO remove
             if curate_data:
                 logger.debug('location=%s' %location)
                 location = "%s%s" %(sweep_name, contextid)
@@ -391,6 +393,7 @@ class Sweep(Stage):
             if rands:
                 setval(run_settings, '%s/input/hrmc/iseed' % django_settings.SCHEMA_PREFIX, rands[i])
 
+
             if input_loc:
                 # Set revised input_location for subdirective
                 setval(run_settings, input_loc,
@@ -402,15 +405,21 @@ class Sweep(Stage):
             # Redirect input
             run_input_storage_name, run_input_storage_offset = \
                 _parse_input_location(run_settings,
-                    "local/sweep%s/run%s/input_0" % (contextid, run_counter))
-            # setval(run_settings,
-            #        '%s/platform/storage/input/platform_url' % django_settings.SCHEMA_PREFIX,
-            #        run_input_storage_name)
-            # setval(run_settings,
-            #        '%s/platform/storage/input/offset' % django_settings.SCHEMA_PREFIX,
-            #        run_input_storage_offset)
+                    "local/%s%s/run%s/input_0" % (sweep_name, contextid, run_counter))
 
-            logger.debug("run_settings=%s" % pformat(run_settings))
+            #run_input_storage_offset = os.path.join('%s%s' % (sweep_name, contextid), run_input_storage_offset)
+
+            logger.debug('run_input_storage_name=%s' % run_input_storage_name)
+            logger.debug('run_input_storage_offset=%s' % run_input_storage_offset)
+
+            setval(run_settings,
+                    '%s/platform/storage/input/platform_url' % django_settings.SCHEMA_PREFIX,
+                    run_input_storage_name)
+            setval(run_settings,
+                    '%s/platform/storage/input/offset' % django_settings.SCHEMA_PREFIX,
+                    run_input_storage_offset)
+
+            logger.debug("updated_run_settings=%s" % pformat(run_settings))
             try:
                 _submit_subdirective("nectar", run_settings, user, current_context)
             except Exception, e:
