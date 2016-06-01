@@ -20,6 +20,14 @@ It reads inputs from a remote file system, and then writes output to a remote fi
 The HRMC SC enables  end-users to control the degree of the provided fault tolerance support. Furthermore, this smart connector includes
 a sweep functionality to enable end-users to simultaneously execute multiple HRMC jobs from a single submission.
 
+The HRMC SC and related topics will be discussed as follows:
+
+- HRMC source code
+
+-
+
+
+
 
 
 
