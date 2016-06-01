@@ -3,10 +3,10 @@ The Hidden-Reverse Monte Carlo Connector
 ========================================
 
 
-.. note:: This documentation is under construction
+#.. note:: This documentation is under construction
 
 
-HYBRID REVERSE MONTE CARLO (HRMC) - Version 2.0 (Oct 2012)
+Hybrid Reverse Monte Carlo (HRMC) - Version 2.0 (Oct 2012)
 ----------------------------------------------------------
 
 | Code development by:
@@ -23,6 +23,11 @@ Published in:
   G. Opletal, T. C. Petersen, I. K. Snook, S. P. Russo, HRMC_2.0: Hybrid Reverse Monte Carlo method with silicon, carbon and germanium potentials, Com. Phys. Comm., 184(8), 1946-1957 (2013).
 
 License: CPC License: http://cpc.cs.qub.ac.uk/licence/licence.html
+
+.. note:: This example is significantly more complicated than the previous examples. Therefore we describe here the
+  unique features of this connector and invite the reader to read the source code for this connector in detail.
+   It combines a number of features from the previous examples and uses the same overall architecture.
+
 
 Setup
 `````
