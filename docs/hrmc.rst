@@ -1,5 +1,5 @@
 
-The Hybrid Reverse Monte Carlo (HRMC) Connector
+The Hybrid Reverse Monte Carlo (HRMC) Smart Connector
 ========================================
 
 
