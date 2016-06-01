@@ -14,6 +14,9 @@ and how a smart connector is defined and registered within a Chiminey server.
     :numbered: 3
 
     quick_example_
+    <quick_example>_
+    
+    :ref:`quick_example`
     Cloud-based smart connector <randnumcloud>
     Cloud-based smart connector with internal parameter sweep <randnuminternalsweep>
     Cloud-based smart connector with MyTardis support <randnummytardis>
