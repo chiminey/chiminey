@@ -1,5 +1,5 @@
 
-.. _create_sc:
+.. _create_sc_deprecated:
 
 Creating a smart connector
 -------------------------
