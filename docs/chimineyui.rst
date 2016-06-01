@@ -46,7 +46,7 @@ The following table shows the list of input field types and their description.
       +----------------------------+-------------------------------------------------+
       |``mytardis``                | | Set of fields to enable end users to curate   |
       |                            | | the input and output of their smart connector |
-      |                            | | job on `MyTardis <http://mytardis.org>`_      |
+      |                            | | job on `MyTardis <http://mytardis.org>`_.     |
       +----------------------------+-------------------------------------------------+
       |``hrmclite``                | | Domain-specific input fields needed           |
       |                            | | to run :ref:`HRMCLite <hrmclite_sc>` jobs.    |
