@@ -6,6 +6,7 @@ The Hybrid Reverse Monte Carlo (HRMC) Smart Connector
 ========================================
 
 
+
 ..
   note:: This documentation is under construction
 
@@ -13,8 +14,12 @@ The Hybrid Reverse Monte Carlo (HRMC) Smart Connector
 .. note:: This example is significantly more complicated than the previous examples. Therefore we describe here the unique features of this connector and invite the reader to read the source code for this connector in detail. It combines a number of features from the previous examples and uses the same overall architecture.
 
 
+The Hybrid Reverse Monte Carlo Smart Connector, hereafter HRMC SC, is designed to run :ref:`the implementation of an HRMC simulation by  George Opletal <hrmc-source-code>`.
 
-Hybrid Reverse Monte Carlo - Version 2.0 (Oct 2012)
+
+.. _hrmc-source-code:
+
+Hybrid Reverse Monte Carlo - Source Code Version 2.0 (Oct 2012)
 ----------------------------------------------------------
 
 | Code development by:
