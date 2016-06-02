@@ -91,17 +91,18 @@ def register_schemas(schema_data):
 
 def _get_chiminey_schemas():
     schema_data = {
-        u'%s/platform/storage/mytardis' % django_settings.SCHEMA_PREFIX:
-            [u'schema for Unix storage platform instances',
+        u'%s/platform/storage/curation/mytardis' % django_settings.SCHEMA_PREFIX:
+            [u'Schema for MyTardis storage platform instances',
              {
                  #u'name': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'', 'ranking':6, 'help_text':''},
                  u'operation': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': '',
                                 'initial': 'update', 'ranking': 0, 'help_text': ''},
                  u'filters': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': '',
                               'initial': '', 'ranking': 3, 'help_text': ''},
-                 u'platform_type': {'type': models.ParameterName.STRING, 'subtype': 'hidden',
-                                    'description': 'Resource type', 'initial': 'mytardis', 'ranking': 6,
-                                    'help_text': ''},
+                 u'platform_type': {'type': models.ParameterName.STRLIST, 'subtype': '',
+                                   'description': 'Resource type', 'initial': '',
+                                   'choices': '[("mytardis", "MyTardis"), ]', 'ranking': 6,
+                                   'help_text': 'The identifier of the type of the storage resource'},
                  u'platform_name': {'type': models.ParameterName.STRING, 'subtype': '',
                                     'description': 'Resource name', 'initial': '', 'ranking': 10,
                                     'help_text': 'The unique identifier of the MyTardis instance'},
@@ -116,16 +117,17 @@ def _get_chiminey_schemas():
                  #u'api_key': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'API key', 'ranking':42, 'help_text':''},
              }
             ],
-        u'%s/platform/storage/unix' % django_settings.SCHEMA_PREFIX:
-            [u'schema for Unix storage platform instances',
+        u'%s/platform/storage/filesystem/rfs' % django_settings.SCHEMA_PREFIX:
+            [u'schema for remote file system storage resource instances',
              {
                  u'operation': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': '',
                                 'initial': 'update', 'ranking': 0, 'help_text': ''},
                  u'filters': {'type': models.ParameterName.STRING, 'subtype': 'hidden', 'description': '',
                               'initial': '', 'ranking': 3, 'help_text': ''},
-                 u'platform_type': {'type': models.ParameterName.STRING, 'subtype': 'hidden',
-                                    'description': 'Resource type', 'initial': 'unix', 'ranking': 6,
-                                    'help_text': ''},
+                 u'platform_type': {'type': models.ParameterName.STRLIST, 'subtype': '',
+                                   'description': 'Resource type', 'initial': '',
+                                   'choices': '[("rfs", "Remote File System"), ]', 'ranking': 6,
+                                   'help_text': 'The identifier of the type of the storage resource'},
                  u'platform_name': {'type': models.ParameterName.STRING, 'subtype': '',
                                     'description': 'Resource name', 'initial': '', 'ranking': 10,
                                     'help_text': 'The unique identifier of the platform'},

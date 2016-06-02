@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 
 
-def generate_unix_key(parameters):
+def generate_rfs_key(parameters):
     key_generated = True
     message = 'Key generated successfully'
     password = ''

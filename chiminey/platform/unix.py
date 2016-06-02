@@ -5,7 +5,7 @@ import logging
 
 from chiminey import storage
 from chiminey.corestages import strategies
-from chiminey.platform.generatekeys import generate_unix_key
+from chiminey.platform.generatekeys import generate_rfs_key
 from chiminey.platform.validate import validate_remote_path
 from chiminey.platform.manage import retrieve_platform
 from chiminey.compute.command import run_command
@@ -13,11 +13,11 @@ from chiminey.compute.command import run_command
 logger = logging.getLogger(__name__)
 
 
-class UnixPlatform():
+class RemoteFileSystemPlatform():
 
 
     def get_platform_types(self):
-        return ['unix', 'nci']
+        return ['rfs', 'nci']
 
     def configure(self, platform_type, username, parameters):
         key_name = 'bdp_%s' % parameters['platform_name']
@@ -37,7 +37,7 @@ class UnixPlatform():
         return [True] + list(validate_remote_path(path_list, parameters, passwd_auth))
 
     def generate_key(self, parameters):
-        return generate_unix_key(parameters)
+        return generate_rfs_key(parameters)
 
     # def get_platform_settings(self, platform_url, username):
     #     platform_name = platform_url.split('/')[0]
@@ -87,7 +87,7 @@ class UnixPlatform():
             settings['host'] = settings['ip_address']
             settings['scheme'] = 'ssh'
 
-        elif platform_type == 'unix':
+        elif platform_type == 'rfs':
             settings['private_key'] = os.path.join(storage.get_bdp_root_path(),
                            settings['private_key_path'])
             settings['host'] = settings['ip_address']

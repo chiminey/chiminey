@@ -849,7 +849,7 @@ def get_url_with_credentials(settings, url_or_relative_path,
     platform = parsed_url.username
     url_settings = {}
     logger.debug('platform=%s' % platform)
-    if platform in ['nectar', 'unix', 'nci', 'csrack', 'amazon', 'hadoop']: #TODO make it generic
+    if platform in ['nectar', 'unix', 'nci', 'csrack', 'amazon', 'hadoop', 'rfs']: #TODO make it generic
         url_settings['username'] = settings['username']
         #url_settings['password'] = settings['nectar_password']
         url_settings['key_file'] = settings['private_key']

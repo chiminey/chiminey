@@ -5,7 +5,7 @@ import logging
 
 from chiminey import storage
 from chiminey.corestages import strategies
-from chiminey.platform.generatekeys import generate_unix_key
+from chiminey.platform.generatekeys import generate_rfs_key
 from chiminey.platform.validate import validate_remote_path
 from chiminey.platform.manage import retrieve_platform
 
@@ -33,7 +33,7 @@ class JenkinsPlatform():
     def generate_key(self, parameters):
         return (True, "")
         # TODO: connect to jenkins to make sure valid host
-        # return generate_unix_key(parameters)
+        # return generate_rfs_key(parameters)
 
     def get_platform_settings(self, platform_url, username):
         platform_name = platform_url.split('/')[0]
