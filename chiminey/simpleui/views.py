@@ -116,16 +116,39 @@ def bdp_account_settings(request):
 
 
 def computation_platform_settings(request):
+    resources_list = [('cluster_form', 'cluster/pbs_based', 'cluster', "HPC", 'true' ),\
+    ('cloud_form', 'cloud/ec2-based', 'cloud', 'Cloud', 'true'),\
+    ('jenkins_form','testing/jenkins_based', 'jenkins', 'Continuous Integration', 'false' ),\
+    ('bigdata_form', 'bigdata/hadoop', 'bigdata', 'Analytics', 'true')]
+
+    resource_namespace_prefix = "%s/platform/computation" % django_settings.SCHEMA_PREFIX
+    post_response_redirect = 'computation-platform-settings'
+    resources_overall_id = 'computation_platforms'
+
+    return manage_platforms(request, resources_list=resources_list, resource_namespace_prefix=resource_namespace_prefix,\
+    post_response_redirect=post_response_redirect, resources_overall_id=resources_overall_id)
+
+
+def storage_platform_settings(request):
+    resources_list = [('unix_form', 'filesystem/rfs', 'filesystem', "File System", 'true' ), \
+    ('mytardis_form', 'curation/mytardis', 'curation', 'Data Curation Service', 'false')]
+
+    resource_namespace_prefix = "%s/platform/storage" % django_settings.SCHEMA_PREFIX
+    post_response_redirect = 'storage-platform-settings'
+    resources_overall_id = 'storage_platforms'
+
+    return manage_platforms(request, resources_list=resources_list, resource_namespace_prefix=resource_namespace_prefix,\
+    post_response_redirect=post_response_redirect, resources_overall_id=resources_overall_id)
+
+
+
+def manage_platforms(request, resources_list=[], resource_namespace_prefix='',post_response_redirect='', resources_overall_id=''):
     new_form_data = {}
     resources = {}
     for k, v in new_form_data.items():
         resources[k] = {k: {'form': v[0], 'data': v[1], 'advanced_ops': 'false'}}
-    for field_name, ns_suffix, group, group_name, ops in [('cluster_form', 'cluster/pbs_based', 'cluster', "HPC", 'true' ),
-                                    ('cloud_form', 'cloud/ec2-based', 'cloud', 'Cloud', 'true'),
-                                    ('jenkins_form','testing/jenkins_based', 'jenkins', 'Continuous Integration', 'false' ),
-                                    ('bigdata_form', 'bigdata/hadoop', 'bigdata', 'Analytics', 'true'),
-                                    ]:
-        namespace = "%s/platform/computation/%s" % (django_settings.SCHEMA_PREFIX, ns_suffix)
+    for field_name, ns_suffix, group, group_name, ops in resources_list:
+        namespace = "%s/%s" % (resource_namespace_prefix, ns_suffix)
         params = _get_platform_params(request, namespace)
 
         form, form_data= make_directive_form(
@@ -144,10 +167,10 @@ def computation_platform_settings(request):
             new_form_data[field_name] = (form, form_data)
             if form.is_valid():
                 post_platform(namespace, form.cleaned_data, request)
-                return HttpResponsePermanentRedirect(reverse('computation-platform-settings'))
+                return HttpResponsePermanentRedirect(reverse(post_response_redirect))
 
     #FIXME: consider using non-locahost URL for api_host
-    url = "%s/api/v1/platformparameter/?format=json&limit=0&schema=%s/platform/computation" % (api_host, django_settings.SCHEMA_PREFIX)
+    url = "%s/api/v1/platformparameter/?format=json&limit=0&schema=%s" % (api_host, resource_namespace_prefix)
     cookies = dict(request.COOKIES)
     logger.debug("cookies=%s" % cookies)
     headers = {'content-type': 'application/json'}
@@ -162,18 +185,18 @@ def computation_platform_settings(request):
     else:
         logger.debug('everything is fine')
         GET_data = r.json()
-        computation_platforms, all_headers = filter_computation_platforms(GET_data)
-        logger.debug(computation_platforms)
+        storage_platforms, all_headers = filter_computation_platforms(GET_data)
+        logger.debug(storage_platforms)
     logger.debug("new_form_data=%s" % pformat(new_form_data))
     # logger.debug("cloud_form_get=%s" % cloudform)
     # logger.debug("cloud_data_get=%s" % form_data)
     # logger.debug("nci_form_get=%s" % cluster_form)
-    res = {'computation_platforms': computation_platforms,
+    res = {resources_overall_id: storage_platforms,
                     'all_headers': all_headers}
     res.update(dict([(x,y[0]) for x,y in new_form_data.items()]))
     logger.debug("res=%s" % pformat(res))
-    logger.debug('computation_platforms=%s' % res['computation_platforms'])
-    hide_resource_fields(res['computation_platforms'], POPPED_KEYS)
+    logger.debug('resources_overall_id=%s' % res[resources_overall_id])
+    hide_resource_fields(res[resources_overall_id], POPPED_KEYS)
     hide_resource_header_fields(res['all_headers'], POPPED_KEYS)
 
     logger.debug("new res=%s" % pformat(res))
@@ -227,87 +250,9 @@ def _get_platform_params(request, namespace):
     parameters = get_parameters(request, schema_id)
     platform_params.append((schema_info, parameters))
     platform_params = add_form_fields(request, platform_params)
+    logger.debug('schema_id=%s, platform_params=%s' % (schema_id,platform_params))
     return platform_params
 
-
-def storage_platform_settings(request):
-    namespace = django_settings.SCHEMA_PREFIX + "/platform/storage/mytardis"
-    mytardis_params = _get_platform_params(request, namespace)
-    mytardis_form, mytardis_form_data = make_directive_form(
-        platform_params=mytardis_params,
-        username=request.user.username)
-    namespace = django_settings.SCHEMA_PREFIX + "/platform/storage/unix"
-    unix_params = _get_platform_params(request, namespace)
-    unix_form, unix_form_data = make_directive_form(
-        platform_params=unix_params,
-            username=request.user.username)
-    if request.method == "POST":
-
-        logger.debug('storage mytardis post')
-        logger.debug(request.__dict__)
-
-        #unix_form = SSHStoragePlatformForm(request.POST)
-        unix_form, unix_form_data = make_directive_form(
-            request=request.POST,
-            platform_params=unix_params,
-            username=request.user.username)
-        #if unix_form.is_valid():
-        #    schema = django_settings.SCHEMA_PREFIX + '/platform/storage/unix'
-        #    unix_form.cleaned_data['platform_type'] = 'unix'
-        #    post_platform(schema, unix_form.cleaned_data, request)
-        #    return HttpResponsePermanentRedirect(reverse('storage-platform-settings'))
-        mytardis_form, mytardis_form_data = make_directive_form(
-            request=request.POST,
-            platform_params=mytardis_params,
-            username=request.user.username)
-        if mytardis_form.is_valid():
-            logger.debug('valid mytardis')
-            schema = django_settings.SCHEMA_PREFIX + '/platform/storage/mytardis'
-            mytardis_form.cleaned_data['platform_type'] = 'mytardis'
-            post_platform(schema, mytardis_form.cleaned_data, request)
-            return HttpResponsePermanentRedirect(reverse('storage-platform-settings'))
-
-    #FIXME: consider using non-locahost URL for api_host
-    url = "%s/api/v1/platformparameter/" \
-        "?format=json&limit=0&schema=" \
-        "%s/platform/storage" % (api_host, django_settings.SCHEMA_PREFIX)
-    cookies = dict(request.COOKIES)
-    logger.debug("cookies=%s" % cookies)
-    headers = {'content-type': 'application/json'}
-    try:
-        #response = urlopen(req)
-        r = requests.get(url,
-        headers=headers,
-        cookies=cookies)
-    except HTTPError as e:
-        logger.debug('The server couldn\'t fulfill the request. %s' % e)
-        logger.debug('Error code: ', e.code)
-    except URLError as e:
-        logger.debug('We failed to reach a server. %s' % e)
-        logger.debug('Reason: ', e.reason)
-    else:
-        logger.debug('everything is fine')
-        #logger.debug(r.text)
-        #logger.debug(r.json())
-        GET_data = r.json()
-        storage_platforms, all_headers = filter_computation_platforms(GET_data)
-        logger.debug('storage=%s' % storage_platforms)
-    logger.debug('invalid mytardis')
-    hide_resource_fields(storage_platforms, POPPED_KEYS)
-    hide_resource_header_fields(all_headers, POPPED_KEYS)
-    return render(request, 'accountsettings/resources.html',
-                  {'unix_form': unix_form,
-                  # 'unix_form_data': dict([(y[0],x) for x,y in unix_form_data]),
-                   'unix_form_data': unix_form_data,
-                   'mytardis_form': mytardis_form,
-                   'mytardis_form_data': mytardis_form_data,
-                   'all_headers': all_headers,
-                   'resources': {'unix': {'data': unix_form_data, 'advanced_ops':'true', 'form': unix_form, 'group_name': 'Remote File System'},
-                                 'mytardis': {'data': mytardis_form_data, 'advanced_ops': 'false', 'form': mytardis_form, 'group_name': 'MyTardis'}
-                                  },
-                   'formtypes': {'create':'Register', 'update': 'Update', 'delete': 'Remove'},
-                   'resourcetype': 'storage'
-                   })
 
 
 def post_platform(schema, form_data, request, type=None):

@@ -452,10 +452,10 @@ RESOURCE_SCHEMA_NAMESPACE = \
     {SCHEMA_PREFIX + '/input/system/compplatform/cloud': '/platform/computation/cloud/ec2-based',
      SCHEMA_PREFIX + '/input/system/compplatform/unix': '/platform/computation/cluster/pbs_based',
      SCHEMA_PREFIX + '/input/system/compplatform/hadoop': '/platform/computation/bigdata/hadoop',
-     SCHEMA_PREFIX + '/input/location': '/platform/storage/unix',
-     SCHEMA_PREFIX + '/input/location/input': '/platform/storage/unix',
-     SCHEMA_PREFIX + '/input/location/output': '/platform/storage/unix',
-     SCHEMA_PREFIX + '/input/mytardis': '/platform/storage/mytardis',
+     SCHEMA_PREFIX + '/input/location': '/platform/storage/filesystem/rfs',
+     SCHEMA_PREFIX + '/input/location/input': '/platform/storage/filesystem/rfs',
+     SCHEMA_PREFIX + '/input/location/output': '/platform/storage/filesystem/rfs',
+     SCHEMA_PREFIX + '/input/mytardis': '/platform/storage/curation/mytardis',
     }
 
 
@@ -468,7 +468,7 @@ REDIS_HOST = "localhost"
 APIHOST = "http://127.0.0.1"
 
 PLATFORM_CLASSES = (
-    'chiminey.platform.unix.UnixPlatform',
+    'chiminey.platform.rfs.RemoteFileSystemPlatform',
     'chiminey.platform.cloud.CloudPlatform',
     'chiminey.platform.jenkins.JenkinsPlatform',
     'chiminey.platform.mytardis.MyTardisPlatform',

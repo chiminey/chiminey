@@ -35,7 +35,7 @@ $(document).ready(function () {
                {% if formtype == 'create' %}
                 <ul class="nav nav-tabs" id="myTab">
                     {% for resource, details in resources.items %}
-                     <li class="{% if resource == 'unix' or resource == 'cloud' %} active {% endif %}"><a href="#{{resource}}_{{resourcetype}}" data-toggle="tab"> {{details.group_name}}</a></li>
+                     <li class="{% if resource == 'filesystem' or resource == 'cloud' %} active {% endif %}"><a href="#{{resource}}_{{resourcetype}}" data-toggle="tab"> {{details.group_name}}</a></li>
                      {% endfor %}
                 </ul>
                 {% endif %}
@@ -45,7 +45,7 @@ $(document).ready(function () {
                 <div class="tab-content">
 
                     {% for resource, details in resources.items %}
-                     <div class="tab-pane {% if resource == 'unix' or resource == 'cloud' or formtype == 'update' or formtype == 'delete' %} active {% endif %} " id="{{resource}}_{{resourcetype}}">
+                     <div class="tab-pane {% if resource == 'filesystem' or resource == 'cloud' or formtype == 'update' or formtype == 'delete' %} active {% endif %} " id="{{resource}}_{{resourcetype}}">
                        <form class="form-horizontal" action="{{ action }}" method="POST" id="{{resource}}_form_{{formtype}}"> {% csrf_token %}
                              {% for data, field in  details.data  %}
                               {% if field.is_hidden == False and data.4 != "advanced" %}
@@ -136,9 +136,10 @@ $(document).ready(function () {
             <h2>Cloud - NeCTAR/CSRack/Amazon EC2</h2>
          {% elif platform_type == 'hadoop' %}
             <h2>Analytics - Hadoop MapReduce</h2>
-    {% elif platform_type == 'unix' %}
+    {% elif platform_type == 'rfs' %}
             <h2>Remote File System</h2>
-
+            {% elif platform_type == 'mytardis' %}
+               <h2>Data Curation Service - MyTardis</h2>
          {% else %}
             <h2>{{ platform_type|title }}</h2>
 
