@@ -225,8 +225,8 @@ def storage_platform_settings(request):
     resources = {}
     for k, v in new_form_data.items():
         resources[k] = {k: {'form': v[0], 'data': v[1], 'advanced_ops': 'false'}}
-    for field_name, ns_suffix, group, group_name, ops in [('unix_form', 'filesystem/rfs', 'filesystem', "Remote File System", 'true' ),
-                                    ('mytardis_form', 'curation/mytardis', 'curation', 'MyTardis', 'false'),
+    for field_name, ns_suffix, group, group_name, ops in [('unix_form', 'filesystem/rfs', 'filesystem', "File System", 'true' ),
+                                    ('mytardis_form', 'curation/mytardis', 'curation', 'Data Curation Service', 'false'),
                                     ]:
         namespace = "%s/platform/storage/%s" % (django_settings.SCHEMA_PREFIX, ns_suffix)
         params = _get_platform_params(request, namespace)
@@ -237,26 +237,8 @@ def storage_platform_settings(request):
 
         new_form_data[field_name] = (form, form_data)
         resources[group] = {'form': form, 'data': form_data, 'advanced_ops': ops, 'group_name': group_name}
-        logger.debug('request=%s method=%s' % (request.__dict__, request.method))
-        '''
 
-        if request.method == 'POST':
 
-            form, form_data= make_directive_form(
-                request=request.POST,
-                platform_params=params,
-                username=request.user.username)
-            new_form_data[field_name] = (form, form_data)
-            if form.is_valid():
-
-                form.cleaned_data['platform_type'] = ns_suffix
-                data_form = form.cleaned_data
-                logger.debug('field_name=%s, ns_suffix=%s, group=%s, group_name=%s, ops=%s' %(field_name, ns_suffix, group, group_name, ops))
-                logger.debug('namespace=%s, form.cleaned_data=%s' % (namespace, data_form))
-                post_platform(namespace, data_form, request)
-                return HttpResponsePermanentRedirect(reverse('storage-platform-settings'))
-
-        '''
     #FIXME: consider using non-locahost URL for api_host
     url = "%s/api/v1/platformparameter/?format=json&limit=0&schema=%s/platform/storage" % (api_host, django_settings.SCHEMA_PREFIX)
     cookies = dict(request.COOKIES)
@@ -342,85 +324,6 @@ def _get_platform_params(request, namespace):
     logger.debug('schema_id=%s, platform_params=%s' % (schema_id,platform_params))
     return platform_params
 
-
-def storage_platform_settings_old(request):
-    namespace = django_settings.SCHEMA_PREFIX + "/platform/storage/mytardis"
-    mytardis_params = _get_platform_params(request, namespace)
-    mytardis_form, mytardis_form_data = make_directive_form(
-        platform_params=mytardis_params,
-        username=request.user.username)
-    namespace = django_settings.SCHEMA_PREFIX + "/platform/storage/unix"
-    unix_params = _get_platform_params(request, namespace)
-    unix_form, unix_form_data = make_directive_form(
-        platform_params=unix_params,
-            username=request.user.username)
-    if request.method == "POST":
-
-        logger.debug('storage mytardis post')
-        logger.debug(request.__dict__)
-
-        #unix_form = SSHStoragePlatformForm(request.POST)
-        unix_form, unix_form_data = make_directive_form(
-            request=request.POST,
-            platform_params=unix_params,
-            username=request.user.username)
-        #if unix_form.is_valid():
-        #    schema = django_settings.SCHEMA_PREFIX + '/platform/storage/unix'
-        #    unix_form.cleaned_data['platform_type'] = 'unix'
-        #    post_platform(schema, unix_form.cleaned_data, request)
-        #    return HttpResponsePermanentRedirect(reverse('storage-platform-settings'))
-        mytardis_form, mytardis_form_data = make_directive_form(
-            request=request.POST,
-            platform_params=mytardis_params,
-            username=request.user.username)
-        if mytardis_form.is_valid():
-            logger.debug('valid mytardis')
-            schema = django_settings.SCHEMA_PREFIX + '/platform/storage/mytardis'
-            mytardis_form.cleaned_data['platform_type'] = 'mytardis'
-            post_platform(schema, mytardis_form.cleaned_data, request)
-            return HttpResponsePermanentRedirect(reverse('storage-platform-settings'))
-
-    #FIXME: consider using non-locahost URL for api_host
-    url = "%s/api/v1/platformparameter/" \
-        "?format=json&limit=0&schema=" \
-        "%s/platform/storage" % (api_host, django_settings.SCHEMA_PREFIX)
-    cookies = dict(request.COOKIES)
-    logger.debug("cookies=%s" % cookies)
-    headers = {'content-type': 'application/json'}
-    try:
-        #response = urlopen(req)
-        r = requests.get(url,
-        headers=headers,
-        cookies=cookies)
-    except HTTPError as e:
-        logger.debug('The server couldn\'t fulfill the request. %s' % e)
-        logger.debug('Error code: ', e.code)
-    except URLError as e:
-        logger.debug('We failed to reach a server. %s' % e)
-        logger.debug('Reason: ', e.reason)
-    else:
-        logger.debug('everything is fine')
-        #logger.debug(r.text)
-        #logger.debug(r.json())
-        GET_data = r.json()
-        storage_platforms, all_headers = filter_computation_platforms(GET_data)
-        logger.debug('storage=%s' % storage_platforms)
-    logger.debug('invalid mytardis')
-    hide_resource_fields(storage_platforms, POPPED_KEYS)
-    hide_resource_header_fields(all_headers, POPPED_KEYS)
-    return render(request, 'accountsettings/resources.html',
-                  {'unix_form': unix_form,
-                  # 'unix_form_data': dict([(y[0],x) for x,y in unix_form_data]),
-                   'unix_form_data': unix_form_data,
-                   'mytardis_form': mytardis_form,
-                   'mytardis_form_data': mytardis_form_data,
-                   'all_headers': all_headers,
-                   'resources': {'unix': {'data': unix_form_data, 'advanced_ops':'true', 'form': unix_form, 'group_name': 'Remote File System'},
-                                 'mytardis': {'data': mytardis_form_data, 'advanced_ops': 'false', 'form': mytardis_form, 'group_name': 'MyTardis'}
-                                  },
-                   'formtypes': {'create':'Register', 'update': 'Update', 'delete': 'Remove'},
-                   'resourcetype': 'storage'
-                   })
 
 
 def post_platform(schema, form_data, request, type=None):
