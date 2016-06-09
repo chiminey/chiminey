@@ -38,7 +38,9 @@ The names of the files and the directories under ``payload_name``, except the do
 
   - ``schedule.sh`` is needed to add process-specific configurations. Some smart connectors spawn multiple processes to complete  a single job. If each process needs to be configured differently, the instruction on how to configure each process should be recorded in schedule.sh.
 
-  - ``main.sh`` runs the core functionality of the smart connector, and writes the output to a file.
+  - ``main.sh`` runs the core functionality of the smart connector, and writes the output to a file. Chiminey sends the path to input and output directories via command-line arguments:
+  the first argument for input and the second for output. The smart connector developer can read inputs from the input directory, and redirect outputs of the job to  the output directory.
+  Upon the completion of the smart connector job,  Chiminey will transfer the content of the output directory to the end-user's designated location.
 
   - ``domain-specific executables`` are additional files that may be needed by main.sh.
 

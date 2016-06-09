@@ -80,15 +80,15 @@ The HRMC SC requires packages like dos2unix, fortran compiler. Thus, all the req
 The content of  ``bootstrap.sh`` is as follows:
 
 ::
-   #!/bin/bash
 
+   #!/bin/bash
 
     yum -y install dos2unix gcc-gfortran compat-libgfortran-41 gcc-gfortran.x86_64
 
 
 The payload includes domain-specific executables, i.e. ``HRMC2.tar.gz`` and ``PSDCOde.tar.gz``.
-The ``schedule.sh``  of HRMC SC contains process-specific configurations. ``schedule.sh`` is responsible to extract the executables for each HRMC process.
-Below shows the content of ``schedule.sh``.
+The ``schedule.sh``  of HRMC SC contains process-specific configurations. ``schedule.sh`` is responsible to extract
+the executables for each HRMC process. Below shows the content of ``schedule.sh``.
 
 
 ::
@@ -100,7 +100,6 @@ Below shows the content of ``schedule.sh``.
     INPUT_DIR=$1
     OUTPUT_DIR=$2
 
-
     tar --extract --gunzip --verbose --file=HRMC2.tar.gz
     f95 HRMC2/hrmc.f90 -fno-align-commons -o HRMC
 
@@ -109,7 +108,9 @@ Below shows the content of ``schedule.sh``.
 
 
 
-``main.sh`` is the core of HRMC SC. Chiminey sends the INPUT_DIR and OUTPUT_DIR of
+``main.sh`` is the core of HRMC SC.
+
+
 
 
 
