@@ -108,7 +108,15 @@ the executables for each HRMC process. Below shows the content of ``schedule.sh`
 
 
 
-``main.sh`` is the core of HRMC SC.
+``main.sh`` is the core of HRMC SC. Recall that `Chiminey sends the path to input (``INPUT_DIR``) and output (OUTPUT_DIR) directories
+via command-line arguments<payload>`. Here, the SC developer moves the HRMC executable, which was extracted by ``schedule.sh``, to
+the input directory. The SC developer changes its working directory to ``INPUT_DIR``,  run HRMC, and redirect the execution  output
+to ``OUTPUT_DIR``.  When HRMC is completed, the SC developer moves additional files to ``OUTPUT_DIR``. As the
+next major step, the SC developer runs the ``PSD`` executable, which was extracted by ``schedule.sh``. Once the execution is
+completed, the necessary files are moved to ``OUTPUT_DIR``.
+
+NB: Running HRMC and PSD takes a long time. However, the SC developer should not be concerned about this as Chiminey
+will  ensure that all tasks  are run asynchronously.
 
 ::
 
