@@ -287,24 +287,23 @@ class Execute(stage.Stage):
             ssh = open_connection(ip_address=ip_address, settings=settings)
             logger.debug(settings['process_output_dirname'])
             try:
+                self.hadoop_input = 'HADOOP_INPUT_%s' % self.contextid
+                self.hadoop_output = 'HADOOP_OUTPUT_%s' % self.contextid
                 hadoop = run_settings['%s/input/system/compplatform/hadoop' % django_settings.SCHEMA_PREFIX]
                 sudo = False
-                options = "%s input_%s_%s output_%s_%s HADOOP_INPUT %s %s"  % (
-                    settings['process_output_dirname'], self.contextid, process_id, self.contextid,
-                    process_id, settings['hadoop_home_path'], self.get_optional_args(run_settings))
-                command, errs = run_make(
-                ssh, makefile_path,
-                'start_running_process  %s'  % options,#, self.contextid, process_id),
-            sudo= sudo
-            )
+                options = '%s %s  %s %s %s ' % (settings['smart_connector_input'], settings['process_output_dirname'], settings['hadoop_home_path'], self.hadoop_input, self.hadoop_output)
+                logger.debug('options = %s ' % options)
+                optional_args = self.get_optional_args(run_settings)
+                if optional_args:
+                        options += " %s" % optional_args
+                logger.debug('options = %s ' % options)
+                command, errs = run_make(ssh, makefile_path, 'start_running_process  %s'  % options, sudo= sudo )
             except KeyError:
                 sudo = True
                 command, errs = run_make(
                 ssh, makefile_path,
                 'start_running_process %s %s'  % (settings['smart_connector_input'],
                 settings['process_output_dirname']), sudo= sudo)
-
-
             logger.debug('execute_command=%s' % command
                          )
         finally:
@@ -474,9 +473,12 @@ class Execute(stage.Stage):
         logger.debug("values=%s" % values)
 
         # generates a set of variations for the template fname
+        logger.debug('self.initial_numbfile = %s ' % self.initial_numbfile)
         contexts = self._get_variation_contexts(
             [run_map], values,  self.initial_numbfile)
         self.initial_numbfile += len(contexts)
+        logger.debug('contexts = %s ' % contexts)
+        logger.debug('self.initial_numbfile = %s ' % self.initial_numbfile)
 
         # for each context, copy each file to dest and any
         # templates to be instantiated, then store in values.
@@ -575,9 +577,6 @@ class Execute(stage.Stage):
                         + "@" + os.path.join(relative_path_suffix,
                                              proc['id'],
                                              local_settings['smart_connector_input'])
-                    if computation_platform_settings['type'] == 'hadoop':
-                        dest_file_location = os.path.join(dest_file_location, 'HADOOP_INPUT')
-
                     logger.debug("dest_file_location =%s" % dest_file_location)
                     resched_file_location = "%s%s" % (output_prefix, os.path.join(
                         self.job_dir, "input_backup", proc['id']))
@@ -653,11 +652,13 @@ class Execute(stage.Stage):
 
 
     def get_optional_args(self, run_settings):
-        from os.path import basename
-        namespace = self.get_input_schema_namespace(
-            run_settings['%s/directive_profile' % django_settings.SCHEMA_PREFIX]['directive_name'])
+        directive_name = run_settings['%s/directive_profile' % django_settings.SCHEMA_PREFIX]['directive_name']
+        logger.debug('directive_name=%s' % directive_name)
+        namespace = self.get_input_schema_namespace(run_settings) 
+        logger.debug('namespave=%s' % namespace) 
         try:
-            args_keys = django_settings.SMART_CONNECTORS[basename(namespace)]['args']
+            args_keys = django_settings.SMART_CONNECTORS[directive_name]['args']
+            logger.debug('args_keys = %s' % args_keys) 
         except KeyError:
             args_keys = []
         args = ''

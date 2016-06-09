@@ -1,20 +1,18 @@
-#!/bin/sh
+#!/bin/bash
 
-PROC_DESTINATION=$1
-INPUT_DIR=$2
-OUTPUT_DIR=$3
+INPUT_DIR=$1
+OUTPUT_DIR=$2
+HADOOP_HOME="$3"
 HADOOP_INPUT=$4
-HADOOP_HOME=$5
+HADOOP_OUTPUT=$5
+OPTS_ARGS=$6
 
-cd $PROC_DESTINATION
+$HADOOP_HOME/bin/hdfs dfs -rm -r -f $HADOOP_INPUT
+$HADOOP_HOME/bin/hdfs dfs -mkdir -p $HADOOP_INPUT
+$HADOOP_HOME/bin/hdfs dfs -put $INPUT_DIR/*   $HADOOP_INPUT
 
+$HADOOP_HOME/bin/hdfs dfs -rm -r -f $HADOOP_OUTPUT
+$HADOOP_HOME/bin/hadoop jar hadoop-mapreduce-examples-2.7.2.jar grep  $HADOOP_INPUT  $HADOOP_OUTPUT  $OPTS_ARGS
 
-#HADOOP_HOME=/home/ec2-user/hadoop-2.7.2
-
-$HADOOP_HOME/bin/hdfs dfs -mkdir -p   $INPUT_DIR
-$HADOOP_HOME/bin/hdfs dfs -put $HADOOP_INPUT/*   $INPUT_DIR
-
-$HADOOP_HOME/bin/hadoop jar ../hadoop-mapreduce-examples-2.7.2.jar grep  $INPUT_DIR  $OUTPUT_DIR  $6
-
-$HADOOP_HOME/bin/hdfs dfs -get $OUTPUT_DIR .
+$HADOOP_HOME/bin/hdfs dfs -get $HADOOP_OUTPUT $OUTPUT_DIR
 
