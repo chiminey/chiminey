@@ -22,9 +22,15 @@ a sweep functionality to enable end-users to simultaneously execute multiple HRM
 
 The HRMC SC and related topics will be discussed as follows:
 
-- HRMC source code
+- :ref:`HRMC source code<hrmc-source-code>`
 
--
+- :ref:`The Core function<hrmc-core-function>`
+
+- :ref:`Attaching resources and non-functional properties<hrmc-ataching_resources>`
+
+- :ref:`Registering the HRMC SC<hrmc_registration>`
+
+
 
 
 
@@ -50,6 +56,29 @@ Published in:
   G. Opletal, T. C. Petersen, I. K. Snook, S. P. Russo, HRMC_2.0: Hybrid Reverse Monte Carlo method with silicon, carbon and germanium potentials, Com. Phys. Comm., 184(8), 1946-1957 (2013).
 
 License: CPC License: http://cpc.cs.qub.ac.uk/licence/licence.html
+
+
+
+.. _hrmc-core-function:
+
+HRMC Core Function
+----------------------------------------------------------
+The core functinality of the HRMC SC is provided through a :ref:`payload<payload>`.
+
+
+
+.. _hrmc-ataching_resources:
+
+Attaching Resources and Non-functional properties
+----------------------------------------------------------
+
+
+.. _hrmc_registration:
+
+Registering the HRMC SC
+----------------------------------------------------------
+
+
 
 
 Setup
