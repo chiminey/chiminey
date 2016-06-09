@@ -15,6 +15,6 @@ and how a smart connector is defined and registered within a Chiminey server.
 
 
     Quick Example: Random Number Smart Connector <quick_example>
-    Word Count on Hadoop <wordcount_sc>
-    HRMClite <hrmclite_sc>
+    Word Count on Hadoop <wordcount>
+    HRMClite <hrmclite>
     Hidden Reverse Monte Carlo Smart connector <hrmc>
