@@ -13,9 +13,8 @@ and how a smart connector is defined and registered within a Chiminey server.
     :titlesonly:
     :numbered: 3
 
-    
+
     Quick Example: Random Number Smart Connector <quick_example>
-    Cloud-based smart connector <randnumcloud>
-    Cloud-based smart connector with internal parameter sweep <randnuminternalsweep>
-    Cloud-based smart connector with MyTardis support <randnummytardis>
+    Word Count on Hadoop <wordcount_sc>
+    HRMClite <hrmclite_sc>
     Hidden Reverse Monte Carlo Smart connector <hrmc>
