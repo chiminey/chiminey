@@ -268,12 +268,7 @@ function submitForm(description, form_id) {
 function updatePlatform(parameters, platform_type) {
     $('form[id*="_form_update"]').hide();
     formreset();
-    if (platform_type == 'csrack' || platform_type == 'nectar' || platform_type == 'amazon'){
-        platform_type = 'cloud'
-    }
-    else if (platform_type == 'nci'){
-        platform_type = 'cluster'
-    }
+    platform_type = get_resource_group(platform_type)
     form_id = '#' + platform_type + '_form_update';
     $(form_id).show();
     $('form #id_platform_type').attr("disabled", "disabled")
@@ -292,17 +287,30 @@ function updatePlatform(parameters, platform_type) {
     $('form #id_vm_image_size').val('m1.small');
 }
 
+function get_resource_group(resource_type){
+  if (resource_type == 'csrack' || resource_type == 'nectar' || resource_type == 'amazon'){
+      return 'cloud'
+  }
+  else if (resource_type == 'nci'){
+      return 'cluster'
+  }
+  else if (resource_type == 'mytardis'){
+      return 'curation'
+  }
+  else if (resource_type == 'rfs'){
+      return 'filesystem'
+  }
+  else if (resource_type == 'hadoop'){
+      return 'bigdata'
+  }
+  return resource_type
+}
 //consider merging the ff method with updatePlatform
 function deletePlatform(parameters, platform_type) {
     $('form[id*="_form_delete"]').hide();
     formreset();
     fieldReadonly();
-    if (platform_type == 'csrack' || platform_type == 'nectar' || platform_type == 'amazon'){
-        platform_type = 'cloud'
-    }
-    else if (platform_type == 'nci'){
-        platform_type = 'cluster'
-    }
+    platform_type = get_resource_group(platform_type)
     form_id = '#' + platform_type + '_form_delete'
     $(form_id).show();
     var current_params = parameters.replace(/[\]\(\)\[']/g, '');
@@ -441,4 +449,3 @@ function toggleVisibility(id, opts_id){
 
 </body>
 </html>
-

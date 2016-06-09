@@ -126,7 +126,7 @@ def computation_platform_settings(request):
     resources_overall_id = 'computation_platforms'
 
     return manage_platforms(request, resources_list=resources_list, resource_namespace_prefix=resource_namespace_prefix,\
-    post_response_redirect=post_response_redirect, resources_overall_id=resources_overall_id)
+    post_response_redirect=post_response_redirect, resources_overall_id=resources_overall_id, resource_type='compute')
 
 
 def storage_platform_settings(request):
@@ -138,11 +138,11 @@ def storage_platform_settings(request):
     resources_overall_id = 'storage_platforms'
 
     return manage_platforms(request, resources_list=resources_list, resource_namespace_prefix=resource_namespace_prefix,\
-    post_response_redirect=post_response_redirect, resources_overall_id=resources_overall_id)
+    post_response_redirect=post_response_redirect, resources_overall_id=resources_overall_id, resource_type='storage')
 
 
 
-def manage_platforms(request, resources_list=[], resource_namespace_prefix='',post_response_redirect='', resources_overall_id=''):
+def manage_platforms(request, resources_list=[], resource_namespace_prefix='',post_response_redirect='', resources_overall_id='', resource_type=''):
     new_form_data = {}
     resources = {}
     for k, v in new_form_data.items():
@@ -210,7 +210,7 @@ def manage_platforms(request, resources_list=[], resource_namespace_prefix='',po
                   {'all_headers': all_headers,
                    'resources': resources,
                    'formtypes': {'create':'Register', 'update': 'Update', 'delete': 'Remove'},
-                    'resourcetype': 'compute'
+                    'resourcetype': resource_type
                    })
 
 

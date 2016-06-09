@@ -205,10 +205,13 @@ class Wait(Stage):
                 self.job_dir, self.output_dir, process_id, django_settings.VALUES_FNAME),
             is_relative_path=False)
         logger.debug("values_dest_url=%s" % values_dest_url)
-        content = storage.get_file(values_source_url)
+        try:
+	    logger.debug('reading %s' % values_source_url)
+            content = storage.get_file(values_source_url)
+        except IOError, e:
+            content = {}
         logger.debug('content=%s' % content)
         storage.put_file(values_dest_url, content)
-
 
     def process(self, run_settings):
         """

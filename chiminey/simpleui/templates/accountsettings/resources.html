@@ -191,6 +191,7 @@ $(document).ready(function () {
                             {% endif %}
                         {% endif %}
                     {% endfor %}
+                    
                 <td class="btn-group">
                     <a data-toggle="modal" href="#updateModal_{{resourcetype}}" class="btn btn-primary"
                        onclick="updatePlatform('{{ paramset.items|escapejs }}', '{{ platform_type|slugify }}');">
