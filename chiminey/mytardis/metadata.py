@@ -20,5 +20,6 @@ class MetadataBuilder:
     def build_metadata_for_final_output(self, output_dir_path, **kwargs):
         dataset_paramset = []
         datafile_paramset = []
+        experiment_paramset = []
         dfile_extract_func = {}
         return (experiment_paramset, dataset_paramset, datafile_paramset, dfile_extract_func)
