@@ -28,7 +28,7 @@ from chiminey.smartconnectorscheduler.errors import BadSpecificationError
 from chiminey.smartconnectorscheduler import jobs
 from chiminey.runsettings import update, getval, getvals, SettingNotFoundException
 from chiminey.storage import get_url_with_credentials, list_all_files, get_basename, list_dirs
-from chiminey.conf import settings as django_settings
+from django.conf import settings as django_settings
 
 logger = logging.getLogger(__name__)
 
