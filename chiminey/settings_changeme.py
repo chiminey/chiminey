@@ -269,21 +269,6 @@ LOGGING = {
             'formatter': 'timestamped'
             },
 
-        'file': {
-            'class': 'logging.FileHandler',
-            'filename': os.path.join("/logs", os.environ.get('CHIMINEY_LOG_FILE', 'chiminey.log')),
-            'formatter': 'timestamped',
-            # 'maxBytes': 1024 * 1024 * 100,  # 100 mb
-            # 'backupCount': 4
-            },
-
-        'rotatingfile': {
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': os.path.join("/logs", os.environ.get('CHIMINEY_LOG_FILE', 'chiminey.log')),
-            'formatter': 'timestamped',
-                         'maxBytes': 1024 * 1024 * 100,  # 100 mb
-                         'backupCount': 4
-            },
 
 
     },
