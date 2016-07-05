@@ -35,6 +35,11 @@ from chiminey import storage
 logger = logging.getLogger(__name__)
 
 
+# We assume that all client mytardis hosts speak SSL exclusively
+#TARDIS_PROTOCOL = "https://%s"
+TARDIS_PROTOCOL = "http://%s"
+
+
 EXP_DATASET_NAME_SPLIT = 2
 
 VALUES_FNAME = django_settings.VALUES_FNAME
@@ -206,7 +211,7 @@ def create_experiment(settings, exp_id, expname, experiment_paramset=[]):
     try:
         tardis_user = settings["mytardis_user"]
         tardis_pass = settings["mytardis_password"]
-        tardis_host_url = "http://%s" % settings["mytardis_host"]
+        tardis_host_url = TARDIS_PROTOCOL % settings["mytardis_host"]
     except IndexError, e:
         logger.error(e)
         raise
@@ -227,9 +232,10 @@ def create_experiment(settings, exp_id, expname, experiment_paramset=[]):
         })
         logger.debug("data=%s" % data)
         r = requests.post(url,
-        data=data,
-        headers=headers,
-        auth=(tardis_user, tardis_pass))
+            data=data,
+            headers=headers,
+            auth=(tardis_user, tardis_pass),
+            verify=False)
 
         # FIXME: need to check for status_code and handle failures such
         # as 500 - lack of disk space at mytardis
@@ -291,7 +297,8 @@ def create_experiment(settings, exp_id, expname, experiment_paramset=[]):
                 r = requests.post(url,
                    data=data,
                    headers=headers,
-                   auth=(tardis_user, tardis_pass))
+                   auth=(tardis_user, tardis_pass),
+                   verify=False)
 
                 # FIXME: need to check for status_code and handle failures such
                 # as 500 - lack of disk space at mytardis
@@ -349,7 +356,7 @@ def create_dataset(settings,
     logger.debug("post_dataset")
     tardis_user = settings["mytardis_user"]
     tardis_pass = settings["mytardis_password"]
-    tardis_host_url = "http://%s" % settings["mytardis_host"]
+    tardis_host_url = TARDIS_PROTOCOL % settings["mytardis_host"]
     logger.debug("posting dataset from %s to mytardis at %s with %s" % (source_url,
         tardis_host_url, tardis_pass))
 
@@ -386,7 +393,7 @@ def create_dataset(settings,
            })
     logger.debug("data=%s" % data)
     logger.debug("post to %s" % url)
-    r = requests.post(url, data=data, headers=headers, auth=HTTPBasicAuth(tardis_user, tardis_pass))
+    r = requests.post(url, data=data, headers=headers, auth=HTTPBasicAuth(tardis_user, tardis_pass), verify=False)
     # FIXME: need to check for status_code and handle failures.
 
     logger.debug("r.json=%s" % r.json)
@@ -514,7 +521,8 @@ def create_dataset(settings,
                         data={"json_data": data},
                         headers={'Accept': 'application/json'},
                         files={'attached_file': fp},
-                        auth=HTTPBasicAuth(tardis_user, tardis_pass)
+                        auth=HTTPBasicAuth(tardis_user, tardis_pass),
+                        verify=False
                         )
 
                     # FIXME: need to check for status_code and handle failures.
@@ -551,7 +559,7 @@ def retrieve_datafile(url):
     exp_id, _ = _get_or_create_experiment(query_settings, exp_name)
     dataset_id, _ = _get_or_create_dataset(query_settings, dataset_name, exp_id)
 
-    url = "http://%s/api/v1/dataset_file/%s/" % (tardis_host_url, dataset_id)
+    url = "https://%s/api/v1/dataset_file/%s/" % (tardis_host_url, dataset_id)
     headers = {'Accept': 'application/json'}
 
     logger.debug("fname=%s" % fname)
@@ -569,7 +577,8 @@ def retrieve_datafile(url):
 
     #temp.seek(0)
     r = requests.get(url, headers=headers,
-        auth=HTTPBasicAuth(tardis_user, tardis_pass)
+        auth=HTTPBasicAuth(tardis_user, tardis_pass),
+        verify=False
         )
     # FIXME: need to check for status_code and handle failures.
 
@@ -607,9 +616,9 @@ def _get_or_create_experiment(query_settings, exp_name):
     headers = {'content-type': 'application/json'}
     tardis_user = query_settings["mytardis_username"]
     tardis_pass = query_settings["mytardis_password"]
-    tardis_host_url = "http://%s" % query_settings["mytardis_host"]
+    tardis_host_url = TARDIS_PROTOCOL % query_settings["mytardis_host"]
     tardis_url = "%s/api/v1/experiment/?limit=0&format=json" % tardis_host_url
-    r = requests.get(tardis_url, headers=headers, auth=(tardis_user, tardis_pass))
+    r = requests.get(tardis_url, headers=headers, auth=(tardis_user, tardis_pass), verify=False)
     # logger.debug(r.json)
     # logger.debug(r.text)
     # logger.debug(r.headers)
@@ -637,7 +646,8 @@ def _get_or_create_experiment(query_settings, exp_name):
         r = requests.post(url,
             data=data,
             headers=headers,
-            auth=(tardis_user, tardis_pass))
+            auth=(tardis_user, tardis_pass),
+            verify=False)
 
         # logger.debug(r.json)
         # logger.debug(r.text)
@@ -650,9 +660,9 @@ def _get_dataset(settings, dataset_name, exp_id):
     headers = {'content-type': 'application/json'}
     tardis_user = settings["mytardis_username"]
     tardis_pass = settings["mytardis_password"]
-    tardis_host_url = "http://%s" % settings["mytardis_host"]
+    tardis_host_url = TARDIS_PROTOCOL % settings["mytardis_host"]
     tardis_url = "%s/api/v1/dataset/?limit=0&format=json" % tardis_host_url
-    r = requests.get(tardis_url, headers=headers, auth=(tardis_user, tardis_pass))
+    r = requests.get(tardis_url, headers=headers, auth=(tardis_user, tardis_pass), verify=False)
 
     experiment_uri = "/api/v1/experiment/%s/" % exp_id
     #logger.debug("r.json()=%s" % r.json())
@@ -669,7 +679,7 @@ def _get_or_create_dataset(settings, dataset_name, exp_id, dataset_schema=None):
     ids = _get_dataset(settings, dataset_name, exp_id)
 
     if not ids:
-        tardis_host_url = "http://%s" % settings["mytardis_host"]
+        tardis_host_url = TARDIS_PROTOCOL % settings["mytardis_host"]
         tardis_user = settings["mytardis_username"]
         tardis_pass = settings["mytardis_password"]
         headers = {'content-type': 'application/json'}
@@ -693,7 +703,8 @@ def _get_or_create_dataset(settings, dataset_name, exp_id, dataset_schema=None):
         r = requests.post("%s/api/v1/dataset/?format=json" % tardis_host_url,
             data=data,
             headers=headers,
-            auth=HTTPBasicAuth(tardis_user, tardis_pass))
+            auth=HTTPBasicAuth(tardis_user, tardis_pass),
+            verify=False)
         # FIXME: need to check for status_code and handle failures.
 
         # logger.debug("r.json=%s" % r.json)
@@ -729,7 +740,7 @@ def _post_datafile(dest_url, content):
     exp_id, _ = _get_or_create_experiment(query_settings, exp_name)
     dataset_id, _ = _get_or_create_dataset(query_settings, dataset_name, exp_id)
 
-    url = "http://%s/api/v1/dataset_file/" % tardis_host_url
+    url = "https://%s/api/v1/dataset_file/" % tardis_host_url
     headers = {'Accept': 'application/json'}
     new_dataset_uri = "/api/v1/dataset/%s/" % dataset_id
 
@@ -762,7 +773,8 @@ def _post_datafile(dest_url, content):
 
     r = requests.post(url, data={'json_data': data}, headers=headers,
         files={'attached_file': temp},
-        auth=HTTPBasicAuth(tardis_user, tardis_pass)
+        auth=HTTPBasicAuth(tardis_user, tardis_pass),
+        verify=False
         )
     # FIXME: need to check for status_code and handle failures.
 
