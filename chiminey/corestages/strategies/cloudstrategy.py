@@ -42,12 +42,12 @@ class CloudStrategy(Strategy):
                )
         try:
             local_settings['min_count'] = int(getval(
-                run_settings, '%s/input/system/cloud/minimum_number_vm_instances' % RMIT_SCHEMA))
+                run_settings, '%s/input/system/compplatform/cloud/minimum_number_vm_instances' % RMIT_SCHEMA))
         except SettingNotFoundException:
             local_settings['min_count'] = 1
         try:
             local_settings['max_count'] = int(getval(
-                run_settings, '%s/input/system/cloud/number_vm_instances' % RMIT_SCHEMA))
+                run_settings, '%s/input/system/compplatform/cloud/number_vm_instances' % RMIT_SCHEMA))
         except SettingNotFoundException:
             local_settings['max_count'] = 1
 
