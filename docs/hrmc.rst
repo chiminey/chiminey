@@ -1,12 +1,45 @@
 
-The Hidden-Reverse Monte Carlo Connector
+
+.. _hrmc_sc:
+
+The Hybrid Reverse Monte Carlo (HRMC) Smart Connector
 ========================================
 
 
-.. note:: This documentation is under construction
+
+..
+  note:: This documentation is under construction
 
 
-HYBRID REVERSE MONTE CARLO (HRMC) - Version 2.0 (Oct 2012)
+.. note:: This example is significantly more complicated than the previous examples. Therefore we describe here the unique features of this connector and invite the reader to read the source code for this connector in detail. It combines a number of features from the previous examples and uses the same overall architecture.
+
+
+The Hybrid Reverse Monte Carlo Smart Connector, hereafter HRMC SC, is designed to run :ref:`the implementation of
+an HRMC simulation by  George Opletal <hrmc-source-code>`. The HRMC SC runs HRMC simulations on a cloud compute resource.
+It reads inputs from a remote file system, and then writes output to a remote file system *and* a data curation service, i.e. MyTardis.
+The HRMC SC enables  end-users to control the degree of the provided fault tolerance support. Furthermore, this smart connector includes
+a sweep functionality to enable end-users to simultaneously execute multiple HRMC jobs from a single submission.
+
+The HRMC SC and related topics will be discussed as follows:
+
+- :ref:`HRMC source code<hrmc-source-code>`
+
+- :ref:`The Core function<hrmc-core-function>`
+
+- :ref:`Attaching resources and non-functional properties<hrmc-ataching_resources>`
+
+- :ref:`Registering the HRMC SC<hrmc_registration>`
+
+
+
+
+
+
+
+
+.. _hrmc-source-code:
+
+Hybrid Reverse Monte Carlo - Source Code Version 2.0 (Oct 2012)
 ----------------------------------------------------------
 
 | Code development by:
@@ -23,6 +56,114 @@ Published in:
   G. Opletal, T. C. Petersen, I. K. Snook, S. P. Russo, HRMC_2.0: Hybrid Reverse Monte Carlo method with silicon, carbon and germanium potentials, Com. Phys. Comm., 184(8), 1946-1957 (2013).
 
 License: CPC License: http://cpc.cs.qub.ac.uk/licence/licence.html
+
+
+
+.. _hrmc-core-function:
+
+HRMC Core Function
+----------------------------------------------------------
+The core functionality of the HRMC SC is provided through a :ref:`payload<payload>`. The HRMC payload is similar to the following.
+
+::
+
+    payload_hrmc/
+    |--- bootstrap.sh
+    |--- process_payload
+    │    |--- HRMC2.tar.gz
+    |    |--- PSDCOde.tar.gz
+    │    |--- schedule.sh
+    │    |--- main.sh
+
+
+The HRMC SC requires packages like dos2unix, fortran compiler. Thus, all the required dependancies are specified in  ``bootstrap.sh``.
+The content of  ``bootstrap.sh`` is as follows:
+
+::
+
+   #!/bin/bash
+
+    yum -y install dos2unix gcc-gfortran compat-libgfortran-41 gcc-gfortran.x86_64
+
+
+The payload includes domain-specific executables, i.e. ``HRMC2.tar.gz`` and ``PSDCOde.tar.gz``.
+The ``schedule.sh``  of HRMC SC contains process-specific configurations. ``schedule.sh`` is responsible to extract
+the executables for each HRMC process. Below shows the content of ``schedule.sh``.
+
+
+::
+
+
+    #!/bin/bash
+    # version 2.0
+
+    INPUT_DIR=$1
+    OUTPUT_DIR=$2
+
+    tar --extract --gunzip --verbose --file=HRMC2.tar.gz
+    f95 HRMC2/hrmc.f90 -fno-align-commons -o HRMC
+
+    tar --extract --gunzip --verbose --file=PSDCode.tar.gz
+    gfortran PSDCode/PSD.f -o PSDCode/PSD
+
+
+
+``main.sh`` is the core of HRMC SC. Recall that `Chiminey sends the path to input (``INPUT_DIR``) and output (OUTPUT_DIR) directories
+via command-line arguments<payload>`. Here, the SC developer moves the HRMC executable, which was extracted by ``schedule.sh``, to
+the input directory. The SC developer changes its working directory to ``INPUT_DIR``,  run HRMC, and redirect the execution  output
+to ``OUTPUT_DIR``.  When HRMC is completed, the SC developer moves additional files to ``OUTPUT_DIR``. As the
+next major step, the SC developer runs the ``PSD`` executable, which was extracted by ``schedule.sh``. Once the execution is
+completed, the necessary files are moved to ``OUTPUT_DIR``.
+
+NB: Running HRMC and PSD takes a long time. However, the SC developer should not be concerned about this as Chiminey
+will  ensure that all tasks  are run asynchronously.
+
+::
+
+    #!/bin/bash
+    # version 2.0
+
+    INPUT_DIR=$1
+    OUTPUT_DIR=$2
+
+    cp HRMC $INPUT_DIR/HRMC
+    cd $INPUT_DIR
+    ./HRMC >& ../$OUTPUT_DIR/hrmc_output
+    cp input_bo.dat ../$OUTPUT_DIR/input_bo.dat
+    cp input_gr.dat ../$OUTPUT_DIR/input_gr.dat
+    cp input_sq.dat ../$OUTPUT_DIR/input_sq.dat
+    cp xyz_final.xyz  ../$OUTPUT_DIR/xyz_final.xyz
+    cp HRMC.inp_template ../$OUTPUT_DIR/HRMC.inp_template
+    cp  data_errors.dat   ../$OUTPUT_DIR/data_errors.dat
+
+    cp -f xyz_final.xyz ../PSDCode/xyz_final.xyz
+    cd ../PSDCode; ./PSD >&  ../$OUTPUT_DIR/psd_output
+    cp PSD_exp.dat ../$OUTPUT_DIR/
+    cp psd.dat ../$OUTPUT_DIR/
+
+
+
+
+
+
+
+
+
+
+
+.. _hrmc-ataching_resources:
+
+Attaching Resources and Non-functional properties
+----------------------------------------------------------
+
+
+.. _hrmc_registration:
+
+Registering the HRMC SC
+----------------------------------------------------------
+
+
+
 
 Setup
 `````

@@ -25,12 +25,12 @@ The following table shows the list of input field types and their description.
       |      Input Field Type      |            Description                          |
       +============================+=================================================+
       |``unix``                    | | Dropdown menu containing the registered       |
-      |                            | | HPC compute resources                         |
+      |                            | | HPC compute resources.                        |
       +----------------------------+-------------------------------------------------+
       |``cloud``                   | | Dropdown menu of registered cloud resources,  |
-      |                            | | number of VMs to be used for the job          |
+      |                            | | number of VMs to be used for the job.         |
       +----------------------------+-------------------------------------------------+
-      |``hadoop``                  | | Dropdown menu of registered hadoop clusters   |
+      |``hadoop``                  | | Dropdown menu of registered hadoop clusters.  |
       +----------------------------+-------------------------------------------------+
       |``output_location``         | | Dropdown menu of registered storage resources |
       |                            | | (i.e. remote file system) with root path,     |
@@ -39,16 +39,23 @@ The following table shows the list of input field types and their description.
       +----------------------------+-------------------------------------------------+
       |``input_location``          | | Same as output location.                      |
       +----------------------------+-------------------------------------------------+
-      |``location``                | | Input and output location                     |
+      |``location``                | | Input and output location.                    |
       +----------------------------+-------------------------------------------------+
       |``reliability``             | | Set of fields to control the degree of the    |
-      |                            | | provided fault tolerance  support             |
+      |                            | | provided fault tolerance  support.            |
+      +----------------------------+-------------------------------------------------+
+      |``mytardis``                | | Set of fields to enable end users to curate   |
+      |                            | | the input and output of their smart connector |
+      |                            | | job on `MyTardis <http://mytardis.org>`_.     |
       +----------------------------+-------------------------------------------------+
       |``hrmclite``                | | Domain-specific input fields needed           |
-      |                            | | to run :ref:`HRMCLite <hrmclite_sc>` jobs     |
+      |                            | | to run :ref:`HRMCLite <hrmclite_sc>` jobs.    |
+      +----------------------------+-------------------------------------------------+
+      |``hrmc``                    | | Domain-specific input fields needed           |
+      |                            | | to run :ref:`HRMC <hrmc_sc>` jobs.            |
       +----------------------------+-------------------------------------------------+
       |``wordcount``               | | Domain-specific input fields needed to run    |
-      |                            | | :ref:`wordcount <wordcount_sc>` jobs          |
+      |                            | | :ref:`wordcount <wordcount_sc>` jobs.         |
       +----------------------------+-------------------------------------------------+
 
 
@@ -61,7 +68,7 @@ Constructing Smart Connector Input Fields
 """""""""""""""""""""""""""""""""""""""""
 
 Here, we see how to include the input fields that are needed for submitting a smart connector job.
-When a :ref:`smart connector is created < create_sc>`, one of the tasks is specifying  attaching resources and non-functional properties via  input field types.
+:ref:`When a smart connector is created <create_sc>`, one of the tasks is   attaching resources and non-functional properties via  input field types.
 This task is done by overriding  ``get_ui_schema_namespace(self)`` of the ``CoreInitial`` class.
 The ``CoreInitial`` class is available at ``chiminey/initialisation/coreinitial``.
 
@@ -88,11 +95,12 @@ a cloud-based compute resource  and b) an output location. Suppose ``CloudSCInit
 .. _domain_specific_input_fields:
 
 Including domain-specific input fields
-''''''''''''''''''''''''''''''''''''''
+'''''''''''''''''''''''''''''''''''''''''
+
 
 Input field types that are included within the Chiminey platform are generic and are included within the platform. However
- domain-specific input fields must be defined when needed. A domain-specific input field type is provided by overriding  ``get_domain_specific_schemas(self)``
- of the  ``CoreInitial`` class. This method will return a  list  of two elements:
+domain-specific input fields must be defined when needed. A domain-specific input field type is provided by overriding  ``get_domain_specific_schemas(self)``
+of the  ``CoreInitial`` class. This method will return a  list  of two elements:
 
  #.  The description of the input field type e.g. `HRMCLite Smart Connector`
 
