@@ -272,7 +272,7 @@ class MyTardisPlatform():
                     self.load_metadata_builder(run_settings)
                     if self.METADATA_BUILDER:
                         (experiment_paramset, dataset_paramset, datafile_paramset, dfile_extract_func) = \
-                        self.METADATA_BUILDER.build_metadata_for_final_output(output_dir, \
+                        self.METADATA_BUILDER.build_metadata_for_final_output(m, output_dir, \
                         run_settings=run_settings, storage_settings=all_settings,\
                         output_dirs=output_dirs)
 

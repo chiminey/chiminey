@@ -41,10 +41,10 @@ import redis
 from copy import deepcopy
 
 # for celery 3.0
-# from celery.utils.log import get_task_logger
-# logger = get_task_logger(__name__)
+from celery.utils.log import get_task_logger
+logger = get_task_logger(__name__)
 
-logger = logging.getLogger(__name__)
+#logger = logging.getLogger(__name__)
 
 
 CELERY_TIMEOUT = 50000

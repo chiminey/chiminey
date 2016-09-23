@@ -17,7 +17,7 @@ class MetadataBuilder:
         continue_loop = False
         return (continue_loop, dataset_paramset, datafile_paramset, dfile_extract_func)
 
-    def build_metadata_for_final_output(self, output_dir_path, **kwargs):
+    def build_metadata_for_final_output(self, m, output_dir_path, **kwargs):
         dataset_paramset = []
         datafile_paramset = []
         experiment_paramset = []
