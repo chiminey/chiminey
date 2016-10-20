@@ -150,6 +150,12 @@ SMART_CONNECTORS = {
            "description": "Randnum generator, with timestamp",
            "payload": "/opt/chiminey/current/chiminey/examples/randnum/payload_randnum"
             },
+'prism':   {'init': 'chiminey.prismconnector.initialise.PrismInitial',
+             'name': 'prism',
+             'description': 'The PRISM Model Checker',
+             'payload': '/opt/chiminey/current/chiminey/prismconnector/payload_prism',
+             'sweep': True
+             },
                     }
 
 SCHEMA_PREFIX = "http://rmit.edu.au/schemas"
@@ -167,7 +173,8 @@ INPUT_FIELDS =  {'cloud': SCHEMA_PREFIX + "/input/system/compplatform/cloud",
                  'hrmclite':  SCHEMA_PREFIX + "/input/hrmclite",
                  'hrmc':  SCHEMA_PREFIX + "/input/hrmc",
                  'wordcount':  SCHEMA_PREFIX + "/input/wordcount",
-                 'mytardis':  SCHEMA_PREFIX + "/input/mytardis"
+                 'mytardis':  SCHEMA_PREFIX + "/input/mytardis",
+                 'prism':  SCHEMA_PREFIX + "/input/prism",
                  }
 
 TEMPLATE_DIRS = (
