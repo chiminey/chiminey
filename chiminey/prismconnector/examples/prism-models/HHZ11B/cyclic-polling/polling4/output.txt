@@ -1,0 +1,35 @@
+PRISM
+=====
+
+Version: 4.3.1
+Date: Thu Oct 06 12:39:29 AEDT 2016
+Hostname: w8031047.local
+Memory limits: cudd=1g, java(heap)=910.5m
+Command line: prism p4.sm p4.csl -param 'mu,gamma'
+
+Parsing model file "p4.sm"...
+
+Parsing properties file "p4.csl"...
+
+1 property:
+(1) Pmax=? [ (!(s=2&a=1)&!(s=3&a=1)&!(s=4&a=1)) U (s=1&a=1) ]
+
+Type:        CTMC
+Modules:     server station1 station2 station3 station4 
+Variables:   s a s1 s2 s3 s4 
+
+---------------------------------------------------------------------
+
+Parametric model checking: Pmax=? [ (!(s=2&a=1)&!(s=3&a=1)&!(s=4&a=1)) U (s=1&a=1) ]
+
+Building model...
+
+Computing reachable states...
+Reachable states exploration and model construction done in 0.365 secs.
+
+Time for model construction: 0.366 seconds.
+
+Time for model checking: 0.204 seconds.
+
+([0.0,1.0],[0.0,1.0]): { 3 mu^6 + 22 gamma * mu^5 + 66 gamma^2 * mu^4 + 104 gamma^3 * mu^3 + 120 gamma^4 * mu^2 + 96 gamma^5 * mu + 32 gamma^6 | 3 mu^6 + 34 gamma * mu^5 + 154 gamma^2 * mu^4 + 368 gamma^3 * mu^3 + 504 gamma^4 * mu^2 + 384 gamma^5 * mu + 128 gamma^6 }
+

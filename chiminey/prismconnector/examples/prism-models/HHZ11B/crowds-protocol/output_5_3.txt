@@ -1,0 +1,36 @@
+PRISM
+=====
+
+Version: 4.3.1
+Date: Wed Oct 19 11:10:57 AEDT 2016
+Hostname: w8031047.local
+Memory limits: cudd=1g, java(heap)=910.5m
+Command line: prism crowds.pm crowds.pctl -const 'CrowdSize=5,TotalRuns=3' -param 'PF,badC'
+
+Parsing model file "crowds.pm"...
+
+Parsing properties file "crowds.pctl"...
+
+1 property:
+(1) Pmax=? [ true U (newInstance&runCount=0&observe0>observe1&observe0>observe2&observe0>observe3&observe0>observe4&observe0>observe5&observe0>observe6&observe0>observe7&observe0>observe8&observe0>observe9&observe0>observe10&observe0>observe11&observe0>observe12&observe0>observe13&observe0>observe14&observe0>observe15&observe0>observe16&observe0>observe17&observe0>observe18&observe0>observe19) ]
+
+Type:        DTMC
+Modules:     crowds 
+Variables:   launch newInstance runCount start run lastSeen good bad recordLast badObserve deliver done observe0 observe1 observe2 observe3 observe4 observe5 observe6 observe7 observe8 observe9 observe10 observe11 observe12 observe13 observe14 observe15 observe16 observe17 observe18 observe19 
+
+---------------------------------------------------------------------
+
+Parametric model checking: Pmax=? [ true U (newInstance&runCount=0&observe0>observe1&observe0>observe2&observe0>observe3&observe0>observe4&observe0>observe5&observe0>observe6&observe0>observe7&observe0>observe8&observe0>observe9&observe0>observe10&observe0>observe11&observe0>observe12&observe0>observe13&observe0>observe14&observe0>observe15&observe0>observe16&observe0>observe17&observe0>observe18&observe0>observe19) ]
+Model constants: TotalRuns=3,CrowdSize=5
+
+Building model...
+
+Computing reachable states...
+Reachable states exploration and model construction done in 0.283 secs.
+
+Time for model construction: 0.287 seconds.
+
+Time for model checking: 1.655 seconds.
+
+Result (maximum probability): ([0.0,1.0],[0.0,1.0]): { ( -128 ) badC^6 * PF^3 + 624 badC^5 * PF^3 - 804 badC^4 * PF^3 - 480 badC^5 * PF^2 - 52 badC^3 * PF^3 + 1200 badC^4 * PF^2 + 660 badC^2 * PF^3 + 15 badC^3 * PF^2 - 300 badC^4 * PF - 300 badC * PF^3 - 1710 badC^2 * PF^2 - 75 badC^3 * PF + 975 badC * PF^2 + 1425 badC^2 * PF + 125 badC^3 - 1050 badC * PF - 375 badC^2 + 375 badC | 125 badC^3 * PF^3 - 375 badC^2 * PF^3 + 375 badC * PF^3 + 375 badC^2 * PF^2 - 125 PF^3 - 750 badC * PF^2 + 375 PF^2 + 375 badC * PF - 375 PF + 125  }
+
