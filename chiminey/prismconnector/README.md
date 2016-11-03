@@ -6,7 +6,7 @@ Prism allows formal model checking of systems having random or probabilistic beh
 const int X;
 const double Y;
 ```
-Single value or a range of values for each of these variables can be passed command line parameters with "-const" switch.
+Single value or a range of values for each of these variables can be passed as command line parameters with "-const" switch.
 
 ```
 prism prism-model.pm properties.pctl -const X=2:8,Y=20:80
@@ -206,21 +206,25 @@ International Journal on Software Tools for Technology Transfer, Springer, 13(1)
 
 All of the aboved models were developed to work with PARAM tool (http://depend.cs.uni-sb.de/tools/param/casestudies/). Therefore, each of these models were slightly modifilied to run as parametarised prsim model for PRISM version 4.3.1. All of these models are available in "examples/prism-models/HHZ11B" directory  
 
-Furthermore, a couple of PRISM models were developed to verify parameterised model checking using PRISM Smart Connector. The  following models are availabe in "examples/prism-models/IMAN" directory:
+Furthermore, a couple more PRISM models were developed to verify parameterised model checking. Following Markov Chain models were used as reference :
 
 * Figure 5.2: The papameterised DTMC of a reactive RACS (Page 66)
 * Figure 5.4: The papameterised DTMC of a reactive RACS (Page 72)
 
-Publlished in:
+The above Markov Chains were published in:
+```
 Iman I Yusuf,
 Recovery-Oriented Software Architecture for Grid Applications (ROSA-Grids)
 PhD Theses, RMIT University, March 2012
+```
 
-Prsim model developed for [8. & 9.] by:
+PRISM models for above mentioned Markov Chains are available in "examples/prism-models/IMAN" directory. Prsim models were developed by:
+```
 Ahmed Abdullah,
 AICAUSE Lab, RMIT Universiy. November 2016
+```
 
-Graph visualisation of PRISM Models
+Graph Visualisation of PRISM Models
 -----------------------------------
 A 3D wareframe graph visualization tool "plot.py" has been developed to plot rational functions produced by PRISM when a parametric prism model is executed. The tool is tested with a couple of reational functions generated for parametric prism model. The tool is available in "examples/prism-models/graph-tool" directory. Execute the help command: 
 
@@ -234,6 +238,3 @@ The graph-tool expects two parameters i.e. parameter "-e" to specify the name of
 ```
 python plot.py -v mu,gamma -e output.txt
 ```
-3D Wareframe Graph Visualization Tool, 
-Developed by Ahmed Abdullah,
-AICAUSE Lab, RMIT Universiy. November 2016
