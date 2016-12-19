@@ -174,7 +174,7 @@ The Input Directory
 -------------------
 The iput directory for JMT SC need to have the run.sh_template file that we describe earlier. Also the input directoy need to have a valid model file either for JMVA or for JSIM tool. The file name located in this directory must me specified in the 'Model file name' field in Chiminey portal.
 
-Configure, Create and Execute a Prism Job
+Configure, Create and Execute a JMTC Job
 ------------------------------------------
 "Create Job" tab in "Chiminey Portal" lists "jmtc_sweep" form for creation and submission of jmtc job. "sweep_jmtc" form require definition of "Compute Resource Name" and "Storage Location". Appropiate "Compute Resource" and "Storage Resource" need to be defined  through "Settings" tab in the "Chiminey portal".
 
