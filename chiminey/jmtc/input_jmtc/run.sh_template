@@ -1,0 +1,42 @@
+#!/bin/sh
+# version 2.0
+
+INPUT_DIR=$1
+OUTPUT_DIR=$2
+
+JAVA_HOME=/opt/jdk1.8.0_101
+
+JMT_TOOL={{jmtconnector_jmt_tool}}
+MODEL_FILE={{jmtconnector_model_file}}
+JSIM_SEED={{jmtconnector_jsim_seed}}
+JSIM_MAXTIME={{jmtconnector_jsim_maxtime}}
+
+if [ "${JMT_TOOL}" == "JMVA" ]
+then
+    echo "$JAVA_HOME/bin/java -cp /opt/JMT.jar jmt.commandline.Jmt mva ${MODEL_FILE}" > stdout.log
+    $JAVA_HOME/bin/java -cp /opt/JMT.jar jmt.commandline.Jmt mva ${MODEL_FILE} >> stdout.log 2>&1
+elif [ "${JMT_TOOL}" == "JSIM" ]
+then
+    if [ "${JSIM_MAXTIME}" != "0" ] && [ "${JSIM_SEED}" != "0" ]
+    then
+        echo "$JAVA_HOME/bin/java -cp /opt/JMT.jar jmt.commandline.Jmt sim ${MODEL_FILE} -maxtime ${JSIM_MAXTIME} -seed ${JSIM_SEED}" > stdout.log
+        $JAVA_HOME/bin/java -cp /opt/JMT.jar jmt.commandline.Jmt sim ${MODEL_FILE} -maxtime ${JSIM_MAXTIME} -seed ${JSIM_SEED} >> stdout.log 2>&1
+    elif [ "${JSIM_MAXTIME}" != "0" ] && [ "${JSIM_SEED}" == "0" ]
+    then
+        echo "$JAVA_HOME/bin/java -cp /opt/JMT.jar jmt.commandline.Jmt sim ${MODEL_FILE} -maxtime ${JSIM_MAXTIME}" > stdout.log
+        $JAVA_HOME/bin/java -cp /opt/JMT.jar jmt.commandline.Jmt sim ${MODEL_FILE} -maxtime ${JSIM_MAXTIME} >> stdout.log 2>&1
+    elif [ "${JSIM_MAXTIME}" == "0" ] && [ "${JSIM_SEED}" != "0" ]
+    then
+        echo "$JAVA_HOME/bin/java -cp /opt/JMT.jar jmt.commandline.Jmt sim ${MODEL_FILE} -seed ${JSIM_SEED}" > stdout.log
+        $JAVA_HOME/bin/java -cp /opt/JMT.jar jmt.commandline.Jmt sim ${MODEL_FILE} -seed ${JSIM_SEED} >> stdout.log 2>&1
+    elif [ "${JSIM_MAXTIME}" == "0" ] && [ "${JSIM_SEED}" == "0" ]
+    then
+        echo "$JAVA_HOME/bin/java -cp /opt/JMT.jar jmt.commandline.Jmt sim ${MODEL_FILE}" > stdout.log
+        $JAVA_HOME/bin/java -cp /opt/JMT.jar jmt.commandline.Jmt sim ${MODEL_FILE} >> stdout.log 2>&1
+    fi
+    cp ~/JMT/jSIM.log ../$OUTPUT_DIR
+fi
+
+mv ${MODEL_FILE}-result* ../$OUTPUT_DIR
+mv stdout.log ../$OUTPUT_DIR
+
