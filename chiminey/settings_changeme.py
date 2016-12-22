@@ -150,6 +150,12 @@ SMART_CONNECTORS = {
            "description": "Randnum generator, with timestamp",
            "payload": "/opt/chiminey/current/chiminey/examples/randnum/payload_randnum"
             },
+'3drac':   {'init': 'chiminey.3drac.initialise.RAC3DInitial',
+             'name': '3drac',
+             'description': '3D Roughness Analysis Connector',
+             'payload': '/opt/chiminey/current/chiminey/3drac/payload_3drac',
+             'sweep': True
+             },
                     }
 
 SCHEMA_PREFIX = "http://rmit.edu.au/schemas"
@@ -167,7 +173,8 @@ INPUT_FIELDS =  {'cloud': SCHEMA_PREFIX + "/input/system/compplatform/cloud",
                  'hrmclite':  SCHEMA_PREFIX + "/input/hrmclite",
                  'hrmc':  SCHEMA_PREFIX + "/input/hrmc",
                  'wordcount':  SCHEMA_PREFIX + "/input/wordcount",
-                 'mytardis':  SCHEMA_PREFIX + "/input/mytardis"
+                 'mytardis':  SCHEMA_PREFIX + "/input/mytardis",
+                 '3drac':  SCHEMA_PREFIX + "/input/3drac"
                  }
 
 TEMPLATE_DIRS = (
