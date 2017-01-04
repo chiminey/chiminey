@@ -33,7 +33,17 @@ logger = logging.getLogger(__name__)
 
 def validate_mytardis_parameters(parameters):
     headers = {'Accept': 'application/json'}
-    mytardis_url = 'http://%s/api/v1/experiment/?format=json' % parameters['ip_address']
+    logger.debug(" validate parameters=%s" % parameters)
+    tardis_ssh = int(parameters["ssl"])
+    tardis_protocol = "http://%s"
+    if tardis_ssh > 0:
+       tardis_protocol = "https://%s"
+    logger.debug("tardis_protocol=%s" % tardis_protocol)
+    tardis_host_url = tardis_protocol % parameters["ip_address"]
+
+    mytardis_url = '%s:%s/api/v1/experiment/?format=json' % (tardis_host_url, parameters['port'])
+    logger.debug("mytardis_url=%s" % mytardis_url)
+
     username = parameters['username']
     password = parameters['password']
     try:

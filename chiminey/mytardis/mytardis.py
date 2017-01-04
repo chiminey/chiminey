@@ -211,7 +211,12 @@ def create_experiment(settings, exp_id, expname, experiment_paramset=[]):
     try:
         tardis_user = settings["mytardis_user"]
         tardis_pass = settings["mytardis_password"]
-        tardis_host_url = TARDIS_PROTOCOL % settings["mytardis_host"]
+        tardis_ssh = int(settings["mytardis_ssl"])
+        tardis_protocol = "http://%s" 
+        if tardis_ssh > 0:
+          tardis_protocol = "https://%s" 
+        tardis_host_url = tardis_protocol % settings["mytardis_host"]
+	tardis_port = settings["mytardis_port"]
     except IndexError, e:
         logger.error(e)
         raise
@@ -222,7 +227,7 @@ def create_experiment(settings, exp_id, expname, experiment_paramset=[]):
     if not new_exp_id:
         logger.debug("creating new experiment")
 
-        url = "%s/api/v1/experiment/?format=json" % tardis_host_url
+        url = "%s:%s/api/v1/experiment/?format=json" % (tardis_host_url, tardis_port)
         headers = {'content-type': 'application/json'}
 
         data = json.dumps({
@@ -231,6 +236,7 @@ def create_experiment(settings, exp_id, expname, experiment_paramset=[]):
         "parameter_sets": experiment_paramset,
         })
         logger.debug("data=%s" % data)
+        logger.debug("url=%s" % url)
         r = requests.post(url,
             data=data,
             headers=headers,
@@ -280,7 +286,7 @@ def create_experiment(settings, exp_id, expname, experiment_paramset=[]):
             #         res.append(parameter_res)
             # for pset in experiment_paramset:
 
-            url = "%s/api/v1/experimentparameterset/?format=json" % tardis_host_url
+            url = "%s:%s/api/v1/experimentparameterset/?format=json" % (tardis_host_url, tardis_port)
             headers = {'content-type': 'application/json'}
 
             # TODO: if parameter has already been created, then put rather than
@@ -356,7 +362,12 @@ def create_dataset(settings,
     logger.debug("post_dataset")
     tardis_user = settings["mytardis_user"]
     tardis_pass = settings["mytardis_password"]
-    tardis_host_url = TARDIS_PROTOCOL % settings["mytardis_host"]
+    tardis_ssh = int(settings["mytardis_ssl"])
+    tardis_protocol = "http://%s"
+    if tardis_ssh > 0:
+        tardis_protocol = "https://%s"
+    tardis_host_url = tardis_protocol % settings["mytardis_host"]
+    tardis_port = settings["mytardis_port"]
     logger.debug("posting dataset from %s to mytardis at %s with %s" % (source_url,
         tardis_host_url, tardis_pass))
 
@@ -380,7 +391,7 @@ def create_dataset(settings,
     # the same name and overwrite or don't move.
     # save dataset
     logger.debug("saving dataset in experiment at %s" % new_exp_id)
-    url = "%s/api/v1/dataset/?format=json" % tardis_host_url
+    url = "%s:%s/api/v1/dataset/?format=json" % (tardis_host_url, tardis_port)
     headers = {'content-type': 'application/json'}
 
     schemas = dataset_paramset
@@ -405,7 +416,7 @@ def create_dataset(settings,
     # move files across
     source_files = storage.list_all_files(source_url)
     logger.debug("source_files=%s" % source_files)
-    url = "%s/api/v1/dataset_file/" % tardis_host_url
+    url = "%s:%s/api/v1/dataset_file/" % (tardis_host_url, tardis_port)
 
     args = source_url.split('?')[1]
 
@@ -555,11 +566,12 @@ def retrieve_datafile(url):
     fname = _get_value('fname', query_settings)
     tardis_user = _get_value('mytardis_username', query_settings)
     tardis_pass = _get_value('mytardis_password', query_settings)
+    tardis_port = _get_value('mytardis_port', query_settings)
 
     exp_id, _ = _get_or_create_experiment(query_settings, exp_name)
     dataset_id, _ = _get_or_create_dataset(query_settings, dataset_name, exp_id)
 
-    url = "https://%s/api/v1/dataset_file/%s/" % (tardis_host_url, dataset_id)
+    url = "https://%s:%s/api/v1/dataset_file/%s/" % (tardis_host_url, tardis_port, dataset_id)
     headers = {'Accept': 'application/json'}
 
     logger.debug("fname=%s" % fname)
@@ -616,8 +628,13 @@ def _get_or_create_experiment(query_settings, exp_name):
     headers = {'content-type': 'application/json'}
     tardis_user = query_settings["mytardis_username"]
     tardis_pass = query_settings["mytardis_password"]
-    tardis_host_url = TARDIS_PROTOCOL % query_settings["mytardis_host"]
-    tardis_url = "%s/api/v1/experiment/?limit=0&format=json" % tardis_host_url
+    tardis_ssh = int(settings["mytardis_ssl"])
+    tardis_protocol = "http://%s"
+    if tardis_ssh > 0:
+        tardis_protocol = "https://%s"
+    tardis_host_url = tardis_protocol % settings["mytardis_host"]
+    tardis_port = query_settings["mytardis_port"]
+    tardis_url = "%s:%s/api/v1/experiment/?limit=0&format=json" % (tardis_host_url, tardis_port)
     r = requests.get(tardis_url, headers=headers, auth=(tardis_user, tardis_pass), verify=False)
     # logger.debug(r.json)
     # logger.debug(r.text)
@@ -632,7 +649,7 @@ def _get_or_create_experiment(query_settings, exp_name):
         return (ids[0][0], False)
     else:
 
-        url = "%s/api/v1/experiment/?format=json" % tardis_host_url
+        url = "%s:%s/api/v1/experiment/?format=json" % (tardis_host_url, tardis_port)
         headers = {'content-type': 'application/json'}
         schemas = [{
                     "schema": "%s/hrmcexp" % django_settings.SCHEMA_PREFIX,
@@ -660,8 +677,13 @@ def _get_dataset(settings, dataset_name, exp_id):
     headers = {'content-type': 'application/json'}
     tardis_user = settings["mytardis_username"]
     tardis_pass = settings["mytardis_password"]
-    tardis_host_url = TARDIS_PROTOCOL % settings["mytardis_host"]
-    tardis_url = "%s/api/v1/dataset/?limit=0&format=json" % tardis_host_url
+    tardis_ssh = int(settings["mytardis_ssl"])
+    tardis_protocol = "http://%s"
+    if tardis_ssh > 0:
+        tardis_protocol = "https://%s"
+    tardis_host_url = tardis_protocol % settings["mytardis_host"]
+    tardis_port = settings["mytardis_port"]
+    tardis_url = "%s:%s/api/v1/dataset/?limit=0&format=json" % (tardis_host_url, tardis_port)
     r = requests.get(tardis_url, headers=headers, auth=(tardis_user, tardis_pass), verify=False)
 
     experiment_uri = "/api/v1/experiment/%s/" % exp_id
@@ -679,9 +701,14 @@ def _get_or_create_dataset(settings, dataset_name, exp_id, dataset_schema=None):
     ids = _get_dataset(settings, dataset_name, exp_id)
 
     if not ids:
-        tardis_host_url = TARDIS_PROTOCOL % settings["mytardis_host"]
+        tardis_ssh = int(settings["mytardis_ssl"])
+        tardis_protocol = "http://%s"
+        if tardis_ssh > 0:
+          tardis_protocol = "https://%s"
+        tardis_host_url = tardis_protocol % settings["mytardis_host"]
         tardis_user = settings["mytardis_username"]
         tardis_pass = settings["mytardis_password"]
+        tardis_port = settings['mytardis_port']
         headers = {'content-type': 'application/json'}
         # FIXME: schema should be a parameter
         schemas = [{
@@ -700,7 +727,7 @@ def _get_or_create_dataset(settings, dataset_name, exp_id, dataset_schema=None):
             "parameter_sets": schemas
                 })
         logger.debug("data=%s" % data)
-        r = requests.post("%s/api/v1/dataset/?format=json" % tardis_host_url,
+        r = requests.post("%s:%s/api/v1/dataset/?format=json" % (tardis_host_url, tardis_port),
             data=data,
             headers=headers,
             auth=HTTPBasicAuth(tardis_user, tardis_pass),
@@ -736,11 +763,12 @@ def _post_datafile(dest_url, content):
     fname = _get_value('fname', query_settings)
     tardis_user = _get_value('mytardis_username', query_settings)
     tardis_pass = _get_value('mytardis_password', query_settings)
+    tardis_port = _get_value('mytardis_port', query_settings)
 
     exp_id, _ = _get_or_create_experiment(query_settings, exp_name)
     dataset_id, _ = _get_or_create_dataset(query_settings, dataset_name, exp_id)
 
-    url = "https://%s/api/v1/dataset_file/" % tardis_host_url
+    url = "https://%s:%s/api/v1/dataset_file/" % (tardis_host_url, tardis_port)
     headers = {'Accept': 'application/json'}
     new_dataset_uri = "/api/v1/dataset/%s/" % dataset_id
 
