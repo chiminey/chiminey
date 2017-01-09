@@ -1,9 +1,9 @@
-3D Surface roughness Analysis Connector for Chiminey
+3D Surface Roughness Analysis Connector for Chiminey
 ====================================================
 
 Introduction
 ------------
-3D Surface Roughness Analysis Connector (3DRAC) allows running "3D Surface Roughness Ananysis Tool" run through chiminey. In standalone mode "3D Surface Roughness Analysis Tool" accepts an input datafile with roughness information and reports roughness qnalysis result through Java Swing GUI. However, 3DRAC connector for chiminey accepts name of the input datafile through chiminey portal.  
+3D Surface Roughness Analysis Connector (3DRAC) allows running "3D Surface Roughness Ananysis Tool" through Chiminey. In standalone mode "3D Surface Roughness Analysis Tool" accepts an input datafile with roughness information and reports roughness qnalysis result through Java Swing GUI. However, 3DRAC connector for chiminey accepts name of the input datafile through chiminey portal.  
 
 Chiminey portal for 3DRAC accepts a couple of inputs. The 'Data file name' field accepts a data file name that is located in the 'Input Location'. An example input data file file may be given as following:
 ```
@@ -73,8 +73,9 @@ cd $WORK_DIR
 The process_payload directory contains 'rougness-analysis-cli.jar, 'run-rac.py' and 'main.sh'. The jar file contains the "Roughness Analysis" tool and 'run-rac.py' is pythos scripts that extracts 'virtual blocks' from an input datafile and execute the block against 'roughness-analysis-cli.jar'. The 'main.sh' is a simple script that copies the 'roughness-analysis-cli.jar' and 'run-rac.py' to the "INPUT_DIRECTORY". It also executes the 'run-rac.py' with necessary arguments that are specific to each sweep of 3DRAC SC. Following is the content of "main.sh" for 3DRAC SC:
 
 ```
-#!/bin/sh
-# version 2.0
+#!/usr/bin/env python
+import os, sys, getopt , ast
+import json
 
 INPUT_DIR=$1
 OUTPUT_DIR=$2
