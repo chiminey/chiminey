@@ -5,16 +5,22 @@ language: python
 services:
       - docker
 
+env:
+    global:
+        - DOCKER_VERSION=1.12.0-0~trusty
+        - DOCKER_COMPOSE_VERSION=1.7.0
+
 before_install:
-      - curl -L https://github.com/docker/compose/releases/download/1.6.1/docker-compose-`uname -s`-`uname -m` > docker-compose
-      - chmod +x docker-compose
-      - sudo mv docker-compose /usr/local/bin
+        - sudo rm /usr/local/bin/docker-compose
+        - curl -L https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-`uname -s`-`uname -m` > docker-compose
+        - chmod +x docker-compose
+        - sudo mv docker-compose /usr/local/bin
 
 script:
-      - sudo apt-get -o Dpkg::Options::="--force-confnew" install -y  docker-engine
-      - git clone https://github.com/chiminey/docker-chiminey.git
-      - cd docker-chiminey
-      - cat .travis.input.txt  | ./makecert
-      - ./makecert
-      - docker-compose up -d
-      - docker-compose ps
+        - git clone https://github.com/chiminey/docker-chiminey.git
+        - cd docker-chiminey
+        - cp env .env
+        - cat .travis.input.txt  | ./makecert
+        - ./makecert
+        - docker-compose up -d
+        - docker-compose ps
