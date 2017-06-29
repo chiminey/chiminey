@@ -281,8 +281,8 @@ def post_platform(schema, form_data, request, type=None):
         if r.status_code == 409:
             messages.error(request, "%s" % r.headers['message'])
         else:
-            messages.error(request, "Task Failed with status code %s: "#%s"
-                % (r.status_code))#, r.headers['message']))
+            messages.error(request, "Task Failed with status code %s: %s"
+                % (r.status_code), r.text))
         return False
     else:
         messages.success(request, "%s" % r.headers['message'])
@@ -809,6 +809,8 @@ def make_dynamic_field(parameter, **kwargs):
                     else:
                         logger.warn("unknown computation platform")
                     '''
+                    #if parameter['subtype'] == 'mytardis':
+                    #    field_params['choices'].insert(0, ('-','-'))
                 #elif parameter['subtype'] == 'mytardis':
                 #    schema = django_settings.SCHEMA_PREFIX + '/platform/storage/mytardis'
 
