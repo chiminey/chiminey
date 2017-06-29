@@ -616,14 +616,14 @@ def _get_chiminey_schemas():
         u'%s/input/mytardis' % django_settings.SCHEMA_PREFIX:
             [u'MyTardis',
              {
-                 u'curate_data': {'type': models.ParameterName.NUMERIC, 'subtype': 'bool', 'ranking': 2,
+                 u'curate_data': {'type': models.ParameterName.NUMERIC, 'subtype': 'bool', 'ranking': 0,
                                   'initial': 1, 'description': 'Curate execution output',
                                   'help_text': 'Curate data using selected MyTardis'},
                  u'mytardis_platform': {'type': models.ParameterName.STRLIST, 'subtype': 'mytardis', 'initial': 0,
                                         'description': 'MyTardis Platform', 'ranking': 1,
                                         'help_text': 'Select MyTardis platfrom name'},
                  u'experiment_id': {'type': models.ParameterName.NUMERIC, 'subtype': 'natural', 'initial': 0,
-                                    'description': 'MyTardis experiment ID', 'ranking': 0,
+                                    'description': 'MyTardis experiment ID', 'ranking': 2,
                                     'help_text': 'Use 0 for new experiment'},
              }
             ],
