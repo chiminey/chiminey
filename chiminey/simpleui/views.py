@@ -131,7 +131,7 @@ def computation_platform_settings(request):
 
 def storage_platform_settings(request):
     resources_list = [('unix_form', 'filesystem/rfs', 'filesystem', "File System", 'true' ), \
-    ('mytardis_form', 'curation/mytardis', 'curation', 'Data Curation Service', 'false')]
+    ('mytardis_form', 'curation/mytardis', 'curation', 'Data Curation Service', 'true')]
 
     resource_namespace_prefix = "%s/platform/storage" % django_settings.SCHEMA_PREFIX
     post_response_redirect = 'storage-platform-settings'

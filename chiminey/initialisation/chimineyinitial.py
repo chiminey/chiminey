@@ -114,6 +114,15 @@ def _get_chiminey_schemas():
                  u'password': {'type': models.ParameterName.STRING, 'subtype': 'password',
                                'description': 'Password', 'ranking': 31,
                                'help_text': 'Password of the account holder.'},
+                 u'port': {'type': models.ParameterName.STRING, 'subtype': '',
+                           'description': 'MyTardis port', 'ranking': 55, 'initial': '80',
+                           'help_text': 'Port of the mytardis server (usually 80).)',
+                           'hidecondition':'advanced'},
+                 u'ssl': {'type': models.ParameterName.STRLIST, 'subtype': '', 'ranking': 2,
+                                  'initial': "", 'description': 'Security?',
+                                  'choices': '[("1", "useSSL"), ("0", "None")]',
+                                  'help_text': 'Use SSL for connection', 'hidecondition':'advanced'},
+
                  #u'api_key': {'type':models.ParameterName.STRING, 'subtype':'', 'description':'API key', 'ranking':42, 'help_text':''},
              }
             ],

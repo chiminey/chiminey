@@ -1,0 +1,1 @@
+{ "prism_model" :  [ "consensus.nm" ], "property_file" :  [ "consensus.pctl" ], "param_string" :  [ "-m -const K=5 -param p1=0.2:0.8,p2=0.2:0.8" , "-m -const K=6 -param p1=0.2:0.8,p2=0.2:0.8" , "-m -const K=7 -param p1=0.2:0.8,p2=0.2:0.8" ] }

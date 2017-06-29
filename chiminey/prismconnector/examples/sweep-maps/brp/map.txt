@@ -1,0 +1,1 @@
+{ "prism_model" :  [ "brp.nm" ], "property_file" :  [ "brp.pctl" ], "param_string" :  [ "-const MAX=4 -param pL,pK", "-const MAX=4 -param pL,pK -parambisim weak" , "-const MAX=5 -param pL,pK" , "-const MAX=5 -param pL,pK -parambisim weak" ], "N_value" : [ 64 ] }

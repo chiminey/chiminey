@@ -1,0 +1,1 @@
+{ "prism_model" :  [ "zeroconf.pm" ], "property_file" :  [  "zeroconf.pctl" ], "param_string" :  [ "-const n=5 -param p,q",  "-const n=50 -param p,q", "-const n=100 -param p,q", "-const n=140  -param p,q" ] }
