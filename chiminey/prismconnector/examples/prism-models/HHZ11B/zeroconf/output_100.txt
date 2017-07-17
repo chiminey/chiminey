@@ -1,0 +1,37 @@
+PRISM
+=====
+
+Version: 4.3.1
+Date: Wed Oct 19 13:40:06 AEDT 2016
+Hostname: w8031047.local
+Memory limits: cudd=1g, java(heap)=910.5m
+Command line: prism zeroconf.pm zeroconf.pctl -const n=100 -param 'p,q'
+
+Parsing model file "zeroconf.pm"...
+
+Parsing properties file "zeroconf.pctl"...
+
+1 property:
+(1) R=? [ F s=-2|s=n+1 ]
+
+Type:        DTMC
+Modules:     main 
+Variables:   s 
+
+---------------------------------------------------------------------
+
+Parametric model checking: R=? [ F s=-2|s=n+1 ]
+Model constants: n=100
+
+Building model...
+
+Computing reachable states...
+Reachable states exploration and model construction done in 0.053 secs.
+
+Time for model construction: 0.056 seconds.
+Building reward structure...
+
+Time for model checking: 3562.164 seconds.
+
+Result (expected reward): ([0.0,1.0],[0.0,1.0]): { q * p^99 + q * p^98 + q * p^97 + q * p^96 + q * p^95 + q * p^94 + q * p^93 + q * p^92 + q * p^91 + q * p^90 + q * p^89 + q * p^88 + q * p^87 + q * p^86 + q * p^85 + q * p^84 + q * p^83 + q * p^82 + q * p^81 + q * p^80 + q * p^79 + q * p^78 + q * p^77 + q * p^76 + q * p^75 + q * p^74 + q * p^73 + q * p^72 + q * p^71 + q * p^70 + q * p^69 + q * p^68 + q * p^67 + q * p^66 + q * p^65 + q * p^64 + q * p^63 + q * p^62 + q * p^61 + q * p^60 + q * p^59 + q * p^58 + q * p^57 + q * p^56 + q * p^55 + q * p^54 + q * p^53 + q * p^52 + q * p^51 + q * p^50 + q * p^49 + q * p^48 + q * p^47 + q * p^46 + q * p^45 + q * p^44 + q * p^43 + q * p^42 + q * p^41 + q * p^40 + q * p^39 + q * p^38 + q * p^37 + q * p^36 + q * p^35 + q * p^34 + q * p^33 + q * p^32 + q * p^31 + q * p^30 + q * p^29 + q * p^28 + q * p^27 + q * p^26 + q * p^25 + q * p^24 + q * p^23 + q * p^22 + q * p^21 + q * p^20 + q * p^19 + q * p^18 + q * p^17 + q * p^16 + q * p^15 + q * p^14 + q * p^13 + q * p^12 + q * p^11 + q * p^10 + q * p^9 + q * p^8 + q * p^7 + q * p^6 + q * p^5 + q * p^4 + q * p^3 + q * p^2 + q * p - 98 q + 100  | q * p^100 - q + 1  }
+

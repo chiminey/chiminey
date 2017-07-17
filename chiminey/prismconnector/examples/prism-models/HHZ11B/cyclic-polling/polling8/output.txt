@@ -1,0 +1,35 @@
+PRISM
+=====
+
+Version: 4.3.1
+Date: Wed Oct 19 15:46:07 AEDT 2016
+Hostname: w8031047.local
+Memory limits: cudd=1g, java(heap)=910.5m
+Command line: prism polling8.sm polling8.csl -param 'mu,gamma'
+
+Parsing model file "polling8.sm"...
+
+Parsing properties file "polling8.csl"...
+
+1 property:
+(1) Pmax=? [ !(s=2&a=1)&!(s=3&a=1)&!(s=4&a=1)&!(s=5&a=1)&!(s=6&a=1)&!(s=7&a=1)&!(s=8&a=1) U (s=1&a=1) ]
+
+Type:        CTMC
+Modules:     server station1 station2 station3 station4 station5 station6 station7 station8 
+Variables:   s a s1 s2 s3 s4 s5 s6 s7 s8 
+
+---------------------------------------------------------------------
+
+Parametric model checking: Pmax=? [ !(s=2&a=1)&!(s=3&a=1)&!(s=4&a=1)&!(s=5&a=1)&!(s=6&a=1)&!(s=7&a=1)&!(s=8&a=1) U (s=1&a=1) ]
+
+Building model...
+
+Computing reachable states...
+Reachable states exploration and model construction done in 4.955 secs.
+
+Time for model construction: 4.958 seconds.
+
+Time for model checking: 2.425 seconds.
+
+Result (maximum probability): ([0.0,1.0],[0.0,1.0]): { 315 mu^14 + 6534 gamma * mu^13 + 61348 gamma^2 * mu^12 + 346640 gamma^3 * mu^11 + 1320242 gamma^4 * mu^10 + 3593212 gamma^5 * mu^9 + 7219716 gamma^6 * mu^8 + 10896288 gamma^7 * mu^7 + 12560240 gamma^8 * mu^6 + 11458944 gamma^9 * mu^5 + 8750336 gamma^10 * mu^4 + 5691392 gamma^11 * mu^3 + 2867200 gamma^12 * mu^2 + 917504 gamma^13 * mu + 131072 gamma^14 | 315 mu^14 + 9054 gamma * mu^13 + 113620 gamma^2 * mu^12 + 837424 gamma^3 * mu^11 + 4093362 gamma^4 * mu^10 + 14155148 gamma^5 * mu^9 + 35965412 gamma^6 * mu^8 + 68654016 gamma^7 * mu^7 + 99599472 gamma^8 * mu^6 + 110105856 gamma^9 * mu^5 + 92164352 gamma^10 * mu^4 + 57344000 gamma^11 * mu^3 + 25460736 gamma^12 * mu^2 + 7340032 gamma^13 * mu + 1048576 gamma^14 }
+

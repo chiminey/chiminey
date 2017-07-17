@@ -54,6 +54,11 @@ class MyTardisPlatform():
         key_relative_path = os.path.join(
             '.ssh', username, platform_type, key_name)
         parameters['private_key_path'] = key_relative_path
+        try:
+            parameters['port'] = int(parameters['port'])
+        except ValueError:
+            parameters['port'] = 80
+
 
     def validate(self, parameters, passwd_auth=False):
         return [False] + list(validate_mytardis_parameters(parameters))
@@ -83,6 +88,8 @@ class MyTardisPlatform():
             settings['mytardis_host'] = settings['ip_address']
             settings['mytardis_user'] = settings['username']
             settings['mytardis_password'] = settings['password']
+            settings['mytardis_port'] = settings['port']
+            settings['mytardis_ssl'] = settings['ssl']
 
 
     def create_experiment(self, run_settings, location, experiment_id):

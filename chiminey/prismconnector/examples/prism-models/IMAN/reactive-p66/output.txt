@@ -1,0 +1,84 @@
+PRISM
+=====
+
+Version: 4.3.1
+Date: Wed Oct 19 17:54:06 AEDT 2016
+Hostname: w8031047.local
+Memory limits: cudd=1g, java(heap)=910.5m
+Command line: prism reactive1.pm reactive1.pctl -param 'd,p,e'
+
+Parsing model file "reactive1.pm"...
+
+Parsing properties file "reactive1.pctl"...
+
+4 properties:
+(1) P=? [ F s=-1|s=2 ]
+(2) P=? [ F s=-1 ]
+(3) P=? [ F s=2 ]
+(4) R=? [ F s=-1|s=2 ]
+
+Type:        DTMC
+Modules:     main 
+Variables:   s 
+
+---------------------------------------------------------------------
+
+Parametric model checking: P=? [ F s=-1|s=2 ]
+
+Building model...
+
+Computing reachable states...
+Reachable states exploration and model construction done in 0.012 secs.
+
+Time for model construction: 0.013 seconds.
+
+Time for model checking: 0.039 seconds.
+
+Result (probability): ([0.0,1.0],[0.0,1.0],[0.0,1.0]): { 1  }
+
+---------------------------------------------------------------------
+
+Parametric model checking: P=? [ F s=-1 ]
+
+Building model...
+
+Computing reachable states...
+Reachable states exploration and model construction done in 0.002 secs.
+
+Time for model construction: 0.002 seconds.
+
+Time for model checking: 0.035 seconds.
+
+Result (probability): ([0.0,1.0],[0.0,1.0],[0.0,1.0]): { d | e * p + d }
+
+---------------------------------------------------------------------
+
+Parametric model checking: P=? [ F s=2 ]
+
+Building model...
+
+Computing reachable states...
+Reachable states exploration and model construction done in 0.002 secs.
+
+Time for model construction: 0.002 seconds.
+
+Time for model checking: 0.022 seconds.
+
+Result (probability): ([0.0,1.0],[0.0,1.0],[0.0,1.0]): { e * p | e * p + d }
+
+---------------------------------------------------------------------
+
+Parametric model checking: R=? [ F s=-1|s=2 ]
+
+Building model...
+
+Computing reachable states...
+Reachable states exploration and model construction done in 0.002 secs.
+
+Time for model construction: 0.002 seconds.
+Building reward structure...
+
+Time for model checking: 0.025 seconds.
+
+Result (expected reward): ([0.0,1.0],[0.0,1.0],[0.0,1.0]): { p + 1  | e * p + d }
+

@@ -33,20 +33,31 @@ logger = logging.getLogger(__name__)
 
 def validate_mytardis_parameters(parameters):
     headers = {'Accept': 'application/json'}
-    mytardis_url = 'http://%s/api/v1/experiment/?format=json' % parameters['ip_address']
+    logger.debug(" validate parameters=%s" % parameters)
+    tardis_ssh = int(parameters["ssl"])
+    tardis_protocol = "http://%s"
+    if tardis_ssh > 0:
+       tardis_protocol = "https://%s"
+    logger.debug("tardis_protocol=%s" % tardis_protocol)
+    tardis_host_url = tardis_protocol % parameters["ip_address"]
+
+    mytardis_url = '%s:%s/api/v1/experiment/?format=json' % (tardis_host_url, parameters['port'])
+    logger.debug("mytardis_url=%s" % mytardis_url)
+
     username = parameters['username']
     password = parameters['password']
     try:
+        #FIXME: ignore any SSL certificates (as by default they are self signed
         response = requests.get(mytardis_url, headers=headers,
-                                auth=HTTPBasicAuth(username, password))
+                                auth=HTTPBasicAuth(username, password), verify=False)
         status_code = response.status_code
         if status_code == 200:
             return True, "MyTardis instance registered successfully"
         if status_code == 401:
             return False, "Unauthorised access to %s" % parameters['ip_address']
         return False, "MyTardis instance registration failed with %s error code" % response.status_code
-    except Exception:
-        return False, 'Unable to connect to Mytardis instance [%s]' % parameters['ip_address']
+    except Exception as e:
+        return False, 'Unable to connect to Mytardis instance [%s]: %s' % (parameters['ip_address'],e)
 
 
 def validate_remote_path(path_list, parameters, passwd_auth=False):

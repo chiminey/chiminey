@@ -1,0 +1,36 @@
+PRISM
+=====
+
+Version: 4.3.1
+Date: Wed Oct 19 16:00:27 AEDT 2016
+Hostname: w8031047.local
+Memory limits: cudd=1g, java(heap)=910.5m
+Command line: prism mutual.pm mutual.pctl -param 'highA,highB'
+
+Parsing model file "mutual.pm"...
+
+Parsing properties file "mutual.pctl"...
+
+1 property:
+(1) R=? [ F p1>9|p2>9 ]
+
+Type:        DTMC
+Modules:     process1 process2 
+Variables:   p1 p2 
+
+---------------------------------------------------------------------
+
+Parametric model checking: R=? [ F p1>9|p2>9 ]
+
+Building model...
+
+Computing reachable states...
+Reachable states exploration and model construction done in 0.121 secs.
+
+Time for model construction: 0.124 seconds.
+Building reward structure...
+
+Time for model checking: 1.382 seconds.
+
+Result (expected reward): ([0.0,1.0],[0.0,1.0]): { 258 highB^2 * highA^5 + 1054 highB^3 * highA^4 + 1054 highB^4 * highA^3 + 258 highB^5 * highA^2 + 3081 highB * highA^5 + 27900 highB^2 * highA^4 + 71510 highB^3 * highA^3 + 27900 highB^4 * highA^2 + 3081 highB^5 * highA + 64500 highB * highA^4 + 777372 highB^2 * highA^3 + 777372 highB^3 * highA^2 + 64500 highB^4 * highA - 16224 highA^4 + 28632 highB * highA^3 - 66096 highB^2 * highA^2 + 28632 highB^3 * highA - 16224 highB^4 - 746304 highA^3 + 3788096 highB * highA^2 + 3788096 highB^2 * highA - 746304 highB^3 - 8436480 highA^2 - 20334080 highB * highA - 8436480 highB^2 | 360 highB^3 * highA^5 + 5040 highB^4 * highA^4 + 360 highB^5 * highA^3 + 9360 highB^2 * highA^5 + 138960 highB^3 * highA^4 + 138960 highB^4 * highA^3 + 9360 highB^5 * highA^2 + 203040 highB^2 * highA^4 + 3369600 highB^3 * highA^3 + 203040 highB^4 * highA^2 - 74880 highB * highA^4 - 132480 highB^2 * highA^3 - 132480 highB^3 * highA^2 - 74880 highB^4 * highA - 3444480 highB * highA^3 + 22314240 highB^2 * highA^2 - 3444480 highB^3 * highA - 38937600 highB * highA^2 - 38937600 highB^2 * highA }
+
