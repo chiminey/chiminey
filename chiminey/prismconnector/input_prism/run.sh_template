@@ -3,7 +3,13 @@
 INPUT_DIR=$1
 OUTPUT_DIR=$2
 
-export PATH=/opt/jdk1.8.0_101/bin:$PATH
+java_exe=$(whereis java 2>&1 | awk '/java/ {print $2}')
+java_path=$(dirname $java_exe)
 
-/opt/prism-4.3.1-linux64/bin/prism $INPUT_DIR/{{prism_model}} $INPUT_DIR/{{property_file}} {{param_string}} > $OUTPUT_DIR/result
+prism_exe=$(whereis prism 2>&1 | awk '/prism/ {print $2}')
+prism_path=$(dirname $prism_exe)
+
+export PATH=$java_path:$prism_path:$PATH
+
+prism $INPUT_DIR/{{prism_model}} $INPUT_DIR/{{property_file}} {{param_string}} > $OUTPUT_DIR/result
 # --- EOF ---
