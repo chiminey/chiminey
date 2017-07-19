@@ -43,26 +43,39 @@ The PRISM SC needs to install Prism binary and Java runtime environment. All dep
 #!/bin/sh
 # version 2.0
 
+
 WORK_DIR=`pwd`
 
+# Install Java
+ext="tar.gz"
+jdk_version=8
+
+# how to get the latest oracle java version ref: https://gist.github.com/n0ts/40dd9bd45578556f93e7
+cd /opt/
+readonly url="http://www.oracle.com"
+readonly jdk_download_url1="$url/technetwork/java/javase/downloads/index.html"
+readonly jdk_download_url2=$(curl -s $jdk_download_url1 | egrep -o "\/technetwork\/java/\javase\/downloads\/jdk${jdk_version}-downloads-.+?\.html" | head -1 | cut -d '"' -f 1)
+[[ -z "$jdk_download_url2" ]] && error "Could not get jdk download url - $jdk_download_url1"
+
+readonly jdk_download_url3="${url}${jdk_download_url2}"
+readonly jdk_download_url4=$(curl -s $jdk_download_url3 | egrep -o "http\:\/\/download.oracle\.com\/otn-pub\/java\/jdk\/[7-8]u[0-9]+\-(.*)+\/jdk-[7-8]u[0-9]+(.*)linux-x64.$ext")
+
+for dl_url in ${jdk_download_url4[@]}; do
+    wget --no-cookies \
+         --no-check-certificate \
+         --header "Cookie: oraclelicense=accept-securebackup-cookie" \
+         -N $dl_url
+done
+JAVA_TARBALL=$(basename $dl_url)
+tar xzfv $JAVA_TARBALL
+
+# Install PRISM
 PRISM_VERSION=4.3.1
 PRISM_DOWNLOAD_URL=http://www.prismmodelchecker.org/dl/prism-${PRISM_VERSION}-linux64.tar.gz
-
-JAVA_UPDATE=8u101
-JAVA_BUILD=b13
-JAVA_VERSION=jdk1.8.0_101
-JAVA_COOKIE="Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com%2F; oraclelicense=accept-securebackup-cookie"
-JAVA_DOWNLOAD_URL="http://download.oracle.com/otn-pub/java/jdk/${JAVA_UPDATE}-${JAVA_BUILD}/jdk-${JAVA_UPDATE}-linux-x64.tar.gz"
 
 yum -y update
 yum -y install glibc.i686 libstdc++.so.6 gcc make
 
-# Install Java
-cd /opt/
-wget --no-cookies --no-check-certificate --header "${JAVA_COOKIE}" "${JAVA_DOWNLOAD_URL}"
-tar xzfv jdk-${JAVA_UPDATE}-linux-x64.tar.gz
-
-# Install PRISM
 cd /opt/
 curl -O ${PRISM_DOWNLOAD_URL}
 tar xzvf prism-${PRISM_VERSION}-linux64.tar.gz
@@ -70,7 +83,7 @@ cd prism-${PRISM_VERSION}-linux64 && ./install.sh
 chown -R root:root /opt/prism-${PRISM_VERSION}-linux64
 chmod -R 755 /opt/prism-${PRISM_VERSION}-linux64
 
-export PATH=/opt/prism-${PRISM_VERSION}-linux64/bin:/opt/${JAVA_VERSION}/bin:$PATH
+export PATH=/opt/prism-${PRISM_VERSION}-linux64/bin:$PATH
 
 cd $WORK_DIR
 ```
@@ -123,9 +136,13 @@ Each connector in Chiminey system may specify a payload directory that is loaded
 INPUT_DIR=$1
 OUTPUT_DIR=$2
 
-export PATH=/opt/jdk1.8.0_101/bin:$PATH
+java_exe=$(whereis java 2>&1 | awk '/java/ {print $2}')
+java_path=$(dirname $java_exe)
 
-/opt/prism-4.3.1-linux64/bin/prism $INPUT_DIR/consensus.nm $INPUT_DIR/consensus.pctl -m -const K=2 -param p1=0.2:0.8,p2=0.2:0.8 > $OUTPUT_DIR/result
+prism_exe=$(whereis prism 2>&1 | awk '/prism/ {print $2}')
+prism_path=$(dirname $prism_exe)
+
+export PATH=$java_path:$prism_path:$PATH
 ```
 To make template "run.sh_template" for above "run.sh" for Chiminey sytem to run different PRISM model (or same PRISM model)  with different parameter set, a file named "run.sh_template" need to be created with following content and be palced in the input directory.
 
