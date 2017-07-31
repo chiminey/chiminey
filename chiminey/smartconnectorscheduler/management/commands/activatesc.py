@@ -61,4 +61,6 @@ class Command(BaseCommand):
                 self.setup(current_sm['init'], current_sm['name'], current_sm['description'], sweep=current_sm['sweep'])
             except KeyError, e:
                 self.setup(current_sm['init'], current_sm['name'], current_sm['description'])
+            except SystemExit:
+                print "action aborted by user"
             print "done"
