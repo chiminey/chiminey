@@ -156,6 +156,12 @@ SMART_CONNECTORS = {
              'payload': '/opt/chiminey/current/chiminey/prismconnector/payload_prism',
              'sweep': True
              },
+'uppaal':   {'init': 'chiminey.uppaal.initialise.UppaalInitial',
+             'name': 'uppaal',
+             'description': 'The UPPAAL Model Checker',
+             'payload': '/opt/chiminey/current/chiminey/uppaal/payload_uppaal',
+             'sweep': True
+             },
                     }
 
 SCHEMA_PREFIX = "http://rmit.edu.au/schemas"
@@ -175,6 +181,7 @@ INPUT_FIELDS =  {'cloud': SCHEMA_PREFIX + "/input/system/compplatform/cloud",
                  'wordcount':  SCHEMA_PREFIX + "/input/wordcount",
                  'mytardis':  SCHEMA_PREFIX + "/input/mytardis",
                  'prism':  SCHEMA_PREFIX + "/input/prism",
+                 'uppaal':  SCHEMA_PREFIX + "/input/uppaal",
                  }
 
 TEMPLATE_DIRS = (
