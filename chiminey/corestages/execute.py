@@ -368,27 +368,86 @@ class Execute(stage.Stage):
             generator_counter = values_map['run_counter']
         except KeyError:
             logger.warn("could not retrieve generator counter")
-        for iter, run_map in enumerate(run_maps):
-            logger.debug("run_map=%s" % run_map)
-            logger.debug("iter #%d" % iter)
-            temp_num = 0
-            # ensure ordering of the run_map entries
-            map_keys = run_map.keys()
-            logger.debug("map_keys %s" % map_keys)
-            map_ranges = [list(run_map[x]) for x in map_keys]
-            for z in product(*map_ranges):
-                context = dict(values_map)
-                for i, k in enumerate(map_keys):
-                    # str() so that 0 doesn't default value
-                    context[k] = str(z[i])
-                # instance special variables into the template context
-                context['run_counter'] = num_file
-                # FIXME: not needed?
-                context['generator_counter'] = generator_counter
-                contexts.append(context)
-                temp_num += 1
-                num_file += 1
-            logger.debug("%d contexts created" % (temp_num))
+
+        run_maps_size = len(run_maps)
+
+        logger.debug("XXXX run_maps: %s" % (run_maps))
+        logger.debug("XXXX len(run_maps): %d" % (run_maps_size))
+
+        if run_maps_size > 1:
+            logger.debug("XXXX>1 inside loop")
+            for xx in range(run_maps_size): 
+                temp_run_maps = [run_maps[xx]]
+                for iter, run_map in enumerate(temp_run_maps):
+                    logger.debug("XXXX>1 run_map=%s" % run_map)
+                    logger.debug("XXXX>1 iter #%d" % iter)
+                    temp_num = 0
+                    # ensure ordering of the run_map entries
+                    map_keys = run_map.keys()
+                    logger.debug("XXXX>1 map_keys %s" % map_keys)
+                    map_ranges = [list(run_map[x]) for x in map_keys]
+                    for z in product(*map_ranges):
+                        context = dict(values_map)
+                        for i, k in enumerate(map_keys):
+                            # str() so that 0 doesn't default value
+                            context[k] = str(z[i])
+                        # instance special variables into the template context
+                        context['run_counter'] = num_file
+                        # FIXME: not needed?
+                        context['generator_counter'] = generator_counter
+                        contexts.append(context)
+                        logger.debug("XXXX>1 xx = %d ; appended context = %s" % (xx,context))
+                        temp_num += 1
+                        num_file += 1
+                logger.debug("XXXX>1 %d contexts created" % (temp_num))
+        else:
+            logger.debug("XXXX<=1 inside loop")
+            for iter, run_map in enumerate(run_maps):
+                logger.debug("XXXX<=1 run_map=%s" % run_map)
+                logger.debug("XXXX<=1 iter #%d" % iter)
+                temp_num = 0
+                # ensure ordering of the run_map entries
+                map_keys = run_map.keys()
+                logger.debug("XXXX<=1 map_keys %s" % map_keys)
+                map_ranges = [list(run_map[x]) for x in map_keys]
+                for z in product(*map_ranges):
+                    context = dict(values_map)
+                    for i, k in enumerate(map_keys):
+                        # str() so that 0 doesn't default value
+                        context[k] = str(z[i])
+                    # instance special variables into the template context
+                    context['run_counter'] = num_file
+                    # FIXME: not needed?
+                    context['generator_counter'] = generator_counter
+                    contexts.append(context)
+                    temp_num += 1
+                    num_file += 1
+                logger.debug("XXXX<=1 %d contexts created" % (temp_num))
+
+#        run_maps_size = len(run_maps)
+#        logger.debug("AAAA run_maps: %s" % (run_maps))
+#        logger.debug("AAAA len(run_maps): %d" % (run_maps_size))
+#        for iter, run_map in enumerate(run_maps):
+#            logger.debug("run_map=%s" % run_map)
+#            logger.debug("iter #%d" % iter)
+#            temp_num = 0
+#            # ensure ordering of the run_map entries
+#            map_keys = run_map.keys()
+#            logger.debug("map_keys %s" % map_keys)
+#            map_ranges = [list(run_map[x]) for x in map_keys]
+#            for z in product(*map_ranges):
+#                context = dict(values_map)
+#                for i, k in enumerate(map_keys):
+#                    # str() so that 0 doesn't default value
+#                    context[k] = str(z[i])
+#                # instance special variables into the template context
+#                context['run_counter'] = num_file
+#                # FIXME: not needed?
+#                context['generator_counter'] = generator_counter
+#                contexts.append(context)
+#                temp_num += 1
+#                num_file += 1
+
         return contexts
 
     def prepare_inputs(self, local_settings, output_storage_settings,
@@ -474,8 +533,24 @@ class Execute(stage.Stage):
 
         # generates a set of variations for the template fname
         logger.debug('self.initial_numbfile = %s ' % self.initial_numbfile)
-        contexts = self._get_variation_contexts(
-            [run_map], values,  self.initial_numbfile)
+
+        #contexts = self._get_variation_contexts(
+        #    run_map, values,  self.initial_numbfile)
+
+        logger.debug('AAAA run_map = %s ' % run_map)
+        if type(run_map) is dict:
+            contexts = self._get_variation_contexts(
+                 [run_map], values,  self.initial_numbfile)
+        else:
+            contexts = self._get_variation_contexts(
+                 run_map, values,  self.initial_numbfile)
+
+        #if len(run_map) <= 1:
+        #    contexts = self._get_variation_contexts(
+        #        [run_map], values,  self.initial_numbfile)
+        #else:
+        #    contexts = self._get_variation_contexts(
+        #        run_map, values,  self.initial_numbfile)
         self.initial_numbfile += len(contexts)
         logger.debug('contexts = %s ' % contexts)
         logger.debug('self.initial_numbfile = %s ' % self.initial_numbfile)

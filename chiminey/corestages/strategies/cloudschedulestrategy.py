@@ -162,15 +162,22 @@ def start_schedule(schedule_class, run_settings, local_settings):
         run_map = map[0]
     except TypeError:
         run_map = map
-    logger.debug('map=%s' % run_map)
+    logger.debug('CCCC map=%s' % run_map)
     output_storage_settings = schedule_class.get_platform_settings(
             run_settings, '%s/platform/storage/output' % django_settings.SCHEMA_PREFIX)
     offset = getval(run_settings, '%s/platform/storage/output/offset' % django_settings.SCHEMA_PREFIX)
     job_dir = get_job_dir(output_storage_settings, offset)
-    schedule_class.total_processes = parent_stage.get_total_procs_per_iteration(
-        [run_map], run_settings=run_settings,
-        output_storage_settings=output_storage_settings, job_dir=job_dir)
-    logger.debug('total_processes=%d' % schedule_class.total_processes)
+   
+    if type(run_map) is dict: 
+        schedule_class.total_processes = parent_stage.get_total_procs_per_iteration(
+            [run_map], run_settings=run_settings,
+            output_storage_settings=output_storage_settings, job_dir=job_dir)
+    else:
+        schedule_class.total_processes = parent_stage.get_total_procs_per_iteration(
+            run_map, run_settings=run_settings,
+            output_storage_settings=output_storage_settings, job_dir=job_dir)
+    logger.debug('CCCC total_processes=%d' % schedule_class.total_processes)
+
     schedule_class.current_processes = []
     relative_path_suffix = schedule_class.get_relative_output_path(local_settings)
     schedule_class.schedule_index, schedule_class.current_processes = \
@@ -181,7 +188,7 @@ def start_schedule(schedule_class, run_settings, local_settings):
     schedule_class.all_processes = update_lookup_table(
              schedule_class.all_processes,
              new_processes=schedule_class.current_processes)
-    logger.debug('all_processes=%s' % schedule_class.all_processes)
+    logger.debug('CCCC all_processes=%s' % schedule_class.all_processes)
 
 
 def start_reschedule(schedule_class, run_settings, local_settings):

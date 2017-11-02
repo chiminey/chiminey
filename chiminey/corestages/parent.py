@@ -98,31 +98,77 @@ class Parent(Stage):
             is_relative_path=False)
         logger.debug(url_with_pkey)
         input_dirs = list_dirs(url_with_pkey)
-        for iter, template_map in enumerate(maps):
-            logger.debug("template_map=%s" % template_map)
-            map_keys = template_map.keys()
-            logger.debug("map_keys %s" % map_keys)
-            map_ranges = [list(template_map[x]) for x in map_keys]
-            product = 1
-            for i in map_ranges:
-                product = product * len(i)
-            total_procs = product * len(input_dirs)
-            logger.debug("total_procs=%d" % (total_procs))
+
+        maps_size = len(maps)
+        logger.debug("ZZZZ maps: %s" % (maps))
+        logger.debug("ZZZZ len(maps): %d" % (maps_size))
+        if maps_size > 1:
+            iter_total_procs=0
+            logger.debug("ZZZZ>1 inside loop")
+            for xx in range(maps_size): 
+                temp_maps = [maps[xx]]
+                for iter, template_map in enumerate(temp_maps):
+                    logger.debug("ZZZZ>1 template_map=%s" % template_map)
+                    map_keys = template_map.keys()
+                    logger.debug("ZZZZ>1 map_keys %s" % map_keys)
+                    map_ranges = [list(template_map[x]) for x in map_keys]
+                    product = 1
+                    for i in map_ranges:
+                        product = product * len(i)
+                    total_procs = product * len(input_dirs)
+                iter_total_procs=iter_total_procs + total_procs 
+            total_procs=iter_total_procs
+            logger.debug("ZZZZ>1 total_procs=%d" % (total_procs))
+        else:
+            for iter, template_map in enumerate(maps):
+                logger.debug("ZZZZ<1 template_map=%s" % template_map)
+                map_keys = template_map.keys()
+                logger.debug("ZZZZ<1 map_keys %s" % map_keys)
+                map_ranges = [list(template_map[x]) for x in map_keys]
+                product = 1
+                for i in map_ranges:
+                    product = product * len(i)
+                total_procs = product * len(input_dirs)
+                logger.debug("ZZZZ<1 total_procs=%d" % (total_procs))
         return total_procs
 
     def _get_procs_from_map_variations(self, maps):
         contexts = []
         num_variations = 0
-        for run_map in maps:
-            logger.debug("run_map=%s" % run_map)
-            map_keys = run_map.keys()
-            map_ranges = [list(run_map[x]) for x in map_keys]
-            logger.debug("map_ranges=%s" % map_ranges)
-            for z in product(*map_ranges):
-                context = {}
-                for i, k in enumerate(map_keys):
-                    context[k] = str(z[i])  # str() so that 0 doesn't default value
-                contexts.append(context)
-                num_variations += 1
-        logger.debug("num_variations=%s" % num_variations)
+
+        maps_size = len(maps)
+
+        logger.debug("YYYY maps: %s" % (maps))
+        logger.debug("YYYY len(maps): %d" % (maps_size))
+
+        if maps_size > 1:
+            logger.debug("YYYY>1 inside loop")
+            for xx in range(maps_size): 
+                temp_maps = [maps[xx]]
+                for run_map in temp_maps:
+                    logger.debug("YYYY>1 run_map=%s" % run_map)
+                    map_keys = run_map.keys()
+                    map_ranges = [list(run_map[x]) for x in map_keys]
+                    logger.debug("YYYY>1 map_ranges=%s" % map_ranges)
+                    for z in product(*map_ranges):
+                        context = {}
+                        for i, k in enumerate(map_keys):
+                            context[k] = str(z[i])  # str() so that 0 doesn't default value
+                        contexts.append(context)
+                        num_variations += 1
+                xx=xx-1
+        else:
+            logger.debug("YYYY<=1 inside loop")
+            for run_map in maps:
+                logger.debug("YYYY<=1 run_map=%s" % run_map)
+                map_keys = run_map.keys()
+                map_ranges = [list(run_map[x]) for x in map_keys]
+                logger.debug("YYYY<=1 map_ranges=%s" % map_ranges)
+                for z in product(*map_ranges):
+                    context = {}
+                    for i, k in enumerate(map_keys):
+                        context[k] = str(z[i])  # str() so that 0 doesn't default value
+                    contexts.append(context)
+                    num_variations += 1
+        logger.debug("YYYY num_variations=%s" % num_variations)
         return num_variations
