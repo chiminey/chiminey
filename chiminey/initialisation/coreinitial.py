@@ -370,22 +370,30 @@ class CoreInitial(object):
         sweep_stage.update_settings(default_params['settings'])
         return sweep_stage
 
-    def define_directive(self, directive_name, description='', sweep=False):
+    def define_directive(self, directive_name, description='', sweep=False, hide_config=False, hide_external_sweep=False):
         self.directive_name = directive_name
         if not description:
             description = '%s Smart Connector' % self.directive_name
         register_schemas(self._get_domain_specific_schemas())
         parent_stage = self.assemble_stages()
-        directive, _ = models.Directive.objects.get_or_create(
-            name=self.directive_name,
-            defaults={'stage': parent_stage,
+        if hide_external_sweep:
+            directive, _ = models.Directive.objects.get_or_create(
+                name=self.directive_name,
+                defaults={'stage': parent_stage,
+                      'description': description,
+                      'hidden': hide_external_sweep,}
+            )
+        else:
+            directive, _ = models.Directive.objects.get_or_create(
+                name=self.directive_name,
+                defaults={'stage': parent_stage,
                       'description': description,
                       'hidden': sweep,}
-        )
+            )
         self._attach_directive_args(directive)
         if sweep:
             sweep_directive = self.define_sweep_directive(
-                directive, description)
+                directive, description, hide_config)
             self._attach_directive_args(sweep_directive)
 
     def delete_directive(self, directive_name, sweep=False):
@@ -403,14 +411,14 @@ class CoreInitial(object):
                 pass
 
 
-    def define_sweep_directive(self, subdirective, description):
+    def define_sweep_directive(self, subdirective, description, hide_config):
         sweep_stage = self._define_sweep_stage(subdirective)
         sweep_directive_name = "sweep_%s" % subdirective.name
         sweep_directive, _ = models.Directive.objects.get_or_create(
             name=sweep_directive_name,
             defaults={'stage': sweep_stage,
                       'description': 'Sweep for %s' % description,
-                      'hidden': False}
+                      'hidden': hide_config}
                     )
         max_order = 0
         for das in models.DirectiveArgSet.objects.filter(directive=subdirective):

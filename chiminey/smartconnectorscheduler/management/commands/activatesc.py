@@ -35,21 +35,22 @@ class Command(BaseCommand):
     """
     args = ''
     help = 'Setup an initial task structure.'
-    def setup(self, initialiser, name, description, sweep=False):
+    def setup(self, initialiser, name, description, sweep=False, hide_config=False, hide_external_sweep=False):
         MESSAGE = "This will add %s to the catalogue of available smart connectors.  Are you sure [Yes/No]?" % name
         confirm = raw_input(MESSAGE)
         if confirm != "Yes":
             print "action aborted by user"
             return
         directive = jobs.safe_import(initialiser, [], {})
-        directive.define_directive(name, description=description, sweep=sweep)
+        directive.define_directive(name, description=description, sweep=sweep, hide_config=hide_config, hide_external_sweep=hide_external_sweep)
         print "done"
 
 
     def handle(self, *args, **options):
             current_sm = django_settings.SMART_CONNECTORS[args[0]]
             print current_sm['init'], current_sm['name'], current_sm['description']
-            if current_sm['payload']:
+            #if current_sm['payload']:
+            if 'payload' in current_sm:
                 destination = os.path.join(django_settings.LOCAL_FILESYS_ROOT_PATH,
                                            django_settings.PAYLOAD_DESTINATION,
                                            'payload_%s' % current_sm['name'])
@@ -58,7 +59,14 @@ class Command(BaseCommand):
                 copy_tree('/opt/chiminey/current/chiminey/PAYLOAD_ROOT', destination)
                 copy_tree(current_sm['payload'], destination)
             try:
-                self.setup(current_sm['init'], current_sm['name'], current_sm['description'], sweep=current_sm['sweep'])
+                if 'sweep' in current_sm:
+                    self.setup(current_sm['init'], current_sm['name'], current_sm['description'], sweep=current_sm['sweep'])
+                if 'hide_config' in current_sm:
+                    self.setup(current_sm['init'], current_sm['name'], current_sm['description'], sweep=current_sm['sweep'],
+                           current_sm['hide_config'])
+                if 'hide_external_sweep' in current_sm:
+                    self.setup(current_sm['init'], current_sm['name'], current_sm['description'], sweep=current_sm['sweep'],
+                           current_sm['hide_external_sweep'])
             except KeyError, e:
                 self.setup(current_sm['init'], current_sm['name'], current_sm['description'])
             except SystemExit:
