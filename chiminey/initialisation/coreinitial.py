@@ -383,6 +383,7 @@ class CoreInitial(object):
                       'description': description,
                       'hidden': hide_external_sweep,}
             )
+            hide_config=True
         elif hide_config:
             directive, _ = models.Directive.objects.get_or_create(
                 name=self.directive_name,
@@ -400,7 +401,7 @@ class CoreInitial(object):
         self._attach_directive_args(directive)
         if sweep:
             sweep_directive = self.define_sweep_directive(
-                directive, description, sweep, hide_config)
+                directive, description, hide_config)
             self._attach_directive_args(sweep_directive)
 
     def delete_directive(self, directive_name, sweep=False):
@@ -418,7 +419,7 @@ class CoreInitial(object):
                 pass
 
 
-    def define_sweep_directive(self, subdirective, description, sweep, hide_config):
+    def define_sweep_directive(self, subdirective, description, hide_config):
         sweep_stage = self._define_sweep_stage(subdirective)
         sweep_directive_name = "sweep_%s" % subdirective.name
         sweep_directive, _ = models.Directive.objects.get_or_create(
