@@ -59,14 +59,18 @@ class Command(BaseCommand):
                 copy_tree('/opt/chiminey/current/chiminey/PAYLOAD_ROOT', destination)
                 copy_tree(current_sm['payload'], destination)
             try:
+                sweep=False
+                hide_config=False
+                hide_external_sweep=False
                 if 'sweep' in current_sm:
-                    self.setup(current_sm['init'], current_sm['name'], current_sm['description'], sweep=current_sm['sweep'])
+                    sweep=current_sm['sweep']
                 if 'hide_config' in current_sm:
-                    self.setup(current_sm['init'], current_sm['name'], current_sm['description'], sweep=current_sm['sweep'],
-                           hide_config=current_sm['hide_config'])
+                    hide_config=current_sm['hide_config']
                 if 'hide_external_sweep' in current_sm:
-                    self.setup(current_sm['init'], current_sm['name'], current_sm['description'], sweep=current_sm['sweep'],
-                           hide_external_sweep=current_sm['hide_external_sweep'])
+                    hide_external_sweep=current_sm['hide_external_sweep']
+
+                self.setup(current_sm['init'], current_sm['name'], current_sm['description'], sweep=sweep,
+                           hide_config=hide_config, hide_external_sweep=hide_external_sweep)
             except KeyError, e:
                 self.setup(current_sm['init'], current_sm['name'], current_sm['description'])
             except SystemExit:
