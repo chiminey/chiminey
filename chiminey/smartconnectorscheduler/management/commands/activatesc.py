@@ -37,6 +37,7 @@ class Command(BaseCommand):
     help = 'Setup an initial task structure.'
     def setup(self, initialiser, name, description, sweep=False, hide_config=False, hide_external_sweep=False):
         MESSAGE = "This will add %s to the catalogue of available smart connectors.  Are you sure [Yes/No]?" % name
+        print name, description, sweep, hide_config, hide_external_sweep 
         confirm = raw_input(MESSAGE)
         if confirm != "Yes":
             print "action aborted by user"
@@ -68,7 +69,7 @@ class Command(BaseCommand):
                     hide_config=current_sm['hide_config']
                 if 'hide_external_sweep' in current_sm:
                     hide_external_sweep=current_sm['hide_external_sweep']
-
+                print sweep, hide_config, hide_external_sweep 
                 self.setup(current_sm['init'], current_sm['name'], current_sm['description'], sweep=sweep,
                            hide_config=hide_config, hide_external_sweep=hide_external_sweep)
             except KeyError, e:
