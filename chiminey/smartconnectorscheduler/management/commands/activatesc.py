@@ -63,10 +63,10 @@ class Command(BaseCommand):
                     self.setup(current_sm['init'], current_sm['name'], current_sm['description'], sweep=current_sm['sweep'])
                 if 'hide_config' in current_sm:
                     self.setup(current_sm['init'], current_sm['name'], current_sm['description'], sweep=current_sm['sweep'],
-                           current_sm['hide_config'])
+                           hide_config=current_sm['hide_config'])
                 if 'hide_external_sweep' in current_sm:
                     self.setup(current_sm['init'], current_sm['name'], current_sm['description'], sweep=current_sm['sweep'],
-                           current_sm['hide_external_sweep'])
+                           hide_external_sweep=current_sm['hide_external_sweep'])
             except KeyError, e:
                 self.setup(current_sm['init'], current_sm['name'], current_sm['description'])
             except SystemExit:
