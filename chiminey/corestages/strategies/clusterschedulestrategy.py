@@ -217,7 +217,7 @@ def start_round_robin_schedule(nodes, processes, schedule_index, settings, relat
         new_processes = construct_lookup_table(
             ids, ip_address, new_processes,
             maximum_retry=int(settings['maximum_retry']),
-            total_exec_time)
+            total_exec_time=total_exec_time)
 
         destination = get_url_with_credentials(
             settings,
@@ -288,7 +288,7 @@ def start_round_robin_reschedule(nodes, procs_2b_rescheduled,
             ids, ip_address, new_processes,
             status='reschedule_ready',
             maximum_retry=int(settings['maximum_retry']),
-            total_exec_time)
+            total_exec_time=total_exec_time)
         destination = get_url_with_credentials(settings,
             relative_path,
             is_relative_path=True,
