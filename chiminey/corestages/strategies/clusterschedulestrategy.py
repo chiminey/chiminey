@@ -20,6 +20,7 @@
 
 import logging
 import os
+import datetime
 
 from chiminey.platform import get_job_dir
 from chiminey.runsettings import SettingNotFoundException, getval, update
@@ -212,9 +213,11 @@ def start_round_robin_schedule(nodes, processes, schedule_index, settings, relat
         index += len(ids)
         logger.debug('index=%d' % index)
         put_proc_ids(relative_path, ids, ip_address, settings)
+        total_exec_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
         new_processes = construct_lookup_table(
             ids, ip_address, new_processes,
-            maximum_retry=int(settings['maximum_retry']))
+            maximum_retry=int(settings['maximum_retry']),
+            total_exec_time)
 
         destination = get_url_with_credentials(
             settings,
@@ -280,10 +283,12 @@ def start_round_robin_reschedule(nodes, procs_2b_rescheduled,
         #index += len(ids)
         #logger.debug('index=%d' % index)
         put_proc_ids(relative_path, ids, ip_address, settings)
+        total_exec_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
         new_processes = construct_lookup_table(
             ids, ip_address, new_processes,
             status='reschedule_ready',
-            maximum_retry=int(settings['maximum_retry']))
+            maximum_retry=int(settings['maximum_retry']),
+            total_exec_time)
         destination = get_url_with_credentials(settings,
             relative_path,
             is_relative_path=True,
@@ -353,12 +358,13 @@ def put_proc_ids(relative_path, ids, ip, settings):
     put_file(destination, proc_ids.encode('utf-8'))
 
 
-def construct_lookup_table(ids, ip_address, new_processes, maximum_retry=1, status='ready'):
+def construct_lookup_table(ids, ip_address, new_processes, maximum_retry=1, status='ready', total_exec_time=''):
     for id in ids:
         new_processes.append(
             {'status': '%s' % status, 'id': '%s' % id,
              'ip_address': '%s' % ip_address,
-             'retry_left': '%d' % maximum_retry})
+             'retry_left': '%d' % maximum_retry,
+             'total_exec_time': '%s' % total_exec_time})
     return new_processes
 
 

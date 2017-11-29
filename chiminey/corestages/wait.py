@@ -21,6 +21,8 @@
 import logging
 import ast
 import os
+import datetime
+
 from chiminey.platform import get_platform_settings, get_job_dir
 from chiminey.corestages import stage
 from chiminey.corestages.stage import Stage
@@ -316,12 +318,20 @@ class Wait(Stage):
                     for iterator, p in enumerate(self.all_processes):
                         if int(p['id']) == int(process_id) and p['status'] == 'running':
                             self.all_processes[iterator]['status'] = 'completed'
+                            start_time=datetime.datetime.strptime(self.all_processes[iterator]['total_exec_time'],"%Y-%m-%d  %H:%M:%S.%f")
+                            end_time=datetime.datetime.now()
+                            total_exec_time=end_time-start_time
+                            self.all_processes[iterator]['total_exec_time'] = str(total_exec_time)
                     for iterator, p in enumerate(self.executed_procs):
                         if int(p['id']) == int(process_id) and p['status'] == 'running':
                             self.executed_procs[iterator]['status'] = 'completed'
                     for iterator, p in enumerate(self.current_processes):
                         if int(p['id']) == int(process_id) and p['status'] == 'running':
                             self.current_processes[iterator]['status'] = 'completed'
+                            start_time=datetime.datetime.strptime(self.current_processes[iterator]['total_exec_time'],"%Y-%m-%d  %H:%M:%S.%f")
+                            end_time=datetime.datetime.now()
+                            total_exec_time=end_time-start_time
+                            self.current_processes[iterator]['total_exec_time'] = str(total_exec_time)
                 else:
                     logger.warn("We have already "
                         + "processed output of %s on node %s" % (process_id, ip_address))

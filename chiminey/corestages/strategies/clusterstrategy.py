@@ -65,10 +65,12 @@ class ClusterStrategy(Strategy):
                 ['1', local_settings['ip_address'], 'unix', 'running'])
             schedule_class.all_processes.append({'status': 'ready', 'retry_left': '2',
                                               'ip_address': local_settings['ip_address'],
-                                              'id': str(local_settings['non_cloud_proc_id'])})
+                                              'id': str(local_settings['non_cloud_proc_id']),
+                                              'total_exec_time': total_exec_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")})
             schedule_class.current_processes.append({'status': 'ready', 'retry_left': '2',
                                               'ip_address': local_settings['ip_address'],
-                                              'id': str(local_settings['non_cloud_proc_id'])})
+                                              'id': str(local_settings['non_cloud_proc_id']),
+                                              'total_exec_time': total_exec_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")})
 
     def set_bootstrap_settings(self, run_settings, local_settings):
         super(ClusterStrategy, self).set_bootstrap_settings(run_settings, local_settings)
