@@ -213,7 +213,7 @@ def start_round_robin_schedule(nodes, processes, schedule_index, settings, relat
         index += len(ids)
         logger.debug('index=%d' % index)
         put_proc_ids(relative_path, ids, ip_address, settings)
-        total_exec_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
+        total_exec_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         new_processes = construct_lookup_table(
             ids, ip_address, new_processes,
             maximum_retry=int(settings['maximum_retry']),
@@ -283,7 +283,7 @@ def start_round_robin_reschedule(nodes, procs_2b_rescheduled,
         #index += len(ids)
         #logger.debug('index=%d' % index)
         put_proc_ids(relative_path, ids, ip_address, settings)
-        total_exec_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
+        total_exec_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         new_processes = construct_lookup_table(
             ids, ip_address, new_processes,
             status='reschedule_ready',

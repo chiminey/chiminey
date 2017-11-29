@@ -318,8 +318,9 @@ class Wait(Stage):
                     for iterator, p in enumerate(self.all_processes):
                         if int(p['id']) == int(process_id) and p['status'] == 'running':
                             self.all_processes[iterator]['status'] = 'completed'
-                            start_time=datetime.datetime.strptime(self.all_processes[iterator]['total_exec_time'],"%Y-%m-%d  %H:%M:%S.%f")
-                            end_time=datetime.datetime.now()
+                            start_time=datetime.datetime.strptime(self.all_processes[iterator]['total_exec_time'],"%Y-%m-%d  %H:%M:%S")
+                            end_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                            end_time=datetime.datetime.strptime(end_time,"%Y-%m-%d  %H:%M:%S")
                             total_exec_time=end_time-start_time
                             self.all_processes[iterator]['total_exec_time'] = str(total_exec_time)
                     for iterator, p in enumerate(self.executed_procs):
@@ -328,8 +329,9 @@ class Wait(Stage):
                     for iterator, p in enumerate(self.current_processes):
                         if int(p['id']) == int(process_id) and p['status'] == 'running':
                             self.current_processes[iterator]['status'] = 'completed'
-                            start_time=datetime.datetime.strptime(self.current_processes[iterator]['total_exec_time'],"%Y-%m-%d  %H:%M:%S.%f")
-                            end_time=datetime.datetime.now()
+                            start_time=datetime.datetime.strptime(self.current_processes[iterator]['total_exec_time'],"%Y-%m-%d  %H:%M:%S")
+                            end_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                            end_time=datetime.datetime.strptime(end_time,"%Y-%m-%d  %H:%M:%S")
                             total_exec_time=end_time-start_time
                             self.current_processes[iterator]['total_exec_time'] = str(total_exec_time)
                 else:
