@@ -22,6 +22,7 @@ import sys
 import os
 import linecache
 import logging
+import datetime
 from celery.task import task
 from django.conf import settings
 from celery.exceptions import SoftTimeLimitExceeded
@@ -80,6 +81,7 @@ def delete(context_id):
             else:
                 logger.info("deleting %s" % context_id)
             run_context.deleted = True
+            run_context.stopped = datetime.datetime.now()
             run_context.save()
     except SoftTimeLimitExceeded:
         raise
@@ -283,6 +285,7 @@ def _process_context(context_id):
             logger.debug("No corestages is_triggered")
             test_info = task_run_settings
             run_context.deleted = True
+            run_context.stopped = datetime.datetime.now()
             run_context.save()
             #run_context.delete()
 

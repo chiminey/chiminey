@@ -1312,7 +1312,7 @@ def get_contexts(request):
     logger.debug("r.json()=%s" % pformat(r.json()))
     for x in r.json()['objects']:
         logger.debug("x=%s" % pformat(x))
-        contextid = contextdeleted = contextcreated = ""
+        contextid = contextdeleted = contextcreated = contextstopped = ""
         parent_id = 0
         directive_name = directive_desc = ""
         if 'context' in x and x['context']:
@@ -1320,6 +1320,8 @@ def get_contexts(request):
                 contextid = x['context']['id']
             if 'deleted' in x['context']:
                 contextdeleted = x['context']['deleted']
+            if 'stopped' in x['context']:
+                contextstopped = x['context']['stopped']
             if 'created' in x['context']:
                     contextcreated = x['context']['created']
             if 'parent' in x['context'] and x['context']['parent']:
@@ -1337,6 +1339,7 @@ def get_contexts(request):
         obj.append(int(contextid))
         obj.append(contextdeleted)
         obj.append(dateutil.parser.parse(contextcreated))
+        obj.append(dateutil.parser.parse(contextstopped))
         obj.append(x['message'])
         obj.append(directive_name)
         obj.append(directive_desc)

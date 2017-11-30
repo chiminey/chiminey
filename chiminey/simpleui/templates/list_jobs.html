@@ -73,6 +73,9 @@ $(document).on('click','.delete', function(e) {
             <th class="col-1" data-hide="phone,tablet">
                 <strong>Created</strong>
             </th>
+            <th class="col-1" data-hide="phone,tablet">
+                <strong>Run Duration</strong>
+            </th>
             <th class="" data-hide="phone">
                 <strong>Iteration: Current task</strong>
             </th>
@@ -85,24 +88,25 @@ $(document).on('click','.delete', function(e) {
 {% for job in object_list %}
 {% if forloop.first %}
 {% else %}
-{% if job.0 == job.6 %}
+{% if job.0 == job.7 %}
     <tr><td></td></tr>
 {% endif %}
 {% endif %}
 
-<tr class='{{job.3|split:"0"}}' id="row_{{job.0}}">
+<tr class='{{job.4|split:"0"}}' id="row_{{job.0}}">
 <td  id="expand_{{job.0}}"> {{ job.0 }}
 </td>
-<td >{{ job.4 }} <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{job.5}}" id='{{forloop.counter}}'>
+<td >{{ job.5 }} <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{job.6}}" id='{{forloop.counter}}'>
   <i  class="fa fa-question-circle"></i></a>
 </td>
 <td >{{ job.2|date}} {{ job.2|time}} ({{job.2|naturaltime}})</td>
+<td >{{ job.3|date}} {{ job.3|time}} ({{job.3|naturaltime}})</td>
 
 <td>
-{% if job.3|split:"0" == 'error' %}
+{% if job.4|split:"0" == 'error' %}
 <i class="fa fa-exclamation-circle"</i>
 {% endif %}
-{{job.3|custom_divide:"1"}}
+{{job.4|custom_divide:"1"}}
 </td>
 <td>
   {% if not job.1 %}
@@ -114,7 +118,7 @@ $(document).on('click','.delete', function(e) {
 </td>
 <td >
 <div class="btn-group">
-    <a href="{{ job.7 }}" class="btn btn-small" >Info</a>
+    <a href="{{ job.8 }}" class="btn btn-small" >Info</a>
 </div>
 <td >
     <div class="control-group">

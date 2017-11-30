@@ -494,6 +494,7 @@ class Context(models.Model):
                              help_text="")
     directive = models.ForeignKey(Directive, null=True)
     created = models.DateTimeField(auto_now_add=True)
+    stopped = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     parent = models.ForeignKey('self', null=True, blank=True)
 
     CONTEXT_SCHEMA_NS = "%s/context1" % django_settings.SCHEMA_PREFIX
