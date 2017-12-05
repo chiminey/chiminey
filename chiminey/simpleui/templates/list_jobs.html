@@ -100,7 +100,7 @@ $(document).on('click','.delete', function(e) {
   <i  class="fa fa-question-circle"></i></a>
 </td>
 <td >{{ job.2|date}} {{ job.2|time}} ({{job.2|naturaltime}})</td>
-<td >{{ job.3|date}} {{ job.3|time}} ({{job.3|naturaltime}})</td>
+<td >{{job.3|naturaltime}}</td>
 
 <td>
 {% if job.4|split:"0" == 'error' %}

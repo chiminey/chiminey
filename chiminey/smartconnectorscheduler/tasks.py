@@ -83,6 +83,7 @@ def delete(context_id):
             run_context.deleted = True
             run_context.stopped = datetime.datetime.now()
             run_context.save()
+            logger.debug("ZZZ1>>>smartconnectorscheduler.delete %s" % run_context)
     except SoftTimeLimitExceeded:
         raise
 
@@ -287,6 +288,7 @@ def _process_context(context_id):
             run_context.deleted = True
             run_context.stopped = datetime.datetime.now()
             run_context.save()
+            logger.debug("ZZZ2>>>_process_context %s" % run_context)
             #run_context.delete()
 
         logger.info("processing of context task %s complete" % (context_id))
@@ -422,7 +424,9 @@ def progress_context_broken(context_id):
                     logger.debug("No corestages is_triggered")
                     test_info = task_run_settings
                     run_context.deleted = True
+                    run_context.stopped = datetime.datetime.now()
                     run_context.save()
+                    logger.debug("ZZZ3>>>progress_context_broken %s" % run_context)
                     #run_context.delete()
 
                 logger.info("processing of context task %s complete" % (context_id))

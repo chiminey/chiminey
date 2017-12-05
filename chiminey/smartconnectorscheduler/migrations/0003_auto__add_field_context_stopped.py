@@ -10,7 +10,7 @@ class Migration(SchemaMigration):
     def forwards(self, orm):
         # Adding field 'Context.stopped'
         db.add_column(u'smartconnectorscheduler_context', 'stopped',
-                      self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, null=True, blank=True),
+                      self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now),
                       keep_default=False)
 
 
@@ -71,7 +71,7 @@ class Migration(SchemaMigration):
             'owner': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['smartconnectorscheduler.UserProfile']"}),
             'parent': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['smartconnectorscheduler.Context']", 'null': 'True', 'blank': 'True'}),
             'status': ('django.db.models.fields.TextField', [], {'default': "''", 'blank': 'True'}),
-            'stopped': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'null': 'True', 'blank': 'True'})
+            'stopped': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'})
         },
         u'smartconnectorscheduler.contextmessage': {
             'Meta': {'object_name': 'ContextMessage'},

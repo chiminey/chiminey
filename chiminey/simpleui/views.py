@@ -21,6 +21,7 @@ import logging
 import json
 import itertools
 import ast
+import datetime
 from pprint import pformat
 from urllib2 import URLError, HTTPError
 
@@ -1335,11 +1336,26 @@ def get_contexts(request):
                     directive_name = x['context']['directive']['name']
                 if 'description' in x['context']['directive']:
                     directive_desc = x['context']['directive']['description']
+
+
+	contextcreated_time = datetime.datetime.strptime(contextcreated, "%Y-%m-%dT%H:%M:%S.%f")
+        logger.debug("contextcreated_time=%s" % contextcreated_time)
+
+        contextstopped_time = datetime.datetime.strptime(contextstopped, "%Y-%m-%dT%H:%M:%S.%f")
+        logger.debug("contextstopped_time=%s" % contextstopped_time)
+
+        contextduration = contextstopped_time - contextcreated_time
+        contextduration = contextduration - datetime.timedelta(microseconds=contextduration.microseconds)
+        if contextduration < datetime.timedelta(0):
+            contextduration = datetime.timedelta(0)
+        logger.debug("contextduration=%s" % contextduration)
+
         obj = []
         obj.append(int(contextid))
         obj.append(contextdeleted)
         obj.append(dateutil.parser.parse(contextcreated))
-        obj.append(dateutil.parser.parse(contextstopped))
+        #obj.append(dateutil.parser.parse(contextstopped))
+        obj.append(contextduration)
         obj.append(x['message'])
         obj.append(directive_name)
         obj.append(directive_desc)
