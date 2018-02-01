@@ -37,7 +37,7 @@ class PrismInitial(CoreInitial):
             u'http://rmit.edu.au/schemas/system':
                 {
                     u'random_numbers': 'file://127.0.0.1/randomnums.txt',
-                    u'metadata_builder': 'chiminey.mytardis.metadata.MetadataBuilder',
+                    #u'metadata_builder': 'chiminey.mytardis.metadata.MetadataBuilder',
                 },
         }
         return { 'settings': settings}
@@ -50,7 +50,7 @@ class PrismInitial(CoreInitial):
                 django_settings.INPUT_FIELDS['input_location'],
                 django_settings.INPUT_FIELDS['output_location'],
                 django_settings.INPUT_FIELDS['prism'],
-                django_settings.INPUT_FIELDS['mytardis'],
+                #django_settings.INPUT_FIELDS['mytardis'],
                 ]
         return schemas
 
