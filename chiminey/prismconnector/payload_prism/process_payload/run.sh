@@ -11,5 +11,10 @@ prism_path=$(dirname $prism_exe)
 
 export PATH=$java_path:$prism_path:$PATH
 
-prism $INPUT_DIR/{{prism_model}} $INPUT_DIR/{{property_file}} {{param_string}} > $OUTPUT_DIR/result
+cd $INPUT_DIR
+
+prism $(cat cli_parameters.txt) &> runlog.txt
+
+cp ./*.txt ../$OUTPUT_DIR
+
 # --- EOF ---
