@@ -123,6 +123,16 @@ def complete_schedule(schedule_class, local_settings):
         if fin:
             logger.debug("done.")
             node_list = schedule_class.scheduled_nodes
+            for iterator, p in enumerate(schedule_class.current_processes):
+                #if int(p['id']) == int(process_id) and p['status'] == 'running':
+                #    schedule_class.current_processes[iterator]['status'] = 'completed'
+                start_time=datetime.datetime.strptime(schedule_class.current_processes[iterator]['sched_start_time'],"%Y-%m-%d  %H:%M:%S")
+                end_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                schedule_class.current_processes[iterator]['sched_end_time'] = end_time 
+                end_time=datetime.datetime.strptime(end_time,"%Y-%m-%d  %H:%M:%S")
+                total_sched_time=end_time-start_time
+                schedule_class.current_processes[iterator]['total_sched_time'] = str(total_sched_time)
+
             if schedule_class.procs_2b_rescheduled:
                 node_list = schedule_class.rescheduled_nodes
             if not (node_ip in [x[1]
@@ -227,11 +237,11 @@ def start_round_robin_schedule(nodes, processes, schedule_index, settings, relat
         index += len(ids)
         logger.debug('index=%d' % index)
         put_proc_ids(relative_path, ids, ip_address, settings)
-        total_exec_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        sched_start_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         new_processes = construct_lookup_table(
             ids, ip_address, new_processes,
             maximum_retry=int(settings['maximum_retry']),
-            total_exec_time=total_exec_time)
+            sched_start_time=sched_start_time)
 
         destination = get_url_with_credentials(
             settings,
@@ -298,12 +308,12 @@ def start_round_robin_reschedule(nodes, procs_2b_rescheduled,
         #index += len(ids)
         #logger.debug('index=%d' % index)
         put_proc_ids(relative_path, ids, ip_address, settings)
-        total_exec_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        sched_start_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         new_processes = construct_lookup_table(
             ids, ip_address, new_processes,
             status='reschedule_ready',
             maximum_retry=int(settings['maximum_retry']),
-            total_exec_time=total_exec_time)
+            sched_start_time=sched_start_time)
         destination = get_url_with_credentials(settings,
             relative_path,
             is_relative_path=True,
@@ -373,13 +383,15 @@ def put_proc_ids(relative_path, ids, ip, settings):
     put_file(destination, proc_ids.encode('utf-8'))
 
 
-def construct_lookup_table(ids, ip_address, new_processes, maximum_retry=1, status='ready', total_exec_time=''):
+def construct_lookup_table(ids, ip_address, new_processes, maximum_retry=1, status='ready', sched_start_time='', sched_end_time='', total_sched_time=''):
     for id in ids:
         new_processes.append(
             {'status': '%s' % status, 'id': '%s' % id,
              'ip_address': '%s' % ip_address,
              'retry_left': '%d' % maximum_retry,
-             'total_exec_time': '%s' % total_exec_time})
+             'sched_start_time': '%s' % sched_start_time,
+             'sched_end_time': '%s' % sched_end_time,
+             'total_sched_time': '%s' % total_sched_time})
     return new_processes
 
 
