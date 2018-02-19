@@ -750,14 +750,39 @@ def _get_chiminey_schemas():
                  u'scheduled_nodes': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
                                       'ranking': 2, 'help_text': ''},
                  u'schedule_completed': {'type': models.ParameterName.NUMERIC, 'subtype': '', 'description': '',
-                                         'ranking': 1, 'help_text': ''}
+                                         'ranking': 1, 'help_text': ''},
+                 u'schedule_start_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                                        'ranking': 9, 'help_text': ''},
+                 u'schedule_complete_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                                        'ranking': 10, 'help_text': ''},
+                 u'total_schedule_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                                        'ranking': 11, 'help_text': ''}
+                     
              }
             ],
         u'%s/stages/execute' % django_settings.SCHEMA_PREFIX:
             [u'the execute stage of the smartconnector1',
              {
                  u'executed_procs': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
-                                     'ranking': 1, 'help_text': ''}
+                                     'ranking': 1, 'help_text': ''},
+                 u'execute_start_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                                        'ranking': 2, 'help_text': ''},
+                 u'execute_end_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                                        'ranking': 3, 'help_text': ''},
+                 u'total_execute_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                                        'ranking': 4, 'help_text': ''},
+                 u'variation_input_transfer_start_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                                        'ranking': 5, 'help_text': ''},
+                 u'variation_input_transfer_end_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                                        'ranking': 6, 'help_text': ''},
+                 u'total_variation_input_transfer_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                                        'ranking': 7, 'help_text': ''},
+                 u'output_transfer_start_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                                        'ranking': 8, 'help_text': ''},
+                 u'output_transfer_end_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                                        'ranking': 9, 'help_text': ''},
+                 u'total_output_transfer_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                                        'ranking': 10, 'help_text': ''}
              }
             ],
         u'%s/stages/run' % django_settings.SCHEMA_PREFIX:
