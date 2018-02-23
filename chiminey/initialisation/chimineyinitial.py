@@ -752,11 +752,11 @@ def _get_chiminey_schemas():
                  u'schedule_completed': {'type': models.ParameterName.NUMERIC, 'subtype': '', 'description': '',
                                          'ranking': 1, 'help_text': ''},
                  u'schedule_start_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
-                                        'ranking': 9, 'help_text': ''},
+                                        'initial': '', 'ranking': 9, 'help_text': ''},
                  u'schedule_complete_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
-                                        'ranking': 10, 'help_text': ''},
+                                        'initial': '', 'ranking': 10, 'help_text': ''},
                  u'total_schedule_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
-                                        'ranking': 11, 'help_text': ''}
+                                        'initial': '', 'ranking': 11, 'help_text': ''}
                      
              }
             ],

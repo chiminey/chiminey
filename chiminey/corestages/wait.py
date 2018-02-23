@@ -49,11 +49,13 @@ class Wait(Stage):
         self.runs_left = 0
         self.error_nodes = 0
         logger.debug("Wait stage initialised")
+        logger.debug("XXXXX YYYYY Wait stage : %s , %s" % ("__init__","in"))
 
     def is_triggered(self, run_settings):
         """
             Checks whether there is a non-zero number of runs still going.
         """
+        logger.debug("XXXXX YYYYY Wait stage : %s , %s" % ("is_triggered","in"))
         self.ftmanager = FTManager()
         self.failure_detector = FailureDetection()
         #self.cleanup_nodes = self.ftmanager.get_cleanup_nodes(run_settings, smartconnectorscheduler)
@@ -133,6 +135,7 @@ class Wait(Stage):
         except SettingNotFoundException:
             pass
         logger.debug("wait not triggered")
+        logger.debug("XXXXX YYYYY Wait stage : %s , %s" % ("is_triggered","out"))
         return False
 
     '''
@@ -146,6 +149,7 @@ class Wait(Stage):
         """
             Retrieve the output from the task on the node
         """
+        logger.debug("XXXXX YYYYY Wait stage : %s , %s" % ("get_output","in"))
 
         logger.debug("get_output of process %s on %s" % (process_id, ip_address))
         output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
@@ -214,6 +218,7 @@ class Wait(Stage):
             content = {}
         logger.debug('content=%s' % content)
         storage.put_file(values_dest_url, content)
+        logger.debug("XXXXX YYYYY Wait stage : %s , %s" % ("get_output","out"))
 
     def process(self, run_settings):
         """
@@ -221,6 +226,7 @@ class Wait(Stage):
             they are running, stopped or in error_nodes
         """
 
+        logger.debug("XXXXX YYYYY Wait stage : %s , %s" % ("process","in"))
         local_settings = getvals(run_settings, models.UserProfile.PROFILE_SCHEMA_NS)
         # local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
         retrieve_local_settings(run_settings, local_settings)
@@ -271,6 +277,7 @@ class Wait(Stage):
         except SettingNotFoundException:
             pass
 
+        self.output_transfer_started = 0
         for process in processes:
             #instance_id = node.id
             ip_address = process['ip_address']
@@ -298,6 +305,16 @@ class Wait(Stage):
                 #its output will be retrieved, but it may again when the other node fails, because
                 #we cannot tell whether we have prevous retrieved this output before and finished_nodes
                 # is not maintained between triggerings...
+                if not self.output_transfer_started:
+                    try:
+                        self.output_transfer_start_time = str(getval(run_settings, '%s/stages/execute/output_transfer_start_time' % django_settings.SCHEMA_PREFIX))
+                        self.output_transfer_started = 1
+                    except SettingNotFoundException:
+                        self.output_transfer_start_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        self.output_transfer_started = 1
+                    except ValueError, e:
+                        logger.error(e)
+
                 if not (int(process_id) in [int(x['id'])
                                             for x in self.finished_nodes
                                             if int(process_id) == int(x['id'])]):
@@ -318,6 +335,11 @@ class Wait(Stage):
                     for iterator, p in enumerate(self.all_processes):
                         if int(p['id']) == int(process_id) and p['status'] == 'running':
                             self.all_processes[iterator]['status'] = 'completed'
+                            self.output_transfer_end_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                            outtrans_start_time=datetime.datetime.strptime(self.output_transfer_start_time,"%Y-%m-%d  %H:%M:%S")
+                            outtrans_end_time=datetime.datetime.strptime(self.output_transfer_end_time,"%Y-%m-%d  %H:%M:%S")
+                            total_outtrans_time=outtrans_end_time - outtrans_start_time
+                            self.total_output_transfer_time = str(total_outtrans_time)
                             #start_time=datetime.datetime.strptime(self.all_processes[iterator]['total_exec_time'],"%Y-%m-%d  %H:%M:%S")
                             #end_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                             #end_time=datetime.datetime.strptime(end_time,"%Y-%m-%d  %H:%M:%S")
@@ -345,11 +367,13 @@ class Wait(Stage):
             messages.info(run_settings, "%d: Waiting %d processes (%d completed, %d failed) " % (
                 self.id + 1, len(self.current_processes),  len(self.finished_nodes),
                 len(failed_processes)))
+        logger.debug("XXXXX YYYYY Wait stage : %s , %s" % ("process","out"))
 
     def output(self, run_settings):
         """
         Output new runs_left value (including zero value)
         """
+        logger.debug("XXXXX YYYYY Wait stage : %s , %s" % ("output","in"))
         logger.debug("finished stage output")
         executing_procs = [x for x in self.current_processes if x['status'] != 'ready']
         #nodes_working = len(self.executed_procs) - (len(self.finished_nodes) + self.failed_processes)
@@ -387,7 +411,10 @@ class Wait(Stage):
                 '%s/stages/run/finished_nodes' % django_settings.SCHEMA_PREFIX: str(self.finished_nodes),
                 '%s/stages/schedule/all_processes' % django_settings.SCHEMA_PREFIX: str(self.all_processes),
                 '%s/stages/schedule/current_processes' % django_settings.SCHEMA_PREFIX: str(self.current_processes),
-                '%s/stages/execute/executed_procs' % django_settings.SCHEMA_PREFIX: str(self.executed_procs)
+                '%s/stages/execute/executed_procs' % django_settings.SCHEMA_PREFIX: str(self.executed_procs),
+                '%s/stages/execute/output_transfer_start_time' % django_settings.SCHEMA_PREFIX: self.output_transfer_start_time,
+                '%s/stages/execute/output_transfer_end_time' % django_settings.SCHEMA_PREFIX: self.output_transfer_end_time,
+                '%s/stages/execute/total_output_transfer_time' % django_settings.SCHEMA_PREFIX: self.total_output_transfer_time
                 })
 
 
@@ -404,9 +431,11 @@ class Wait(Stage):
                     '%s/stages/schedule/scheduled_started' % django_settings.SCHEMA_PREFIX: 0,
                     '%s/stages/schedule/procs_2b_rescheduled' % django_settings.SCHEMA_PREFIX: self.procs_2b_rescheduled
                     })
+        logger.debug("XXXXX YYYYY Wait stage : %s , %s" % ("output","out"))
         return run_settings
 
 def retrieve_local_settings(run_settings, local_settings):
+    logger.debug("XXXXX YYYYY Wait stage : %s , %s" % ("retrieve_local_settings","in"))
     stage.copy_settings(local_settings, run_settings,
         '%s/stages/setup/payload_destination' % django_settings.SCHEMA_PREFIX)
     stage.copy_settings(local_settings, run_settings,
@@ -421,3 +450,4 @@ def retrieve_local_settings(run_settings, local_settings):
         django_settings.SCHEMA_PREFIX + '/bdp_userprofile']['username']
 
     logger.debug('retrieve completed')
+    logger.debug("XXXXX YYYYY Wait stage : %s , %s" % ("retrieve_local_settings","out"))

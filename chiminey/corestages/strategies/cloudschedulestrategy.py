@@ -184,11 +184,13 @@ def start_schedule(schedule_class, run_settings, local_settings):
     logger.debug('total_processes=%d' % schedule_class.total_processes)
     schedule_class.current_processes = []
     relative_path_suffix = schedule_class.get_relative_output_path(local_settings)
+    #schedule_class.schedule_index, schedule_class.current_processes, schedule_class.schedule_start_time = \
     schedule_class.schedule_index, schedule_class.current_processes = \
             start_round_robin_schedule(
                 schedule_class.nodes, schedule_class.total_processes,
                                        schedule_class.schedule_index,
-                                       local_settings, relative_path_suffix)
+                                       local_settings, relative_path_suffix,
+                                       schedule_class.schedule_start_time)
     schedule_class.all_processes = update_lookup_table(
              schedule_class.all_processes,
              new_processes=schedule_class.current_processes)
@@ -202,13 +204,15 @@ def start_reschedule(schedule_class, run_settings, local_settings):
     _, schedule_class.current_processes = \
     start_round_robin_reschedule(schedule_class.nodes, schedule_class.procs_2b_rescheduled,
                                  schedule_class.current_processes, local_settings,
-                                 output_storage_settings, relative_path_suffix)
+                                 output_storage_settings, relative_path_suffix,
+                                 schedule_class.schedule_start_time)
     schedule_class.all_processes = update_lookup_table(
              schedule_class.all_processes,
              new_processes=schedule_class.current_processes, reschedule=True)
 
 
-def start_round_robin_schedule(nodes, processes, schedule_index, settings, relative_path_suffix):
+def start_round_robin_schedule(nodes, processes, schedule_index, settings, relative_path_suffix,
+                               schedule_start_time):
     total_nodes = len(nodes)
     all_nodes = list(nodes)
     if total_nodes > processes:
@@ -237,7 +241,8 @@ def start_round_robin_schedule(nodes, processes, schedule_index, settings, relat
         index += len(ids)
         logger.debug('index=%d' % index)
         put_proc_ids(relative_path, ids, ip_address, settings)
-        sched_start_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        #sched_start_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        sched_start_time=schedule_start_time
         new_processes = construct_lookup_table(
             ids, ip_address, new_processes,
             maximum_retry=int(settings['maximum_retry']),
@@ -271,12 +276,14 @@ def start_round_robin_schedule(nodes, processes, schedule_index, settings, relat
         logger.debug("command_out2=(%s, %s)" % (command_out, errs))
     logger.debug('index=%d' % index)
     logger.debug('current_processes=%s' % new_processes)
+    logger.debug('sched_start_time=%s' % sched_start_time)
     return index, new_processes
 
 
 def start_round_robin_reschedule(nodes, procs_2b_rescheduled,
                                  current_procs, settings,
-                                 output_storage_settings, relative_path_suffix):
+                                 output_storage_settings, relative_path_suffix,
+                                 schedule_start_time):
     total_nodes = len(nodes)
     all_nodes = list(nodes)
     processes = len(procs_2b_rescheduled)
@@ -308,7 +315,8 @@ def start_round_robin_reschedule(nodes, procs_2b_rescheduled,
         #index += len(ids)
         #logger.debug('index=%d' % index)
         put_proc_ids(relative_path, ids, ip_address, settings)
-        sched_start_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        #sched_start_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        sched_start_time=schedule_start_time
         new_processes = construct_lookup_table(
             ids, ip_address, new_processes,
             status='reschedule_ready',
@@ -341,6 +349,7 @@ def start_round_robin_reschedule(nodes, procs_2b_rescheduled,
         logger.debug("command_out2=(%s, %s)" % (command_out, errs))
     logger.debug('index=%d' % index)
     logger.debug('current_processes=%s' % new_processes)
+    logger.debug('sched_start_time=%s' % sched_start_time)
     return index, new_processes
 
 
