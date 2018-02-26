@@ -69,6 +69,17 @@ class Converge(Stage):
         return False
 
     def process(self, run_settings):
+
+        try:
+            self.converge_stage_start_time = str(getval(run_settings, '%s/stages/converge/converge_stage_start_time' % django_settings.SCHEMA_PREFIX))
+            logger.debug("WWWWW converge stage start time : %s " % (self.converge_stage_start_time))
+        except SettingNotFoundException:
+            self.converge_stage_start_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            logger.debug("WWWWW converge stage start time new : %s " % (self.converge_stage_start_time))
+        except ValueError, e:
+            logger.error(e)
+
+
         try:
             id = int(getval(run_settings, '%s/system/id' % django_settings.SCHEMA_PREFIX))
         except (SettingNotFoundException, ValueError):
@@ -195,11 +206,23 @@ class Converge(Stage):
                 logger.warn('Data curation is off')
 
             #messages.info(run_settings, "%s: converged" % (self.id + 1))
-
+        try:
+            self.converge_stage_end_time = str(getval(run_settings, '%s/stages/converge/converge_stage_end_time' % django_settings.SCHEMA_PREFIX))
+            logger.debug("WWWWW converge stage end time : %s " % (self.converge_stage_end_time))
+        except SettingNotFoundException:
+            self.converge_stage_end_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            logger.debug("WWWWW converge stage end time new : %s " % (self.converge_stage_end_time))
+        except ValueError, e:
+            logger.error(e)
 
 
 
     def output(self, run_settings):
+
+        convstg_start_time=datetime.datetime.strptime(self.converge_stage_start_time,"%Y-%m-%d  %H:%M:%S")
+        convstg_end_time=datetime.datetime.strptime(self.converge_stage_end_time,"%Y-%m-%d  %H:%M:%S")
+        total_convstg_time=convstg_end_time - convstg_start_time
+        total_time_converge_stage = str(total_convstg_time)
 
         setval(run_settings, '%s/input/mytardis/experiment_id' % django_settings.SCHEMA_PREFIX, str(self.experiment_id))
 
@@ -240,7 +263,13 @@ class Converge(Stage):
             logger.debug("convergence")
             # we are done, so trigger next stage outside of converge
             #update_key('converged', True, context)
-            setval(run_settings, '%s/stages/converge/converged' % django_settings.SCHEMA_PREFIX, 1)
+            #setval(run_settings, '%s/stages/converge/converged' % django_settings.SCHEMA_PREFIX, 1)
+            setvals(run_settings, {
+                    '%s/stages/converge/converged' % django_settings.SCHEMA_PREFIX: 1,
+                    '%s/stages/converge/converge_stage_start_time' % django_settings.SCHEMA_PREFIX: self.converge_stage_start_time,
+                    '%s/stages/converge/converge_stage_end_time' % django_settings.SCHEMA_PREFIX: self.converge_stage_end_time,
+                    '%s/stages/converge/total_time_converge_stage' % django_settings.SCHEMA_PREFIX: total_time_converge_stage,
+                    })
             # we are done, so don't trigger iteration stages
 
         #update_key('criterion', self.criterion, context)

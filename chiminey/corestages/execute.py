@@ -118,6 +118,14 @@ class Execute(stage.Stage):
 
     def process(self, run_settings):
         logger.debug("XXXXX Execute stage : %s , %s" % ("process","in"))
+        try:
+            self.execute_stage_start_time = str(getval(run_settings, '%s/stages/execute/execute_stage_start_time' % django_settings.SCHEMA_PREFIX))
+            logger.debug("WWWWW execute stage start time : %s " % (self.execute_stage_start_time))
+        except SettingNotFoundException:
+            self.execute_stage_start_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            logger.debug("WWWWW execute stage start time new : %s " % (self.execute_stage_start_time))
+        except ValueError, e:
+            logger.error(e)
 
         try:
             self.rand_index = int(
@@ -223,6 +231,14 @@ class Execute(stage.Stage):
             # TODO: cleanup node of copied input files etc.
             sys.exit(1)
 
+        try:
+            self.execute_stage_end_time = str(getval(run_settings, '%s/stages/execute/execute_stage_end_time' % django_settings.SCHEMA_PREFIX))
+            logger.debug("WWWWW execute stage end time : %s " % (self.execute_stage_end_time))
+        except SettingNotFoundException:
+            self.execute_stage_end_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            logger.debug("WWWWW execute stage end time new : %s " % (self.execute_stage_end_time))
+        except ValueError, e:
+            logger.error(e)
         logger.debug("XXXXX Execute stage : %s , %s" % ("process","out"))
         return pids
 
@@ -267,6 +283,11 @@ class Execute(stage.Stage):
         exec_end_time=datetime.datetime.strptime(self.execute_end_time,"%Y-%m-%d  %H:%M:%S")
         total_exec_time=exec_end_time - exec_start_time
         total_execute_time = str(total_exec_time)
+
+        execstg_start_time=datetime.datetime.strptime(self.execute_stage_start_time,"%Y-%m-%d  %H:%M:%S")
+        execstg_end_time=datetime.datetime.strptime(self.execute_stage_end_time,"%Y-%m-%d  %H:%M:%S")
+        total_execstg_time=execstg_end_time - execstg_start_time
+        total_time_execute_stage = str(total_execstg_time)
         logger.debug("XXXXX Execute stage : %s , %s" % ("output","in"))
 
         setvals(run_settings, {
@@ -277,6 +298,9 @@ class Execute(stage.Stage):
                 '%s/stages/execute/execute_start_time' % django_settings.SCHEMA_PREFIX: self.execute_start_time,
                 '%s/stages/execute/execute_end_time' % django_settings.SCHEMA_PREFIX: self.execute_end_time,
                 '%s/stages/execute/total_execute_time' % django_settings.SCHEMA_PREFIX: total_execute_time,
+                '%s/stages/execute/execute_stage_start_time' % django_settings.SCHEMA_PREFIX: self.execute_stage_start_time,
+                '%s/stages/execute/execute_stage_end_time' % django_settings.SCHEMA_PREFIX: self.execute_stage_end_time,
+                '%s/stages/execute/total_time_execute_stage' % django_settings.SCHEMA_PREFIX: total_time_execute_stage,
                 '%s/stages/schedule/current_processes' % django_settings.SCHEMA_PREFIX: str(self.schedule_procs),
                 '%s/stages/schedule/all_processes' % django_settings.SCHEMA_PREFIX: str(self.all_processes)
                 })

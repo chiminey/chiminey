@@ -112,6 +112,16 @@ class Transform(Stage):
         return False
 
     def process(self, run_settings):
+
+        try:
+            self.transform_stage_start_time = str(getval(run_settings, '%s/stages/transform/transform_stage_start_time' % django_settings.SCHEMA_PREFIX))
+            logger.debug("WWWWW transform stage start time : %s " % (self.transform_stage_start_time))
+        except SettingNotFoundException:
+            self.transform_stage_start_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            logger.debug("WWWWW transform stage start time new : %s " % (self.transform_stage_start_time))
+        except ValueError, e:
+            logger.error(e)
+
         try:
             id = int(getval(run_settings, '%s/system/id' % django_settings.SCHEMA_PREFIX))
         except (SettingNotFoundException, ValueError):
@@ -184,13 +194,29 @@ class Transform(Stage):
 
         else:
             logger.warn('Data curation is off')
+        
+        try:
+            self.transform_stage_end_time = str(getval(run_settings, '%s/stages/transform/transform_stage_end_time' % django_settings.SCHEMA_PREFIX))
+            logger.debug("WWWWW transform stage end time : %s " % (self.transform_stage_end_time))
+        except SettingNotFoundException:
+            self.transform_stage_end_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            logger.debug("WWWWW transform stage end time new : %s " % (self.transform_stage_end_time))
+        except ValueError, e:
+            logger.error(e)
 
 
     def output(self, run_settings):
         logger.debug("transform.output")
+        transfstg_start_time=datetime.datetime.strptime(self.transform_stage_start_time,"%Y-%m-%d  %H:%M:%S")
+        transfstg_end_time=datetime.datetime.strptime(self.transform_stage_end_time,"%Y-%m-%d  %H:%M:%S")
+        total_transfstg_time=transfstg_end_time - transfstg_start_time
+        total_time_transform_stage = str(total_transfstg_time)
         setvals(run_settings, {
                 '%s/stages/transform/transformed' % django_settings.SCHEMA_PREFIX: 1,
                 '%s/input/mytardis/experiment_id' % django_settings.SCHEMA_PREFIX: str(self.experiment_id),
+                '%s/stages/transform/transform_stage_start_time' % django_settings.SCHEMA_PREFIX: self.transform_stage_start_time,
+                '%s/stages/transform/transform_stage_end_time' % django_settings.SCHEMA_PREFIX: self.transform_stage_end_time,
+                '%s/stages/transform/total_time_transform_stage' % django_settings.SCHEMA_PREFIX: total_time_transform_stage,
                 })
         #print "End of Transformation: \n %s" % self.audit
 

@@ -56,6 +56,15 @@ class Wait(Stage):
             Checks whether there is a non-zero number of runs still going.
         """
         logger.debug("XXXXX YYYYY Wait stage : %s , %s" % ("is_triggered","in"))
+        try:
+            self.wait_stage_start_time = str(getval(run_settings, '%s/stages/wait/wait_stage_start_time' % django_settings.SCHEMA_PREFIX))
+            logger.debug("WWWWW wait stage start time : %s " % (self.execute_stage_start_time))
+        except SettingNotFoundException:
+            self.wait_stage_start_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            logger.debug("WWWWW wait stage start time new : %s " % (self.execute_stage_start_time))
+        except ValueError, e:
+            logger.error(e)
+
         self.ftmanager = FTManager()
         self.failure_detector = FailureDetection()
         #self.cleanup_nodes = self.ftmanager.get_cleanup_nodes(run_settings, smartconnectorscheduler)
@@ -367,12 +376,25 @@ class Wait(Stage):
             messages.info(run_settings, "%d: Waiting %d processes (%d completed, %d failed) " % (
                 self.id + 1, len(self.current_processes),  len(self.finished_nodes),
                 len(failed_processes)))
+        try:
+            self.wait_stage_end_time = str(getval(run_settings, '%s/stages/wait/wait_stage_end_time' % django_settings.SCHEMA_PREFIX))
+            logger.debug("WWWWW wait stage end time : %s " % (self.wait_stage_end_time))
+        except SettingNotFoundException:
+            self.wait_stage_end_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            logger.debug("WWWWW wait stage end time new : %s " % (self.wait_stage_end_time))
+        except ValueError, e:
+            logger.error(e)
         logger.debug("XXXXX YYYYY Wait stage : %s , %s" % ("process","out"))
 
     def output(self, run_settings):
         """
         Output new runs_left value (including zero value)
         """
+        waitstg_start_time=datetime.datetime.strptime(self.wait_stage_start_time,"%Y-%m-%d  %H:%M:%S")
+        waitstg_end_time=datetime.datetime.strptime(self.wait_stage_end_time,"%Y-%m-%d  %H:%M:%S")
+        total_waitstg_time=waitstg_end_time - waitstg_start_time
+        total_time_wait_stage = str(total_waitstg_time)
+
         logger.debug("XXXXX YYYYY Wait stage : %s , %s" % ("output","in"))
         logger.debug("finished stage output")
         executing_procs = [x for x in self.current_processes if x['status'] != 'ready']
@@ -414,7 +436,10 @@ class Wait(Stage):
                 '%s/stages/execute/executed_procs' % django_settings.SCHEMA_PREFIX: str(self.executed_procs),
                 '%s/stages/execute/output_transfer_start_time' % django_settings.SCHEMA_PREFIX: self.output_transfer_start_time,
                 '%s/stages/execute/output_transfer_end_time' % django_settings.SCHEMA_PREFIX: self.output_transfer_end_time,
-                '%s/stages/execute/total_output_transfer_time' % django_settings.SCHEMA_PREFIX: self.total_output_transfer_time
+                '%s/stages/execute/total_output_transfer_time' % django_settings.SCHEMA_PREFIX: self.total_output_transfer_time,
+                '%s/stages/wait/wait_stage_start_time' % django_settings.SCHEMA_PREFIX: self.wait_stage_start_time,
+                '%s/stages/wait/wait_stage_end_time' % django_settings.SCHEMA_PREFIX: self.wait_stage_end_time,
+                '%s/stages/wait/total_time_wait_stage' % django_settings.SCHEMA_PREFIX: total_time_wait_stage,
                 })
 
 

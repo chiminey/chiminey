@@ -756,7 +756,13 @@ def _get_chiminey_schemas():
                  u'schedule_complete_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
                                         'initial': '', 'ranking': 10, 'help_text': ''},
                  u'total_schedule_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
-                                        'initial': '', 'ranking': 11, 'help_text': ''}
+                                        'initial': '', 'ranking': 11, 'help_text': ''},
+                 u'schedule_stage_start_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                                        'ranking': 12, 'help_text': ''},
+                 u'schedule_stage_end_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                                        'ranking': 13, 'help_text': ''},
+                 u'total_time_schedule_stage': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                                        'ranking': 14, 'help_text': ''}
                      
              }
             ],
@@ -782,7 +788,13 @@ def _get_chiminey_schemas():
                  u'output_transfer_end_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
                                         'ranking': 9, 'help_text': ''},
                  u'total_output_transfer_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
-                                        'ranking': 10, 'help_text': ''}
+                                        'ranking': 10, 'help_text': ''},
+                 u'execute_stage_start_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                                        'ranking': 11, 'help_text': ''},
+                 u'execute_stage_end_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                                        'ranking': 12, 'help_text': ''},
+                 u'total_time_execute_stage': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                                        'ranking': 13, 'help_text': ''}
              }
             ],
         u'%s/stages/run' % django_settings.SCHEMA_PREFIX:
@@ -808,6 +820,12 @@ def _get_chiminey_schemas():
              {
                  u'transformed': {'type': models.ParameterName.NUMERIC, 'subtype': '', 'description': '',
                                   'ranking': 1, 'help_text': ''},
+                 u'transform_stage_start_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                                        'ranking': 2, 'help_text': ''},
+                 u'transform_stage_end_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                                        'ranking': 3, 'help_text': ''},
+                 u'total_time_transform_stage': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                                        'ranking': 4, 'help_text': ''}
              }
             ],
         u'%s/stages/converge' % django_settings.SCHEMA_PREFIX:
@@ -817,6 +835,12 @@ def _get_chiminey_schemas():
                                 'ranking': 2, 'help_text': ''},
                  u'criterion': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '', 'ranking': 1,
                                 'help_text': ''},  # Use STRING as float not implemented
+                 u'converge_stage_start_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                                        'ranking': 3, 'help_text': ''},
+                 u'converge_stage_end_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                                        'ranking': 4, 'help_text': ''},
+                 u'total_time_converge_stage': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                                        'ranking': 5, 'help_text': ''}
              }
             ],
 
@@ -866,7 +890,13 @@ def _get_chiminey_schemas():
             [u'wait stage parameters',
              {
                  u'synchronous': {'type': models.ParameterName.NUMERIC, 'subtype': '', 'description': '',
-                                  'ranking': 1, 'help_text': ''}
+                                  'ranking': 1, 'help_text': ''},
+                 u'wait_stage_start_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                                        'ranking': 2, 'help_text': ''},
+                 u'wait_stage_end_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                                        'ranking': 3, 'help_text': ''},
+                 u'total_time_wait_stage': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                                        'ranking': 4, 'help_text': ''}
              }
             ],
         u'%s/stages/make' % django_settings.SCHEMA_PREFIX:
