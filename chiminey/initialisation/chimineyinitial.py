@@ -783,18 +783,12 @@ def _get_chiminey_schemas():
                                         'ranking': 6, 'help_text': ''},
                  u'total_variation_input_transfer_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
                                         'ranking': 7, 'help_text': ''},
-                 u'output_transfer_start_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
-                                        'ranking': 8, 'help_text': ''},
-                 u'output_transfer_end_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
-                                        'ranking': 9, 'help_text': ''},
-                 u'total_output_transfer_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
-                                        'ranking': 10, 'help_text': ''},
                  u'execute_stage_start_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
-                                        'ranking': 11, 'help_text': ''},
+                                        'ranking': 8, 'help_text': ''},
                  u'execute_stage_end_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
-                                        'ranking': 12, 'help_text': ''},
+                                        'ranking': 9, 'help_text': ''},
                  u'total_time_execute_stage': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
-                                        'ranking': 13, 'help_text': ''}
+                                        'ranking': 10, 'help_text': ''}
              }
             ],
         u'%s/stages/run' % django_settings.SCHEMA_PREFIX:
@@ -896,7 +890,13 @@ def _get_chiminey_schemas():
                  u'wait_stage_end_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
                                         'ranking': 3, 'help_text': ''},
                  u'total_time_wait_stage': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
-                                        'ranking': 4, 'help_text': ''}
+                                        'ranking': 4, 'help_text': ''},
+                 u'output_transfer_start_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                                        'ranking': 5, 'help_text': ''},
+                 u'output_transfer_end_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                                        'ranking': 6, 'help_text': ''},
+                 u'total_output_transfer_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                                        'ranking': 7, 'help_text': ''},
              }
             ],
         u'%s/stages/make' % django_settings.SCHEMA_PREFIX:

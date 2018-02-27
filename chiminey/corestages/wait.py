@@ -56,14 +56,6 @@ class Wait(Stage):
             Checks whether there is a non-zero number of runs still going.
         """
         logger.debug("XXXXX YYYYY Wait stage : %s , %s" % ("is_triggered","in"))
-        try:
-            self.wait_stage_start_time = str(getval(run_settings, '%s/stages/wait/wait_stage_start_time' % django_settings.SCHEMA_PREFIX))
-            logger.debug("WWWWW wait stage start time : %s " % (self.execute_stage_start_time))
-        except SettingNotFoundException:
-            self.wait_stage_start_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            logger.debug("WWWWW wait stage start time new : %s " % (self.execute_stage_start_time))
-        except ValueError, e:
-            logger.error(e)
 
         self.ftmanager = FTManager()
         self.failure_detector = FailureDetection()
@@ -236,6 +228,16 @@ class Wait(Stage):
         """
 
         logger.debug("XXXXX YYYYY Wait stage : %s , %s" % ("process","in"))
+        try:
+            self.wait_stage_start_time = str(getval(run_settings, '%s/stages/wait/wait_stage_start_time' % django_settings.SCHEMA_PREFIX))
+            logger.debug("WWWWW wait stage start time : %s " % (self.wait_stage_start_time))
+        except SettingNotFoundException:
+            self.wait_stage_start_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            logger.debug("WWWWW wait stage start time new : %s " % (self.wait_stage_start_time))
+        except ValueError, e:
+            logger.error(e)
+
+
         local_settings = getvals(run_settings, models.UserProfile.PROFILE_SCHEMA_NS)
         # local_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
         retrieve_local_settings(run_settings, local_settings)
@@ -316,7 +318,7 @@ class Wait(Stage):
                 # is not maintained between triggerings...
                 if not self.output_transfer_started:
                     try:
-                        self.output_transfer_start_time = str(getval(run_settings, '%s/stages/execute/output_transfer_start_time' % django_settings.SCHEMA_PREFIX))
+                        self.output_transfer_start_time = str(getval(run_settings, '%s/stages/wait/output_transfer_start_time' % django_settings.SCHEMA_PREFIX))
                         self.output_transfer_started = 1
                     except SettingNotFoundException:
                         self.output_transfer_start_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -434,9 +436,9 @@ class Wait(Stage):
                 '%s/stages/schedule/all_processes' % django_settings.SCHEMA_PREFIX: str(self.all_processes),
                 '%s/stages/schedule/current_processes' % django_settings.SCHEMA_PREFIX: str(self.current_processes),
                 '%s/stages/execute/executed_procs' % django_settings.SCHEMA_PREFIX: str(self.executed_procs),
-                '%s/stages/execute/output_transfer_start_time' % django_settings.SCHEMA_PREFIX: self.output_transfer_start_time,
-                '%s/stages/execute/output_transfer_end_time' % django_settings.SCHEMA_PREFIX: self.output_transfer_end_time,
-                '%s/stages/execute/total_output_transfer_time' % django_settings.SCHEMA_PREFIX: self.total_output_transfer_time,
+                '%s/stages/wait/output_transfer_start_time' % django_settings.SCHEMA_PREFIX: self.output_transfer_start_time,
+                '%s/stages/wait/output_transfer_end_time' % django_settings.SCHEMA_PREFIX: self.output_transfer_end_time,
+                '%s/stages/wait/total_output_transfer_time' % django_settings.SCHEMA_PREFIX: self.total_output_transfer_time,
                 '%s/stages/wait/wait_stage_start_time' % django_settings.SCHEMA_PREFIX: self.wait_stage_start_time,
                 '%s/stages/wait/wait_stage_end_time' % django_settings.SCHEMA_PREFIX: self.wait_stage_end_time,
                 '%s/stages/wait/total_time_wait_stage' % django_settings.SCHEMA_PREFIX: total_time_wait_stage,
