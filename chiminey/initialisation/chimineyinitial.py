@@ -762,7 +762,15 @@ def _get_chiminey_schemas():
                  u'schedule_stage_end_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
                                         'ranking': 13, 'help_text': ''},
                  u'total_time_schedule_stage': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
-                                        'ranking': 14, 'help_text': ''}
+                                        'ranking': 14, 'help_text': ''},
+                 u'current_processes_file': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                                        'ranking': 15, 'help_text': ''},
+                 u'all_processes_file': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                                    'ranking': 16, 'help_text': ''},
+                 u'current_processes_dump': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                                        'ranking': 17, 'help_text': ''},
+                 u'all_processes_dump': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                                    'ranking': 18, 'help_text': ''},
                      
              }
             ],

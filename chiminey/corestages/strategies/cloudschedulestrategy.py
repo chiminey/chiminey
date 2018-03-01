@@ -123,15 +123,6 @@ def complete_schedule(schedule_class, local_settings):
         if fin:
             logger.debug("done.")
             node_list = schedule_class.scheduled_nodes
-            for iterator, p in enumerate(schedule_class.current_processes):
-                #if int(p['id']) == int(process_id) and p['status'] == 'running':
-                #    schedule_class.current_processes[iterator]['status'] = 'completed'
-                start_time=datetime.datetime.strptime(schedule_class.current_processes[iterator]['sched_start_time'],"%Y-%m-%d  %H:%M:%S")
-                end_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                schedule_class.current_processes[iterator]['sched_end_time'] = end_time 
-                end_time=datetime.datetime.strptime(end_time,"%Y-%m-%d  %H:%M:%S")
-                total_sched_time=end_time-start_time
-                schedule_class.current_processes[iterator]['total_sched_time'] = str(total_sched_time)
 
             if schedule_class.procs_2b_rescheduled:
                 node_list = schedule_class.rescheduled_nodes
@@ -161,6 +152,21 @@ def complete_schedule(schedule_class, local_settings):
             else:
                     logger.info("We have already "
                         + "scheduled process on node %s" % node_ip)
+
+            end_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            end_time_time = datetime.datetime.strptime(end_time,"%Y-%m-%d  %H:%M:%S")
+            for iterator, p in enumerate(schedule_class.current_processes):
+                #if schedule_class.current_processes[iterator]['ip_address'] == node_ip: 
+                    schedule_class.current_processes[iterator]['sched_end_time'] = end_time 
+                    start_time_time = datetime.datetime.strptime(schedule_class.current_processes[iterator]['sched_start_time'],"%Y-%m-%d  %H:%M:%S")
+                    total_sched_time = end_time_time - start_time_time
+                    schedule_class.current_processes[iterator]['total_sched_time'] = str(total_sched_time)
+            for iterator, p in enumerate(schedule_class.all_processes):
+                #if schedule_class.all_processes[iterator]['ip_address'] == node_ip: 
+                    schedule_class.all_processes[iterator]['sched_end_time'] = end_time 
+                    start_time_time = datetime.datetime.strptime(schedule_class.all_processes[iterator]['sched_start_time'],"%Y-%m-%d  %H:%M:%S")
+                    total_sched_time = end_time_time - start_time_time
+                    schedule_class.all_processes[iterator]['total_sched_time'] = str(total_sched_time)
         else:
             print "job still running on %s" % node_ip
 
@@ -185,12 +191,17 @@ def start_schedule(schedule_class, run_settings, local_settings):
     schedule_class.current_processes = []
     relative_path_suffix = schedule_class.get_relative_output_path(local_settings)
     #schedule_class.schedule_index, schedule_class.current_processes, schedule_class.schedule_start_time = \
+    #schedule_class.schedule_index, schedule_class.current_processes = \
+    #        start_round_robin_schedule(
+    #            schedule_class.nodes, schedule_class.total_processes,
+    #                                   schedule_class.schedule_index,
+    #                                   local_settings, relative_path_suffix,
+    #                                   schedule_class.schedule_start_time)
     schedule_class.schedule_index, schedule_class.current_processes = \
             start_round_robin_schedule(
                 schedule_class.nodes, schedule_class.total_processes,
                                        schedule_class.schedule_index,
-                                       local_settings, relative_path_suffix,
-                                       schedule_class.schedule_start_time)
+                                       local_settings, relative_path_suffix)
     schedule_class.all_processes = update_lookup_table(
              schedule_class.all_processes,
              new_processes=schedule_class.current_processes)
@@ -201,18 +212,23 @@ def start_reschedule(schedule_class, run_settings, local_settings):
     output_storage_settings = schedule_class.get_platform_settings(
             run_settings, '%s/platform/storage/output' % django_settings.SCHEMA_PREFIX)
     relative_path_suffix = schedule_class.get_relative_output_path(local_settings)
+    #_, schedule_class.current_processes = \
+    #start_round_robin_reschedule(schedule_class.nodes, schedule_class.procs_2b_rescheduled,
+    #                             schedule_class.current_processes, local_settings,
+    #                             output_storage_settings, relative_path_suffix,
+    #                             schedule_class.schedule_start_time)
     _, schedule_class.current_processes = \
     start_round_robin_reschedule(schedule_class.nodes, schedule_class.procs_2b_rescheduled,
                                  schedule_class.current_processes, local_settings,
-                                 output_storage_settings, relative_path_suffix,
-                                 schedule_class.schedule_start_time)
+                                 output_storage_settings, relative_path_suffix)
     schedule_class.all_processes = update_lookup_table(
              schedule_class.all_processes,
              new_processes=schedule_class.current_processes, reschedule=True)
 
 
-def start_round_robin_schedule(nodes, processes, schedule_index, settings, relative_path_suffix,
-                               schedule_start_time):
+#def start_round_robin_schedule(nodes, processes, schedule_index, settings, relative_path_suffix,
+#                               schedule_start_time):
+def start_round_robin_schedule(nodes, processes, schedule_index, settings, relative_path_suffix):
     total_nodes = len(nodes)
     all_nodes = list(nodes)
     if total_nodes > processes:
@@ -241,8 +257,9 @@ def start_round_robin_schedule(nodes, processes, schedule_index, settings, relat
         index += len(ids)
         logger.debug('index=%d' % index)
         put_proc_ids(relative_path, ids, ip_address, settings)
-        #sched_start_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        sched_start_time=schedule_start_time
+
+        sched_start_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        #sched_start_time=schedule_start_time
         new_processes = construct_lookup_table(
             ids, ip_address, new_processes,
             maximum_retry=int(settings['maximum_retry']),
@@ -280,10 +297,13 @@ def start_round_robin_schedule(nodes, processes, schedule_index, settings, relat
     return index, new_processes
 
 
+#def start_round_robin_reschedule(nodes, procs_2b_rescheduled,
+#                                 current_procs, settings,
+#                                 output_storage_settings, relative_path_suffix,
+#                                 schedule_start_time):
 def start_round_robin_reschedule(nodes, procs_2b_rescheduled,
                                  current_procs, settings,
-                                 output_storage_settings, relative_path_suffix,
-                                 schedule_start_time):
+                                 output_storage_settings, relative_path_suffix):
     total_nodes = len(nodes)
     all_nodes = list(nodes)
     processes = len(procs_2b_rescheduled)
@@ -315,13 +335,15 @@ def start_round_robin_reschedule(nodes, procs_2b_rescheduled,
         #index += len(ids)
         #logger.debug('index=%d' % index)
         put_proc_ids(relative_path, ids, ip_address, settings)
-        #sched_start_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        sched_start_time=schedule_start_time
+
+        sched_start_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        #sched_start_time=schedule_start_time
         new_processes = construct_lookup_table(
             ids, ip_address, new_processes,
             status='reschedule_ready',
             maximum_retry=int(settings['maximum_retry']),
             sched_start_time=sched_start_time)
+
         destination = get_url_with_credentials(settings,
             relative_path,
             is_relative_path=True,
