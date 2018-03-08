@@ -1,6 +1,0 @@
-{
-    "sched_start_time": "SCHED_START_TIME",
-    "sched_end_time": "SCHED_END_TIME",
-    "exec_start_time": "EXEC_START_TIME",
-    "exec_end_time": "EXEC_END_TIME"
-}
