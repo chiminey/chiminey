@@ -300,10 +300,6 @@ class Execute(stage.Stage):
         total_varinptr_time=varinptr_end_time - varinptr_start_time
         total_variation_input_transfer_time = str(total_varinptr_time)
 
-        #exec_start_time=datetime.datetime.strptime(self.execute_start_time,"%Y-%m-%d  %H:%M:%S")
-        #exec_end_time=datetime.datetime.strptime(self.execute_end_time,"%Y-%m-%d  %H:%M:%S")
-        #total_exec_time=exec_end_time - exec_start_time
-        #total_execute_time = str(total_exec_time)
 
         execstg_start_time=datetime.datetime.strptime(self.execute_stage_start_time,"%Y-%m-%d  %H:%M:%S")
         execstg_end_time=datetime.datetime.strptime(self.execute_stage_end_time,"%Y-%m-%d  %H:%M:%S")
@@ -316,9 +312,6 @@ class Execute(stage.Stage):
                 '%s/stages/execute/variation_input_transfer_start_time' % django_settings.SCHEMA_PREFIX: self.variation_input_transfer_start_time,
                 '%s/stages/execute/variation_input_transfer_end_time' % django_settings.SCHEMA_PREFIX: self.variation_input_transfer_end_time,
                 '%s/stages/execute/total_variation_input_transfer_time' % django_settings.SCHEMA_PREFIX: total_variation_input_transfer_time,
-                '%s/stages/execute/execute_start_time' % django_settings.SCHEMA_PREFIX: self.execute_start_time,
-                '%s/stages/execute/execute_end_time' % django_settings.SCHEMA_PREFIX: self.execute_end_time,
-                '%s/stages/execute/total_execute_time' % django_settings.SCHEMA_PREFIX: total_execute_time,
                 '%s/stages/execute/execute_stage_start_time' % django_settings.SCHEMA_PREFIX: self.execute_stage_start_time,
                 '%s/stages/execute/execute_stage_end_time' % django_settings.SCHEMA_PREFIX: self.execute_stage_end_time,
                 '%s/stages/execute/execute_stage_total_time' % django_settings.SCHEMA_PREFIX: execute_stage_total_time,
@@ -403,12 +396,6 @@ class Execute(stage.Stage):
         any output as needed
         """
         logger.debug("XXXXX Execute stage : %s , %s" % ("run_multi_task","in"))
-        try:
-            self.execute_start_time = str(getval(run_settings, '%s/stages/execute/execute_start_time' % django_settings.SCHEMA_PREFIX))
-        except SettingNotFoundException:
-            self.execute_start_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        except ValueError, e:
-            logger.error(e)
 
         pids = []
         logger.debug('exec_procs=%s' % self.exec_procs)

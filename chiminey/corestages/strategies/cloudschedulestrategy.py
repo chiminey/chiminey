@@ -153,20 +153,6 @@ def complete_schedule(schedule_class, local_settings):
                     logger.info("We have already "
                         + "scheduled process on node %s" % node_ip)
 
-            end_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            end_time_time = datetime.datetime.strptime(end_time,"%Y-%m-%d  %H:%M:%S")
-            for iterator, p in enumerate(schedule_class.current_processes):
-                #if schedule_class.current_processes[iterator]['ip_address'] == node_ip: 
-                    schedule_class.current_processes[iterator]['sched_end_time'] = end_time 
-                    start_time_time = datetime.datetime.strptime(schedule_class.current_processes[iterator]['sched_start_time'],"%Y-%m-%d  %H:%M:%S")
-                    total_sched_time = end_time_time - start_time_time
-                    schedule_class.current_processes[iterator]['total_sched_time'] = str(total_sched_time)
-            for iterator, p in enumerate(schedule_class.all_processes):
-                #if schedule_class.all_processes[iterator]['ip_address'] == node_ip: 
-                    schedule_class.all_processes[iterator]['sched_end_time'] = end_time 
-                    start_time_time = datetime.datetime.strptime(schedule_class.all_processes[iterator]['sched_start_time'],"%Y-%m-%d  %H:%M:%S")
-                    total_sched_time = end_time_time - start_time_time
-                    schedule_class.all_processes[iterator]['total_sched_time'] = str(total_sched_time)
         else:
             print "job still running on %s" % node_ip
 
@@ -293,7 +279,6 @@ def start_round_robin_schedule(nodes, processes, schedule_index, settings, relat
         logger.debug("command_out2=(%s, %s)" % (command_out, errs))
     logger.debug('index=%d' % index)
     logger.debug('current_processes=%s' % new_processes)
-    logger.debug('sched_start_time=%s' % sched_start_time)
     return index, new_processes
 
 
@@ -371,7 +356,6 @@ def start_round_robin_reschedule(nodes, procs_2b_rescheduled,
         logger.debug("command_out2=(%s, %s)" % (command_out, errs))
     logger.debug('index=%d' % index)
     logger.debug('current_processes=%s' % new_processes)
-    logger.debug('sched_start_time=%s' % sched_start_time)
     return index, new_processes
 
 
@@ -414,7 +398,7 @@ def put_proc_ids(relative_path, ids, ip, settings):
     put_file(destination, proc_ids.encode('utf-8'))
 
 
-def construct_lookup_table(ids, ip_address, new_processes, maximum_retry=1, status='ready', sched_start_time='', sched_end_time='', total_sched_time='', exec_start_time='', exec_end_time='', varinp_transfer_start_time='', total_exec_time='', wait_start_time='', output_transfer_start_time='', wait_end_time='', total_wait_time='' ):
+def construct_lookup_table(ids, ip_address, new_processes, maximum_retry=1, status='ready', sched_start_time='', sched_end_time='', sched_total_time='',  varinp_transfer_start_time='',  varinp_transfer_end_time='', varinp_transfer_total_time='', exec_start_time='', exec_end_time='', exec_total_time='', output_transfer_start_time='', output_transfer_end_time='', output_transfer_total_time='' ):
     for id in ids:
         new_processes.append(
             {'status': '%s' % status, 'id': '%s' % id,
@@ -422,16 +406,16 @@ def construct_lookup_table(ids, ip_address, new_processes, maximum_retry=1, stat
              'retry_left': '%d' % maximum_retry,
              'sched_start_time': '%s' % sched_start_time,
              'sched_end_time': '%s' % sched_end_time,
-             'sched_total_time': '%s' % total_sched_time,
+             'sched_total_time': '%s' % sched_total_time,
              'varinp_transfer_start_time': '%s' % varinp_transfer_start_time,
-             'varinp_transfer_end_time': '%s' % wait_end_time,
-             'varinp_transfer_total_time': '%s' % total_wait_time,
+             'varinp_transfer_end_time': '%s' % varinp_transfer_end_time,
+             'varinp_transfer_total_time': '%s' % varinp_transfer_total_time,
              'exec_start_time': '%s' % exec_start_time,
              'exec_end_time': '%s' % exec_end_time,
-             'exec_total_time': '%s' % total_exec_time,
-             'output_transfer_start_time': '%s' % wait_start_time,
-             'output_transfer_end_time': '%s' % output_transfer_start_time,
-             'output_transfer_total_time': '%s' % total_wait_time
+             'exec_total_time': '%s' % exec_total_time,
+             'output_transfer_start_time': '%s' % output_transfer_start_time,
+             'output_transfer_end_time': '%s' % output_transfer_end_time,
+             'output_transfer_total_time': '%s' % output_transfer_total_time
              })
     return new_processes
 

@@ -352,6 +352,7 @@ class Wait(Stage):
                     except SettingNotFoundException:
                         self.output_transfer_start_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     except ValueError, e:
+                        logger.error(e)
 
                     for iterator, p in enumerate(self.current_processes):
                        if int(p['id']) == int(process_id):
@@ -361,6 +362,10 @@ class Wait(Stage):
                     #                  output_storage_settings, run_settings)
                     #for iterator, p in enumerate(self.current_processes):
                     #   if int(p['id']) == int(process_id):
+                           timedata = self.get_output(ip_address, process_id, self.output_dir,
+                                      local_settings, comp_pltf_settings,
+                                      output_storage_settings, run_settings)
+
                            self.current_processes[iterator]['output_transfer_end_time'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") 
                            outp_transf_end_time =  self.current_processes[iterator]['output_transfer_end_time']
                            outtrans_end_time=datetime.datetime.strptime(outp_transf_end_time,"%Y-%m-%d  %H:%M:%S")
@@ -378,9 +383,6 @@ class Wait(Stage):
                            varinp_transfer_total_time = str(total_varinptrans_time)
                            self.current_processes[iterator]['varinp_transfer_total_time'] = varinp_transfer_total_time
 
-                           timedata = self.get_output(ip_address, process_id, self.output_dir,
-                                      local_settings, comp_pltf_settings,
-                                      output_storage_settings, run_settings)
 
                            if timedata:
                                self.current_processes[iterator]['sched_start_time'] = timedata['sched_start_time']

@@ -247,15 +247,7 @@ class Schedule(Stage):
         except ValueError, e:
             logger.error(e)
 
-        try:
-            self.schedule_start_time = str(getval(run_settings, '%s/stages/schedule/schedule_start_time' % django_settings.SCHEMA_PREFIX))
-        except SettingNotFoundException:
-            self.schedule_start_time = ''
-        except ValueError, e:
-            logger.error(e)
-
         logger.debug("started=%s" % self.started)
-        logger.debug("schedule_start_time=%s" % self.schedule_start_time)
         logger.debug('Schedule there')
         if not self.started:
             logger.debug("initial run")
@@ -305,11 +297,9 @@ class Schedule(Stage):
                 '%s/stages/schedule/current_processes' % django_settings.SCHEMA_PREFIX: str(self.current_processes),
                 })
         if not self.started:
-            #schedule_start_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             setvals(run_settings, {
                     '%s/stages/schedule/schedule_started' % django_settings.SCHEMA_PREFIX: 1,
                     '%s/stages/schedule/schedule_stage_start_time' % django_settings.SCHEMA_PREFIX: self.schedule_stage_start_time,
-                    #'%s/stages/schedule/schedule_start_time' % django_settings.SCHEMA_PREFIX: self.schedule_start_time,
                     '%s/stages/schedule/procs_2b_rescheduled' % django_settings.SCHEMA_PREFIX: self.procs_2b_rescheduled,
                     '%s/stages/schedule/all_processes_file' % django_settings.SCHEMA_PREFIX: str(self.all_processes_file),
                     '%s/stages/schedule/current_processes_file' % django_settings.SCHEMA_PREFIX: str(self.current_processes_file),
@@ -335,8 +325,6 @@ class Schedule(Stage):
                         '%s/stages/schedule/procs_2b_rescheduled' % django_settings.SCHEMA_PREFIX: [],
                         '%s/stages/schedule/total_rescheduled_procs' % django_settings.SCHEMA_PREFIX: 0,
                         '%s/stages/schedule/rescheduled_nodes' % django_settings.SCHEMA_PREFIX: [],
-                        #'%s/stages/schedule/schedule_complete_time' % django_settings.SCHEMA_PREFIX: schedule_complete_time,
-                        #'%s/stages/schedule/total_schedule_time' % django_settings.SCHEMA_PREFIX: total_schedule_time,
                         '%s/stages/schedule/schedule_stage_end_time' % django_settings.SCHEMA_PREFIX: self.schedule_stage_end_time,
                         '%s/stages/schedule/schedule_stage_total_time' % django_settings.SCHEMA_PREFIX: schedule_stage_total_time,
 
@@ -351,8 +339,6 @@ class Schedule(Stage):
                     total_schedstg_time=schedstg_end_time - schedstg_start_time
                     setvals(run_settings, {
                         '%s/stages/schedule/schedule_completed' % django_settings.SCHEMA_PREFIX: 1,
-                        #'%s/stages/schedule/schedule_complete_time' % django_settings.SCHEMA_PREFIX: schedule_complete_time,
-                        #'%s/stages/schedule/total_schedule_time' % django_settings.SCHEMA_PREFIX: total_schedule_time,
                         '%s/stages/schedule/schedule_stage_end_time' % django_settings.SCHEMA_PREFIX: self.schedule_stage_end_time,
                         '%s/stages/schedule/total_time_schedule_stage' % django_settings.SCHEMA_PREFIX: total_time_schedule_stage,
                          })
