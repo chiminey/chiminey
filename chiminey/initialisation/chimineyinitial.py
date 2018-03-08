@@ -761,16 +761,12 @@ def _get_chiminey_schemas():
                                         'ranking': 12, 'help_text': ''},
                  u'schedule_stage_end_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
                                         'ranking': 13, 'help_text': ''},
-                 u'total_time_schedule_stage': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                 u'schedule_stage_total_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
                                         'ranking': 14, 'help_text': ''},
                  u'current_processes_file': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
                                         'ranking': 15, 'help_text': ''},
                  u'all_processes_file': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
                                     'ranking': 16, 'help_text': ''},
-                 u'current_processes_dump': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
-                                        'ranking': 17, 'help_text': ''},
-                 u'all_processes_dump': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
-                                    'ranking': 18, 'help_text': ''},
                      
              }
             ],
@@ -795,7 +791,7 @@ def _get_chiminey_schemas():
                                         'ranking': 8, 'help_text': ''},
                  u'execute_stage_end_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
                                         'ranking': 9, 'help_text': ''},
-                 u'total_time_execute_stage': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                 u'execute_stage_total_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
                                         'ranking': 10, 'help_text': ''}
              }
             ],
@@ -826,7 +822,7 @@ def _get_chiminey_schemas():
                                         'ranking': 2, 'help_text': ''},
                  u'transform_stage_end_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
                                         'ranking': 3, 'help_text': ''},
-                 u'total_time_transform_stage': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                 u'transform_stage_total_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
                                         'ranking': 4, 'help_text': ''}
              }
             ],
@@ -841,7 +837,7 @@ def _get_chiminey_schemas():
                                         'ranking': 3, 'help_text': ''},
                  u'converge_stage_end_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
                                         'ranking': 4, 'help_text': ''},
-                 u'total_time_converge_stage': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                 u'converge_stage_total_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
                                         'ranking': 5, 'help_text': ''}
              }
             ],
@@ -897,13 +893,13 @@ def _get_chiminey_schemas():
                                         'ranking': 2, 'help_text': ''},
                  u'wait_stage_end_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
                                         'ranking': 3, 'help_text': ''},
-                 u'total_time_wait_stage': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                 u'wait_stage_total_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
                                         'ranking': 4, 'help_text': ''},
                  u'output_transfer_start_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
                                         'ranking': 5, 'help_text': ''},
                  u'output_transfer_end_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
                                         'ranking': 6, 'help_text': ''},
-                 u'total_output_transfer_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
+                 u'output_transfer_total_time': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '',
                                         'ranking': 7, 'help_text': ''},
              }
             ],

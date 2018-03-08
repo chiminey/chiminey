@@ -22,6 +22,7 @@ import logging
 import ast
 import os
 import datetime
+import json
 
 from chiminey.platform import get_platform_settings, get_job_dir
 from chiminey.corestages import stage
@@ -90,6 +91,7 @@ class Wait(Stage):
             self.current_processes = ast.literal_eval(getval(run_settings, '%s/stages/schedule/current_processes' % django_settings.SCHEMA_PREFIX))
         except (SettingNotFoundException, ValueError):
             self.current_processes = []
+
 
         try:
             self.exec_procs = ast.literal_eval(getval(run_settings, '%s/stages/schedule/executed_procs' % django_settings.SCHEMA_PREFIX))
@@ -219,7 +221,33 @@ class Wait(Stage):
             content = {}
         logger.debug('content=%s' % content)
         storage.put_file(values_dest_url, content)
+
+        #reading timedata.txt file
+        timedata_files_location = "%s://%s@%s" % (computation_platform_settings['scheme'],
+                                                  computation_platform_settings['type'],
+                                                  os.path.join(ip, cloud_path,"timedata.txt"))
+
+        logger.debug("timedata_files_location=%s" % timedata_files_location)
+
+        timedata_source_url = get_url_with_credentials(
+                                                  computation_platform_settings, timedata_files_location,
+                                                  is_relative_path=False)
+        timedict={}
+        try:
+	    logger.debug('Reading %s' % timedata_source_url)
+            content = storage.get_file(timedata_source_url)
+            timedict = dict(ast.literal_eval(content))
+            logger.debug("Timedata exec_start_time:%s" % timedict['exec_start_time'])
+        except IOError, e:
+            content = {}
+        logger.debug('timedata.txt content=%s' % content)
+        
         logger.debug("XXXXX YYYYY Wait stage : %s , %s" % ("get_output","out"))
+        return timedict
+
+    def update_dump_file(self, file_name, json_data):
+        with open(file_name, 'a') as fh:
+            json.dump(json_data, fh, indent=4, sort_keys=True, ensure_ascii = False)
 
     def process(self, run_settings):
         """
@@ -288,7 +316,6 @@ class Wait(Stage):
         except SettingNotFoundException:
             pass
 
-        self.output_transfer_started = 0
         for process in processes:
             #instance_id = node.id
             ip_address = process['ip_address']
@@ -316,33 +343,79 @@ class Wait(Stage):
                 #its output will be retrieved, but it may again when the other node fails, because
                 #we cannot tell whether we have prevous retrieved this output before and finished_nodes
                 # is not maintained between triggerings...
-                if not self.output_transfer_started:
-                    try:
-                        self.output_transfer_start_time = str(getval(run_settings, '%s/stages/wait/output_transfer_start_time' % django_settings.SCHEMA_PREFIX))
-                        self.output_transfer_started = 1
-                    except SettingNotFoundException:
-                        self.output_transfer_start_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                        self.output_transfer_started = 1
-                    except ValueError, e:
-                        logger.error(e)
 
                 if not (int(process_id) in [int(x['id'])
                                             for x in self.finished_nodes
                                             if int(process_id) == int(x['id'])]):
-                    self.get_output(ip_address, process_id, self.output_dir,
-                                    local_settings, comp_pltf_settings,
-                                    output_storage_settings, run_settings)
+                    try:
+                        self.output_transfer_start_time = str(getval(run_settings, '%s/stages/wait/output_transfer_start_time' % django_settings.SCHEMA_PREFIX))
+                    except SettingNotFoundException:
+                        self.output_transfer_start_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    except ValueError, e:
+
+                    for iterator, p in enumerate(self.current_processes):
+                       if int(p['id']) == int(process_id):
+                           self.current_processes[iterator]['output_transfer_start_time'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") 
+                    #timedata = self.get_output(ip_address, process_id, self.output_dir,
+                    #                  local_settings, comp_pltf_settings,
+                    #                  output_storage_settings, run_settings)
+                    #for iterator, p in enumerate(self.current_processes):
+                    #   if int(p['id']) == int(process_id):
+                           self.current_processes[iterator]['output_transfer_end_time'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") 
+                           outp_transf_end_time =  self.current_processes[iterator]['output_transfer_end_time']
+                           outtrans_end_time=datetime.datetime.strptime(outp_transf_end_time,"%Y-%m-%d  %H:%M:%S")
+                           output_trasnfer_start_time = self.current_processes[iterator]['output_transfer_start_time']
+                           outtrans_start_time=datetime.datetime.strptime(outp_transf_start_time,"%Y-%m-%d  %H:%M:%S")
+                           total_outtrans_time=outtrans_end_time - outtrans_start_time
+                           outp_transf_total_time = str(total_outtrans_time)
+                           self.current_processes[iterator]['output_transfer_total_time'] = outp_transf_total_time
+
+                           varinp_transfer_end_time =  self.current_processes[iterator]['varinp_transfer_end_time']
+                           varinptrans_end_time=datetime.datetime.strptime(varinp_transfer_end_time,"%Y-%m-%d  %H:%M:%S")
+                           varinp_trasnfer_start_time = self.current_processes[iterator]['varinp_transfer_start_time']
+                           varinptrans_start_time=datetime.datetime.strptime(varinp_transfer_start_time,"%Y-%m-%d  %H:%M:%S")
+                           total_varinptrans_time=varinptrans_end_time - varinptrans_start_time
+                           varinp_transfer_total_time = str(total_varinptrans_time)
+                           self.current_processes[iterator]['varinp_transfer_total_time'] = varinp_transfer_total_time
+
+                           timedata = self.get_output(ip_address, process_id, self.output_dir,
+                                      local_settings, comp_pltf_settings,
+                                      output_storage_settings, run_settings)
+
+                           if timedata:
+                               self.current_processes[iterator]['sched_start_time'] = timedata['sched_start_time']
+                               self.current_processes[iterator]['sched_end_time'] = timedata['sched_end_time']
+                               sched_end_time =  self.current_processes[iterator]['sched_end_time']
+                               sch_end_time=datetime.datetime.strptime(sched_end_time,"%Y-%m-%d  %H:%M:%S")
+                               sched_start_time = self.current_processes[iterator]['sched_start_time']
+                               sch_start_time=datetime.datetime.strptime(sched_start_time,"%Y-%m-%d  %H:%M:%S")
+                               total_sch_time=sch_end_time - sch_start_time
+                               sched_total_time = str(total_sch_time)
+                               self.current_processes[iterator]['sched_total_time'] = sched_total_time
+                               
+
+                               self.current_processes[iterator]['exec_start_time'] = timedata['exec_start_time']
+                               self.current_processes[iterator]['exec_end_time'] = timedata['exec_end_time']
+                               exec_end_time =  self.current_processes[iterator]['exec_end_time']
+                               ex_end_time=datetime.datetime.strptime(exec_end_time,"%Y-%m-%d  %H:%M:%S")
+                               exec_start_time = self.current_processes[iterator]['exec_start_time']
+                               ex_start_time=datetime.datetime.strptime(exec_start_time,"%Y-%m-%d  %H:%M:%S")
+                               total_ex_time=ex_end_time - ex_start_time
+                               exec_total_time = str(total_ex_time)
+                               self.current_processes[iterator]['exec_total_time'] = exec_total_time
 
                     audit_url = get_url_with_credentials(
-                        comp_pltf_settings, os.path.join(
-                            self.output_dir, process_id, "audit.txt"),
-                        is_relative_path=True)
+                                comp_pltf_settings, os.path.join(
+                                self.output_dir, process_id, "audit.txt"),
+                                is_relative_path=True)
                     fsys = storage.get_filesystem(audit_url)
                     logger.debug("Audit file url %s" % audit_url)
                     if fsys.exists(audit_url):
                         fsys.delete(audit_url)
+
                     self.finished_nodes.append(process)
                     logger.debug('finished_processes=%s' % self.finished_nodes)
+
                     for iterator, p in enumerate(self.all_processes):
                         if int(p['id']) == int(process_id) and p['status'] == 'running':
                             self.all_processes[iterator]['status'] = 'completed'
@@ -350,23 +423,14 @@ class Wait(Stage):
                             outtrans_start_time=datetime.datetime.strptime(self.output_transfer_start_time,"%Y-%m-%d  %H:%M:%S")
                             outtrans_end_time=datetime.datetime.strptime(self.output_transfer_end_time,"%Y-%m-%d  %H:%M:%S")
                             total_outtrans_time=outtrans_end_time - outtrans_start_time
-                            self.total_output_transfer_time = str(total_outtrans_time)
-                            #start_time=datetime.datetime.strptime(self.all_processes[iterator]['total_exec_time'],"%Y-%m-%d  %H:%M:%S")
-                            #end_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                            #end_time=datetime.datetime.strptime(end_time,"%Y-%m-%d  %H:%M:%S")
-                            #total_exec_time=end_time-start_time
-                            #self.all_processes[iterator]['total_exec_time'] = str(total_exec_time)
+                            self.output_transfer_total_time = str(total_outtrans_time)
+
                     for iterator, p in enumerate(self.executed_procs):
                         if int(p['id']) == int(process_id) and p['status'] == 'running':
                             self.executed_procs[iterator]['status'] = 'completed'
                     for iterator, p in enumerate(self.current_processes):
                         if int(p['id']) == int(process_id) and p['status'] == 'running':
                             self.current_processes[iterator]['status'] = 'completed'
-                            #start_time=datetime.datetime.strptime(self.current_processes[iterator]['total_exec_time'],"%Y-%m-%d  %H:%M:%S")
-                            #end_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                            #end_time=datetime.datetime.strptime(end_time,"%Y-%m-%d  %H:%M:%S")
-                            #total_exec_time=end_time-start_time
-                            #self.current_processes[iterator]['total_exec_time'] = str(total_exec_time)
                 else:
                     logger.warn("We have already "
                         + "processed output of %s on node %s" % (process_id, ip_address))
@@ -378,6 +442,21 @@ class Wait(Stage):
             messages.info(run_settings, "%d: Waiting %d processes (%d completed, %d failed) " % (
                 self.id + 1, len(self.current_processes),  len(self.finished_nodes),
                 len(failed_processes)))
+        try:
+            self.current_processes_file = str(getval(run_settings, '%s/stages/schedule/current_processes_file' % django_settings.SCHEMA_PREFIX))
+            self.update_dump_file(self.current_processes_file,self.current_processes)
+        except SettingNotFoundException:
+            self.current_processes_file =''
+        except ValueError, e:
+            logger.error(e)
+        try:
+            self.all_processes_file = str(getval(run_settings, '%s/stages/schedule/all_processes_file' % django_settings.SCHEMA_PREFIX))
+            self.update_dump_file(self.all_processes_file,self.all_processes)
+        except SettingNotFoundException:
+            self.all_processes_file=''
+        except ValueError, e:
+            logger.error(e)
+
         try:
             self.wait_stage_end_time = str(getval(run_settings, '%s/stages/wait/wait_stage_end_time' % django_settings.SCHEMA_PREFIX))
             logger.debug("WWWWW wait stage end time : %s " % (self.wait_stage_end_time))
@@ -395,7 +474,7 @@ class Wait(Stage):
         waitstg_start_time=datetime.datetime.strptime(self.wait_stage_start_time,"%Y-%m-%d  %H:%M:%S")
         waitstg_end_time=datetime.datetime.strptime(self.wait_stage_end_time,"%Y-%m-%d  %H:%M:%S")
         total_waitstg_time=waitstg_end_time - waitstg_start_time
-        total_time_wait_stage = str(total_waitstg_time)
+        wait_stage_total_time = str(total_waitstg_time)
 
         logger.debug("XXXXX YYYYY Wait stage : %s , %s" % ("output","in"))
         logger.debug("finished stage output")
@@ -438,10 +517,10 @@ class Wait(Stage):
                 '%s/stages/execute/executed_procs' % django_settings.SCHEMA_PREFIX: str(self.executed_procs),
                 '%s/stages/wait/output_transfer_start_time' % django_settings.SCHEMA_PREFIX: self.output_transfer_start_time,
                 '%s/stages/wait/output_transfer_end_time' % django_settings.SCHEMA_PREFIX: self.output_transfer_end_time,
-                '%s/stages/wait/total_output_transfer_time' % django_settings.SCHEMA_PREFIX: self.total_output_transfer_time,
+                '%s/stages/wait/output_transfer_total_time' % django_settings.SCHEMA_PREFIX: self.output_transfer_total_time,
                 '%s/stages/wait/wait_stage_start_time' % django_settings.SCHEMA_PREFIX: self.wait_stage_start_time,
                 '%s/stages/wait/wait_stage_end_time' % django_settings.SCHEMA_PREFIX: self.wait_stage_end_time,
-                '%s/stages/wait/total_time_wait_stage' % django_settings.SCHEMA_PREFIX: total_time_wait_stage,
+                '%s/stages/wait/wait_stage_total_time' % django_settings.SCHEMA_PREFIX: wait_stage_total_time,
                 })
 
 

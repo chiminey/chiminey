@@ -113,8 +113,13 @@ class Execute(stage.Stage):
             logger.debug(e)
             self.exec_procs = []
             return True
+
         logger.debug("XXXXX Execute stage : %s , %s" % ("is_triggered","out"))
         return False
+
+    def update_dump_file(self, file_name, json_data):
+        with open(file_name, 'a') as fh:
+            json.dump(json_data, fh, indent=4, sort_keys=True, ensure_ascii = False)
 
     def process(self, run_settings):
         logger.debug("XXXXX Execute stage : %s , %s" % ("process","in"))
@@ -232,6 +237,22 @@ class Execute(stage.Stage):
             sys.exit(1)
 
         try:
+            self.current_processes_file = str(getval(run_settings, '%s/stages/schedule/current_processes_file' % django_settings.SCHEMA_PREFIX))
+            #self.update_dump_file(self.current_processes_file,self.schedule_procs)
+        except SettingNotFoundException:
+            self.current_processes_file =''
+        except ValueError, e:
+            logger.error(e)
+        try:
+            self.all_processes_file = str(getval(run_settings, '%s/stages/schedule/all_processes_file' % django_settings.SCHEMA_PREFIX))
+            #self.update_dump_file(self.all_processes_file,self.all_processes)
+        except SettingNotFoundException:
+            self.all_processes_file=''
+        except ValueError, e:
+            logger.error(e)
+
+
+        try:
             self.execute_stage_end_time = str(getval(run_settings, '%s/stages/execute/execute_stage_end_time' % django_settings.SCHEMA_PREFIX))
             logger.debug("WWWWW execute stage end time : %s " % (self.execute_stage_end_time))
         except SettingNotFoundException:
@@ -279,15 +300,15 @@ class Execute(stage.Stage):
         total_varinptr_time=varinptr_end_time - varinptr_start_time
         total_variation_input_transfer_time = str(total_varinptr_time)
 
-        exec_start_time=datetime.datetime.strptime(self.execute_start_time,"%Y-%m-%d  %H:%M:%S")
-        exec_end_time=datetime.datetime.strptime(self.execute_end_time,"%Y-%m-%d  %H:%M:%S")
-        total_exec_time=exec_end_time - exec_start_time
-        total_execute_time = str(total_exec_time)
+        #exec_start_time=datetime.datetime.strptime(self.execute_start_time,"%Y-%m-%d  %H:%M:%S")
+        #exec_end_time=datetime.datetime.strptime(self.execute_end_time,"%Y-%m-%d  %H:%M:%S")
+        #total_exec_time=exec_end_time - exec_start_time
+        #total_execute_time = str(total_exec_time)
 
         execstg_start_time=datetime.datetime.strptime(self.execute_stage_start_time,"%Y-%m-%d  %H:%M:%S")
         execstg_end_time=datetime.datetime.strptime(self.execute_stage_end_time,"%Y-%m-%d  %H:%M:%S")
         total_execstg_time=execstg_end_time - execstg_start_time
-        total_time_execute_stage = str(total_execstg_time)
+        execute_stage_total_time = str(total_execstg_time)
         logger.debug("XXXXX Execute stage : %s , %s" % ("output","in"))
 
         setvals(run_settings, {
@@ -300,7 +321,7 @@ class Execute(stage.Stage):
                 '%s/stages/execute/total_execute_time' % django_settings.SCHEMA_PREFIX: total_execute_time,
                 '%s/stages/execute/execute_stage_start_time' % django_settings.SCHEMA_PREFIX: self.execute_stage_start_time,
                 '%s/stages/execute/execute_stage_end_time' % django_settings.SCHEMA_PREFIX: self.execute_stage_end_time,
-                '%s/stages/execute/total_time_execute_stage' % django_settings.SCHEMA_PREFIX: total_time_execute_stage,
+                '%s/stages/execute/execute_stage_total_time' % django_settings.SCHEMA_PREFIX: execute_stage_total_time,
                 '%s/stages/schedule/current_processes' % django_settings.SCHEMA_PREFIX: str(self.schedule_procs),
                 '%s/stages/schedule/all_processes' % django_settings.SCHEMA_PREFIX: str(self.all_processes)
                 })
@@ -514,6 +535,8 @@ class Execute(stage.Stage):
                                      mytardis_settings,
                                      input_dir, run_settings):
         logger.debug("XXXXX Execute stage : %s , %s" % ("_upload_input_dir_variations","in"))
+
+
         output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
                                       output_storage_settings['type'])
         input_url_with_credentials = get_url_with_credentials(
@@ -573,9 +596,12 @@ class Execute(stage.Stage):
 
         template_pat = re.compile("(.*)_template")
         relative_path_suffix = self.get_relative_output_path(local_settings)
-
+        process_counter=0
         for context in contexts:
             logger.debug("context=%s" % context)
+            process_counter+=1 
+            logger.debug("XXXXX COUNT=%d" % process_counter)
+
             # get list of all files in input_dir
             fname_url_with_pkey = get_url_with_credentials(
                 output_storage_settings,
@@ -599,6 +625,11 @@ class Execute(stage.Stage):
                 logger.error("no process found matching run_counter")
                 raise BadInputException()
             logger.debug("proc=%s" % pformat(proc))
+
+            for iterator, p in enumerate(self.schedule_procs):
+               if int(p['id']) == int(proc['id']):
+                   self.schedule_procs[iterator]['varinp_transfer_start_time'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") 
+
 
             for fname in input_files:
                 logger.debug("fname=%s" % fname)
@@ -676,6 +707,8 @@ class Execute(stage.Stage):
                     put_dest_file(proc, new_fname, dest_file_location,
                                   resched_file_location, content)
 
+
+           
             # then copy context new values file
             logger.debug("writing values file")
             values_dest_location = computation_platform_settings['type']\
@@ -690,6 +723,9 @@ class Execute(stage.Stage):
                 is_relative_path=True, ip_address=proc['ip_address'])
 
             storage.put_file(values_dest_url, json.dumps(context, indent=4))
+            for iterator, p in enumerate(self.schedule_procs):
+               if int(p['id']) == int(proc['id']):
+                   self.schedule_procs[iterator]['varinp_transfer_end_time'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") 
 
         logger.debug("done input upload")
         logger.debug("XXXXX Execute stage : %s , %s" % ("_upload_input_dir_variations","out"))

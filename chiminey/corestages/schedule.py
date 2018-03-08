@@ -175,11 +175,11 @@ class Schedule(Stage):
         if not os.path.exists(dumps_dir):
              os.makedirs(dumps_dir)
         open(dump_file, 'w').close()
-        return dump_file,dump_ref
+        return dump_file
                
     def update_dump_file(self, file_name, json_data):
         with open(file_name, 'a') as fh:
-            json.dump(json_data, fh)
+            json.dump(json_data, fh, indent=4, sort_keys=True, ensure_ascii = False)
 
     def process(self, run_settings):
         logger.debug("schedule processing")
@@ -269,18 +269,18 @@ class Schedule(Stage):
 
             logger.debug('schedule_index=%d' % self.schedule_index)
             self.schedule_stage_start_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            self.current_processes_file, self.current_processes_link = create_dump_file(
-                             str(getval(run_settings, '%s/stages/schemas/system/contexid' % django_settings.SCHEMA_PREFIX)),
+            self.current_processes_file = self.create_dump_file(
+                             str(getval(run_settings, '%s/system/contextid' % django_settings.SCHEMA_PREFIX)),
                              'current_processes')
-            self.all_processes_file, self.all_processes_link  = create_dump_file(
-                             str(getval(run_settings, '%s/stages/schemas/system/contexid' % django_settings.SCHEMA_PREFIX)),
+            self.all_processes_file  = self.create_dump_file(
+                             str(getval(run_settings, '%s/system/contextid' % django_settings.SCHEMA_PREFIX)),
                              'all_processes')
 
             self.strategy.start_schedule_task(self, run_settings, local_settings)
         else:
             self.strategy.complete_schedule(self, local_settings)
-            self.update_dump_file(self.current_processes_file,self.current_processes)
-            self.update_dump_file(self.all_processes_file,self.all_processes)
+            #self.update_dump_file(self.current_processes_file,self.current_processes)
+            #self.update_dump_file(self.all_processes_file,self.all_processes)
 
         try:
             self.schedule_stage_end_time = str(getval(run_settings, '%s/stages/schedule/schedule_stage_end_time' % django_settings.SCHEMA_PREFIX))
@@ -295,7 +295,7 @@ class Schedule(Stage):
         schedstg_start_time=datetime.datetime.strptime(self.schedule_stage_start_time,"%Y-%m-%d  %H:%M:%S")
         schedstg_end_time=datetime.datetime.strptime(self.schedule_stage_end_time,"%Y-%m-%d  %H:%M:%S")
         total_schedstg_time=schedstg_end_time - schedstg_start_time
-        total_time_schedule_stage = str(total_schedstg_time)
+        schedule_stage_total_time = str(total_schedstg_time)
         logger.debug('run_settings=%s' % run_settings)
 
         setvals(run_settings, {
@@ -313,10 +313,6 @@ class Schedule(Stage):
                     '%s/stages/schedule/procs_2b_rescheduled' % django_settings.SCHEMA_PREFIX: self.procs_2b_rescheduled,
                     '%s/stages/schedule/all_processes_file' % django_settings.SCHEMA_PREFIX: str(self.all_processes_file),
                     '%s/stages/schedule/current_processes_file' % django_settings.SCHEMA_PREFIX: str(self.current_processes_file),
-                    '%s/stages/schedule/all_processes_dump' % django_settings.SCHEMA_PREFIX: 
-                                 str('<a href=\"{% static \"'+ self.all_processes_link + '\"%}\">all_processes</a>'),
-                    '%s/stages/schedule/current_processes_dump' % django_settings.SCHEMA_PREFIX: 
-                                 str('<a href=\"{% static \"'+ self.current_processes_link + '\"%}\">current_processes</a>'),
                     })
             if not self.procs_2b_rescheduled:
 
@@ -330,15 +326,10 @@ class Schedule(Stage):
                         '%s/stages/schedule/total_rescheduled_procs' % django_settings.SCHEMA_PREFIX,
                         self.total_rescheduled_procs)
                 if self.total_rescheduled_procs == len(self.procs_2b_rescheduled):
-                    #schedule_complete_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    #sched_start_time=datetime.datetime.strptime(self.schedule_start_time,"%Y-%m-%d  %H:%M:%S")
-                    #sched_comp_time=datetime.datetime.strptime(schedule_complete_time,"%Y-%m-%d  %H:%M:%S")
-                    #total_sched_time=sched_comp_time - sched_start_time
-                    #total_schedule_time = str(total_sched_time)
                     schedstg_start_time=datetime.datetime.strptime(self.schedule_stage_start_time,"%Y-%m-%d  %H:%M:%S")
                     schedstg_end_time=datetime.datetime.strptime(self.schedule_stage_end_time,"%Y-%m-%d  %H:%M:%S")
                     total_schedstg_time=schedstg_end_time - schedstg_start_time
-                    total_time_schedule_stage = str(total_schedstg_time)
+                    schedule_stage_total_time = str(total_schedstg_time)
                     setvals(run_settings, {
                         '%s/stages/schedule/schedule_completed' % django_settings.SCHEMA_PREFIX: 1,
                         '%s/stages/schedule/procs_2b_rescheduled' % django_settings.SCHEMA_PREFIX: [],
@@ -347,7 +338,7 @@ class Schedule(Stage):
                         #'%s/stages/schedule/schedule_complete_time' % django_settings.SCHEMA_PREFIX: schedule_complete_time,
                         #'%s/stages/schedule/total_schedule_time' % django_settings.SCHEMA_PREFIX: total_schedule_time,
                         '%s/stages/schedule/schedule_stage_end_time' % django_settings.SCHEMA_PREFIX: self.schedule_stage_end_time,
-                        '%s/stages/schedule/total_time_schedule_stage' % django_settings.SCHEMA_PREFIX: total_time_schedule_stage,
+                        '%s/stages/schedule/schedule_stage_total_time' % django_settings.SCHEMA_PREFIX: schedule_stage_total_time,
 
                         })
             else:
@@ -355,11 +346,6 @@ class Schedule(Stage):
                        '%s/stages/schedule/total_scheduled_procs' % django_settings.SCHEMA_PREFIX,
                        self.total_scheduled_procs)
                 if self.total_scheduled_procs == len(self.current_processes):
-                    #schedule_complete_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    #sched_start_time=datetime.datetime.strptime(self.schedule_start_time,"%Y-%m-%d  %H:%M:%S")
-                    #sched_comp_time=datetime.datetime.strptime(schedule_complete_time,"%Y-%m-%d  %H:%M:%S")
-                    #total_sched_time=sched_comp_time - sched_start_time
-                    #total_schedule_time = str(total_sched_time)
                     schedstg_start_time=datetime.datetime.strptime(self.schedule_stage_start_time,"%Y-%m-%d  %H:%M:%S")
                     schedstg_end_time=datetime.datetime.strptime(self.schedule_stage_end_time,"%Y-%m-%d  %H:%M:%S")
                     total_schedstg_time=schedstg_end_time - schedstg_start_time

@@ -211,13 +211,13 @@ class Transform(Stage):
         transfstg_start_time=datetime.datetime.strptime(self.transform_stage_start_time,"%Y-%m-%d  %H:%M:%S")
         transfstg_end_time=datetime.datetime.strptime(self.transform_stage_end_time,"%Y-%m-%d  %H:%M:%S")
         total_transfstg_time=transfstg_end_time - transfstg_start_time
-        total_time_transform_stage = str(total_transfstg_time)
+        transform_stage_total_time = str(total_transfstg_time)
         setvals(run_settings, {
                 '%s/stages/transform/transformed' % django_settings.SCHEMA_PREFIX: 1,
                 '%s/input/mytardis/experiment_id' % django_settings.SCHEMA_PREFIX: str(self.experiment_id),
                 '%s/stages/transform/transform_stage_start_time' % django_settings.SCHEMA_PREFIX: self.transform_stage_start_time,
                 '%s/stages/transform/transform_stage_end_time' % django_settings.SCHEMA_PREFIX: self.transform_stage_end_time,
-                '%s/stages/transform/total_time_transform_stage' % django_settings.SCHEMA_PREFIX: total_time_transform_stage,
+                '%s/stages/transform/transform_stage_total_time' % django_settings.SCHEMA_PREFIX: transform_stage_total_time,
                 })
         #print "End of Transformation: \n %s" % self.audit
 

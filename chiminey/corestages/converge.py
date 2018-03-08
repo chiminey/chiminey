@@ -259,11 +259,12 @@ class Converge(Stage):
             convstg_start_time=datetime.datetime.strptime(self.converge_stage_start_time,"%Y-%m-%d  %H:%M:%S")
             convstg_end_time=datetime.datetime.strptime(converge_stage_end_time,"%Y-%m-%d  %H:%M:%S")
             total_convstg_time=convstg_end_time - convstg_start_time
-            total_time_converge_stage = str(total_convstg_time)
+            converge_stage_total_time = str(total_convstg_time)
             setvals(run_settings, {
                     '%s/stages/converge/converged' % django_settings.SCHEMA_PREFIX: 1,
+                    '%s/stages/converge/converge_stage_start_time' % django_settings.SCHEMA_PREFIX: self.converge_stage_start_time,
                     '%s/stages/converge/converge_stage_end_time' % django_settings.SCHEMA_PREFIX: converge_stage_end_time,
-                    '%s/stages/converge/total_time_converge_stage' % django_settings.SCHEMA_PREFIX: total_time_converge_stage,
+                    '%s/stages/converge/converge_stage_total_time' % django_settings.SCHEMA_PREFIX: converge_stage_total_time,
                     })
             # we are done, so don't trigger iteration stages
 

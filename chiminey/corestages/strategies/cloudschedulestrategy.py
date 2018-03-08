@@ -258,12 +258,12 @@ def start_round_robin_schedule(nodes, processes, schedule_index, settings, relat
         logger.debug('index=%d' % index)
         put_proc_ids(relative_path, ids, ip_address, settings)
 
-        sched_start_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        #sched_start_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         #sched_start_time=schedule_start_time
         new_processes = construct_lookup_table(
             ids, ip_address, new_processes,
-            maximum_retry=int(settings['maximum_retry']),
-            sched_start_time=sched_start_time)
+            maximum_retry=int(settings['maximum_retry']))
+            
 
         destination = get_url_with_credentials(
             settings,
@@ -336,13 +336,13 @@ def start_round_robin_reschedule(nodes, procs_2b_rescheduled,
         #logger.debug('index=%d' % index)
         put_proc_ids(relative_path, ids, ip_address, settings)
 
-        sched_start_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        #sched_start_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         #sched_start_time=schedule_start_time
         new_processes = construct_lookup_table(
             ids, ip_address, new_processes,
             status='reschedule_ready',
-            maximum_retry=int(settings['maximum_retry']),
-            sched_start_time=sched_start_time)
+            maximum_retry=int(settings['maximum_retry']))
+            #sched_start_time=sched_start_time)
 
         destination = get_url_with_credentials(settings,
             relative_path,
@@ -414,7 +414,7 @@ def put_proc_ids(relative_path, ids, ip, settings):
     put_file(destination, proc_ids.encode('utf-8'))
 
 
-def construct_lookup_table(ids, ip_address, new_processes, maximum_retry=1, status='ready', sched_start_time='', sched_end_time='', total_sched_time=''):
+def construct_lookup_table(ids, ip_address, new_processes, maximum_retry=1, status='ready', sched_start_time='', sched_end_time='', total_sched_time='', exec_start_time='', exec_end_time='', varinp_transfer_start_time='', total_exec_time='', wait_start_time='', output_transfer_start_time='', wait_end_time='', total_wait_time='' ):
     for id in ids:
         new_processes.append(
             {'status': '%s' % status, 'id': '%s' % id,
@@ -422,7 +422,17 @@ def construct_lookup_table(ids, ip_address, new_processes, maximum_retry=1, stat
              'retry_left': '%d' % maximum_retry,
              'sched_start_time': '%s' % sched_start_time,
              'sched_end_time': '%s' % sched_end_time,
-             'total_sched_time': '%s' % total_sched_time})
+             'sched_total_time': '%s' % total_sched_time,
+             'varinp_transfer_start_time': '%s' % varinp_transfer_start_time,
+             'varinp_transfer_end_time': '%s' % wait_end_time,
+             'varinp_transfer_total_time': '%s' % total_wait_time,
+             'exec_start_time': '%s' % exec_start_time,
+             'exec_end_time': '%s' % exec_end_time,
+             'exec_total_time': '%s' % total_exec_time,
+             'output_transfer_start_time': '%s' % wait_start_time,
+             'output_transfer_end_time': '%s' % output_transfer_start_time,
+             'output_transfer_total_time': '%s' % total_wait_time
+             })
     return new_processes
 
 
