@@ -10,7 +10,7 @@ bootstrap_done:
 	@bash ./bootstrap_done.sh 
 
 start_schedule:
-	@bash ./start_schedule.sh $(RUN_ARGS) >& start_schedule.output &
+	@bash ./start_schedule.sh $(RUN_ARGS)
 
 schedule_done:
 	@bash ./schedule_done.sh $(IDS) 
