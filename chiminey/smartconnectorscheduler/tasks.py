@@ -37,6 +37,8 @@ from chiminey.smartconnectorscheduler import jobs
 
 from chiminey import messages
 
+from chiminey.corestages import timings
+
 import redis
 
 from copy import deepcopy
@@ -255,7 +257,11 @@ def _process_context(context_id):
             try:
                 if stage.is_triggered(deepcopy(task_run_settings)):
                     logger.debug("Stage '%s' TRIGGERED" % current_stage.name)
+                    exec_start_time = timings.datetime_now_milliseconds()
+                    logger.debug('YYYZZZZZZ_process_context = %s ' % exec_start_time)
                     stage.process(deepcopy(task_run_settings))
+                    exec_end_time = timings.datetime_now_milliseconds()
+                    logger.debug('YYYZZZZZZ_process_context = %s ' % exec_end_time)
                     task_run_settings = stage.output(task_run_settings)
                     logger.debug("updated task_run_settings=%s" % pformat(task_run_settings))
                     run_context.update_run_settings(task_run_settings)
@@ -326,112 +332,112 @@ def progress_context(context_id):
 # FIXME: The following blocks using db locks, but still has a race condition, so
 # use approach above using redis.
 #@task(name="smartconnectorscheduler.progress_context", time_limit=CELERY_TIMEOUT, ignore_result=True)
-def progress_context_broken(context_id):
-    try:
-        try:
-            # try:
-            #     run_context = models.Context.objects.get(id=context_id, deleted=False)
-            # except models.Context.DoesNotExist:
-            #     logger.warn("Context %s removed from other thread" % context_id)
-            #     return
-            # logger.debug("try to process context %s" % run_context)
-
-            test_info = []
-            with transaction.commit_on_success():
-                logger.debug("progress_context.context_id=%s" % context_id)
-                try:
-                    run_contexts = models.Context.objects.select_for_update(
-                        nowait=True).filter(id=context_id, deleted=False)
-                    r_cont = run_contexts[0]
-                except DatabaseError:
-                    logger.debug("progress context for %s is already running.  exiting"
-                                 % context_id)
-                    return
-                except models.Context.DoesNotExist, e:
-                    logger.debug("Context %s removed from other thread" % context_id)
-                    return
-                except Exception, e:
-                    logger.error("uknown error")
-                    logger.error(e)
-                    return
-                else:
-                    logger.info("Processing %s" % context_id)
-
-                logger.debug("r_cont=%s" % r_cont)
-                run_context = models.Context.objects.get(id=context_id, deleted=False)
-                logger.debug("Executing task id %r, args: %r kwargs: %r" % (progress_context.request.id, progress_context.request.args, progress_context.request.kwargs))
-                stage = run_context.current_stage
-                logger.debug("stage=%s" % stage)
-                children = models.Stage.objects.filter(parent=stage)
-                if children:
-                    stageset = children
-                else:
-                    #siblings = models.Stage.objects.filter(parent=stage.parent)
-                    #stageset = siblings
-                    stageset = [stage]
-
-                logger.debug("stageset=%s", stageset)
-                profile = run_context.owner
-                logger.debug("profile=%s" % profile)
-
-                run_settings = run_context.get_context()
-                logger.debug("retrieved run_settings=%s" % pformat(run_settings))
-
-                # user_settings are r/w during execution, but original values
-                # associated with UserProfile are unchanged as loaded once on
-                # context creation.
-                #user_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
-                # PROFILE_SCHEMA is now deprecated, so
-                user_settings = {}
-
-                triggered = 0
-                for current_stage in stageset:
-
-                    # get the actual stage object
-                    stage = jobs.safe_import(current_stage.package, [],
-                        {'user_settings': deepcopy(user_settings)})  # obviously need to cache this
-                    logger.debug("process stage=%s", stage)
-
-                    task_run_settings = deepcopy(run_settings)
-                    logger.debug("starting task settings = %s" % pformat(task_run_settings))
-                    # stage_settings are read only as transfered into context here
-                    stage_settings = current_stage.get_settings()
-                    logger.debug("stage_settings=%s" % stage_settings)
-
-                    # This is nasty
-                    task_run_settings = jobs.transfer(task_run_settings, stage_settings)
-                    #task_run_settings.update(stage_settings)
-                    logger.debug("task run_settings=%s" % task_run_settings)
-
-                    logger.debug("Stage '%s' testing for triggering" % current_stage.name)
-                    try:
-                        if stage.is_triggered(deepcopy(task_run_settings)):
-                            logger.debug("Stage '%s' TRIGGERED" % current_stage.name)
-                            stage.process(deepcopy(task_run_settings))
-                            task_run_settings = stage.output(task_run_settings)
-                            logger.debug("updated task_run_settings=%s" % pformat(task_run_settings))
-                            run_context.update_run_settings(task_run_settings)
-                            logger.debug("task_run_settings=%s" % pformat(task_run_settings))
-                            logger.debug("context run_settings=%s" % pformat(run_context))
-
-                            triggered = True
-                            break
-                        else:
-                            logger.debug("Stage '%s' NOT TRIGGERED" % current_stage.name)
-                    except Exception, e:
-                        messages.error(run_settings, "0: internal error:%s" % e)
-                if not triggered:
-                    logger.debug("No corestages is_triggered")
-                    test_info = task_run_settings
-                    run_context.deleted = True
-                    run_context.stopped = datetime.datetime.now()
-                    run_context.save()
-                    logger.debug("ZZZ3>>>progress_context_broken %s" % run_context)
-                    #run_context.delete()
-
-                logger.info("processing of context task %s complete" % (context_id))
-        except SoftTimeLimitExceeded:
-            raise
-    except Exception, e:
-        logger.debug('tasks.py=%s' % e)
-        raise
+#def progress_context_broken(context_id):
+#    try:
+#        try:
+#            # try:
+#            #     run_context = models.Context.objects.get(id=context_id, deleted=False)
+#            # except models.Context.DoesNotExist:
+#            #     logger.warn("Context %s removed from other thread" % context_id)
+#            #     return
+#            # logger.debug("try to process context %s" % run_context)
+#
+#            test_info = []
+#            with transaction.commit_on_success():
+#                logger.debug("progress_context.context_id=%s" % context_id)
+#                try:
+#                    run_contexts = models.Context.objects.select_for_update(
+#                        nowait=True).filter(id=context_id, deleted=False)
+#                    r_cont = run_contexts[0]
+#                except DatabaseError:
+#                    logger.debug("progress context for %s is already running.  exiting"
+#                                 % context_id)
+#                    return
+#                except models.Context.DoesNotExist, e:
+#                    logger.debug("Context %s removed from other thread" % context_id)
+#                    return
+#                except Exception, e:
+#                    logger.error("uknown error")
+#                    logger.error(e)
+#                    return
+#                else:
+#                    logger.info("Processing %s" % context_id)
+#
+#                logger.debug("r_cont=%s" % r_cont)
+#                run_context = models.Context.objects.get(id=context_id, deleted=False)
+#                logger.debug("Executing task id %r, args: %r kwargs: %r" % (progress_context.request.id, progress_context.request.args, progress_context.request.kwargs))
+#                stage = run_context.current_stage
+#                logger.debug("stage=%s" % stage)
+#                children = models.Stage.objects.filter(parent=stage)
+#                if children:
+#                    stageset = children
+#                else:
+#                    #siblings = models.Stage.objects.filter(parent=stage.parent)
+#                    #stageset = siblings
+#                    stageset = [stage]
+#
+#                logger.debug("stageset=%s", stageset)
+#                profile = run_context.owner
+#                logger.debug("profile=%s" % profile)
+#
+#                run_settings = run_context.get_context()
+#                logger.debug("retrieved run_settings=%s" % pformat(run_settings))
+#
+#                # user_settings are r/w during execution, but original values
+#                # associated with UserProfile are unchanged as loaded once on
+#                # context creation.
+#                #user_settings = run_settings[models.UserProfile.PROFILE_SCHEMA_NS]
+#                # PROFILE_SCHEMA is now deprecated, so
+#                user_settings = {}
+#
+#                triggered = 0
+#                for current_stage in stageset:
+#
+#                    # get the actual stage object
+#                    stage = jobs.safe_import(current_stage.package, [],
+#                        {'user_settings': deepcopy(user_settings)})  # obviously need to cache this
+#                    logger.debug("process stage=%s", stage)
+#
+#                    task_run_settings = deepcopy(run_settings)
+#                    logger.debug("starting task settings = %s" % pformat(task_run_settings))
+#                    # stage_settings are read only as transfered into context here
+#                    stage_settings = current_stage.get_settings()
+#                    logger.debug("stage_settings=%s" % stage_settings)
+#
+#                    # This is nasty
+#                    task_run_settings = jobs.transfer(task_run_settings, stage_settings)
+#                    #task_run_settings.update(stage_settings)
+#                    logger.debug("task run_settings=%s" % task_run_settings)
+#
+#                    logger.debug("Stage '%s' testing for triggering" % current_stage.name)
+#                    try:
+#                        if stage.is_triggered(deepcopy(task_run_settings)):
+#                            logger.debug("Stage '%s' TRIGGERED" % current_stage.name)
+#                            stage.process(deepcopy(task_run_settings))
+#                            task_run_settings = stage.output(task_run_settings)
+#                            logger.debug("updated task_run_settings=%s" % pformat(task_run_settings))
+#                            run_context.update_run_settings(task_run_settings)
+#                            logger.debug("task_run_settings=%s" % pformat(task_run_settings))
+#                            logger.debug("context run_settings=%s" % pformat(run_context))
+#
+#                            triggered = True
+#                            break
+#                        else:
+#                            logger.debug("Stage '%s' NOT TRIGGERED" % current_stage.name)
+#                    except Exception, e:
+#                        messages.error(run_settings, "0: internal error:%s" % e)
+#                if not triggered:
+#                    logger.debug("No corestages is_triggered")
+#                    test_info = task_run_settings
+#                    run_context.deleted = True
+#                    run_context.stopped = datetime.datetime.now()
+#                    run_context.save()
+#                    logger.debug("ZZZ3>>>progress_context_broken %s" % run_context)
+#                    #run_context.delete()
+#
+#                logger.info("processing of context task %s complete" % (context_id))
+#        except SoftTimeLimitExceeded:
+#            raise
+#    except Exception, e:
+#        logger.debug('tasks.py=%s' % e)
+#        raise
