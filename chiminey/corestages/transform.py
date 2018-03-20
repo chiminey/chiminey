@@ -33,6 +33,8 @@ from chiminey.runsettings import getval, setvals, SettingNotFoundException
 from chiminey import messages
 from django.core.exceptions import ImproperlyConfigured
 
+from chiminey.corestages import timings
+
 logger = logging.getLogger(__name__)
 
 from django.conf import settings as django_settings
@@ -105,6 +107,19 @@ class Transform(Stage):
             except (SettingNotFoundException, ValueError) as e:
                 self.transformed = 0
             if (self.runs_left == 0) and (not self.transformed) and (not self.converged):
+
+                self.wait_stage_end_time = timings.datetime_now_seconds()
+                self.wait_stage_start_time = str(getval(run_settings, '%s/stages/wait/wait_stage_start_time' % django_settings.SCHEMA_PREFIX))
+                self.wait_stage_total_time = timings.timedelta_seconds(self.wait_stage_end_time, self.wait_stage_start_time)
+
+                #current_processes_file = str(getval(run_settings, '%s/stages/schedule/current_processes_file' % django_settings.SCHEMA_PREFIX))
+                #current_processes = ast.literal_eval(getval(run_settings, '%s/stages/schedule/current_processes' % django_settings.SCHEMA_PREFIX))
+                #timings.update_timings_dump(current_processes_file, current_processes)
+                #all_processes = ast.literal_eval(getval(run_settings, '%s/stages/schedule/all_processes' % django_settings.SCHEMA_PREFIX))
+                #all_processes_file = str(getval(run_settings, '%s/stages/schedule/all_processes_file' % django_settings.SCHEMA_PREFIX))
+                #timings.update_timings_dump(all_processes_file, all_processes)
+                #timings.analyse_timings_data(run_settings)
+
                 return True
             else:
                 logger.debug("%s %s %s" % (self.runs_left, self.transformed, self.converged))
@@ -116,10 +131,8 @@ class Transform(Stage):
 
         try:
             self.transform_stage_start_time = str(getval(run_settings, '%s/stages/transform/transform_stage_start_time' % django_settings.SCHEMA_PREFIX))
-            logger.debug("WWWWW transform stage start time : %s " % (self.transform_stage_start_time))
         except SettingNotFoundException:
-            self.transform_stage_start_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            logger.debug("WWWWW transform stage start time new : %s " % (self.transform_stage_start_time))
+            self.transform_stage_start_time = timings.datetime_now_seconds()
         except ValueError, e:
             logger.error(e)
 
@@ -200,7 +213,7 @@ class Transform(Stage):
             self.transform_stage_end_time = str(getval(run_settings, '%s/stages/transform/transform_stage_end_time' % django_settings.SCHEMA_PREFIX))
             logger.debug("WWWWW transform stage end time : %s " % (self.transform_stage_end_time))
         except SettingNotFoundException:
-            self.transform_stage_end_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            self.transform_stage_end_time = timings.datetime_now_seconds()
             logger.debug("WWWWW transform stage end time new : %s " % (self.transform_stage_end_time))
         except ValueError, e:
             logger.error(e)
@@ -208,16 +221,27 @@ class Transform(Stage):
 
     def output(self, run_settings):
         logger.debug("transform.output")
-        transfstg_start_time=datetime.datetime.strptime(self.transform_stage_start_time,"%Y-%m-%d  %H:%M:%S")
-        transfstg_end_time=datetime.datetime.strptime(self.transform_stage_end_time,"%Y-%m-%d  %H:%M:%S")
-        total_transfstg_time=transfstg_end_time - transfstg_start_time
-        transform_stage_total_time = str(total_transfstg_time)
+
+        transform_stage_total_time = timings.timedelta_seconds(self.transform_stage_end_time, self.transform_stage_end_time) 
+
+        #wait_stage_start_time = str(getval(run_settings, '%s/stages/wait/wait_stage_start_time' % django_settings.SCHEMA_PREFIX))
+        #wait_stage_total_time = timings.timedelta_seconds(wait_stage_end_time, wait_stage_start_time)
+        #current_processes_file = str(getval(run_settings, '%s/stages/schedule/current_processes_file' % django_settings.SCHEMA_PREFIX))
+        #current_processes = ast.literal_eval(getval(run_settings, '%s/stages/schedule/current_processes' % django_settings.SCHEMA_PREFIX))
+        #timings.update_timings_dump(current_processes_file, current_processes)
+        #all_processes = ast.literal_eval(getval(run_settings, '%s/stages/schedule/all_processes' % django_settings.SCHEMA_PREFIX))
+        #all_processes_file = str(getval(run_settings, '%s/stages/schedule/all_processes_file' % django_settings.SCHEMA_PREFIX))
+        #timings.update_timings_dump(all_processes_file, all_processes)
+
         setvals(run_settings, {
                 '%s/stages/transform/transformed' % django_settings.SCHEMA_PREFIX: 1,
                 '%s/input/mytardis/experiment_id' % django_settings.SCHEMA_PREFIX: str(self.experiment_id),
                 '%s/stages/transform/transform_stage_start_time' % django_settings.SCHEMA_PREFIX: self.transform_stage_start_time,
                 '%s/stages/transform/transform_stage_end_time' % django_settings.SCHEMA_PREFIX: self.transform_stage_end_time,
                 '%s/stages/transform/transform_stage_total_time' % django_settings.SCHEMA_PREFIX: transform_stage_total_time,
+                '%s/stages/wait/wait_stage_start_time' % django_settings.SCHEMA_PREFIX: self.wait_stage_start_time,
+                '%s/stages/wait/wait_stage_end_time' % django_settings.SCHEMA_PREFIX: self.wait_stage_end_time,
+                '%s/stages/wait/wait_stage_total_time' % django_settings.SCHEMA_PREFIX: self.wait_stage_total_time,
                 })
         #print "End of Transformation: \n %s" % self.audit
 

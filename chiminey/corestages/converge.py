@@ -20,12 +20,14 @@
 # IN THE SOFTWARE.
 
 import os
+import ast
 import logging
 import datetime
 
 from chiminey.storage import get_url_with_credentials
 
 from chiminey.corestages.stage import Stage
+from chiminey.corestages import timings
 
 from chiminey.smartconnectorscheduler import models
 from chiminey import storage
@@ -74,10 +76,8 @@ class Converge(Stage):
 
         try:
             self.converge_stage_start_time = str(getval(run_settings, '%s/stages/converge/converge_stage_start_time' % django_settings.SCHEMA_PREFIX))
-            logger.debug("WWWWW converge stage start time : %s " % (self.converge_stage_start_time))
         except SettingNotFoundException:
-            self.converge_stage_start_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            logger.debug("WWWWW converge stage start time new : %s " % (self.converge_stage_start_time))
+            self.converge_stage_start_time = timings.datetime_now_seconds()
         except ValueError, e:
             logger.error(e)
 
@@ -255,11 +255,9 @@ class Converge(Stage):
             #update_key('converged', True, context)
             #setval(run_settings, '%s/stages/converge/converged' % django_settings.SCHEMA_PREFIX, 1)
 
-            converge_stage_end_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            convstg_start_time=datetime.datetime.strptime(self.converge_stage_start_time,"%Y-%m-%d  %H:%M:%S")
-            convstg_end_time=datetime.datetime.strptime(converge_stage_end_time,"%Y-%m-%d  %H:%M:%S")
-            total_convstg_time=convstg_end_time - convstg_start_time
-            converge_stage_total_time = str(total_convstg_time)
+            converge_stage_end_time = timings.datetime_now_seconds()
+            converge_stage_total_time = timings.timedelta_seconds(converge_stage_end_time, self.converge_stage_start_time)
+            
             setvals(run_settings, {
                     '%s/stages/converge/converged' % django_settings.SCHEMA_PREFIX: 1,
                     '%s/stages/converge/converge_stage_start_time' % django_settings.SCHEMA_PREFIX: self.converge_stage_start_time,
@@ -282,6 +280,15 @@ class Converge(Stage):
         # update_key('id', self.id, context)
 
         setval(run_settings, '%s/system/id' % django_settings.SCHEMA_PREFIX, self.id)
+        
+        current_processes_file = str(getval(run_settings, '%s/stages/schedule/current_processes_file' % django_settings.SCHEMA_PREFIX))
+        current_processes = ast.literal_eval(getval(run_settings, '%s/stages/schedule/current_processes' % django_settings.SCHEMA_PREFIX))
+        timings.update_timings_dump(current_processes_file, current_processes)
+        all_processes = ast.literal_eval(getval(run_settings, '%s/stages/schedule/all_processes' % django_settings.SCHEMA_PREFIX))
+        all_processes_file = str(getval(run_settings, '%s/stages/schedule/all_processes_file' % django_settings.SCHEMA_PREFIX))
+        timings.update_timings_dump(all_processes_file, all_processes)
+        timings.analyse_timings_data(run_settings)
+
         return run_settings
 
     def process_outputs(self, run_settings, base_dir, output_url, all_settings):
