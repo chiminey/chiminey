@@ -58,14 +58,19 @@ def run_command_with_status(ssh_client, command, current_dir=None, requiretty=Fa
     try:
         if requiretty:
             logger.debug("requiredttty")
-            ssh_client.invoke_shell()
-            stdin, stdout, stderr = ssh_client.exec_command(command)
+            #ssh_client.invoke_shell()
+            #stdin, stdout, stderr = ssh_client.exec_command(command)
+            transport = ssh_client.get_transport()
+            channel = transport.open_session()
+            stdin, stdout, stderr = channel.exec_command(command)
             res = stdout.readlines()
             errs = stderr.readlines()
+            #channel.close()
         else:
             stdin, stdout, stderr = ssh_client.exec_command(command)
             res = stdout.readlines()
             errs = stderr.readlines()
+            
     except Exception, e:
         logger.error(e)
         errs = [str(e)]
