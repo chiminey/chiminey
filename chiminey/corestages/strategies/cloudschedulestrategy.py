@@ -270,7 +270,8 @@ def start_round_robin_schedule(nodes, processes, schedule_index, settings, relat
         logger.debug("starting command for %s" % ip_address)
         try:
             ssh = open_connection(ip_address=ip_address, settings=settings)
-            command_out, errs = run_command_with_status(ssh, command)
+            #command_out, errs = run_command_with_status(ssh, command)
+            command_out, errs = run_command_with_status(ssh, command, requiretty=True)
         except Exception, e:
             logger.error(e)
         finally:
