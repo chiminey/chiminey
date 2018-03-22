@@ -259,11 +259,16 @@ def start_round_robin_schedule(nodes, processes, schedule_index, settings, relat
         logger.debug('schedule destination=%s' % destination)
         makefile_path = get_make_path(destination)
         logger.debug('makefile_path=%s' % makefile_path)
-        command = "cd %s; make %s" % (makefile_path,
+        command = "cd %s; make %s &" % (makefile_path,
             'start_schedule %s %s %s %s' % (settings['payload_name'],
                                          settings['filename_for_PIDs'],
                                          settings['process_output_dirname'],
                                          settings['smart_connector_input']))
+        #command = "cd %s; make %s" % (makefile_path,
+        #    'start_schedule %s %s %s %s' % (settings['payload_name'],
+        #                                 settings['filename_for_PIDs'],
+        #                                 settings['process_output_dirname'],
+        #                                 settings['smart_connector_input']))
 
         command_out = ''
         errs = ''

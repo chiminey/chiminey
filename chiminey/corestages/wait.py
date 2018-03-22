@@ -500,6 +500,30 @@ class Wait(Stage):
         # messages.info(run_settings, "%s: waiting (%s of %s processes done)"
         #     % (self.id + 1, len(completed_procs), len(self.current_processes) - (self.failed_processes)))
 
+        #logger.debug("ZZZZ_len_completed_procs=%s" % len(completed_procs))
+        #logger.debug("ZZZZ_len_self.current_processes=%s" % len(self.current_processes))
+        #logger.debug("ZZZZ_len_self.failed_processes=%s" % self.failed_processes)
+        #if len(completed_procs) == (len(self.current_processes) - self.failed_processes):
+        #    output_transfer_end_time = timings.datetime_now_seconds()
+        #    output_transfer_total_time = timings.timedelta_seconds(output_transfer_end_time, self.output_transfer_start_time)
+        #    wait_stage_end_time = timings.datetime_now_seconds()
+        #    wait_stage_total_time = timings.timedelta_seconds(wait_stage_end_time, self.wait_stage_start_time)
+        #    setvals(run_settings, {
+        #        '%s/stages/run/finished_nodes' % django_settings.SCHEMA_PREFIX: str(self.finished_nodes),
+        #        '%s/stages/schedule/all_processes' % django_settings.SCHEMA_PREFIX: str(self.all_processes),
+        #        '%s/stages/schedule/current_processes' % django_settings.SCHEMA_PREFIX: str(self.current_processes),
+        #        '%s/stages/execute/executed_procs' % django_settings.SCHEMA_PREFIX: str(self.executed_procs),
+        #        '%s/stages/wait/output_transfer_start_time' % django_settings.SCHEMA_PREFIX: self.output_transfer_start_time,
+        #        '%s/stages/wait/output_transfer_end_time' % django_settings.SCHEMA_PREFIX: output_transfer_end_time,
+        #        '%s/stages/wait/output_transfer_total_time' % django_settings.SCHEMA_PREFIX: output_transfer_total_time,
+        #        '%s/stages/wait/wait_stage_start_time' % django_settings.SCHEMA_PREFIX: self.wait_stage_start_time,
+        #        '%s/stages/wait/wait_stage_end_time' % django_settings.SCHEMA_PREFIX: wait_stage_end_time,
+        #        '%s/stages/wait/wait_stage_total_time' % django_settings.SCHEMA_PREFIX: wait_stage_total_time,
+        #        })
+        #    self.current_processes_file = str(getval(run_settings, '%s/stages/schedule/current_processes_file' % django_settings.SCHEMA_PREFIX))
+        #    timings.update_timings_dump(self.current_processes_file, self.current_processes)
+        #    self.all_processes_file = str(getval(run_settings, '%s/stages/schedule/all_processes_file' % django_settings.SCHEMA_PREFIX))
+        #    timings.update_timings_dump(self.all_processes_file, self.all_processes)
 
         if self.procs_2b_rescheduled:
             setvals(run_settings, {

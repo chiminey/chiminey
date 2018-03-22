@@ -221,8 +221,10 @@ class Execute(stage.Stage):
         try:
             local_settings.update(comp_pltf_settings)
             exec_start_time = timings.datetime_now_milliseconds()
+            logger.debug('YYYZZZZZZ_execute_process = %s ' % exec_start_time)
             pids = self.run_multi_task(local_settings, run_settings)
             exec_end_time = timings.datetime_now_milliseconds()
+            logger.debug('YYYZZZZZZ_execute_process = %s ' % exec_end_time)
         except PackageFailedError, e:
             logger.error(e)
             logger.error("unable to start packages: %s" % e)
@@ -346,7 +348,7 @@ class Execute(stage.Stage):
         #                                 settings['filename_for_PIDs'],
         #                                 settings['process_output_dirname'],
         #                                 settings['smart_connector_input']))
-        command_in = "cd %s; make %s" % (makefile_path, 'start_processing %s %s' % 
+        command_in = "cd %s; make %s &" % (makefile_path, 'start_processing %s %s' % 
                                         (settings['smart_connector_input'], settings['process_output_dirname']))
         command_out=''
         errs_out=''
@@ -365,11 +367,14 @@ class Execute(stage.Stage):
                         options += " %s" % optional_args
                 logger.debug('options = %s ' % options)
                 exec_start_time = timings.datetime_now_milliseconds()
+                logger.debug('ZZZZZZ = %s ' % exec_start_time)
                 command, errs = run_make(ssh, makefile_path, 'start_running_process  %s'  % options, sudo= sudo )
                 exec_end_time = timings.datetime_now_milliseconds()
+                logger.debug('ZZZZZZ = %s ' % exec_end_time)
             except KeyError:
                 sudo = True
                 exec_start_time = timings.datetime_now_milliseconds()
+                logger.debug('YYYZZZZZZ_run_task = %s ' % exec_start_time)
 
                 #command, errs = run_make( ssh, makefile_path,
                 #'start_running_process %s %s'  % (settings['smart_connector_input'],
@@ -377,7 +382,9 @@ class Execute(stage.Stage):
                 command_out, errs_out = run_command_with_status(ssh, command_in, requiretty=True)
 
                 exec_end_time = timings.datetime_now_milliseconds()
-            logger.debug('execute_command=%s' % command)
+                logger.debug('YYYZZZZZZ_run_task = %s ' % exec_end_time)
+            #logger.debug('execute_command=%s' % command)
+            logger.debug('YYYZZZZZZ_execute_command=%s %s' % (command_out,errs_out))
         finally:
             ssh.close()
 
@@ -407,9 +414,11 @@ class Execute(stage.Stage):
             process_id = proc['id']
             try:
                 exec_start_time = timings.datetime_now_milliseconds()
+                logger.debug('YYYZZZZZZ_multi_task = %s ' % exec_start_time)
                 pids_for_task = self.run_task(
                     ip_address, process_id, settings, run_settings)
                 exec_end_time = timings.datetime_now_milliseconds()
+                logger.debug('YYYZZZZZZ_multi_task = %s ' % exec_end_time)
                 proc['status'] = 'running'
                 # self.exec_procs.append(proc)
                 for iterator, process in enumerate(self.all_processes):
