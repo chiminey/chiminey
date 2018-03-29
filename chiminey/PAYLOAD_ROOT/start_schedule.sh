@@ -7,7 +7,7 @@ INPUT_DIR=$4
 
 while read line
 do
-    start_time=`date +"%Y-%m-%d %H:%M:%S"`
+    start_time=`date +"%Y-%m-%d %H:%M:%S.%3N"`
     mkdir -p $line/$OUTPUT_DIR
     mkdir -p $line/$INPUT_DIR
     cp -r $PAYLOAD_NAME/*  $line
