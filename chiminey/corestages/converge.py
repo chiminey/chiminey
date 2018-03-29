@@ -264,6 +264,13 @@ class Converge(Stage):
                     '%s/stages/converge/converge_stage_end_time' % django_settings.SCHEMA_PREFIX: converge_stage_end_time,
                     '%s/stages/converge/converge_stage_total_time' % django_settings.SCHEMA_PREFIX: converge_stage_total_time,
                     })
+            current_processes_file = str(getval(run_settings, '%s/stages/schedule/current_processes_file' % django_settings.SCHEMA_PREFIX))
+            current_processes = ast.literal_eval(getval(run_settings, '%s/stages/schedule/current_processes' % django_settings.SCHEMA_PREFIX))
+            timings.update_timings_dump(current_processes_file, current_processes)
+            all_processes = ast.literal_eval(getval(run_settings, '%s/stages/schedule/all_processes' % django_settings.SCHEMA_PREFIX))
+            all_processes_file = str(getval(run_settings, '%s/stages/schedule/all_processes_file' % django_settings.SCHEMA_PREFIX))
+            timings.update_timings_dump(all_processes_file, all_processes)
+            timings.analyse_timings_data(run_settings)
             # we are done, so don't trigger iteration stages
 
         #update_key('criterion', self.criterion, context)
@@ -281,13 +288,13 @@ class Converge(Stage):
 
         setval(run_settings, '%s/system/id' % django_settings.SCHEMA_PREFIX, self.id)
         
-        current_processes_file = str(getval(run_settings, '%s/stages/schedule/current_processes_file' % django_settings.SCHEMA_PREFIX))
-        current_processes = ast.literal_eval(getval(run_settings, '%s/stages/schedule/current_processes' % django_settings.SCHEMA_PREFIX))
-        timings.update_timings_dump(current_processes_file, current_processes)
-        all_processes = ast.literal_eval(getval(run_settings, '%s/stages/schedule/all_processes' % django_settings.SCHEMA_PREFIX))
-        all_processes_file = str(getval(run_settings, '%s/stages/schedule/all_processes_file' % django_settings.SCHEMA_PREFIX))
-        timings.update_timings_dump(all_processes_file, all_processes)
-        timings.analyse_timings_data(run_settings)
+        #current_processes_file = str(getval(run_settings, '%s/stages/schedule/current_processes_file' % django_settings.SCHEMA_PREFIX))
+        #current_processes = ast.literal_eval(getval(run_settings, '%s/stages/schedule/current_processes' % django_settings.SCHEMA_PREFIX))
+        #timings.update_timings_dump(current_processes_file, current_processes)
+        #all_processes = ast.literal_eval(getval(run_settings, '%s/stages/schedule/all_processes' % django_settings.SCHEMA_PREFIX))
+        #all_processes_file = str(getval(run_settings, '%s/stages/schedule/all_processes_file' % django_settings.SCHEMA_PREFIX))
+        #timings.update_timings_dump(all_processes_file, all_processes)
+        #timings.analyse_timings_data(run_settings)
 
         return run_settings
 
