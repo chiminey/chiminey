@@ -40,12 +40,13 @@ $(document).ready(function () {
             {% else %}
                 {% if key2 == "current_processes" %}
                     {% with context.id|slugify as dump_reference %}
-                        <a href=" {% static "dumps/"|add:dump_reference|add:"/current_processes.txt" %}"><font color="0000FF">current processes dump</font></a>
+                       view: &nbsp;<a href=" {% static "dumps/"|add:dump_reference|add:"/current_processes.txt" %}"><font color="0000FF">current processes list (JSON format)</font></a><br>
+                        download: &nbsp;<a href=" {% static "dumps/"|add:dump_reference|add:"/current_processes.csv" %}"><font color="0000FF">current processes list (CSV format)</font></a>
                     {% endwith %}
                 
                 {% elif key2 == "all_processes" %}
                     {% with context.id|slugify as dump_reference %}
-                        <a href=" {% static "dumps/"|add:dump_reference|add:"/all_processes.txt" %}"><font color="0000FF">all processes dump</font></a>
+                       view: &nbsp; <a href=" {% static "dumps/"|add:dump_reference|add:"/all_processes.txt" %}"><font color="0000FF">all processes (no timing information, JSON format) </font></a>
                     {% endwith %}
                 {% else %}
                     {{value2.0}}
