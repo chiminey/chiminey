@@ -113,7 +113,7 @@ class CloudStrategy(Strategy):
         schedule.set_schedule_settings(run_settings, local_settings)
 
     def start_schedule_task(self, schedule_class, run_settings, local_settings):
-        schedule.schedule_task(schedule_class, run_settings, local_settings, self.get_iteration_id(run_settings))
+        schedule.schedule_task(schedule_class, run_settings, local_settings,  self.get_iteration_id(run_settings))
 
     def complete_schedule(self, schedule_class, local_settings):
         schedule.complete_schedule(schedule_class, local_settings)

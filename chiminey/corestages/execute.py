@@ -26,6 +26,7 @@ import logging
 import json
 import re
 from itertools import product
+import datetime
 
 from django.template import Context, Template
 from django.template import TemplateSyntaxError
@@ -38,11 +39,12 @@ from chiminey.smartconnectorscheduler import models
 from chiminey import storage
 from chiminey import messages
 from chiminey.sshconnection import open_connection
-from chiminey.compute import run_make
+from chiminey.compute import run_make, run_command_with_status
 from django.conf import settings as django_settings
 
 from chiminey.runsettings import getval, setvals, getvals, update, SettingNotFoundException
 from chiminey.storage import get_url_with_credentials, list_dirs, get_make_path
+from chiminey.corestages import timings
 
 
 logger = logging.getLogger(__name__)
@@ -110,9 +112,17 @@ class Execute(stage.Stage):
             logger.debug(e)
             self.exec_procs = []
             return True
+
         return False
 
     def process(self, run_settings):
+        try:
+            self.execute_stage_start_time = str(getval(run_settings, '%s/stages/execute/execute_stage_start_time' % django_settings.SCHEMA_PREFIX))
+        except SettingNotFoundException:
+            self.execute_stage_start_time = timings.datetime_now_seconds()
+        except ValueError, e:
+            logger.error(e)
+
         try:
             self.rand_index = int(
                 getval(run_settings, '%s/stages/run/rand_index' % django_settings.SCHEMA_PREFIX))
@@ -125,6 +135,7 @@ class Execute(stage.Stage):
                 logger.debug(e)
 
         logger.debug("processing execute stage")
+
         local_settings = getvals(
             run_settings, models.UserProfile.PROFILE_SCHEMA_NS)
         self.set_execute_settings(run_settings, local_settings)
@@ -186,6 +197,13 @@ class Execute(stage.Stage):
         failed_processes = [
             x for x in self.schedule_procs if x['status'] == 'failed']
         if self.input_exists(run_settings):
+            try:
+                self.variation_input_transfer_start_time = str(getval(run_settings, '%s/stages/execute/variation_input_transfer_start_time' % django_settings.SCHEMA_PREFIX))
+            except SettingNotFoundException:
+                self.variation_input_transfer_start_time = timings.datetime_now_seconds()
+            except ValueError, e:
+                logger.error(e)
+
             if not failed_processes:
                 self.prepare_inputs(
                     local_settings, output_storage_settings, comp_pltf_settings, mytardis_settings, run_settings)
@@ -193,15 +211,46 @@ class Execute(stage.Stage):
                 self._copy_previous_inputs(
                     local_settings, output_storage_settings,
                     comp_pltf_settings)
+            try:
+                self.variation_input_transfer_end_time = str(getval(run_settings, '%s/stages/execute/variation_input_transfer_end_time' % django_settings.SCHEMA_PREFIX))
+            except SettingNotFoundException:
+                self.variation_input_transfer_end_time = timings.datetime_now_seconds()
+            except ValueError, e:
+                logger.error(e)
+
         try:
             local_settings.update(comp_pltf_settings)
+            exec_start_time = timings.datetime_now_milliseconds()
+            logger.debug('YYYZZZZZZ_execute_process = %s ' % exec_start_time)
             pids = self.run_multi_task(local_settings, run_settings)
+            exec_end_time = timings.datetime_now_milliseconds()
+            logger.debug('YYYZZZZZZ_execute_process = %s ' % exec_end_time)
         except PackageFailedError, e:
             logger.error(e)
             logger.error("unable to start packages: %s" % e)
             # TODO: cleanup node of copied input files etc.
             sys.exit(1)
 
+        try:
+            self.current_processes_file = str(getval(run_settings, '%s/stages/schedule/current_processes_file' % django_settings.SCHEMA_PREFIX))
+        except SettingNotFoundException:
+            self.current_processes_file =''
+        except ValueError, e:
+            logger.error(e)
+        try:
+            self.all_processes_file = str(getval(run_settings, '%s/stages/schedule/all_processes_file' % django_settings.SCHEMA_PREFIX))
+        except SettingNotFoundException:
+            self.all_processes_file=''
+        except ValueError, e:
+            logger.error(e)
+
+
+        try:
+            self.execute_stage_end_time = str(getval(run_settings, '%s/stages/execute/execute_stage_end_time' % django_settings.SCHEMA_PREFIX))
+        except SettingNotFoundException:
+            self.execute_stage_end_time = timings.datetime_now_seconds()
+        except ValueError, e:
+            logger.error(e)
         return pids
 
     def _copy_previous_inputs(self, local_settings, output_storage_settings,
@@ -234,9 +283,18 @@ class Execute(stage.Stage):
         """
         Assume that no nodes have finished yet and indicate to future corestages
         """
+        total_variation_input_transfer_time = timings.timedelta_seconds(self.variation_input_transfer_end_time, self.variation_input_transfer_start_time)
+
+        execute_stage_total_time = timings.timedelta_seconds(self.execute_stage_end_time, self.execute_stage_start_time)
 
         setvals(run_settings, {
                 '%s/stages/execute/executed_procs' % django_settings.SCHEMA_PREFIX: str(self.exec_procs),
+                '%s/stages/execute/variation_input_transfer_start_time' % django_settings.SCHEMA_PREFIX: self.variation_input_transfer_start_time,
+                '%s/stages/execute/variation_input_transfer_end_time' % django_settings.SCHEMA_PREFIX: self.variation_input_transfer_end_time,
+                '%s/stages/execute/total_variation_input_transfer_time' % django_settings.SCHEMA_PREFIX: total_variation_input_transfer_time,
+                '%s/stages/execute/execute_stage_start_time' % django_settings.SCHEMA_PREFIX: self.execute_stage_start_time,
+                '%s/stages/execute/execute_stage_end_time' % django_settings.SCHEMA_PREFIX: self.execute_stage_end_time,
+                '%s/stages/execute/execute_stage_total_time' % django_settings.SCHEMA_PREFIX: execute_stage_total_time,
                 '%s/stages/schedule/current_processes' % django_settings.SCHEMA_PREFIX: str(self.schedule_procs),
                 '%s/stages/schedule/all_processes' % django_settings.SCHEMA_PREFIX: str(self.all_processes)
                 })
@@ -283,6 +341,17 @@ class Execute(stage.Stage):
                                                is_relative_path=True,
                                                ip_address=ip_address)
         makefile_path = get_make_path(destination)
+
+        #Following "command" is replaced with "command_in" -- copied from schedule stage
+        #command = "cd %s; make %s" % (makefile_path,
+        #    'start_schedule %s %s %s %s' % (settings['payload_name'],
+        #                                 settings['filename_for_PIDs'],
+        #                                 settings['process_output_dirname'],
+        #                                 settings['smart_connector_input']))
+        command_in = "cd %s; make %s &" % (makefile_path, 'start_processing %s %s' % 
+                                        (settings['smart_connector_input'], settings['process_output_dirname']))
+        command_out=''
+        errs_out=''
         try:
             ssh = open_connection(ip_address=ip_address, settings=settings)
             logger.debug(settings['process_output_dirname'])
@@ -297,15 +366,25 @@ class Execute(stage.Stage):
                 if optional_args:
                         options += " %s" % optional_args
                 logger.debug('options = %s ' % options)
+                exec_start_time = timings.datetime_now_milliseconds()
+                logger.debug('ZZZZZZ = %s ' % exec_start_time)
                 command, errs = run_make(ssh, makefile_path, 'start_running_process  %s'  % options, sudo= sudo )
+                exec_end_time = timings.datetime_now_milliseconds()
+                logger.debug('ZZZZZZ = %s ' % exec_end_time)
             except KeyError:
                 sudo = True
-                command, errs = run_make(
-                ssh, makefile_path,
-                'start_running_process %s %s'  % (settings['smart_connector_input'],
-                settings['process_output_dirname']), sudo= sudo)
-            logger.debug('execute_command=%s' % command
-                         )
+                exec_start_time = timings.datetime_now_milliseconds()
+                logger.debug('YYYZZZZZZ_run_task = %s ' % exec_start_time)
+
+                #command, errs = run_make( ssh, makefile_path,
+                #'start_running_process %s %s'  % (settings['smart_connector_input'],
+                #settings['process_output_dirname']), sudo= sudo)
+                command_out, errs_out = run_command_with_status(ssh, command_in, requiretty=True)
+
+                exec_end_time = timings.datetime_now_milliseconds()
+                logger.debug('YYYZZZZZZ_run_task = %s ' % exec_end_time)
+            #logger.debug('execute_command=%s' % command)
+            logger.debug('YYYZZZZZZ_execute_command=%s %s' % (command_out,errs_out))
         finally:
             ssh.close()
 
@@ -314,6 +393,7 @@ class Execute(stage.Stage):
         Run the package on each of the nodes in the group and grab
         any output as needed
         """
+
         pids = []
         logger.debug('exec_procs=%s' % self.exec_procs)
         tmp_exec_procs = []
@@ -333,8 +413,12 @@ class Execute(stage.Stage):
             ip_address = proc['ip_address']
             process_id = proc['id']
             try:
+                exec_start_time = timings.datetime_now_milliseconds()
+                logger.debug('YYYZZZZZZ_multi_task = %s ' % exec_start_time)
                 pids_for_task = self.run_task(
                     ip_address, process_id, settings, run_settings)
+                exec_end_time = timings.datetime_now_milliseconds()
+                logger.debug('YYYZZZZZZ_multi_task = %s ' % exec_end_time)
                 proc['status'] = 'running'
                 # self.exec_procs.append(proc)
                 for iterator, process in enumerate(self.all_processes):
@@ -355,6 +439,7 @@ class Execute(stage.Stage):
         #all_pids = dict(zip(nodes, pids))
         all_pids = pids
         logger.debug('all_pids=%s' % all_pids)
+
         return all_pids
 
     def _get_variation_contexts(self, run_maps, values_map, initial_numbfile):
@@ -426,6 +511,8 @@ class Execute(stage.Stage):
                                      output_storage_settings,
                                      mytardis_settings,
                                      input_dir, run_settings):
+
+
         output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
                                       output_storage_settings['type'])
         input_url_with_credentials = get_url_with_credentials(
@@ -485,9 +572,11 @@ class Execute(stage.Stage):
 
         template_pat = re.compile("(.*)_template")
         relative_path_suffix = self.get_relative_output_path(local_settings)
-
+        process_counter=0
         for context in contexts:
             logger.debug("context=%s" % context)
+            process_counter+=1 
+
             # get list of all files in input_dir
             fname_url_with_pkey = get_url_with_credentials(
                 output_storage_settings,
@@ -511,6 +600,11 @@ class Execute(stage.Stage):
                 logger.error("no process found matching run_counter")
                 raise BadInputException()
             logger.debug("proc=%s" % pformat(proc))
+
+            for iterator, p in enumerate(self.schedule_procs):
+               if int(p['id']) == int(proc['id']):
+                   self.schedule_procs[iterator]['varinp_transfer_start_time'] = timings.datetime_now_milliseconds() 
+
 
             for fname in input_files:
                 logger.debug("fname=%s" % fname)
@@ -586,6 +680,8 @@ class Execute(stage.Stage):
                     put_dest_file(proc, new_fname, dest_file_location,
                                   resched_file_location, content)
 
+
+           
             # then copy context new values file
             logger.debug("writing values file")
             values_dest_location = computation_platform_settings['type']\
@@ -600,6 +696,9 @@ class Execute(stage.Stage):
                 is_relative_path=True, ip_address=proc['ip_address'])
 
             storage.put_file(values_dest_url, json.dumps(context, indent=4))
+            for iterator, p in enumerate(self.schedule_procs):
+               if int(p['id']) == int(proc['id']):
+                   self.schedule_procs[iterator]['varinp_transfer_end_time'] = timings.datetime_now_milliseconds() 
 
         logger.debug("done input upload")
 

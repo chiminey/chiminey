@@ -140,7 +140,7 @@ def complete_bootstrap(bootstrap_class, local_settings, id):
         logger.debug('VMTerminatedError detected')
         ftmanager = FTManager()
         ftmanager.manage_failure(e, stage_class=bootstrap_class,  settings=local_settings)
-    logger.debug("nodes=%s" % nodes)
+    #logger.debug("nodes=%s" % nodes)
     for node in nodes:
         logger.debug("node=%s" % node)
         node_ip = node.ip_address
