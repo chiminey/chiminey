@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
+{% load staticfiles %}
 <script type="text/javascript">
 $(document).ready(function () {
             $('.footable').footable();
@@ -13,7 +14,8 @@ $(document).ready(function () {
 </script>
 <div class="container-fluid">
 <div class="row-fluid">
-<div class="page-header"><h1>Job {{ context.id}}: {{context.directive.name}} </h1></div>
+<div class="page-header"><h1>Job {{ context.id}}: {{context.directive.name}} </h1>
+</div>
 <div class="row-fluid">
 <table class="footable table table-hover table-condensed table-hover">
 
@@ -24,29 +26,41 @@ $(document).ready(function () {
 {% for key, value in settings %}
     <tr class="info"><td colspan="2"><strong>{{ key }}</strong></td></tr>
     <tbody>
-    {% for key2,value2 in value.items %}
-    <tr>
+        {% for key2,value2 in value.items %}
+        <tr>
         <td class="">{{ key2 }}
-        {% if value2.1 %}
-        <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{value2.1}}" id='{{key|slugify}}_{{key2|slugify}}'>
-          <i  class="fa fa-question-circle"></i></a>
-          {% endif %}
-    </td>
-<td class="">
-    {% if value2.2 == "password" %}
-    -----------
-    {% else %}
-        {{value2.0}}
-    {% endif %}
-
-    </td>
-
-    </tr>
-    {% endfor %}
-</tbody>
+            {% if value2.1 %}
+                <a href="#" data-toggle="tooltip" tabindex="-1" data-placement="right" title="{{value2.1}}" id='{{key|slugify}}_{{key2|slugify}}'>
+                <i  class="fa fa-question-circle"></i></a>
+            {% endif %}
+        </td>
+        <td class="">
+            {% if value2.2 == "password" %}
+            -----------
+            {% else %}
+                {% if key2 == "current_processes" %}
+                    {% with context.id|slugify as dump_reference %}
+                       view: &nbsp;<a href=" {% static "dumps/"|add:dump_reference|add:"/current_processes.txt" %}"><font color="0000FF">current processes list (JSON format)</font></a><br>
+                        download: &nbsp;<a href=" {% static "dumps/"|add:dump_reference|add:"/current_processes.csv" %}"><font color="0000FF">current processes list (CSV format)</font></a>
+                    {% endwith %}
+                
+                {% elif key2 == "all_processes" %}
+                    {% with context.id|slugify as dump_reference %}
+                       view: &nbsp; <a href=" {% static "dumps/"|add:dump_reference|add:"/all_processes.txt" %}"><font color="0000FF">all processes (no timing information, JSON format) </font></a>
+                    {% endwith %}
+                {% else %}
+                    {{value2.0}}
+                {% endif %}
+            {% endif %}
+    
+        </td>
+    
+        </tr>
+        {% endfor %}
+    </tbody>
 {% endfor %}
-    </table>
-  </div>
+</table>
+</div>
 </div>
 </div>
 {%endblock %}

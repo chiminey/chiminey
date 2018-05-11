@@ -6,6 +6,7 @@
 {% load split %}
 {% load humanize %}
 {% block content %}
+{% load staticfiles %}
 
 
 <script type="text/javascript">
@@ -60,6 +61,12 @@ $(document).on('click','.delete', function(e) {
 <div class="container-fluid">
 <div class="row-fluid">
 <div class="page-header"><h1> Jobs</h1></div>
+<div>
+  <strong>Download:&nbsp;</strong> <a href=" {% static "dumps/process_report.csv" %}"><font color="0000FF">process level timedata (CSV format) </font></a>
+</div>&nbsp;
+<div>
+  <strong>Download:&nbsp;</strong> <a href=" {% static "dumps/stage_report.csv" %}"><font color="0000FF">stage specific timedata (CSV format)</font></a>
+</div>&nbsp;
 <div class="row-fluid">
     <form class="form-horizontal" id="myform-id" action="" method="POST"> {% csrf_token %}
     <table class="footable table table-hover table-bordered platform_table">
