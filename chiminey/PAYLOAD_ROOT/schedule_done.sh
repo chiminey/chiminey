@@ -1,5 +1,4 @@
 #!/bin/bash
-START_TIME=$SECONDS
 
 IDS=$1
 completed=0
