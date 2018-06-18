@@ -126,17 +126,64 @@ def find_min(timedata):
     pass
 
 def report_stage_timings(timings_file, stage_csv_file, run_settings):
-#def report_stage_timings(dumps_dir, timings_dir, run_settings):
-#    timings_file = os.path.join(timings_dir,'current_processes.txt')
-#    stage_csv_file = os.path.join(dumps_dir,'stage_report.csv')
+
+    job_id = str(getval(run_settings, '%s/system/contextid' % django_settings.SCHEMA_PREFIX))
+    directive_name = str(getval(run_settings, '%s/directive_profile/directive_name' % django_settings.SCHEMA_PREFIX))
+    number_vm_instances = str(getval(run_settings, '%s/input/system/compplatform/cloud/number_vm_instances' % django_settings.SCHEMA_PREFIX))
+    total_processes = str(getval(run_settings, '%s/stages/schedule/total_processes' % django_settings.SCHEMA_PREFIX))
+
+    schedule_stage_total_time =  str(getval (run_settings, '%s/stages/schedule/schedule_stage_total_time' % django_settings.SCHEMA_PREFIX))
+    logger.debug('schedule_stage_total_time=%s' % schedule_stage_total_time)
+    schedule_stage_total_time =  to_timedelta_seconds(schedule_stage_total_time).total_seconds()
+
+    variation_input_transfer_total_time = str(getval (run_settings, '%s/stages/execute/total_variation_input_transfer_time' % django_settings.SCHEMA_PREFIX))
+    logger.debug('variation_input_transfer_total_time=%s' % variation_input_transfer_total_time)
+    variation_input_transfer_total_time = to_timedelta_seconds(variation_input_transfer_total_time).total_seconds()
+
+    execute_stage_total_time =  str(getval (run_settings, '%s/stages/execute/execute_stage_total_time' % django_settings.SCHEMA_PREFIX))
+    logger.debug('execute_stage_total_time=%s' % execute_stage_total_time)
+    execute_stage_total_time =  to_timedelta_seconds(execute_stage_total_time).total_seconds()
+
+
+    output_transfer_total_time = str(getval (run_settings, '%s/stages/wait/output_transfer_total_time' % django_settings.SCHEMA_PREFIX))
+    logger.debug('output_transfer_total_time=%s' % output_transfer_total_time)
+    output_transfer_total_time = to_timedelta_seconds(output_transfer_total_time).total_seconds()
+
+    wait_stage_total_time = str(getval (run_settings, '%s/stages/wait/wait_stage_total_time' % django_settings.SCHEMA_PREFIX))
+    logger.debug('wait_stage_total_time=%s' % wait_stage_total_time)
+    wait_stage_total_time = to_timedelta_seconds(wait_stage_total_time).total_seconds()
+
+    converge_stage_total_time = str(getval (run_settings, '%s/stages/converge/converge_stage_total_time' % django_settings.SCHEMA_PREFIX))
+    logger.debug('converge_stage_total_time=%s' % converge_stage_total_time)
+    converge_stage_total_time = to_timedelta_seconds(converge_stage_total_time).total_seconds()
+
+    execute_total_time = wait_stage_total_time - output_transfer_total_time
+    total_processing_time = schedule_stage_total_time +  execute_stage_total_time  + wait_stage_total_time + converge_stage_total_time
+
+    stage_timings_csv_report = [ 
+                      {
+                       "schedule_stage_total_time" : str(schedule_stage_total_time),
+                       "variation_input_transfer_total_time" : str (variation_input_transfer_total_time), 
+                       "execute_stage_total_time" : str(execute_stage_total_time),
+                       "output_transfer_total_time" : str(output_transfer_total_time),
+                       "wait_stage_total_time" : str(wait_stage_total_time),
+                       "execute_total_time" : str(execute_total_time),
+                       "converge_stage_total_time" : str(converge_stage_total_time),
+                       "total_processing_time" : str(total_processing_time),
+                       "job_id" : job_id,
+                       "number_vm_instances" : number_vm_instances,
+                       "directive_name" : directive_name,
+                       "total_processes" : total_processes
+                      } 
+                     ]
+
     stage_timings_report = [
                             {
                              "schedule_stage_start_time" :  
                              str(getval (run_settings, '%s/stages/schedule/schedule_stage_start_time' % django_settings.SCHEMA_PREFIX)),
                              "schedule_stage_end_time" : 
                              str(getval (run_settings, '%s/stages/schedule/schedule_stage_end_time' % django_settings.SCHEMA_PREFIX)),
-                             "schedule_stage_total_time" : 
-                             str(getval (run_settings, '%s/stages/schedule/schedule_stage_total_time' % django_settings.SCHEMA_PREFIX)),
+                             "schedule_stage_total_time" : schedule_stage_total_time
                             },
                             {
                              "execute_stage_start_time" : 
@@ -177,51 +224,19 @@ def report_stage_timings(timings_file, stage_csv_file, run_settings):
                            ]
     write_json_report(timings_file, stage_timings_report, "Stage Level Timings Report")
 
+    write_csv_dictlist(stage_csv_file, stage_timings_csv_report) 
+
     #write_csv_dictlist(stage_csv_file, merge_dictionary(stage_timings_report)) 
 
     return stage_timings_report
 
 def report_process_timings(timings_file, timings_csv_file, process_csv_file, run_settings):
    
-#def report_process_timings( dumps_dir, timings_dir):
-#    timings_csv_file = os.path.join(timings_dir,'current_processes.csv')
-#    process_csv_file = os.path.join(dumps_dir,'process_report.csv')
-#    timings_file = os.path.join(timings_dir,'current_processes.txt')
     job_id = str(getval(run_settings, '%s/system/contextid' % django_settings.SCHEMA_PREFIX))
     directive_name = str(getval(run_settings, '%s/directive_profile/directive_name' % django_settings.SCHEMA_PREFIX))
     number_vm_instances = str(getval(run_settings, '%s/input/system/compplatform/cloud/number_vm_instances' % django_settings.SCHEMA_PREFIX))
     total_processes = str(getval(run_settings, '%s/stages/schedule/total_processes' % django_settings.SCHEMA_PREFIX))
-    schedule_stage_total_time =  str(getval (run_settings, '%s/stages/schedule/schedule_stage_total_time' % django_settings.SCHEMA_PREFIX))
-    logger.debug('ZZZ schedule_stage_total_time=%s' % schedule_stage_total_time)
-    schedule_stage_total_time =  to_timedelta_seconds(schedule_stage_total_time).total_seconds()
 
-    variation_input_transfer_total_time = str(getval (run_settings, '%s/stages/execute/total_variation_input_transfer_time' % django_settings.SCHEMA_PREFIX))
-    logger.debug('ZZZvariation_input_transfer_total_time=%s' % variation_input_transfer_total_time)
-    variation_input_transfer_total_time = to_timedelta_seconds(variation_input_transfer_total_time).total_seconds()
-
-    execute_stage_total_time =  str(getval (run_settings, '%s/stages/execute/execute_stage_total_time' % django_settings.SCHEMA_PREFIX))
-    logger.debug('ZZZexecute_stage_total_time=%s' % execute_stage_total_time)
-    execute_stage_total_time =  to_timedelta_seconds(execute_stage_total_time).total_seconds()
-
-
-    output_transfer_total_time = str(getval (run_settings, '%s/stages/wait/output_transfer_total_time' % django_settings.SCHEMA_PREFIX))
-    logger.debug('ZZZoutput_transfer_total_time=%s' % output_transfer_total_time)
-    output_transfer_total_time = to_timedelta_seconds(output_transfer_total_time).total_seconds()
-
-    wait_stage_total_time = str(getval (run_settings, '%s/stages/wait/wait_stage_total_time' % django_settings.SCHEMA_PREFIX))
-    logger.debug('ZZZwait_stage_total_time=%s' % wait_stage_total_time)
-    wait_stage_total_time = to_timedelta_seconds(wait_stage_total_time).total_seconds()
-
-    #execute_stage_total_time =  1.0
-    #output_transfer_total_time = 1.0
-    #wait_stage_total_time = 1.0
-    #converge_stage_total_time = 1.0
-    #converge_stage_total_time = to_timedelta_seconds(str(getval (run_settings, '%s/stages/converge/converge_stage_total_time' % django_settings.SCHEMA_PREFIX))).total_seconds()
-    converge_stage_total_time = str(getval (run_settings, '%s/stages/converge/converge_stage_total_time' % django_settings.SCHEMA_PREFIX))
-    logger.debug('ZZZconverge_stage_total_time=%s' % converge_stage_total_time)
-    converge_stage_total_time = to_timedelta_seconds(converge_stage_total_time).total_seconds()
-
-    total_processing_time = schedule_stage_total_time +  execute_stage_total_time  + wait_stage_total_time + converge_stage_total_time
 
     process_timings_report = [ 
                       {
@@ -251,22 +266,15 @@ def report_process_timings(timings_file, timings_csv_file, process_csv_file, run
                        "schedule_minimum_time": "",
                        "schedule_maximum_time": "",
                        "schedule_average_time": "",
-                       "schedule_stage_total_time" : str(schedule_stage_total_time),
                        "variation_input_transfer_minimum_time": "",
                        "variation_input_transfer_maximum_time": "",
                        "variation_input_transfer_average_time": "",
-                       "variation_input_transfer_total_time" : str (variation_input_transfer_total_time), 
                        "execute_minimum_time": "",
                        "execute_maximum_time": "",
                        "execute_average_time": "",
-                       "execute_stage_total_time" : str(execute_stage_total_time),
                        "output_transfer_minimum_time": "",
                        "output_transfer_maximum_time": "",
                        "output_transfer_average_time": "",
-                       "output_transfer_total_time" : str(output_transfer_total_time),
-                       "wait_stage_total_time" : str(wait_stage_total_time),
-                       "converge_stage_total_time" : str(converge_stage_total_time),
-                       "total_processing_time" : str(total_processing_time),
                        "job_id" : job_id,
                        "number_vm_instances" : number_vm_instances,
                        "directive_name" : directive_name,
@@ -361,11 +369,9 @@ def report_process_timings(timings_file, timings_csv_file, process_csv_file, run
        process_timings_csv_report[0]["output_transfer_average_time"] = str(round((output_transfer_total_time.total_seconds() / total_json_obj),3))
 
        write_json_report(timings_file, process_timings_report, "Process Level Timings Report")
-
        write_csv_dictlist(process_csv_file, process_timings_csv_report) 
-
-       #write_csv_dictlist(timings_csv_file, process_timings_list) 
-       #dictwrite_csv_dictlist(timings_csv_file, process_timings_list)
+       write_csv_dictlist(timings_csv_file, process_timings_list) 
+       #write_csv_dictlist(timings_csv_file, merge_dictionary(process_timings_list)) 
 
 
 def write_json_report(timings_file, timings_data, message):
@@ -381,15 +387,10 @@ def analyse_timings_data(run_settings):
     timings_csv_file = os.path.join(timings_dir,'current_processes.csv')
     process_csv_file = os.path.join(dumps_dir,'process_report.csv')
     stage_csv_file = os.path.join(dumps_dir,'stage_report.csv')
-    #report_file=os.path.join(timings_dir,'current_processes.txt')
 
     report_process_timings(timings_file, timings_csv_file, process_csv_file, run_settings) 
-
     report_stage_timings(timings_file, stage_csv_file, run_settings)
 
-    #dictwrite_csv_dictlist(timings_csv_report, process_timings_list)
-    #dictwrite_csv_dict(process_report, process_timings_dict)
-    #dictwrite_csv_dict(stage_report, stage_timings_dict)
 
 def dictwrite_csv_dictlist(filename, data):
     file_exists = False
