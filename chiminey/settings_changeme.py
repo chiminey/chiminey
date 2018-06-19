@@ -154,7 +154,6 @@ SMART_CONNECTORS = {
              'name': 'prism',
              'description': 'The PRISM Model Checker',
              'payload': '/opt/chiminey/current/chiminey/prismconnector/payload_prism',
-             'sweep': True
              },
                     }
 
