@@ -56,6 +56,7 @@ class Execute(stage.Stage):
     """
 
     VALUES_FNAME = django_settings.VALUES_FNAME
+    VARIATIONS_FNAME = django_settings.VARIATIONS_FNAME
 
     def __init__(self, user_settings=None):
         self.numbfile = 0
@@ -71,7 +72,6 @@ class Execute(stage.Stage):
                 run_settings, '%s/stages/schedule/schedule_completed' % django_settings.SCHEMA_PREFIX))
             self.all_processes = ast.literal_eval(
                 getval(run_settings, '%s/stages/schedule/all_processes' % django_settings.SCHEMA_PREFIX))
-
         except SettingNotFoundException, e:
             return False
         except ValueError, e:
@@ -79,11 +79,30 @@ class Execute(stage.Stage):
 
         if not schedule_completed:
             return False
+
+        try:
+            scheduled_str = getval(run_settings, '%s/stages/schedule/scheduled_nodes' % django_settings.SCHEMA_PREFIX)
+            self.scheduled_nodes = ast.literal_eval(scheduled_str)
+        except SettingNotFoundException, e:
+            self.scheduled_nodes = []
+        except ValueError, e:
+            logger.error(e)
+            self.scheduled_nodes = []
+        try:
+            rescheduled_str = getval(run_settings, '%s/stages/schedule/rescheduled_nodes' % django_settings.SCHEMA_PREFIX)
+            self.rescheduled_nodes = ast.literal_eval(rescheduled_str)
+        except SettingNotFoundException, e:
+            self.rescheduled_nodes = []
+        except ValueError, e:
+            logger.error(e)
+            self.rescheduled_nodes = []
+
         try:
             scheduled_procs_str = getval(
                 run_settings, '%s/stages/schedule/current_processes' % django_settings.SCHEMA_PREFIX)
         except SettingNotFoundException:
             return False
+
         try:
             self.schedule_procs = ast.literal_eval(scheduled_procs_str)
         except ValueError:
@@ -253,6 +272,33 @@ class Execute(stage.Stage):
             logger.error(e)
         return pids
 
+
+    def _copy_previous_inputs2(self, local_settings, output_storage_settings,
+                              computation_platform_settings):
+        output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
+                                      output_storage_settings['type'])
+        for proc in self.ready_processes:
+            source_location = os.path.join(
+                self.job_dir, "input_backup", proc['id'])
+            source_files_url = get_url_with_credentials(output_storage_settings,
+                                                        output_prefix + source_location, is_relative_path=False)
+            relative_path_suffix = self.get_relative_output_path(
+                local_settings)
+            #dest_files_location = computation_platform_settings['type'] + "@"\
+            #                      + os.path.join(
+            #    local_settings['payload_destination'],
+            #    proc['id'], local_settings['process_output_dirname'])
+            dest_files_location = computation_platform_settings['type'] + "@"\
+                + os.path.join(relative_path_suffix,
+                               local_settings['smart_connector_raw_input'])
+            logger.debug('dest_files_location=%s' % dest_files_location)
+
+            dest_files_url = get_url_with_credentials(
+                computation_platform_settings, dest_files_location,
+                is_relative_path=True, ip_address=proc['ip_address'])
+            logger.debug('dest_files_url=%s' % dest_files_url)
+            storage.copy_directories(source_files_url, dest_files_url)
+
     def _copy_previous_inputs(self, local_settings, output_storage_settings,
                               computation_platform_settings):
         output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
@@ -340,7 +386,6 @@ class Execute(stage.Stage):
                                                relative_path,
                                                is_relative_path=True,
                                                ip_address=ip_address)
-        makefile_path = get_make_path(destination)
 
         #Following "command" is replaced with "command_in" -- copied from schedule stage
         #command = "cd %s; make %s" % (makefile_path,
@@ -348,6 +393,7 @@ class Execute(stage.Stage):
         #                                 settings['filename_for_PIDs'],
         #                                 settings['process_output_dirname'],
         #                                 settings['smart_connector_input']))
+        makefile_path = get_make_path(destination)
         command_in = "cd %s; make %s &" % (makefile_path, 'start_processing %s %s' % 
                                         (settings['smart_connector_input'], settings['process_output_dirname']))
         command_out=''
@@ -476,6 +522,53 @@ class Execute(stage.Stage):
             logger.debug("%d contexts created" % (temp_num))
         return contexts
 
+    def _copy_inputs(self, processes, schedule_processes, local_settings, output_storage_settings,
+                              computation_platform_settings):
+        output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
+                                      output_storage_settings['type'])
+        #source_location = os.path.join(
+        #    self.iter_inputdir, "initial")
+        #AA# Assuming self.scheduled_nodes in not empty. If self.scheduled_nodes is empty, the following code will not work
+ 
+        nodes_settings = []
+
+        for sched_node in self.scheduled_nodes:
+
+            relative_path_suffix = self.get_relative_output_path(local_settings)
+            relative_payload_path = computation_platform_settings['type'] + '@' + os.path.join(relative_path_suffix)
+            payload_dest_url = get_url_with_credentials(computation_platform_settings,
+                                               relative_payload_path,
+                                               is_relative_path=True,
+                                               ip_address=sched_node[1])
+            logger.debug('payload_dest_url=%s' % payload_dest_url)
+
+            source_location = self.iter_inputdir
+            source_files_url = get_url_with_credentials(output_storage_settings,
+                                                    output_prefix + source_location, is_relative_path=False)
+            logger.debug('source_files_url=%s' % source_files_url)
+
+            relative_initial_path = computation_platform_settings['type'] + "@"\
+                                                 + os.path.join(relative_path_suffix, 'smart_connector_initial_input')
+            initial_input_source_url = get_url_with_credentials(computation_platform_settings, 
+                                                      relative_initial_path,
+                                                      is_relative_path=True, 
+                                                      ip_address=sched_node[1])
+            logger.debug('initial_input_source_url=%s' % initial_input_source_url)
+
+            storage.copy_directories(source_files_url, initial_input_source_url)
+
+            nodes_settings.append({ 'ip':sched_node[1],
+                                    'processes': processes, 
+                                    'schedule_processes': schedule_processes, 
+                                    'initial_input_url':initial_input_source_url,
+                                    'initial_input_dir':os.path.join(relative_path_suffix, 'smart_connector_initial_input'),
+                                    'payload_dest_url':payload_dest_url,
+                                    'context_list':[]
+                                   })
+
+        return nodes_settings
+
+
     def prepare_inputs(self, local_settings, output_storage_settings,
                        computation_platform_settings, mytardis_settings, run_settings):
         """
@@ -487,30 +580,73 @@ class Execute(stage.Stage):
         #processes = self.schedule_procs
         processes = [x for x in self.schedule_procs
                      if x['status'] == 'ready']
+
+        nodes_settings = self._copy_inputs(processes, self.schedule_procs, local_settings, output_storage_settings, computation_platform_settings)
+
         self.node_ind = 0
-        logger.debug("Iteration Input dir %s" % self.iter_inputdir)
-        output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
-                                      output_storage_settings['type'])
-        url_with_pkey = get_url_with_credentials(
-            output_storage_settings, output_prefix + self.iter_inputdir, is_relative_path=False)
+        #AA# logger.debug("Iteration Input dir %s" % self.iter_inputdir)
+        #AA# output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
+        #AA#                               output_storage_settings['type'])
+        #AA# url_with_pkey = get_url_with_credentials(
+        #AA#     output_storage_settings, output_prefix + self.iter_inputdir, is_relative_path=False)
 
-        input_dirs = list_dirs(url_with_pkey)
-        if not input_dirs:
-            raise BadInputException(
-                "require an initial subdirectory of input directory")
+        #AA# url_with_pkeys[0] is the VM where jobs will be executed. We want to caluculated input_dir_variations i
+        #AA# locally within each scheduled VM
+        #AA# for iterator, ns in enumerate(nodes_settings):
+        #AA#     if ns['ip'] == prc['ip_address']: 
+        #AA#         nodes_settings[iterator]['context_list'].append(ctext)   
 
-        for input_dir in sorted(input_dirs):
-            self._upload_input_dir_variations(processes,
-                                              local_settings,
+        for node_settings in nodes_settings:
+            input_dirs = list_dirs(node_settings['initial_input_url'])
+            logger.debug("AAAA INPUT DIRS %s" % input_dirs)
+            if not input_dirs:
+                raise BadInputException(
+                    "require an initial subdirectory of input directory")
+
+
+            for input_dir in sorted(input_dirs):
+                logger.debug("BBB INPUT DIR %s" % input_dir)
+                self._upload_input_dir_variations(processes, local_settings,
                                               computation_platform_settings,
                                               output_storage_settings, mytardis_settings,
-                                              input_dir, run_settings)
+                                              input_dir, run_settings, node_settings)
+
+    def _local_input_dir_variation(self,node_settings, local_settings,comp_platf_settings):
+
+        # copy new variations file
+        logger.debug("writing variations file")
+        relative_path_suffix = self.get_relative_output_path(local_settings)
+        variations_dest_location = comp_platf_settings['type']\
+            + "@" + os.path.join(relative_path_suffix,self.VARIATIONS_FNAME)
+        logger.debug("variations_dest_location =%s" % variations_dest_location)
+        variations_dest_url = get_url_with_credentials(
+            comp_platf_settings, variations_dest_location,
+            is_relative_path=True, ip_address=node_settings['ip'])
+
+        #node_settings[0]['template_pattern'] = template_pattern
+        storage.put_file(variations_dest_url, json.dumps(node_settings, indent=4))
+
+
+        makefile_path = get_make_path(node_settings['payload_dest_url'])
+        #command_in = "cd %s; make %s &" % (makefile_path, 'start_input_variation %s' % (nodes_settings[0]))
+        command_in = "cd %s; make %s &" % (makefile_path, 'start_input_variation %s' % self.VARIATIONS_FNAME )
+        logger.debug('KKKK_command_in=%s' % command_in)
+        command_out=''
+        errs_out=''
+        try:
+            ssh = open_connection(ip_address=node_settings['ip'], settings=comp_platf_settings)
+            logger.debug('KKKK_ssh_connection=%s %s' % (node_settings['ip'],comp_platf_settings))
+            sudo = True
+            command_out, errs_out = run_command_with_status(ssh, command_in, requiretty=True)
+            logger.debug('KKKK_start_local_input_variation=%s %s' % (command_out,errs_out))
+        finally:
+            logger.debug('KKKK_close_ssh_connection=%s %s' % (node_settings['ip'],comp_platf_settings))
+            ssh.close()
+
 
     def _upload_input_dir_variations(self, processes, local_settings,
-                                     computation_platform_settings,
-                                     output_storage_settings,
-                                     mytardis_settings,
-                                     input_dir, run_settings):
+                                     computation_platform_settings, output_storage_settings,
+                                     mytardis_settings, input_dir, run_settings, node_settings):
 
 
         output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
@@ -548,6 +684,7 @@ class Execute(stage.Stage):
                                          input_dir,
                                          self.VALUES_FNAME),
             is_relative_path=False)
+        
         logger.debug("initial values_file=%s" % values_url_with_pkey)
         values = {}
         try:
@@ -572,6 +709,67 @@ class Execute(stage.Stage):
 
         template_pat = re.compile("(.*)_template")
         relative_path_suffix = self.get_relative_output_path(local_settings)
+        
+        #for ctext in contexts:
+        #    # get process information
+        #    r_counter = ctext['run_counter']
+        #    prc = None
+        #    for pp in processes:
+        #        # TODO: how to handle invalid run_counter
+        #        ppid = int(pp['id'])
+        #        logger.debug("ppid=%s" % ppid)
+        #        if ppid == r_counter:
+        #            prc = pp
+        #            break
+        #    else:
+        #        logger.error("no process found matching run_counter")
+        #        raise BadInputException()
+        #    for iterator, ns in enumerate(nodes_settings):
+        #        if ns['ip'] == prc['ip_address']: 
+        #            nodes_settings[iterator]['context_list'].append(ctext)   
+
+
+        local_dir_variation = True
+        logger.debug("NODE_SETTINGS=%s" % pformat(node_settings))
+        if local_dir_variation:
+            values_dir = output_prefix + os.path.join(self.iter_inputdir, input_dir, self.VALUES_FNAME)
+            for ctext in contexts:
+                # get process information
+                r_counter = ctext['run_counter']
+                prc = None
+                for pp in processes:
+                    # TODO: how to handle invalid run_counter
+                    ppid = int(pp['id'])
+                    logger.debug("ppid=%s" % ppid)
+                    if ppid == r_counter:
+                        prc = pp
+                        break
+                else:
+                    logger.error("no process found matching run_counter")
+                    raise BadInputException()
+                if node_settings['ip'] == prc['ip_address']: 
+                    node_settings['context_list'].append(ctext)   
+
+            node_settings['values_dir'] = values_dir   
+            node_settings['run_map'] = run_map   
+                #for iterator, ns in enumerate(nodes_settings):
+                #    if ns['ip'] == prc['ip_address']: 
+                #        nodes_settings[iterator]['context_list'].append(ctext)   
+            #for iterator, ns in enumerate(nodes_settings):
+            #    nodes_settings[iterator]['values_dir'] = values_dir   
+            #    nodes_settings[iterator]['run_map'] = run_map   
+
+            for iterator, pp in enumerate(self.schedule_procs):
+               if pp['ip_address'] == prc['ip_address']: 
+                   self.schedule_procs[iterator]['varinp_transfer_start_time'] = timings.datetime_now_milliseconds() 
+
+            self._local_input_dir_variation(node_settings,local_settings,computation_platform_settings)
+
+            for iterator, pp in enumerate(self.schedule_procs):
+               if pp['ip_address'] == prc['ip_address']: 
+                   self.schedule_procs[iterator]['varinp_transfer_end_time'] = timings.datetime_now_milliseconds() 
+            return
+
         process_counter=0
         for context in contexts:
             logger.debug("context=%s" % context)
@@ -770,3 +968,4 @@ class Execute(stage.Stage):
                 pass
         logger.debug('optional_args_keys=%s' % args)
         return args
+             

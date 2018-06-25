@@ -14,3 +14,6 @@ start_schedule:
 
 schedule_done:
 	@bash ./schedule_done.sh $(IDS) 
+
+start_input_variation:
+	@bash ./start_input_variation.sh $(RUN_ARGS) >& start_input_variation.output &
