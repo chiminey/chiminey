@@ -57,6 +57,7 @@ class Execute(stage.Stage):
 
     VALUES_FNAME = django_settings.VALUES_FNAME
     VARIATIONS_FNAME = django_settings.VARIATIONS_FNAME
+    LOCAL_VARIATION = django_settings.LOCAL_VARIATION
 
     def __init__(self, user_settings=None):
         self.numbfile = 0
@@ -603,12 +604,23 @@ class Execute(stage.Stage):
         processes = [x for x in self.schedule_procs
                      if x['status'] == 'ready']
 
-        nodes_settings = self._copy_inputs(processes, self.schedule_procs, local_settings, output_storage_settings, computation_platform_settings)
-
         self.node_ind = 0
 
+        nodes_settings=[]
+        if self.LOCAL_VARIATION:
+            nodes_settings = self._copy_inputs(processes, self.schedule_procs, local_settings, output_storage_settings, computation_platform_settings)
+            input_dirs = list_dirs(nodes_settings[0]['initial_input_urls'][0])
+        else:
+            logger.debug("Iteration Input dir %s" % self.iter_inputdir)
+            output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
+                                          output_storage_settings['type'])
+            url_with_pkey = get_url_with_credentials(
+                output_storage_settings, output_prefix + self.iter_inputdir, is_relative_path=False)
+
+            input_dirs = list_dirs(url_with_pkey)
+            
+
         #Same 'initial_input_url' copied to all the target VMs. Therefore, 'initial_input_url' from any VM will suffice
-        input_dirs = list_dirs(nodes_settings[0]['initial_input_urls'][0])
         logger.debug("AAAA INPUT DIRS %s" % input_dirs)
         if not input_dirs:
             raise BadInputException(
@@ -664,7 +676,7 @@ class Execute(stage.Stage):
 
     def _upload_input_dir_variations(self, processes, local_settings,
                                      computation_platform_settings, output_storage_settings,
-                                     mytardis_settings, input_dir, run_settings, nodes_settings=[]):
+                                     mytardis_settings, input_dir, run_settings, nodes_settings):
 
 
         output_prefix = '%s://%s@' % (output_storage_settings['scheme'],

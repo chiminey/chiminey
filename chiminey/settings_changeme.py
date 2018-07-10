@@ -125,6 +125,8 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.transaction.TransactionMiddleware'
     )
 VALUES_FNAME = 'values'
+VARIATIONS_FNAME = 'variations'
+LOCAL_VARIATION = True 
 
 SMART_CONNECTORS = {
 'hrmc': {'init': 'chiminey.examples.hrmc.initialise.HRMCInitial',
@@ -154,7 +156,6 @@ SMART_CONNECTORS = {
              'name': 'prism',
              'description': 'The PRISM Model Checker',
              'payload': '/opt/chiminey/current/chiminey/prismconnector/payload_prism',
-             'sweep': True
              },
                     }
 
