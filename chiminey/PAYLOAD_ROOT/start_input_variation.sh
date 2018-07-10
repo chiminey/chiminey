@@ -1,1 +1,1 @@
-python ./input_variation.py $1
+python ./input_variation.py $1 $2

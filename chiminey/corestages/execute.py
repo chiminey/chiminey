@@ -526,16 +526,25 @@ class Execute(stage.Stage):
                               computation_platform_settings):
         output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
                                       output_storage_settings['type'])
+
         #source_location = os.path.join(
         #    self.iter_inputdir, "initial")
+
         #AA# Assuming self.scheduled_nodes in not empty. If self.scheduled_nodes is empty, the following code will not work
  
         nodes_settings = []
+        #nodes_settings = {}
+        ips = []
+        initial_input_urls = []
+        initial_input_dirs = []
+        payload_dest_urls = []
+        context_list = []
 
         for sched_node in self.scheduled_nodes:
 
             relative_path_suffix = self.get_relative_output_path(local_settings)
             relative_payload_path = computation_platform_settings['type'] + '@' + os.path.join(relative_path_suffix)
+
             payload_dest_url = get_url_with_credentials(computation_platform_settings,
                                                relative_payload_path,
                                                is_relative_path=True,
@@ -557,14 +566,27 @@ class Execute(stage.Stage):
 
             storage.copy_directories(source_files_url, initial_input_source_url)
 
-            nodes_settings.append({ 'ip':sched_node[1],
-                                    'processes': processes, 
-                                    'schedule_processes': schedule_processes, 
-                                    'initial_input_url':initial_input_source_url,
-                                    'initial_input_dir':os.path.join(relative_path_suffix, 'smart_connector_initial_input'),
-                                    'payload_dest_url':payload_dest_url,
-                                    'context_list':[]
-                                   })
+            ips.append(sched_node[1]) 
+            initial_input_urls.append(initial_input_source_url)
+            initial_input_dirs.append(os.path.join(relative_path_suffix, 'smart_connector_initial_input'))
+            payload_dest_urls.append(payload_dest_url)
+
+        nodes_settings.append({ 'ips':ips,
+                                'processes': processes, 
+                                'schedule_processes': schedule_processes, 
+                                'initial_input_urls': initial_input_urls,
+                                'initial_input_dirs': initial_input_dirs,
+                                'payload_dest_urls': payload_dest_urls,
+                                'context_list':[]
+                                })
+
+        #nodes_settings['ips'] = ips
+        #nodes_settings['processes'] = processes 
+        #nodes_settings['schedule_processes'] = schedule_processes 
+        #nodes_settings['initial_input_urls'] = initial_input_urls
+        #nodes_settings['initial_input_dirs'] = initial_input_dirs
+        #nodes_settings['payload_dest_urls'] = payload_dest_urls
+        #nodes_settings['context_list'] = context_list 
 
         return nodes_settings
 
@@ -584,69 +606,65 @@ class Execute(stage.Stage):
         nodes_settings = self._copy_inputs(processes, self.schedule_procs, local_settings, output_storage_settings, computation_platform_settings)
 
         self.node_ind = 0
-        #AA# logger.debug("Iteration Input dir %s" % self.iter_inputdir)
-        #AA# output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
-        #AA#                               output_storage_settings['type'])
-        #AA# url_with_pkey = get_url_with_credentials(
-        #AA#     output_storage_settings, output_prefix + self.iter_inputdir, is_relative_path=False)
 
-        #AA# url_with_pkeys[0] is the VM where jobs will be executed. We want to caluculated input_dir_variations i
-        #AA# locally within each scheduled VM
-        #AA# for iterator, ns in enumerate(nodes_settings):
-        #AA#     if ns['ip'] == prc['ip_address']: 
-        #AA#         nodes_settings[iterator]['context_list'].append(ctext)   
-
-        for node_settings in nodes_settings:
-            input_dirs = list_dirs(node_settings['initial_input_url'])
-            logger.debug("AAAA INPUT DIRS %s" % input_dirs)
-            if not input_dirs:
-                raise BadInputException(
-                    "require an initial subdirectory of input directory")
+        #Same 'initial_input_url' copied to all the target VMs. Therefore, 'initial_input_url' from any VM will suffice
+        input_dirs = list_dirs(nodes_settings[0]['initial_input_urls'][0])
+        logger.debug("AAAA INPUT DIRS %s" % input_dirs)
+        if not input_dirs:
+            raise BadInputException(
+                "require an initial subdirectory of input directory")
 
 
-            for input_dir in sorted(input_dirs):
-                logger.debug("BBB INPUT DIR %s" % input_dir)
-                self._upload_input_dir_variations(processes, local_settings,
+        for input_dir in sorted(input_dirs):
+            logger.debug("BBB INPUT DIR %s" % input_dir)
+            self._upload_input_dir_variations(processes, 
+                                              local_settings,
                                               computation_platform_settings,
                                               output_storage_settings, mytardis_settings,
-                                              input_dir, run_settings, node_settings)
+                                              input_dir, run_settings, nodes_settings)
 
-    def _local_input_dir_variation(self,node_settings, local_settings,comp_platf_settings):
+    def _local_input_dir_variation(self,nodes_settings, local_settings,comp_platf_settings):
 
         # copy new variations file
         logger.debug("writing variations file")
         relative_path_suffix = self.get_relative_output_path(local_settings)
+
         variations_dest_location = comp_platf_settings['type']\
             + "@" + os.path.join(relative_path_suffix,self.VARIATIONS_FNAME)
         logger.debug("variations_dest_location =%s" % variations_dest_location)
-        variations_dest_url = get_url_with_credentials(
-            comp_platf_settings, variations_dest_location,
-            is_relative_path=True, ip_address=node_settings['ip'])
 
-        #node_settings[0]['template_pattern'] = template_pattern
-        storage.put_file(variations_dest_url, json.dumps(node_settings, indent=4))
+        relative_makefile_path = comp_platf_settings['type'] + '@' + os.path.join(relative_path_suffix)
+        logger.debug('relative_makefile_path=%s' % relative_makefile_path)
 
 
-        makefile_path = get_make_path(node_settings['payload_dest_url'])
-        #command_in = "cd %s; make %s &" % (makefile_path, 'start_input_variation %s' % (nodes_settings[0]))
-        command_in = "cd %s; make %s &" % (makefile_path, 'start_input_variation %s' % self.VARIATIONS_FNAME )
-        logger.debug('KKKK_command_in=%s' % command_in)
-        command_out=''
-        errs_out=''
-        try:
-            ssh = open_connection(ip_address=node_settings['ip'], settings=comp_platf_settings)
-            logger.debug('KKKK_ssh_connection=%s %s' % (node_settings['ip'],comp_platf_settings))
-            sudo = True
-            command_out, errs_out = run_command_with_status(ssh, command_in, requiretty=True)
-            logger.debug('KKKK_start_local_input_variation=%s %s' % (command_out,errs_out))
-        finally:
-            logger.debug('KKKK_close_ssh_connection=%s %s' % (node_settings['ip'],comp_platf_settings))
-            ssh.close()
+        for nodes_settings_ip in nodes_settings[0]['ips']:
+
+            variations_dest_url = get_url_with_credentials(comp_platf_settings, variations_dest_location,
+                                                           is_relative_path=True, ip_address=nodes_settings_ip)
+            #nodes_settings[0]['template_pattern'] = template_pattern
+            storage.put_file(variations_dest_url, json.dumps(nodes_settings, indent=4))
+
+            makefile_dest_url = get_url_with_credentials(comp_platf_settings, relative_makefile_path,
+                                                        is_relative_path=True, ip_address=nodes_settings_ip)
+            makefile_path = get_make_path(makefile_dest_url)
+            command_in = "cd %s; make %s &" % (makefile_path, 'start_input_variation %s %s' % (self.VARIATIONS_FNAME, nodes_settings_ip) )
+            logger.debug('KKKK_command_in=%s' % command_in)
+            command_out=''
+            errs_out=''
+            try:
+                ssh = open_connection(ip_address=nodes_settings_ip, settings=comp_platf_settings)
+                logger.debug('KKKK_ssh_connection=%s %s' % (nodes_settings_ip,comp_platf_settings))
+                sudo = True
+                command_out, errs_out = run_command_with_status(ssh, command_in, requiretty=True)
+                logger.debug('KKKK_start_local_input_variation=%s %s' % (command_out,errs_out))
+            finally:
+                logger.debug('KKKK_close_ssh_connection=%s %s' % (nodes_settings_ip,comp_platf_settings))
+                ssh.close()
 
 
     def _upload_input_dir_variations(self, processes, local_settings,
                                      computation_platform_settings, output_storage_settings,
-                                     mytardis_settings, input_dir, run_settings, node_settings):
+                                     mytardis_settings, input_dir, run_settings, nodes_settings=[]):
 
 
         output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
@@ -709,33 +727,15 @@ class Execute(stage.Stage):
 
         template_pat = re.compile("(.*)_template")
         relative_path_suffix = self.get_relative_output_path(local_settings)
-        
-        #for ctext in contexts:
-        #    # get process information
-        #    r_counter = ctext['run_counter']
-        #    prc = None
-        #    for pp in processes:
-        #        # TODO: how to handle invalid run_counter
-        #        ppid = int(pp['id'])
-        #        logger.debug("ppid=%s" % ppid)
-        #        if ppid == r_counter:
-        #            prc = pp
-        #            break
-        #    else:
-        #        logger.error("no process found matching run_counter")
-        #        raise BadInputException()
-        #    for iterator, ns in enumerate(nodes_settings):
-        #        if ns['ip'] == prc['ip_address']: 
-        #            nodes_settings[iterator]['context_list'].append(ctext)   
 
-
-        local_dir_variation = True
-        logger.debug("NODE_SETTINGS=%s" % pformat(node_settings))
-        if local_dir_variation:
+        if nodes_settings:
+            logger.debug("NODE_SETTINGS=%s" % pformat(nodes_settings[0]))
             values_dir = output_prefix + os.path.join(self.iter_inputdir, input_dir, self.VALUES_FNAME)
             for ctext in contexts:
+                logger.debug("context=%s" % ctext)
                 # get process information
                 r_counter = ctext['run_counter']
+                logger.debug("run_counter=%s" % r_counter)
                 prc = None
                 for pp in processes:
                     # TODO: how to handle invalid run_counter
@@ -743,15 +743,22 @@ class Execute(stage.Stage):
                     logger.debug("ppid=%s" % ppid)
                     if ppid == r_counter:
                         prc = pp
+                        nodes_settings[0]['context_list'].append(ctext)   
                         break
                 else:
                     logger.error("no process found matching run_counter")
                     raise BadInputException()
-                if node_settings['ip'] == prc['ip_address']: 
-                    node_settings['context_list'].append(ctext)   
+            #nodes_settings[0]['context_list'].append(contexts)   
+            #nodes_settings['context_list'] = contexts   
 
-            node_settings['values_dir'] = values_dir   
-            node_settings['run_map'] = run_map   
+            #nodes_settings['values_dir'] = values_dir   
+            #nodes_settings['run_map'] = run_map   
+
+            #    if node_settings['ip'] == prc['ip_address']: 
+            #        node_settings['context_list'].append(ctext)   
+            #node_settings['values_dir'] = values_dir   
+            #node_settings['run_map'] = run_map   
+
                 #for iterator, ns in enumerate(nodes_settings):
                 #    if ns['ip'] == prc['ip_address']: 
                 #        nodes_settings[iterator]['context_list'].append(ctext)   
@@ -763,7 +770,7 @@ class Execute(stage.Stage):
                if pp['ip_address'] == prc['ip_address']: 
                    self.schedule_procs[iterator]['varinp_transfer_start_time'] = timings.datetime_now_milliseconds() 
 
-            self._local_input_dir_variation(node_settings,local_settings,computation_platform_settings)
+            self._local_input_dir_variation(nodes_settings,local_settings,computation_platform_settings)
 
             for iterator, pp in enumerate(self.schedule_procs):
                if pp['ip_address'] == prc['ip_address']: 
