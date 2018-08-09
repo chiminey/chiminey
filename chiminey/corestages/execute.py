@@ -57,7 +57,7 @@ class Execute(stage.Stage):
 
     VALUES_FNAME = django_settings.VALUES_FNAME
     VARIATIONS_FNAME = django_settings.VARIATIONS_FNAME
-    LOCAL_VARIATION = django_settings.LOCAL_VARIATION
+    LATE_LOCAL_VARIATION = django_settings.LATE_LOCAL_VARIATION
 
     def __init__(self, user_settings=None):
         self.numbfile = 0
@@ -225,8 +225,9 @@ class Execute(stage.Stage):
                 logger.error(e)
 
             if not failed_processes:
-                self.prepare_inputs(
-                    local_settings, output_storage_settings, comp_pltf_settings, mytardis_settings, run_settings)
+                if not self.LATE_LOCAL_VARIATION:
+                    self.prepare_inputs(
+                        local_settings, output_storage_settings, comp_pltf_settings, mytardis_settings, run_settings)
             else:
                 self._copy_previous_inputs(
                     local_settings, output_storage_settings,
@@ -242,7 +243,20 @@ class Execute(stage.Stage):
             local_settings.update(comp_pltf_settings)
             exec_start_time = timings.datetime_now_milliseconds()
             logger.debug('YYYZZZZZZ_execute_process = %s ' % exec_start_time)
-            pids = self.run_multi_task(local_settings, run_settings)
+            if self.LATE_LOCAL_VARIATION:
+                processes = [x for x in self.schedule_procs if x['status'] == 'ready']
+                self.node_ind = 0
+                nodes_settings = self._copy_inputs(processes, self.schedule_procs, local_settings, output_storage_settings, computation_platform_settings)
+                #Same 'initial_input_url' copied to all the target VMs. Therefore, 'initial_input_url' from any VM will suffice
+                input_dirs = list_dirs(nodes_settings[0]['initial_input_urls'][0])
+
+                logger.debug("AAAA INPUT DIRS %s" % input_dirs)
+                if not input_dirs:
+                    raise BadInputException(
+                        "require an initial subdirectory of input directory")
+                pids = self.run_multi_task_with_late_input_variation(local_settings, run_settings, nodes_settings, input_dirs)
+            else:
+                pids = self.run_multi_task(local_settings, run_settings)
             exec_end_time = timings.datetime_now_milliseconds()
             logger.debug('YYYZZZZZZ_execute_process = %s ' % exec_end_time)
         except PackageFailedError, e:
@@ -273,32 +287,6 @@ class Execute(stage.Stage):
             logger.error(e)
         return pids
 
-
-    def _copy_previous_inputs2(self, local_settings, output_storage_settings,
-                              computation_platform_settings):
-        output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
-                                      output_storage_settings['type'])
-        for proc in self.ready_processes:
-            source_location = os.path.join(
-                self.job_dir, "input_backup", proc['id'])
-            source_files_url = get_url_with_credentials(output_storage_settings,
-                                                        output_prefix + source_location, is_relative_path=False)
-            relative_path_suffix = self.get_relative_output_path(
-                local_settings)
-            #dest_files_location = computation_platform_settings['type'] + "@"\
-            #                      + os.path.join(
-            #    local_settings['payload_destination'],
-            #    proc['id'], local_settings['process_output_dirname'])
-            dest_files_location = computation_platform_settings['type'] + "@"\
-                + os.path.join(relative_path_suffix,
-                               local_settings['smart_connector_raw_input'])
-            logger.debug('dest_files_location=%s' % dest_files_location)
-
-            dest_files_url = get_url_with_credentials(
-                computation_platform_settings, dest_files_location,
-                is_relative_path=True, ip_address=proc['ip_address'])
-            logger.debug('dest_files_url=%s' % dest_files_url)
-            storage.copy_directories(source_files_url, dest_files_url)
 
     def _copy_previous_inputs(self, local_settings, output_storage_settings,
                               computation_platform_settings):
@@ -434,6 +422,68 @@ class Execute(stage.Stage):
             logger.debug('YYYZZZZZZ_execute_command=%s %s' % (command_out,errs_out))
         finally:
             ssh.close()
+
+    def run_multi_task_with_late_input_variation(self, settings, run_settings, nodes_settings, input_dirs):
+        """
+        Run the package on each of the nodes in the group and grab
+        any output as needed
+        """
+
+        pids = []
+        logger.debug('exec_procs=%s' % self.exec_procs)
+        tmp_exec_procs = []
+        for iterator, proc in enumerate(self.exec_procs):
+            if proc['status'] != 'failed':
+                tmp_exec_procs.append(proc)
+                logger.debug('adding=%s' % proc)
+            else:
+                logger.debug('not adding=%s' % proc)
+        self.exec_procs = tmp_exec_procs
+        logger.debug('exec_procs=%s' % self.exec_procs)
+        logger.debug('self.schedule_procs=%s' % self.schedule_procs)
+        for proc in self.schedule_procs:
+            if proc['status'] != 'ready':
+                continue
+            #instance_id = node.id
+            ip_address = proc['ip_address']
+            process_id = proc['id']
+            try:
+                exec_start_time = timings.datetime_now_milliseconds()
+                logger.debug('YYYZZZZZZ_multi_task = %s ' % exec_start_time)
+
+                for input_dir in sorted(input_dirs):
+                    logger.debug("BBB INPUT DIR %s" % input_dir)
+                    self._late_input_dir_variations(processes,
+                                                    local_settings,
+                                                    computation_platform_settings,
+                                                    output_storage_settings, mytardis_settings,
+                                                    input_dir, run_settings, nodes_settings, ip_address, process_id)
+                pids_for_task = self.run_task(
+                    ip_address, process_id, settings, run_settings)
+                exec_end_time = timings.datetime_now_milliseconds()
+                logger.debug('YYYZZZZZZ_multi_task = %s ' % exec_end_time)
+                proc['status'] = 'running'
+                # self.exec_procs.append(proc)
+                for iterator, process in enumerate(self.all_processes):
+                    if int(process['id']) == int(process_id) and process['status'] == 'ready':
+                        self.all_processes[iterator]['status'] = 'running'
+                        break
+            except PackageFailedError, e:
+                logger.error(e)
+                logger.error("unable to start package on node %s" % ip_address)
+                # TODO: cleanup node of copied input files etc.
+            except Exception, e:
+                logger.debug('error=%s' % e)
+                # fixme FT management
+                pass
+            else:
+                pids.append(pids_for_task)
+                logger.debug('pids=%s' % pids)
+        #all_pids = dict(zip(nodes, pids))
+        all_pids = pids
+        logger.debug('all_pids=%s' % all_pids)
+
+        return all_pids
 
     def run_multi_task(self, settings, run_settings):
         """
@@ -606,18 +656,13 @@ class Execute(stage.Stage):
 
         self.node_ind = 0
 
-        nodes_settings=[]
-        if self.LOCAL_VARIATION:
-            nodes_settings = self._copy_inputs(processes, self.schedule_procs, local_settings, output_storage_settings, computation_platform_settings)
-            input_dirs = list_dirs(nodes_settings[0]['initial_input_urls'][0])
-        else:
-            logger.debug("Iteration Input dir %s" % self.iter_inputdir)
-            output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
-                                          output_storage_settings['type'])
-            url_with_pkey = get_url_with_credentials(
-                output_storage_settings, output_prefix + self.iter_inputdir, is_relative_path=False)
+        logger.debug("Iteration Input dir %s" % self.iter_inputdir)
+        output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
+                                      output_storage_settings['type'])
+        url_with_pkey = get_url_with_credentials(
+            output_storage_settings, output_prefix + self.iter_inputdir, is_relative_path=False)
 
-            input_dirs = list_dirs(url_with_pkey)
+        input_dirs = list_dirs(url_with_pkey)
             
 
         #Same 'initial_input_url' copied to all the target VMs. Therefore, 'initial_input_url' from any VM will suffice
@@ -633,9 +678,9 @@ class Execute(stage.Stage):
                                               local_settings,
                                               computation_platform_settings,
                                               output_storage_settings, mytardis_settings,
-                                              input_dir, run_settings, nodes_settings)
+                                              input_dir, run_settings)
 
-    def _local_input_dir_variation(self,nodes_settings, local_settings,comp_platf_settings):
+    def _local_input_dir_variation(self,nodes_settings, local_settings,comp_platf_settings, ip_address, process_id ):
 
         # copy new variations file
         logger.debug("writing variations file")
@@ -659,7 +704,7 @@ class Execute(stage.Stage):
             makefile_dest_url = get_url_with_credentials(comp_platf_settings, relative_makefile_path,
                                                         is_relative_path=True, ip_address=nodes_settings_ip)
             makefile_path = get_make_path(makefile_dest_url)
-            command_in = "cd %s; make %s &" % (makefile_path, 'start_input_variation %s %s' % (self.VARIATIONS_FNAME, nodes_settings_ip) )
+            command_in = "cd %s; make %s &" % (makefile_path, 'start_input_variation %s %s %s' % (self.VARIATIONS_FNAME, ip_address, process_id) )
             logger.debug('KKKK_command_in=%s' % command_in)
             command_out=''
             errs_out=''
@@ -673,12 +718,9 @@ class Execute(stage.Stage):
                 logger.debug('KKKK_close_ssh_connection=%s %s' % (nodes_settings_ip,comp_platf_settings))
                 ssh.close()
 
-
-    def _upload_input_dir_variations(self, processes, local_settings,
+    def _late_input_dir_variations(self, processes, local_settings,
                                      computation_platform_settings, output_storage_settings,
-                                     mytardis_settings, input_dir, run_settings, nodes_settings):
-
-
+                                     mytardis_settings, input_dir, run_settings, nodes_settings, ip_address, process_id):
         output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
                                       output_storage_settings['type'])
         input_url_with_credentials = get_url_with_credentials(
@@ -748,46 +790,96 @@ class Execute(stage.Stage):
                 # get process information
                 r_counter = ctext['run_counter']
                 logger.debug("run_counter=%s" % r_counter)
+
                 prc = None
                 for pp in processes:
-                    # TODO: how to handle invalid run_counter
                     ppid = int(pp['id'])
-                    logger.debug("ppid=%s" % ppid)
-                    if ppid == r_counter:
+                    if ppid == process_id:
                         prc = pp
-                        nodes_settings[0]['context_list'].append(ctext)   
-                        break
-                else:
-                    logger.error("no process found matching run_counter")
-                    raise BadInputException()
-            #nodes_settings[0]['context_list'].append(contexts)   
-            #nodes_settings['context_list'] = contexts   
-
-            #nodes_settings['values_dir'] = values_dir   
-            #nodes_settings['run_map'] = run_map   
-
-            #    if node_settings['ip'] == prc['ip_address']: 
-            #        node_settings['context_list'].append(ctext)   
-            #node_settings['values_dir'] = values_dir   
-            #node_settings['run_map'] = run_map   
-
-                #for iterator, ns in enumerate(nodes_settings):
-                #    if ns['ip'] == prc['ip_address']: 
-                #        nodes_settings[iterator]['context_list'].append(ctext)   
-            #for iterator, ns in enumerate(nodes_settings):
-            #    nodes_settings[iterator]['values_dir'] = values_dir   
-            #    nodes_settings[iterator]['run_map'] = run_map   
+                prc_pid = int(prc['id'])
+                if prc_pid == r_counter:
+                    nodes_settings[0]['context_list'].append(ctext)   
+                    break
+            else:
+                logger.error("no process found matching run_counter")
+                raise BadInputException()
 
             for iterator, pp in enumerate(self.schedule_procs):
                if pp['ip_address'] == prc['ip_address']: 
                    self.schedule_procs[iterator]['varinp_transfer_start_time'] = timings.datetime_now_milliseconds() 
 
-            self._local_input_dir_variation(nodes_settings,local_settings,computation_platform_settings)
+            self._local_input_dir_variation(nodes_settings,local_settings,computation_platform_settings, ip_address, process_id)
 
             for iterator, pp in enumerate(self.schedule_procs):
                if pp['ip_address'] == prc['ip_address']: 
                    self.schedule_procs[iterator]['varinp_transfer_end_time'] = timings.datetime_now_milliseconds() 
-            return
+
+
+    def _upload_input_dir_variations(self, processes, local_settings,
+                                     computation_platform_settings, output_storage_settings,
+                                     mytardis_settings, input_dir, run_settings):
+
+
+        output_prefix = '%s://%s@' % (output_storage_settings['scheme'],
+                                      output_storage_settings['type'])
+        input_url_with_credentials = get_url_with_credentials(
+            output_storage_settings, output_prefix + os.path.join(
+                self.iter_inputdir, input_dir),
+            is_relative_path=False)
+        logger.debug('input_url_with_credentials=%s' %
+                     input_url_with_credentials)
+        if local_settings['curate_data']:
+
+            try:
+                mytardis_platform = jobs.safe_import('chiminey.platform.mytardis.MyTardisPlatform', [], {})
+                self.experiment_id = mytardis_platform.create_dataset_for_input(self.experiment_id,
+                                                      run_settings, local_settings,
+                                                      output_storage_settings,
+                                                      mytardis_settings,
+                                                      input_url_with_credentials)
+            except ImproperlyConfigured as  e:
+                logger.error("Cannot load mytardis platform hook %s" % e)
+
+        else:
+            logger.warn('Data curation is off')
+
+        # get run Map
+        parent_stage = self.import_parent_stage(run_settings)
+        run_map, self.rand_index = parent_stage.get_internal_sweep_map(local_settings,
+                                                                       run_settings=run_settings)
+
+        # load value_map
+        values_url_with_pkey = get_url_with_credentials(
+            output_storage_settings,
+            output_prefix + os.path.join(self.iter_inputdir,
+                                         input_dir,
+                                         self.VALUES_FNAME),
+            is_relative_path=False)
+        
+        logger.debug("initial values_file=%s" % values_url_with_pkey)
+        values = {}
+        try:
+            values_content = storage.get_file(values_url_with_pkey)
+        except IOError:
+            logger.warn("no values file found")
+        else:
+            logger.debug("values_content = %s" % values_content)
+            values = dict(json.loads(values_content))
+        logger.debug("values=%s" % values)
+
+        # generates a set of variations for the template fname
+        logger.debug('self.initial_numbfile = %s ' % self.initial_numbfile)
+        contexts = self._get_variation_contexts(
+            [run_map], values,  self.initial_numbfile)
+        self.initial_numbfile += len(contexts)
+        logger.debug('contexts = %s ' % contexts)
+        logger.debug('self.initial_numbfile = %s ' % self.initial_numbfile)
+
+        # for each context, copy each file to dest and any
+        # templates to be instantiated, then store in values.
+
+        template_pat = re.compile("(.*)_template")
+        relative_path_suffix = self.get_relative_output_path(local_settings)
 
         process_counter=0
         for context in contexts:

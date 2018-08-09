@@ -25,6 +25,8 @@ import functools
 import logging
 import json
 import django
+import copy
+import ast
 from pprint import pformat
 
 from django.conf import settings as django_settings
@@ -969,6 +971,39 @@ def _fix_put(request):
     request.PUT = request.POST
 
 
+def _add_preset_file_context(data, user_profile, directive):
+    logger.debug("DATA=%s" % data)
+    logger.debug("TYPE_DATA=%s" % type(data))
+    new_data = dict(ast.literal_eval(data))
+    logger.debug("TYPE_NEW_DATA=%s" % type(new_data))
+    logger.debug("USER_PROFILE=%s" % user_profile.user.username)
+    logger.debug("DIRECTIVE=%s" % directive.name)
+    new_data2 = copy.deepcopy(new_data) 
+    new_data2.pop("preset_name", None)
+    new_input_location =  "%s/%s" % ( new_data2["http://rmit.edu.au/schemas/input/location/input/input_storage"],
+                          new_data2["http://rmit.edu.au/schemas/input/location/input/input_location"] ) 
+    new_data2["http://rmit.edu.au/schemas/input/location/input/input_location"] = new_input_location
+    new_output_location = "%s/%s" % ( new_data2["http://rmit.edu.au/schemas/input/location/output/output_storage"],
+                           new_data2["http://rmit.edu.au/schemas/input/location/output/output_location"] ) 
+    new_data2["http://rmit.edu.au/schemas/input/location/output/output_location"] = new_output_location
+    new_data2["smart_connector"] = directive.name
+    new_data2["http://rmit.edu.au/schemas/bdp_userprofile/username"] = user_profile.user.username
+    logger.debug("NEW_DATA2=%s" % new_data2 )
+    return new_data2
+
+def _touch_preset_dump(preset_name):
+    presets_dir= os.path.join(django_settings.STATIC_ROOT,'presets')
+    preset_file=os.path.join(presets_dir, preset_name + '.txt')
+    if not os.path.exists(presets_dir):
+        os.makedirs(presets_dir)
+    if not os.path.exists(preset_file):
+        open(preset_file, 'w').close()
+    return preset_file
+
+def _populate_preset_dump(preset_name, data):
+    #json_data = json.loads(data)
+    with open(preset_name, 'w') as fh:
+        json.dump(data, fh, indent=4, sort_keys=True, ensure_ascii = False)
 
 
 @has_session_key
@@ -1038,6 +1073,10 @@ def preset_list(request):
         logger.debug("ps=%s" % ps)
         parameters = json.loads(data)
         logger.debug("parameters=%s" % pformat(parameters))
+        #--AA write preset content to staticfiles/presets directory
+        preset_file=_touch_preset_dump(name)
+        new_data = _add_preset_file_context(data,user_profile,directive)
+        _populate_preset_dump(preset_file,new_data)
         new_pset = models.PresetParameterSet.objects.create(
             preset=ps, ranking=0)
         # TODO: we don't check types here
@@ -1081,6 +1120,9 @@ def preset_list(request):
                         value=pp_v)
                     ppp.save()
                     logger.debug("ppp=%s" % ppp)
+                    # write preset content to staticfiles/presets directory
+                    #preset_file=_touch_preset_dump(new_name)
+                    #_populate_preset_dump(preset_file,data)
                 except Exception, e:
                     logger.error(e)
                     return _error_response(
