@@ -944,6 +944,17 @@ def _delete_preset(request, pk):
         return _error_response(
             HttpResponseBadRequest(),
             "multiple presets returned")
+    #--AA-01--DELETE the preset dump file
+    logger.debug("PRESET_FILE_NAME")
+    preset_name=''
+    if ps.name:
+        preset_name=ps.name
+        logger.debug("PS.NAME=%s" % ps.name)
+    elif ps.name.name:
+        preset_name=ps.name.name
+        logger.debug("PS.NAME.NAME=%s" % ps.name.name)
+    logger.debug("PRESET_FILE_NAME=%s" %preset_name)
+    _delete_preset_dump(preset_name)
     ps.delete()
     response = HttpResponse()
     response.status_code = 200
@@ -991,13 +1002,20 @@ def _add_preset_file_context(data, user_profile, directive):
     logger.debug("NEW_DATA2=%s" % new_data2 )
     return new_data2
 
+def _delete_preset_dump(preset_name):
+    presets_dir= os.path.join(django_settings.STATIC_ROOT,'presets')
+    preset_file=os.path.join(presets_dir, preset_name + '.txt')
+    if os.path.exists(preset_file):
+        os.remove(preset_file)
+
 def _touch_preset_dump(preset_name):
     presets_dir= os.path.join(django_settings.STATIC_ROOT,'presets')
     preset_file=os.path.join(presets_dir, preset_name + '.txt')
     if not os.path.exists(presets_dir):
         os.makedirs(presets_dir)
-    if not os.path.exists(preset_file):
-        open(preset_file, 'w').close()
+    #if not os.path.exists(preset_file):
+    open(preset_file, 'w').close()
+    logger.debug("PRESET_FILE_NAME=%s" % preset_file )
     return preset_file
 
 def _populate_preset_dump(preset_name, data):
@@ -1073,7 +1091,7 @@ def preset_list(request):
         logger.debug("ps=%s" % ps)
         parameters = json.loads(data)
         logger.debug("parameters=%s" % pformat(parameters))
-        #--AA write preset content to staticfiles/presets directory
+        #--AA-03--write preset content to staticfiles/presets directory
         preset_file=_touch_preset_dump(name)
         new_data = _add_preset_file_context(data,user_profile,directive)
         _populate_preset_dump(preset_file,new_data)
@@ -1143,6 +1161,8 @@ def preset_list(request):
         """
         _fix_put(request)
         try:
+            #--AA-01
+            #direct_name = request.POST['directive']
             name = request.POST['name']
             data = request.POST['data']
         except IndexError:
@@ -1160,6 +1180,17 @@ def preset_list(request):
             return _error_response(
                 HttpResponseNotFound(),
                 "cannot get userprofile")
+        #try:
+        #    directive = models.Directive.objects.get(
+        #        name=direct_name,
+        #        hidden=False)
+        #except models.Directive.DoesNotExist:
+        #    return _error_response(
+        #        HttpResponseNotFound(),
+        #        "cannot get directive %s" % direct_name)
+        #logger.debug("directive=%s" % directive)
+        #if not directive:
+        #    return HttpResponseNotFound()
         try:
             ps = models.Preset.objects.get(name=name,
                                            user_profile=user_profile)
@@ -1189,6 +1220,10 @@ def preset_list(request):
                         logger.debug("parameters[pp.name.name]=%s"
                             % parameters[full_name])
                         pp.save()
+            #--AA-03--write preset content to staticfiles/presets directory
+            #preset_file=_touch_preset_dump(name)
+            #new_data = _add_preset_file_context(data,user_profile,directive)
+            #_populate_preset_dump(preset_file,new_data) 
         except Exception, e:
             logger.error(e)
             return _error_response(
@@ -1325,6 +1360,8 @@ def preset_detail(request, pk):
         _fix_put(request)
         try:
             data = request.POST['data']
+            #--AA-01
+            direct_name = request.POST['directive']
         except Exception, e:
             logger.error(e)
             return _error_response(
@@ -1348,6 +1385,17 @@ def preset_detail(request, pk):
             return _error_response(
                 HttpResponseBadRequest(),
                 "multiple objects with same key")
+        try:
+            directive = models.Directive.objects.get(
+                name=direct_name,
+                hidden=False)
+        except models.Directive.DoesNotExist:
+            return _error_response(
+                HttpResponseNotFound(),
+                "cannot get directive %s" % direct_name)
+        logger.debug("PRESET_DIRECTIVE=%s" % directive)
+        if not directive:
+            return HttpResponseNotFound()
         parameters = json.loads(data)
         logger.debug("parameters=%s" % pformat(parameters))
         # TODO: we don't check types here
@@ -1363,6 +1411,10 @@ def preset_detail(request, pk):
                         logger.debug("parameters[pp.name.name]=%s"
                             % parameters[full_name])
                         pp.save()
+            #--AA-03--write preset content to staticfiles/presets directory
+            preset_file=_touch_preset_dump(ps.name)
+            new_data = _add_preset_file_context(data,user_profile,directive)
+            _populate_preset_dump(preset_file,new_data) 
         except Exception, e:
             logger.error(e)
             return _error_response(
