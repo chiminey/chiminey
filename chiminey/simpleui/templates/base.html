@@ -97,6 +97,20 @@ function addPresetDB(form_id, directive_name, preset_name, auto_save){
 }
 
 
+function downloadPreset(form_id, preset_name){
+    var form =  '#' + form_id;
+    var selected_item = $(form + " #id_presets option:selected").val();
+    console.log(selected_item);
+    var matchres = selected_item.match(/last/g);
+    preset_filename = selected_item + '.txt';
+    preset_href = "/static/presets/"+ preset_filename;
+    if (!matchres){
+        console.log(selected_item);
+        window.open(preset_href);
+    }
+}
+
+
 function deletePreset(form_id){
     var form =  '#' + form_id;
     var selected_item = $(form + " #id_presets option:selected").val();
@@ -198,7 +212,6 @@ function resetPreset(form_id, preset_name){
 function advanced(){
     alert("hi");
 }
-
 
 function deactivate_DEL_UPD_buttons(){
      $('form #id_delete_preset_button').attr("disabled", "disabled");
