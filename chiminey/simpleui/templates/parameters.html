@@ -73,6 +73,9 @@ here </a>. Copy these files to your registered storage location. </p>
      <button id="id_update_preset_button" type="button" class="btn btn-default btn-small" title="Update current preset" onclick="updatePreset('myform-id', '{{directive.name}}', '')">
         <i class="fa fa-floppy-o"></i>
     </button>
+     <button  id="id_download_preset_button" type="button" class="btn btn-download btn-small" title="Download current preset" onclick="downloadPreset('myform-id', 'last_{{ directive.name }}_preset')">
+        <i class="fa fa-download"></i>
+    </button>
      <script>resetPreset('myform-id', 'last_{{ directive.name }}_preset')</script>
     </div>
 </div>
