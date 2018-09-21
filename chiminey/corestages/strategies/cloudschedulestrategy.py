@@ -176,13 +176,6 @@ def start_schedule(schedule_class, run_settings, local_settings):
     logger.debug('total_processes=%d' % schedule_class.total_processes)
     schedule_class.current_processes = []
     relative_path_suffix = schedule_class.get_relative_output_path(local_settings)
-    #schedule_class.schedule_index, schedule_class.current_processes, schedule_class.schedule_start_time = \
-    #schedule_class.schedule_index, schedule_class.current_processes = \
-    #        start_round_robin_schedule(
-    #            schedule_class.nodes, schedule_class.total_processes,
-    #                                   schedule_class.schedule_index,
-    #                                   local_settings, relative_path_suffix,
-    #                                   schedule_class.schedule_start_time)
     schedule_class.schedule_index, schedule_class.current_processes = \
             start_round_robin_schedule(
                 schedule_class.nodes, schedule_class.total_processes,
@@ -198,11 +191,6 @@ def start_reschedule(schedule_class, run_settings, local_settings):
     output_storage_settings = schedule_class.get_platform_settings(
             run_settings, '%s/platform/storage/output' % django_settings.SCHEMA_PREFIX)
     relative_path_suffix = schedule_class.get_relative_output_path(local_settings)
-    #_, schedule_class.current_processes = \
-    #start_round_robin_reschedule(schedule_class.nodes, schedule_class.procs_2b_rescheduled,
-    #                             schedule_class.current_processes, local_settings,
-    #                             output_storage_settings, relative_path_suffix,
-    #                             schedule_class.schedule_start_time)
     _, schedule_class.current_processes = \
     start_round_robin_reschedule(schedule_class.nodes, schedule_class.procs_2b_rescheduled,
                                  schedule_class.current_processes, local_settings,
@@ -212,8 +200,6 @@ def start_reschedule(schedule_class, run_settings, local_settings):
              new_processes=schedule_class.current_processes, reschedule=True)
 
 
-#def start_round_robin_schedule(nodes, processes, schedule_index, settings, relative_path_suffix,
-#                               schedule_start_time):
 def start_round_robin_schedule(nodes, processes, schedule_index, settings, relative_path_suffix):
     total_nodes = len(nodes)
     all_nodes = list(nodes)
@@ -244,8 +230,6 @@ def start_round_robin_schedule(nodes, processes, schedule_index, settings, relat
         logger.debug('index=%d' % index)
         put_proc_ids(relative_path, ids, ip_address, settings)
 
-        #sched_start_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        #sched_start_time=schedule_start_time
         new_processes = construct_lookup_table(
             ids, ip_address, new_processes,
             maximum_retry=int(settings['maximum_retry']))
@@ -288,10 +272,6 @@ def start_round_robin_schedule(nodes, processes, schedule_index, settings, relat
     return index, new_processes
 
 
-#def start_round_robin_reschedule(nodes, procs_2b_rescheduled,
-#                                 current_procs, settings,
-#                                 output_storage_settings, relative_path_suffix,
-#                                 schedule_start_time):
 def start_round_robin_reschedule(nodes, procs_2b_rescheduled,
                                  current_procs, settings,
                                  output_storage_settings, relative_path_suffix):
@@ -327,13 +307,10 @@ def start_round_robin_reschedule(nodes, procs_2b_rescheduled,
         #logger.debug('index=%d' % index)
         put_proc_ids(relative_path, ids, ip_address, settings)
 
-        #sched_start_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        #sched_start_time=schedule_start_time
         new_processes = construct_lookup_table(
             ids, ip_address, new_processes,
             status='reschedule_ready',
             maximum_retry=int(settings['maximum_retry']))
-            #sched_start_time=sched_start_time)
 
         destination = get_url_with_credentials(settings,
             relative_path,
@@ -404,24 +381,28 @@ def put_proc_ids(relative_path, ids, ip, settings):
     put_file(destination, proc_ids.encode('utf-8'))
 
 
-def construct_lookup_table(ids, ip_address, new_processes, maximum_retry=1, status='ready', sched_start_time='', sched_end_time='', sched_total_time='',  varinp_transfer_start_time='',  varinp_transfer_end_time='', varinp_transfer_total_time='', exec_start_time='', exec_end_time='', exec_total_time='', output_transfer_start_time='', output_transfer_end_time='', output_transfer_total_time='' ):
+def construct_lookup_table(ids, ip_address, new_processes, maximum_retry=1, status='ready'):
     for id in ids:
         new_processes.append(
             {'status': '%s' % status, 'id': '%s' % id,
              'ip_address': '%s' % ip_address,
              'retry_left': '%d' % maximum_retry,
-             'sched_start_time': '%s' % sched_start_time,
-             'sched_end_time': '%s' % sched_end_time,
-             'sched_total_time': '%s' % sched_total_time,
-             'varinp_transfer_start_time': '%s' % varinp_transfer_start_time,
-             'varinp_transfer_end_time': '%s' % varinp_transfer_end_time,
-             'varinp_transfer_total_time': '%s' % varinp_transfer_total_time,
-             'exec_start_time': '%s' % exec_start_time,
-             'exec_end_time': '%s' % exec_end_time,
-             'exec_total_time': '%s' % exec_total_time,
-             'output_transfer_start_time': '%s' % output_transfer_start_time,
-             'output_transfer_end_time': '%s' % output_transfer_end_time,
-             'output_transfer_total_time': '%s' % output_transfer_total_time
+             'sched_start_time': '',
+             'sched_end_time': '',
+             'sched_total_time': '',
+             'varinp_transfer_start_time': '',
+             'varinp_transfer_end_time': '',
+             'varinp_transfer_total_time': '',
+             'exec_start_time': '',
+             'exec_end_time': '',
+             'exec_total_time': '',
+             'output_transfer_start_time': '',
+             'output_transfer_end_time': '',
+             'output_transfer_total_time': '',
+             'avg_cpu_usage': '',
+             'avg_memory_usage': '',
+             'avg_ioread_per_sec':'',
+             'avg_iowrite_per_sec':''
              })
     return new_processes
 

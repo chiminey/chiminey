@@ -362,17 +362,11 @@ class Wait(Stage):
                            self.current_processes[iterator]['output_transfer_total_time'] = timings.timedelta_milliseconds(
                                           self.current_processes[iterator]['output_transfer_end_time'], 
                                           self.current_processes[iterator]['output_transfer_start_time']) 
-                           #self.current_processes[iterator]['output_transfer_total_time'] = timings.microseconds_timedelta(
-                           #               self.current_processes[iterator]['output_transfer_end_time'], 
-                           #               self.current_processes[iterator]['output_transfer_start_time']) 
 
 
                            self.current_processes[iterator]['varinp_transfer_total_time'] = timings.timedelta_milliseconds(
                                           self.current_processes[iterator]['varinp_transfer_end_time'], 
                                           self.current_processes[iterator]['varinp_transfer_start_time'])
-                           #self.current_processes[iterator]['varinp_transfer_total_time'] = timings.microseconds_timedelta(
-                           #               self.current_processes[iterator]['varinp_transfer_end_time'], 
-                           #               self.current_processes[iterator]['varinp_transfer_start_time'])
                                           
                            if timedata:
                                self.current_processes[iterator]['sched_start_time'] = timedata['sched_start_time']
@@ -380,18 +374,16 @@ class Wait(Stage):
                                self.current_processes[iterator]['sched_total_time'] = timings.timedelta_milliseconds(
                                           self.current_processes[iterator]['sched_end_time'], 
                                           self.current_processes[iterator]['sched_start_time'])
-                               #self.current_processes[iterator]['sched_total_time'] = timings.microseconds_timedelta(
-                               #           self.current_processes[iterator]['sched_end_time'], 
-                               #           self.current_processes[iterator]['sched_start_time'])
                                    
                                self.current_processes[iterator]['exec_start_time'] = timedata['exec_start_time']
                                self.current_processes[iterator]['exec_end_time'] = timedata['exec_end_time']
                                self.current_processes[iterator]['exec_total_time'] = timings.timedelta_milliseconds(
                                           self.current_processes[iterator]['exec_end_time'], 
                                           self.current_processes[iterator]['exec_start_time'])
-                               #self.current_processes[iterator]['exec_total_time'] = timings.microseconds_timedelta(
-                               #           self.current_processes[iterator]['exec_end_time'], 
-                               #           self.current_processes[iterator]['exec_start_time'])
+                               self.current_processes[iterator]['avg_cpu_usage'] = timedata['avg_cpu_usage']
+                               self.current_processes[iterator]['avg_memory_usage'] = timedata['avg_memory_usage']
+                               self.current_processes[iterator]['avg_ioread_per_sec'] = timedata['avg_ioread_per_sec']
+                               self.current_processes[iterator]['avg_iowrite_per_sec'] = timedata['avg_iowrite_per_sec']
 
                     audit_url = get_url_with_credentials(
                                 comp_pltf_settings, os.path.join(

@@ -107,14 +107,24 @@ def _start_bootstrap(instance, ip,  settings, source, destination):
     # and then test can access, otherwise, loop.
     #install_make = 'yum install -y make'
     install_make = '`command -v make  > /dev/null 2>&1 || echo yum install -y make`; '
-    command_out = ''
-    errs = ''
+    install_bc = '`command -v bc  > /dev/null 2>&1 || echo sudo -s yum install -y bc`; '
+    install_sysstat = '`command -v sysstat  > /dev/null 2>&1 || echo sudo -s yum install -y sysstat`; '
+    command_out1 = ''
+    command_out2 = ''
+    command_out3 = ''
+    errs1 = ''
+    errs2 = ''
+    errs3 = ''
     logger.debug("starting command for %s" % ip)
     ssh = ''
     try:
         ssh = open_connection(ip_address=ip, settings=settings)
-        command_out, errs = run_command_with_status(ssh, install_make)
-        logger.debug("command_out1=(%s, %s)" % (command_out, errs))
+        command_out1, errs1 = run_command_with_status(ssh, install_make)
+        logger.debug("command_out1=(%s, %s)" % (command_out1, errs1))
+        command_out2, errs2 = run_command_with_status(ssh, install_bc)
+        logger.debug("command_out2=(%s, %s, %s)" % (install_bc, command_out2, errs2))
+        command_out3, errs3 = run_command_with_status(ssh, install_sysstat)
+        logger.debug("command_out3=(%s, %s, %s)" % (install_sysstat, command_out3, errs3))
         run_make(ssh, makefile_path, 'start_bootstrap')
     except Exception, e:  # fixme: consider using reliability framework
         logger.error(e)
