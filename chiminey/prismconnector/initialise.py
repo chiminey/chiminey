@@ -57,7 +57,7 @@ class PrismInitial(CoreInitial):
 #TODO backward compatability issue
     def get_domain_specific_schemas(self):
 
-        schema_data =  [u'Payload parameter sweep',
+        schema_data =  [u'Payload Parameter Sweep',
              {
                  u'internal_sweep_map': {'type': models.ParameterName.STRING, 'subtype': 'jsondict',
                                 'description': 'Values to sweep over', 'ranking': 60, 'initial': '{}',
