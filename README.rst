@@ -17,8 +17,7 @@ Chiminey provides
 
 * Definition, execution and monitoring of high-performance, big data, and cloud computing applications.
 
-* A user interface that focusses  both on the  domain-specific parts of a task for scientists and  a framework that allows IT research engineers
-to build computation tasks.
+* A user interface that focusses  both on the  domain-specific parts of a task for scientists and  a framework that allows IT research engineers to build computation tasks.
 
 * Automatic generation of  parameter sweeps over variables that can be scheduled on HPC clusters or across cloud IaaS nodes.
 
@@ -28,7 +27,7 @@ to build computation tasks.
 
 * Connectors for data transfer to and from remote data sources and remote execution platforms for both unix and cloud computation resources.
 
-* Provides framework for metadata extraction and publishing to the MyTardis data curation system
+* Provides framework for metadata extraction and publishing to the MyTardis data curation system.
 
 * Provides APIs for both job submission and monitoring but also redefinition of alternative user interfaces.
 
