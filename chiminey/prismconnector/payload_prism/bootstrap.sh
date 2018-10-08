@@ -3,6 +3,7 @@
 
 
 WORK_DIR=`pwd`
+cd /opt
 
 # Install Java
 jdk_version=${1:-8}
@@ -40,7 +41,6 @@ PRISM_DOWNLOAD_URL=http://www.prismmodelchecker.org/dl/prism-${PRISM_VERSION}-li
 yum -y update
 yum -y install glibc.i686 libstdc++.so.6 gcc make
 
-cd /opt/
 curl -O ${PRISM_DOWNLOAD_URL}
 tar xzvf prism-${PRISM_VERSION}-linux64.tar.gz
 cd prism-${PRISM_VERSION}-linux64 && ./install.sh
