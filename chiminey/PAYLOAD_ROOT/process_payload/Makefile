@@ -9,7 +9,7 @@ process_schedule_done:
 
 start_running_process:
 	@echo running
-	@bash ./start_running_process.sh  $(RUN_ARGS)
+	@bash ./start_running_process.sh  $(RUN_ARGS) >& start_running_process.output &
 
 process_running_done:
 	@echo checking for running
