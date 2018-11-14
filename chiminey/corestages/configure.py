@@ -25,6 +25,7 @@ from pprint import pformat
 from chiminey.platform import manage
 from chiminey.corestages import stage
 from chiminey.platform import *
+from chiminey.corestages import timings
 
 from chiminey.corestages.stage import Stage, UI
 from chiminey.smartconnectorscheduler import models
@@ -48,7 +49,9 @@ class Configure(Stage):
     """
         - Setups up remote file system
            e.g. Object store in NeCTAR Creates file system,
+
     """
+    NETWORK_IO_USAGE_LOG = django_settings.NETWORK_IO_USAGE_LOG
 
     def __init__(self, user_settings=None):
         self.job_dir = "hrmcrun"  # TODO: make a stageparameter + suffix on real job number
@@ -153,9 +156,10 @@ class Configure(Stage):
 
     def process(self, run_settings):
 
+
         logger.debug('run_settings=%s' % run_settings)
-
-
+        #create empty network io usage log file
+        self.NETWORK_IO_USAGE_LOG = timings.create_input_output_log(str(getval(run_settings, '%s/system/contextid' % django_settings.SCHEMA_PREFIX)), self.NETWORK_IO_USAGE_LOG)
         self.setup_output(run_settings)
         self.setup_input(run_settings)
         self.setup_computation(run_settings)
@@ -237,6 +241,9 @@ class Configure(Stage):
         setval(run_settings,
                '%s/input/mytardis/experiment_id' % django_settings.SCHEMA_PREFIX,
                str(self.experiment_id))
+        setval(run_settings,
+               '%s/system/usage_logs' % django_settings.SCHEMA_PREFIX,
+               self.NETWORK_IO_USAGE_LOG)
 
 
         return run_settings
@@ -285,7 +292,8 @@ class Configure(Stage):
                              iter_inputdir),
             is_relative_path=False)
         logger.debug("destination_url=%s" % destination_url)
-        storage.copy_directories(source_url, destination_url)
+        #storage.copy_directories(source_url, destination_url)
+        storage.copy_directories(source_url, destination_url,job_id=str(self.contextid), message='ConfigureStage')
 
 
     def get_results_dirname(self, run_settings):

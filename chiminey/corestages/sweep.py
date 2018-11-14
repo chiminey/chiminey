@@ -271,7 +271,7 @@ class Sweep(Stage):
                     values_url,
                     is_relative_path=False)
                 logger.debug("values_url=%s" % values_e_url)
-                values_content = get_file(values_e_url)
+                values_content = get_file(values_e_url, job_id=str(contextid), message='SweepStage')
                 logger.debug("values_content=%s" % values_content)
                 starting_map = dict(json.loads(values_content))
             except IOError:
@@ -328,7 +328,7 @@ class Sweep(Stage):
             # Duplicate any input_directory into runX duplicates
             if input_loc:
                 logger.debug("context=%s" % context)
-                copy_directories(input_url, run_iter_url)
+                copy_directories(input_url, run_iter_url, job_id=str(contextid), message='SweepStage')
 
             # Need to load up existing values, because original input_dir could
             # have contained values for the whole run
@@ -351,7 +351,7 @@ class Sweep(Stage):
             #                  VALUES_MAP_TEMPLATE_FILE % {'template_name': template_name}),
             #             is_relative_path=False)
             #         logger.debug("values_url=%s" % values_url)
-            #         values_content = get_file(values_url)
+            #         values_content = get_file(values_url, str(contextid))
             #         logger.debug("values_content=%s" % values_content)
             #         v_map = dict(json.loads(values_content), indent=4)
             #     except IOError:
@@ -363,7 +363,7 @@ class Sweep(Stage):
             #     v_map.update(context)
             #     v_map['run_counter'] = 1
             #     logger.debug("new v_map=%s" % v_map)
-            #     put_file(values_url, json.dumps(v_map, indent=4))
+            #     put_file(values_url, json.dumps(v_map, indent=4), str(contextid))
 
             v_map = {}
             try:
@@ -373,7 +373,7 @@ class Sweep(Stage):
                         VALUES_MAP_FILE),
                     is_relative_path=False)
                 logger.debug("values_url=%s" % values_url)
-                values_content = get_file(values_url)
+                values_content = get_file(values_url, job_id=str(contextid), message='SweepStage')
                 logger.debug("values_content=%s" % values_content)
                 v_map = dict(json.loads(values_content), )
             except IOError:
@@ -386,7 +386,7 @@ class Sweep(Stage):
             v_map['run_counter'] = 1
 
             logger.debug("new v_map=%s" % v_map)
-            put_file(values_url, json.dumps(v_map, indent=4))
+            put_file(values_url, json.dumps(v_map, indent=4), job_id=str(contextid), message='SweepStage')
 
             # Set random numbers for subdirective
             logger.debug("run_settings=%s" % pformat(run_settings))

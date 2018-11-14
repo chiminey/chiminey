@@ -398,6 +398,7 @@ def _get_chiminey_schemas():
                  u'max_seed_int': {'type': models.ParameterName.NUMERIC, 'subtype': 'natural', 'description': '',
                                    'ranking': 1, 'help_text': ''},
                  u'metadata_builder': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '', 'initial': 'chiminey.mytardis.metadata.MetadataBuilder', 'ranking': 1, 'help_text': ''},
+                 u'usage_logs': {'type': models.ParameterName.STRING, 'subtype': '', 'description': '', 'initial':'','ranking': 5, 'help_text': ''},
              }
             ],
         u'%s/bdp_userprofile' % django_settings.SCHEMA_PREFIX:

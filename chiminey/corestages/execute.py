@@ -277,7 +277,8 @@ class Execute(stage.Stage):
                 computation_platform_settings, dest_files_location,
                 is_relative_path=True, ip_address=proc['ip_address'])
             logger.debug('dest_files_url=%s' % dest_files_url)
-            storage.copy_directories(source_files_url, dest_files_url)
+            #storage.copy_directories(source_files_url, dest_files_url)
+            storage.copy_directories(source_files_url, dest_files_url, job_id=str(self.contextid), process_id=str(proc['id']), message='ExecuteStage')
 
     def output(self, run_settings):
         """
@@ -551,7 +552,7 @@ class Execute(stage.Stage):
         logger.debug("initial values_file=%s" % values_url_with_pkey)
         values = {}
         try:
-            values_content = storage.get_file(values_url_with_pkey)
+            values_content = storage.get_file(values_url_with_pkey, job_id=str(self.contextid), message='ExecuteStage')
         except IOError:
             logger.warn("no values file found")
         else:
@@ -626,7 +627,7 @@ class Execute(stage.Stage):
                         is_relative_path=True, ip_address=proc['ip_address'])
                     logger.debug("writing to =%s" % dest_url)
                     #logger.debug("content=%s" % content)
-                    storage.put_file(dest_url, content)
+                    storage.put_file(dest_url, content, job_id=str(self.contextid), process_id=str(proc['id']), message='ExecuteStage')
                     if self.reschedule_failed_procs:
                         logger.debug("resched=%s" % resched_file_location)
                         logger.debug("fname=%s" % fname)
@@ -639,14 +640,14 @@ class Execute(stage.Stage):
                         resched_url = get_url_with_credentials(
                             output_storage_settings, test)
                         logger.debug("writing backup to %s" % resched_url)
-                        storage.put_file(resched_url, content)
+                        storage.put_file(resched_url, content, job_id=str(self.contextid), process_id=str(proc['id']), message='ExecuteStage')
                     logger.debug("done")
 
                 outputs = []
                 if templ_mat:
                     base_fname = templ_mat.group(1)
                     template_content = storage.get_file(
-                        fname_url_with_credentials)
+                        fname_url_with_credentials, job_id=str(self.contextid), process_id=str(proc['id']), message='ExecuteStage')
                     try:
                         templ = Template(template_content)
                     except TemplateSyntaxError, e:
@@ -663,7 +664,7 @@ class Execute(stage.Stage):
                     outputs.append((fname, template_content))
 
                 else:
-                    content = storage.get_file(fname_url_with_credentials)
+                    content = storage.get_file(fname_url_with_credentials, job_id=str(self.contextid), process_id=str(proc['id']), message='ExecuteStage')
                     outputs.append((fname, content))
 
                 for (new_fname, content) in outputs:
@@ -695,7 +696,7 @@ class Execute(stage.Stage):
                 computation_platform_settings, values_dest_location,
                 is_relative_path=True, ip_address=proc['ip_address'])
 
-            storage.put_file(values_dest_url, json.dumps(context, indent=4))
+            storage.put_file(values_dest_url, json.dumps(context, indent=4), job_id=str(self.contextid), process_id=str(proc['id']), message='ExecuteStage')
             for iterator, p in enumerate(self.schedule_procs):
                if int(p['id']) == int(proc['id']):
                    self.schedule_procs[iterator]['varinp_transfer_end_time'] = timings.datetime_now_milliseconds() 

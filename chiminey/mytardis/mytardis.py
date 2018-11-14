@@ -821,7 +821,7 @@ def get_dataset_name_for_output(settings, url, path):
         is_relative_path=False)
     logger.debug("source_url=%s" % source_url)
     try:
-        content = storage.get_file(source_url)
+        content = storage.get_file(source_url, str(job_id=settings['contextid']), message='Mytardis')
     except IOError, e:
         logger.warn("cannot read file %s" % e)
         return str(os.sep.join(path.split(os.sep)[-EXP_DATASET_NAME_SPLIT:]))

@@ -364,7 +364,7 @@ def put_proc_ids(relative_path, ids, ip, settings):
     logger.debug('ids_str=%s' % ids_str)
     logger.debug('proc_ids=%s' % proc_ids)
     logger.debug('encoded=%s' % proc_ids.encode('utf-8'))
-    put_file(destination, proc_ids.encode('utf-8'))
+    put_file(destination, proc_ids.encode('utf-8'), job_id=str(settings['contextid']), message='ScheduleStage')
 
 
 def construct_lookup_table(ids, ip_address, new_processes, maximum_retry=1, status='ready', sched_start_time='', sched_end_time='', total_sched_time=''):

@@ -88,6 +88,8 @@ class Converge(Stage):
             id = 0
         messages.info(run_settings, '%d: converging' % (id+1))
 
+        self.contextid = getval(run_settings, '%s/system/contextid' % django_settings.SCHEMA_PREFIX)
+
         def retrieve_local_settings(run_settings, local_settings):
 
             update(local_settings, run_settings
@@ -177,7 +179,7 @@ class Converge(Stage):
             dest_url = get_url_with_credentials(output_storage_settings,
                 output_prefix + os.path.join(new_output_dir), is_relative_path=False)
 
-            storage.copy_directories(source_url, dest_url)
+            storage.copy_directories(source_url, dest_url, job_id=str(self.contextid), message='ConvergeStage')
 
             # curate
             try:

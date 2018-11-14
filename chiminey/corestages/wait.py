@@ -34,8 +34,10 @@ from chiminey.reliabilityframework.failuredetection import FailureDetection
 from chiminey import messages
 from chiminey import storage
 
+from chiminey.sshconnection import open_connection
+from chiminey.compute import run_make, run_command_with_status
 from chiminey.runsettings import getval, setvals, setval, getvals, SettingNotFoundException
-from chiminey.storage import get_url_with_credentials
+from chiminey.storage import get_url_with_credentials, list_dirs, get_make_path
 from chiminey.corestages import timings
 
 logger = logging.getLogger(__name__)
@@ -46,6 +48,8 @@ class Wait(Stage):
     """
         Return whether the run has finished or not
     """
+
+    DISK_USAGE_LOGS = django_settings.DISK_USAGE_LOGS
 
     def __init__(self, user_settings=None):
         self.runs_left = 0
@@ -91,7 +95,6 @@ class Wait(Stage):
             self.current_processes = ast.literal_eval(getval(run_settings, '%s/stages/schedule/current_processes' % django_settings.SCHEMA_PREFIX))
         except (SettingNotFoundException, ValueError):
             self.current_processes = []
-
 
         try:
             self.exec_procs = ast.literal_eval(getval(run_settings, '%s/stages/schedule/executed_procs' % django_settings.SCHEMA_PREFIX))
@@ -187,7 +190,7 @@ class Wait(Stage):
         logger.debug('dest_files_url=%s' % dest_files_url)
         # FIXME: might want to turn on paramiko compress function
         # to speed up this transfer
-        storage.copy_directories(source_files_url, dest_files_url)
+        storage.copy_directories(source_files_url, dest_files_url, job_id=str(self.contextid), process_id=str(process_id), message='WaitStage')
 
 
         #copying values file
@@ -214,11 +217,11 @@ class Wait(Stage):
         logger.debug("values_dest_url=%s" % values_dest_url)
         try:
 	    logger.debug('reading %s' % values_source_url)
-            content = storage.get_file(values_source_url)
+            content = storage.get_file(values_source_url, job_id=str(self.contextid), process_id=str(process_id), message='WaitStage')
         except IOError, e:
             content = {}
         logger.debug('content=%s' % content)
-        storage.put_file(values_dest_url, content)
+        storage.put_file(values_dest_url, content, job_id=str(self.contextid), process_id=str(process_id), message='WaitStage')
 
         #reading timedata.txt file
         timedata_files_location = "%s://%s@%s" % (computation_platform_settings['scheme'],
@@ -233,7 +236,8 @@ class Wait(Stage):
         timedict={}
         try:
 	    logger.debug('Reading %s' % timedata_source_url)
-            content = storage.get_file(timedata_source_url)
+            #content = storage.get_file(timedata_source_url)
+            content = storage.get_file(timedata_source_url, job_id=str(self.contextid), process_id=str(process_id), message='WaitStage')
             timedict = dict(ast.literal_eval(content))
             logger.debug("Timedata exec_start_time:%s" % timedict['exec_start_time'])
         except IOError, e:
@@ -433,6 +437,63 @@ class Wait(Stage):
         #    self.all_processes_file=''
         #except ValueError, e:
         #    logger.error(e)
+        self.check_disk_usage(str(self.contextid), local_settings, run_settings)
+  
+    def check_disk_usage(self, job_id, settings, run_settings):
+        logger.debug("DISKUSAGE job_id:%s" %job_id)
+        logger.debug("DISKUSAGE settings:%s" %settings)
+        logger.debug("DISKUSAGE run_settings:%s" %run_settings)
+        
+        relative_path_suffix = self.get_relative_output_path(settings)
+        relative_path = settings['type'] + '@' + \
+            os.path.join(relative_path_suffix)
+        scheduled_str = getval(run_settings, '%s/stages/schedule/scheduled_nodes' % django_settings.SCHEMA_PREFIX)
+        self.scheduled_nodes = ast.literal_eval(scheduled_str)
+        logger.debug("DISKUSAGE scheduled_nodes:%s" %scheduled_str)
+        for disk_usage_file in self.DISK_USAGE_LOGS:
+            self.DISK_USAGE_LOGS[disk_usage_file]=timings.create_log_file(job_id,disk_usage_file) 
+        for s_node in self.scheduled_nodes:
+            ip_address=s_node[1]
+            logger.debug("DISKUSAGE ip_address:%s" %ip_address)
+            destination = get_url_with_credentials(settings,
+                                               relative_path,
+                                               is_relative_path=True,
+                                               ip_address=ip_address)
+            makefile_path = get_make_path(destination)
+            disk_usage_check_done = False
+            try:
+                logger.debug('DISKUSAGE SSH open_connection=%s' %ip_address)
+                ssh = open_connection(ip_address=ip_address, settings=settings)
+                logger.debug('DISKUSAGE run_make=%s %s' % (makefile_path,'check_disk_usage'))
+                (command_out, err) = run_make(ssh, makefile_path, 'check_disk_usage')
+                logger.debug('DISKUSAGE run_make_output=%s %s' % (command_out,err))
+                if command_out:
+                    logger.debug("DISKUSAGE disk_usage_out = %s" % command_out)
+                    for line in command_out:
+                        if 'Disk usage checking done' in line:
+                             disk_usage_check_done = True
+            except Exception, e:
+                logger.error(e)
+            finally:
+                if ssh:
+                    ssh.close()
+            if disk_usage_check_done:
+                logger.debug('DISKUSAGE disk_usage_check_done TRUE ')
+                for disk_usage_file in self.DISK_USAGE_LOGS:
+                    try:
+                        disk_usage_file_path = os.path.join(relative_path_suffix,disk_usage_file)
+                        disk_usage_file_location = "%s://%s@%s" % (settings['scheme'], settings['type'],
+                                                                   os.path.join(ip_address, disk_usage_file_path))
+                        disk_usage_source_url = get_url_with_credentials(settings, disk_usage_file_location,
+                                                                      is_relative_path=False)
+                        logger.debug("DISKUSAGE disk_usage_file_location : %s" % disk_usage_file_location)
+                        content = storage.get_file(disk_usage_source_url, job_id=str(self.contextid), message='WaitStage')
+                        timings.update_log_file(self.DISK_USAGE_LOGS[disk_usage_file], content)
+                    except IOError, e:
+                        content = {}
+                    logger.debug('DISKUSAGE filename : %s' % disk_usage_file_path)
+                    logger.debug('DISKUSAGE content : %s' % content)
+
 
     def output(self, run_settings):
         """

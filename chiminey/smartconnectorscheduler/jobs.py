@@ -375,7 +375,7 @@ def generate_rands(settings, start_range,  end_range, num_required, start_index)
     rand_nums = []
     num_url = get_url_with_credentials(settings, settings['random_numbers'],
         is_relative_path=False)
-    random_content = get_file(num_url)
+    random_content = get_file(num_url, job_id=str(settings['contextid']), message='Internal')
     # FIXME: this loads the entire file, which could be very large.
     numbers = random_content.split('\n')
     random_counter = start_index

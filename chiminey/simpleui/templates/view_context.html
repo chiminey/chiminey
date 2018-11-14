@@ -48,6 +48,13 @@ $(document).ready(function () {
                     {% with context.id|slugify as dump_reference %}
                        view: &nbsp; <a href=" {% static "dumps/"|add:dump_reference|add:"/all_processes.txt" %}"><font color="0000FF">all processes (no timing information, JSON format) </font></a>
                     {% endwith %}
+                {% elif key2 == "usage_logs" %}
+                       {% with context.id|slugify as dump_reference %}
+                          view: &nbsp;<a href=" {% static "dumps/"|add:dump_reference|add:"/network_io_usage_log.txt" %}"><font color="0000FF">Network IO usage</font></a><br>
+                          view: &nbsp;<a href=" {% static "dumps/"|add:dump_reference|add:"/yum_install_disk_usage_log.txt" %}"><font color="0000FF">Yum install disk usage </font></a><br>
+                          view: &nbsp;<a href=" {% static "dumps/"|add:dump_reference|add:"/other_install_disk_usage_log.txt" %}"><font color="0000FF">3rd-party package install disk usage </font></a><br>
+                          view: &nbsp;<a href=" {% static "dumps/"|add:dump_reference|add:"/job_level_disk_usage_log.txt" %}"><font color="0000FF">Job level disk usage </font></a><br>
+                       {% endwith %}
                 {% else %}
                     {{value2.0}}
                 {% endif %}

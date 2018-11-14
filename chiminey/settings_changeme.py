@@ -126,6 +126,13 @@ MIDDLEWARE_CLASSES = (
     )
 VALUES_FNAME = 'values'
 
+NETWORK_IO_USAGE_LOG = 'network_io_usage_log.txt'
+
+DISK_USAGE_LOGS = {'yum_install_disk_usage_log.txt':'',
+                   'other_install_disk_usage_log.txt': '',
+                   'job_level_disk_usage_log.txt':''
+                  }
+
 SMART_CONNECTORS = {
 'hrmc': {'init': 'chiminey.examples.hrmc.initialise.HRMCInitial',
          'name': 'hrmc',

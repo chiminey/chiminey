@@ -457,3 +457,26 @@ def create_timings_dump(job_id, file_name):
 def update_timings_dump(file_name, json_data):
     with open(file_name, 'a') as fh:
         json.dump(json_data, fh, indent=4, sort_keys=True, ensure_ascii = False)
+
+def create_log_file(job_id, file_name):
+    dumps_dir= os.path.join(django_settings.STATIC_ROOT,'dumps',job_id)
+    dump_file=os.path.join(dumps_dir,file_name)
+    dump_ref=os.path.join('dumps',job_id,file_name)
+    if not os.path.exists(dumps_dir):
+        os.makedirs(dumps_dir)
+    open(dump_file, 'w').close()
+    return dump_file
+
+def update_log_file(filename, text):
+    with open(filename, "a") as logf:
+        logf.write(text)
+
+def create_input_output_log(job_id, file_name):
+    dumps_dir= os.path.join(django_settings.STATIC_ROOT,'dumps',job_id)
+    dump_file=os.path.join(dumps_dir,file_name)
+    dump_ref=os.path.join('dumps',job_id,file_name)
+    if not os.path.exists(dumps_dir):
+        os.makedirs(dumps_dir)
+    open(dump_file, 'w').close()
+    return dump_file
+

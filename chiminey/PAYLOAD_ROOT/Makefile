@@ -14,3 +14,6 @@ start_schedule:
 
 schedule_done:
 	@bash ./schedule_done.sh $(IDS) 
+
+check_disk_usage:
+	@bash ./disk_usage.sh

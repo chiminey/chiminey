@@ -40,6 +40,8 @@ from chiminey.smartconnectorscheduler.errors import InvalidInputError
 
 logger = logging.getLogger(__name__)
 
+NETWORK_IO_USAGE_LOG = settings.NETWORK_IO_USAGE_LOG
+
 
 def get_bdp_root_path():
     bdp_root_path = settings.LOCAL_FILESYS_ROOT_PATH
@@ -146,6 +148,9 @@ def get_value(key, dictionary):
         return u''
 
 
+def content_size(s):
+    return len(s.encode('utf-8'))
+
 def _get_http_url(non_http_url):
     curr_scheme = non_http_url.split(':')[0]
     http_url = "http" + non_http_url[len(curr_scheme):]
@@ -169,6 +174,7 @@ def parse_bdpurl(bdp_url):
     query_settings = dict(x[0:] for x in query)
     logger.debug('bdp_url=%s' % bdp_url)
     logger.debug('query_settings=%s' % query_settings)
+    logger.debug('URL_PROPERTIES=%s' % str(o))
     return (scheme, host, mypath, location, query_settings)
 
 
@@ -401,7 +407,7 @@ def get_basename(files_list):
     return files
 
 
-def copy_directories(source_url, destination_url):
+def copy_directories(source_url, destination_url, job_id='0', process_id='0', message='unknown'):
     """
     Supports only file and ssh schemes
     :param source_url:
@@ -506,7 +512,7 @@ def copy_directories(source_url, destination_url):
             #fixme move to ftmanager
             for i in xrange(1, RETRY_ATTEMPTS):
                 try:
-                    content = get_file(curr_source_url)
+                    content = get_file(curr_source_url, job_id, process_id, message)
                 except SSHException, e:
                     logger.error(e)
                     fail = True
@@ -535,7 +541,7 @@ def copy_directories(source_url, destination_url):
             #fixme move to ftmanager
             for i in xrange(1, RETRY_ATTEMPTS):
                 try:
-                    put_file(curr_dest_url, content)
+                    put_file(curr_dest_url, content, job_id, process_id, message)
                 except SSHException, e:
                     logger.error(e)
                     fail = True
@@ -574,7 +580,7 @@ def copy_directories(source_url, destination_url):
     logger.debug("end of copy_directories")
 
 
-def put_file(file_url, content):
+def put_file(file_url, content, job_id='0', process_id='0', message='unknown'):
     """
     Writes out the content to the file_url using config info from user_settings. Note that content is bytecodes
     """
@@ -584,9 +590,10 @@ def put_file(file_url, content):
         # .. allow url to potentially leave the user filesys. This would be bad.
         raise InvalidInputError(".. not allowed in urls")
     scheme = urlparse(file_url).scheme
+
     http_file_url = _get_http_url(file_url)
-    # TODO: replace with parse_bdp_url()
     o = urlparse(http_file_url)
+
     mypath = o.path
     location = o.netloc
     if mypath[0] == os.path.sep:
@@ -638,6 +645,8 @@ def put_file(file_url, content):
             import traceback
             traceback.print_exc()
         logger.debug("File to be written on %s" % location)
+        file_size = str(content_size(content))
+        log_io("PUT", file_url, file_size, job_id, process_id, message)
         # FIXME: does this overwrite?
     elif scheme == "tardis":
         # TODO: do a POST of a new datafile into existing exp and dataset
@@ -701,8 +710,46 @@ def file_exists(bdp_file_url):
 
     return fs.exists(source_path)
 
+def get_input_output_log_file(job_id):
+    log_filename = NETWORK_IO_USAGE_LOG
+    log_dir = os.path.join(settings.STATIC_ROOT,'dumps',job_id)
+    log_file = os.path.join(log_dir,log_filename)
+    if os.path.exists(log_file):
+        logger.debug("FILELOG>>network_io_usage_log=%s" % log_file)
+        return log_file
+    else:
+        return ""
+def write_io_log(filename, text):
+    with open(filename, "a") as iolog:
+        iolog.write(text)
 
-def get_file(file_url):
+def log_io(io_log_req, file_url, file_size, job_id, process_id, message):
+    io_log_filename=""
+    if job_id != '0':
+        io_log_filename = get_input_output_log_file(job_id)
+        if io_log_filename:
+            http_file_url = _get_http_url(file_url)
+            o = urlparse(http_file_url)
+            opath= o.path
+            floc, fname = os.path.split(opath)
+            if process_id == '0':
+               the_rest, expect_proc_id  = os.path.split(floc)
+               if expect_proc_id.isdigit():
+                  process_id = expect_proc_id
+            #file_size = str(content_size(content))
+            if io_log_req == 'GET':
+                write_io_log(io_log_filename,"GET<<<\t%s\tVM: %s\tjob_id: %s\ttask_id: %s\tsize: %s\tfilename: %s\tlocation: %s\n" % (message, o.netloc, job_id, process_id, file_size, fname, floc))
+                #logger.debug("%s: <<<GET job_id: %s process_id: %s source: %s filename: %s SIZE: %s location: %s\n" % (message, job_id, process_id, o.netloc, fname, file_size, floc))
+            else:
+                write_io_log(io_log_filename,"PUT>>>\t%s\tVM: %s\tjob_id: %s\ttask_id: %s\tsize: %s\tfilename: %s\tlocation: %s\n" % (message, o.netloc, job_id, process_id, file_size, fname, floc))
+                #logger.debug("%s: >>>PUT job_id: %s process_id: %s target: %s filename: %s SIZE: %s location: %s\n" % (message, job_id, process_id, o.netloc, fname, file_size, floc))
+        else:
+            logger.debug("FILELOG<<<IO log request not logged, IO log file=%s for job_id=%s not found" % (io_log_filename,job_id)) 
+    else:
+        logger.debug("FILELOG<<<IO log request not availabe for jod_id=%s" % (job_id)) 
+
+
+def get_file(file_url, job_id='0', process_id='0', message='unknown'):
     """
     Reads in content at file_url using config info from user_settings
     Returns byte strings
@@ -716,6 +763,9 @@ def get_file(file_url):
         logger.debug("content(abbrev)=\n%s\n ... \n%s\nEOF\n" % (content[:100], content[-100:]))
     else:
         logger.debug("content=%s" % content)
+
+    file_size = str(content_size(content))
+    log_io("GET", file_url, file_size, job_id, process_id, message)
     return content
 
 

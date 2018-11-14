@@ -102,7 +102,7 @@ def _start_bootstrap(instance, ip,  settings, source, destination):
         Start the task on the instance, then return
     """
     logger.info("run_task %s" % str(instance))
-    copy_directories(source, destination)
+    copy_directories(source, destination, job_id=str(settings['contextid']), message='BootstrapStage')
     makefile_path = get_make_path(destination)
     # TODO, FIXME:  need to have timeout for yum install make
     # and then test can access, otherwise, loop.
