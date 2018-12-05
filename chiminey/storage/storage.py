@@ -149,7 +149,12 @@ def get_value(key, dictionary):
 
 
 def content_size(s):
-    return len(s.encode('utf-8'))
+    try:
+        length=len(s.encode('utf-8'))
+    except Exception, e:
+        logger.debug('FILESIZE error: non-text data %s' % e)
+        length=len(s)
+    return length
 
 def _get_http_url(non_http_url):
     curr_scheme = non_http_url.split(':')[0]
