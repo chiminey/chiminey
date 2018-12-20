@@ -162,6 +162,11 @@ SMART_CONNECTORS = {
              'description': 'The PRISM Model Checker',
              'payload': '/opt/chiminey/current/chiminey/prismconnector/payload_prism',
              },
+'storm' : {'init': 'chiminey.stormconnector.initialise.StormInitial',
+                     'name': 'storm',
+                     'description': 'The Storm Model Checker',
+                     'payload': '/opt/chiminey/current/chiminey/stormconnector/payload_storm'
+                     },
                     }
 
 SCHEMA_PREFIX = "http://rmit.edu.au/schemas"
@@ -181,6 +186,7 @@ INPUT_FIELDS =  {'cloud': SCHEMA_PREFIX + "/input/system/compplatform/cloud",
                  'wordcount':  SCHEMA_PREFIX + "/input/wordcount",
                  'mytardis':  SCHEMA_PREFIX + "/input/mytardis",
                  'prism':  SCHEMA_PREFIX + "/input/prism",
+                 'storm':  SCHEMA_PREFIX + "/input/storm",
                  }
 
 TEMPLATE_DIRS = (
@@ -409,12 +415,15 @@ echo changedsudo
 """
 
 # According to Nectar Image Catalog 12/4/14
+# According to Nectar AMIImage 12/19/2018
+# NeCTAR Image details: 'Name':'NeCTAR CentOS 7 x86_64', 'ImageId':'ami-b6d6dad8','OwnerId': '28eadf5ad64b42a4929b2fb7df99275c', 'CreationDate': '2018-12-17T04:08:54Z'
 VM_IMAGES = {
               #'csrack': {'placement': None, 'vm_image': "ami-00000004", 'user_data': CSRACK_USERDATA},
               'csrack': {'placement': None, 'vm_image': "ami-00000009", 'user_data': CSRACK_USERDATA}, # centos 7
               #'nectar': {'placement': None, 'vm_image': "ami-00001c06", 'user_data': ''},
               #'nectar': {'placement': None, 'vm_image': "ami-00001e2b", 'user_data': ''},
-              'nectar': {'placement': 'monash-01', 'vm_image': "ami-000022b0", 'user_data': ''}, # centos 7
+              #'nectar': {'placement': 'monash-01', 'vm_image': "ami-000022b0", 'user_data': ''}, # centos 7
+              'nectar': {'placement': 'monash-01', 'vm_image': "ami-b6d6dad8", 'user_data': ''},  # centos 7
               'amazon': {'placement': '', 'vm_image': "ami-9352c1a9", 'user_data': ''}}
 
 

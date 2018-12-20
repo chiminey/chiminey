@@ -12,6 +12,7 @@ do
     mkdir -p $line/$INPUT_DIR
     cp -r $PAYLOAD_NAME/*  $line
     cd $line
+    echo "$line" > task.id
     make start_process_schedule $INPUT_DIR $OUTPUT_DIR
     cd ..
     sed -i "s/SCHED_START_TIME/$start_time/" $line/timedata.txt

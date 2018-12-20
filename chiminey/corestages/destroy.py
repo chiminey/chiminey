@@ -120,7 +120,7 @@ class Destroy(stage.Stage):
             messages.error(run_settings, e)
             return
         logger.debug('started')
-        #self.strategy.destroy_resource(self, run_settings, local_settings)
+        self.strategy.destroy_resource(self, run_settings, local_settings)
         logger.debug('ended')
 
     def output(self, run_settings):
