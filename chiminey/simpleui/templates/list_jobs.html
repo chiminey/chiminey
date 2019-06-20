@@ -140,7 +140,7 @@ $(document).on('click','.delete', function(e) {
     <ul>
 
         {% if offset <= 0  %}
-        <li class="disabled">&laquo</span></li>
+        <li class="disabled"><span>&laquo</span></li>
         {% else %}
         <li><a href='{% url "hrmcjob-list" %}?offset={{ offset|add:"-20"}}'>&laquo;</a></li>
         {% endif %}
