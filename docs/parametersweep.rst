@@ -96,7 +96,7 @@ number of tasks or jobs generated during job submission.  The above sweep map, f
 
 .. _unknown_param:
 
-Imapct of unknown parameters in a sweep map
+Impact of unknown parameters in a sweep map
 '''''''''''''''''''''''''''''''''''''''''''
 
 An **unknown parameter** is a parameter that is not needed during the execution of a smart
